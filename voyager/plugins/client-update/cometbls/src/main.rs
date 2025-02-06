@@ -3,6 +3,7 @@ use std::{
     num::ParseIntError,
 };
 
+use call::FetchUpdateBoot;
 use cometbft_types::{
     crypto::public_key::PublicKey,
     types::{
@@ -18,7 +19,6 @@ use galois_rpc::{
     prove_request::ProveRequest,
     validator_set_commit::ValidatorSetCommit,
 };
-use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -28,7 +28,7 @@ use num_bigint::BigUint;
 use protos::union::galois::api::v3::union_prover_api_client;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace};
-use unionlabs::bounded::BoundedI64;
+use unionlabs::{bounded::BoundedI64, ibc::core::client::height::Height};
 use voyager_message::{
     call::{Call, WaitForHeight},
     core::{ChainId, ClientType},
@@ -38,7 +38,7 @@ use voyager_message::{
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{
-    call, data, defer, now, pass::PassResult, promise, seq, void, BoxDynError, Op, Visit,
+    call, data, defer, noop, now, pass::PassResult, promise, seq, void, BoxDynError, Op, Visit,
 };
 
 use crate::{
@@ -147,6 +147,105 @@ impl Module {
     fn plugin_name(&self) -> String {
         plugin_name(&self.chain_id)
     }
+
+    #[instrument(skip_all, fields(%from, %to))]
+    async fn find_highest_update_height(&self, from: Height, to: Height) -> Height {
+        let sort = |mut validators: Vec<Validator>| {
+            validators.sort_by(|a, b| {
+                #[allow(clippy::collapsible_else_if)]
+                if a.voting_power == b.voting_power {
+                    if a.address < b.address {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
+                } else {
+                    if a.voting_power > b.voting_power {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
+                }
+            });
+            validators
+                .into_iter()
+                .map(|v| (v.address, v))
+                .collect::<HashMap<_, _>>()
+        };
+
+        let trusted_validators = self
+            .cometbft_client
+            .all_validators(Some(from.increment().height().try_into().unwrap()))
+            .await
+            .unwrap()
+            .validators;
+
+        let trusted_map = sort(trusted_validators);
+
+        // 1/3 of the trusted power must remain at H+k
+        let trusted_power_threshold = trusted_map
+            .values()
+            .map(|v| v.voting_power.inner())
+            .sum::<i64>()
+            / 3;
+
+        let mut low = from;
+        let mut high = to.increment();
+        while low < high {
+            let mid = Height::new((low.height() + high.height()) / 2);
+
+            info!("fetching between {low} and {high}, mid = {mid}");
+
+            // 1. fetch commit
+            let signed_header = self
+                .cometbft_client
+                .commit(Some(mid.height().try_into().unwrap()))
+                .await
+                .unwrap()
+                .signed_header;
+
+            // 2. fetch untrusted validators
+            let untrusted_validators = self
+                .cometbft_client
+                .all_validators(Some(mid.height().try_into().unwrap()))
+                .await
+                .unwrap()
+                .validators;
+
+            let untrusted_map = sort(untrusted_validators);
+
+            // 2. compute trusted power
+            let mut trusted_power = 0;
+            for sig in signed_header.commit.signatures.iter() {
+                if let CommitSig::Commit {
+                    validator_address, ..
+                } = sig
+                {
+                    let address = validator_address.as_encoding();
+                    match (trusted_map.get(address), untrusted_map.get(address)) {
+                        (Some(trusted_validator), Some(untrusted_validator))
+                            if trusted_validator.voting_power
+                                == untrusted_validator.voting_power =>
+                        {
+                            trusted_power += trusted_validator.voting_power.inner();
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            info!(%trusted_power, %trusted_power_threshold);
+
+            // 3. ensure trusted power is higher than threshold
+            if trusted_power > trusted_power_threshold {
+                low = mid.increment();
+            } else {
+                high = mid;
+            }
+        }
+
+        Height::new(low.height() - 1)
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -176,7 +275,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         |fetch| {
                             Call::Plugin(PluginMessage::new(
                                 self.plugin_name(),
-                                ModuleCall::from(FetchUpdate {
+                                ModuleCall::from(FetchUpdateBoot {
                                     update_from: fetch.update_from,
                                     update_to: fetch.update_to,
                                 }),
@@ -196,13 +295,53 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
+            ModuleCall::FetchUpdateBoot(FetchUpdateBoot {
+                update_from,
+                update_to,
+            }) => Ok(promise(
+                [call(PluginMessage::new(
+                    self.plugin_name(),
+                    ModuleCall::FetchUpdate(FetchUpdate {
+                        update_from,
+                        update_to,
+                    }),
+                ))],
+                [],
+                PluginMessage::new(self.plugin_name(), ModuleCallback::from(AggregateHeader {})),
+            )),
             ModuleCall::FetchUpdate(FetchUpdate {
                 update_from,
                 update_to,
             }) => {
+                if update_from.height() == update_to.height() {
+                    info!("update from {update_from} to {update_to} is a noop");
+                    return Ok(noop());
+                }
+
+                let update_to_highest = self
+                    .find_highest_update_height(update_from, update_to)
+                    .await;
+                if update_to_highest != update_to {
+                    let intermediate = call(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(FetchUpdate {
+                            update_from,
+                            update_to: update_to_highest,
+                        }),
+                    ));
+                    let continuation = call(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(FetchUpdate {
+                            update_from: update_to_highest,
+                            update_to,
+                        }),
+                    ));
+                    return Ok(seq([intermediate, continuation]));
+                }
+
                 let trusted_validators = self
                     .cometbft_client
-                    .all_validators(Some(update_from.height().try_into().unwrap()))
+                    .all_validators(Some(update_from.increment().height().try_into().unwrap()))
                     .await
                     .unwrap()
                     .validators;
@@ -324,63 +463,53 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         height: update_to,
                         finalized: true,
                     })),
-                    promise(
-                        [call(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(FetchProveRequest {
-                                request: ProveRequest {
-                                    vote: CanonicalVote {
-                                        // REVIEW: Should this be hardcoded to precommit?
-                                        ty: SignedMsgType::Precommit,
-                                        height: signed_header.commit.height,
-                                        round: BoundedI64::new_const(
-                                            signed_header.commit.round.inner().into(),
-                                        )
-                                        .expect(
-                                            "0..=i32::MAX can be converted to 0..=i64::MAX safely",
-                                        ),
-                                        block_id: CanonicalBlockId {
+                    call(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(FetchProveRequest {
+                            update_from,
+                            request: ProveRequest {
+                                vote: CanonicalVote {
+                                    // REVIEW: Should this be hardcoded to precommit?
+                                    ty: SignedMsgType::Precommit,
+                                    height: signed_header.commit.height,
+                                    round: BoundedI64::new_const(
+                                        signed_header.commit.round.inner().into(),
+                                    )
+                                    .expect("0..=i32::MAX can be converted to 0..=i64::MAX safely"),
+                                    block_id: CanonicalBlockId {
+                                        hash: signed_header
+                                            .commit
+                                            .block_id
+                                            .hash
+                                            .unwrap_or_default(),
+                                        part_set_header: CanonicalPartSetHeader {
+                                            total: signed_header
+                                                .commit
+                                                .block_id
+                                                .part_set_header
+                                                .total,
                                             hash: signed_header
                                                 .commit
                                                 .block_id
+                                                .part_set_header
                                                 .hash
                                                 .unwrap_or_default(),
-                                            part_set_header: CanonicalPartSetHeader {
-                                                total: signed_header
-                                                    .commit
-                                                    .block_id
-                                                    .part_set_header
-                                                    .total,
-                                                hash: signed_header
-                                                    .commit
-                                                    .block_id
-                                                    .part_set_header
-                                                    .hash
-                                                    .unwrap_or_default(),
-                                            },
                                         },
-                                        chain_id: signed_header.header.chain_id.clone(),
                                     },
-                                    untrusted_header: signed_header.header.clone(),
-                                    trusted_commit: trusted_validators_commit,
-                                    untrusted_commit: untrusted_validators_commit,
+                                    chain_id: signed_header.header.chain_id.clone(),
                                 },
-                            }),
-                        ))],
-                        [],
-                        PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCallback::from(AggregateHeader {
-                                chain_id: self.chain_id.clone(),
-                                signed_header,
-                                update_from,
-                                update_to,
-                            }),
-                        ),
-                    ),
+                                untrusted_header: signed_header.header.clone(),
+                                trusted_commit: trusted_validators_commit,
+                                untrusted_commit: untrusted_validators_commit,
+                            },
+                        }),
+                    )),
                 ]))
             }
-            ModuleCall::FetchProveRequest(FetchProveRequest { request }) => {
+            ModuleCall::FetchProveRequest(FetchProveRequest {
+                update_from,
+                request,
+            }) => {
                 debug!("submitting prove request");
 
                 let prover_endpoint = &self.prover_endpoints[usize::try_from(
@@ -411,7 +540,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         defer(now() + 1),
                         call(PluginMessage::new(
                             self.plugin_name(),
-                            ModuleCall::from(FetchProveRequest { request }),
+                            ModuleCall::from(FetchProveRequest {
+                                update_from,
+                                request: request.clone(),
+                            }),
                         )),
                     ])
                 };
@@ -435,6 +567,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             self.plugin_name(),
                             ModuleData::from(ProveResponse {
                                 prove_response: response,
+                                update_from,
+                                header: request.untrusted_header,
                             }),
                         )))
                     }
@@ -453,13 +587,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         Ok(match callback {
             ModuleCallback::AggregateHeader(aggregate) => self.aggregate_header(
                 aggregate,
-                data.into_iter()
-                    .exactly_one()
-                    .unwrap()
-                    .as_plugin::<ModuleData>(self.plugin_name())
-                    .unwrap()
-                    .try_into()
-                    .unwrap(),
+                data.into_iter().map(|x| {
+                    x.as_plugin::<ModuleData>(self.plugin_name())
+                        .unwrap()
+                        .try_into()
+                        .unwrap()
+                }),
             ),
         })
     }

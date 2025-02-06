@@ -14,10 +14,9 @@ workspace = true
 [dependencies]
 cometbft-rpc                = { workspace = true }
 cometbft-types              = { workspace = true }
-cometbls-light-client-types = { workspace = true }
+cometbls-light-client-types = { workspace = true, features = ["serde"] }
 enumorph                    = { workspace = true }
 galois-rpc                  = { workspace = true }
-itertools                   = "0.13.0"
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 num-bigint                  = { workspace = true }
