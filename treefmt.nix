@@ -163,6 +163,7 @@ in
         "**/.gitattributes"
         "uniond/docs/static/**"
         ".git-blame-ignore-revs"
+        "cosmwasm/cw20-base/**"
       ];
     };
   };

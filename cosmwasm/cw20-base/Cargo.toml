@@ -1,13 +1,13 @@
 [package]
-name = "cw20-base"
-version = "0.0.0"
-authors = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
-edition = "2021"
-description = "Basic implementation of a CosmWasm-20 compliant token"
-license = "Apache-2.0"
-repository = "https://github.com/CosmWasm/cw-plus"
-homepage = "https://cosmwasm.com"
+authors       = ["Ethan Frey <ethanfrey@users.noreply.github.com>"]
+description   = "Basic implementation of a CosmWasm-20 compliant token"
 documentation = "https://docs.cosmwasm.com"
+edition       = "2021"
+homepage      = "https://cosmwasm.com"
+license       = "Apache-2.0"
+name          = "cw20-base"
+repository    = "https://github.com/CosmWasm/cw-plus"
+version       = "0.0.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -18,15 +18,15 @@ library = []
 
 [dependencies]
 cosmwasm-schema = { workspace = true }
-cw2 = "2.0.0"
-cw20 = "2.0.0"
+cosmwasm-std    = { workspace = true }
 cw-storage-plus = { workspace = true }
-cosmwasm-std = { workspace = true }
-schemars = { workspace = true }
-semver = "1"
-serde = { workspace = true }
-thiserror = { workspace = true }
+cw2             = "2.0.0"
+cw20            = "2.0.0"
+schemars        = { workspace = true }
+semver          = "1"
+serde           = { workspace = true }
+thiserror       = { workspace = true }
 
 [dev-dependencies]
 cw-multi-test = "2.0.0"
-cw-utils = "2.0.0"
+cw-utils      = "2.0.0"

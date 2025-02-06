@@ -14,8 +14,8 @@ use ibc_union_msg::{
 };
 use ibc_union_spec::types::Packet;
 use ucs03_zkgm_token_minter_api::{
-    LocalTokenMsg, Metadata, MetadataResponse, PredictWrappedTokenResponse, WrappedTokenMsg,
-    CW20_QUOTE_TOKEN, CW20_TOKEN_ADDRESS, CW20_TOKEN_CREATION_EVENT,
+    LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg, CW20_QUOTE_TOKEN,
+    CW20_TOKEN_ADDRESS, CW20_TOKEN_CREATION_EVENT,
 };
 use unionlabs::{
     ethereum::keccak256,
@@ -29,7 +29,7 @@ use crate::{
         ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, OP_BATCH,
         OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS, ZKGM_VERSION_0,
     },
-    msg::{EurekaMsg, ExecuteMsg, InitMsg},
+    msg::{EurekaMsg, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg},
     state::{
         CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN,
         TOKEN_MINTER, TOKEN_ORIGIN,
@@ -586,7 +586,7 @@ fn query_predict_wrapped_token(
 ) -> StdResult<String> {
     Ok(deps
         .querier
-        .query::<PredictWrappedTokenResponse>(&QueryRequest::Wasm(
+        .query::<ucs03_zkgm_token_minter_api::PredictWrappedTokenResponse>(&QueryRequest::Wasm(
             cosmwasm_std::WasmQuery::Smart {
                 contract_addr: minter.to_string(),
                 msg: to_json_binary(
@@ -1099,4 +1099,27 @@ fn make_wasm_msg(
 ) -> StdResult<CosmosMsg> {
     let msg = msg.into();
     Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, funds)?))
+}
+
+#[entry_point]
+pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+    match msg {
+        QueryMsg::PredictWrappedToken {
+            path,
+            channel,
+            token,
+        } => {
+            let minter = TOKEN_MINTER.load(deps.storage)?;
+            let token = query_predict_wrapped_token(
+                deps,
+                &minter,
+                path.parse().map_err(ContractError::U256Parse)?,
+                channel,
+                token.into(),
+            )?;
+            Ok(to_json_binary(&PredictWrappedTokenResponse {
+                wrapped_token: token.as_bytes().into(),
+            })?)
+        }
+    }
 }

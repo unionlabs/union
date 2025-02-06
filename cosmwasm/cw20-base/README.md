@@ -7,15 +7,15 @@ cw20-compatible tokens with custom logic.
 
 Implements:
 
-- [x] CW20 Base
-- [x] Mintable extension
-- [x] Allowances extension
+- \[x\] CW20 Base
+- \[x\] Mintable extension
+- \[x\] Allowances extension
 
 ## Running this contract
 
 You will need Rust 1.44.1+ with `wasm32-unknown-unknown` target installed.
 
-You can run unit tests on this via: 
+You can run unit tests on this via:
 
 `cargo test`
 
@@ -37,7 +37,7 @@ You can also import much of the logic of this contract to build another
 ERC20-contract, such as a bonding curve, overiding or extending what you
 need.
 
-Basically, you just need to write your handle function and import 
+Basically, you just need to write your handle function and import
 `cw20_base::contract::handle_transfer`, etc and dispatch to them.
 This allows you to use custom `ExecuteMsg` and `QueryMsg` with your additional
 calls, but then use the underlying implementation for the standard cw20
