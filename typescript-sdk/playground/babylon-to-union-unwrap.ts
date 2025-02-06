@@ -8,7 +8,6 @@ import {
   getRecommendedChannels
 } from "#query/offchain/ucs03-channels"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { queryContractState } from "#query/on-chain"
 
 // hack to encode bigints to json
 declare global {
