@@ -48,14 +48,14 @@ const hideZeroBalances = writable(true)
     </button>
   </div>
 
-  <div class="flex flex-col overflow-y-auto">
+  <div class="flex flex-col overflow-y-auto gap-2 py-2">
     {#each intents.baseTokens ?? [] as token}
       {#if !$hideZeroBalances || token.balance !== "0"}
         <button
-                class="px-2 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-md flex justify-start items-center"
+                class="px-4 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-sm flex justify-start items-center"
                 on:click={() => setAsset(token.denom)}
         >
-          <Token chainId={$rawIntents.source} denom={token.denom} amount={token.balance} {chains}/>
+          <Token stackedView highlightEnabled={false} chainId={$rawIntents.source} denom={token.denom} amount={token.balance} {chains}/>
         </button>
       {/if}
     {/each}
