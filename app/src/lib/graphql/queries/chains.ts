@@ -15,6 +15,10 @@ export const chainsQueryDocument =
       transfer_list
       transfer_submission
     }    
+    relayer_status {
+      status
+      message
+    }
     enabled
     rpc_type
     addr_prefix
