@@ -35,6 +35,8 @@ if (channel === null) {
 
 consola.info("channel", channel)
 
+consola.info("base token", BASE_TOKEN)
+
 const quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, BASE_TOKEN, channel)
 
 if (quoteToken.isErr()) {
