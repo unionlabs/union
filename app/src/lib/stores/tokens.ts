@@ -1,8 +1,13 @@
 import type { Chain, TokenInfoMulti } from "$lib/types.ts"
 import { get, writable, type Writable } from "svelte/store"
 import type { ChainId, Denom } from "./balances.ts" // hack, move to proper place
-import { hexToString, isHex, type Address } from "viem"
+import { fromHex, hexToString, isHex, type Address } from "viem"
 import { erc20ReadMulticall } from "$lib/queries/balance/evm/multicall"
+import {
+  isValidBech32ContractAddress,
+  queryCosmosC20TokenMetadata,
+  type CosmosChainId
+} from "@unionlabs/client"
 
 export type TokenInfos = Record<ChainId, Record<Denom, TokenInfo>>
 
@@ -103,13 +108,35 @@ export async function fetchTokenInfo(chain: Chain, denom: Denom): Promise<TokenI
     }
   }
 
+  if (chain.rpc_type === "cosmos") {
+    const maybeBechAddr = isHex(denom) ? fromHex(denom, "string") : ""
+    if (isValidBech32ContractAddress(maybeBechAddr)) {
+      const result = await queryCosmosC20TokenMetadata({
+        contractAddress: maybeBechAddr,
+        chainId: chain.chain_id as CosmosChainId
+      })
+
+      if (result.isOk()) {
+        tokenInfoMulti.onchain = {
+          name: result.value.name,
+          decimals: result.value.decimals,
+          symbol: result.value.symbol
+        }
+      }
+    }
+  }
+
   let graphqlRepr = tokenInfoMulti.graphql?.primaryRepresentation
   if (graphqlRepr) {
     tokenInfoMulti.combined.symbol = graphqlRepr.symbol
     tokenInfoMulti.combined.decimals = graphqlRepr.decimals
-  } else if (tokenInfoMulti.onchain?.symbol && tokenInfoMulti.onchain.decimals) {
-    tokenInfoMulti.combined.symbol = tokenInfoMulti.onchain.symbol
-    tokenInfoMulti.combined.decimals = tokenInfoMulti.onchain.decimals
+  } else {
+    if (tokenInfoMulti.onchain?.symbol) {
+      tokenInfoMulti.combined.symbol = tokenInfoMulti.onchain.symbol
+    }
+    if (tokenInfoMulti.onchain?.decimals) {
+      tokenInfoMulti.combined.decimals = tokenInfoMulti.onchain.decimals
+    }
   }
 
   return tokenInfoMulti
