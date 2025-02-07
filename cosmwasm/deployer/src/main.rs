@@ -7,8 +7,9 @@ use cosmos_client::{Ctx, GasConfig};
 use cosmwasm_std::Addr;
 use hex_literal::hex;
 use protos::cosmwasm::wasm::v1::{
-    MsgInstantiateContract2, MsgInstantiateContract2Response, MsgMigrateContract,
-    MsgMigrateContractResponse, MsgStoreCode, MsgStoreCodeResponse,
+    MsgExecuteContract, MsgExecuteContractResponse, MsgInstantiateContract2,
+    MsgInstantiateContract2Response, MsgMigrateContract, MsgMigrateContractResponse, MsgStoreCode,
+    MsgStoreCodeResponse, QuerySmartContractStateRequest, QuerySmartContractStateResponse,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -99,6 +100,7 @@ const BYTECODE_BASE: &str = "bytecode-base";
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 struct ContractPaths {
     core: PathBuf,
+    // salt -> wasm path
     lightclient: BTreeMap<String, PathBuf>,
     app: AppPaths,
 }
@@ -282,7 +284,7 @@ async fn do_main() -> Result<()> {
                 },
             };
 
-            for (salt, path) in contracts.lightclient {
+            for (client_type, path) in contracts.lightclient {
                 let address = ctx
                     .deploy_and_initiate(
                         std::fs::read(path)?,
@@ -290,11 +292,58 @@ async fn do_main() -> Result<()> {
                         ibc_union_light_client::msg::InitMsg {
                             ibc_host: Addr::unchecked(core_address.clone()),
                         },
-                        format!("{LIGHTCLIENT}/{salt}"),
+                        format!("{LIGHTCLIENT}/{client_type}"),
                     )
                     .await?;
 
-                contract_addresses.lightclient.insert(salt, address);
+                let response = ctx
+                    .client()
+                    .grpc_abci_query::<_, QuerySmartContractStateResponse>(
+                        "/cosmwasm.wasm.v1.Query/SmartContractState",
+                        &QuerySmartContractStateRequest {
+                            address: core_address.clone(),
+                            query_data: serde_json::to_vec(
+                                &ibc_union_msg::query::QueryMsg::GetRegisteredClientType {
+                                    client_type: client_type.clone(),
+                                },
+                            )
+                            .unwrap(),
+                        },
+                        None,
+                        false,
+                    )
+                    .await?;
+
+                if let Some(addr) = response
+                    .value
+                    .map(|value| serde_json::from_slice::<Addr>(&value.data).unwrap())
+                {
+                    assert_eq!(addr.to_string(), address);
+                    info!("client {client_type} has already been registered");
+                } else {
+                    ctx.tx::<_, MsgExecuteContractResponse>(
+                        MsgExecuteContract {
+                            sender: ctx.signer().to_string(),
+                            contract: core_address.clone(),
+                            msg: serde_json::to_vec(
+                                &ibc_union_msg::msg::ExecuteMsg::RegisterClient(
+                                    ibc_union_msg::msg::MsgRegisterClient {
+                                        client_type: client_type.clone(),
+                                        client_address: address.clone(),
+                                    },
+                                ),
+                            )
+                            .unwrap(),
+                            funds: vec![],
+                        },
+                        "",
+                    )
+                    .await?;
+
+                    info!("registered client type {client_type} to {address}");
+                };
+
+                contract_addresses.lightclient.insert(client_type, address);
             }
 
             if let Some(_ucs00) = contracts.app.ucs00 {}
@@ -394,9 +443,9 @@ async fn do_main() -> Result<()> {
 
             let mut heights = BTreeMap::new();
 
-            for (client_type, address) in addresses.lightclient {
-                let height = ctx
-                    .contract_history(address.clone())
+            heights.insert(
+                addresses.core.clone(),
+                ctx.contract_history(addresses.core.clone())
                     .await??
                     .unwrap()
                     .entries
@@ -404,33 +453,51 @@ async fn do_main() -> Result<()> {
                     .unwrap()
                     .updated
                     .unwrap()
-                    .block_height;
+                    .block_height,
+            );
 
-                info!(
-                    "lightclient contract for client type \
-                    {client_type} was initiated at {height}"
-                );
+            for (client_type, address) in addresses.lightclient {
+                if let Some(entry) = ctx
+                    .contract_history(address.clone())
+                    .await??
+                    .unwrap()
+                    .entries
+                    .pop()
+                {
+                    let height = entry.updated.unwrap().block_height;
 
-                heights.insert(address, height);
+                    info!(
+                        "lightclient contract for client type \
+                        {client_type} was initiated at {height}"
+                    );
+
+                    heights.insert(address, height);
+                } else {
+                    info!(
+                        "lightclient contract for client type \
+                        {client_type} has not been stored yet"
+                    )
+                };
             }
 
             if let Some(_ucs00) = addresses.app.ucs00 {}
 
             if let Some(address) = addresses.app.ucs03 {
-                let height = ctx
+                if let Some(entry) = ctx
                     .contract_history(address.clone())
                     .await??
                     .unwrap()
                     .entries
                     .pop()
-                    .unwrap()
-                    .updated
-                    .unwrap()
-                    .block_height;
+                {
+                    let height = entry.updated.unwrap().block_height;
 
-                info!("app ucs03 was initiated at {height}");
+                    info!("app ucs03 was initiated at {height}");
 
-                heights.insert(address, height);
+                    heights.insert(address, height);
+                } else {
+                    info!("app ucs03 has not been stored yet");
+                };
             }
 
             write_output(output, heights)?;

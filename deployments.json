@@ -1,0 +1,89 @@
+[
+  {
+    "chain_id": "union-devnet-1",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "core": {
+        "address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73",
+        "height": 1
+      },
+      "lightclient": {
+        "arbitrum": {
+          "address": "union17tnf6a36lneq0eh03z6x5l5flq9efsdd5ew5pycjexn6e0pzrrusc4vd5m",
+          "height": 1
+        },
+        "berachain": {
+          "address": "union16h8dcc0930707wgh8fdw25swx6fa94eecsqr78kazq05ayqfg0ns7pc04d",
+          "height": 1
+        },
+        "ethereum": {
+          "address": "union16r7cfhgdhnhp5dgmkx7h79q463ax2jut2smwdv7j7lclua6mer8sfq95rd",
+          "height": 1
+        },
+        "ethermint": {
+          "address": "union1dzcemksyl5sffsxn2vm7ac84t64dxg3rfw0l6qte8ck73dvtq5eqaw0wqd",
+          "height": 1
+        },
+        "movement": {
+          "address": "union16ruv4elqfe5gek06lneppc82g5086uyswxc06vawfjhkkflxlq5s6ef8y0",
+          "height": 1
+        },
+        "state-lens/ics23/mpt": {
+          "address": "union1aaqx8pny8rp2ygjfc90zrr4ldf09xmkpjlpzyr942p8xujkanltqr7agmq",
+          "height": 1
+        },
+        "tendermint": {
+          "address": "union10wdac638dafm9ssew6gu2mv8tfnhxqpj6ntgm9xa3lssa9cm24es7pu2g7",
+          "height": 1
+        }
+      },
+      "app": {
+        "ucs03": {
+          "address": "union162nwv92cfwthfcnlqmh30gmnem2u3uv56ap9y7e0vuqtdnz2qjeq2ckrsf",
+          "height": 1
+        }
+      }
+    }
+  },
+  {
+    "chain_id": "union-testnet-9",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "core": {
+        "address": "union1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tesyypmkw",
+        "height": 4081128
+      },
+      "lightclient": {
+        "arbitrum": {
+          "address": "union1txkq475e6s4dmapnla8aunqey7pnmlfptl6tkfm3w3huhh2ymfrq2e3s9g",
+          "height": 4081134
+        },
+        "berachain": {
+          "address": "union1y4rln3sk8ehqxdcca3juey7ee0hp23czcfmc457lxsp4kt39wzqqpfa08f",
+          "height": 4081139
+        },
+        "ethereum": {
+          "address": "union1ahqjgzw37gp2n6tzpa3hjlenysaz5waewhlfq5rqlgl5ljeafpws4h0dfn",
+          "height": 4081145
+        },
+        "ethermint": {
+          "address": "union1dxpa24en20qk9mqxa55qaaqkmeg647k25qwt5cmqc4wajr00h2hsp830h5",
+          "height": 4081152
+        },
+        "movement": {
+          "address": "union143w7u4eq02fnetguapftwmnu5qnnf58wcygk4sg5d8sycr5m0auqacgecd",
+          "height": 4081156
+        },
+        "state-lens/ics23/mpt": {
+          "address": "union13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqe5j4a0",
+          "height": 4081162
+        },
+        "tendermint": {
+          "address": "union1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqss29m5ru",
+          "height": 4081167
+        }
+      },
+      "app": {}
+    }
+  }
+]
