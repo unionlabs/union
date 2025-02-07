@@ -48,7 +48,6 @@ onMount(() => {
   highlightItem.set(denom ? { kind: "token", denom} : null)
   }}>
     <div class="flex gap-1 items-center">
-      <TokenQualityLevel level={token.graphql != null ? "GRAPHQL" : token.onchain != null ? "ONCHAIN" : "NONE"}/>
       {#if amount !== null}
         {formatUnits(BigInt(amount), token.combined.decimals)}
       {/if}
@@ -67,7 +66,9 @@ onMount(() => {
         chains,
       )}
       {/each}
-    </div>{/if}{/if}</span>
+    </div>{/if}{/if}
+    </span>
+    <TokenQualityLevel level={token.graphql != null ? "GRAPHQL" : token.onchain != null ? "ONCHAIN" : "NONE"}/>
     </div>
     {#if stackedView}
     <div class="text-muted-foreground text-xs flex gap-1 items-center -mt-1">

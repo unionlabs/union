@@ -11,11 +11,11 @@ export let chain: Chain | null = null
 $: ch = chain ? chain : chains?.find(c => c.chain_id === chainId)
 </script>
 
-<span class="inline-flex items-center gap-1">
+<span class="inline-flex items-center">
 {#if !ch}
   Invalid chain: {#if chainId}{chainId}{/if}
 {:else}
-  {#if ch.relayer_status.status !== "HEALTHY"}<Tooltip.Root><Tooltip.Trigger><TokenQualityLevel level="NONE"/></Tooltip.Trigger><Tooltip.Content>{ch.relayer_status.message}</Tooltip.Content></Tooltip.Root>{:else}<TokenQualityLevel level="GRAPHQL"/>{/if}
-  <div>{ch.display_name}</div>
+    <div>{ch.display_name}</div>
+{#if ch.relayer_status.status !== "HEALTHY"}<Tooltip.Root><Tooltip.Trigger><TokenQualityLevel level={ch.relayer_status.status === "WARNING" ? "ONCHAIN" : "NONE"}/></Tooltip.Trigger><Tooltip.Content>{ch.relayer_status.message}</Tooltip.Content></Tooltip.Root>{/if}
 {/if}
 </span>
