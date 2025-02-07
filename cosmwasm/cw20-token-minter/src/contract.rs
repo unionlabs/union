@@ -79,7 +79,6 @@ pub fn execute(
                 channel,
                 token,
             } => {
-                let name = metadata.name;
                 Response::new()
                     .add_message(
                         // Instantiating the dummy contract first to be able to get the deterministic address
@@ -89,7 +88,7 @@ pub fn execute(
                             label: denom.clone(),
                             msg: to_json_binary(&cosmwasm_std::Empty {})?,
                             funds: vec![],
-                            salt: Binary(calculate_salt(
+                            salt: Binary::new(calculate_salt(
                                 U256::from_be_bytes::<{ U256::BYTES }>(
                                     path.as_slice().try_into().expect("correctly encoded; qed"),
                                 ),
@@ -107,12 +106,8 @@ pub fn execute(
                             new_code_id: config.cw20_base_code_id,
                             msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
                                 // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set
-                                name: if name.is_empty() || name.len() > 50 {
-                                    "ZKGM".into()
-                                } else {
-                                    name
-                                },
-                                symbol: "ZKGM".to_string(),
+                                name: restrict_name(metadata.name),
+                                symbol: restrict_symbol(metadata.symbol),
                                 decimals: 0,
                                 initial_balances: vec![],
                                 mint: Some(cw20::MinterResponse {
@@ -294,4 +289,76 @@ fn calculate_salt(path: U256, channel: u32, token: Vec<u8>) -> Vec<u8> {
     keccak256((path, channel, token.to_vec()).abi_encode_params())
         .into_bytes()
         .to_vec()
+}
+
+fn restrict_name(name: String) -> String {
+    if name.len() > 50 {
+        let name = &name[(name.len() - 50)..];
+        let split = name.split('/').collect::<Vec<&str>>();
+        split[split.len() - 1].to_string()
+    } else {
+        name
+    }
+}
+
+fn restrict_symbol(symbol: String) -> String {
+    if symbol.len() > 12 {
+        // truncate the symbol to get the last 12 chars
+        let symbol = &symbol[(symbol.len() - 12)..];
+        // split it by `/` incase this is a factory token and only get the last part
+        let split = symbol.split('/').collect::<Vec<&str>>();
+        // filter the unwanted chars
+        let symbol = split[split.len() - 1]
+            .chars()
+            .into_iter()
+            .filter(|c| *c == '-' || c.is_ascii_alphabetic())
+            .collect::<String>();
+        // filtering might make the token length < 3, so postfix the denom with '-'
+        format!("{symbol:-<3}")
+    } else {
+        symbol
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_restrict_name() {
+        assert_eq!(&restrict_symbol("muno".into()), "muno");
+        assert_eq!(
+            &restrict_name(
+                "factory/asdelfnaslednunion12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown".into()
+            ),
+            "clown"
+        );
+        assert_eq!(
+            &restrict_name(
+                "alsednfelasndfelasndfleansdfelnasdlefnasledfnleasdnfleasndflenasdfelnasledfelasdnalsednfelasndfelasndfleansdfelnasdflen"
+                    .into()
+            ),
+            "asledfelasdnalsednfelasndfelasndfleansdfelnasdflen"
+        );
+    }
+
+    #[test]
+    fn test_restrict_symbol() {
+        assert_eq!(&restrict_symbol("muno".into()), "muno");
+        assert_eq!(
+            &restrict_symbol("factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown".into()),
+            "clown"
+        );
+        assert_eq!(
+            &restrict_symbol(
+                "alsednfelasndfelasndfleansdfelnasdlefnasledfnleasdnfleasndflenasdfelnasledfelasdn"
+                    .into()
+            ),
+            "asledfelasdn"
+        );
+        assert_eq!(
+            &restrict_symbol("factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/a12c".into()),
+            "ac-"
+        );
+    }
 }
