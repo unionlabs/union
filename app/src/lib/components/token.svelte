@@ -14,6 +14,7 @@ import { onMount } from "svelte"
 import * as Tooltip from "$lib/components/ui/tooltip"
 import { truncate } from "$lib/utilities/format"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
+import Address from "./address.svelte"
 
 export let chains: Array<Chain>
 export let chainId: string
@@ -119,11 +120,14 @@ let cosmosDenom = derived(tokenInfo, $tokenInfo => {
       <section>
         <h3 class="text-white">Denom</h3>
         {#if $cosmosDenom}
-          <div>{$cosmosDenom.denom}</div>
-          <div>{$cosmosDenom.type}</div>
+          {#if $cosmosDenom.type === "CW20"}
+            <Address truncate={false} highlightEnabled={false} address={$cosmosDenom.denom} {chains} {chainId}/>
+          {:else}
+            <div>{$cosmosDenom.denom}</div>
+          {/if}
           <div>{denom}</div>
         {:else}
-          <div>{denom}</div>
+          <Address truncate={false} highlightEnabled={false} address={denom} {chains} {chainId}/>
         {/if}
       </section>
       {#if token.graphql}
