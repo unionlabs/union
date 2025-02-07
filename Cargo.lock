@@ -3918,26 +3918,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-multi-test"
-version = "2.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0ae276e7a06ad1b7e7da78a3d68aba80634cde30ee7fe8259a94e653603fef8"
-dependencies = [
- "anyhow",
- "bech32 0.11.0",
- "cosmwasm-std 2.1.4",
- "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
- "derivative",
- "itertools 0.13.0",
- "prost 0.13.2",
- "schemars",
- "serde",
- "sha2 0.10.8",
- "thiserror",
-]
-
-[[package]]
 name = "cw-ownable"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4119,23 +4099,6 @@ dependencies = [
 
 [[package]]
 name = "cw20-base"
-version = "0.0.0"
-dependencies = [
- "cosmwasm-schema 2.1.4",
- "cosmwasm-std 2.1.4",
- "cw-multi-test",
- "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
- "cw2 2.0.0",
- "cw20",
- "schemars",
- "semver 1.0.22",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "cw20-base"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6de8c32e100f1fca306972d86b617234a5e6b00594ea2b48716fd6804d4d95d"
@@ -4160,7 +4123,7 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
  "cw20",
- "cw20-base 2.0.0",
+ "cw20-base",
  "hex-literal",
  "serde",
  "thiserror",

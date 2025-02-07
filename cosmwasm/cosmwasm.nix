@@ -211,9 +211,9 @@
         crateDirFromRoot = "cosmwasm/multicall";
       };
 
-      native-token-minter = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/native-token-minter";
-      };
+      # native-token-minter = crane.buildWasmContract {
+      #   crateDirFromRoot = "cosmwasm/native-token-minter";
+      # };
 
       cw20-token-minter = crane.buildWasmContract {
         crateDirFromRoot = "cosmwasm/cw20-token-minter";
@@ -283,7 +283,7 @@
             bytecode-base
             cw721-base
             ucs03-zkgm
-            native-token-minter
+            # native-token-minter
             cw20-token-minter
             ibc-union
             multicall
