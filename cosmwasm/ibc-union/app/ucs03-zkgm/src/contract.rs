@@ -1,6 +1,7 @@
 use core::str;
 
 use alloy::{primitives::U256, sol_types::SolValue};
+use anybuf::Bufany;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -849,6 +850,12 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
     match reply.id {
         ESCROW_REPLY_ID => {
             let Some(data) = reply.result.into_result().expect("only if success").data else {
+                return Ok(Response::new());
+            };
+            let Some(data) = Bufany::deserialize(&data)
+                .expect("data is always serialized as proto")
+                .bytes(1)
+            else {
                 return Ok(Response::new());
             };
             match from_json::<Vec<WasmMsg>>(&data) {
