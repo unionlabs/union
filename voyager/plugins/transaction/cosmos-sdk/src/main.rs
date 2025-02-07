@@ -45,7 +45,7 @@ use voyager_message::{
     module::{PluginInfo, PluginServer},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, conc, noop, pass::PassResult, Op, Visit};
+use voyager_vm::{call, conc, defer, noop, now, pass::PassResult, seq, Op, Visit};
 
 use crate::{
     call::{IbcMessage, ModuleCall},
@@ -639,6 +639,34 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         match msg {
             ModuleCall::SubmitTransaction(msgs) => {
                 let mut out = vec![];
+
+                let batch_submission_result = self.do_send_transaction(msgs.to_vec()).await;
+
+                match batch_submission_result {
+                    Ok(ok) => return Ok(ok),
+                    Err(err) => match err {
+                        BroadcastTxCommitError::QueryLatestHeight(_)
+                        | BroadcastTxCommitError::BroadcastTxSync(_)
+                        | BroadcastTxCommitError::Inclusion(_)
+                        | BroadcastTxCommitError::OutOfGas
+                        | BroadcastTxCommitError::AccountSequenceMismatch(_) => {
+                            info!(error = %ErrorReporter(err), "batch tx submission failed with retryable error, message will be requeued");
+                            return Ok(seq([
+                                defer(now() + 5),
+                                call(PluginMessage::new(
+                                    self.plugin_name(),
+                                    ModuleCall::from(msgs),
+                                )),
+                            ]));
+                        }
+
+                        BroadcastTxCommitError::Tx(_)
+                        | BroadcastTxCommitError::SimulateTx(_)
+                        | BroadcastTxCommitError::IbcUnionError(_) => {
+                            warn!(error = %ErrorReporter(err), "batch tx submission failed with non-batchable error, attempting to submit messages individually");
+                        }
+                    },
+                }
 
                 for msgs in msgs.chunks(1) {
                     let res = self
