@@ -72,7 +72,7 @@ export const checkValidation = (
   }
 
   if (rawIntents.source === rawIntents.destination) {
-    errors.destination = "Source and destination chains must be different"
+    errors.destination = "Chains must be different"
   }
 
   if (rawIntents.asset && intents.baseToken) {

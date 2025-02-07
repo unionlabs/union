@@ -102,34 +102,38 @@ export let rotateTo: Props["rotateTo"]
       </div>
     </div>
 
-    {#if !intents.channel}
-      <div>No recommended UCS03 channel to go from {toDisplayName($rawIntents.source, chains)}
-        to {toDisplayName($rawIntents.destination, chains)}</div>
-    {:else}
-      <div class="flex flex-col gap-1 justify-end items-center">
-        <div class="flex gap-4 text-muted-foreground text-xs">{intents.channel.source_connection_id}
-          | {intents.channel.source_channel_id}
-          <ArrowRightIcon/>{intents.channel.destination_connection_id} | {intents.channel.destination_channel_id}
+    <div>
+      {#if !intents.channel}
+        <div class="flex justify-center">
+          <p class="text-xs text-center max-w-[230px]">No recommended UCS03 channel to go from {toDisplayName($rawIntents.source, chains)}
+            to {toDisplayName($rawIntents.destination, chains)}</p>
         </div>
-        {#if !$rawIntents.asset}
-          <p class="text-xs">Select an asset</p>
-        {:else if !$rawIntents.source || !$rawIntents.destination}
-          <p class="text-xs">Select source and destination</p>
-        {:else if validation.args === "NO_QUOTE_AVAILABLE"}
-          <div class="text-xs text-center">No Quote Token available for this transfer. Sending new assets to Cosmos is
-            currently not supported and will be enabled in an update soon.
+      {:else}
+        <div class="flex flex-col gap-1 justify-end items-center">
+          <div class="flex gap-4 text-muted-foreground text-xs">{intents.channel.source_connection_id}
+            | {intents.channel.source_channel_id}
+            <ArrowRightIcon/>{intents.channel.destination_connection_id} | {intents.channel.destination_channel_id}
           </div>
-        {:else if intents.quoteToken}
-          <div class="flex-1 flex flex-col items-center text-xs">
-            <Token chainId={$rawIntents.destination} denom={intents.quoteToken} {chains}/>
-          </div>
-          {#if validation.isValid}
-            <Address address={intents.receiver} {chains} chainId={intents.channel.destination_chain_id}/>
+          {#if !$rawIntents.asset}
+            <p class="text-xs">Select an asset</p>
+          {:else if !$rawIntents.source || !$rawIntents.destination}
+            <p class="text-xs">Select source and destination</p>
+          {:else if validation.args === "NO_QUOTE_AVAILABLE"}
+            <div class="text-xs text-center">No Quote Token available for this transfer. Sending new assets to Cosmos is
+              currently not supported and will be enabled in an update soon.
+            </div>
+          {:else if intents.quoteToken}
+            <div class="flex-1 flex flex-col items-center text-xs">
+              <Token chainId={$rawIntents.destination} denom={intents.quoteToken} {chains}/>
+            </div>
+            {#if validation.isValid}
+              <Address address={intents.receiver} {chains} chainId={intents.channel.destination_chain_id}/>
+            {/if}
           {/if}
-        {/if}
-        <Button class="w-full mt-2" disabled={!validation.isValid} on:click={() => rotateTo("verifyFace")}>Transfer
-        </Button>
-      </div>
-    {/if}
+        </div>
+      {/if}
+      <Button class="w-full mt-2" disabled={!validation.isValid} on:click={() => rotateTo("verifyFace")}>Transfer
+      </Button>
+    </div>
   </div>
 </div>
