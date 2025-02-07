@@ -340,18 +340,18 @@ async function doTransfer(task: TransferConfig) {
 
     const quoteToken = await getQuoteToken(sourceChainId, task.denomAddress.toLowerCase(), channel)
 
-    consola.info(
-      "quoteToken: ",
-      quoteToken,
-      " chainId: ",
-      sourceChainId,
-      " denomAddr: ",
-      task.denomAddress,
-      " channel: ",
-      channel,
-      "sending amount:",
-      random_amount
-    )
+    // consola.info(
+    //   "quoteToken: ",
+    //   quoteToken,
+    //   " chainId: ",
+    //   sourceChainId,
+    //   " denomAddr: ",
+    //   task.denomAddress,
+    //   " channel: ",
+    //   channel,
+    //   "sending amount:",
+    //   random_amount
+    // )
 
     if (quoteToken.isErr()) {
       consola.info("could not get quote token")
@@ -364,7 +364,7 @@ async function doTransfer(task: TransferConfig) {
       return
     }
 
-    consola.info("quote token", quoteToken.value)
+    // consola.info("quote token", quoteToken.value)
 
     const txPayload = isCosmosChain
       ? {
@@ -506,23 +506,39 @@ function doTransferLoadTest(task: TransferConfig, totalRequests: number, privKey
   const useKeys = privKeys?.length ? privKeys : [task.privateKey]
 
   // Kick off multiple transfers in parallel
+  const promises: Promise<void>[] = []
+
   for (let i = 0; i < totalRequests; i++) {
     const index = i % useKeys.length
     const newPrivateKey = useKeys[index]
     const loadTask = { ...task, privateKey: newPrivateKey } // overwrite the key
     consola.info("Starting transfer", i + 1, "with key", newPrivateKey)
 
-    if (i > 0 && i % 10 === 0) {
-      consola.info(`Sleeping for 10 seconds after ${i} transfers...`)
-      sleepSync(5000) // Block the loop for 10 seconds
-    }
+    // if (i > 0 && i % 10 === 0) {
+    //   consola.info(`Sleeping for 10 seconds after ${i} transfers...`)
+    //   sleepSync(5000) // Block the loop for 10 seconds
+    // }
 
     // Fire the asynchronous function but do NOT await
-    doTransfer(loadTask).catch(err => {
-      // Optionally catch errors so they don't become unhandled rejections
+    // doTransfer(loadTask).catch(err => {
+    //   // Optionally catch errors so they don't become unhandled rejections
+    //   consola.error(`[LoadTest] Transfer ${i + 1}/${totalRequests} failed:`, err)
+    // })
+
+    const promise = doTransfer(loadTask).catch(err => {
       consola.error(`[LoadTest] Transfer ${i + 1}/${totalRequests} failed:`, err)
     })
+    promises.push(promise)
   }
+
+  // Optionally wait for all the transfers to finish.
+  Promise.all(promises)
+    .then(() => {
+      consola.info(`All ${totalRequests} parallel transfers for load test have completed.`)
+    })
+    .catch(err => {
+      consola.error("Error in one of the load test transfers:", err)
+    })
 
   // Since we are not awaiting, this function will return immediately.
   consola.info(`Kicked off ${totalRequests} parallel transfers for load test.`)
