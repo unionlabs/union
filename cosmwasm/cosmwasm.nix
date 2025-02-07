@@ -218,6 +218,63 @@
       cw20-token-minter = crane.buildWasmContract {
         crateDirFromRoot = "cosmwasm/cw20-token-minter";
       };
+
+      deployments-json-entry =
+        { name, rpc_url, ... }:
+        pkgs.writeShellApplication {
+          name = "${name}-deployments-json-entry";
+          runtimeInputs = [
+            cosmwasm-deployer.packages.cosmwasm-deployer
+            pkgs.jq
+            ibc-union-contract-addresses
+          ];
+          text = ''
+            ADDRESSES=$(ibc-union-contract-addresses "$1")
+            HEIGHTS=$(cosmwasm-deployer init-heights --rpc-url "${rpc_url}" --addresses <(echo "$ADDRESSES"))
+            echo "$ADDRESSES" | jq \
+              --argjson heights "$HEIGHTS" \
+              '. as $in | {
+                core: {
+                  address: .core,
+                  height: $heights[.core]
+                },
+                lightclient: (reduce
+                  (.lightclient | keys[]) as $key
+                  ({};
+                    if
+                      $heights[$in.lightclient[$key]] != null
+                    then
+                      . + {
+                        ($key): {
+                          address: $in.lightclient[$key],
+                          height: $heights[$in.lightclient[$key]]
+                        }
+                      }
+                    else
+                      .
+                    end
+                  )
+                ),
+                app: (reduce
+                  (.app | keys[]) as $key
+                  ({};
+                    if
+                      $heights[$in.app[$key]] != null
+                    then
+                      . + {
+                        ($key): {
+                          address: $in.app[$key],
+                          height: $heights[$in.app[$key]]
+                        }
+                      }
+                    else
+                      .
+                    end
+                  )
+                ),
+              }'
+          '';
+        };
     in
     {
       packages =
@@ -246,6 +303,12 @@
                 map (args: {
                   name = "deploy-full-${args.name}";
                   value = deploy-full args;
+                }) networks
+              ))
+              // (builtins.listToAttrs (
+                map (args: {
+                  name = "deployments-json-entry-${args.name}";
+                  value = deployments-json-entry args;
                 }) networks
               ))
             )

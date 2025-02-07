@@ -99,6 +99,7 @@ const BYTECODE_BASE: &str = "bytecode-base";
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 struct ContractPaths {
     core: PathBuf,
+    // salt -> wasm path
     lightclient: BTreeMap<String, PathBuf>,
     app: AppPaths,
 }
@@ -394,9 +395,9 @@ async fn do_main() -> Result<()> {
 
             let mut heights = BTreeMap::new();
 
-            for (client_type, address) in addresses.lightclient {
-                let height = ctx
-                    .contract_history(address.clone())
+            heights.insert(
+                addresses.core.clone(),
+                ctx.contract_history(addresses.core.clone())
                     .await??
                     .unwrap()
                     .entries
@@ -404,33 +405,51 @@ async fn do_main() -> Result<()> {
                     .unwrap()
                     .updated
                     .unwrap()
-                    .block_height;
+                    .block_height,
+            );
 
-                info!(
-                    "lightclient contract for client type \
-                    {client_type} was initiated at {height}"
-                );
+            for (client_type, address) in addresses.lightclient {
+                if let Some(entry) = ctx
+                    .contract_history(address.clone())
+                    .await??
+                    .unwrap()
+                    .entries
+                    .pop()
+                {
+                    let height = entry.updated.unwrap().block_height;
 
-                heights.insert(address, height);
+                    info!(
+                        "lightclient contract for client type \
+                        {client_type} was initiated at {height}"
+                    );
+
+                    heights.insert(address, height);
+                } else {
+                    info!(
+                        "lightclient contract for client type \
+                        {client_type} has not been stored yet"
+                    )
+                };
             }
 
             if let Some(_ucs00) = addresses.app.ucs00 {}
 
             if let Some(address) = addresses.app.ucs03 {
-                let height = ctx
+                if let Some(entry) = ctx
                     .contract_history(address.clone())
                     .await??
                     .unwrap()
                     .entries
                     .pop()
-                    .unwrap()
-                    .updated
-                    .unwrap()
-                    .block_height;
+                {
+                    let height = entry.updated.unwrap().block_height;
 
-                info!("app ucs03 was initiated at {height}");
+                    info!("app ucs03 was initiated at {height}");
 
-                heights.insert(address, height);
+                    heights.insert(address, height);
+                } else {
+                    info!("app ucs03 has not been stored yet");
+                };
             }
 
             write_output(output, heights)?;
