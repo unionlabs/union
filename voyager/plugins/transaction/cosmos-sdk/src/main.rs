@@ -66,7 +66,7 @@ pub struct Module {
     pub chain_id: ChainId,
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: CosmosKeyring,
-    pub comtbft_client: cometbft_rpc::Client,
+    pub cometbft_client: cometbft_rpc::Client,
     pub grpc_url: String,
     pub gas_config: GasConfig,
     pub bech32_prefix: String,
@@ -124,7 +124,7 @@ impl Plugin for Module {
                     }
                 }),
             ),
-            comtbft_client: tm_client,
+            cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             grpc_url: config.grpc_url,
             gas_config: config.gas_config,
@@ -364,13 +364,13 @@ impl Module {
             .finalize()
             .into();
 
-        if let Ok(tx) = self.comtbft_client.tx(tx_hash, false).await {
+        if let Ok(tx) = self.cometbft_client.tx(tx_hash, false).await {
             debug!(%tx_hash, "tx already included");
             return Ok((tx_hash, tx.tx_result.gas_used));
         }
 
         let response = self
-            .comtbft_client
+            .cometbft_client
             .broadcast_tx_sync(&tx_raw_bytes)
             .await
             .map_err(BroadcastTxCommitError::BroadcastTxSync)?;
@@ -392,7 +392,7 @@ impl Module {
         };
 
         let mut target_height = self
-            .comtbft_client
+            .cometbft_client
             .block(None)
             .await
             .map_err(BroadcastTxCommitError::QueryLatestHeight)?
@@ -405,7 +405,7 @@ impl Module {
         loop {
             let reached_height = 'l: loop {
                 let current_height = self
-                    .comtbft_client
+                    .cometbft_client
                     .block(None)
                     .await
                     .map_err(BroadcastTxCommitError::QueryLatestHeight)?
@@ -419,7 +419,7 @@ impl Module {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             };
 
-            let tx_inclusion = self.comtbft_client.tx(tx_hash, false).await;
+            let tx_inclusion = self.cometbft_client.tx(tx_hash, false).await;
 
             debug!(?tx_inclusion);
 

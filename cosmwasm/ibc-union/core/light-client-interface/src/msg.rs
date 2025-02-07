@@ -8,7 +8,7 @@ use cosmwasm_std::Addr;
     std::cmp::PartialEq,
     cosmwasm_schema::schemars::JsonSchema,
 )]
-pub struct InstantiateMsg {
+pub struct InitMsg {
     pub ibc_host: Addr,
 }
 

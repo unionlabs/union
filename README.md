@@ -32,7 +32,7 @@ The upgradability of contracts on other chains, connections, token configuration
 | [`voyager`](./voyager)                                | Modular hyper-performant cross-ecosystem relayer     | [Rust]                |
 | [`hubble`](./hubble)                                  | Multi-ecosystem, GMP-enabled chain indexer           | [Rust]                |
 | [`cosmwasm`](./cosmwasm)                              | [CosmWasm] smart contract stack                      | [Rust]                |
-| [`light-clients`](./cosmwasm/ibc-union/light-clients) | [Light Clients] for various ecosystems               | [Rust]                |
+| [`light-clients`](./cosmwasm/ibc-union/lightclient)   | [Light Clients] for various ecosystems               | [Rust]                |
 | [`unionvisor`](./unionvisor/README.md)                | Node supervisor intended for production usage        | [Rust]                |
 | [`drip`](./drip)                                      | Faucet for [Cosmos] chains: [app.union.build/faucet] | [Rust]                |
 | [`evm`](./evm)                                        | [EVM] smart contract stack                           | [Solidity]            |

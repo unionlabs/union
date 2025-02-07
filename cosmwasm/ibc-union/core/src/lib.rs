@@ -10,6 +10,7 @@ use cosmwasm_std::{Addr, StdError};
 use ibc_union_spec::types::{ChannelState, ConnectionState};
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
+use unionlabs_cosmwasm_upgradable::UpgradeError;
 
 #[derive(Error, Debug, PartialEq, strum::EnumDiscriminants)]
 #[strum_discriminants(
@@ -20,6 +21,8 @@ use unionlabs::primitives::Bytes;
 pub enum ContractError {
     #[error("{} std error: {0}", ContractErrorKind::from(self))]
     Std(#[from] StdError),
+    #[error("{} migration error", ContractErrorKind::from(self))]
+    Migrate(#[from] UpgradeError),
     #[error(
         "{} the client type has been registered already",
         ContractErrorKind::from(self)

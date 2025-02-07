@@ -12,13 +12,14 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-cosmwasm-schema       = { workspace = true }
-cosmwasm-std          = { workspace = true }
-cw-storage-plus       = { workspace = true }
-ibc-union-msg         = { workspace = true }
-macros.workspace      = true
-schemars              = { workspace = true }
-serde                 = { workspace = true }
-serde-utils.workspace = true
-thiserror.workspace   = true
-unionlabs.workspace   = true
+cosmwasm-schema               = { workspace = true }
+cosmwasm-std                  = { workspace = true }
+cw-storage-plus               = { workspace = true }
+ibc-union-msg                 = { workspace = true }
+macros                        = { workspace = true }
+schemars                      = { workspace = true }
+serde                         = { workspace = true }
+serde-utils                   = { workspace = true }
+thiserror                     = { workspace = true }
+unionlabs                     = { workspace = true }
+unionlabs-cosmwasm-upgradable = { workspace = true }

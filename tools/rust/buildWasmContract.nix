@@ -77,15 +77,15 @@ in
       extraNativeBuildInputs ? [ ],
     }:
     let
-      contractFileNameWithoutExt = dashesToUnderscores (crateCargoToml crateDirFromRoot).package.name;
+      packageName = (crateCargoToml crateDirFromRoot).package.name;
+
+      contract-basename = dashesToUnderscores packageName;
 
       all = buildWorkspaceMember {
         # extraEnv = {
         #   nativeBuildInputs = [ pkgs.breakpointHook ];
         # };
-        inherit crateDirFromRoot;
-        inherit extraBuildInputs;
-        inherit extraNativeBuildInputs;
+        inherit crateDirFromRoot extraBuildInputs extraNativeBuildInputs;
         buildStdTarget = CARGO_BUILD_TARGET;
         pnameSuffix = featuresString features;
 
@@ -95,20 +95,26 @@ in
         cargoBuildCheckPhase = ''
           ls target/wasm32-unknown-unknown/release
 
-          sha256sum target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm  
+          sha256sum target/wasm32-unknown-unknown/release/${contract-basename}.wasm  
         '';
         cargoBuildInstallPhase = cargoBuildInstallPhase {
           inherit
             features
-            contractFileNameWithoutExt
+
             checks
             maxSize
             ;
+          contractFileNameWithoutExt = contract-basename;
         };
       };
     in
-    {
-      inherit (all) checks packages;
+    pkgs.stdenv.mkDerivation {
+      name = "${packageName}.wasm";
+      passthru.packageName = packageName;
+      src = all.packages.${packageName};
+      buildPhase = ''
+        cp "$src/lib/${contract-basename}.wasm" $out
+      '';
     };
 
   buildRemoteWasmContract =

@@ -1,9 +1,6 @@
-use std::sync::Arc;
-
 #[allow(unused_imports, reason = "it is used???")]
 use bip32::secp256k1::ecdsa::signature::SignatureEncoding;
 use cometbft_rpc::Client;
-use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tracing::{debug, error, info, warn};
@@ -20,11 +17,9 @@ use unionlabs::{
     },
     encoding::{EncodeAs, Proto},
     google::protobuf::any::Any,
-    id::{ClientId, ConnectionId},
-    parse_wasm_client_type,
-    primitives::{encoding::HexUnprefixed, H256},
+    primitives::H256,
     signer::CosmosSigner,
-    ErrorReporter, WasmClientType,
+    ErrorReporter,
 };
 
 use crate::{
@@ -73,113 +68,6 @@ pub trait CosmosSdkChainRpcs {
     fn grpc_url(&self) -> String;
     fn tm_client(&self) -> &Client;
     fn gas_config(&self) -> &GasConfig;
-}
-
-pub trait CosmosSdkChain {
-    fn checksum_cache(&self) -> &Arc<dashmap::DashMap<H256, WasmClientType>>;
-}
-
-#[allow(async_fn_in_trait)]
-pub trait CosmosSdkChainIbcExt: CosmosSdkChain + CosmosSdkChainRpcs {
-    async fn client_type_of_checksum(&self, checksum: H256) -> Option<WasmClientType> {
-        if let Some(ty) = self.checksum_cache().get(&checksum) {
-            debug!(
-                %checksum,
-                ty = ?*ty,
-                "cache hit for checksum"
-            );
-
-            return Some(*ty);
-        };
-
-        info!(
-            %checksum,
-            "cache miss for checksum"
-        );
-
-        let bz = protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
-            self.grpc_url().clone(),
-        )
-        .await
-        .unwrap()
-        .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
-            checksum: checksum.into_encoding::<HexUnprefixed>().to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .data;
-
-        match parse_wasm_client_type(bz) {
-            Ok(Some(ty)) => {
-                info!(
-                    %checksum,
-                    ?ty,
-                    "parsed checksum"
-                );
-
-                self.checksum_cache().insert(checksum, ty);
-
-                Some(ty)
-            }
-            Ok(None) => None,
-            Err(err) => {
-                error!(
-                    %checksum,
-                    %err,
-                    "unable to parse wasm client type"
-                );
-
-                None
-            }
-        }
-    }
-
-    async fn checksum_of_client_id(&self, client_id: ClientId) -> H256 {
-        let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
-            self.grpc_url().clone(),
-        )
-        .await
-        .unwrap()
-        .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
-            client_id: client_id.to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .client_state
-        .unwrap();
-
-        assert!(
-            client_state.type_url == protos::ibc::lightclients::wasm::v1::ClientState::type_url()
-        );
-
-        // NOTE: We only need the checksum, so we don't need to decode the inner state contained in .data
-        protos::ibc::lightclients::wasm::v1::ClientState::decode(&*client_state.value)
-            .unwrap()
-            .checksum
-            .try_into()
-            .unwrap()
-    }
-
-    async fn client_id_of_connection(&self, connection_id: ConnectionId) -> ClientId {
-        protos::ibc::core::connection::v1::query_client::QueryClient::connect(
-            self.grpc_url().clone(),
-        )
-        .await
-        .unwrap()
-        .connection(protos::ibc::core::connection::v1::QueryConnectionRequest {
-            connection_id: connection_id.to_string(),
-        })
-        .await
-        .unwrap()
-        .into_inner()
-        .connection
-        .unwrap()
-        .client_id
-        .parse()
-        .unwrap()
-    }
 }
 
 #[allow(async_fn_in_trait)]
@@ -500,9 +388,9 @@ fn test_u128_mul_f64() {
     assert_eq!(val, 110);
 }
 
-impl<T: CosmosSdkChain + CosmosSdkChainRpcs> CosmosSdkChainIbcExt for T {}
+// impl<T: CosmosSdkChain + CosmosSdkChainRpcs> CosmosSdkChainIbcExt for T {}
 
-impl<T: CosmosSdkChainRpcs> CosmosSdkChainExt for T {}
+// impl<T: CosmosSdkChainRpcs> CosmosSdkChainExt for T {}
 
 #[derive(Debug, thiserror::Error)]
 pub enum BroadcastTxCommitError {
