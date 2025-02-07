@@ -13,6 +13,7 @@ import { requestTokenInfo, tokenInfos } from "$lib/stores/tokens"
 import { onMount } from "svelte"
 import * as Tooltip from "$lib/components/ui/tooltip"
 import { truncate } from "$lib/utilities/format"
+import { isValidBech32ContractAddress } from "@unionlabs/client"
 
 export let chains: Array<Chain>
 export let chainId: string
@@ -35,6 +36,14 @@ onMount(() => {
     return
   }
   requestTokenInfo(chain, denom.toLowerCase())
+})
+
+let cosmosDenom = derived(tokenInfo, $tokenInfo => {
+  if (chain?.rpc_type === "cosmos" && isHex(denom)) {
+    const hexDecoded = fromHex(denom, "string")
+    return { denom: hexDecoded, type: isValidBech32ContractAddress(hexDecoded) ? "CW20" : "BANK" }
+  }
+  return null
 })
 </script>
 
@@ -90,7 +99,16 @@ onMount(() => {
   <Tooltip.Content>
     <div class="text-xs flex flex-col gap gap-4 text-muted-foreground">
       <section>
-        <h2 class="text-foreground font-bold text-sm">{token.combined.symbol}</h2>
+        <div class="flex justify-between items-center">
+          <h2 class="text-foreground font-bold text-sm">{token.combined.symbol}</h2>
+          <div class="bg-union-accent-500 text-black font-bold rounded px-1">
+            {#if $cosmosDenom}
+              {$cosmosDenom.type}
+            {:else}
+              ERC20
+            {/if}
+          </div>
+        </div>
         <div class="flex items-center justify-right gap-1">
           {toDisplayName(chainId, chains)}
           {#each token.combined.wrapping as wrapping}
@@ -100,8 +118,9 @@ onMount(() => {
       </section>
       <section>
         <h3 class="text-foreground">Denom</h3>
-        {#if chain?.rpc_type ==="cosmos" && isHex(denom)}
-          <div>{fromHex(denom, "string")}</div>
+        {#if $cosmosDenom}
+          <div>{$cosmosDenom.denom}</div>
+          <div>{$cosmosDenom.type}</div>
           <div>{denom}</div>
         {:else}
           <div>{denom}</div>
