@@ -19,7 +19,7 @@ _: {
     {
       packages = {
         app = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-HJIwEmS52YApGY/KLRFXl79TZwxsKoeWHjtt0R+wAns=";
+          npmDepsHash = "sha256-tNMs7TF64XK3agDQY9mcZ1mAz1y0gKPokYB6XnGjHAA=";
           src = ./.;
           sourceRoot = "app";
           npmFlags = [
