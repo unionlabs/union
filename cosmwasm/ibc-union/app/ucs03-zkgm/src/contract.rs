@@ -599,8 +599,7 @@ fn query_predict_wrapped_token(
                 )?,
             },
         ))?
-        .wrapped_token
-        .into())
+        .wrapped_token)
 }
 
 // fn predict_wrapped_denom(path: alloy::primitives::U256, channel: u32, token: Bytes) -> String {
@@ -1140,7 +1139,7 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
                 &minter,
                 path.parse().map_err(ContractError::U256Parse)?,
                 channel,
-                token.into(),
+                token,
             )?;
             Ok(to_json_binary(&PredictWrappedTokenResponse {
                 wrapped_token: token.as_bytes().into(),
