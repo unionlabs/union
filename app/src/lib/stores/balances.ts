@@ -172,9 +172,8 @@ export async function updateBalancesCosmos(chain: Chain, address: string) {
     denoms
       .filter(denom => isValidBech32ContractAddress(fromHex(denom as Address, "string")))
       .map(async denom => {
-        console.info(denom, fromHex(denom as Address, "string"))
         const balance = await queryCosmosCW20AddressBalance({
-          address: address,
+          address: addr,
           contractAddress: fromHex(denom as Address, "string"),
           chainId: chain.chain_id as never
         })
