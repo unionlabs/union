@@ -190,7 +190,6 @@ const transfer = async () => {
         return
       }
       if (isValidBech32ContractAddress(maybeBechAddr)) {
-        toast.info("needs cw20 approval inner")
         transferState.set({ kind: "APPROVING_ASSET" })
       } else {
         // @ts-ignore
@@ -602,8 +601,6 @@ let stepperSteps = derived(transferState, $transferState => {
       ? fromHex(transferArgs.baseToken, "string")
       : ""
     if (isValidBech32ContractAddress(maybeBechAddr)) {
-      toast.info("needs cw20 approval")
-
       return [
         stateToStatus(
           $transferState,
