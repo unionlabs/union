@@ -83,15 +83,16 @@ $: translateZ = width / 2
       <slot name="intent" {rotateTo}/>
     </FaceWrapper>
 
-    <!--Source and destination is on the same degree, we just hide one depending on clicked intent.-->
-    <!--By doing this we can "layer" faces and reuse the rotation-->
-    <FaceWrapper {width} {height} {translateZ} visible={currentVisibleFace === 'source'} rotateY={"90deg"}>
-      <slot name="source" {rotateTo}/>
-    </FaceWrapper>
+    {#if currentVisibleFace === 'source'}
+      <FaceWrapper {width} {height} {translateZ} rotateY={"90deg"}>
+        <slot name="source" {rotateTo}/>
+      </FaceWrapper>
+    {:else if currentVisibleFace === 'destination'}
+      <FaceWrapper {width} {height} {translateZ} rotateY={"90deg"}>
+        <slot name="destination" {rotateTo}/>
+      </FaceWrapper>
+    {/if}
 
-    <FaceWrapper {width} {height} {translateZ} visible={currentVisibleFace === 'destination'} rotateY={"90deg"}>
-      <slot name="destination" {rotateTo}/>
-    </FaceWrapper>
 
     <FaceWrapper {width} {height} {translateZ} visible rotateY={"270deg"}>
       <slot name="assets" {rotateTo}/>

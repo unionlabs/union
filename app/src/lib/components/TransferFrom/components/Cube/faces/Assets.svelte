@@ -32,7 +32,7 @@ $: filteredTokens =
     : (intents.baseTokens ?? [])
 </script>
 
-<div class="flex flex-col h-full w-full overflow-y-scroll">
+<div class="flex flex-col h-full w-full">
   <div class="text-primary p-2 px-4 flex items-center justify-between border-b-2">
     <div class="flex items-center gap-2">
       <span class="font-bold uppercase">Assets</span>
@@ -51,9 +51,8 @@ $: filteredTokens =
     >✕</button>
   </div>
 
-  <!-- SCROLL CONTAINER -->
-  <div class="flex-1 relative border h-full">
-    <div class="h-full border border-red-600">
+  <div class="flex-1 relative">
+    <div class="absolute inset-0 overflow-y-auto overflow-x-hidden">
       {#each filteredTokens as token}
         <button
                 class="px-2 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-sm flex justify-start items-center w-full"

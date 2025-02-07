@@ -1,5 +1,4 @@
 <script>
-export let visible = true
 export let width = 0 // Pixel value
 export let height = 0 // Pixel value
 export let translateZ = 0
@@ -8,9 +7,6 @@ export let rotateY = "0deg"
 
 <div
         class="absolute bg-muted flex flex-col items-center border-2 h-full"
-        class:opacity-100={visible}
-        class:opacity-0={!visible}
-        class:pointer-events-none={!visible}
         style={`width: ${width}px; height: ${height}px; transform: rotateY(${rotateY}) translateZ(${translateZ}px);`}
 >
   <slot />
