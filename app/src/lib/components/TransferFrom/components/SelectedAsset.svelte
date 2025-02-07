@@ -30,7 +30,10 @@ export let onSelectAsset: Props["onSelectAsset"]
           on:click={onSelectAsset}
   >
     {#if $rawIntents.asset}
-      <Token highlightEnabled={false} showWrapping={false} {chains} chainId={$rawIntents.source} denom={$rawIntents.asset}/>
+      {#key $rawIntents.asset}
+        <Token highlightEnabled={false} showWrapping={false} {chains} chainId={$rawIntents.source}
+               denom={$rawIntents.asset}/>
+      {/key}
     {:else}
       Select Asset
     {/if}
