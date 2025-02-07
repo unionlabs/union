@@ -8,10 +8,11 @@ import {
   evmChainFromChainId,
   type AptosBrowserWallet,
   http,
-  type CosmosChainId
+  type CosmosChainId,
+  isValidBech32ContractAddress
 } from "@unionlabs/client"
 import { custom, getConnectorClient, switchChain, waitForTransactionReceipt } from "@wagmi/core"
-import { fromHex, type HttpTransport } from "viem"
+import { fromHex, isHex, type HttpTransport } from "viem"
 import { config, userAddrEvm } from "$lib/wallet/evm/config.ts"
 import { toast } from "svelte-sonner"
 import { aptosStore, getAptosWallet, userAddressAptos } from "$lib/wallet/aptos"
@@ -128,7 +129,7 @@ const transfer = async () => {
   //
   //    /** --- APTOS END --- */
   //    /** --- COSOS START --- */
-  if (sourceChain.rpc_type === "cosmos") {
+  if (sourceChain.rpc_type === "cosmos" && transferArgs !== "NO_QUOTE_AVAILABLE") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
     if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
 
@@ -149,6 +150,10 @@ const transfer = async () => {
       })
       return
     }
+
+    const maybeBechAddr = isHex(transferArgs.baseToken)
+      ? fromHex(transferArgs.baseToken, "string")
+      : ""
 
     // @ts-ignore
     transferState.set({ kind: "SWITCHING_TO_CHAIN" })
@@ -184,7 +189,51 @@ const transfer = async () => {
         }
         return
       }
-      // @ts-ignore
+      if (isValidBech32ContractAddress(maybeBechAddr)) {
+        transferState.set({ kind: "APPROVING_ASSET" })
+      } else {
+        // @ts-ignore
+        transferState.set({ kind: "CONFIRMING_TRANSFER" })
+      }
+    }
+
+    if ($transferState.kind === "APPROVING_ASSET") {
+      let hash: string | null = null
+
+      try {
+        const cosmosOfflineSigner = await getCosmosOfflineSigner({
+          connectedWallet,
+          chainId: sourceChain.chain_id
+        })
+        const unionClient = createUnionClient({
+          account: cosmosOfflineSigner,
+          transport: http(`${rpcUrl}`),
+          chainId: sourceChain.chain_id as CosmosChainId,
+          // TODO: don't hardcode
+          gasPrice: {
+            amount: "0.025",
+            denom: sourceChain.chain_id === "union-testnet-9" ? "muno" : "ubbn"
+          }
+        })
+
+        const approve = await unionClient.cw20IncreaseAllowance({
+          contractAddress: maybeBechAddr,
+          amount: transferArgs.baseAmount,
+          // TODO: don't hardcode
+          spender:
+            sourceChain.chain_id === "union-testnet-9"
+              ? "union16ex34xjzhv729ygw2hyhdjdseemujesw2d73xgey3wc3mm36mc6s6ehah7"
+              : "bbn143365ksyxj0zxj26djqsjltscty75qdlpwry6yxhr8ckzhq92xas8pz8sn"
+        })
+
+        if (approve.isErr()) throw approve.error
+        hash = approve.value
+      } catch (error) {
+        if (error instanceof Error) {
+          transferState.set({ kind: "APPROVING_ASSET", error })
+        }
+        return
+      }
       transferState.set({ kind: "CONFIRMING_TRANSFER" })
     }
 
@@ -198,7 +247,7 @@ const transfer = async () => {
           account: cosmosOfflineSigner,
           transport: http(`${rpcUrl}`),
           chainId: sourceChain.chain_id as CosmosChainId,
-          gasPrice: { amount: "0.025", denom: "ubbn" } // TODO: don't hardcode
+          gasPrice: { amount: "0.025", denom: "muno" } // TODO: don't hardcode
         })
         let realArgs = {
           ...transferArgs,
@@ -547,6 +596,100 @@ let stepperSteps = derived(transferState, $transferState => {
       )
     ] as Array<Step>
   }
+  if (sourceChain.rpc_type === "cosmos" && transferArgs !== "NO_QUOTE_AVAILABLE") {
+    const maybeBechAddr = isHex(transferArgs.baseToken)
+      ? fromHex(transferArgs.baseToken, "string")
+      : ""
+    if (isValidBech32ContractAddress(maybeBechAddr)) {
+      return [
+        stateToStatus(
+          $transferState,
+          "SWITCHING_TO_CHAIN",
+          `Switch to ${sourceChain.display_name}`,
+          `Switched to ${sourceChain.display_name}`,
+          ts => ({
+            status: "ERROR",
+            title: `Error switching to ${sourceChain.display_name}`,
+            description: `There was an issue switching to ${sourceChain.display_name} to your wallet. ${ts.warning}`
+          }),
+          () => ({
+            status: "WARNING",
+            title: `Could not automatically switch chain.`,
+            description: `Please make sure your wallet is connected to  ${sourceChain.display_name}`
+          }),
+          () => ({
+            status: "IN_PROGRESS",
+            title: `Switching to ${sourceChain.display_name}`,
+            description: `Click "Approve" in wallet.`
+          })
+        ),
+        stateToStatus(
+          $transferState,
+          "APPROVING_ASSET",
+          "Approve CW20",
+          "Approved CW20",
+          ts => ({
+            status: "ERROR",
+            title: `Error approving CW20`,
+            description: `${ts.error}`
+          }),
+          () => ({}),
+          () => ({
+            status: "IN_PROGRESS",
+            title: "Approving CW20",
+            description: "Click 'Next' and 'Approve' in wallet."
+          })
+        ),
+        // stateToStatus(
+        //   $transferState,
+        //   "AWAITING_APPROVAL_RECEIPT",
+        //   "Wait for approval receipt",
+        //   "Received approval receipt",
+        //   ts => ({
+        //     status: "ERROR",
+        //     title: `Error waiting for approval receipt`,
+        //     description: `${ts.error}`
+        //   }),
+        //   () => ({}),
+        //   () => ({
+        //     status: "IN_PROGRESS",
+        //     title: "Awaiting approval receipt",
+        //     description: `Waiting on ${sourceChain.display_name}`
+        //   })
+        // ),
+        stateToStatus(
+          $transferState,
+          "CONFIRMING_TRANSFER",
+          "Confirm transfer",
+          "Confirmed transfer",
+          ts => ({
+            status: "ERROR",
+            title: "Error confirming transfer",
+            description: `${ts.error}`
+          }),
+          () => ({}),
+          () => ({
+            status: "IN_PROGRESS",
+            title: "Confirming your transfer",
+            description: `Click "Approve" in your wallet`
+          })
+        ),
+        stateToStatus(
+          $transferState,
+          "TRANSFERRING",
+          "Transfer assets",
+          "Transferred assets",
+          () => ({}),
+          () => ({}),
+          () => ({
+            status: "IN_PROGRESS",
+            title: "Transferring assets",
+            description: `Successfully initiated transfer`
+          })
+        )
+      ]
+    }
+  }
   if (sourceChain.rpc_type === "cosmos" || sourceChain.rpc_type === "aptos") {
     return [
       stateToStatus(
@@ -646,4 +789,3 @@ let stepperSteps = derived(transferState, $transferState => {
     />
     {/if}
 </div>
-
