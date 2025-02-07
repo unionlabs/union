@@ -81,12 +81,10 @@ const unionClient = createUnionClient({
   transport: http("https://rpc.bbn-test-5.babylon.chain.kitchen")
 })
 
-const CW20_TOKEN_MINTER = "bbn143365ksyxj0zxj26djqsjltscty75qdlpwry6yxhr8ckzhq92xas8pz8sn"
-
 const allowanceParams = {
   contractAddress: WRASPPED_MUNO_DENOM_CW20,
   amount: AMOUNT,
-  spender: CW20_TOKEN_MINTER
+  spender: fromHex(`0x${channel.source_port_id}`, "string")
 }
 consola.info("allowance params", allowanceParams)
 

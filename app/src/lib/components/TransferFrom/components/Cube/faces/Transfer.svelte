@@ -18,7 +18,7 @@ import { toast } from "svelte-sonner"
 import { aptosStore, getAptosWallet, userAddressAptos } from "$lib/wallet/aptos"
 import { stepAfter, stepBefore, type TransferState } from "$lib/transfer/transfer.ts"
 import { cosmosStore, getCosmosOfflineSigner, userAddrCosmos } from "$lib/wallet/cosmos"
-import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
+import { getCosmosChainInfo, getHighGasPriceStep } from "$lib/wallet/cosmos/chain-info.ts"
 import { raise, sleep } from "$lib/utilities"
 import { goto } from "$app/navigation"
 import Stepper from "$lib/components/stepper.svelte"
@@ -196,6 +196,10 @@ const transfer = async () => {
         transferState.set({ kind: "CONFIRMING_TRANSFER" })
       }
     }
+    const keplrChainInfo = getCosmosChainInfo(sourceChain.chain_id, "keplr")
+    if (!keplrChainInfo) return toast.error("no keplr chain info found")
+    const gasPrice = getHighGasPriceStep(keplrChainInfo)
+    if (!gasPrice) return toast.error("no gas price info found")
 
     if ($transferState.kind === "APPROVING_ASSET") {
       let hash: string | null = null
@@ -209,21 +213,13 @@ const transfer = async () => {
           account: cosmosOfflineSigner,
           transport: http(`${rpcUrl}`),
           chainId: sourceChain.chain_id as CosmosChainId,
-          // TODO: don't hardcode
-          gasPrice: {
-            amount: "0.025",
-            denom: sourceChain.chain_id === "union-testnet-9" ? "muno" : "ubbn"
-          }
+          gasPrice
         })
 
         const approve = await unionClient.cw20IncreaseAllowance({
           contractAddress: maybeBechAddr,
           amount: transferArgs.baseAmount,
-          // TODO: don't hardcode
-          spender:
-            sourceChain.chain_id === "union-testnet-9"
-              ? "union16ex34xjzhv729ygw2hyhdjdseemujesw2d73xgey3wc3mm36mc6s6ehah7"
-              : "bbn143365ksyxj0zxj26djqsjltscty75qdlpwry6yxhr8ckzhq92xas8pz8sn"
+          spender: transferArgs.ucs03address
         })
 
         if (approve.isErr()) throw approve.error
@@ -247,7 +243,7 @@ const transfer = async () => {
           account: cosmosOfflineSigner,
           transport: http(`${rpcUrl}`),
           chainId: sourceChain.chain_id as CosmosChainId,
-          gasPrice: { amount: "0.025", denom: "muno" } // TODO: don't hardcode
+          gasPrice
         })
         let realArgs = {
           ...transferArgs,

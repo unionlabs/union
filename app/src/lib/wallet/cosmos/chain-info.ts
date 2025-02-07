@@ -411,3 +411,23 @@ export function getCosmosChainInfo(
   const chainInfoMap = connectedWallet === "leap" ? leapChainInfoMap : keplrChainInfoMap
   return chainInfoMap[chainId] || null
 }
+
+export function getHighGasPriceStep(
+  chainInfo: KeplrChainInfo
+): { amount: string; denom: string } | null {
+  if (!chainInfo.currencies || chainInfo.currencies.length === 0) {
+    return null
+  }
+
+  const firstCurrency = chainInfo.currencies[0]
+  const matchedFeeCurrency = chainInfo.feeCurrencies.find(
+    feeCurrency => feeCurrency.coinMinimalDenom === firstCurrency.coinMinimalDenom
+  )
+
+  return matchedFeeCurrency?.gasPriceStep
+    ? {
+        amount: matchedFeeCurrency.gasPriceStep.high.toString(),
+        denom: firstCurrency.coinMinimalDenom
+      }
+    : null
+}
