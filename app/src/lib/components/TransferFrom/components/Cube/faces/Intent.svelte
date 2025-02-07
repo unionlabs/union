@@ -33,7 +33,7 @@ export let rotateTo: Props["rotateTo"]
   <div class="text-primary p-2 flex items-center justify-between border-b-2">
     <span class="font-bold uppercase">Transfer</span>
   </div>
-  <div class="flex flex-col h-full w-full justify-between p-4">
+  <div class="flex flex-col h-full w-full justify-between p-4 overflow-y-scroll">
     <div class="flex flex-col gap-2">
       <Direction {rawIntents} {intents} {validation} getSourceChain={() => rotateTo("sourceFace")}
                  getDestinationChain={() => rotateTo("destinationFace")}/>
