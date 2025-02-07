@@ -51,8 +51,9 @@ $: filteredTokens =
     >✕</button>
   </div>
 
-  <div class="flex-1 overflow-hidden">
-    <div class="h-full overflow-y-auto overflow-x-hidden -webkit-overflow-scrolling-touch">
+  <!-- SCROLL CONTAINER -->
+  <div class="flex-1 relative">
+    <div class="absolute inset-0 overflow-y-auto overflow-x-hidden -webkit-overflow-scrolling-touch">
       {#each filteredTokens as token}
         <button
                 class="px-2 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-sm flex justify-start items-center w-full"
