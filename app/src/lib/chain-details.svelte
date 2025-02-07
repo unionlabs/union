@@ -16,6 +16,6 @@ $: ch = chain ? chain : chains?.find(c => c.chain_id === chainId)
   Invalid chain: {#if chainId}{chainId}{/if}
 {:else}
     <div>{ch.display_name}</div>
-{#if ch.relayer_status.status !== "HEALTHY"}<Tooltip.Root><Tooltip.Trigger class="-translate-y-1 scale-75"><TokenQualityLevel level="NONE"/></Tooltip.Trigger><Tooltip.Content>{ch.relayer_status.message}</Tooltip.Content></Tooltip.Root>{/if}
+{#if ch.relayer_status.status !== "HEALTHY"}<Tooltip.Root><Tooltip.Trigger><TokenQualityLevel level={ch.relayer_status.status === "WARNING" ? "ONCHAIN" : "NONE"}/></Tooltip.Trigger><Tooltip.Content>{ch.relayer_status.message}</Tooltip.Content></Tooltip.Root>{/if}
 {/if}
 </span>

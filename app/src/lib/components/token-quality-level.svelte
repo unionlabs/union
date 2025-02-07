@@ -6,9 +6,10 @@ import { cn } from "$lib/utilities/shadcn"
 export let level: "GRAPHQL" | "ONCHAIN" | "NONE"
 </script>
 
-<div class={cn("text-xs w-4 h-4 flex justify-center items-center", level === "GRAPHQL" ? "text-muted-foreground" : level === "ONCHAIN" ? "text-yellow-500" : "text-red-500")}>
+<div class={cn("flex justify-center items-center scale-75", level === "GRAPHQL" ? "text-muted-foreground" : level === "ONCHAIN" ? "text-yellow-500" : "text-red-500")}>
   {#if level === "GRAPHQL"}
-    <CheckIcon/>
+    <!-- we decided to not show checks if all is ok !-->
+    <!--<CheckIcon/>!-->
   {:else if level === "ONCHAIN"}
     <TriangleAlertIcon/>
   {:else if level === "NONE"}
