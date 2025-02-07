@@ -219,11 +219,7 @@ const transfer = async () => {
         const approve = await unionClient.cw20IncreaseAllowance({
           contractAddress: maybeBechAddr,
           amount: transferArgs.baseAmount,
-          // TODO: don't hardcode
-          spender:
-            sourceChain.chain_id === "union-testnet-9"
-              ? "union16ex34xjzhv729ygw2hyhdjdseemujesw2d73xgey3wc3mm36mc6s6ehah7"
-              : "bbn143365ksyxj0zxj26djqsjltscty75qdlpwry6yxhr8ckzhq92xas8pz8sn"
+          spender: transferArgs.ucs03address
         })
 
         if (approve.isErr()) throw approve.error
