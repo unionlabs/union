@@ -1,9 +1,9 @@
 use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary, Coin,
-    DenomMetadataResponse, Deps, DepsMut, Env, MessageInfo, QueryRequest, Response, StdResult,
-    WasmMsg,
+    entry_point, instantiate2_address, to_json_binary, to_json_string, wasm_execute, BankMsg,
+    Binary, Coin, DenomMetadataResponse, Deps, DepsMut, Env, Event, MessageInfo, QueryRequest,
+    Response, StdResult, WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use ucs03_zkgm_token_minter_api::{
@@ -148,7 +148,9 @@ pub fn execute(
                     },
                     vec![],
                 )?;
-                Response::new().set_data(to_json_binary(&vec![msg])?)
+                Response::new().add_event(
+                    Event::new("dispatch").add_attribute("msg", to_json_string(&vec![msg])?),
+                )
             }
         },
         ExecuteMsg::Local(msg) => match msg {
@@ -178,7 +180,9 @@ pub fn execute(
                         vec![],
                     )?;
                     // We are delegating the TransferFrom to zkgm so it is capable
-                    Response::new().set_data(to_json_binary(&vec![msg])?)
+                    Response::new().add_event(
+                        Event::new("dispatch").add_attribute("msg", to_json_string(&vec![msg])?),
+                    )
                 }
             }
             LocalTokenMsg::Unescrow {

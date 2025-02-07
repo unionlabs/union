@@ -1,13 +1,12 @@
 use core::str;
 
 use alloy::{primitives::U256, sol_types::SolValue};
-use anybuf::Bufany;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_json, to_json_binary, to_json_string, wasm_execute, Addr, Attribute, Binary, Coin,
-    CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, QueryRequest, Reply, Response, StdError,
-    StdResult, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
+    to_json_binary, to_json_string, wasm_execute, Addr, Attribute, Binary, Coin, CosmosMsg, Deps,
+    DepsMut, Env, Event, MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, SubMsg,
+    SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
@@ -849,18 +848,22 @@ fn execute_fungible_asset_order(
 pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, ContractError> {
     match reply.id {
         ESCROW_REPLY_ID => {
-            #[allow(deprecated)]
-            let Some(data) = reply.result.into_result().expect("only if success").data
+            let Some(dispatch) = reply
+                .result
+                .into_result()
+                .expect("only if success")
+                .events
+                .into_iter()
+                .find(|e| e.ty == "dispatch")
             else {
                 return Ok(Response::new());
             };
-            let Some(data) = Bufany::deserialize(&data)
-                .expect("data is always serialized as proto")
-                .bytes(1)
-            else {
+
+            let Some(attr) = dispatch.attributes.into_iter().find(|a| a.key == "msg") else {
                 return Ok(Response::new());
             };
-            match from_json::<Vec<WasmMsg>>(&data) {
+
+            match serde_json_wasm::from_str::<Vec<WasmMsg>>(&attr.value) {
                 Ok(msgs) => Ok(Response::new().add_messages(msgs)),
                 Err(_) => Ok(Response::new()),
             }
@@ -1144,16 +1147,4 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
             })?)
         }
     }
-}
-
-#[test]
-pub fn see_tx() {
-    let tx = hex_literal::hex!("53f247a39cb05a49ed206cdb7b09dad6a71b9eae2f49b3408be67510fd19b1ab0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002800000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001c00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020cb6c475d746a54c1e4a77c49a030f45622b710d40be444dbd6afe82514fc2ffa0000000000000000000000000000000000000000000000000000000000000040756e696f6e3136736a717330647565677268716e366732306d3278723474703678747630796d66753463756175616834346c793871666b7a6d717438797977780000000000000000000000000000000000000000000000000000000000000020c72f198d6cc4a0ae4d7369fbf93cc60c56156548b051e5ccc9a27fb380099467000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005046d756e6f000000000000000000000000000000000000000000000000000000");
-
-    let zkgm_packet = ZkgmPacket::abi_decode_params(&tx, true).unwrap();
-
-    let packet =
-        FungibleAssetOrder::abi_decode_params(&zkgm_packet.instruction.operand, false).unwrap();
-
-    panic!("packet {packet:?}");
 }

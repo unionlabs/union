@@ -19,7 +19,6 @@ library = []
 
 [dependencies]
 alloy                         = { workspace = true, features = ["sol-types"] }
-anybuf                        = "0.5.2"
 cosmwasm-schema               = { workspace = true }
 cosmwasm-std                  = { workspace = true }
 cw-storage-plus               = { workspace = true }
@@ -27,6 +26,7 @@ ethabi                        = { workspace = true }
 ibc-union-msg                 = { workspace = true }
 ibc-union-spec                = { workspace = true, features = ["serde"] }
 serde                         = { workspace = true, features = ["derive"] }
+serde-json-wasm               = "1.0"
 thiserror                     = { workspace = true }
 token-factory-api             = { workspace = true }
 ucs03-zkgm-token-minter-api   = { workspace = true }

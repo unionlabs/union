@@ -759,12 +759,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anybuf"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecb50559f19eb92f65279f9de03e4625ed0572e7564ef3de5253e13928c55266"
-
-[[package]]
 name = "anyhow"
 version = "1.0.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12771,7 +12765,6 @@ name = "ucs03-zkgm"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "anybuf",
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
@@ -12781,6 +12774,7 @@ dependencies = [
  "ibc-union-msg",
  "ibc-union-spec",
  "serde",
+ "serde-json-wasm 1.0.1",
  "serde_json",
  "thiserror",
  "token-factory-api",
