@@ -32,7 +32,6 @@ $: normalizedData =
 
 <div class="flex flex-row-reverse items-end gap-[2.5px]">
   {#each normalizedData as data}
-    {#if Array.isArray(data.normalizedValue)}
     <Tooltip.Root>
       <Tooltip.Trigger>
         <div class="bar flex flex-col-reverse gap-[1px] group cursor-crosshair">
@@ -52,6 +51,5 @@ $: normalizedData =
         {/if}
       </Tooltip.Content>
     </Tooltip.Root>
-    {/if}
   {/each}
 </div>
