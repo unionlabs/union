@@ -52,8 +52,8 @@ $: filteredTokens =
   </div>
 
   <!-- SCROLL CONTAINER -->
-  <div class="flex-1 relative">
-    <div class="absolute inset-0 overflow-y-auto overflow-x-hidden -webkit-overflow-scrolling-touch">
+  <div class="flex-1 relative border h-full overflow-y-auto">
+    <div class="h-full border border-red-600">
       {#each filteredTokens as token}
         <button
                 class="px-2 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-sm flex justify-start items-center w-full"
@@ -64,4 +64,3 @@ $: filteredTokens =
       {/each}
     </div>
   </div>
-</div>
