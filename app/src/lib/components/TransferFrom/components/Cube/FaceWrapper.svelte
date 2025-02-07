@@ -6,7 +6,7 @@ export let rotateY = "0deg"
 </script>
 
 <div
-        class="absolute bg-muted flex flex-col items-center border-2 h-full"
+        class="absolute bg-muted flex flex-col items-center border-2 h-full overflow-hidden"
         style={`width: ${width}px; height: ${height}px; transform: rotateY(${rotateY}) translateZ(${translateZ}px);`}
 >
   <slot />

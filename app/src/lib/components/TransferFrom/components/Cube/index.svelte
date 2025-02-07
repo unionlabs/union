@@ -74,12 +74,12 @@ $: height = width * 1.55
 $: translateZ = width / 2
 </script>
 
-<div class="h-screen w-full flex items-center justify-center perspective-[2000px]">
+<div class="min-h-screen w-full flex items-center justify-center perspective-[2000px] overflow-hidden">
   <div
           class="relative transform-style-preserve-3d transition-transform duration-500 h-full"
           style={`width: ${width}px; height: ${height}px; transform: rotateX(${currentRotation.x}deg) rotateY(${currentRotation.y}deg)`}
   >
-    <FaceWrapper {width} {height} {translateZ} visible rotateY={"0deg"}>
+    <FaceWrapper {width} {height} {translateZ} rotateY={"0deg"}>
       <slot name="intent" {rotateTo}/>
     </FaceWrapper>
 
@@ -93,12 +93,11 @@ $: translateZ = width / 2
       </FaceWrapper>
     {/if}
 
-
-    <FaceWrapper {width} {height} {translateZ} visible rotateY={"270deg"}>
+    <FaceWrapper {width} {height} {translateZ} rotateY={"270deg"}>
       <slot name="assets" {rotateTo}/>
     </FaceWrapper>
 
-    <FaceWrapper {width} {height} {translateZ} visible rotateY={"180deg"}>
+    <FaceWrapper {width} {height} {translateZ} rotateY={"180deg"}>
       <slot name="transfer" {rotateTo}/>
     </FaceWrapper>
   </div>
