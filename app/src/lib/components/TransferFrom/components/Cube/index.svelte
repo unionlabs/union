@@ -1,96 +1,93 @@
 <script lang="ts">
-  import FaceWrapper from "$lib/components/TransferFrom/components/Cube/FaceWrapper.svelte"
-  import {deviceWidth} from "$lib/utilities/device.ts"
-  import {is} from "valibot";
+import FaceWrapper from "$lib/components/TransferFrom/components/Cube/FaceWrapper.svelte"
+import { deviceWidth } from "$lib/utilities/device.ts"
 
-  type CubeFaces =
-    | "intentFace"
-    | "chainsFace"
-    | "verifyFace"
-    | "assetsFace"
-    | "sourceFace"
-    | "destinationFace"
+type CubeFaces =
+  | "intentFace"
+  | "chainsFace"
+  | "verifyFace"
+  | "assetsFace"
+  | "sourceFace"
+  | "destinationFace"
 
-  let currentRotation = {x: 0, y: 0}
-  let currentFace: CubeFaces = "intentFace"
-  let targetFace: CubeFaces = currentFace
-  let isRotating = false
+let currentRotation = { x: 0, y: 0 }
+let currentFace: CubeFaces = "intentFace"
+let targetFace: CubeFaces = currentFace
+let isRotating = false
 
-  const facePositions = {
-    intentFace: 0,
-    chainsFace: -90,
-    verifyFace: -180,
-    assetsFace: -270,
-    sourceFace: -90,
-    destinationFace: -90
-  } as const
+const facePositions = {
+  intentFace: 0,
+  chainsFace: -90,
+  verifyFace: -180,
+  assetsFace: -270,
+  sourceFace: -90,
+  destinationFace: -90
+} as const
 
-  let currentVisibleFace: "source" | "destination" = "source"
-  $: currentVisibleFace = "source"
+let currentVisibleFace: "source" | "destination" = "source"
+$: currentVisibleFace = "source"
 
-  function findShortestRotation(current: number, target: number): number {
-    const revolution = Math.floor(current / 360) * 360
-    const normalizedTarget = target + revolution
+function findShortestRotation(current: number, target: number): number {
+  const revolution = Math.floor(current / 360) * 360
+  const normalizedTarget = target + revolution
 
-    let diff = normalizedTarget - current
-    if (Math.abs(diff) > 180) {
-      diff = diff > 0 ? diff - 360 : diff + 360
-    }
-    return current + diff
+  let diff = normalizedTarget - current
+  if (Math.abs(diff) > 180) {
+    diff = diff > 0 ? diff - 360 : diff + 360
+  }
+  return current + diff
+}
+
+function handleTransitionEnd(e: TransitionEvent) {
+  if (e.propertyName === "transform") {
+    console.log(`Rotation completed at ${new Date().toISOString()}`)
+    isRotating = false
+    currentFace = targetFace
+  }
+}
+
+function rotateTo(face: CubeFaces) {
+  targetFace = face
+  isRotating = true
+
+  // Update visibility state immediately
+  if (face === "sourceFace") {
+    currentVisibleFace = "source"
+  } else if (face === "destinationFace") {
+    currentVisibleFace = "destination"
   }
 
+  // Delay the rotation by 100ms
+  setTimeout(() => {
+    const targetRotation = facePositions[face]
 
-  function handleTransitionEnd(e: TransitionEvent) {
-    if (e.propertyName === 'transform') {
-      console.log(`Rotation completed at ${new Date().toISOString()}`);
-      isRotating = false;
-      currentFace = targetFace;
-    }
-  }
+    // Calculate the new Y rotation
+    const newY = findShortestRotation(currentRotation.y, targetRotation)
+    currentRotation = { x: 0, y: newY }
+  }, 100)
+}
 
-  function rotateTo(face: CubeFaces) {
-    targetFace = face;
-    isRotating = true
-
-    // Update visibility state immediately
-    if (face === "sourceFace") {
-      currentVisibleFace = "source"
-    } else if (face === "destinationFace") {
-      currentVisibleFace = "destination"
-    }
-
-    // Delay the rotation by 100ms
-    setTimeout(() => {
-      const targetRotation = facePositions[face]
-
-      // Calculate the new Y rotation
-      const newY = findShortestRotation(currentRotation.y, targetRotation)
-      currentRotation = {x: 0, y: newY}
-    }, 100)
-  }
-
-  //If we want to be specific we can set each w
-  $: width =
-    $deviceWidth >= 1536
-      ? 400
-      : // 2xl breakpoint
+//If we want to be specific we can set each w
+$: width =
+  $deviceWidth >= 1536
+    ? 400
+    : // 2xl breakpoint
       $deviceWidth >= 1280
-        ? 400
-        : // xl breakpoint
+      ? 400
+      : // xl breakpoint
         $deviceWidth >= 1024
-          ? 400
-          : // lg breakpoint
+        ? 400
+        : // lg breakpoint
           $deviceWidth >= 768
-            ? 400
-            : // md breakpoint
+          ? 400
+          : // md breakpoint
             $deviceWidth >= 640
-              ? 400
-              : // sm breakpoint
+            ? 400
+            : // sm breakpoint
               300 // Default for smaller screens
 
-  $: height = width * 1.6
-  $: translateZ = width / 2
-
+$: height = width * 1.6
+$: translateZ = width / 2
 </script>
 
 <div class="h-screen w-full flex items-center justify-center">
