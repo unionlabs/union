@@ -98,7 +98,6 @@ let processedTransfers = derived(
             <section class={cn(!$showTokenDetails ? "items-center text-xl" : "", "flex flex-col gap-6")}>
               {#if transfer.base_amount && transfer.base_token}
                 <Token
-                  expanded={$showTokenDetails}
                   showWrapping={$showTokenDetails}
                   highlightEnabled={false}
                   amount={transfer.base_amount}
@@ -109,7 +108,6 @@ let processedTransfers = derived(
               {/if}
               {#if $showTokenDetails && "quote_amount" in transfer && transfer.quote_amount && "quote_token" in transfer && transfer.quote_token}
                 <Token
-                  expanded={$showTokenDetails}
                   highlightEnabled={false}
                   amount={transfer.quote_amount}
                   denom={transfer.quote_token}
