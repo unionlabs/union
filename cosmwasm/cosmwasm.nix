@@ -174,6 +174,65 @@
           bech32_prefix = "union";
           lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
         }
+        {
+          name = "stargaze-testnet";
+          rpc_url = "https://rpc.elgafar-1.stargaze.chain.kitchen";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_price = "1.0";
+            gas_denom = "ustars";
+            gas_multiplier = "1.1";
+            max_gas = 10000000;
+          };
+          apps = {
+            # ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "stars";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          name = "osmosis-testnet";
+          rpc_url = "https://osmosis-testnet-rpc.polkachu.com";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_price = "0.05";
+            gas_denom = "uosmo";
+            gas_multiplier = "1.1";
+            max_gas = 300000000;
+          };
+          apps = {
+            # ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "osmo";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          name = "babylon-testnet";
+          rpc_url = "https://babylon-testnet-rpc.polkachu.com";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_price = "1.0";
+            gas_denom = "ubbn";
+            gas_multiplier = "1.1";
+            max_gas = 10000000;
+          };
+          apps = {
+            # ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "bbn";
+          lightclients = [
+            "cometbls"
+            "state-lens-ics23-mpt"
+          ];
+        }
       ];
 
       mk-lightclient =

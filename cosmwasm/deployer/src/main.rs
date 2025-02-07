@@ -264,7 +264,7 @@ async fn do_main() -> Result<()> {
                 }
             };
 
-            println!("{bytecode_base_code_id}");
+            info!("bytecode-base code_id is {bytecode_base_code_id}");
 
             let core_address = ctx
                 .deploy_and_initiate(
