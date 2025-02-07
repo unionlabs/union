@@ -2,8 +2,8 @@ use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, instantiate2_address, to_json_binary, to_json_string, wasm_execute, BankMsg,
-    Binary, Coin, DenomMetadataResponse, Deps, DepsMut, Env, Event, MessageInfo, QueryRequest,
-    Response, StdResult, WasmMsg,
+    Binary, CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Env, Event, MessageInfo,
+    QueryRequest, Response, StdResult, WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use ucs03_zkgm_token_minter_api::{
@@ -22,7 +22,6 @@ pub enum TokenMinterInitMsg {
     Cw20 {
         cw20_base_code_id: u64,
         dummy_code_id: u64,
-        dummy_code_hash: H256,
     },
 }
 
@@ -34,7 +33,6 @@ pub fn instantiate(
     TokenMinterInitMsg::Cw20 {
         cw20_base_code_id,
         dummy_code_id,
-        dummy_code_hash,
     }: TokenMinterInitMsg,
 ) -> StdResult<Response> {
     CONFIG.save(
@@ -43,7 +41,6 @@ pub fn instantiate(
             admin: info.sender,
             cw20_base_code_id,
             dummy_code_id,
-            dummy_code_hash,
         },
     )?;
     Ok(Response::default())
@@ -242,11 +239,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             channel,
             token,
         } => {
-            let Config {
-                dummy_code_hash, ..
-            } = CONFIG.load(deps.storage)?;
+            let Config { dummy_code_id, .. } = CONFIG.load(deps.storage)?;
+            let code_hash = get_code_hash(deps, dummy_code_id)?;
             let token_addr = instantiate2_address(
-                &dummy_code_hash.into_bytes(),
+                &code_hash.into_bytes(),
                 &deps.api.addr_canonicalize(env.contract.address.as_str())?,
                 &calculate_salt(
                     path.parse::<U256>().map_err(Error::U256Parse)?,
@@ -279,6 +275,18 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             }
         },
     }
+}
+
+fn get_code_hash(deps: Deps, code_id: u64) -> StdResult<H256> {
+    Ok(H256::new(
+        *deps
+            .querier
+            .query::<CodeInfoResponse>(&QueryRequest::Wasm(cosmwasm_std::WasmQuery::CodeInfo {
+                code_id,
+            }))?
+            .checksum
+            .as_ref(),
+    ))
 }
 
 fn query_token_info(deps: Deps, addr: &str) -> StdResult<TokenInfoResponse> {

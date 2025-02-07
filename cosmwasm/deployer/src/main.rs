@@ -398,7 +398,6 @@ async fn do_main() -> Result<()> {
                             TokenMinterInitMsg::Cw20 {
                                 cw20_base_code_id: code_id,
                                 dummy_code_id: bytecode_base_code_id,
-                                dummy_code_hash: sha2(BYTECODE_BASE_BYTECODE),
                             }
                         }
                         TokenMinterConfig::Native => TokenMinterInitMsg::Native,
