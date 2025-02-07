@@ -32,10 +32,11 @@ export let chains: Array<Chain>
 
 let transfers = createQuery({
   queryKey: ["transfers-by-source-base", source],
-  refetchInterval: query => (query.state.data?.length === 0 ? 1_000 : false), // fetch every second until we have the transaction
+  refetchInterval: query =>
+    query.state.data?.[0]?.traces?.filter(t => !t.height)?.length === 0 ? false : 5_000, // fetch every five seconds until we have all traces
   placeholderData: (previousData, _) => previousData,
   queryFn: async () => {
-    console.log("querying")
+    console.log("traces still incomplete: querying transfer details")
     const response = await request(URLS().GRAPHQL, transfersBySourceHashBaseQueryDocument, {
       source_transaction_hash: source
     })
