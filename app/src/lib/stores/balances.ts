@@ -1,9 +1,13 @@
 import { erc20ReadMulticall } from "$lib/queries/balance/evm/multicall"
 import * as v from "valibot"
 import type { Chain } from "$lib/types"
-import { bech32ToBech32Address } from "@unionlabs/client"
+import {
+  bech32ToBech32Address,
+  isValidBech32ContractAddress,
+  queryCosmosCW20AddressBalance
+} from "@unionlabs/client"
 import { writable, type Writable } from "svelte/store"
-import { isAddress, toHex, type Address } from "viem"
+import { fromHex, isAddress, toHex, type Address } from "viem"
 import { fetchJson } from "$lib/utilities/neverthrow"
 import { err, ok } from "neverthrow"
 
@@ -96,12 +100,12 @@ const cosmosBalancesResponseSchema = v.object({
 })
 
 export async function updateBalancesCosmos(chain: Chain, address: string) {
-  console.log(address)
   const addr = bech32ToBech32Address({
     address: address,
     toPrefix: chain.addr_prefix
   })
   const denoms = chain.tokens.map(token => token.denom.toLowerCase())
+
   balances.update(val => {
     denoms.forEach(denom => updateBalanceObject(chain.chain_id, denom, { kind: "loading" }, val))
     return val
@@ -164,7 +168,34 @@ export async function updateBalancesCosmos(chain: Chain, address: string) {
     return val
   })
 
-  console.log("valid balances", response.value.balances.at(0))
+  const cw20Balances = await Promise.all(
+    denoms
+      .filter(denom => isValidBech32ContractAddress(fromHex(denom as Address, "string")))
+      .map(async denom => {
+        console.info(denom, fromHex(denom as Address, "string"))
+        const balance = await queryCosmosCW20AddressBalance({
+          address: address,
+          contractAddress: fromHex(denom as Address, "string"),
+          chainId: chain.chain_id as never
+        })
+        if (balance.isErr()) {
+          return { denom: denom, amount: null }
+        }
+
+        balances.update(val => {
+          updateBalanceObject(
+            chain.chain_id,
+            denom,
+            { kind: "balance", amount: balance.value, timestamp: Date.now() },
+            val
+          )
+          return val
+        })
+        return { denom: denom, amount: balance.value }
+      })
+  )
+
+  console.info(cw20Balances)
 
   // balances.update(val => {
   //   multicallResults.forEach((result, index) => {
