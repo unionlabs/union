@@ -295,6 +295,7 @@ module zkgm::ibc_app {
         r
     }
 
+    #[view]
     public fun last_channel_from_path(path: u256): u32 {
         if (path == 0) {
             return 0
@@ -304,6 +305,7 @@ module zkgm::ibc_app {
         (last_channel as u32)
     }
 
+    #[view]
     public fun update_channel_path(path: u256, next_channel_id: u32): u256 {
         if (path == 0) {
             return (next_channel_id as u256)
@@ -387,7 +389,7 @@ module zkgm::ibc_app {
                 symbol,
                 name,
                 base_amount,
-                bcs::to_bytes(&quote_token),
+                quote_token,
                 quote_amount
             );
         let operand = fungible_asset_order::encode(&fungible_asset_order);
