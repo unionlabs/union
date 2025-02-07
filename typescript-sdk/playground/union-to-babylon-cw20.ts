@@ -84,7 +84,7 @@ const unionClient = createUnionClient({
 const allowanceParams = {
   contractAddress: CW20_DENOM,
   amount: AMOUNT,
-  spender: "union16ex34xjzhv729ygw2hyhdjdseemujesw2d73xgey3wc3mm36mc6s6ehah7" // found using read-contract-state.ts
+  spender: fromHex(`0x${channel.source_port_id}`, "string") // found using read-contract-state.ts
 }
 consola.info("allowance params", allowanceParams)
 
