@@ -27,15 +27,18 @@ $: formattedBalance =
     : "0"
 
 $: isEnabled = !!intents.baseToken && !!intents.baseTokenInfo
+$: hasBalance = isEnabled && BigInt(intents.baseToken?.balance || 0) > 0n
 </script>
 
 <div class="text-xs flex justify-between mt-2">
   <span class="text-muted-foreground">Balance: <span class="text-primary">{formattedBalance}</span></span>
-  <button
-          class="ml-1 text-primary font-bold disabled:cursor-not-allowed"
-          on:click={calculateMaxAmount}
-          disabled={!isEnabled}
-  >
-    MAX
-  </button>
+  {#if hasBalance}
+    <button
+            class="ml-1 text-primary font-bold disabled:cursor-not-allowed"
+            on:click={calculateMaxAmount}
+            disabled={!isEnabled}
+    >
+      MAX
+    </button>
+  {/if}
 </div>
