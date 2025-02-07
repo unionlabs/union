@@ -849,7 +849,9 @@ fn execute_fungible_asset_order(
 pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, ContractError> {
     match reply.id {
         ESCROW_REPLY_ID => {
-            let Some(data) = reply.result.into_result().expect("only if success").data else {
+            #[allow(deprecated)]
+            let Some(data) = reply.result.into_result().expect("only if success").data
+            else {
                 return Ok(Response::new());
             };
             let Some(data) = Bufany::deserialize(&data)
@@ -1121,7 +1123,7 @@ fn make_wasm_msg(
     Ok(CosmosMsg::Wasm(wasm_execute(minter, &msg, funds)?))
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::PredictWrappedToken {

@@ -310,7 +310,6 @@ fn restrict_symbol(symbol: String) -> String {
         // filter the unwanted chars
         let symbol = split[split.len() - 1]
             .chars()
-            .into_iter()
             .filter(|c| *c == '-' || c.is_ascii_alphabetic())
             .collect::<String>();
         // filtering might make the token length < 3, so postfix the denom with '-'
