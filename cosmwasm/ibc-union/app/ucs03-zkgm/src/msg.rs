@@ -27,6 +27,8 @@ pub enum TokenMinterInitMsg {
         ///
         /// [`cw20-base`]: https://github.com/CosmWasm/cw-plus/blob/main/packages/cw20/README.md#base
         cw20_base_code_id: u64,
+        /// The code id of the dummy contract in order to get a contract address that does not depend on the code hash of `cw20_base`
+        dummy_code_id: u64,
     },
     /// Instantiate `ucs03-zkgm` with a native tokenfactory minter implementation.
     Native,
@@ -69,3 +71,17 @@ pub enum EurekaMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {}
+
+#[cw_serde]
+pub enum QueryMsg {
+    PredictWrappedToken {
+        path: String,
+        channel: u32,
+        token: Bytes,
+    },
+}
+
+#[cw_serde]
+pub struct PredictWrappedTokenResponse {
+    pub wrapped_token: Bytes,
+}

@@ -2,6 +2,7 @@ pub mod com;
 pub mod contract;
 pub mod msg;
 mod state;
+use alloy::primitives::ruint::ParseError;
 use cosmwasm_std::StdError;
 use thiserror::Error;
 use unionlabs_cosmwasm_upgradable::UpgradeError;
@@ -66,4 +67,6 @@ pub enum ContractError {
     Unimplemented,
     #[error("contract creation event not found during handling `reply`")]
     ContractCreationEventNotFound,
+    #[error("{0:?}")]
+    U256Parse(ParseError),
 }

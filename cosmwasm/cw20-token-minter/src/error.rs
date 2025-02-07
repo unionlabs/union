@@ -1,4 +1,5 @@
-use cosmwasm_std::StdError;
+use alloy::primitives::ruint::ParseError;
+use cosmwasm_std::{Instantiate2AddressError, StdError};
 use ucs03_zkgm_token_minter_api::WrappedTokenMsg;
 
 #[derive(Debug, thiserror::Error)]
@@ -29,4 +30,10 @@ pub enum Error {
 
     #[error("unexpected execute msg: {0:?}")]
     UnexpectedExecuteMsg(Box<WrappedTokenMsg>),
+
+    #[error(transparent)]
+    Instantiate2Error(#[from] Instantiate2AddressError),
+
+    #[error("{0:?}")]
+    U256Parse(ParseError),
 }

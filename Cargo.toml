@@ -186,7 +186,7 @@ members = [
   "lib/state-lens-light-client-types",
   "lib/create3",
   "lib/linea-types",
-  "cosmwasm/native-token-minter",
+  # "cosmwasm/native-token-minter",
   "cosmwasm/cw20-token-minter",
   "cosmwasm/ucs03-zkgm-token-minter-api",
 ]

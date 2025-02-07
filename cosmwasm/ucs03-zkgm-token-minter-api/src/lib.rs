@@ -36,6 +36,9 @@ pub enum WrappedTokenMsg {
         subdenom: String,
         // TODO: upgrade tokenfactory to handle this
         metadata: Metadata,
+        path: Binary,
+        channel: u32,
+        token: Binary,
     },
     MintTokens {
         denom: String,
@@ -59,12 +62,15 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum QueryMsg {
-    /// Query the identifier of a wrapped token. If the token is not a wrapped token, then it will return the token as is.
-    TokenToIdentifier { token: Binary },
     /// Query the metadata of a token.
     Metadata {
         /// `denom` is either a normal token denom, or a cosmwasm contract address of a cw20 token that was created through the `cw20-token-minter`.
         denom: String,
+    },
+    PredictWrappedToken {
+        path: String,
+        channel: u32,
+        token: Binary,
     },
 }
 
@@ -75,6 +81,6 @@ pub struct MetadataResponse {
 }
 
 #[cw_serde]
-pub struct TokenToIdentifierResponse {
-    pub token_identifier: Binary,
+pub struct PredictWrappedTokenResponse {
+    pub wrapped_token: String,
 }

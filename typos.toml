@@ -50,6 +50,7 @@ files.extend-exclude = [
   "./docs/src/content/openapi/**",
   "uniond/docs/static/openapi.yml",
   "docs/src/assets/theme/**",
+  "cosmwasm/cw20-base/**",
 ]
 
 [default.extend-words]
