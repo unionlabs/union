@@ -44,7 +44,7 @@
               --gas-multiplier ${toString gas_config.gas_multiplier} \
               --max-gas ${toString gas_config.max_gas} \
               --contracts ${chain-deployments-json args} \
-              --rpc-url ${rpc_url} "$@"
+              --rpc-url ${rpc_url}
           '';
         };
 
@@ -161,7 +161,7 @@
         {
           name = "union-testnet";
           rpc_url = "https://rpc.testnet-9.union.build";
-          private_key = "$1";
+          private_key = ''"$1"'';
           gas_config = {
             gas_denom = "muno";
             gas_multiplier = "1.1";
@@ -169,7 +169,7 @@
             max_gas = 10000000;
           };
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            # ucs03 = ucs03-configs.cw20;
           };
           bech32_prefix = "union";
           lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);

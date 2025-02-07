@@ -7,8 +7,9 @@ use cosmos_client::{Ctx, GasConfig};
 use cosmwasm_std::Addr;
 use hex_literal::hex;
 use protos::cosmwasm::wasm::v1::{
-    MsgInstantiateContract2, MsgInstantiateContract2Response, MsgMigrateContract,
-    MsgMigrateContractResponse, MsgStoreCode, MsgStoreCodeResponse,
+    MsgExecuteContract, MsgExecuteContractResponse, MsgInstantiateContract2,
+    MsgInstantiateContract2Response, MsgMigrateContract, MsgMigrateContractResponse, MsgStoreCode,
+    MsgStoreCodeResponse, QuerySmartContractStateRequest, QuerySmartContractStateResponse,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -283,7 +284,7 @@ async fn do_main() -> Result<()> {
                 },
             };
 
-            for (salt, path) in contracts.lightclient {
+            for (client_type, path) in contracts.lightclient {
                 let address = ctx
                     .deploy_and_initiate(
                         std::fs::read(path)?,
@@ -291,11 +292,58 @@ async fn do_main() -> Result<()> {
                         ibc_union_light_client::msg::InitMsg {
                             ibc_host: Addr::unchecked(core_address.clone()),
                         },
-                        format!("{LIGHTCLIENT}/{salt}"),
+                        format!("{LIGHTCLIENT}/{client_type}"),
                     )
                     .await?;
 
-                contract_addresses.lightclient.insert(salt, address);
+                let response = ctx
+                    .client()
+                    .grpc_abci_query::<_, QuerySmartContractStateResponse>(
+                        "/cosmwasm.wasm.v1.Query/SmartContractState",
+                        &QuerySmartContractStateRequest {
+                            address: core_address.clone(),
+                            query_data: serde_json::to_vec(
+                                &ibc_union_msg::query::QueryMsg::GetRegisteredClientType {
+                                    client_type: client_type.clone(),
+                                },
+                            )
+                            .unwrap(),
+                        },
+                        None,
+                        false,
+                    )
+                    .await?;
+
+                if let Some(addr) = response
+                    .value
+                    .map(|value| serde_json::from_slice::<Addr>(&value.data).unwrap())
+                {
+                    assert_eq!(addr.to_string(), address);
+                    info!("client {client_type} has already been registered");
+                } else {
+                    ctx.tx::<_, MsgExecuteContractResponse>(
+                        MsgExecuteContract {
+                            sender: ctx.signer().to_string(),
+                            contract: core_address.clone(),
+                            msg: serde_json::to_vec(
+                                &ibc_union_msg::msg::ExecuteMsg::RegisterClient(
+                                    ibc_union_msg::msg::MsgRegisterClient {
+                                        client_type: client_type.clone(),
+                                        client_address: address.clone(),
+                                    },
+                                ),
+                            )
+                            .unwrap(),
+                            funds: vec![],
+                        },
+                        "",
+                    )
+                    .await?;
+
+                    info!("registered client type {client_type} to {address}");
+                };
+
+                contract_addresses.lightclient.insert(client_type, address);
             }
 
             if let Some(_ucs00) = contracts.app.ucs00 {}

@@ -44,5 +44,46 @@
         }
       }
     }
+  },
+  {
+    "chain_id": "union-testnet-9",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "core": {
+        "address": "union1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tesyypmkw",
+        "height": 4081128
+      },
+      "lightclient": {
+        "arbitrum": {
+          "address": "union1txkq475e6s4dmapnla8aunqey7pnmlfptl6tkfm3w3huhh2ymfrq2e3s9g",
+          "height": 4081134
+        },
+        "berachain": {
+          "address": "union1y4rln3sk8ehqxdcca3juey7ee0hp23czcfmc457lxsp4kt39wzqqpfa08f",
+          "height": 4081139
+        },
+        "ethereum": {
+          "address": "union1ahqjgzw37gp2n6tzpa3hjlenysaz5waewhlfq5rqlgl5ljeafpws4h0dfn",
+          "height": 4081145
+        },
+        "ethermint": {
+          "address": "union1dxpa24en20qk9mqxa55qaaqkmeg647k25qwt5cmqc4wajr00h2hsp830h5",
+          "height": 4081152
+        },
+        "movement": {
+          "address": "union143w7u4eq02fnetguapftwmnu5qnnf58wcygk4sg5d8sycr5m0auqacgecd",
+          "height": 4081156
+        },
+        "state-lens/ics23/mpt": {
+          "address": "union13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqe5j4a0",
+          "height": 4081162
+        },
+        "tendermint": {
+          "address": "union1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqss29m5ru",
+          "height": 4081167
+        }
+      },
+      "app": {}
+    }
   }
 ]
