@@ -97,10 +97,10 @@ let cosmosDenom = derived(tokenInfo, $tokenInfo => {
   </div>
   </Tooltip.Trigger>
   <Tooltip.Content>
-    <div class="text-xs flex flex-col gap gap-4 text-muted-foreground">
+    <div class="text-xs flex flex-col gap gap-4 text-neutral-400">
       <section>
         <div class="flex justify-between items-center">
-          <h2 class="text-foreground font-bold text-sm">{token.combined.symbol}</h2>
+          <h2 class="text-white font-bold text-sm">{token.combined.symbol}</h2>
           <div class="bg-union-accent-500 text-black font-bold rounded px-1">
             {#if $cosmosDenom}
               {$cosmosDenom.type}
@@ -117,7 +117,7 @@ let cosmosDenom = derived(tokenInfo, $tokenInfo => {
         </div>
       </section>
       <section>
-        <h3 class="text-foreground">Denom</h3>
+        <h3 class="text-white">Denom</h3>
         {#if $cosmosDenom}
           <div>{$cosmosDenom.denom}</div>
           <div>{$cosmosDenom.type}</div>
@@ -128,7 +128,7 @@ let cosmosDenom = derived(tokenInfo, $tokenInfo => {
       </section>
       {#if token.graphql}
         <section>
-          <h3 class="text-foreground">GraphQL</h3>
+          <h3 class="text-white">GraphQL</h3>
           <div>Name: {token.graphql.primaryRepresentation.name}</div>
           <div>Symbol: {token.graphql.primaryRepresentation.symbol}</div>
           <div>Decimals: {token.graphql.primaryRepresentation.decimals}</div>
@@ -145,7 +145,7 @@ let cosmosDenom = derived(tokenInfo, $tokenInfo => {
       {/if}
       {#if token.onchain}
         <section>
-          <h3 class="text-foreground">Onchain</h3>
+          <h3 class="text-white">Onchain</h3>
           <div>Name: {token.onchain.name}</div>
           <div>Symbol: {token.onchain.symbol}</div>
           <div>Decimals: {token.onchain.decimals}</div>
