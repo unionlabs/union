@@ -610,16 +610,16 @@ let stepperSteps = derived(transferState, $transferState => {
     {#if $transferState.kind === "PRE_TRANSFER"}
     <div class="flex flex-col gap-6">
       <div>
-        <h3 class="font-supermolot font-bold uppercase text-xl">Base Asset</h3>
-        <Token amount={transferArgs.baseAmount} denom={transferArgs.baseToken} chainId={transferContext.channel.source_chain_id} {chains}/>
+        <h3 class="font-supermolot font-bold uppercase text-sm">Base Asset</h3>
+        <Token highlightEnabled={false} stackedView amount={transferArgs.baseAmount} denom={transferArgs.baseToken} chainId={transferContext.channel.source_chain_id} {chains}/>
       </div>
       <div>
-        <h3 class="font-supermolot font-bold uppercase text-xl">Quote Asset</h3>
-        <Token amount={transferArgs.quoteAmount} denom={transferArgs.quoteToken} chainId={transferContext.channel.destination_chain_id} {chains}/>
+        <h3 class="font-supermolot font-bold uppercase text-sm">Quote Asset</h3>
+        <Token highlightEnabled={false} stackedView amount={transferArgs.quoteAmount} denom={transferArgs.quoteToken} chainId={transferContext.channel.destination_chain_id} {chains}/>
       </div>
       <div>
-        <h3 class="font-supermolot font-bold uppercase text-xl">Recipient</h3>
-        <Address showChain showRaw address={transferArgs.receiver} {chains} chainId={transferContext.channel.destination_chain_id}/>
+        <h3 class="font-supermolot font-bold uppercase text-sm">Recipient</h3>
+        <Address highlightEnabled={false} showChain address={transferArgs.receiver} {chains} chainId={transferContext.channel.destination_chain_id}/>
       </div>
     </div>
     <div class="flex flex-1 flex-col justify-end items-center">
