@@ -39,6 +39,6 @@ export let onSelectAsset: Props["onSelectAsset"]
     {/if}
   </Button>
   {#if validation.errors.asset}
-    <p class="text-red-500 text-sm">{validation.errors.asset}</p>
+    <p class="text-red-500 text-xs">{validation.errors.asset}</p>
   {/if}
 </div>

@@ -71,7 +71,7 @@ export let rotateTo: Props["rotateTo"]
                 }}
         />
         {#if validation.errors.amount}
-          <span class="text-red-500 text-sm">{validation.errors.amount}</span>
+          <span class="text-red-500 text-xs">{validation.errors.amount}</span>
         {/if}
         <Input
                 type="text"
@@ -97,7 +97,7 @@ export let rotateTo: Props["rotateTo"]
           </button>
         {/if}
         {#if validation.errors.receiver}
-          <span class="text-red-500 text-sm">{validation.errors.receiver}</span>
+          <span class="text-red-500 text-xs">{validation.errors.receiver}</span>
         {/if}
       </div>
     </div>

@@ -7,7 +7,7 @@ export let rotateY = "0deg"
 </script>
 
 <div
-        class="absolute bg-muted flex flex-col items-center border-2"
+        class="absolute bg-muted flex flex-col items-center border-2 h-full"
         class:opacity-100={visible}
         class:opacity-0={!visible}
         class:pointer-events-none={!visible}
