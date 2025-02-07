@@ -70,7 +70,7 @@ $: width =
             : // sm breakpoint
               300 // Default for smaller screens
 
-$: height = width * 1.5
+$: height = width * 1.55
 $: translateZ = width / 2
 </script>
 
