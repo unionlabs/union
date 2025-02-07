@@ -153,7 +153,7 @@ pub fn execute(
                     },
                     vec![],
                 )?;
-                Response::new().add_message(msg)
+                Response::new().set_data(to_json_binary(&vec![msg])?)
             }
         },
         ExecuteMsg::Local(msg) => match msg {
@@ -182,7 +182,8 @@ pub fn execute(
                         },
                         vec![],
                     )?;
-                    Response::new().add_message(msg)
+                    // We are delegating the TransferFrom to zkgm so it is capable
+                    Response::new().set_data(to_json_binary(&vec![msg])?)
                 }
             }
             LocalTokenMsg::Unescrow {

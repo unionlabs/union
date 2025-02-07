@@ -4,9 +4,9 @@ use alloy::{primitives::U256, sol_types::SolValue};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, to_json_string, wasm_execute, Addr, Attribute, Binary, Coin, CosmosMsg, Deps,
-    DepsMut, Env, Event, MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, SubMsg,
-    SubMsgResult, Uint128, Uint256, WasmMsg,
+    from_json, to_json_binary, to_json_string, wasm_execute, Addr, Attribute, Binary, Coin,
+    CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, QueryRequest, Reply, Response, StdError,
+    StdResult, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
@@ -42,6 +42,7 @@ pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
 pub const EXECUTE_REPLY_ID: u64 = 0x1337;
 pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
 pub const CREATE_DENOM_REPLY_ID: u64 = 0xdead;
+pub const ESCROW_REPLY_ID: u64 = 0xcafe;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
 
@@ -846,6 +847,15 @@ fn execute_fungible_asset_order(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, ContractError> {
     match reply.id {
+        ESCROW_REPLY_ID => {
+            let Some(data) = reply.result.into_result().expect("only if success").data else {
+                return Ok(Response::new());
+            };
+            match from_json::<Vec<WasmMsg>>(&data) {
+                Ok(msgs) => Ok(Response::new().add_messages(msgs)),
+                Err(_) => Ok(Response::new()),
+            }
+        }
         CREATE_DENOM_REPLY_ID => {
             // We are just emitting the token creation event so that the event is emitted from this
             // contract.
@@ -975,7 +985,7 @@ fn transfer(
     let minter = TOKEN_MINTER.load(deps.storage)?;
     // If the origin exists, the preimage exists
     let unwrapped_asset = HASH_TO_FOREIGN_TOKEN.may_load(deps.storage, base_token.clone())?;
-    let mut messages = Vec::<CosmosMsg>::new();
+    let mut messages = Vec::<SubMsg>::new();
     // TODO: handle forward path
     let mut origin = TOKEN_ORIGIN.may_load(deps.storage, base_token.clone())?;
     match origin {
@@ -984,30 +994,36 @@ fn transfer(
             if path == Uint256::from(channel_id)
                 && unwrapped_asset == Some(quote_token.clone()) =>
         {
-            messages.push(make_wasm_msg(
-                WrappedTokenMsg::BurnTokens {
-                    denom: base_token.clone(),
-                    amount: base_amount,
-                    burn_from_address: minter.to_string(),
-                    sender: info.sender.clone(),
-                },
-                &minter,
-                info.funds,
-            )?)
+            messages.push(SubMsg::reply_on_success(
+                make_wasm_msg(
+                    WrappedTokenMsg::BurnTokens {
+                        denom: base_token.clone(),
+                        amount: base_amount,
+                        burn_from_address: minter.to_string(),
+                        sender: info.sender.clone(),
+                    },
+                    &minter,
+                    info.funds,
+                )?,
+                ESCROW_REPLY_ID,
+            ))
         }
         // Escrow and update the balance, the counterparty will mint the token
         _ => {
             origin = None;
-            messages.push(make_wasm_msg(
-                LocalTokenMsg::Escrow {
-                    from: info.sender.to_string(),
-                    denom: base_token.clone(),
-                    recipient: minter.to_string(),
-                    amount: base_amount,
-                },
-                &minter,
-                info.funds,
-            )?);
+            messages.push(SubMsg::reply_on_success(
+                make_wasm_msg(
+                    LocalTokenMsg::Escrow {
+                        from: info.sender.to_string(),
+                        denom: base_token.clone(),
+                        recipient: minter.to_string(),
+                        amount: base_amount,
+                    },
+                    &minter,
+                    info.funds,
+                )?,
+                ESCROW_REPLY_ID,
+            ));
             CHANNEL_BALANCE.update(deps.storage, (channel_id, base_token.clone()), |balance| {
                 match balance {
                     Some(value) => value
@@ -1030,46 +1046,43 @@ fn transfer(
         },
     ))?;
     let config = CONFIG.load(deps.storage)?;
-    messages.push(
-        wasm_execute(
-            &config.ibc_host,
-            &ibc_union_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
-                source_channel: channel_id,
-                timeout_height,
-                timeout_timestamp,
-                data: ZkgmPacket {
-                    salt: salt.into(),
-                    path: alloy::primitives::U256::ZERO,
-                    instruction: Instruction {
-                        version: ZKGM_VERSION_0,
-                        opcode: OP_FUNGIBLE_ASSET_ORDER,
-                        operand: FungibleAssetOrder {
-                            sender: info.sender.as_bytes().to_vec().into(),
-                            receiver: Vec::from(receiver).into(),
-                            base_token: base_token.as_bytes().to_vec().into(),
-                            base_amount: base_amount.u128().try_into().expect("u256>u128"),
-                            base_token_symbol,
-                            base_token_name,
-                            base_token_path: origin
-                                .map(|x| alloy::primitives::U256::from_be_bytes(x.to_be_bytes()))
-                                .unwrap_or(alloy::primitives::U256::ZERO),
-                            quote_token: Vec::from(quote_token).into(),
-                            quote_amount: alloy::primitives::U256::from_be_bytes(
-                                quote_amount.to_be_bytes(),
-                            ),
-                        }
-                        .abi_encode_params()
-                        .into(),
-                    },
-                }
-                .abi_encode_params()
-                .into(),
-            }),
-            vec![],
-        )?
-        .into(),
-    );
-    Ok(Response::new().add_messages(messages))
+    messages.push(SubMsg::new(wasm_execute(
+        &config.ibc_host,
+        &ibc_union_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
+            source_channel: channel_id,
+            timeout_height,
+            timeout_timestamp,
+            data: ZkgmPacket {
+                salt: salt.into(),
+                path: alloy::primitives::U256::ZERO,
+                instruction: Instruction {
+                    version: ZKGM_VERSION_0,
+                    opcode: OP_FUNGIBLE_ASSET_ORDER,
+                    operand: FungibleAssetOrder {
+                        sender: info.sender.as_bytes().to_vec().into(),
+                        receiver: Vec::from(receiver).into(),
+                        base_token: base_token.as_bytes().to_vec().into(),
+                        base_amount: base_amount.u128().try_into().expect("u256>u128"),
+                        base_token_symbol,
+                        base_token_name,
+                        base_token_path: origin
+                            .map(|x| alloy::primitives::U256::from_be_bytes(x.to_be_bytes()))
+                            .unwrap_or(alloy::primitives::U256::ZERO),
+                        quote_token: Vec::from(quote_token).into(),
+                        quote_amount: alloy::primitives::U256::from_be_bytes(
+                            quote_amount.to_be_bytes(),
+                        ),
+                    }
+                    .abi_encode_params()
+                    .into(),
+                },
+            }
+            .abi_encode_params()
+            .into(),
+        }),
+        vec![],
+    )?));
+    Ok(Response::new().add_submessages(messages))
 }
 
 #[cosmwasm_schema::cw_serde]
@@ -1122,4 +1135,16 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
             })?)
         }
     }
+}
+
+#[test]
+pub fn see_tx() {
+    let tx = hex_literal::hex!("53f247a39cb05a49ed206cdb7b09dad6a71b9eae2f49b3408be67510fd19b1ab0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002800000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001c00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020cb6c475d746a54c1e4a77c49a030f45622b710d40be444dbd6afe82514fc2ffa0000000000000000000000000000000000000000000000000000000000000040756e696f6e3136736a717330647565677268716e366732306d3278723474703678747630796d66753463756175616834346c793871666b7a6d717438797977780000000000000000000000000000000000000000000000000000000000000020c72f198d6cc4a0ae4d7369fbf93cc60c56156548b051e5ccc9a27fb380099467000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005046d756e6f000000000000000000000000000000000000000000000000000000");
+
+    let zkgm_packet = ZkgmPacket::abi_decode_params(&tx, true).unwrap();
+
+    let packet =
+        FungibleAssetOrder::abi_decode_params(&zkgm_packet.instruction.operand, false).unwrap();
+
+    panic!("packet {packet:?}");
 }
