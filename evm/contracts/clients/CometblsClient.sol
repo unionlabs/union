@@ -173,6 +173,16 @@ library CometblsClientLib {
     ) internal pure returns (bytes32) {
         return keccak256(encodeMemory(clientState));
     }
+
+    function chainIdToString(
+        bytes31 source
+    ) internal pure returns (string memory result) {
+        // casting bytes31 to bytes32 directly pads on the right, but we need left padding
+        // cast to uint248 first (since bytes31 to uint256 isn't valid), then to uint256
+        // then cast to bytes32, resulting in left padding
+        // this bytes32 value is then converted to a bytes value with .concat, and then casted to a string
+        result = string(bytes.concat(bytes32(uint256(uint248(source)))));
+    }
 }
 
 contract CometblsClient is
@@ -230,7 +240,7 @@ contract CometblsClient is
                 consensusStateCommitment: consensusState.commit(),
                 height: clientState.latestHeight
             }),
-            string(abi.encodePacked(clientState.chainId))
+            CometblsClientLib.chainIdToString(clientState.chainId)
         );
     }
 
