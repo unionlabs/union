@@ -87,60 +87,72 @@
     }
   },
   {
-    "core": {
-      "address": "stars1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380teskdmgll",
-      "height": 14692209
-    },
-    "lightclient": {
-      "cometbls": {
-        "address": "stars1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ksttv76s",
-        "height": 14692215
+    "chain_id": "elgafar-1",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "core": {
+        "address": "stars1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380teskdmgll",
+        "height": 14692209
       },
-      "state-lens/ics23/mpt": {
-        "address": "stars13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqtagx57",
-        "height": 14692221
-      },
-      "tendermint": {
-        "address": "stars1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqsscvp82d",
-        "height": 14692367
+      "lightclient": {
+        "cometbls": {
+          "address": "stars1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ksttv76s",
+          "height": 14692215
+        },
+        "state-lens/ics23/mpt": {
+          "address": "stars13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqtagx57",
+          "height": 14692221
+        },
+        "tendermint": {
+          "address": "stars1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqsscvp82d",
+          "height": 14692367
+        }
       }
     },
     "app": {}
   },
   {
-    "core": {
-      "address": "osmo1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tes4h8h8p",
-      "height": 21880854
-    },
-    "lightclient": {
-      "cometbls": {
-        "address": "osmo1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ksg3spzw",
-        "height": 21880927
+    "chain_id": "osmo-test-5",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "core": {
+        "address": "osmo1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tes4h8h8p",
+        "height": 21880854
       },
-      "state-lens/ics23/mpt": {
-        "address": "osmo13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqg85evq",
-        "height": 21880970
-      },
-      "tendermint": {
-        "address": "osmo1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqssmkacjn",
-        "height": 21883107
+      "lightclient": {
+        "cometbls": {
+          "address": "osmo1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ksg3spzw",
+          "height": 21880927
+        },
+        "state-lens/ics23/mpt": {
+          "address": "osmo13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqg85evq",
+          "height": 21880970
+        },
+        "tendermint": {
+          "address": "osmo1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqssmkacjn",
+          "height": 21883107
+        }
       }
     },
     "app": {}
   },
   {
-    "core": {
-      "address": "bbn1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tesmr7mtw",
-      "height": 240561
-    },
-    "lightclient": {
-      "cometbls": {
-        "address": "bbn1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ksx9fdwp",
-        "height": 240564
+    "chain_id": "bbn-test-5",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "core": {
+        "address": "bbn1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tesmr7mtw",
+        "height": 240561
       },
-      "state-lens/ics23/mpt": {
-        "address": "bbn13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqxnd4q0",
-        "height": 240568
+      "lightclient": {
+        "cometbls": {
+          "address": "bbn1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ksx9fdwp",
+          "height": 240564
+        },
+        "state-lens/ics23/mpt": {
+          "address": "bbn13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqxnd4q0",
+          "height": 240568
+        }
       }
     },
     "app": {}
