@@ -15,7 +15,7 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import consola from "consola";
 // For the EVM cross-chain transfer snippet:
-import { fallback, http, fromHex } from "viem";
+import { fallback, http, fromHex, toHex } from "viem";
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing";
 import { privateKeyToAccount } from "viem/accounts";
 // If you’re pulling createUnionClient from your local or a published package:
@@ -206,7 +206,11 @@ async function doTransfer(task) {
             consola.error("No channel found. Source chain ID:", sourceChainId, " Destination chain ID:", task.destinationChainId);
             return;
         }
-        const quoteToken = await getQuoteToken(sourceChainId, task.denomAddress.toLowerCase(), channel);
+        let taskDenomAddr = task.denomAddress;
+        if (!taskDenomAddr.startsWith("0x")) {
+            taskDenomAddr = toHex(taskDenomAddr);
+        }
+        const quoteToken = await getQuoteToken(sourceChainId, taskDenomAddr, channel);
         // consola.info(
         //   "quoteToken: ",
         //   quoteToken,
@@ -215,9 +219,7 @@ async function doTransfer(task) {
         //   " denomAddr: ",
         //   task.denomAddress,
         //   " channel: ",
-        //   channel,
-        //   "sending amount:",
-        //   random_amount
+        //   channel
         // )
         if (quoteToken.isErr()) {
             consola.info("could not get quote token");
@@ -235,7 +237,7 @@ async function doTransfer(task) {
                 baseAmount: BigInt(random_amount),
                 quoteToken: quoteToken.value.quote_token,
                 quoteAmount: BigInt(random_amount),
-                receiver: task.receiverAddress,
+                receiver: toHex(task.receiverAddress),
                 sourceChannelId: channel.source_channel_id,
                 ucs03address: fromHex(`0x${channel.source_port_id}`, "string")
             }
@@ -351,43 +353,27 @@ function sleepSync(ms) {
  * @param totalRequests How many transfer calls to spawn
  * @param privKeys Optional array of private keys to rotate through
  */
-function doTransferLoadTest(task, totalRequests, privKeys) {
-    if (!task.enabled) {
-        consola.info("Transfer task is disabled. Skipping.");
-        return;
+async function doTransferLoadTest(transfers, totalRequests, privKeys) {
+    while (true) {
+        for (const task of transfers) {
+            if (!task.enabled) {
+                consola.info("Transfer task is disabled. Skipping.");
+                continue;
+            }
+            const useKeys = privKeys?.length ? privKeys : [task.privateKey];
+            for (let i = 0; i < useKeys.length; i++) {
+                const newPrivateKey = useKeys[i];
+                const loadTask = { ...task, privateKey: newPrivateKey }; // overwrite the key
+                consola.info("Starting transfer", i + 1, "with key", newPrivateKey);
+                // Fire the asynchronous function but do NOT await
+                doTransfer(loadTask).catch(err => {
+                    consola.error(`[LoadTest] Transfer ${i + 1} failed:`, err);
+                });
+            }
+        }
+        // Use non-blocking sleep instead of the synchronous busy-wait.
+        await new Promise(resolve => setTimeout(resolve, 60000));
     }
-    const useKeys = privKeys?.length ? privKeys : [task.privateKey];
-    // Kick off multiple transfers in parallel
-    const promises = [];
-    for (let i = 0; i < totalRequests; i++) {
-        const index = i % useKeys.length;
-        const newPrivateKey = useKeys[index];
-        const loadTask = { ...task, privateKey: newPrivateKey }; // overwrite the key
-        consola.info("Starting transfer", i + 1, "with key", newPrivateKey);
-        // if (i > 0 && i % 10 === 0) {
-        //   consola.info(`Sleeping for 10 seconds after ${i} transfers...`)
-        //   sleepSync(5000) // Block the loop for 10 seconds
-        // }
-        // Fire the asynchronous function but do NOT await
-        // doTransfer(loadTask).catch(err => {
-        //   // Optionally catch errors so they don't become unhandled rejections
-        //   consola.error(`[LoadTest] Transfer ${i + 1}/${totalRequests} failed:`, err)
-        // })
-        const promise = doTransfer(loadTask).catch(err => {
-            consola.error(`[LoadTest] Transfer ${i + 1}/${totalRequests} failed:`, err);
-        });
-        promises.push(promise);
-    }
-    // Optionally wait for all the transfers to finish.
-    Promise.all(promises)
-        .then(() => {
-        consola.info(`All ${totalRequests} parallel transfers for load test have completed.`);
-    })
-        .catch(err => {
-        consola.error("Error in one of the load test transfers:", err);
-    });
-    // Since we are not awaiting, this function will return immediately.
-    consola.info(`Kicked off ${totalRequests} parallel transfers for load test.`);
 }
 /**
  * Kick off both loops in parallel.

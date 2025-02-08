@@ -6,7 +6,7 @@
     "@cosmjs/tendermint-rpc": "^0.33.0",
     "@cosmjs/stargate": "0.33.0",
     "@cosmjs/amino": "^0.33.0",
-    "@unionlabs/client": "0.0.56",
+    "@unionlabs/client": "0.0.59",
     "consola": "^3.4.0",
     "graphql-request": "^7.1.2",
     "neverthrow": "^8.1.1",
