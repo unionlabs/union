@@ -47,6 +47,10 @@ library StateLensIcs23Ics23Lib {
     error ErrInvalidInitialConsensusState();
     error ErrInvalidMisbehaviour();
 
+    event CreateLensClient(
+        uint32 clientId, uint32 l1ClientId, uint32 l2ClientId, string l2ChainId
+    );
+
     function encode(
         ConsensusState memory consensusState
     ) internal pure returns (bytes memory) {
@@ -137,6 +141,14 @@ contract StateLensIcs23Ics23Client is
             timestamp: block.timestamp * 1e9,
             height: block.number
         });
+
+        emit StateLensIcs23Ics23Lib.CreateLensClient(
+            clientId,
+            clientState.l1ClientId,
+            clientState.l2ClientId,
+            clientState.l2ChainId
+        );
+
         return (
             ConsensusStateUpdate({
                 clientStateCommitment: clientState.commit(),
