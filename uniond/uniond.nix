@@ -3,9 +3,7 @@ _: {
     {
       pkgs,
       self',
-      crane,
       system,
-      ensureAtRepositoryRoot,
       nix-filter,
       gitRev,
       uniondBundleVersions,
@@ -54,7 +52,7 @@ _: {
                     (nix-filter.matchExt "md")
                   ];
                 };
-                vendorHash = "sha256-0uhfzmIzIgdwx+OBdCo48RnyAhQ4Yg2AMj7xsJdipO0=";
+                vendorHash = "sha256-rJxxyeWaZFzw9AHv6Ap+HgKvqvxhUCIkQaTMAmYcaPU=";
                 doCheck = true;
                 meta.mainProgram = "uniond";
               }
