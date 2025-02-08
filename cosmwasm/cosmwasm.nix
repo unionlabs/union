@@ -222,7 +222,7 @@
             max_gas = 10000000;
           };
           apps = {
-            # ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20;
           };
           bech32_prefix = "bbn";
           lightclients = [

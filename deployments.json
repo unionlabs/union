@@ -160,6 +160,11 @@
         }
       }
     },
-    "app": {}
+    "app": {
+      "ucs03": {
+        "address": "bbn1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqaa99ye",
+        "height": 248735
+      }
+    }
   }
 ]
