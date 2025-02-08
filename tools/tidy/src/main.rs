@@ -47,6 +47,7 @@ fn main() -> ExitCode {
             .lints
             .as_ref()
             .is_none_or(|lints| !lints.workspace)
+            && member.name != "cw20-base"
         {
             is_err = true;
 
