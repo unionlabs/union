@@ -23,7 +23,7 @@ import { hideBin } from "yargs/helpers"
 import consola from "consola"
 
 // For the EVM cross-chain transfer snippet:
-import { Address, fallback, http, fromHex } from "viem"
+import { Address, fallback, http, fromHex, toHex } from "viem"
 import { bech32, hex, bytes } from "@scure/base"
 import { holesky, sepolia } from "viem/chains"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
@@ -338,8 +338,11 @@ async function doTransfer(task: TransferConfig) {
       )
       return
     }
-
-    const quoteToken = await getQuoteToken(sourceChainId, task.denomAddress.toLowerCase(), channel)
+    let taskDenomAddr = task.denomAddress
+    if (!taskDenomAddr.startsWith("0x")) {
+      taskDenomAddr = toHex(taskDenomAddr)
+    }
+    const quoteToken = await getQuoteToken(sourceChainId, taskDenomAddr, channel)
 
     // consola.info(
     //   "quoteToken: ",
@@ -371,7 +374,7 @@ async function doTransfer(task: TransferConfig) {
           baseAmount: BigInt(random_amount),
           quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
           quoteAmount: BigInt(random_amount),
-          receiver: task.receiverAddress,
+          receiver: toHex(task.receiverAddress),
           sourceChannelId: channel.source_channel_id,
           ucs03address: fromHex(`0x${channel.source_port_id}`, "string") as `0x${string}`
         }
@@ -496,35 +499,31 @@ function sleepSync(ms: number) {
  * @param totalRequests How many transfer calls to spawn
  * @param privKeys Optional array of private keys to rotate through
  */
-function doTransferLoadTest(task: TransferConfig, totalRequests: number, privKeys?: string[]) {
-  if (!task.enabled) {
-    consola.info("Transfer task is disabled. Skipping.")
-    return
-  }
-
-  const useKeys = privKeys?.length ? privKeys : [task.privateKey]
-
-  // Kick off multiple transfers in parallel
-  for (let i = 0; i < totalRequests; i++) {
-    const index = i % useKeys.length
-    const newPrivateKey = useKeys[index]
-    const loadTask = { ...task, privateKey: newPrivateKey } // overwrite the key
-    consola.info("Starting transfer", i + 1, "with key", newPrivateKey)
-
-    if (i > 0 && i % 10 === 0) {
-      consola.info(`Sleeping for 10 seconds after ${i} transfers...`)
-      sleepSync(5000) // Block the loop for 10 seconds
+async function doTransferLoadTest(
+  transfers: TransferConfig[],
+  totalRequests: number,
+  privKeys?: string[]
+) {
+  while (true) {
+    for (const task of transfers) {
+      if (!task.enabled) {
+        consola.info("Transfer task is disabled. Skipping.")
+        continue
+      }
+      const useKeys = privKeys?.length ? privKeys : [task.privateKey]
+      for (let i = 0; i < useKeys.length; i++) {
+        const newPrivateKey = useKeys[i]
+        const loadTask = { ...task, privateKey: newPrivateKey } // overwrite the key
+        consola.info("Starting transfer", i + 1, "with key", newPrivateKey)
+        // Fire the asynchronous function but do NOT await
+        doTransfer(loadTask).catch(err => {
+          consola.error(`[LoadTest] Transfer ${i + 1} failed:`, err)
+        })
+      }
     }
-
-    // Fire the asynchronous function but do NOT await
-    doTransfer(loadTask).catch(err => {
-      // Optionally catch errors so they don't become unhandled rejections
-      consola.error(`[LoadTest] Transfer ${i + 1}/${totalRequests} failed:`, err)
-    })
+    // Use non-blocking sleep instead of the synchronous busy-wait.
+    await new Promise(resolve => setTimeout(resolve, 60000))
   }
-
-  // Since we are not awaiting, this function will return immediately.
-  consola.info(`Kicked off ${totalRequests} parallel transfers for load test.`)
 }
 
 /**
