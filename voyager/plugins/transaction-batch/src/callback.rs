@@ -98,7 +98,7 @@ where
         %client_id,
         has_updates = updates.is_some(),
         client_meta.height = %client_meta.counterparty_height,
-        client_meta.chain_id = %client_meta.chain_id,
+        client_meta.chain_id = %client_meta.counterparty_chain_id,
         %new_trusted_height
     )
 )]
@@ -127,7 +127,7 @@ where
                     new_trusted_height
                 );
 
-                let origin_chain_id = client_meta.chain_id.clone();
+                let origin_chain_id = client_meta.counterparty_chain_id.clone();
                 let target_chain_id = module_server.chain_id.clone();
 
                 debug!(

@@ -62,7 +62,7 @@ where
             .await?;
 
         let latest_height = voyager_client
-            .query_latest_height(client_meta.chain_id.clone(), true)
+            .query_latest_height(client_meta.counterparty_chain_id.clone(), true)
             .await?;
 
         let target_height = self
@@ -84,7 +84,7 @@ where
                     in order to create an update for this client, we need to wait for the \
                     counterparty chain to progress to the next consensus checkpoint greater \
                     than the required target height {target_height}",
-                    counterparty_chain_id = client_meta.chain_id,
+                    counterparty_chain_id = client_meta.counterparty_chain_id,
                     trusted_height = client_meta.counterparty_height,
                     client_id = self.client_id,
                     self_chain_id = module.chain_id,
@@ -117,7 +117,7 @@ where
                     [call(FetchUpdateHeaders {
                         client_type: client_info.client_type,
                         counterparty_chain_id: module.chain_id.clone(),
-                        chain_id: client_meta.chain_id,
+                        chain_id: client_meta.counterparty_chain_id,
                         client_id: RawClientId::new(self.client_id.clone()),
                         update_from: client_meta.counterparty_height,
                         update_to: latest_height,

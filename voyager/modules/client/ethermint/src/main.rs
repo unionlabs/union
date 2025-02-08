@@ -82,7 +82,7 @@ impl ClientModuleServer for Module {
         let cs = self.decode_client_state(&client_state)?;
 
         Ok(ClientStateMeta {
-            chain_id: ChainId::new(cs.tendermint_client_state.chain_id),
+            counterparty_chain_id: ChainId::new(cs.tendermint_client_state.chain_id),
             counterparty_height: cs.tendermint_client_state.latest_height,
         })
     }

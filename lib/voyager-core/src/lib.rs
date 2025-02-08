@@ -322,7 +322,7 @@ pub struct ClientStateMeta {
     pub counterparty_height: Height,
 
     /// The chain id of the counterparty chain this client tracks.
-    pub chain_id: ChainId,
+    pub counterparty_chain_id: ChainId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

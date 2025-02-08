@@ -211,7 +211,7 @@ impl Module {
         let other_channel_id = self_channel.counterparty_channel_id;
         let other_channel = voyager_rpc_client
             .query_ibc_state(
-                client_meta.chain_id.clone(),
+                client_meta.counterparty_chain_id.clone(),
                 QueryHeight::Latest,
                 ChannelPath {
                     channel_id: other_channel_id,
@@ -241,7 +241,7 @@ impl Module {
         };
 
         Ok((
-            client_meta.chain_id,
+            client_meta.counterparty_chain_id,
             client_info,
             source_channel,
             destination_channel,
@@ -749,7 +749,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.chain_id,
+                    counterparty_chain_id: client_meta.counterparty_chain_id,
                     tx_hash,
                     // TODO: Review this, does it need to be +1?
                     provable_height: self.make_height(height),

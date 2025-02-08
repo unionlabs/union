@@ -271,7 +271,7 @@ impl Server {
 
                 trace!(
                     client_state_meta.height = %meta.counterparty_height,
-                    client_state_meta.chain_id = %meta.chain_id,
+                    client_state_meta.chain_id = %meta.counterparty_chain_id,
                     %client_info.ibc_interface,
                     %client_info.client_type,
                     "fetched client meta"
@@ -548,7 +548,7 @@ impl Server {
 
                 trace!(
                     height = %meta.counterparty_height,
-                    chain_id = %meta.chain_id,
+                    chain_id = %meta.counterparty_chain_id,
                     "decoded client state meta"
                 );
 
