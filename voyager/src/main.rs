@@ -491,6 +491,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 metadata,
                 enqueue,
                 rest_url,
+                client_state_config,
+                consensus_state_config,
             } => {
                 let voyager_config = get_voyager_config()?;
 
@@ -517,6 +519,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     ibc_interface,
                     ibc_spec_id,
                     metadata,
+                    client_state_config,
+                    consensus_state_config,
                 )
                 .await?;
 
@@ -645,6 +649,8 @@ pub mod utils {
         ibc_interface: IbcInterface,
         ibc_spec_id: IbcSpecId,
         metadata: Value,
+        client_state_config: Value,
+        consensus_state_config: Value,
     ) -> anyhow::Result<Op<VoyagerMessage>> {
         if height == QueryHeight::Latest {
             // TODO: Also check if a specific height was passed and ensure that that height is also finalized
@@ -662,12 +668,12 @@ pub mod utils {
             .client_bootstrap_module(&counterparty_chain_id, &client_type)?;
 
         let self_client_state = counterparty_client_bootstrap_module
-            .self_client_state(height)
+            .self_client_state(height, client_state_config)
             .await?;
         trace!(%self_client_state);
 
         let self_consensus_state = counterparty_client_bootstrap_module
-            .self_consensus_state(height)
+            .self_consensus_state(height, consensus_state_config)
             .await?;
         trace!(%self_consensus_state);
 

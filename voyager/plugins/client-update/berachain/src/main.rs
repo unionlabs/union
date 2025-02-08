@@ -146,7 +146,7 @@ impl Module {
             proof: account_update
                 .account_proof
                 .into_iter()
-                .map(|x| x.to_vec())
+                .map(|x| x.into())
                 .collect(),
         })
     }

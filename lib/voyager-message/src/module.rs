@@ -440,13 +440,17 @@ pub trait ClientBootstrapModule {
     ///
     /// Returns the client state value as JSON, which will then be encoded to
     /// bytes by a ClientModule.
+    ///
+    /// This also accepts a config value as arbitrary json that can be used for client-specific configuration parameters.
     #[method(name = "selfClientState", with_extensions)]
-    async fn self_client_state(&self, height: Height) -> RpcResult<Value>;
+    async fn self_client_state(&self, height: Height, config: Value) -> RpcResult<Value>;
 
     /// The consensus state of this chain at the specified [`Height`].
     ///
     /// Returns the consensus state value as JSON, which will then be encoded to
     /// bytes by a ClientModule.
+    ///
+    /// This also accepts a config value as arbitrary json that can be used for client-specific configuration parameters.
     #[method(name = "selfConsensusState", with_extensions)]
-    async fn self_consensus_state(&self, height: Height) -> RpcResult<Value>;
+    async fn self_consensus_state(&self, height: Height, config: Value) -> RpcResult<Value>;
 }

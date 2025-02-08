@@ -18,6 +18,7 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientType},
+    ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
     ClientBootstrapModule,
 };
@@ -144,7 +145,14 @@ pub enum ModuleInitError {
 #[async_trait]
 impl ClientBootstrapModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
+    async fn self_client_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        config: Value,
+    ) -> RpcResult<Value> {
+        ensure_null(config)?;
+
         let ledger_version = self.ledger_version_of_height(height.height()).await;
 
         let vault_addr = self
@@ -188,7 +196,14 @@ impl ClientBootstrapModuleServer for Module {
 
     /// The consensus state on this chain at the specified `Height`.
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn self_consensus_state(&self, _: &Extensions, _height: Height) -> RpcResult<Value> {
+    async fn self_consensus_state(
+        &self,
+        _: &Extensions,
+        _height: Height,
+        config: Value,
+    ) -> RpcResult<Value> {
+        ensure_null(config)?;
+
         Ok(serde_json::to_value(ConsensusState {
             state_root: Default::default(),
             timestamp: 1000,

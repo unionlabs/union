@@ -608,10 +608,11 @@ impl VoyagerClient {
         chain_id: ChainId,
         client_type: ClientType,
         height: QueryHeight,
+        config: Value,
     ) -> RpcResult<SelfClientState> {
         let client_state = self
             .0
-            .self_client_state(chain_id, client_type, height)
+            .self_client_state(chain_id, client_type, height, config)
             .await
             .map_err(json_rpc_error_to_error_object)?;
         Ok(client_state)
@@ -622,10 +623,11 @@ impl VoyagerClient {
         chain_id: ChainId,
         client_type: ClientType,
         height: QueryHeight,
+        config: Value,
     ) -> RpcResult<SelfConsensusState> {
         let consensus_state = self
             .0
-            .self_consensus_state(chain_id, client_type, height)
+            .self_consensus_state(chain_id, client_type, height, config)
             .await
             .map_err(json_rpc_error_to_error_object)?;
         Ok(consensus_state)
@@ -1042,5 +1044,17 @@ pub fn into_value<T: Debug + Serialize>(t: T) -> Value {
                 std::any::type_name::<T>()
             );
         }
+    }
+}
+
+pub fn ensure_null(value: Value) -> RpcResult<()> {
+    if value == Value::Null {
+        Ok(())
+    } else {
+        Err(ErrorObject::owned(
+            FATAL_JSONRPC_ERROR_CODE,
+            format!("expected null but found {value}"),
+            None::<()>,
+        ))
     }
 }

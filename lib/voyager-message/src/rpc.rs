@@ -96,6 +96,7 @@ pub trait VoyagerRpc {
         chain_id: ChainId,
         client_type: ClientType,
         height: QueryHeight,
+        config: Value,
     ) -> RpcResult<SelfClientState>;
 
     #[method(name = "selfConsensusState", with_extensions)]
@@ -104,6 +105,7 @@ pub trait VoyagerRpc {
         chain_id: ChainId,
         client_type: ClientType,
         height: QueryHeight,
+        config: Value,
     ) -> RpcResult<SelfConsensusState>;
 
     // ======================
