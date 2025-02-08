@@ -46,7 +46,7 @@ impl ClientModule for Module {
     async fn new(_: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::STATE_LENS_ICS23_ICS23)?;
         info.ensure_consensus_type(ConsensusType::TENDERMINT)?;
-        info.ensure_ibc_interface(IbcInterface::IBC_SOLIDITY)?;
+        info.ensure_ibc_interface([IbcInterface::IBC_COSMWASM])?;
         Ok(Self {})
     }
 }
