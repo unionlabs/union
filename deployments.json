@@ -87,6 +87,8 @@
     }
   },
   {
+    "chain_id": "elgafar-1",
+    "ibc_interface": "ibc-cosmwasm",
     "core": {
       "address": "stars1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380teskdmgll",
       "height": 14692209
@@ -108,6 +110,8 @@
     "app": {}
   },
   {
+    "chain_id": "osmo-test-5",
+    "ibc_interface": "ibc-cosmwasm",
     "core": {
       "address": "osmo1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tes4h8h8p",
       "height": 21880854
@@ -129,6 +133,8 @@
     "app": {}
   },
   {
+    "chain_id": "bbn-test-5",
+    "ibc_interface": "ibc-cosmwasm",
     "core": {
       "address": "bbn1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tesmr7mtw",
       "height": 240561
