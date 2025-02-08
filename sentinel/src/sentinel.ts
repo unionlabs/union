@@ -80,6 +80,7 @@ interface ConfigFile {
   transfers?: TransferConfig[] // optional array
   privkeys_for_loadtest?: string[]
   load_test_request: number
+  load_test_enabled: boolean
 }
 
 // The shape of Hasura’s response
@@ -348,9 +349,7 @@ async function doTransfer(task: TransferConfig) {
     //   " denomAddr: ",
     //   task.denomAddress,
     //   " channel: ",
-    //   channel,
-    //   "sending amount:",
-    //   random_amount
+    //   channel
     // )
 
     if (quoteToken.isErr()) {
@@ -506,39 +505,23 @@ function doTransferLoadTest(task: TransferConfig, totalRequests: number, privKey
   const useKeys = privKeys?.length ? privKeys : [task.privateKey]
 
   // Kick off multiple transfers in parallel
-  const promises: Promise<void>[] = []
-
   for (let i = 0; i < totalRequests; i++) {
     const index = i % useKeys.length
     const newPrivateKey = useKeys[index]
     const loadTask = { ...task, privateKey: newPrivateKey } // overwrite the key
     consola.info("Starting transfer", i + 1, "with key", newPrivateKey)
 
-    // if (i > 0 && i % 10 === 0) {
-    //   consola.info(`Sleeping for 10 seconds after ${i} transfers...`)
-    //   sleepSync(5000) // Block the loop for 10 seconds
-    // }
+    if (i > 0 && i % 10 === 0) {
+      consola.info(`Sleeping for 10 seconds after ${i} transfers...`)
+      sleepSync(5000) // Block the loop for 10 seconds
+    }
 
     // Fire the asynchronous function but do NOT await
-    // doTransfer(loadTask).catch(err => {
-    //   // Optionally catch errors so they don't become unhandled rejections
-    //   consola.error(`[LoadTest] Transfer ${i + 1}/${totalRequests} failed:`, err)
-    // })
-
-    const promise = doTransfer(loadTask).catch(err => {
+    doTransfer(loadTask).catch(err => {
+      // Optionally catch errors so they don't become unhandled rejections
       consola.error(`[LoadTest] Transfer ${i + 1}/${totalRequests} failed:`, err)
     })
-    promises.push(promise)
   }
-
-  // Optionally wait for all the transfers to finish.
-  Promise.all(promises)
-    .then(() => {
-      consola.info(`All ${totalRequests} parallel transfers for load test have completed.`)
-    })
-    .catch(err => {
-      consola.error("Error in one of the load test transfers:", err)
-    })
 
   // Since we are not awaiting, this function will return immediately.
   consola.info(`Kicked off ${totalRequests} parallel transfers for load test.`)
@@ -564,7 +547,7 @@ async function main() {
 
   // Load configuration
   const config = loadConfig(configPath)
-  const is_loadtest = config.load_test_request > 0 ? true : false
+  const is_loadtest = config.load_test_enabled ? true : false
   if (is_loadtest) {
     // Run a one-time load test
     const transfers: TransferConfig[] = config.transfers ?? []
@@ -574,9 +557,8 @@ async function main() {
     }
 
     consola.info("========== Starting Load Test ==========")
-    for (const task of transfers) {
-      doTransferLoadTest(task, config.load_test_request, config.privkeys_for_loadtest)
-    }
+    doTransferLoadTest(transfers, config.load_test_request, config.privkeys_for_loadtest)
+
     // You can exit after scheduling them if you don't want
     // to remain running. Or keep the process alive if needed.
     // If you prefer to exit:

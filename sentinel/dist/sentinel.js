@@ -407,7 +407,7 @@ async function main() {
     consola.info(`Using config file: ${configPath}`);
     // Load configuration
     const config = loadConfig(configPath);
-    const is_loadtest = config.load_test_request > 0 ? true : false;
+    const is_loadtest = config.load_test_enabled ? true : false;
     if (is_loadtest) {
         // Run a one-time load test
         const transfers = config.transfers ?? [];
@@ -416,9 +416,7 @@ async function main() {
             return;
         }
         consola.info("========== Starting Load Test ==========");
-        for (const task of transfers) {
-            doTransferLoadTest(task, config.load_test_request, config.privkeys_for_loadtest);
-        }
+        doTransferLoadTest(transfers, config.load_test_request, config.privkeys_for_loadtest);
         // You can exit after scheduling them if you don't want
         // to remain running. Or keep the process alive if needed.
         // If you prefer to exit:

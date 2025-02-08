@@ -19,7 +19,7 @@
     {
       packages = {
         sentinel = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-86UjqPyc1IaU3zxFX8aTudaM9K/KKRjFV4dmsK6TVZg=";
+          npmDepsHash = "sha256-nwEg1OVZSmThD8o7RU0fo3GpVV5xIJcfcEFL53L/BDI=";
           src = ./.;
           sourceRoot = "sentinel";
           npmFlags = [
@@ -115,6 +115,10 @@
           type = types.listOf types.str;
           description = "Array for privkeys_for_loadtest for loadtesting.";
         };
+        load_test_enabled = mkOption {
+          type = types.bool;
+          description = "Is loadtesting enabled?";
+        };
         logLevel = mkOption {
           type = types.str;
           default = "info";
@@ -138,6 +142,7 @@
                   interactions = cfg.interactions;
                   transfers = cfg.transfers;
                   privkeys_for_loadtest = cfg.privkeys_for_loadtest;
+                  load_test_enabled = cfg.load_test_enabled;
                   load_test_request = cfg.load_test_request;
                 })
               }
