@@ -28,12 +28,12 @@ export let chains: Props["chains"]
 export let rotateTo: Props["rotateTo"]
 </script>
 
-<div class="flex flex-col w-full h-full ">
+<div class="flex flex-col w-full h-full">
 
   <div class="text-primary p-2 flex items-center justify-between border-b-2">
     <span class="font-bold uppercase">Transfer</span>
   </div>
-  <div class="flex flex-col h-full w-full justify-between p-4">
+  <div class="flex flex-col h-full w-full justify-between p-4 overflow-y-scroll">
     <div class="flex flex-col gap-2">
       <Direction {rawIntents} {intents} {validation} getSourceChain={() => rotateTo("sourceFace")}
                  getDestinationChain={() => rotateTo("destinationFace")}/>
@@ -71,7 +71,7 @@ export let rotateTo: Props["rotateTo"]
                 }}
         />
         {#if validation.errors.amount}
-          <span class="text-red-500 text-sm">{validation.errors.amount}</span>
+          <span class="text-red-500 text-xs">{validation.errors.amount}</span>
         {/if}
         <Input
                 type="text"
@@ -97,39 +97,43 @@ export let rotateTo: Props["rotateTo"]
           </button>
         {/if}
         {#if validation.errors.receiver}
-          <span class="text-red-500 text-sm">{validation.errors.receiver}</span>
+          <span class="text-red-500 text-xs">{validation.errors.receiver}</span>
         {/if}
       </div>
     </div>
 
-    {#if !intents.channel}
-      <div>No recommended UCS03 channel to go from {toDisplayName($rawIntents.source, chains)}
-        to {toDisplayName($rawIntents.destination, chains)}</div>
-    {:else}
-      <div class="flex flex-col gap-1 justify-end items-center">
-        <div class="flex gap-4 text-muted-foreground text-xs">{intents.channel.source_connection_id}
-          | {intents.channel.source_channel_id}
-          <ArrowRightIcon/>{intents.channel.destination_connection_id} | {intents.channel.destination_channel_id}
+    <div>
+      {#if !intents.channel}
+        <div class="flex justify-center">
+          <p class="text-xs text-center max-w-[230px]">No recommended UCS03 channel to go from {toDisplayName($rawIntents.source, chains)}
+            to {toDisplayName($rawIntents.destination, chains)}</p>
         </div>
-        {#if !$rawIntents.asset}
-          <p class="text-xs">Select an asset</p>
-        {:else if !$rawIntents.source || !$rawIntents.destination}
-          <p class="text-xs">Select source and destination</p>
-        {:else if validation.args === "NO_QUOTE_AVAILABLE"}
-          <div class="text-xs text-center">No Quote Token available for this transfer. Sending new assets to Cosmos is
-            currently not supported and will be enabled in an update soon.
+      {:else}
+        <div class="flex flex-col gap-1 justify-end items-center">
+          <div class="flex gap-4 text-muted-foreground text-xs">{intents.channel.source_connection_id}
+            | {intents.channel.source_channel_id}
+            <ArrowRightIcon/>{intents.channel.destination_connection_id} | {intents.channel.destination_channel_id}
           </div>
-        {:else if intents.quoteToken}
-          <div class="flex-1 flex flex-col items-center text-xs">
-            <Token chainId={$rawIntents.destination} denom={intents.quoteToken} {chains}/>
-          </div>
-          {#if validation.isValid}
-            <Address address={intents.receiver} {chains} chainId={intents.channel.destination_chain_id}/>
+          {#if !$rawIntents.asset}
+            <p class="text-xs">Select an asset</p>
+          {:else if !$rawIntents.source || !$rawIntents.destination}
+            <p class="text-xs">Select source and destination</p>
+          {:else if validation.args === "NO_QUOTE_AVAILABLE"}
+            <div class="text-xs text-center">No Quote Token available for this transfer. Sending new assets to Cosmos is
+              currently not supported and will be enabled in an update soon.
+            </div>
+          {:else if intents.quoteToken}
+            <div class="flex-1 flex flex-col items-center text-xs">
+              <Token chainId={$rawIntents.destination} denom={intents.quoteToken} {chains}/>
+            </div>
+            {#if validation.isValid}
+              <Address address={intents.receiver} {chains} chainId={intents.channel.destination_chain_id}/>
+            {/if}
           {/if}
-        {/if}
-        <Button class="w-full mt-2" disabled={!validation.isValid} on:click={() => rotateTo("verifyFace")}>Transfer
-        </Button>
-      </div>
-    {/if}
+        </div>
+      {/if}
+      <Button class="w-full mt-2" disabled={!validation.isValid} on:click={() => rotateTo("verifyFace")}>Transfer
+      </Button>
+    </div>
   </div>
 </div>

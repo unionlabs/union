@@ -11,6 +11,9 @@ type CubeFaces =
   | "destinationFace"
 
 let currentRotation = { x: 0, y: 0 }
+let currentFace: CubeFaces = "intentFace"
+let targetFace: CubeFaces = currentFace
+let isRotating = false
 
 const facePositions = {
   intentFace: 0,
@@ -35,20 +38,33 @@ function findShortestRotation(current: number, target: number): number {
   return current + diff
 }
 
+function handleTransitionEnd(e: TransitionEvent) {
+  if (e.propertyName === "transform") {
+    console.log(`Rotation completed at ${new Date().toISOString()}`)
+    isRotating = false
+    currentFace = targetFace
+  }
+}
+
 function rotateTo(face: CubeFaces) {
-  console.log("rotate to: ", face)
-  const targetRotation = facePositions[face]
+  targetFace = face
+  isRotating = true
 
-  // Calculate the new Y rotation
-  const newY = findShortestRotation(currentRotation.y, targetRotation)
-  currentRotation = { x: 0, y: newY }
-
-  // Update visibility state
+  // Update visibility state immediately
   if (face === "sourceFace") {
     currentVisibleFace = "source"
   } else if (face === "destinationFace") {
     currentVisibleFace = "destination"
   }
+
+  // Delay the rotation by 100ms
+  setTimeout(() => {
+    const targetRotation = facePositions[face]
+
+    // Calculate the new Y rotation
+    const newY = findShortestRotation(currentRotation.y, targetRotation)
+    currentRotation = { x: 0, y: newY }
+  }, 100)
 }
 
 //If we want to be specific we can set each w
@@ -70,43 +86,76 @@ $: width =
             : // sm breakpoint
               300 // Default for smaller screens
 
-$: height = width * 1.5
+$: height = width * 1.6
 $: translateZ = width / 2
 </script>
 
-<div class="h-screen w-full flex items-center justify-center perspective-[2000px]">
-  <div
-          class="relative transform-style-preserve-3d transition-transform duration-500"
-          style={`width: ${width}px; height: ${height}px; transform: rotateX(${currentRotation.x}deg) rotateY(${currentRotation.y}deg)`}
-  >
-    <FaceWrapper {width} {height} {translateZ} visible rotateY={"0deg"}>
-      <slot name="intent" {rotateTo}/>
-    </FaceWrapper>
+<div class="h-screen w-full flex items-center justify-center">
+  {#if isRotating}
+    <div
+            class="relative transform-style-preserve-3d transition-transform duration-500 h-full"
+            style={`width: ${width}px; height: ${height}px; transform: rotateX(${currentRotation.x}deg) rotateY(${currentRotation.y}deg)`}
+            on:transitionend={handleTransitionEnd}
+    >
+      <FaceWrapper {width} {height} {translateZ} rotateY={"0deg"}>
+        <slot name="intent" {rotateTo}/>
+      </FaceWrapper>
 
-    <!--Source and destination is on the same degree, we just hide one depending on clicked intent.-->
-    <!--By doing this we can "layer" faces and reuse the rotation-->
-    <FaceWrapper {width} {height} {translateZ} visible={currentVisibleFace === 'source'} rotateY={"90deg"}>
-      <slot name="source" {rotateTo}/>
-    </FaceWrapper>
+      {#if currentVisibleFace === 'source'}
+        <FaceWrapper {width} {height} {translateZ} rotateY={"90deg"}>
+          <slot name="source" {rotateTo}/>
+        </FaceWrapper>
+      {:else if currentVisibleFace === 'destination'}
+        <FaceWrapper {width} {height} {translateZ} rotateY={"90deg"}>
+          <slot name="destination" {rotateTo}/>
+        </FaceWrapper>
+      {/if}
 
-    <FaceWrapper {width} {height} {translateZ} visible={currentVisibleFace === 'destination'} rotateY={"90deg"}>
-      <slot name="destination" {rotateTo}/>
-    </FaceWrapper>
+      <FaceWrapper {width} {height} {translateZ} rotateY={"270deg"}>
+        <slot name="assets" {rotateTo}/>
+      </FaceWrapper>
 
-    <FaceWrapper {width} {height} {translateZ} visible rotateY={"270deg"}>
-      <slot name="assets" {rotateTo}/>
-    </FaceWrapper>
-
-    <FaceWrapper {width} {height} {translateZ} visible rotateY={"180deg"}>
-      <slot name="transfer" {rotateTo}/>
-    </FaceWrapper>
-  </div>
+      <FaceWrapper {width} {height} {translateZ} rotateY={"180deg"}>
+        <slot name="transfer" {rotateTo}/>
+      </FaceWrapper>
+    </div>
+  {:else}
+    <div
+            class="relative   h-full"
+            style={`width: ${width}px; height: ${height}px;`}
+            on:transitionend={handleTransitionEnd}
+    >
+      {#if currentFace === "intentFace"}
+        <div class="bg-muted border-2 h-full w-full" style={`width: ${width}px; height: ${height}px"`}>
+          <slot name="intent" {rotateTo}/>
+        </div>
+      {:else if currentFace === "destinationFace" || currentFace === "sourceFace"}
+        {#if currentVisibleFace === 'source'}
+          <div class="bg-muted border-2 h-full w-full" style={`width: ${width}px; height: ${height}px;`}>
+            <slot name="source" {rotateTo}/>
+          </div>
+        {:else if currentVisibleFace === 'destination'}
+          <div class="bg-muted border-2 h-full w-full" style={`width: ${width}px; height: ${height}px;`}>
+            <slot name="destination" {rotateTo}/>
+          </div>
+        {/if}
+      {:else if currentFace === 'assetsFace'}
+        <div class="bg-muted border-2 h-full w-full" style={`width: ${width}px; height: ${height}px;`}>
+          <slot name="assets" {rotateTo}/>
+        </div>
+      {:else if currentFace === "verifyFace"}
+        <div class="bg-muted border-2 h-full w-full" style={`width: ${width}px; height: ${height}px;`}>
+          <slot name="transfer" {rotateTo}/>
+        </div>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <style>
-  .perspective-\[2000px\] {
-    perspective: 2000px;
-  }
+.perspective {
+  perspective: 2000px;
+}
 
   .transform-style-preserve-3d {
     transform-style: preserve-3d;

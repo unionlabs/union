@@ -39,7 +39,7 @@ export let getDestinationChain: Props["getDestinationChain"]
     {/if}
   </Button>
   {#if validation.errors.source}
-    <p class="text-red-500 text-sm">{validation.errors.source}</p>
+    <p class="text-red-500 text-xs">{validation.errors.source}</p>
   {/if}
   <Button
           variant="outline"
@@ -57,6 +57,6 @@ export let getDestinationChain: Props["getDestinationChain"]
     {/if}
   </Button>
   {#if validation.errors.destination}
-    <p class="text-red-500 text-sm"> {validation.errors.destination}</p>
+    <p class="text-red-500 text-xs"> {validation.errors.destination}</p>
   {/if}
 </div>

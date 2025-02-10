@@ -15,7 +15,6 @@ import { checkValidation } from "$lib/components/TransferFrom/transfer/validatio
 import { createIntents } from "$lib/components/TransferFrom/transfer/intents.ts"
 import { balances } from "$lib/stores/balances.ts"
 import { tokenInfos } from "$lib/stores/tokens.ts"
-import { fromHex, type Hex } from "viem"
 
 export let chains: Array<Chain>
 export let ucs03channels: Array<Ucs03Channel>
