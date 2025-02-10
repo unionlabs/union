@@ -2,6 +2,13 @@
 title: "ibc-union deployments"
 ---
 
-:::warning
+import ContractDeploymentsTable from '#/components/svelte/tables/ContractDeploymentsTable.svelte'
+import ChannelsTable from '#/components/svelte/tables/ChannelsTable.svelte'
 
-The contents of this file have been moved to [deployments.json](https://github.com/unionlabs/union/blob/main/deployments.json).
+All deployments of the `ibc-union` stack, light-clients, and `ucs*` apps built on Union.
+
+## Contracts
+<ContractDeploymentsTable client:only='svelte' />
+
+## Channels
+<ChannelsTable client:only='svelte' />

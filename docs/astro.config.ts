@@ -155,6 +155,10 @@ export default defineConfig({
                   link: "/protocol/overview"
                 },
                 {
+                  label: "Deployments",
+                  link: "/protocol/deployments"
+                },
+                {
                   label: "Chains",
                   autogenerate: {
                     directory: "/protocol/chains"
