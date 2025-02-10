@@ -74,9 +74,12 @@ pub struct MigrateMsg {}
 
 #[cw_serde]
 pub enum QueryMsg {
+    /// Calculate the wrapped token denom
     PredictWrappedToken {
         path: String,
+        /// Destination channel id
         channel: u32,
+        /// Base token denom
         token: Bytes,
     },
 }

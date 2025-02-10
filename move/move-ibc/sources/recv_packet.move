@@ -125,7 +125,7 @@ module ibc::recv_packet {
             if (!set_packet_receive(commitment_key)) {
                 let acknowledgement =
                     if (intent) {
-                        let param = helpers::pack_recv_intent_packet_params(packet);
+                        let param = helpers::pack_recv_intent_packet_params(packet, @ibc, b"");
                         engine::dispatch<T>(param);
 
                         let ack = dispatcher::get_return_value<T>();
@@ -134,7 +134,7 @@ module ibc::recv_packet {
                         ibc::emit_recv_intent_packet(packet);
                         ack
                     } else {
-                        let param = helpers::pack_recv_packet_params(packet);
+                        let param = helpers::pack_recv_packet_params(packet, @ibc, b"");
                         engine::dispatch<T>(param);
 
                         let ack = dispatcher::get_return_value<T>();

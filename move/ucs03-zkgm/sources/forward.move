@@ -1,9 +1,8 @@
 module zkgm::forward {
-    use zkgm::ethabi;
+    use zkgm::zkgm_ethabi;
     use zkgm::instruction::{Self, Instruction};
 
     use std::vector;
-    use std::string::{Self};
 
     struct Forward has copy, drop, store {
         channel_id: u32,
@@ -30,26 +29,26 @@ module zkgm::forward {
 
     public fun encode(forward: &Forward): vector<u8> {
         let buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u32>(&mut buf, forward.channel_id);
-        ethabi::encode_uint<u64>(&mut buf, forward.timeout_height);
-        ethabi::encode_uint<u64>(&mut buf, forward.timeout_timestamp);
-        ethabi::encode_uint<u8>(&mut buf, 0x80);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u32>(&mut buf, forward.channel_id);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, forward.timeout_height);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, forward.timeout_timestamp);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x80);
         let ins_buf = instruction::encode(&forward.instruction);
         vector::append(&mut buf, ins_buf);
         buf
     }
 
     public fun decode(buf: &vector<u8>, index: &mut u64): Forward {
-        let channel_id = ethabi::decode_uint(buf, index);
-        let timeout_height = ethabi::decode_uint(buf, index);
-        let timeout_timestamp = ethabi::decode_uint(buf, index);
+        let channel_id = zkgm_ethabi::decode_uint(buf, index);
+        let timeout_height = zkgm_ethabi::decode_uint(buf, index);
+        let timeout_timestamp = zkgm_ethabi::decode_uint(buf, index);
         *index = *index + 0x20;
 
-        let version = (ethabi::decode_uint(buf, index) as u8);
-        let opcode = (ethabi::decode_uint(buf, index) as u8);
+        let version = (zkgm_ethabi::decode_uint(buf, index) as u8);
+        let opcode = (zkgm_ethabi::decode_uint(buf, index) as u8);
         *index = *index + 0x20;
-        let operand = ethabi::decode_bytes(buf, index);
+        let operand = zkgm_ethabi::decode_bytes(buf, index);
 
         let instruction = instruction::new(version, opcode, operand);
 
@@ -81,7 +80,7 @@ module zkgm::forward {
         };
 
         let ack_bytes = encode(&forward_data);
-        std::debug::print(&string::utf8(b"ack bytes: "));
+        std::debug::print(&std::string::utf8(b"ack bytes: "));
         std::debug::print(&ack_bytes);
         assert!(ack_bytes == output, 0);
 

@@ -1,5 +1,5 @@
 module zkgm::multiplex {
-    use zkgm::ethabi;
+    use zkgm::zkgm_ethabi;
 
     use std::vector;
 
@@ -39,26 +39,26 @@ module zkgm::multiplex {
         let buf = vector::empty();
 
         let sender = vector::empty();
-        ethabi::encode_bytes(&mut sender, &multiplex.sender);
+        zkgm_ethabi::encode_bytes(&mut sender, &multiplex.sender);
         let contract_address = vector::empty();
-        ethabi::encode_bytes(&mut contract_address, &multiplex.contract_address);
+        zkgm_ethabi::encode_bytes(&mut contract_address, &multiplex.contract_address);
         let contract_calldata = vector::empty();
-        ethabi::encode_bytes(&mut contract_calldata, &multiplex.contract_calldata);
+        zkgm_ethabi::encode_bytes(&mut contract_calldata, &multiplex.contract_calldata);
 
         let dyn_offset = 0x20 * 4;
         // sender offset
-        ethabi::encode_uint<u64>(&mut buf, dyn_offset);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
         dyn_offset = dyn_offset + vector::length(&sender);
         if (multiplex.eureka) {
-            ethabi::encode_uint<u8>(&mut buf, 1);
+            zkgm_ethabi::encode_uint<u8>(&mut buf, 1);
         } else {
-            ethabi::encode_uint<u8>(&mut buf, 0);
+            zkgm_ethabi::encode_uint<u8>(&mut buf, 0);
         };
         // contract address offset
-        ethabi::encode_uint<u64>(&mut buf, dyn_offset);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
         dyn_offset = dyn_offset + vector::length(&contract_address);
         // contract calldata offset
-        ethabi::encode_uint<u64>(&mut buf, dyn_offset);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
 
         vector::append(&mut buf, sender);
         vector::append(&mut buf, contract_address);
@@ -70,11 +70,11 @@ module zkgm::multiplex {
     public fun decode(buf: &vector<u8>): Multiplex {
         let index = 0;
         Multiplex {
-            sender: ethabi::decode_bytes_from_offset(buf, &mut index),
-            eureka: if (ethabi::decode_uint(buf, &mut index) == 0) { false }
+            sender: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+            eureka: if (zkgm_ethabi::decode_uint(buf, &mut index) == 0) { false }
             else { true },
-            contract_address: ethabi::decode_bytes_from_offset(buf, &mut index),
-            contract_calldata: ethabi::decode_bytes_from_offset(buf, &mut index)
+            contract_address: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+            contract_calldata: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index)
         }
     }
 
@@ -82,12 +82,12 @@ module zkgm::multiplex {
         sender: vector<u8>, contract_calldata: vector<u8>
     ): vector<u8> {
         let buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u8>(&mut buf, 0x40);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x40);
         let length_of_first = vector::length(&sender);
-        ethabi::encode_uint<u64>(&mut buf, ((length_of_first / 32) * 0x20) + 0x80);
-        ethabi::encode_bytes(&mut buf, &sender);
-        ethabi::encode_bytes(&mut buf, &contract_calldata);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, ((length_of_first / 32) * 0x20) + 0x80);
+        zkgm_ethabi::encode_bytes(&mut buf, &sender);
+        zkgm_ethabi::encode_bytes(&mut buf, &contract_calldata);
         buf
     }
 

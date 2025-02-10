@@ -1,7 +1,7 @@
 module zkgm::fungible_asset_order {
-    use zkgm::ethabi;
+    use zkgm::zkgm_ethabi;
 
-    use std::string::{Self, String};
+    use std::string::String;
     use std::vector;
 
     struct FungibleAssetOrder has copy, drop, store {
@@ -80,39 +80,39 @@ module zkgm::fungible_asset_order {
         let buf = vector::empty();
 
         let sender = vector::empty();
-        ethabi::encode_bytes(&mut sender, &order.sender);
+        zkgm_ethabi::encode_bytes(&mut sender, &order.sender);
         let receiver = vector::empty();
-        ethabi::encode_bytes(&mut receiver, &order.receiver);
+        zkgm_ethabi::encode_bytes(&mut receiver, &order.receiver);
         let base_token = vector::empty();
-        ethabi::encode_bytes(&mut base_token, &order.base_token);
+        zkgm_ethabi::encode_bytes(&mut base_token, &order.base_token);
         let base_token_symbol = vector::empty();
-        ethabi::encode_string(&mut base_token_symbol, &order.base_token_symbol);
+        zkgm_ethabi::encode_string(&mut base_token_symbol, &order.base_token_symbol);
         let base_token_name = vector::empty();
-        ethabi::encode_string(&mut base_token_name, &order.base_token_name);
+        zkgm_ethabi::encode_string(&mut base_token_name, &order.base_token_name);
         let quote_token = vector::empty();
-        ethabi::encode_bytes(&mut quote_token, &order.quote_token);
+        zkgm_ethabi::encode_bytes(&mut quote_token, &order.quote_token);
 
         let dyn_offset = 0x20 * 9;
         // sender offset
-        ethabi::encode_uint<u64>(&mut buf, dyn_offset);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
         dyn_offset = dyn_offset + vector::length(&sender);
         // receiver offset
-        ethabi::encode_uint<u64>(&mut buf, dyn_offset);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
         dyn_offset = dyn_offset + vector::length(&receiver);
         // base_token offset
-        ethabi::encode_uint<u64>(&mut buf, dyn_offset);
-        ethabi::encode_uint<u256>(&mut buf, order.base_amount);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, order.base_amount);
         dyn_offset = dyn_offset + vector::length(&base_token);
         // base_token_symbol offset
-        ethabi::encode_uint<u64>(&mut buf, dyn_offset);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
         dyn_offset = dyn_offset + vector::length(&base_token_symbol);
         // base_token_name offset
-        ethabi::encode_uint<u64>(&mut buf, dyn_offset);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
         dyn_offset = dyn_offset + vector::length(&base_token_name);
-        ethabi::encode_uint<u256>(&mut buf, order.base_token_path);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, order.base_token_path);
         // quote_token offset
-        ethabi::encode_uint<u64>(&mut buf, dyn_offset);
-        ethabi::encode_uint<u256>(&mut buf, order.quote_amount);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, order.quote_amount);
 
         vector::append(&mut buf, sender);
         vector::append(&mut buf, receiver);
@@ -127,15 +127,15 @@ module zkgm::fungible_asset_order {
     public fun decode(buf: &vector<u8>): FungibleAssetOrder {
         let index = 0;
         FungibleAssetOrder {
-            sender: ethabi::decode_bytes_from_offset(buf, &mut index),
-            receiver: ethabi::decode_bytes_from_offset(buf, &mut index),
-            base_token: ethabi::decode_bytes_from_offset(buf, &mut index),
-            base_amount: ethabi::decode_uint(buf, &mut index),
-            base_token_symbol: ethabi::decode_string_from_offset(buf, &mut index),
-            base_token_name: ethabi::decode_string_from_offset(buf, &mut index),
-            base_token_path: ethabi::decode_uint(buf, &mut index),
-            quote_token: ethabi::decode_bytes_from_offset(buf, &mut index),
-            quote_amount: ethabi::decode_uint(buf, &mut index)
+            sender: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+            receiver: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+            base_token: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+            base_amount: zkgm_ethabi::decode_uint(buf, &mut index),
+            base_token_symbol: zkgm_ethabi::decode_string_from_offset(buf, &mut index),
+            base_token_name: zkgm_ethabi::decode_string_from_offset(buf, &mut index),
+            base_token_path: zkgm_ethabi::decode_uint(buf, &mut index),
+            quote_token: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+            quote_amount: zkgm_ethabi::decode_uint(buf, &mut index)
         }
     }
 

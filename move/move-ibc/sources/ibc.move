@@ -738,8 +738,8 @@ module ibc::ibc {
             channel::new(
                 CHAN_STATE_INIT,
                 get_counterparty_connection(connection_id),
-                counterparty_channel_id,
-                counterparty_port_id,
+                0,
+                bcs::to_bytes(&port_id),
                 counterparty_version
             );
 

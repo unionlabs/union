@@ -1,5 +1,5 @@
 module zkgm::fungible_asset_order_ack {
-    use zkgm::ethabi;
+    use zkgm::zkgm_ethabi;
 
     use std::vector;
 
@@ -22,17 +22,17 @@ module zkgm::fungible_asset_order_ack {
 
     public fun encode(ack: &FungibleAssetOrderAck): vector<u8> {
         let buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
 
         let version_offset = 0x40;
-        ethabi::encode_uint<u32>(&mut buf, version_offset);
+        zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
 
-        ethabi::encode_vector<u8>(
+        zkgm_ethabi::encode_vector<u8>(
             &mut buf,
             &ack.market_maker,
             |some_variable, data| {
-                ethabi::encode_uint<u8>(some_variable, *data);
+                zkgm_ethabi::encode_uint<u8>(some_variable, *data);
             }
         );
         buf
@@ -40,14 +40,14 @@ module zkgm::fungible_asset_order_ack {
 
     public fun decode(buf: &vector<u8>): FungibleAssetOrderAck {
         let index = 0x20;
-        let fill_type = ethabi::decode_uint(buf, &mut index);
+        let fill_type = zkgm_ethabi::decode_uint(buf, &mut index);
         index = index + 0x20;
         let market_maker =
-            ethabi::decode_vector<u8>(
+            zkgm_ethabi::decode_vector<u8>(
                 buf,
                 &mut index,
                 |buf, index| {
-                    (ethabi::decode_uint(buf, index) as u8)
+                    (zkgm_ethabi::decode_uint(buf, index) as u8)
                 }
             );
 

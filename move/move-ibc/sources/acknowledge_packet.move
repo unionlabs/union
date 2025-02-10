@@ -89,7 +89,7 @@ module ibc::acknowledge_packet {
             let acknowledgement = *vector::borrow(&acknowledgements, i);
             // onAcknowledgementPacket(...)
 
-            let param = helpers::pack_acknowledge_packet_params(packet, acknowledgement);
+            let param = helpers::pack_acknowledge_packet_params(packet, acknowledgement, @ibc);
             engine::dispatch<T>(param);
 
             dispatcher::delete_storage<T>();

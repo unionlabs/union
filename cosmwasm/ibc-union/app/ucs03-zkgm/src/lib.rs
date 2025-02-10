@@ -68,5 +68,5 @@ pub enum ContractError {
     #[error("contract creation event not found during handling `reply`")]
     ContractCreationEventNotFound,
     #[error("{0:?}")]
-    U256Parse(ParseError),
+    InvalidPath(ParseError),
 }

@@ -1137,7 +1137,7 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
             let token = query_predict_wrapped_token(
                 deps,
                 &minter,
-                path.parse().map_err(ContractError::U256Parse)?,
+                path.parse().map_err(ContractError::InvalidPath)?,
                 channel,
                 token,
             )?;

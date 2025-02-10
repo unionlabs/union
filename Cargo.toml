@@ -94,6 +94,7 @@ members = [
   "cosmwasm/ibc-union/lightclient/tendermint",
   "cosmwasm/ibc-union/lightclient/movement",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt",
+  "cosmwasm/ibc-union/lightclient/state-lens-ics23-smt",
 
   # these will all be re enabled and updated once ethereum-light-client is updated
   # "cosmwasm/ibc-union/lightclient/scroll",
