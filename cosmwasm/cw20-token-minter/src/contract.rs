@@ -8,7 +8,7 @@ use cosmwasm_std::{
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use ucs03_zkgm_token_minter_api::{
     ExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse, QueryMsg,
-    WrappedTokenMsg,
+    WrappedTokenMsg, DISPATCH_EVENT, DISPATCH_EVENT_ATTR,
 };
 use unionlabs::{ethereum::keccak256, primitives::H256};
 
@@ -146,7 +146,8 @@ pub fn execute(
                     vec![],
                 )?;
                 Response::new().add_event(
-                    Event::new("dispatch").add_attribute("msg", to_json_string(&vec![msg])?),
+                    Event::new(DISPATCH_EVENT)
+                        .add_attribute(DISPATCH_EVENT_ATTR, to_json_string(&vec![msg])?),
                 )
             }
         },
