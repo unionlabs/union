@@ -7,8 +7,6 @@ head:
     content: Channels Overview
 ---
 
-import ChannelsTable from '#/components/svelte/tables/ChannelsTable.svelte'
-
 ### Identifier
 
 Each channel has a `connection-id` and `channel-id`, uniquely identifying the channel on that specific chain. Note that these identifiers
@@ -40,9 +38,3 @@ they can be fully custom, like
 
 Which was created by the [ICA](https://github.com/cosmos/ibc/tree/main/spec/app/ics-027-interchain-accounts) module. Custom
 versions should only be used if you created the channel or have a deep understanding of the protocol.
-
-### Channels Table
-
-This table provides live information on current channels. 
-
-<ChannelsTable client:only='svelte' />
