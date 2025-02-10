@@ -9,7 +9,7 @@ import * as Table from "#/components/svelte/ui/table/index.ts"
 import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 import { graphqlQueryToCurl, splitArray, stringIsJSON } from "#/lib/utilities.ts"
 import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
-import deployments from "~root/deployments.json" with { type: "json" }
+import deployments from "~root/deployments/deployments.json" with { type: "json" }
 </script>
 
 {#each deployments as network}
