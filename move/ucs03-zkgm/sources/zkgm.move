@@ -211,13 +211,6 @@ module zkgm::ibc_app {
         (wrapped_address, salt)
     }
 
-    #[test]
-    fun see_predict() {
-        let (addr, salt) = predict_wrapped_token(0, 2, b"muno");
-        std::debug::print(&addr);
-        std::debug::print(&salt);
-    }
-
     public fun deploy_token(salt: vector<u8>): address acquires SignerRef {
         zkgm::fa_coin::initialize(
             &get_signer(),
