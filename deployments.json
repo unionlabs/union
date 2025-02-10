@@ -114,7 +114,12 @@
           "height": 14692367
         }
       },
-      "app": {}
+      "app": {
+        "ucs03": {
+          "address": "stars1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqsnqksg",
+          "height": 14775531
+        }
+      }
     }
   },
   {
@@ -139,7 +144,12 @@
           "height": 21883107
         }
       },
-      "app": {}
+      "app": {
+        "ucs03": {
+          "address": "osmo1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqnfufgk",
+          "height": 22422709
+        }
+      }
     }
   },
   {
