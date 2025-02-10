@@ -1506,7 +1506,7 @@ where
         idxs.into_iter().flatten().collect::<Vec<_>>(),
         seq([
             call(WaitForHeight {
-                chain_id: client_meta.chain_id,
+                chain_id: client_meta.counterparty_chain_id,
                 height: target_height,
                 finalized: true,
             }),

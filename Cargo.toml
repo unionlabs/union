@@ -189,6 +189,7 @@ members = [
   # "cosmwasm/native-token-minter",
   "cosmwasm/cw20-token-minter",
   "cosmwasm/ucs03-zkgm-token-minter-api",
+  "cosmwasm/cw20-base",
 ]
 
 [workspace.package]

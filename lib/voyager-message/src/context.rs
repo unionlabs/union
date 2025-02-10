@@ -7,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context as _};
 use futures::{
     future,
     stream::{self, FuturesUnordered},
@@ -1065,7 +1065,7 @@ pub fn get_plugin_info(module_config: &PluginConfig) -> anyhow::Result<PluginInf
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .unwrap()
+        .with_context(|| format!("spawning plugin at {}", module_config.path.display()))?
         .wait_with_output()
         .unwrap();
 

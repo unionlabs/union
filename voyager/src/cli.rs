@@ -255,6 +255,7 @@ pub enum RpcCmd {
 }
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum MsgCmd {
     CreateClient {
         #[arg(long, value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
@@ -276,6 +277,22 @@ pub enum MsgCmd {
             default_value_t = serde_json::Value::Null
         )]
         metadata: serde_json::Value,
+
+        #[arg(
+            long,
+            // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
+            value_parser(serde_json::Value::from_str),
+            default_value_t = serde_json::Value::Null
+        )]
+        client_state_config: serde_json::Value,
+
+        #[arg(
+            long,
+            // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
+            value_parser(serde_json::Value::from_str),
+            default_value_t = serde_json::Value::Null
+        )]
+        consensus_state_config: serde_json::Value,
 
         /// Automatically enqueue the op.
         #[arg(long, short = 'e', default_value_t = false)]

@@ -271,7 +271,7 @@ impl Server {
 
                 trace!(
                     client_state_meta.height = %meta.counterparty_height,
-                    client_state_meta.chain_id = %meta.chain_id,
+                    client_state_meta.chain_id = %meta.counterparty_chain_id,
                     %client_info.ibc_interface,
                     %client_info.client_type,
                     "fetched client meta"
@@ -433,6 +433,7 @@ impl Server {
         chain_id: ChainId,
         client_type: ClientType,
         height: Height,
+        config: Value,
     ) -> RpcResult<SelfClientState> {
         self.span()
             .in_scope(|| async {
@@ -445,7 +446,7 @@ impl Server {
                     .with_id(self.item_id);
 
                 let state = client_bootstrap_module
-                    .self_client_state(height)
+                    .self_client_state(height, config)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
@@ -463,6 +464,7 @@ impl Server {
         chain_id: ChainId,
         client_type: ClientType,
         height: QueryHeight,
+        config: Value,
     ) -> RpcResult<SelfConsensusState> {
         self.span()
             .in_scope(|| async {
@@ -477,7 +479,7 @@ impl Server {
                 let height = self.query_height(&chain_id, height).await?;
 
                 let state = client_bootstrap_module
-                    .self_consensus_state(height)
+                    .self_consensus_state(height, config)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
@@ -546,7 +548,7 @@ impl Server {
 
                 trace!(
                     height = %meta.counterparty_height,
-                    chain_id = %meta.chain_id,
+                    chain_id = %meta.counterparty_chain_id,
                     "decoded client state meta"
                 );
 
@@ -716,13 +718,15 @@ impl VoyagerRpcServer for Server {
         chain_id: ChainId,
         client_type: ClientType,
         height: QueryHeight,
+        config: Value,
     ) -> RpcResult<SelfClientState> {
         let item_id = e.try_get().ok().cloned();
         let this = self.with_id(item_id);
 
         let height = this.query_height(&chain_id, height).await?;
 
-        this.self_client_state(chain_id, client_type, height).await
+        this.self_client_state(chain_id, client_type, height, config)
+            .await
     }
 
     async fn self_consensus_state(
@@ -731,9 +735,10 @@ impl VoyagerRpcServer for Server {
         chain_id: ChainId,
         client_type: ClientType,
         height: QueryHeight,
+        config: Value,
     ) -> RpcResult<SelfConsensusState> {
         self.with_id(e.try_get().ok().cloned())
-            .self_consensus_state(chain_id, client_type, height)
+            .self_consensus_state(chain_id, client_type, height, config)
             .await
     }
 

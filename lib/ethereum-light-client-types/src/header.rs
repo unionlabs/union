@@ -113,7 +113,7 @@ mod tests {
             })),
             ibc_account_proof: AccountProof {
                 storage_root: H256::new([0xAA; 32]),
-                proof: vec![b"ooga".to_vec(), b"booga".to_vec()],
+                proof: vec![b"ooga".into(), b"booga".into()],
             },
         }
     }

@@ -14,6 +14,7 @@ pub enum ModuleCall {
 
 #[model]
 pub struct FetchUpdate {
+    pub chain_id: ChainId,
     pub counterparty_chain_id: ChainId,
     pub client_id: u32,
     pub update_from: Height,

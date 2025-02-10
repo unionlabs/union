@@ -40,8 +40,9 @@ impl<F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> Visit<VoyagerMessage> for Up
                 if fetch.chain_id == self.chain_id && fetch.client_type == self.client_type =>
             {
                 info!(
-                    "hooking for update (`{}` on `{}`, {} to {})",
+                    "hooking for update (`{}` on `{}` tracking `{}`, {} to {})",
                     fetch.client_type,
+                    fetch.chain_id,
                     fetch.counterparty_chain_id,
                     fetch.update_from,
                     fetch.update_to

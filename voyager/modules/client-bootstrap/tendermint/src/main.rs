@@ -22,6 +22,7 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientType},
+    ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
     ClientBootstrapModule,
 };
@@ -158,7 +159,14 @@ impl Module {
 #[async_trait]
 impl ClientBootstrapModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
+    async fn self_client_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        config: Value,
+    ) -> RpcResult<Value> {
+        ensure_null(config)?;
+
         let unbonding_period = self.fetch_unbonding_period(height).await;
 
         let commit = self
@@ -211,7 +219,14 @@ impl ClientBootstrapModuleServer for Module {
 
     /// The consensus state on this chain at the specified `Height`.
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
+    async fn self_consensus_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        config: Value,
+    ) -> RpcResult<Value> {
+        ensure_null(config)?;
+
         let commit = self
             .cometbft_client
             .commit(Some(height.height().try_into().unwrap()))

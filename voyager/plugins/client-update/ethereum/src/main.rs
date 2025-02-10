@@ -116,7 +116,7 @@ impl Module {
             proof: account_update
                 .account_proof
                 .into_iter()
-                .map(|x| x.to_vec())
+                .map(|x| x.into())
                 .collect(),
         })
     }
@@ -322,6 +322,11 @@ impl Module {
         counterparty_chain_id: ChainId,
         client_id: RawClientId,
     ) -> Result<Op<VoyagerMessage>, BoxDynError> {
+        if update_from_block_number == update_to_block_number {
+            info!("update is for the same height, noop");
+            return Ok(voyager_vm::data(OrderedHeaders { headers: vec![] }));
+        }
+
         let finality_update = self
             .beacon_api_client
             .finality_update()

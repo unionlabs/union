@@ -23,7 +23,7 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientType},
-    into_value,
+    ensure_null, into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
     ClientBootstrapModule,
 };
@@ -148,7 +148,14 @@ impl ClientBootstrapModule for Module {
 #[async_trait]
 impl ClientBootstrapModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
-    async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
+    async fn self_client_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        config: Value,
+    ) -> RpcResult<Value> {
+        ensure_null(config)?;
+
         let genesis = self.beacon_api_client.genesis().await.unwrap().data;
 
         let spec = self.beacon_api_client.spec().await.unwrap().data;
@@ -172,7 +179,14 @@ impl ClientBootstrapModuleServer for Module {
 
     /// The consensus state on this chain at the specified `Height`.
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
-    async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
+    async fn self_consensus_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        config: Value,
+    ) -> RpcResult<Value> {
+        ensure_null(config)?;
+
         let beacon_slot = self
             .beacon_slot_of_execution_block_number(height.height())
             .await?;

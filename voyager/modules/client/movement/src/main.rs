@@ -92,7 +92,7 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_client_state(&client_state)?;
 
         Ok(ClientStateMeta {
-            chain_id: ChainId::new(cs.chain_id.to_string()),
+            counterparty_chain_id: ChainId::new(cs.chain_id.to_string()),
             counterparty_height: Module::make_height(cs.latest_block_num),
         })
     }

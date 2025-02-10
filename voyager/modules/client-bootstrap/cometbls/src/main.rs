@@ -19,6 +19,7 @@ use unionlabs::{
 };
 use voyager_message::{
     core::{ChainId, ClientType},
+    ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
     ClientBootstrapModule,
 };
@@ -107,7 +108,14 @@ impl Module {
 #[async_trait]
 impl ClientBootstrapModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn self_client_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
+    async fn self_client_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        config: Value,
+    ) -> RpcResult<Value> {
+        ensure_null(config)?;
+
         let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
             self.grpc_url.clone(),
         )
@@ -158,7 +166,14 @@ impl ClientBootstrapModuleServer for Module {
 
     /// The consensus state on this chain at the specified `Height`.
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn self_consensus_state(&self, _: &Extensions, height: Height) -> RpcResult<Value> {
+    async fn self_consensus_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        config: Value,
+    ) -> RpcResult<Value> {
+        ensure_null(config)?;
+
         let commit = self
             .cometbft_client
             .commit(Some(NonZeroU64::new(height.height()).unwrap()))

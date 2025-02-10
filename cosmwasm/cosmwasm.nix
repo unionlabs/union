@@ -82,10 +82,7 @@
           token_minter_path = "${self'.packages.cw20-token-minter}";
           token_minter_config = {
             cw20 = {
-              cw20_base = "${pkgs.fetchurl {
-                url = "https://github.com/CosmWasm/cw-plus/releases/download/v2.0.0/cw20_base.wasm";
-                sha256 = "sha256-TY6Q3TQJkwM/G56OOj7n+Gc8WCypvN2MjPPHRw1lN9U=";
-              }}";
+              cw20_base = "${cw20-base}";
             };
           };
         };
@@ -169,7 +166,7 @@
             max_gas = 10000000;
           };
           apps = {
-            # ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20;
           };
           bech32_prefix = "union";
           lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
@@ -225,7 +222,7 @@
             max_gas = 10000000;
           };
           apps = {
-            # ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20;
           };
           bech32_prefix = "bbn";
           lightclients = [
@@ -260,6 +257,10 @@
 
       ucs03-zkgm = crane.buildWasmContract {
         crateDirFromRoot = "cosmwasm/ibc-union/app/ucs03-zkgm";
+      };
+
+      cw20-base = crane.buildWasmContract {
+        crateDirFromRoot = "cosmwasm/cw20-base";
       };
 
       ibc-union = crane.buildWasmContract {

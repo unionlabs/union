@@ -127,7 +127,7 @@ impl Module {
             .await?;
 
         let latest_finalized_height = voyager_client
-            .query_latest_height(client_meta.chain_id.clone(), true)
+            .query_latest_height(client_meta.counterparty_chain_id.clone(), true)
             .await?;
 
         if client_meta.counterparty_height.height() + max_age < latest_finalized_height.height() {
@@ -137,7 +137,7 @@ impl Module {
                 promise(
                     [call(FetchUpdateHeaders {
                         client_type: client_info.client_type,
-                        chain_id: client_meta.chain_id,
+                        chain_id: client_meta.counterparty_chain_id,
                         counterparty_chain_id: chain_id.clone(),
                         client_id: client_id.clone(),
                         update_from: client_meta.counterparty_height,
