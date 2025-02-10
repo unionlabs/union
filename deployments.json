@@ -89,7 +89,8 @@
           "height": 4139174
         }
       }
-    }
+    },
+    "channels": [1]
   },
   {
     "chain_id": "elgafar-1",
@@ -166,5 +167,113 @@
         }
       }
     }
+  },
+  {
+    "chain_id": "17000",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": "0x64A764A734648fA636525C7e4b3cE38Ca256b647",
+      "deployer": "0xa3cd41bfF71AD19fDDfd901A9773C975A0404D97",
+      "sender": "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177",
+      "core": {
+        "address": "0xfa4E502A3bf5f4Bc3EF0e17960b3Cd868d70E809",
+        "height": 2948771
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x6431abdc60313ec8780F5CCE1535dFe2DD891081",
+          "height": 2948771
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0x6aff0075801a7c870f9a6f363dfb0612edd7e9f0",
+          "height": 3109216
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0x2b3e80f99d88328c6ce2f9185604eef0046a1462",
+          "height": 3108937
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x92735254407859361265B51cDb76583ED7E3359b",
+          "height": 2948771
+        },
+        "ucs03": {
+          "address": "0x7B7872fEc715C787A1BE3f062AdeDc82b3B06144",
+          "height": 3062125
+        }
+      }
+    },
+    "channels": [42]
+  },
+  {
+    "chain_id": "11155111",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": "0x6FD4bf9438fAC8C535218E79191594A879E47E96",
+      "deployer": "0xac6dBD360ABCfe0578e998D359d4F43a5A117219",
+      "sender": "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177",
+      "core": {
+        "address": "0xbad69711Da45A0FF61e2c50b8c9B1F3314742d2b",
+        "height": 7340066
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x0A343260a06576a1f938C18F70FaA7eF2a3a7d4F",
+          "height": 7340066
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0x32b498538a44b7ec9cf11b18c18e793d0804db1b",
+          "height": 7453117
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0x98bba3716dd60969bd43ad7464783771d554fa6a",
+          "height": 7453163
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x271126f4F9B36CE16d9e2eF75691485ddCE11dB6",
+          "height": 7340066
+        },
+        "ucs03": {
+          "address": "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
+          "height": 7405729
+        }
+      }
+    },
+    "channels": []
+  },
+  {
+    "chain_id": "16600",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": "0x4DAB0EF2051932FEeBF4E2f6D73635dFD096099A",
+      "deployer": "0x7311D39eF22267E463Bd8Ff65df42B0896856274",
+      "sender": "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177",
+      "core": {
+        "address": "0x70719A4ca2d463806863b6A86281c93b8854dDC2"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0xA660d4D5Cbe2139f06fB0a65a62a707EB1902B0E"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0xE9455fA4D422D590Bb7B6CDdDaC610C47764A7E4"
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0x45DE9536b822CA21B2166d0AC233c8AAC5937766"
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x8eB3c61FC2ea5084B014Aa8C21578875a0b72706"
+        },
+        "ucs03": {
+          "address": "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa"
+        }
+      }
+    },
+    "channels": []
   }
 ]
