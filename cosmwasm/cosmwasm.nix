@@ -188,7 +188,12 @@
                     migrate \
                     --rpc-url ${rpc_url} \
                     --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
-                    --new-bytecode ${(mk-app ((pkgs.lib.lists.findFirst (a: a.value.name == app) (throw "???") (pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps)).name))} \
+                    --new-bytecode ${
+                      mk-app
+                        (pkgs.lib.lists.findFirst (a: a.value.name == app) (throw "???") (
+                          pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
+                        )).name
+                    } \
                     --private-key ${private_key} \
                     --gas-price ${toString gas_config.gas_price} \
                     --gas-denom ${toString gas_config.gas_denom} \
@@ -475,7 +480,7 @@
                 }) networks
               ))
             )
-            // (builtins.foldl' (a: b: a // b) {} (map chain-migration-scripts networks))
+            // (builtins.foldl' (a: b: a // b) { } (map chain-migration-scripts networks))
             # // (dbg (chain-migration-scripts (builtins.elemAt networks 0)))
             # // (dbg (chain-migration-scripts (builtins.elemAt networks 1)))
             // derivation { name = "cosmwasm-scripts"; };
