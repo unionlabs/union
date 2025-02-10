@@ -21,6 +21,7 @@ use unionlabs::{
     bech32::Bech32,
     cosmos::{base::coin::Coin, tx::fee::Fee},
     primitives::{Bytes, H256},
+    signer::CosmosSigner,
 };
 
 #[derive(clap::Parser)]
@@ -37,7 +38,19 @@ enum App {
         #[command(flatten)]
         gas_config: GasConfigArgs,
     },
-    /// Calculate the addresses of the deployed stack given the deployer. The returned addresses will have the same bech32 prefix as the deployer addresses.
+    Migrate {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long)]
+        private_key: H256,
+        #[arg(long)]
+        address: Bech32<H256>,
+        #[arg(long)]
+        new_bytecode: PathBuf,
+        #[command(flatten)]
+        gas_config: GasConfigArgs,
+    },
+    /// Calculate the addresses of the deployed stack given the deployer. The returned addresses will have the same bech32 prefix as the deployer address.
     Addresses {
         #[arg(long)]
         deployer: Bech32<Bytes>,
@@ -56,6 +69,12 @@ enum App {
         addresses: PathBuf,
         #[arg(long)]
         output: Option<PathBuf>,
+    },
+    AddressOfPrivateKey {
+        #[arg(long)]
+        private_key: H256,
+        #[arg(long)]
+        bech32_prefix: String,
     },
 }
 
@@ -503,6 +522,71 @@ async fn do_main() -> Result<()> {
 
             write_output(output, heights)?;
         }
+        App::Migrate {
+            rpc_url,
+            private_key,
+            address,
+            new_bytecode,
+            gas_config,
+        } => {
+            let new_bytecode = std::fs::read(new_bytecode).context("reading new bytecode")?;
+
+            let ctx = Deployer(Ctx::new(rpc_url, private_key, gas_config.into()).await?);
+
+            let contract_info = ctx
+                .contract_info(address.to_string())
+                .await?
+                .with_context(|| format!("contract {address} does not exist"))?;
+
+            let checksum = ctx.code_checksum(contract_info.code_id).await?.unwrap();
+
+            if checksum == sha2(BYTECODE_BASE_BYTECODE) {
+                bail!("contract {address} has not yet been initiated, it must be fully deployed before it can be migrated")
+            } else if checksum == sha2(&new_bytecode) {
+                info!("contract {address} has already been migrated to this bytecode");
+                return Ok(());
+            }
+
+            let (tx_hash, store_code_response) = ctx
+                .tx::<_, MsgStoreCodeResponse>(
+                    MsgStoreCode {
+                        sender: ctx.signer().to_string(),
+                        wasm_byte_code: new_bytecode,
+                        ..Default::default()
+                    },
+                    "",
+                )
+                .await
+                .context("store code")?;
+
+            info!(
+                %tx_hash,
+                code_id = store_code_response.code_id,
+                "code stored"
+            );
+
+            let (tx_hash, _migrate_response) = ctx
+                .tx::<_, MsgMigrateContractResponse>(
+                    MsgMigrateContract {
+                        sender: ctx.signer().to_string(),
+                        contract: address.to_string(),
+                        code_id: store_code_response.code_id,
+                        msg: json!({ "migrate": {} }).to_string().into_bytes(),
+                    },
+                    "",
+                )
+                .await
+                .context("migrate")?;
+
+            info!(%tx_hash, "migrated");
+        }
+        App::AddressOfPrivateKey {
+            private_key,
+            bech32_prefix,
+        } => println!(
+            "{}",
+            CosmosSigner::from_raw(*private_key.get(), bech32_prefix).unwrap(),
+        ),
     }
 
     Ok(())
@@ -615,28 +699,25 @@ impl Deployer {
         }
     }
 
-    // async fn code_info(&self, code_id: u64) -> Result<Option<H256>> {
-    //     let result = self
-    //         .client()    //         .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryCodeInfoResponse>(
-    //             "/cosmwasm.wasm.v1.Query/CodeInfo",
-    //             &protos::cosmwasm::wasm::v1::QueryCodeInfoRequest { code_id },
-    //             None,
-    //             false,
-    //         )
-    //         .await?
-    //         .into_result();
+    async fn code_checksum(&self, code_id: u64) -> Result<Option<H256>> {
+        let result = self
+            .client()
+            .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryCodeResponse>(
+                "/cosmwasm.wasm.v1.Query/Code",
+                &protos::cosmwasm::wasm::v1::QueryCodeRequest { code_id },
+                None,
+                false,
+            )
+            .await?
+            .into_result();
 
-    //     match result {
-    //         Ok(ok) => Ok(Some(ok.unwrap().checksum.try_into().unwrap())),
-    //         Err(err) => {
-    //             // if err.error_code.get() == 6 && err.codespace == "sdk" {
-    //             //     Ok(None)
-    //             // } else {
-    //             Err(err.into())
-    //             // }
-    //         }
-    //     }
-    // }
+        match result {
+            Ok(ok) => Ok(Some(
+                ok.unwrap().code_info.unwrap().data_hash.try_into().unwrap(),
+            )),
+            Err(err) => Err(err.into()),
+        }
+    }
 
     async fn instantiate_code_id_of_contract(&self, address: String) -> Result<Option<u64>> {
         let result = self.contract_history(address).await?;
