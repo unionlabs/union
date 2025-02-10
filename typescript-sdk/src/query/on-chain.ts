@@ -1,8 +1,9 @@
 import { ofetch } from "ofetch"
-import type { Prettify } from "../types.ts"
+import * as v from "valibot"
 import { Base64, Hex, Json } from "ox"
-import { ResultAsync, err, ok, type Result } from "neverthrow"
+import type { Prettify } from "../types.ts"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { ResultAsync, err, ok, type Result } from "neverthrow"
 import { cosmosRpcs, type CosmosChainId } from "#cosmos/client.ts"
 
 type rpcUrlArgument = { rpcUrl: string }
@@ -39,6 +40,12 @@ type CosmosTransactionReceipt = {
   }
 }
 
+const CW20BalanceSchema = v.object({
+  balance: v.string()
+})
+
+type CW20Balance = v.InferOutput<typeof CW20BalanceSchema>
+
 /**
  * get the balance of a given address for a given cw20 contract
  * @example
@@ -72,8 +79,25 @@ export async function queryCosmosCW20AddressBalance({
     }
   )
 
-  return balance.andThen(balance => ok(balance.balance))
+  return balance.andThen(balance => {
+    const parsed = v.safeParse(CW20BalanceSchema, balance)
+    if (!parsed.success) {
+      return err(
+        new Error(`failed to parse balance for contract ${contractAddress}`, { cause: parsed })
+      )
+    }
+    return ok(parsed.output.balance)
+  })
 }
+
+const CW20TokenMetadataSchema = v.object({
+  name: v.string(),
+  symbol: v.string(),
+  decimals: v.number(),
+  total_supply: v.string()
+})
+
+type CW20TokenMetadata = v.InferOutput<typeof CW20TokenMetadataSchema>
 
 /**
  * get the metadata of a given cw20 contract
@@ -85,7 +109,7 @@ export async function queryCosmosCW20AddressBalance({
  * })
  * ```
  */
-export async function queryCosmosC20TokenMetadata({
+export async function queryCosmosCW20TokenMetadata({
   contractAddress,
   chainId
 }: {
@@ -118,7 +142,13 @@ export async function queryCosmosC20TokenMetadata({
       })
     }
   )
-  return response
+  return response.andThen(response => {
+    const parsed = v.safeParse(CW20TokenMetadataSchema, response)
+    if (!parsed.success) {
+      return err(new Error(`failed to parse token info for contract ${contractAddress}`, { cause: parsed }))
+    }
+    return ok(parsed.output)
+  })
 }
 
 const CW20_PREFIXES = [
