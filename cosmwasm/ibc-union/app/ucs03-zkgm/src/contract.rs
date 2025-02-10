@@ -15,7 +15,7 @@ use ibc_union_msg::{
 use ibc_union_spec::types::Packet;
 use ucs03_zkgm_token_minter_api::{
     LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg, CW20_QUOTE_TOKEN,
-    CW20_TOKEN_ADDRESS, CW20_TOKEN_CREATION_EVENT,
+    CW20_TOKEN_ADDRESS, CW20_TOKEN_CREATION_EVENT, DISPATCH_EVENT, DISPATCH_EVENT_ATTR,
 };
 use unionlabs::{
     ethereum::keccak256,
@@ -853,12 +853,16 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
                 .expect("only if success")
                 .events
                 .into_iter()
-                .find(|e| e.ty == "dispatch")
+                .find(|e| e.ty == format!("wasm-{DISPATCH_EVENT}"))
             else {
                 return Ok(Response::new());
             };
 
-            let Some(attr) = dispatch.attributes.into_iter().find(|a| a.key == "msg") else {
+            let Some(attr) = dispatch
+                .attributes
+                .into_iter()
+                .find(|a| a.key == DISPATCH_EVENT_ATTR)
+            else {
                 return Ok(Response::new());
             };
 
