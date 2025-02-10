@@ -24,6 +24,13 @@ impl CosmosSigner {
         }
     }
 
+    pub fn from_raw(signing_key: [u8; 32], prefix: String) -> Result<Self, k256::ecdsa::Error> {
+        Ok(Self {
+            signing_key: k256::ecdsa::SigningKey::from_bytes(&signing_key.into())?,
+            prefix,
+        })
+    }
+
     pub fn new_from_bytes(
         signing_key_bytes: H256,
         prefix: String,

@@ -118,6 +118,114 @@
           }
         );
 
+      chain-migration-scripts =
+        args@{
+          name,
+          lightclients,
+          apps,
+          private_key,
+          rpc_url,
+          bech32_prefix,
+          gas_config,
+          ...
+        }:
+        (builtins.listToAttrs (
+          map (
+            lc:
+            let
+              name = "${args.name}-migrate-lightclient-${lc}";
+            in
+            {
+              inherit name;
+              value = pkgs.writeShellApplication {
+                inherit name;
+                runtimeInputs = [
+                  ibc-union-contract-addresses
+                  cosmwasm-deployer.packages.cosmwasm-deployer
+                ];
+                text = ''
+                  DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
+                  echo "deployer address: $DEPLOYER"
+                  ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
+
+                  RUST_LOG=info \
+                    cosmwasm-deployer \
+                    migrate \
+                    --rpc-url ${rpc_url} \
+                    --address "$(echo "$ADDRESSES" | jq '.lightclient."${all-lightclients.${lc}.client-type}"' -r)" \
+                    --new-bytecode ${mk-lightclient lc} \
+                    --private-key ${private_key} \
+                    --gas-price ${toString gas_config.gas_price} \
+                    --gas-denom ${toString gas_config.gas_denom} \
+                    --gas-multiplier ${toString gas_config.gas_multiplier} \
+                    --max-gas ${toString gas_config.max_gas} \
+                '';
+              };
+            }
+          ) lightclients
+        ))
+        // (builtins.listToAttrs (
+          map (
+            app:
+            let
+              name = "${args.name}-migrate-app-${app}";
+            in
+            {
+              inherit name;
+              value = pkgs.writeShellApplication {
+                inherit name;
+                runtimeInputs = [
+                  ibc-union-contract-addresses
+                  cosmwasm-deployer.packages.cosmwasm-deployer
+                ];
+                text = ''
+                  DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
+                  echo "deployer address: $DEPLOYER"
+                  ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
+
+                  RUST_LOG=info \
+                    cosmwasm-deployer \
+                    migrate \
+                    --rpc-url ${rpc_url} \
+                    --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
+                    --new-bytecode ${
+                      mk-app
+                        (pkgs.lib.lists.findFirst (a: a.value.name == app) (throw "???") (
+                          pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
+                        )).name
+                    } \
+                    --private-key ${private_key} \
+                    --gas-price ${toString gas_config.gas_price} \
+                    --gas-denom ${toString gas_config.gas_denom} \
+                    --gas-multiplier ${toString gas_config.gas_multiplier} \
+                    --max-gas ${toString gas_config.max_gas} \
+                '';
+              };
+            }
+          ) (builtins.attrNames apps)
+        ))
+      # // (map (
+      #   _a:
+      #   pkgs.writeShellApplication {
+      #     name = "${name}-migrate-app-{a}";
+      #     runtimeInputs = [ cosmwasm-deployer.packages.cosmwasm-deployer ];
+      #     text = ''
+      #       cosmwasm-deployer \
+      #         addresses \
+      #         ${
+      #           pkgs.lib.strings.concatStrings (
+      #             map (l: " --lightclient ${all-lightclients.${l}.client-type}") (builtins.attrNames all-lightclients)
+      #           )
+      #         } \
+      #         ${
+      #           pkgs.lib.strings.concatStrings (map (a: " --${all-apps.${a}.name}") (builtins.attrNames all-apps))
+      #         } \
+      #         --deployer "$1" ''${2+--output $2}
+      #     '';
+      #   }
+      # ) apps)
+      ;
+
       ibc-union-contract-addresses = pkgs.writeShellApplication {
         name = "ibc-union-contract-addresses";
         runtimeInputs = [ cosmwasm-deployer.packages.cosmwasm-deployer ];
@@ -182,7 +290,7 @@
             max_gas = 10000000;
           };
           apps = {
-            # ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20;
           };
           bech32_prefix = "stars";
           lightclients = [
@@ -202,7 +310,7 @@
             max_gas = 300000000;
           };
           apps = {
-            # ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20;
           };
           bech32_prefix = "osmo";
           lightclients = [
@@ -372,6 +480,9 @@
                 }) networks
               ))
             )
+            // (builtins.foldl' (a: b: a // b) { } (map chain-migration-scripts networks))
+            # // (dbg (chain-migration-scripts (builtins.elemAt networks 0)))
+            # // (dbg (chain-migration-scripts (builtins.elemAt networks 1)))
             // derivation { name = "cosmwasm-scripts"; };
         }
         // cosmwasm-deployer.packages
