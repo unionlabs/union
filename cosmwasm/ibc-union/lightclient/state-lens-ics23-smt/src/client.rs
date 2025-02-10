@@ -1,16 +1,16 @@
-use cometbls_light_client::client::CometblsLightClient;
+// use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::Empty;
 use ibc_union_light_client::IbcClient;
-use ibc_union_msg::lightclient::Status;
-use ibc_union_spec::path::ConsensusStatePath;
+use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
+// use ibc_union_spec::path::ConsensusStatePath;
 use movement_light_client_types::ConsensusState as L2ConsensusState;
 use state_lens_ics23_smt_light_client_types::{ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
 use unionlabs::{
     aptos::{account::AccountAddress, storage_proof::StorageProof},
     encoding::{Bincode, DecodeAs, EthAbi},
-    ethereum::{ibc_commitment_key, keccak256},
-    ibc::core::commitment::merkle_proof::MerkleProof,
+    ethereum::{ibc_commitment_key /*keccak256*/},
+    // ibc::core::commitment::merkle_proof::MerkleProof,
     primitives::{H256, U256},
 };
 
@@ -36,11 +36,11 @@ impl IbcClient for StateLensIcs23SmtLightClient {
     type Encoding = Bincode;
 
     fn verify_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
-        height: u64,
-        key: Vec<u8>,
-        storage_proof: Self::StorageProof,
-        value: Vec<u8>,
+        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _height: u64,
+        _key: Vec<u8>,
+        _storage_proof: Self::StorageProof,
+        _value: Vec<u8>,
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         // let client_state = ctx.read_self_client_state()?;
         // let consensus_state = ctx.read_self_consensus_state(height)?;
@@ -101,10 +101,17 @@ impl IbcClient for StateLensIcs23SmtLightClient {
     }
 
     fn verify_creation(
-        _client_state: &Self::ClientState,
+        client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
-        Ok(())
+    ) -> Result<
+        Option<Vec<VerifyCreationResponseEvent>>,
+        ibc_union_light_client::IbcClientError<Self>,
+    > {
+        Ok(Some(vec![VerifyCreationResponseEvent::CreateLensClient {
+            l1_client_id: client_state.l1_client_id,
+            l2_client_id: client_state.l2_client_id,
+            l2_chain_id: client_state.l2_chain_id.clone(),
+        }]))
     }
 
     fn verify_header(

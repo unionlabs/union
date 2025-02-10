@@ -198,9 +198,9 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .and_then(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcMoveAptos => Ok(cs.encode_as::<Bcs>()),
-                SupportedIbcInterface::IbcSolidity => Ok(cs.abi_encode_params()),
+            .map(|cs| match self.ibc_interface {
+                SupportedIbcInterface::IbcMoveAptos => cs.encode_as::<Bcs>(),
+                SupportedIbcInterface::IbcSolidity => cs.abi_encode_params(),
             })
             .map(Into::into)
     }

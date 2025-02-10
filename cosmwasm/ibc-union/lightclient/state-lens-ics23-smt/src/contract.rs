@@ -1,22 +1,13 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, Response, StdResult};
 use ibc_union_light_client::{
-    msg::{InstantiateMsg, QueryMsg},
+    msg::{InitMsg, QueryMsg},
     IbcClientError,
 };
+use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::client::StateLensIcs23SmtLightClient;
-
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn instantiate(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: InstantiateMsg,
-) -> Result<Response, IbcClientError<StateLensIcs23SmtLightClient>> {
-    ibc_union_light_client::instantiate(deps, env, info, msg)
-}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
@@ -29,9 +20,17 @@ pub struct MigrateMsg {}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
-    _deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
-    _msg: MigrateMsg,
+    msg: UpgradeMsg<InitMsg, MigrateMsg>,
 ) -> Result<Response, IbcClientError<StateLensIcs23SmtLightClient>> {
-    Ok(Response::new())
+    msg.run(
+        deps,
+        |deps, init_msg| {
+            let res = ibc_union_light_client::init(deps, init_msg)?;
+
+            Ok((res, None))
+        },
+        |_deps, _migrate_msg, _current_version| Ok((Response::default(), None)),
+    )
 }

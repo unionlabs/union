@@ -11475,6 +11475,7 @@ dependencies = [
  "state-lens-light-client-types",
  "thiserror",
  "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]

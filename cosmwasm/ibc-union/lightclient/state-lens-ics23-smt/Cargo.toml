@@ -29,6 +29,7 @@ state-lens-ics23-smt-light-client-types = { workspace = true, features = ["serde
 state-lens-light-client-types           = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 thiserror                               = { workspace = true }
 unionlabs                               = { workspace = true, features = ["ethabi", "stargate", "bincode"] }
+unionlabs-cosmwasm-upgradable           = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
