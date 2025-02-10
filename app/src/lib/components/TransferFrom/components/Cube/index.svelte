@@ -153,9 +153,9 @@ $: translateZ = width / 2
 </div>
 
 <style>
-  .perspective-\[2000px\] {
-    perspective: 2000px;
-  }
+.perspective {
+  perspective: 2000px;
+}
 
   .transform-style-preserve-3d {
     transform-style: preserve-3d;
