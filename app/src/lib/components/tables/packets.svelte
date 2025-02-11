@@ -16,8 +16,9 @@ import {
 import { timestamp } from "$lib/stores/page.ts"
 import CellCopy from "../table-cells/cell-copy.svelte"
 import { page } from "$app/stores"
-import type { ChainFeature } from "$lib/types.ts"
+import type { Chain, ChainFeature } from "$lib/types.ts"
 
+export let chains: Array<Chain>
 // export let chains: Array<Chain>
 export let chain_id: string | undefined = undefined
 export let connection_id: number | undefined = undefined
@@ -56,12 +57,12 @@ const columns: Array<ColumnDef<PacketRow>> = [
   {
     accessorKey: "source",
     size: 200,
-    cell: info => flexRender(CellOriginChannel, { value: info.getValue() })
+    cell: info => flexRender(CellOriginChannel, { chains, value: info.getValue() })
   },
   {
     accessorKey: "destination",
     size: 200,
-    cell: info => flexRender(CellOriginChannel, { value: info.getValue() })
+    cell: info => flexRender(CellOriginChannel, { chains, value: info.getValue() })
   },
   {
     accessorKey: "send",

@@ -34,7 +34,7 @@ export const load = (loadEvent => ({
     {
       route: "channels",
       icon: ChannelsIcon,
-      description: "Open IBC Channels"
+      description: "Recommended open IBC channels"
     },
     {
       route: "index-status",

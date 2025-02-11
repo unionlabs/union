@@ -1,7 +1,7 @@
 import { raise } from "./utilities/index.ts"
 import { bech32, hex, bytes } from "@scure/base"
 import type { Bech32Address, HexAddress } from "./types.ts"
-import { isValidBech32Address } from "./utilities/address.ts"
+import { isValidBech32Address, isValidBech32ContractAddress } from "./utilities/address.ts"
 
 /**
  * convert a bech32 address (cosmos, osmosis, union addresses) to hex address (evm)
@@ -11,7 +11,7 @@ import { isValidBech32Address } from "./utilities/address.ts"
  * ```
  */
 export function bech32AddressToHex({ address }: { address: string }): HexAddress {
-  if (!isValidBech32Address(address)) raise(`Invalid bech32 address: ${address}`)
+  if (!isValidBech32ContractAddress(address)) raise(`Invalid bech32 address: ${address}`)
   const { bytes } = bech32.decodeToBytes(address)
   return `0x${bytesToHex(bytes)}`
 }
