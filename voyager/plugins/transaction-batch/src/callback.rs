@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use enumorph::Enumorph;
+use futures::{stream::FuturesOrdered, TryFutureExt, TryStreamExt};
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use itertools::Itertools;
@@ -11,7 +12,7 @@ use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::{SubmitTx, WaitForTrustedHeight},
     core::{ChainId, ClientStateMeta, QueryHeight},
-    data::{Data, IbcDatagram, OrderedClientUpdates},
+    data::{Data, IbcDatagram, OrderedHeaders},
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, noop, promise, seq, Op};
@@ -50,7 +51,7 @@ where
         module_server: &Module,
         datas: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
-        let updates: Option<OrderedClientUpdates> = datas
+        let updates: Option<OrderedHeaders> = datas
             .into_iter()
             .exactly_one()
             .map_err(|found| serde_json::to_string(&found.collect::<Vec<_>>()).unwrap())
@@ -72,7 +73,7 @@ where
             .as_ref()
             .map(|updates| {
                 updates
-                    .updates
+                    .headers
                     .last()
                     .expect("must have at least one update")
                     .0
@@ -108,7 +109,7 @@ pub fn make_msgs<V: IbcSpecExt>(
     client_id: V::ClientId,
     batches: Vec<Vec<BatchableEvent<V>>>,
 
-    updates: Option<OrderedClientUpdates>,
+    updates: Option<OrderedHeaders>,
 
     client_meta: ClientStateMeta,
     new_trusted_height: Height,
@@ -167,12 +168,17 @@ pub struct MakeBatchTransaction<V: IbcSpecExt> {
     // NOTE: We could technically fetch this from the information in the callback data messages, but this is just so much easier
     pub client_id: V::ClientId,
     /// Updates to send before the messages in this message's callback data. If this is `None`, then that means the updates have been included in a previous batch, and this will instead be enqueued with a WaitForTrustedHeight in front of it.
-    pub updates: Option<OrderedClientUpdates>,
+    pub updates: Option<OrderedHeaders>,
 }
 
 impl<V: IbcSpecExt> MakeBatchTransaction<V> {
     #[instrument(skip_all, fields(ibc_spec_id = %V::ID, %chain_id, datas_len = datas.len()))]
-    pub fn call(self, chain_id: ChainId, datas: VecDeque<Data>) -> Op<VoyagerMessage> {
+    pub async fn call(
+        self,
+        voyager_client: &VoyagerClient,
+        chain_id: ChainId,
+        datas: VecDeque<Data>,
+    ) -> RpcResult<Op<VoyagerMessage>> {
         if datas.is_empty() {
             warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain");
         }
@@ -201,34 +207,45 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
         //     (IbcMessage::TimeoutPacket(_), IbcMessage::TimeoutPacket(_)) => todo!(),
         // });
 
-        match self.updates {
-            Some(updates) => call(SubmitTx {
-                chain_id,
-                datagrams: updates
-                    .updates
-                    .into_iter()
-                    .map(|(_, msg)| {
-                        assert_eq!(msg.ibc_spec_id, V::ID);
+        let client_info = voyager_client
+            .client_info::<V>(chain_id.clone(), self.client_id.clone())
+            .await?;
 
-                        V::update_client_datagram(
-                            msg.client_id.decode_spec::<V>().unwrap(),
-                            msg.client_message,
-                        )
+        match self.updates {
+            Some(updates) => Ok(call(SubmitTx {
+                chain_id: chain_id.clone(),
+                datagrams: updates
+                    .headers
+                    .into_iter()
+                    .map(|(_, header)| {
+                        voyager_client
+                            .encode_header::<V>(
+                                client_info.client_type.clone(),
+                                client_info.ibc_interface.clone(),
+                                header,
+                            )
+                            .map_ok(|encoded_header| {
+                                V::update_client_datagram(self.client_id.clone(), encoded_header)
+                            })
                     })
+                    .collect::<FuturesOrdered<_>>()
+                    .try_collect::<Vec<_>>()
+                    .await?
+                    .into_iter()
                     .chain(msgs)
                     .map(|e| IbcDatagram::new::<V>(e))
                     .collect::<Vec<_>>(),
-            }),
+            })),
             None => {
                 if msgs.len() == 0 {
-                    noop()
+                    Ok(noop())
                 } else {
                     // TODO: We can probably relax this in the future if we want to reuse this module to work with all IBC messages
                     // NOTE: We assume that all of the IBC messages were generated against the same consensus height
                     let required_consensus_height =
                         V::proof_height(msgs.peek().expect("msgs is non-empty; qed;"));
 
-                    seq([
+                    Ok(seq([
                         call(WaitForTrustedHeight {
                             chain_id: chain_id.clone(),
                             client_id: RawClientId::new(self.client_id.clone()),
@@ -240,7 +257,7 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
                             chain_id,
                             datagrams: msgs.map(IbcDatagram::new::<V>).collect::<Vec<_>>(),
                         }),
-                    ])
+                    ]))
                 }
             }
         }

@@ -523,6 +523,37 @@ impl Server {
     }
 
     // TODO: Use valuable here
+    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_spec_id, %header))]
+    pub async fn encode_header(
+        &self,
+        client_type: &ClientType,
+        ibc_interface: &IbcInterface,
+        ibc_spec_id: &IbcSpecId,
+        header: Value,
+    ) -> RpcResult<Bytes> {
+        self.span()
+            .in_scope(|| async {
+                trace!("encoding header");
+
+                let client_module = self
+                    .inner
+                    .modules()?
+                    .client_module(client_type, ibc_interface, ibc_spec_id)?
+                    .with_id(self.item_id);
+
+                let header = client_module
+                    .encode_header(header)
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                trace!(%header, "encoded header");
+
+                Ok(header)
+            })
+            .await
+    }
+
+    // TODO: Use valuable here
     #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_spec_id))]
     pub async fn decode_client_state_meta(
         &self,
@@ -757,6 +788,19 @@ impl VoyagerRpcServer for Server {
     ) -> RpcResult<Bytes> {
         self.with_id(e.try_get().ok().cloned())
             .encode_proof(&client_type, &ibc_interface, &ibc_spec_id, proof)
+            .await
+    }
+
+    async fn encode_header(
+        &self,
+        e: &Extensions,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        ibc_spec_id: IbcSpecId,
+        header: Value,
+    ) -> RpcResult<Bytes> {
+        self.with_id(e.try_get().ok().cloned())
+            .encode_header(&client_type, &ibc_interface, &ibc_spec_id, header)
             .await
     }
 

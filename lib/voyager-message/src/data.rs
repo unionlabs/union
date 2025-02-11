@@ -3,16 +3,12 @@ use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use subset_of::SubsetOf;
-use unionlabs::{
-    ibc::core::client::height::Height,
-    primitives::{Bytes, H256},
-    traits::Member,
-};
+use unionlabs::{ibc::core::client::height::Height, primitives::H256, traits::Member};
 use voyager_core::IbcSpecId;
 
 use crate::{
-    core::{ChainId, ClientInfo, ClientStateMeta, IbcSpec},
-    into_value, PluginMessage, RawClientId,
+    core::{ChainId, ClientInfo, IbcSpec},
+    into_value, PluginMessage,
 };
 
 #[model]
@@ -23,8 +19,7 @@ pub enum Data {
     IbcDatagram(IbcDatagram),
 
     OrderedHeaders(OrderedHeaders),
-    OrderedMsgUpdateClients(OrderedClientUpdates),
-
+    // OrderedClientUpdates(OrderedClientUpdates),
     Plugin(PluginMessage),
 }
 
@@ -97,12 +92,6 @@ impl IbcDatagram {
 }
 
 #[model]
-pub struct UnfinalizedTrustedClientState {
-    pub height: Height,
-    pub client_state: ClientStateMeta,
-}
-
-#[model]
 pub struct DecodedHeaderMeta {
     /// The new trusted height that the header provides a consensus update to.
     pub height: Height,
@@ -115,14 +104,14 @@ pub struct OrderedHeaders {
     pub headers: Vec<(DecodedHeaderMeta, Value)>,
 }
 
-#[model]
-pub struct OrderedClientUpdates {
-    pub updates: Vec<(DecodedHeaderMeta, ClientUpdate)>,
-}
+// #[model]
+// pub struct OrderedClientUpdates {
+//     pub updates: Vec<(DecodedHeaderMeta, ClientUpdate)>,
+// }
 
-#[model]
-pub struct ClientUpdate {
-    pub client_id: RawClientId,
-    pub ibc_spec_id: IbcSpecId,
-    pub client_message: Bytes,
-}
+// #[model]
+// pub struct ClientUpdate {
+//     pub client_id: RawClientId,
+//     pub ibc_spec_id: IbcSpecId,
+//     pub client_message: Bytes,
+// }

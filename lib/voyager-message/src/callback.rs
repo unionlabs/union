@@ -24,7 +24,7 @@ use crate::{
 #[model]
 #[derive(Enumorph)]
 pub enum Callback {
-    AggregateMsgUpdateClientsFromOrderedHeaders(AggregateMsgUpdateClientsFromOrderedHeaders),
+    AggregateSubmitTxFromOrderedHeaders(AggregateSubmitTxFromOrderedHeaders),
 
     Plugin(PluginMessage),
 }
@@ -49,8 +49,8 @@ impl CallbackT<VoyagerMessage> for Callback {
         data: VecDeque<Data>,
     ) -> Result<Op<VoyagerMessage>, QueueError> {
         match self {
-            Callback::AggregateMsgUpdateClientsFromOrderedHeaders(
-                AggregateMsgUpdateClientsFromOrderedHeaders {
+            Callback::AggregateSubmitTxFromOrderedHeaders(
+                AggregateSubmitTxFromOrderedHeaders {
                     ibc_spec_id,
                     chain_id,
                     client_id,
@@ -67,8 +67,8 @@ impl CallbackT<VoyagerMessage> for Callback {
                     .map_err(|found| {
                         QueueError::Fatal(
                             format!(
-                                "OrderedHeaders not present in data queue for \
-                                AggregateMsgUpdateClientsFromOrderedHeaders, \
+                                "OrderedHeaders not present in data queue \
+                                for AggregateSubmitTxFromOrderedHeaders, \
                                 found {found}",
                             )
                             .into(),
@@ -100,6 +100,8 @@ impl CallbackT<VoyagerMessage> for Callback {
                     .ibc_spec_handlers
                     .get(&ibc_spec_id)
                     .map_err(error_object_to_queue_error)?;
+
+                // OrderedClientUpdates
 
                 Ok(voyager_vm::call(SubmitTx {
                     chain_id,
@@ -145,8 +147,10 @@ impl CallbackT<VoyagerMessage> for Callback {
 }
 
 /// Required data: [`OrderedHeaders`]
+///
+/// Returns: [`SubmitTx`]
 #[model]
-pub struct AggregateMsgUpdateClientsFromOrderedHeaders {
+pub struct AggregateSubmitTxFromOrderedHeaders {
     pub ibc_spec_id: IbcSpecId,
     pub chain_id: ChainId,
     pub client_id: RawClientId,

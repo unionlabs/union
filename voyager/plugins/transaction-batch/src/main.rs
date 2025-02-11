@@ -369,9 +369,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ModuleCallback::MakeIbcMessagesFromUpdateUnion(cb) => {
                 cb.call(e.try_get()?, self, datas).await
             }
-            ModuleCallback::MakeBatchTransactionV1(cb) => Ok(cb.call(self.chain_id.clone(), datas)),
+            ModuleCallback::MakeBatchTransactionV1(cb) => {
+                cb.call(e.try_get()?, self.chain_id.clone(), datas).await
+            }
             ModuleCallback::MakeBatchTransactionUnion(cb) => {
-                Ok(cb.call(self.chain_id.clone(), datas))
+                cb.call(e.try_get()?, self.chain_id.clone(), datas).await
             }
         }
     }

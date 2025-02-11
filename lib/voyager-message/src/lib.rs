@@ -671,6 +671,30 @@ impl VoyagerClient {
         Ok(proof)
     }
 
+    #[instrument(
+        skip_all,
+        name = "voyager_client_encode_header",
+        fields(
+            %client_type,
+            %ibc_interface,
+            %header
+        )
+    )]
+    pub async fn encode_header<V: IbcSpec>(
+        &self,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        header: Value,
+    ) -> RpcResult<Bytes> {
+        let header = self
+            .0
+            .encode_header(client_type, ibc_interface, V::ID, header)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        Ok(header)
+    }
+
     pub async fn decode_client_state<V: IbcSpec>(
         &self,
         client_type: ClientType,

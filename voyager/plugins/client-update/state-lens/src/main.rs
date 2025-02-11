@@ -16,7 +16,7 @@ use tracing::{debug, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
-    callback::AggregateMsgUpdateClientsFromOrderedHeaders,
+    callback::AggregateSubmitTxFromOrderedHeaders,
     core::{ChainId, ClientType, IbcSpec, QueryHeight},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     into_value,
@@ -247,7 +247,7 @@ impl Module {
                             update_to,
                         })],
                         [],
-                        AggregateMsgUpdateClientsFromOrderedHeaders {
+                        AggregateSubmitTxFromOrderedHeaders {
                             ibc_spec_id: IbcUnion::ID,
                             chain_id: l1_client_meta.counterparty_chain_id.clone(),
                             client_id: RawClientId::new(state_lens_client_state.l2_client_id),
@@ -489,7 +489,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             update_to: l1_latest_height,
                         })],
                         [],
-                        AggregateMsgUpdateClientsFromOrderedHeaders {
+                        AggregateSubmitTxFromOrderedHeaders {
                             ibc_spec_id: IbcUnion::ID,
                             chain_id: counterparty_chain_id.clone(),
                             client_id: RawClientId::new(state_lens_client_state.l1_client_id),

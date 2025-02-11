@@ -8,7 +8,6 @@ use tracing::info;
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::FetchUpdateHeaders,
-    callback::AggregateMsgUpdateClientsFromOrderedHeaders,
     core::{ChainId, QueryHeight},
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -113,22 +112,14 @@ where
             )
         } else {
             Ok(promise(
-                [promise(
-                    [call(FetchUpdateHeaders {
-                        client_type: client_info.client_type,
-                        counterparty_chain_id: module.chain_id.clone(),
-                        chain_id: client_meta.counterparty_chain_id,
-                        client_id: RawClientId::new(self.client_id.clone()),
-                        update_from: client_meta.counterparty_height,
-                        update_to: latest_height,
-                    })],
-                    [],
-                    AggregateMsgUpdateClientsFromOrderedHeaders {
-                        chain_id: module.chain_id.clone(),
-                        ibc_spec_id: V::ID,
-                        client_id: RawClientId::new(self.client_id.clone()),
-                    },
-                )],
+                [call(FetchUpdateHeaders {
+                    client_type: client_info.client_type,
+                    counterparty_chain_id: module.chain_id.clone(),
+                    chain_id: client_meta.counterparty_chain_id,
+                    client_id: RawClientId::new(self.client_id.clone()),
+                    update_from: client_meta.counterparty_height,
+                    update_to: latest_height,
+                })],
                 [],
                 PluginMessage::new(
                     module.plugin_name(),

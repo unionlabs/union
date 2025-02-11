@@ -121,6 +121,15 @@ pub trait VoyagerRpc {
         proof: Value,
     ) -> RpcResult<Bytes>;
 
+    #[method(name = "encodeHeader", with_extensions)]
+    async fn encode_header(
+        &self,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        ibc_spec_id: IbcSpecId,
+        header: Value,
+    ) -> RpcResult<Bytes>;
+
     #[method(name = "decodeClientStateMeta", with_extensions)]
     async fn decode_client_state_meta(
         &self,
