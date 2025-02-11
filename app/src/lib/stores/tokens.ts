@@ -20,16 +20,32 @@ export type TokenInfo =
 
 export let tokenInfos: Writable<TokenInfos> = persisted("token-infos", {})
 
+function isStale(info: TokenInfo): boolean {
+  if (info.kind !== "tokenInfo") return false
+  const oneMinute = 60 * 1000 // 1 minutes in milliseconds
+  return Date.now() - info.timestamp > oneMinute
+}
+
 export async function requestTokenInfo(chain: Chain, denom: Denom) {
   if (
     get(tokenInfos)[chain.chain_id] &&
     (get(tokenInfos)[chain.chain_id][denom]?.kind === "loading" ||
       get(tokenInfos)[chain.chain_id][denom]?.kind === "tokenInfo")
   ) {
-    // we already have this info
-    console.log("token info cache hit", chain.chain_id, denom)
-    return
+    const tokenInfo = get(tokenInfos)[chain.chain_id][denom]
+    if (isStale(tokenInfo)) {
+      console.info("[TokenInfo] stale info", chain.chain_id, denom)
+      tokenInfos.update(val => {
+        delete val[chain.chain_id][denom]
+        return val
+      })
+    } else {
+      console.info("[TokenInfo] cache hit", chain.chain_id, denom)
+      return
+    }
   }
+
+  console.info("[TokenInfo] fetching new info", chain.chain_id, denom)
 
   tokenInfos.update(val => {
     if (val[chain.chain_id] === undefined) {

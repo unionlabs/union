@@ -36,7 +36,7 @@ let transfers = createQuery({
     query.state.data?.[0]?.traces?.filter(t => !t.height)?.length === 0 ? false : 5_000, // fetch every five seconds until we have all traces
   placeholderData: (previousData, _) => previousData,
   queryFn: async () => {
-    console.log("traces still incomplete: querying transfer details")
+    console.info("[TransferDetails] traces incomplete: re-querying transfer details")
     const response = await request(URLS().GRAPHQL, transfersBySourceHashBaseQueryDocument, {
       source_transaction_hash: source
     })
