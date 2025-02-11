@@ -1,12 +1,11 @@
 { self, ... }:
 {
   perSystem =
-    {
-      pkgs,
-      jsPkgs,
-      ensureAtRepositoryRoot,
-      lib,
-      ...
+    { pkgs
+    , jsPkgs
+    , ensureAtRepositoryRoot
+    , lib
+    , ...
     }:
     let
       deps = with jsPkgs; [
@@ -84,86 +83,80 @@
       };
     };
   flake.nixosModules.sentinel =
-    {
-      lib,
-      pkgs,
-      config,
-      ...
+    { lib
+    , pkgs
+    , config
+    , ...
     }:
-    with lib;
-    let
-      cfg = config.services.sentinel;
-    in
-    {
-      options.services.sentinel = {
-        enable = mkEnableOption "Sentinel service";
-        package = mkOption {
-          type = types.package;
-          # Now we can reference it correctly
-          default = self.packages.${pkgs.system}.sentinel;
+      with lib;
+      let
+        cfg = config.services.sentinel;
+      in
+      {
+        options.services.sentinel = {
+          enable = mkEnableOption "Sentinel service";
+          package = mkOption {
+            type = types.package;
+            # Now we can reference it correctly
+            default = self.packages.${pkgs.system}.sentinel;
+          };
+          cycleIntervalMs = mkOption {
+            type = types.number;
+            description = "Interval between cycles in milliseconds";
+          };
+          interactions = mkOption {
+            type = types.listOf types.attrs;
+            description = "Interactions for cross-chain communication.";
+          };
+          transfers = mkOption {
+            type = types.listOf types.attrs;
+            description = "Array for cross-chain transfers.";
+          };
+          privkeys_for_loadtest = mkOption {
+            type = types.listOf types.str;
+            description = "Array for privkeys_for_loadtest for loadtesting.";
+          };
+          load_test_enabled = mkOption {
+            type = types.bool;
+            description = "Is loadtesting enabled?";
+          };
+          logLevel = mkOption {
+            type = types.str;
+            default = "info";
+            description = "Log level for Sentinel";
+          };
         };
-        cycleIntervalMs = mkOption {
-          type = types.number;
-          description = "Interval between cycles in milliseconds";
-        };
-        load_test_request = mkOption {
-          type = types.number;
-          description = "load_test_request for request counter. 0 if no loadtest.";
-        };
-        interactions = mkOption {
-          type = types.listOf types.attrs;
-          description = "Interactions for cross-chain communication.";
-        };
-        transfers = mkOption {
-          type = types.listOf types.attrs;
-          description = "Array for cross-chain transfers.";
-        };
-        privkeys_for_loadtest = mkOption {
-          type = types.listOf types.str;
-          description = "Array for privkeys_for_loadtest for loadtesting.";
-        };
-        load_test_enabled = mkOption {
-          type = types.bool;
-          description = "Is loadtesting enabled?";
-        };
-        logLevel = mkOption {
-          type = types.str;
-          default = "info";
-          description = "Log level for Sentinel";
-        };
-      };
 
-      config = mkIf cfg.enable {
-        # Write config.json from user-provided cycleIntervalMs & interactions
-        # so the sentinel script can read them
-        systemd.services.sentinel = {
-          description = "Sentinel Service";
-          wantedBy = [ "multi-user.target" ];
-          after = [ "network.target" ];
-          serviceConfig = {
-            Type = "simple";
-            ExecStart = ''
-              ${pkgs.lib.getExe cfg.package} --config ${
-                pkgs.writeText "config.json" (
-                  builtins.toJSON {
-                    inherit (cfg) cycleIntervalMs;
-                    inherit (cfg) interactions;
-                    inherit (cfg) transfers;
-                    inherit (cfg) privkeys_for_loadtest;
-                    inherit (cfg) load_test_enabled;
-                    inherit (cfg) load_test_request;
-                  }
-                )
-              }
-            '';
-            Restart = "always";
-            RestartSec = 10;
-          };
-          environment = {
-            NODE_ENV = "production";
-            LOG_LEVEL = cfg.logLevel;
+        config = mkIf cfg.enable {
+          # Write config.json from user-provided cycleIntervalMs & interactions
+          # so the sentinel script can read them
+          systemd.services.sentinel = {
+            description = "Sentinel Service";
+            wantedBy = [ "multi-user.target" ];
+            after = [ "network.target" ];
+            serviceConfig = {
+              Type = "simple";
+              ExecStart = ''
+                ${pkgs.lib.getExe cfg.package} --config ${
+                  pkgs.writeText "config.json" (
+                    builtins.toJSON {
+                      inherit (cfg) cycleIntervalMs;
+                      inherit (cfg) interactions;
+                      inherit (cfg) transfers;
+                      inherit (cfg) privkeys_for_loadtest;
+                      inherit (cfg) load_test_enabled;
+                    }
+                  )
+                }
+              '';
+              Restart = "always";
+              RestartSec = 10;
+            };
+            environment = {
+              NODE_ENV = "production";
+              LOG_LEVEL = cfg.logLevel;
+            };
           };
         };
       };
-    };
 }

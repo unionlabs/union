@@ -20,7 +20,7 @@ import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing";
 import { privateKeyToAccount } from "viem/accounts";
 import { createUnionClient, hexToBytes, getRecommendedChannels, getChannelInfo, getQuoteToken } from "@unionlabs/client";
 // Hasura endpoint
-const HASURA_ENDPOINT = "https://hubble-purple.hasura.app/v1/graphql";
+const HASURA_ENDPOINT = "https://hubble-green.hasura.app/v1/graphql";
 // Set to track reported block hashes
 const reportedsendTxHashes = new Set();
 // Variable to track sleep cycles
@@ -102,6 +102,7 @@ export async function checkPackets(sourceChain, destinationChain, timeframeMs) {
         packet_recv_transaction_hash
         write_ack_transaction_hash
         packet_ack_transaction_hash
+        packet_send_height
       }
     }
   `;
@@ -110,7 +111,6 @@ export async function checkPackets(sourceChain, destinationChain, timeframeMs) {
         srcChain: sourceChain,
         dstChain: destinationChain
     };
-    //EEE48878CB7D9CE8DF02B87763FE6A8D8ECA7ACE77F9F483142415B0FFFD52FA
     try {
         // Post to Hasura
         const response = await request(HASURA_ENDPOINT, query, variables);
@@ -141,12 +141,14 @@ export async function checkPackets(sourceChain, destinationChain, timeframeMs) {
             if (recvStr) {
                 const recvTimeMs = new Date(recvStr).getTime();
                 if (recvTimeMs - sendTimeMs > timeframeMs) {
-                    consola.error(`[RECV TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, recv_time=${recvStr}, sendTxHash=${sendTxHash}`);
+                    // consola.error(
+                    //   `[RECV TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, recv_time=${recvStr}, sendTxHash=${sendTxHash}`
+                    // )
                     reportedsendTxHashes.add(sendTxHash);
                 }
             }
             else {
-                consola.error(`[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`);
+                consola.error(`[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}, send block_hash: ${p.packet_send_height}`);
                 reportedsendTxHashes.add(sendTxHash);
                 continue;
             }
@@ -154,12 +156,14 @@ export async function checkPackets(sourceChain, destinationChain, timeframeMs) {
             if (writeAckStr) {
                 const writeAckTimeMs = new Date(writeAckStr).getTime();
                 if (writeAckTimeMs - sendTimeMs > timeframeMs) {
-                    consola.error(`[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. sendTxHash=${sendTxHash}, send_time=${sendStr}, write_ack_time=${writeAckStr}`);
+                    // consola.error(
+                    //   `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. sendTxHash=${sendTxHash}, send_time=${sendStr}, write_ack_time=${writeAckStr}`
+                    // )
                     reportedsendTxHashes.add(sendTxHash);
                 }
             }
             else {
-                consola.error(`[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`);
+                consola.error(`[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}, send block_hash: ${p.packet_send_height}`);
                 reportedsendTxHashes.add(sendTxHash);
                 continue;
             }
@@ -167,12 +171,14 @@ export async function checkPackets(sourceChain, destinationChain, timeframeMs) {
             if (ackStr) {
                 const ackTimeMs = new Date(ackStr).getTime();
                 if (ackTimeMs - sendTimeMs > timeframeMs) {
-                    consola.error(`[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, ack_time=${ackStr}, sendTxHash=${sendTxHash}`);
+                    // consola.error(
+                    //   `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, ack_time=${ackStr}, sendTxHash=${sendTxHash}`
+                    // )
                     reportedsendTxHashes.add(sendTxHash);
                 }
             }
             else {
-                consola.error(`[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`);
+                consola.error(`[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}, send block_hash: ${p.packet_send_height}`);
                 reportedsendTxHashes.add(sendTxHash);
             }
         }
@@ -372,7 +378,7 @@ async function doTransferLoadTest(transfers, privKeys) {
             }
         }
         // Use non-blocking sleep instead of the synchronous busy-wait.
-        await new Promise(resolve => setTimeout(resolve, 60000));
+        await new Promise(resolve => setTimeout(resolve, 15000));
     }
 }
 /**
