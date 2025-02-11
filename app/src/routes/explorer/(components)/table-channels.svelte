@@ -9,16 +9,17 @@ import { derived } from "svelte/store"
 import CellOriginChannel from "$lib/components/table-cells/cell-origin-channel.svelte"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import type { UnwrapReadable } from "$lib/utilities/types"
-import type { ChainFeature } from "$lib/types.ts"
+import type { Chain, ChainFeature } from "$lib/types.ts"
 import { page } from "$app/stores"
 
+export let chains: Array<Chain>
 let channels = createQuery({
   queryKey: ["channels"],
   refetchInterval: 5_000,
   retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000),
   queryFn: async () => request(URLS().GRAPHQL, channelsQuery, {}),
   select: data =>
-    data.v1_ibc_union_channels.map(channel => ({
+    data.v1_ibc_union_channel_recommendations.map(channel => ({
       source_chain: {
         chain_display_name: channel.destination_chain?.display_name ?? "unknown",
         chain_id: channel.source_chain_id ?? "unknown",
@@ -33,7 +34,8 @@ let channels = createQuery({
         channel_id: channel.destination_channel_id ?? "unknown",
         port_id: channel.destination_port_id ?? "unknown"
       },
-      status: channel.status
+      status: channel.status,
+      version: channel.version
     }))
 })
 
@@ -54,15 +56,21 @@ type DataRow = UnwrapReadable<typeof channelsDataStore>[number]
 const columns: Array<ColumnDef<DataRow>> = [
   {
     accessorKey: "source_chain",
-    header: () => "Source chain",
+    header: () => "Source",
     size: 200,
-    cell: info => flexRender(CellOriginChannel, { value: info.getValue() })
+    cell: info => flexRender(CellOriginChannel, { chains, value: info.getValue() })
   },
   {
     accessorKey: "destination_chain",
-    header: () => "Destination chain",
+    header: () => "Destination",
     size: 200,
-    cell: info => flexRender(CellOriginChannel, { value: info.getValue() })
+    cell: info => flexRender(CellOriginChannel, { chains, value: info.getValue() })
+  },
+  {
+    accessorKey: "status"
+  },
+  {
+    accessorKey: "version"
   }
 ]
 </script>

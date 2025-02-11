@@ -1,6 +1,10 @@
 <script lang="ts">
+import type { Chain } from "$lib/types"
 import { cn } from "$lib/utilities/shadcn.ts"
+import Address from "../address.svelte"
 import CellCopy from "./cell-copy.svelte"
+
+export let chains: Array<Chain>
 
 export let value: {
   chain_display_name: string | undefined
@@ -11,10 +15,8 @@ export let value: {
 }
 </script>
 
-<div {...$$restProps} class={cn("flex flex-col ")}>
-  {#if value.chain_display_name}<CellCopy value={value.chain_display_name}/>{/if}
-  {#if value.chain_id}<CellCopy label="Chain ID: " value={value.chain_id}/>{/if}
-  {#if value.connection_id}<CellCopy label="Connection ID: " value={value.connection_id}/>{/if}
-  {#if value.channel_id}<CellCopy label="Channel ID: " value={value.channel_id}/>{/if}
-  {#if value.port_id}<CellCopy label="Port: " trunc={10} value={value.port_id}/>{/if}
+<div {...$$restProps} class={cn("flex flex-col items-start")}>
+  {#if value.chain_display_name}<CellCopy class="font-bold" value={value.chain_display_name}/>{/if}
+  {#if value.chain_id && value.channel_id && value.connection_id}<div class="text-muted-foreground">{value.chain_id} | {value.connection_id} | {value.channel_id}</div>{/if}
+  {#if value.port_id && value.chain_id}<Address {chains} chainId={value.chain_id} address={value.port_id}/>{/if}
 </div>
