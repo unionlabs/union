@@ -20,7 +20,7 @@ export let packet: {
     <h2
       class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
     >
-      <ChainDetails {chains} chainId={packet.source_chain_id}/>
+      <ChainDetails highlightEnabled={false} {chains} chainId={packet.source_chain_id}/>
     </h2>
     <div class="flex divide-x-2 divide-muted-background">
     <a 
@@ -55,7 +55,7 @@ export let packet: {
     <h2
       class="font-supermolot uppercase md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
     >
-      <ChainDetails {chains} chainId={packet.destination_chain_id}/>
+      <ChainDetails highlightEnabled={false} {chains} chainId={packet.destination_chain_id}/>
     </h2>
     <div class="flex justify-end divide-x-2 divide-muted-background">
     <a 
