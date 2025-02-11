@@ -223,6 +223,7 @@
         ./devnet-compose/devnet-compose.nix
         ./drip/drip.nix
         ./zkgm-dev/zkgm-dev.nix
+        ./sentinel/sentinel.nix
         treefmt-nix.flakeModule
       ];
 

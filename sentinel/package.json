@@ -1,0 +1,29 @@
+{
+  "name": "sentinel",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@cosmjs/tendermint-rpc": "^0.33.0",
+    "@cosmjs/stargate": "0.33.0",
+    "@cosmjs/amino": "^0.33.0",
+    "@unionlabs/client": "0.0.59",
+    "consola": "^3.4.0",
+    "graphql-request": "^7.1.2",
+    "neverthrow": "^8.1.1",
+    "node-fetch": "3.3.2",
+    "viem": "^2.22.11",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "3.0.2",
+    "@types/yargs": "^17.0.33",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.7.2"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/sentinel.js",
+    "postinstall": "patch-package",
+    "dev": "npx tsx src/sentinel.ts --config ./example_config.json"
+  }
+}
