@@ -120,7 +120,7 @@
         bundle-testnet-next = mkBundle {
           name = "testnet-next";
           versions = uniondBundleVersions.complete;
-          nextVersion = "v0.25.0";
+          nextVersion = "v0.26.0";
           genesis = ../networks/genesis/union-testnet-9/genesis.json;
           meta = {
             binary_name = "uniond";
