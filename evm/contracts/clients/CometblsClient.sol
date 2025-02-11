@@ -176,12 +176,20 @@ library CometblsClientLib {
 
     function chainIdToString(
         bytes31 source
-    ) internal pure returns (string memory result) {
-        // casting bytes31 to bytes32 directly pads on the right, but we need left padding
-        // cast to uint248 first (since bytes31 to uint256 isn't valid), then to uint256
-        // then cast to bytes32, resulting in left padding
-        // this bytes32 value is then converted to a bytes value with .concat, and then casted to a string
-        result = string(bytes.concat(bytes32(uint256(uint248(source)))));
+    ) external pure returns (string memory result) {
+        uint8 offset = 0;
+        while (source[offset] == 0 && offset < 31) {
+            offset++;
+        }
+        assembly {
+            result := mload(0x40)
+            // new "memory end" including padding (the string isn't larger than 32 bytes)
+            mstore(0x40, add(result, 0x40))
+            // store length in memory
+            mstore(result, sub(31, offset))
+            // write actual data
+            mstore(add(result, 0x20), shl(mul(offset, 8), source))
+        }
     }
 }
 
