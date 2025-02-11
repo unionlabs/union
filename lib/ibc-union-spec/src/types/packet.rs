@@ -9,6 +9,7 @@ use crate::types::ChannelId;
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case", deny_unknown_fields)
 )]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Packet {
     pub source_channel_id: ChannelId,
     pub destination_channel_id: ChannelId,

@@ -1,15 +1,17 @@
-use std::num::NonZeroU64;
+use std::{io::Write, num::NonZeroU64};
 
 use ibc_union_spec::types::Packet;
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
 use unionlabs::{
     bech32::Bech32,
     ibc::core::{channel::order::Order, client::height::Height},
     id::{ChannelId, ClientId, ConnectionId, PortId},
     primitives::{encoding::HexUnprefixed, Bytes, H256},
+    ErrorReporter,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, bincode::Encode)]
 #[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
 pub enum IbcEvent {
     // standard ibc-go events for IBC classic
@@ -393,6 +395,26 @@ pub mod height_list_comma_separated {
 }
 
 impl IbcEvent {
+    pub fn hash(&self) -> H256 {
+        struct Sha256Writer(sha2::Sha256);
+
+        // i don't really get why they needed their own trait that's not interoperable with std::io::Write but ok
+        impl bincode::enc::write::Writer for Sha256Writer {
+            fn write(&mut self, bytes: &[u8]) -> Result<(), bincode::error::EncodeError> {
+                self.0
+                    .write(bytes)
+                    .map_err(|e| {
+                        bincode::error::EncodeError::OtherString(ErrorReporter(e).to_string())
+                    })
+                    .map(|_| ())
+            }
+        }
+
+        let mut hasher = Sha256Writer(sha2::Sha256::new());
+        bincode::encode_into_writer(self, &mut hasher, bincode::config::standard()).unwrap();
+        hasher.0.finalize().into()
+    }
+
     #[must_use]
     pub fn name(&self) -> &'static str {
         match self {

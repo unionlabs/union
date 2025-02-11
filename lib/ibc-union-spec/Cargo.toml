@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 alloy-sol-types = { workspace = true, optional = true }
+bincode         = { workspace = true, optional = true, features = ["derive"] }
 enumorph        = { workspace = true }
 ibc-solidity    = { workspace = true, optional = true }
 schemars        = { workspace = true, optional = true, features = ["derive"] }
@@ -30,6 +31,7 @@ ibc-union-spec = { workspace = true, features = ["ethabi", "schemars", "serde", 
 [features]
 default = []
 
+bincode             = ["dep:bincode", "unionlabs/bincode"]
 ethabi              = ["dep:alloy-sol-types", "unionlabs/ethabi"]
 ibc-solidity-compat = ["dep:ibc-solidity"]
 schemars            = ["dep:schemars", "voyager-core/schemars", "unionlabs/schemars"]

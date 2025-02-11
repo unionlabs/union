@@ -2,7 +2,7 @@
 
 use std::{
     cmp::Ordering,
-    collections::VecDeque,
+    collections::{btree_map::Entry, BTreeMap, BTreeSet, VecDeque},
     error::Error,
     fmt::{Debug, Display},
     num::{NonZeroU32, NonZeroU8, ParseIntError},
@@ -20,7 +20,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{debug, error, info, info_span, instrument, trace, warn};
 use unionlabs::{
     bech32::Bech32,
     ibc::core::{
@@ -44,7 +44,7 @@ use voyager_message::{
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
-    call::{FetchBlocks, FetchTransactions, MakeChainEvent, ModuleCall},
+    call::{FetchBlock, FetchBlocks, MakeChainEvent, ModuleCall},
     callback::ModuleCallback,
     ibc_events::IbcEvent,
 };
@@ -71,6 +71,7 @@ pub struct Module {
     pub grpc_url: String,
 
     pub chunk_block_fetch_size: u64,
+    pub refetch_delay: u64,
 
     pub checksum_cache: Arc<DashMap<H256, WasmClientType>>,
 
@@ -84,6 +85,8 @@ pub struct Config {
     pub rpc_url: String,
     #[serde(default = "default_chunk_block_fetch_size")]
     pub chunk_block_fetch_size: u64,
+    #[serde(default = "default_refetch_delay")]
+    pub refetch_delay: u64,
     pub grpc_url: String,
 
     #[serde(default)]
@@ -91,6 +94,10 @@ pub struct Config {
 }
 
 fn default_chunk_block_fetch_size() -> u64 {
+    10
+}
+
+fn default_refetch_delay() -> u64 {
     10
 }
 
@@ -131,8 +138,8 @@ impl Plugin for Module {
             chain_revision,
             grpc_url: config.grpc_url,
             chunk_block_fetch_size: config.chunk_block_fetch_size,
+            refetch_delay: config.refetch_delay,
             checksum_cache: Arc::new(DashMap::default()),
-
             ibc_host_contract_address: config.ibc_host_contract_address,
         })
     }
@@ -154,9 +161,9 @@ impl Plugin for Module {
                     "{}",
                     into_value(call::<VoyagerMessage>(PluginMessage::new(
                         plugin_name(&config.chain_id),
-                        ModuleCall::from(FetchTransactions {
+                        ModuleCall::from(FetchBlock {
+                            already_seen_events: Default::default(),
                             height,
-                            page: const { option_unwrap!(NonZeroU32::new(1)) }
                         })
                     )))
                 )
@@ -330,13 +337,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
-            ModuleCall::FetchTransactions(FetchTransactions { height, page }) => {
-                self.fetch_transaction(height, page).await
-            }
             ModuleCall::FetchBlocks(FetchBlocks { height }) => {
                 self.fetch_blocks(e.try_get::<VoyagerClient>()?, height)
                     .await
             }
+            ModuleCall::FetchBlock(FetchBlock {
+                already_seen_events,
+                height,
+            }) => self.fetch_block(height, already_seen_events).await,
             ModuleCall::MakeChainEvent(MakeChainEvent {
                 height,
                 tx_hash,
@@ -419,9 +427,9 @@ impl Module {
                         .map(|h| {
                             call(PluginMessage::new(
                                 self.plugin_name(),
-                                ModuleCall::from(FetchTransactions {
+                                ModuleCall::from(FetchBlock {
+                                    already_seen_events: Default::default(),
                                     height: Height::new_with_revision(height.revision(), h),
-                                    page: const { option_unwrap!(NonZeroU32::new(1_u32)) },
                                 }),
                             ))
                         })
@@ -438,9 +446,9 @@ impl Module {
                 Ok(conc([
                     call(PluginMessage::new(
                         self.plugin_name(),
-                        ModuleCall::from(FetchTransactions {
+                        ModuleCall::from(FetchBlock {
+                            already_seen_events: Default::default(),
                             height: height.increment(),
-                            page: const { option_unwrap!(NonZeroU32::new(1_u32)) },
                         }),
                     )),
                     continuation(height.increment()),
@@ -458,99 +466,151 @@ impl Module {
         }
     }
 
-    #[instrument(skip_all, fields(%height, %page))]
-    async fn fetch_transaction(
+    #[instrument(skip_all, fields(%height, already_seen_events_count = already_seen_events.as_ref().map(|a| a.len())))]
+    async fn fetch_block(
         &self,
         height: Height,
-        page: NonZeroU32,
+        already_seen_events: Option<BTreeSet<H256>>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         info!(%height, "fetching events in block");
 
-        let response = self
-            .cometbft_client
-            .tx_search(
-                format!("tx.height={}", height.height()),
-                false,
-                page,
-                PER_PAGE_LIMIT,
-                cometbft_rpc::rpc_types::Order::Desc,
-            )
-            .await
-            .map_err(rpc_error(
-                format_args!("error fetching transactions at height {height}"),
-                Some(json!({ "height": height })),
-            ))?;
+        enum EventState {
+            SeenPreviously,
+            SeenNow,
+        }
 
-        Ok(conc(
-            response
-                .txs
-                .into_iter()
-                .flat_map(|txr| {
-                    txr.tx_result.events.into_iter().filter_map(move |event| {
+        let mut already_seen_events = already_seen_events.map(|a| {
+            a.into_iter()
+                .map(|h| (h, EventState::SeenPreviously))
+                .collect::<BTreeMap<H256, EventState>>()
+        });
+
+        // list of MakeChainEvent ops that will be queued in a conc
+        let mut make_chain_event_ops = vec![];
+
+        // event hashes found while fetching this block
+        let mut found_events = BTreeSet::new();
+
+        let mut page = const { option_unwrap!(NonZeroU32::new(1)) };
+
+        let mut total_count = 0;
+
+        loop {
+            info!("fetching page {page}");
+
+            let response = self
+                .cometbft_client
+                .tx_search(
+                    format!("tx.height={}", height.height()),
+                    false,
+                    page,
+                    PER_PAGE_LIMIT,
+                    cometbft_rpc::rpc_types::Order::Desc,
+                )
+                .await
+                .map_err(rpc_error(
+                    format_args!("error fetching transactions at height {height}"),
+                    Some(json!({ "height": height })),
+                ))?;
+
+            total_count += response.txs.len();
+
+            if total_count >= (response.total_count as usize) {
+                break;
+            } else {
+                for tx_response in response.txs {
+                    let _span =
+                        info_span!("tx_result.events", tx_hash = %tx_response.hash).entered();
+                    for event in tx_response.tx_result.events {
                         debug!(%event.ty, "observed event");
 
-                        let event = CosmosSdkEvent::<IbcEvent>::new(event.clone())
-                            .inspect_err(|e| match e {
-                                cosmos_sdk_event::Error::Deserialize(error) => {
-                                    trace!("unable to parse event: {error}")
-                                }
-                                _ => {
-                                    error!("{e}");
-                                }
-                            })
-                            .ok()?;
+                        let event = match CosmosSdkEvent::<IbcEvent>::new(event.clone()) {
+                            Ok(event) => event,
+                            Err(cosmos_sdk_event::Error::Deserialize(error)) => {
+                                trace!("unable to parse event: {error}");
+                                continue;
+                            }
+                            Err(err) => {
+                                error!("{err}");
+                                continue;
+                            }
+                        };
 
                         match (&event.contract_address, &self.ibc_host_contract_address) {
-                            (None, None) => Some((event, txr.hash)),
-                            (None, Some(_)) => Some((event, txr.hash)),
-                            (Some(_), None) => None,
-                            (Some(a), Some(b)) => {
-                                if a == b {
-                                    Some((event, txr.hash))
+                            (None, _) => {}
+                            (Some(addr), None) => {
+                                debug!(
+                                    "found ibc-union event for contract {addr}, but no contract address is configured",
+                                );
+                                continue;
+                            }
+                            (Some(event_addr), Some(configured_addr)) => {
+                                if event_addr == configured_addr {
                                 } else {
-                                    None
+                                    debug!(
+                                        "found ibc-union event for contract {event_addr}, but the configured contract address is {configured_addr}",
+                                    );
+                                    continue;
                                 }
                             }
                         }
-                    })
-                })
-                // .collect::<Result<Vec<_>, _>>()
-                // .map_err(|err| {
-                //     ErrorObject::owned(
-                //         -1,
-                //         ErrorReporter(err).to_string(),
-                //         Some(json!({
-                //             "height": height,
-                //             "page": page
-                //         })),
-                //     )
-                // })?
-                // .into_iter()
-                .map(|(ibc_event, tx_hash)| {
-                    debug!(event = %ibc_event.event.name(), "observed IBC event");
-                    call(PluginMessage::new(
-                        self.plugin_name(),
-                        ModuleCall::from(MakeChainEvent {
-                            height,
-                            tx_hash: tx_hash.into_encoding(),
-                            event: ibc_event.event,
-                        }),
-                    ))
-                })
-                .chain(
-                    ((page.get() * PER_PAGE_LIMIT.get() as u32) < response.total_count).then(
-                        || {
+
+                        let make_chain_event = || {
                             call(PluginMessage::new(
                                 self.plugin_name(),
-                                ModuleCall::from(FetchTransactions {
+                                ModuleCall::from(MakeChainEvent {
                                     height,
-                                    page: page.checked_add(1).expect("too many pages?"),
+                                    tx_hash: tx_response.hash.into_encoding(),
+                                    event: event.event.clone(),
                                 }),
                             ))
-                        },
-                    ),
-                ),
-        ))
+                        };
+
+                        if let Some(ref mut already_seen_events) = already_seen_events {
+                            match already_seen_events.entry(event.event.hash()) {
+                                Entry::Vacant(vacant_entry) => {
+                                    info!("found previously missed event");
+                                    vacant_entry.insert(EventState::SeenNow);
+                                    make_chain_event_ops.push(make_chain_event());
+                                }
+                                Entry::Occupied(mut occupied_entry) => match occupied_entry.get() {
+                                    EventState::SeenPreviously => {
+                                        info!("found previously seen event");
+                                        occupied_entry.insert(EventState::SeenNow);
+                                    }
+                                    EventState::SeenNow => {
+                                        warn!("found duplicate event, likely due to a load-balanced rpc with poor nodes. additional data may have been missed!");
+                                    }
+                                },
+                            };
+                        } else {
+                            found_events.insert(event.event.hash());
+                            make_chain_event_ops.push(make_chain_event());
+                        }
+                    }
+                }
+                page = page.checked_add(1).unwrap();
+            }
+        }
+
+        Ok(conc(make_chain_event_ops.into_iter().chain(
+            already_seen_events.is_none().then(|| {
+                seq([
+                    call(WaitForHeight {
+                        chain_id: self.chain_id.clone(),
+                        height: Height::new(height.height() + self.refetch_delay),
+                        finalized: true,
+                    }),
+                    call(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(FetchBlock {
+                            height,
+                            already_seen_events: Some(found_events),
+                        }),
+                    )),
+                ])
+            }),
+        )))
     }
 
     #[instrument(level = "info", skip_all, fields(%height, %tx_hash))]
