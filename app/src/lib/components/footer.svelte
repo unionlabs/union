@@ -15,7 +15,6 @@ const navigationIconStyle = "size-7 min-w-6 dark:hover:text-white text-zinc-acce
 $: isCurrentPage = (route: string) => $page.route.id?.split("/")[1] === route
 
 let buttons = [
-  { displayName: "home", href: "", icon: HomeIcon },
   { displayName: "transfer", href: "transfer", icon: ArrowDownUpIcon },
   { displayName: "explorer", href: "explorer", icon: TelescopeIcon },
   { displayName: "faucet", href: "faucet", icon: FaucetDripIcon }
@@ -26,7 +25,7 @@ let buttons = [
   class={cn(
     'uppercase font-supermolot font-bold text-xl',
     'border-t bg-card',
-    'grid md:hidden grid-cols-5 place-content-center items-center',
+    'grid md:hidden grid-cols-4 place-content-center items-center',
     // styling children
   )}
 >
