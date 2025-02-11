@@ -126,12 +126,12 @@ $: pTraces = ((): Array<Trace> => {
     </div>
     <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-80px)] break-words justify-center">
       {#if trace.timestamp}
-        <p class="text-xs -mb-1 text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain.chain_id, chains)} at {#if trace.block_url}<a class="underline" href={trace.block_url}>{trace.height}</a>{:else}{trace.height}{/if}</p>
+        <p class="text-xs -mb-1 text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain.chain_id, chains)} at {#if trace.block_url}<a class="underline" target="_blank" href={trace.block_url}>{trace.height}</a>{:else}{trace.height}{/if}</p>
       {/if}
       <div>{trace.type}</div>
       {#if trace.transaction_hash}
         {#if trace.transaction_url}
-          <a href={trace.transaction_url} class="-mt-1 block underline text-xs text-muted-foreground"><Truncate class="underline" value={trace.transaction_hash} type="hash"/></a>
+          <a href={trace.transaction_url} target="_blank"  class="-mt-1 block underline text-xs text-muted-foreground"><Truncate class="underline" value={trace.transaction_hash} type="hash"/></a>
         {:else}
           <p class="text-xs text-muted-foreground"><Truncate value={trace.transaction_hash} type="hash"/></p>
         {/if}

@@ -94,7 +94,7 @@ onDestroy(unsubscribe)
         {#each $virtualizer.getVirtualItems() as row, index (row.index)}
           {@const url = $rows[row.index].original.url ?? undefined}
           <Table.Row
-            class={cn("cursor-pointer",
+            class={cn(url ? "cursor-pointer" : "",
             index % 2 === 0 ? 'bg-secondary/10' : 'bg-transparent',
           )}
             on:click={(e) => {if (url) { goto(url)}}}
