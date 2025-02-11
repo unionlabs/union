@@ -121,7 +121,7 @@
         }
       }
     },
-    "channels": [1, 4]
+    "channels": [1, 3, 4]
   },
   {
     "chain_id": "osmo-test-5",
@@ -216,7 +216,7 @@
         }
       }
     },
-    "channels": [42, 43]
+    "channels": [42, 43, 45]
   },
   {
     "chain_id": "11155111",
