@@ -338,6 +338,7 @@ async function doTransfer(task: TransferConfig) {
       )
       return
     }
+
     let taskDenomAddr = task.denomAddress
     if (!taskDenomAddr.startsWith("0x")) {
       taskDenomAddr = toHex(taskDenomAddr)
@@ -401,23 +402,44 @@ async function doTransfer(task: TransferConfig) {
         chainId: task.sourceChainIdEVM,
         transport: fallback(transports)
       })
-      const approveResponse = await unionClient.approveErc20(txPayload)
-      consola.info("approve response: ", approveResponse)
-      if (approveResponse.isErr()) {
-        consola.error(approveResponse.error)
-        return
-      }
+      // no need to approve for EVM, already approved all holesky & sepolia it will be waste
+      // of time.
+
+      // const approveResponse = await unionClient.approveErc20(txPayload)
+      // consola.info("approve response: ", approveResponse)
+      // if (approveResponse.isErr()) {
+      //   consola.error(approveResponse.error)
+      //   return
+      // }
     }
 
     const transferResp = await unionClient.transferAsset(txPayload)
     if (transferResp.isErr()) {
-      consola.error("[%s] Transfer error:", chainType, transferResp.error)
+      consola.error(
+        "[%s] [%s->%s] Transfer error:",
+        chainType,
+        isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
+        task.destinationChainId,
+        transferResp.error
+      )
       return
     }
-    consola.info("[%s] Transfer success:", chainType, transferResp.value)
+    consola.info(
+      "[%s] [%s->%s] Transfer success:",
+      chainType,
+      isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
+      task.destinationChainId,
+      transferResp.value
+    )
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
-    consola.error("[%s] Transfer exception: %s", chainType, msg)
+    consola.error(
+      "[%s] [%s->%s] Transfer exception: %s",
+      isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
+      task.destinationChainId,
+      chainType,
+      msg
+    )
   }
 }
 
