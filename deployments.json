@@ -90,7 +90,7 @@
         }
       }
     },
-    "channels": [1, 3]
+    "channels": [1, 3, 4]
   },
   {
     "chain_id": "elgafar-1",
@@ -120,7 +120,8 @@
           "height": 14775531
         }
       }
-    }
+    },
+    "channels": [1]
   },
   {
     "chain_id": "osmo-test-5",
