@@ -588,34 +588,38 @@ _: {
                 cd $out
 
                 jq --compact-output --slurp 'map(.abi) | add' \
-                  ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json > ibc-handler.json
+                  ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json > core.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/Relay.sol/IRelay.json \
                   ${contracts}/out/Relay.sol/UCS01Relay.json \
                   ${contracts}/out/Relay.sol/RelayLib.json \
-                  ${contracts}/out/Relay.sol/RelayPacketLib.json > ucs-01.json
+                  ${contracts}/out/Relay.sol/RelayPacketLib.json > app.ucs01.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/NFT.sol/NFTLib.json \
                   ${contracts}/out/NFT.sol/NFTPacketLib.json \
-                  ${contracts}/out/NFT.sol/UCS02NFT.json > ucs-02.json
+                  ${contracts}/out/NFT.sol/UCS02NFT.json > app.ucs02.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/Zkgm.sol/ZkgmLib.json \
-                  ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > ucs-03.json
+                  ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > app.ucs03.json
+
+                jq --compact-output --slurp 'map(.abi) | add' \
+                  ${contracts}/out/CometblsClient.sol/CometblsClient.json \
+                  ${contracts}/out/CometblsClient.sol/CometblsClientLib.json > lightclient.cometbls.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptClient.json \
-                  ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptLib.json > state-lens-ics23-mpt-client.json
+                  ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptLib.json > lightclient.state-lens-ics23-mpt.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Client.json \
-                  ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Lib.json > state-lens-ics23-ics23-client.json
+                  ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Lib.json > lightclient.state-lens-ics23-ics23.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/StateLensIcs23SmtClient.sol/StateLensIcs23SmtClient.json \
-                  ${contracts}/out/StateLensIcs23SmtClient.sol/StateLensIcs23SmtLib.json > state-lens-ics23-smt-client.json
+                  ${contracts}/out/StateLensIcs23SmtClient.sol/StateLensIcs23SmtLib.json > lightclient.state-lens-ics23-smt.json
               ''
           );
 
