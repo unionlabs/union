@@ -197,7 +197,7 @@ fn verify_header<T: ZkpVerifier>(
     }
 
     if is_client_expired(
-        untrusted_timestamp,
+        trusted_timestamp,
         client_state.trusting_period,
         ctx.env.block.time.nanos(),
     ) {

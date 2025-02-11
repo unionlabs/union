@@ -107,7 +107,8 @@ contract CometblsClientTest is Test {
 
     function misbehaviour_common(
         uint256 vm_warp,
-        uint64 trustingPeriod
+        uint64 trustingPeriod,
+        uint64 maxClockDrift
     ) public {
         uint32 clientId = 1;
 
@@ -118,7 +119,7 @@ contract CometblsClientTest is Test {
         ClientState memory clientState = ClientState({
             chainId: bytes31("test-chain"),
             trustingPeriod: trustingPeriod,
-            maxClockDrift: trustingPeriod,
+            maxClockDrift: maxClockDrift,
             frozenHeight: 0,
             latestHeight: 99,
             contractAddress: keccak256("test")
@@ -147,7 +148,7 @@ contract CometblsClientTest is Test {
     }
 
     function test_misbehaviour_freezesClient() public {
-        misbehaviour_common(1000000, 8640000000000000000);
+        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -189,7 +190,7 @@ contract CometblsClientTest is Test {
     }
 
     function test_misbehaviour_freezesClient_fraud() public {
-        misbehaviour_common(1000000, 8640000000000000000);
+        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -230,7 +231,7 @@ contract CometblsClientTest is Test {
     }
 
     function test_misbehaviour_freezesClient_fraud_different_hash() public {
-        misbehaviour_common(1000000, 8640000000000000000);
+        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -271,7 +272,7 @@ contract CometblsClientTest is Test {
     }
 
     function test_misbehaviour_freezesClient_headers_seq() public {
-        misbehaviour_common(1000000, 8640000000000000000);
+        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -318,7 +319,7 @@ contract CometblsClientTest is Test {
 
     function test_misbehaviour_freezesClient_ErrInvalidMisbehaviourHeadersSequence(
     ) public {
-        misbehaviour_common(1000000, 8640000000000000000);
+        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -360,7 +361,7 @@ contract CometblsClientTest is Test {
 
     function test_misbehaviour_freezesClient_ErrUntrustedHeightLTETrustedHeight(
     ) public {
-        misbehaviour_common(1000000, 8640000000000000000);
+        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -402,7 +403,7 @@ contract CometblsClientTest is Test {
 
     function test_misbehaviour_freezesClient_ErrUntrustedTimestampLTETrustedTimestamp(
     ) public {
-        misbehaviour_common(1000000000000000, 0);
+        misbehaviour_common(1000000000000000, 0, 0);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -445,7 +446,7 @@ contract CometblsClientTest is Test {
     }
 
     function test_misbehaviour_freezesClient_ErrHeaderExpired() public {
-        misbehaviour_common(1000000000000000, 0);
+        misbehaviour_common(1000000000000000, 0, 0);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -486,7 +487,7 @@ contract CometblsClientTest is Test {
     function test_misbehaviour_freezesClient_ErrMaxClockDriftExceeded()
         public
     {
-        misbehaviour_common(1000000, 0);
+        misbehaviour_common(1000000, 8640000000000000000, 0);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -529,7 +530,7 @@ contract CometblsClientTest is Test {
     function test_misbehaviour_freezesClient_ErrInvalidUntrustedValidatorsHash()
         public
     {
-        misbehaviour_common(1000000, 8640000000000000000);
+        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -570,7 +571,7 @@ contract CometblsClientTest is Test {
     }
 
     function test_misbehaviour_freezesClient_ErrInvalidZKP() public {
-        misbehaviour_common(1000000, 8640000000000000000);
+        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -645,7 +646,7 @@ contract CometblsClientTest is Test {
     }
 
     function test_updateClient_success() public {
-        misbehaviour_common(1000000, 8640000000000000000);
+        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
         uint32 clientId = 1;
 
         ClientState memory clientState = ClientState({

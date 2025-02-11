@@ -325,7 +325,7 @@ contract CometblsClient is
         uint64 currentTime = uint64(block.timestamp * 1e9);
         if (
             CometblsClientLib.isExpired(
-                untrustedTimestamp, clientState.trustingPeriod, currentTime
+                trustedTimestamp, clientState.trustingPeriod, currentTime
             )
         ) {
             revert CometblsClientLib.ErrHeaderExpired();
