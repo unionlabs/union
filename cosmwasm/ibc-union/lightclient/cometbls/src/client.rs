@@ -141,6 +141,13 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
     > {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
+
+        // If the update is already happened, we just do noop
+        let header_height = header.signed_header.height.inner() as u64;
+        if let Ok(cons) = ctx.read_self_consensus_state(header_height) {
+            return Ok((header_height, client_state, cons));
+        }
+
         verify_header::<T>(&ctx, &client_state, &consensus_state, &header)?;
 
         update_state(client_state, consensus_state, header).map_err(Into::into)
