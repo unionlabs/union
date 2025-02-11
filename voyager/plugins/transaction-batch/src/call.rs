@@ -112,25 +112,14 @@ where
             )
         } else {
             Ok(promise(
-                [
-                    // promise(
-                    // [
-                    call(FetchUpdateHeaders {
-                        client_type: client_info.client_type,
-                        counterparty_chain_id: module.chain_id.clone(),
-                        chain_id: client_meta.counterparty_chain_id,
-                        client_id: RawClientId::new(self.client_id.clone()),
-                        update_from: client_meta.counterparty_height,
-                        update_to: latest_height,
-                    }), // ],
-                        // [],
-                        // AggregateOrderedClientUpdatesFromOrderedHeaders {
-                        //     chain_id: module.chain_id.clone(),
-                        //     ibc_spec_id: V::ID,
-                        //     client_id: RawClientId::new(self.client_id.clone()),
-                        // },
-                        // )
-                ],
+                [call(FetchUpdateHeaders {
+                    client_type: client_info.client_type,
+                    counterparty_chain_id: module.chain_id.clone(),
+                    chain_id: client_meta.counterparty_chain_id,
+                    client_id: RawClientId::new(self.client_id.clone()),
+                    update_from: client_meta.counterparty_height,
+                    update_to: latest_height,
+                })],
                 [],
                 PluginMessage::new(
                     module.plugin_name(),

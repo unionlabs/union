@@ -24,7 +24,7 @@ use crate::{
 #[model]
 #[derive(Enumorph)]
 pub enum Callback {
-    AggregateOrderedClientUpdatesFromOrderedHeaders(AggregateSubmitTxFromOrderedHeaders),
+    AggregateSubmitTxFromOrderedHeaders(AggregateSubmitTxFromOrderedHeaders),
 
     Plugin(PluginMessage),
 }
@@ -49,7 +49,7 @@ impl CallbackT<VoyagerMessage> for Callback {
         data: VecDeque<Data>,
     ) -> Result<Op<VoyagerMessage>, QueueError> {
         match self {
-            Callback::AggregateOrderedClientUpdatesFromOrderedHeaders(
+            Callback::AggregateSubmitTxFromOrderedHeaders(
                 AggregateSubmitTxFromOrderedHeaders {
                     ibc_spec_id,
                     chain_id,
@@ -67,8 +67,8 @@ impl CallbackT<VoyagerMessage> for Callback {
                     .map_err(|found| {
                         QueueError::Fatal(
                             format!(
-                                "OrderedHeaders not present in data queue for \
-                                AggregateOrderedClientUpdatesFromOrderedHeaders, \
+                                "OrderedHeaders not present in data queue \
+                                for AggregateSubmitTxFromOrderedHeaders, \
                                 found {found}",
                             )
                             .into(),
