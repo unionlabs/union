@@ -11,11 +11,11 @@ import { Button } from "$lib/components/ui/button/index.ts"
 import SpinnerSVG from "$lib/components/spinner-svg.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import { derived, writable, type Writable } from "svelte/store"
-import { dydxFaucetMutation } from "$lib/graphql/queries/faucet"
 import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
 import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 import { bech32ToBech32Address, isValidBech32Address } from "@unionlabs/client"
 import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
+import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts"
 
 type DydxFaucetState = DiscriminatedUnion<
   "kind",
@@ -74,12 +74,14 @@ const requestDydxFromFaucet = async () => {
 
   if ($dydxFaucetState.kind === "SUBMITTING") {
     try {
-      const result = await request(URLS().GRAPHQL, dydxFaucetMutation, {
+      const result = await request(URLS().GRAPHQL, faucetUnoMutation2, {
+        chainId: "dydx-testnet-4",
+        denom: "adv4tnt",
         address: $dydxAddress,
         captchaToken: $dydxFaucetState.captchaToken
       })
 
-      if (!result.dydx_faucet) {
+      if (!result.send) {
         dydxFaucetState.set({
           kind: "RESULT_ERR",
           error: "Empty faucet response"
@@ -87,11 +89,11 @@ const requestDydxFromFaucet = async () => {
         return
       }
 
-      if (result.dydx_faucet.send.startsWith("ERROR")) {
-        console.error(result.dydx_faucet.send)
+      if (result.send.startsWith("ERROR")) {
+        console.error(result.send)
         dydxFaucetState.set({
           kind: "RESULT_ERR",
-          error: result.dydx_faucet.send.endsWith("ratelimited")
+          error: result.send.endsWith("ratelimited")
             ? "You already got adv4tnt from the faucet today. Try again in 24 hours."
             : "Error from faucet"
         })
@@ -100,7 +102,7 @@ const requestDydxFromFaucet = async () => {
 
       dydxFaucetState.set({
         kind: "RESULT_OK",
-        message: result.dydx_faucet.send
+        message: result.send
       })
     } catch (error) {
       console.error(error)
