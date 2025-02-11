@@ -17,24 +17,20 @@ if (!BigInt.prototype.toJSON) {
 
 import { request, gql } from "graphql-request"
 import fetch, { Headers } from "node-fetch"
-import fs from "fs"
+import fs from "node:fs"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import consola from "consola"
 
 // For the EVM cross-chain transfer snippet:
-import { Address, fallback, http, fromHex, toHex } from "viem"
-import { bech32, hex, bytes } from "@scure/base"
-import { holesky, sepolia } from "viem/chains"
+import { type Address, fallback, http, fromHex, toHex } from "viem"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { privateKeyToAccount } from "viem/accounts"
-// If you’re pulling createUnionClient from your local or a published package:
 import {
-  ChainId,
-  CosmosChainId,
+  type ChainId,
+  type CosmosChainId,
   createUnionClient,
-  EvmChainId,
-  type TransferAssetsParameters,
+  type EvmChainId,
   hexToBytes,
   getRecommendedChannels,
   getChannelInfo,
@@ -65,27 +61,26 @@ interface TransferConfig {
   sourceChainIdEVM: EvmChainId
   sourceChainIdCosmos: CosmosChainId
   destinationChainId: ChainId
-  rpcs: string[]
+  rpcs: Array<string>
   gasPriceDenom: string
   receiverAddress: Address
   denomAddress: Address
-  amount_range: bigint[]
+  amount_range: Array<bigint>
   cosmosAccountType: string
 }
 
 // Combined config shape
 interface ConfigFile {
-  interactions: ChainPair[]
+  interactions: Array<ChainPair>
   cycleIntervalMs: number
-  transfers?: TransferConfig[] // optional array
-  privkeys_for_loadtest?: string[]
-  load_test_request: number
+  transfers?: Array<TransferConfig> // optional array
+  privkeys_for_loadtest?: Array<string>
   load_test_enabled: boolean
 }
 
 // The shape of Hasura’s response
 interface HasuraResponse {
-  v1_ibc_union_packets: Packet[]
+  v1_ibc_union_packets: Array<Packet>
 }
 
 // Define our expected shape from Hasura
@@ -243,13 +238,7 @@ export async function checkPackets(
       }
 
       // 1) RECV
-      if (!recvStr) {
-        consola.error(
-          `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
-        )
-        reportedsendTxHashes.add(sendTxHash)
-        continue
-      } else {
+      if (recvStr) {
         const recvTimeMs = new Date(recvStr).getTime()
         if (recvTimeMs - sendTimeMs > timeframeMs) {
           consola.error(
@@ -257,16 +246,16 @@ export async function checkPackets(
           )
           reportedsendTxHashes.add(sendTxHash)
         }
-      }
-
-      // 2) WRITE_ACK
-      if (!writeAckStr) {
+      } else {
         consola.error(
-          `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+          `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
         )
         reportedsendTxHashes.add(sendTxHash)
         continue
-      } else {
+      }
+
+      // 2) WRITE_ACK
+      if (writeAckStr) {
         const writeAckTimeMs = new Date(writeAckStr).getTime()
         if (writeAckTimeMs - sendTimeMs > timeframeMs) {
           consola.error(
@@ -274,15 +263,16 @@ export async function checkPackets(
           )
           reportedsendTxHashes.add(sendTxHash)
         }
+      } else {
+        consola.error(
+          `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+        )
+        reportedsendTxHashes.add(sendTxHash)
+        continue
       }
 
       // 3) ACK
-      if (!ackStr) {
-        consola.error(
-          `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
-        )
-        reportedsendTxHashes.add(sendTxHash)
-      } else {
+      if (ackStr) {
         const ackTimeMs = new Date(ackStr).getTime()
         if (ackTimeMs - sendTimeMs > timeframeMs) {
           consola.error(
@@ -290,6 +280,11 @@ export async function checkPackets(
           )
           reportedsendTxHashes.add(sendTxHash)
         }
+      } else {
+        consola.error(
+          `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+        )
+        reportedsendTxHashes.add(sendTxHash)
       }
     }
   } catch (error: any) {
@@ -388,7 +383,7 @@ async function doTransfer(task: TransferConfig) {
           sourceChannelId: channel.source_channel_id,
           ucs03address: `0x${channel.source_port_id}` as `0x${string}`
         }
-    let unionClient = null
+    let unionClient: any
     if (isCosmosChain) {
       unionClient = createUnionClient({
         account: cosmosAccount,
@@ -448,7 +443,7 @@ async function doTransfer(task: TransferConfig) {
  * (For example, once every hour if config.cycleIntervalMs = 3600000)
  */
 async function runIbcChecksForever(config: ConfigFile) {
-  const chainPairs: ChainPair[] = config.interactions
+  const chainPairs: Array<ChainPair> = config.interactions
 
   while (true) {
     consola.info("\n========== Starting IBC cross-chain checks ==========")
@@ -489,7 +484,7 @@ async function runIbcChecksForever(config: ConfigFile) {
  * regardless of how often IBC checks happen.
  */
 async function runTransfersForever(config: ConfigFile) {
-  const transfers: TransferConfig[] = config.transfers ?? []
+  const transfers: Array<TransferConfig> = config.transfers ?? []
   const TEN_MINUTES_MS = 10 * 60 * 1000
 
   while (true) {
@@ -518,21 +513,16 @@ function sleepSync(ms: number) {
  * This will trigger N parallel transfers *without* awaiting their completion.
  *
  * @param task The transfer configuration
- * @param totalRequests How many transfer calls to spawn
  * @param privKeys Optional array of private keys to rotate through
  */
-async function doTransferLoadTest(
-  transfers: TransferConfig[],
-  totalRequests: number,
-  privKeys?: string[]
-) {
+async function doTransferLoadTest(transfers: Array<TransferConfig>, privKeys?: Array<string>) {
   while (true) {
     for (const task of transfers) {
       if (!task.enabled) {
         consola.info("Transfer task is disabled. Skipping.")
         continue
       }
-      const useKeys = privKeys?.length ? privKeys : [task.privateKey]
+      const useKeys = privKeys && privKeys.length > 0 ? privKeys : [task.privateKey]
       for (let i = 0; i < useKeys.length; i++) {
         const newPrivateKey = useKeys[i]
         const loadTask = { ...task, privateKey: newPrivateKey } // overwrite the key
@@ -571,14 +561,14 @@ async function main() {
   const is_loadtest = config.load_test_enabled ? true : false
   if (is_loadtest) {
     // Run a one-time load test
-    const transfers: TransferConfig[] = config.transfers ?? []
+    const transfers: Array<TransferConfig> = config.transfers ?? []
     if (transfers.length === 0) {
       consola.warn("No transfers configured. Nothing to load-test.")
       return
     }
 
     consola.info("========== Starting Load Test ==========")
-    doTransferLoadTest(transfers, config.load_test_request, config.privkeys_for_loadtest)
+    doTransferLoadTest(transfers, config.privkeys_for_loadtest)
 
     // You can exit after scheduling them if you don't want
     // to remain running. Or keep the process alive if needed.

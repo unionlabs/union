@@ -10,7 +10,7 @@ if (!BigInt.prototype.toJSON) {
 }
 import { request, gql } from "graphql-request";
 import fetch, { Headers } from "node-fetch";
-import fs from "fs";
+import fs from "node:fs";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import consola from "consola";
@@ -18,7 +18,6 @@ import consola from "consola";
 import { fallback, http, fromHex, toHex } from "viem";
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing";
 import { privateKeyToAccount } from "viem/accounts";
-// If you’re pulling createUnionClient from your local or a published package:
 import { createUnionClient, hexToBytes, getRecommendedChannels, getChannelInfo, getQuoteToken } from "@unionlabs/client";
 // Hasura endpoint
 const HASURA_ENDPOINT = "https://hubble-purple.hasura.app/v1/graphql";
@@ -139,42 +138,42 @@ export async function checkPackets(sourceChain, destinationChain, timeframeMs) {
                 continue;
             }
             // 1) RECV
-            if (!recvStr) {
-                consola.error(`[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`);
-                reportedsendTxHashes.add(sendTxHash);
-                continue;
-            }
-            else {
+            if (recvStr) {
                 const recvTimeMs = new Date(recvStr).getTime();
                 if (recvTimeMs - sendTimeMs > timeframeMs) {
                     consola.error(`[RECV TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, recv_time=${recvStr}, sendTxHash=${sendTxHash}`);
                     reportedsendTxHashes.add(sendTxHash);
                 }
             }
-            // 2) WRITE_ACK
-            if (!writeAckStr) {
-                consola.error(`[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`);
+            else {
+                consola.error(`[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`);
                 reportedsendTxHashes.add(sendTxHash);
                 continue;
             }
-            else {
+            // 2) WRITE_ACK
+            if (writeAckStr) {
                 const writeAckTimeMs = new Date(writeAckStr).getTime();
                 if (writeAckTimeMs - sendTimeMs > timeframeMs) {
                     consola.error(`[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. sendTxHash=${sendTxHash}, send_time=${sendStr}, write_ack_time=${writeAckStr}`);
                     reportedsendTxHashes.add(sendTxHash);
                 }
             }
-            // 3) ACK
-            if (!ackStr) {
-                consola.error(`[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`);
-                reportedsendTxHashes.add(sendTxHash);
-            }
             else {
+                consola.error(`[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`);
+                reportedsendTxHashes.add(sendTxHash);
+                continue;
+            }
+            // 3) ACK
+            if (ackStr) {
                 const ackTimeMs = new Date(ackStr).getTime();
                 if (ackTimeMs - sendTimeMs > timeframeMs) {
                     consola.error(`[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, ack_time=${ackStr}, sendTxHash=${sendTxHash}`);
                     reportedsendTxHashes.add(sendTxHash);
                 }
+            }
+            else {
+                consola.error(`[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`);
+                reportedsendTxHashes.add(sendTxHash);
             }
         }
     }
@@ -250,7 +249,7 @@ async function doTransfer(task) {
                 sourceChannelId: channel.source_channel_id,
                 ucs03address: `0x${channel.source_port_id}`
             };
-        let unionClient = null;
+        let unionClient;
         if (isCosmosChain) {
             unionClient = createUnionClient({
                 account: cosmosAccount,
@@ -352,17 +351,16 @@ function sleepSync(ms) {
  * This will trigger N parallel transfers *without* awaiting their completion.
  *
  * @param task The transfer configuration
- * @param totalRequests How many transfer calls to spawn
  * @param privKeys Optional array of private keys to rotate through
  */
-async function doTransferLoadTest(transfers, totalRequests, privKeys) {
+async function doTransferLoadTest(transfers, privKeys) {
     while (true) {
         for (const task of transfers) {
             if (!task.enabled) {
                 consola.info("Transfer task is disabled. Skipping.");
                 continue;
             }
-            const useKeys = privKeys?.length ? privKeys : [task.privateKey];
+            const useKeys = privKeys && privKeys.length > 0 ? privKeys : [task.privateKey];
             for (let i = 0; i < useKeys.length; i++) {
                 const newPrivateKey = useKeys[i];
                 const loadTask = { ...task, privateKey: newPrivateKey }; // overwrite the key
@@ -404,7 +402,7 @@ async function main() {
             return;
         }
         consola.info("========== Starting Load Test ==========");
-        doTransferLoadTest(transfers, config.load_test_request, config.privkeys_for_loadtest);
+        doTransferLoadTest(transfers, config.privkeys_for_loadtest);
         // You can exit after scheduling them if you don't want
         // to remain running. Or keep the process alive if needed.
         // If you prefer to exit:

@@ -1,11 +1,12 @@
 { self, ... }:
 {
   perSystem =
-    { pkgs
-    , jsPkgs
-    , ensureAtRepositoryRoot
-    , lib
-    , ...
+    {
+      pkgs,
+      jsPkgs,
+      ensureAtRepositoryRoot,
+      lib,
+      ...
     }:
     let
       deps = with jsPkgs; [
@@ -82,7 +83,13 @@
         };
       };
     };
-  flake.nixosModules.sentinel = { lib, pkgs, config, ... }:
+  flake.nixosModules.sentinel =
+    {
+      lib,
+      pkgs,
+      config,
+      ...
+    }:
     with lib;
     let
       cfg = config.services.sentinel;
@@ -137,14 +144,16 @@
             Type = "simple";
             ExecStart = ''
               ${pkgs.lib.getExe cfg.package} --config ${
-                pkgs.writeText "config.json" (builtins.toJSON {
-                  cycleIntervalMs = cfg.cycleIntervalMs;
-                  interactions = cfg.interactions;
-                  transfers = cfg.transfers;
-                  privkeys_for_loadtest = cfg.privkeys_for_loadtest;
-                  load_test_enabled = cfg.load_test_enabled;
-                  load_test_request = cfg.load_test_request;
-                })
+                pkgs.writeText "config.json" (
+                  builtins.toJSON {
+                    inherit (cfg) cycleIntervalMs;
+                    inherit (cfg) interactions;
+                    inherit (cfg) transfers;
+                    inherit (cfg) privkeys_for_loadtest;
+                    inherit (cfg) load_test_enabled;
+                    inherit (cfg) load_test_request;
+                  }
+                )
               }
             '';
             Restart = "always";
