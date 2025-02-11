@@ -130,7 +130,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         }
 
         if is_client_expired(
-            untrusted_timestamp,
+            trusted_timestamp,
             client_state.data.trusting_period,
             env.block.time.nanos(),
         ) {
