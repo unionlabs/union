@@ -24,6 +24,7 @@ _: {
             srcs = [
               ./.
               ./../versions/.
+              ./../deployments/.
             ];
             sourceRoot = "docs";
             pname = packageJSON.name;

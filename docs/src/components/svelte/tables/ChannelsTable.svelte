@@ -68,8 +68,8 @@ async function fetchChannels() {
   // @ts-expect-error
   const rows = dataArray.map(item => [
     item.source_chain.display_name,
-    item.source_connection_id?.split("-")?.at(-1),
-    item.source_channel_id?.split("-")?.at(-1),
+    item.source_connection_id,
+    item.source_channel_id,
     item.status,
     item.version
   ]) as Array<Array<string>>
