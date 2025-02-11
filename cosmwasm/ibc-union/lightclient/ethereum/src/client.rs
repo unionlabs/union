@@ -343,6 +343,18 @@ pub fn verify_misbehaviour<C: ChainSpec>(
     )
     .map_err(Error::ValidateLightClient)?;
 
+    // check whether at least 2/3 of the sync committee signed
+    ensure(
+        validate_signature_supermajority(
+            &misbehaviour
+                .update_1
+                .update_data()
+                .sync_aggregate
+                .sync_committee_bits,
+        ),
+        Error::NotEnoughSignatures,
+    )?;
+
     let (current_sync_committee, next_sync_committee) =
         misbehaviour.update_2.currently_trusted_sync_committee();
 
@@ -357,6 +369,17 @@ pub fn verify_misbehaviour<C: ChainSpec>(
         VerificationContext { deps: ctx.deps },
     )
     .map_err(Error::ValidateLightClient)?;
+
+    ensure(
+        validate_signature_supermajority(
+            &misbehaviour
+                .update_2
+                .update_data()
+                .sync_aggregate
+                .sync_committee_bits,
+        ),
+        Error::NotEnoughSignatures,
+    )?;
 
     Ok(())
 }
