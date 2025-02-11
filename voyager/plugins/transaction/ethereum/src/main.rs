@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, panic::AssertUnwindSafe};
 
 use alloy::{
     contract::{Error, RawCallBuilder},
@@ -243,7 +243,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let msgs = msgs.clone();
                         move |wallet| -> _ {
                             // let call = if self.legacy { call.legacy() } else { call };
-                            self.submit_transaction(wallet, msgs)
+                            AssertUnwindSafe(self.submit_transaction(wallet, msgs))
                         }
                     })
                     .await;

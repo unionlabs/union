@@ -1,6 +1,6 @@
 // #![warn(clippy::unwrap_used)]
 
-use std::collections::VecDeque;
+use std::{collections::VecDeque, panic::AssertUnwindSafe};
 
 use chain_utils::{
     cosmos_sdk::{
@@ -166,11 +166,12 @@ impl Module {
 
                 trace!(?msgs);
 
-                async move {
+                AssertUnwindSafe(async move {
                     // TODO: Figure out a way to thread this value through
                     let memo = format!("Voyager {}", env!("CARGO_PKG_VERSION"));
 
-                    let msgs = process_msgs(msgs, signer, self.ibc_host_contract_address.clone());
+                    let ibc_host_contract_address = self.ibc_host_contract_address.clone();
+                    let msgs = process_msgs(msgs, signer, ibc_host_contract_address);
 
                     // let simulation_results = stream::iter(msgs.clone().into_iter().enumerate())
                     //     .then(move |(idx, (effect, msg))| async move {
@@ -279,7 +280,7 @@ impl Module {
                             err => Err(err),
                         },
                     }
-                }
+                })
             })
             .await;
 
@@ -310,7 +311,7 @@ impl Module {
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
         memo: String,
     ) -> Result<(H256, BoundedI64<0, { i64::MAX }>), BroadcastTxCommitError> {
-        let account = self.account_info(&signer.to_string()).await;
+        let account = self.account_info(&signer.to_string()).await.unwrap();
 
         let (tx_body, mut auth_info, simulation_gas_info) =
             match self.simulate_tx(signer, messages, memo).await {
@@ -480,7 +481,7 @@ impl Module {
     ) -> Result<(TxBody, AuthInfo, GasInfo), (TxBody, AuthInfo, tonic::Status)> {
         use protos::cosmos::tx;
 
-        let account = self.account_info(&signer.to_string()).await;
+        let account = self.account_info(&signer.to_string()).await.unwrap();
 
         let mut client = tx::v1beta1::service_client::ServiceClient::connect(self.grpc_url.clone())
             .await
@@ -553,7 +554,7 @@ impl Module {
         }
     }
 
-    async fn account_info(&self, account: &str) -> BaseAccount {
+    async fn account_info(&self, account: &str) -> RpcResult<BaseAccount> {
         debug!(%account, "fetching account");
 
         let Any(account) = protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(
@@ -565,14 +566,32 @@ impl Module {
             address: account.to_string(),
         })
         .await
-        .unwrap()
+        .map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                format!(
+                    "error fetching account info for {account}: {}",
+                    ErrorReporter(e)
+                ),
+                None::<()>,
+            )
+        })?
         .into_inner()
         .account
         .unwrap()
         .try_into()
-        .unwrap();
+        .map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                format!(
+                    "unable to decode account info for {account}: {}",
+                    ErrorReporter(e)
+                ),
+                None::<()>,
+            )
+        })?;
 
-        account
+        Ok(account)
     }
 }
 

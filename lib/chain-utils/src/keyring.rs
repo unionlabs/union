@@ -1,10 +1,12 @@
-use std::{collections::HashMap, fmt::Display, hash::Hash, path::PathBuf, sync::Arc};
+use std::{
+    collections::HashMap, fmt::Display, hash::Hash, panic::UnwindSafe, path::PathBuf, sync::Arc,
+};
 
 use crossbeam_queue::ArrayQueue;
-use futures::Future;
+use futures::{Future, FutureExt};
 use rand::prelude::SliceRandom;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info_span, Instrument};
+use tracing::{debug, info_span, warn, Instrument};
 
 pub trait ChainKeyring {
     type Address: Hash + Eq + Clone + Display + Send + Sync;
@@ -83,10 +85,11 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
         self.key_to_address.iter().map(|(a, b)| (a.as_str(), b))
     }
 
-    pub async fn with<'a, F: FnOnce(&'a S) -> Fut + 'a, Fut: Future<Output: 'a> + 'a>(
-        &'a self,
-        f: F,
-    ) -> Option<Fut::Output> {
+    pub async fn with<'a, F, Fut>(&'a self, f: F) -> Option<Fut::Output>
+    where
+        F: FnOnce(&'a S) -> Fut + 'a,
+        Fut: Future<Output: 'a> + Sized + UnwindSafe + 'a,
+    {
         let Some(address) = self.addresses_buffer.pop() else {
             debug!(keyring = %self.name, "high traffic in keyring");
             return None;
@@ -99,6 +102,7 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
         let secret = self.signers.get(&address).expect("key is present; qed;");
 
         let r = f(secret)
+            .catch_unwind()
             .instrument(info_span!(
                 "using signer",
                 keyring = %self.name,
@@ -112,7 +116,21 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
             .ok()
             .expect("no additional items are added; qed;");
 
-        Some(r)
+        match r {
+            Ok(res) => Some(res),
+            Err(err) => {
+                // lol https://github.com/rust-lang/rust/blob/1.67.1/library/std/src/panicking.rs#L247-L253
+                let err = err
+                    .downcast::<String>()
+                    .map(|s| *s)
+                    .or_else(|err| err.downcast::<&str>().map(|s| (*s).to_owned()))
+                    .unwrap_or_else(|_| "Box<dyn Any>".to_owned());
+
+                warn!("ConcurrentKeyring::with future panicked: {err}");
+
+                None
+            }
+        }
     }
 }
 

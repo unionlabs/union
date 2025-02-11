@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, sync::Arc};
+use std::{collections::VecDeque, panic::AssertUnwindSafe, sync::Arc};
 
 use aptos_crypto::{ed25519::Ed25519PrivateKey, PrivateKey};
 use aptos_rest_client::aptos_api_types::Address;
@@ -198,7 +198,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 .keyring
                 .with(|pk| {
                     let msgs = msgs.clone();
-                    async move {
+                    AssertUnwindSafe(async move {
                         let sender = (*<H256>::from(
                             sha3::Sha3_256::new()
                                 .chain_update(pk.public_key().to_bytes())
@@ -251,7 +251,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         // res.into_inner().transaction_failures
 
                         Ok(noop())
-                    }
+                    })
                 })
                 .await
                 .unwrap_or_else(|| {

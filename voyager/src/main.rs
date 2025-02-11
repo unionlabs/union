@@ -26,7 +26,7 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 use voyager_message::{
     call::{FetchBlocks, FetchUpdateHeaders},
-    callback::AggregateMsgUpdateClientsFromOrderedHeaders,
+    callback::AggregateSubmitTxFromOrderedHeaders,
     context::{
         equivalent_chain_ids::EquivalentChainIds, get_plugin_info,
         ibc_spec_handler::IbcSpecHandler, Context, ModulesConfig,
@@ -584,7 +584,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         update_to,
                     })],
                     [],
-                    AggregateMsgUpdateClientsFromOrderedHeaders {
+                    AggregateSubmitTxFromOrderedHeaders {
                         ibc_spec_id: ibc_spec_id.clone(),
                         chain_id: on.clone(),
                         client_id: client_id.clone(),

@@ -9,7 +9,7 @@ use tracing::{error, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, never::Never};
 use voyager_message::{
     call::{FetchUpdateHeaders, WaitForTrustedHeight},
-    callback::AggregateMsgUpdateClientsFromOrderedHeaders,
+    callback::AggregateSubmitTxFromOrderedHeaders,
     core::{ChainId, IbcSpecId, QueryHeight},
     data::Data,
     into_value,
@@ -144,7 +144,7 @@ impl Module {
                         update_to: latest_finalized_height,
                     })],
                     [],
-                    AggregateMsgUpdateClientsFromOrderedHeaders {
+                    AggregateSubmitTxFromOrderedHeaders {
                         ibc_spec_id: ibc_spec_id.clone(),
                         chain_id: chain_id.clone(),
                         client_id: client_id.clone(),
