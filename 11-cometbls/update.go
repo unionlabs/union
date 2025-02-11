@@ -58,10 +58,10 @@ func (cs *ClientState) verifyHeader(
 		)
 	}
 
-	if consState.GetTimestamp() > uint64(header.SignedHeader.GetTime().UnixNano()) {
+	if consState.GetTimestamp() >= uint64(header.SignedHeader.GetTime().UnixNano()) {
 		return errorsmod.Wrapf(
 			ErrInvalidHeaderTimestamp,
-			"trusted header timestamp %d is greater than the new header timestamp %d",
+			"trusted header timestamp %d is greater than or equal to the new header timestamp %d",
 			consState.GetTimestamp(), header.SignedHeader.GetTime().UnixNano(),
 		)
 	}
