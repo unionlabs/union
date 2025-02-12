@@ -9,11 +9,11 @@ import (
 	"cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 
+	apisigning "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 	"cosmossdk.io/client/v2/autocli"
 	corestore "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
-	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 
@@ -131,7 +131,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 			// is only available if the client is online.
 			if !initClientCtx.Offline {
 				txConfigOpts := tx.ConfigOptions{
-					EnabledSignModes:           append(tx.DefaultSignModes, sigtypes.SignMode_SIGN_MODE_TEXTUAL),
+					EnabledSignModes:           append(tx.DefaultSignModes, apisigning.SignMode_SIGN_MODE_TEXTUAL),
 					TextualCoinMetadataQueryFn: txmodule.NewGRPCCoinMetadataQueryFn(initClientCtx),
 					SigningOptions: &signing.Options{
 						AddressCodec: address.Bech32Codec{
@@ -164,7 +164,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		},
 	}
 
-	initRootCmd(rootCmd, encodingConfig, tempApp.ModuleManager)
+	initRootCmd(rootCmd, tempApp.ModuleManager)
 
 	autoCliOpts, err := enrichAutoCliOpts(tempApp.AutoCliOpts(), initClientCtx)
 	if err != nil {
@@ -188,11 +188,11 @@ func enrichAutoCliOpts(autoCliOpts autocli.AppOptions, clientCtx client.Context)
 	if err != nil {
 		return autocli.AppOptions{}, err
 	}
-	autoCliOpts.ClientCtx = clientCtx
 
-	autoCliOpts.ClientCtx.AddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
-	autoCliOpts.ClientCtx.ValidatorAddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())
-	autoCliOpts.ClientCtx.ConsensusAddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix())
+	autoCliOpts.AddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix())
+	autoCliOpts.ValidatorAddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix())
+	autoCliOpts.ConsensusAddressCodec = addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix())
+	autoCliOpts.Cdc = clientCtx.Codec
 
 	return autoCliOpts, nil
 }
@@ -206,7 +206,6 @@ func initCometBFTConfig() *cmtcfg.Config {
 
 func initRootCmd(
 	rootCmd *cobra.Command,
-	encodingConfig appparams.EncodingConfig,
 	moduleManager *module.Manager,
 ) {
 	cfg := sdk.GetConfig()
@@ -232,7 +231,7 @@ func initRootCmd(
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		genesisCommand(encodingConfig.TxConfig, moduleManager),
+		genesisCommand(moduleManager),
 		queryCommand(),
 		txCommand(),
 		keys.Commands(),
@@ -240,7 +239,7 @@ func initRootCmd(
 }
 
 // genesisCommand builds genesis-related `uniond genesis` command. Users may provide application specific commands as a parameter
-func genesisCommand(txConfig client.TxConfig, moduleManager *module.Manager, cmds ...*cobra.Command) *cobra.Command {
+func genesisCommand(moduleManager *module.Manager, cmds ...*cobra.Command) *cobra.Command {
 	cmd := genutilcli.Commands(moduleManager.Modules[genutiltypes.ModuleName].(genutil.AppModule), moduleManager, appExport)
 
 	for _, subCmd := range cmds {

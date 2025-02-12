@@ -483,7 +483,7 @@
               ++ (with unstablePkgs; [
                 wasm-tools
                 postgresql
-                go_1_23
+                go_1_24
                 gopls
                 go-tools
                 gotools

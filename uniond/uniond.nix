@@ -3,9 +3,7 @@ _: {
     {
       pkgs,
       self',
-      crane,
       system,
-      ensureAtRepositoryRoot,
       nix-filter,
       gitRev,
       uniondBundleVersions,
@@ -42,7 +40,7 @@ _: {
       packages = {
         # Statically link on Linux using `pkgsStatic`, dynamically link on Darwin using normal `pkgs`.
         uniond =
-          (if pkgs.stdenv.isLinux then goPkgs.pkgsStatic.buildGo123Module else goPkgs.buildGo123Module)
+          (if pkgs.stdenv.isLinux then goPkgs.pkgsStatic.buildGo124Module else goPkgs.buildGo124Module)
             (
               {
                 name = "uniond";
@@ -54,7 +52,7 @@ _: {
                     (nix-filter.matchExt "md")
                   ];
                 };
-                vendorHash = "sha256-NcTCWXTmjMYkv3cEgcIyhEy18ynELvceEdofBFQVlgM=";
+                vendorHash = "sha256-rJxxyeWaZFzw9AHv6Ap+HgKvqvxhUCIkQaTMAmYcaPU=";
                 doCheck = true;
                 meta.mainProgram = "uniond";
               }
