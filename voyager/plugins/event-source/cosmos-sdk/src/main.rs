@@ -540,8 +540,8 @@ impl Module {
                         (None, _) => {}
                         (Some(addr), None) => {
                             debug!(
-                                    "found ibc-union event for contract {addr}, but no contract address is configured",
-                                );
+                                "found ibc-union event for contract {addr}, but no contract address is configured",
+                            );
                             continue;
                         }
                         (Some(event_addr), Some(configured_addr)) => {
