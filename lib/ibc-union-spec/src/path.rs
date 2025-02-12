@@ -1,4 +1,3 @@
-use alloy_sol_types::SolValue;
 use enumorph::Enumorph;
 use sha3::{Digest, Keccak256};
 use unionlabs::{
@@ -183,8 +182,10 @@ pub struct BatchReceiptsPath {
 }
 
 impl BatchReceiptsPath {
+    #[cfg(feature = "ethabi")]
     #[must_use]
     pub fn from_packets(channel_id: ChannelId, packets: &[&Packet]) -> Self {
+        use alloy_sol_types::SolValue;
         Self {
             channel_id,
             batch_hash: match packets {
@@ -224,8 +225,10 @@ pub struct BatchPacketsPath {
 }
 
 impl BatchPacketsPath {
+    #[cfg(feature = "ethabi")]
     #[must_use]
     pub fn from_packets(channel_id: ChannelId, packets: &[&Packet]) -> Self {
+        use alloy_sol_types::SolValue;
         Self {
             channel_id,
             batch_hash: match packets {
