@@ -420,7 +420,11 @@ impl Module {
                     .clamp(1, self.chunk_block_fetch_size)
                     + height.height();
 
-                info!("batch fetching blocks in range {height}..{next_height}");
+                info!(
+                    from_height = height.height(),
+                    to_height = next_height,
+                    "batch fetching blocks in range {height}..{next_height}"
+                );
 
                 Ok(conc(
                     (height.height()..next_height)
