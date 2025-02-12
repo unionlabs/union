@@ -198,29 +198,29 @@ export default defineConfig({
               label: "Connect",
               items: [
                 {
-                  label: "Apps",
+                  label: "New Chain",
                   items: [
                     {
-                      label: "New Chain",
-                      items: [
-                        {
-                          label: "Overview",
-                          link: "/connect/new-chain/overview"
-                        }
-                        // {
-                        //   label: "EVM",
-                        //   link: "/connect/new-chain/evm"
-                        // },
-                        // {
-                        //   label: "CosmWasm",
-                        //   link: "/connect/new-chain/cosmwasm"
-                        // },
-                        // {
-                        //   label: "Move",
-                        //   link: "/connect/new-chain/move"
-                        // }
-                      ]
-                    },
+                      label: "Overview",
+                      link: "/connect/new-chain/overview"
+                    }
+                    // {
+                    //   label: "EVM",
+                    //   link: "/connect/new-chain/evm"
+                    // },
+                    // {
+                    //   label: "CosmWasm",
+                    //   link: "/connect/new-chain/cosmwasm"
+                    // },
+                    // {
+                    //   label: "Move",
+                    //   link: "/connect/new-chain/move"
+                    // }
+                  ]
+                },
+                {
+                  label: "Apps",
+                  items: [
                     {
                       label: "Asset Transfer",
                       items: [
