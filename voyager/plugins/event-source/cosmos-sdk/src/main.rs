@@ -41,7 +41,7 @@ use voyager_message::{
     rpc::missing_state,
     ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
+use voyager_vm::{call, conc, data, noop, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{FetchBlock, FetchBlocks, MakeChainEvent, ModuleCall},
@@ -55,7 +55,7 @@ pub mod call;
 pub mod callback;
 pub mod data;
 
-const PER_PAGE_LIMIT: NonZeroU8 = option_unwrap!(NonZeroU8::new(10));
+const PER_PAGE_LIMIT: NonZeroU8 = option_unwrap!(NonZeroU8::new(100));
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -515,80 +515,80 @@ impl Module {
 
             total_count += response.txs.len();
 
+            for tx_response in response.txs {
+                let _span = info_span!("tx_result.events", tx_hash = %tx_response.hash).entered();
+                for event in tx_response.tx_result.events {
+                    debug!(%event.ty, "observed event");
+
+                    let event = match CosmosSdkEvent::<IbcEvent>::new(event.clone()) {
+                        Ok(event) => event,
+                        Err(cosmos_sdk_event::Error::Deserialize(error)) => {
+                            trace!("unable to parse event: {error}");
+                            continue;
+                        }
+                        Err(err) => {
+                            error!("{err}");
+                            continue;
+                        }
+                    };
+
+                    match (&event.contract_address, &self.ibc_host_contract_address) {
+                        (None, _) => {}
+                        (Some(addr), None) => {
+                            debug!(
+                                    "found ibc-union event for contract {addr}, but no contract address is configured",
+                                );
+                            continue;
+                        }
+                        (Some(event_addr), Some(configured_addr)) => {
+                            if event_addr == configured_addr {
+                            } else {
+                                debug!(
+                                        "found ibc-union event for contract {event_addr}, but the configured contract address is {configured_addr}",
+                                    );
+                                continue;
+                            }
+                        }
+                    }
+
+                    let make_chain_event = || {
+                        call(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(MakeChainEvent {
+                                height,
+                                tx_hash: tx_response.hash.into_encoding(),
+                                event: event.event.clone(),
+                            }),
+                        ))
+                    };
+
+                    if let Some(ref mut already_seen_events) = already_seen_events {
+                        match already_seen_events.entry(event.event.hash()) {
+                            Entry::Vacant(vacant_entry) => {
+                                info!("found previously missed event");
+                                vacant_entry.insert(EventState::SeenNow);
+                                make_chain_event_ops.push(make_chain_event());
+                            }
+                            Entry::Occupied(mut occupied_entry) => match occupied_entry.get() {
+                                EventState::SeenPreviously => {
+                                    info!("found previously seen event");
+                                    occupied_entry.insert(EventState::SeenNow);
+                                }
+                                EventState::SeenNow => {
+                                    warn!("found duplicate event, likely due to a load-balanced rpc with poor nodes. additional data may have been missed!");
+                                }
+                            },
+                        };
+                    } else {
+                        found_events.insert(event.event.hash());
+                        make_chain_event_ops.push(make_chain_event());
+                    }
+                }
+            }
+
             if total_count >= (response.total_count as usize) {
                 break;
             } else {
-                for tx_response in response.txs {
-                    let _span =
-                        info_span!("tx_result.events", tx_hash = %tx_response.hash).entered();
-                    for event in tx_response.tx_result.events {
-                        debug!(%event.ty, "observed event");
-
-                        let event = match CosmosSdkEvent::<IbcEvent>::new(event.clone()) {
-                            Ok(event) => event,
-                            Err(cosmos_sdk_event::Error::Deserialize(error)) => {
-                                trace!("unable to parse event: {error}");
-                                continue;
-                            }
-                            Err(err) => {
-                                error!("{err}");
-                                continue;
-                            }
-                        };
-
-                        match (&event.contract_address, &self.ibc_host_contract_address) {
-                            (None, _) => {}
-                            (Some(addr), None) => {
-                                debug!(
-                                    "found ibc-union event for contract {addr}, but no contract address is configured",
-                                );
-                                continue;
-                            }
-                            (Some(event_addr), Some(configured_addr)) => {
-                                if event_addr == configured_addr {
-                                } else {
-                                    debug!(
-                                        "found ibc-union event for contract {event_addr}, but the configured contract address is {configured_addr}",
-                                    );
-                                    continue;
-                                }
-                            }
-                        }
-
-                        let make_chain_event = || {
-                            call(PluginMessage::new(
-                                self.plugin_name(),
-                                ModuleCall::from(MakeChainEvent {
-                                    height,
-                                    tx_hash: tx_response.hash.into_encoding(),
-                                    event: event.event.clone(),
-                                }),
-                            ))
-                        };
-
-                        if let Some(ref mut already_seen_events) = already_seen_events {
-                            match already_seen_events.entry(event.event.hash()) {
-                                Entry::Vacant(vacant_entry) => {
-                                    info!("found previously missed event");
-                                    vacant_entry.insert(EventState::SeenNow);
-                                    make_chain_event_ops.push(make_chain_event());
-                                }
-                                Entry::Occupied(mut occupied_entry) => match occupied_entry.get() {
-                                    EventState::SeenPreviously => {
-                                        info!("found previously seen event");
-                                        occupied_entry.insert(EventState::SeenNow);
-                                    }
-                                    EventState::SeenNow => {
-                                        warn!("found duplicate event, likely due to a load-balanced rpc with poor nodes. additional data may have been missed!");
-                                    }
-                                },
-                            };
-                        } else {
-                            found_events.insert(event.event.hash());
-                            make_chain_event_ops.push(make_chain_event());
-                        }
-                    }
-                }
                 page = page.checked_add(1).unwrap();
             }
         }
@@ -1586,6 +1586,22 @@ impl Module {
                 }))
             }
             IbcEvent::WasmPacketSend { packet } => {
+                let state = voyager_client
+                    .query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Latest,
+                        ibc_union_spec::path::BatchPacketsPath::from_packets(
+                            packet.source_channel_id,
+                            &[&packet],
+                        ),
+                    )
+                    .await?;
+
+                if state.state.is_none() {
+                    info!("packet already acknowledged");
+                    return Ok(noop());
+                }
+
                 let source_channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),

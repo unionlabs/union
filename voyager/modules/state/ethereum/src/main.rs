@@ -292,7 +292,11 @@ impl Module {
             })?
             ._0;
 
-        Ok(Some(raw.into()))
+        if <H256>::from(raw) == <H256>::default() {
+            Ok(None)
+        } else {
+            Ok(Some(raw.into()))
+        }
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
@@ -327,7 +331,11 @@ impl Module {
             })?
             ._0;
 
-        Ok(Some(raw.into()))
+        if <H256>::from(raw) == <H256>::default() {
+            Ok(None)
+        } else {
+            Ok(Some(raw.into()))
+        }
     }
 }
 

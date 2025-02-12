@@ -104,6 +104,26 @@ pub mod ethabi {
         }
     }
 
+    impl SolType for &Packet {
+        type RustType = Packet;
+
+        type Token<'a> = <Packet as SolType>::Token<'a>;
+
+        const SOL_NAME: &'static str = <Packet as SolType>::SOL_NAME;
+
+        const ENCODED_SIZE: Option<usize> = <Packet as SolType>::ENCODED_SIZE;
+
+        const PACKED_ENCODED_SIZE: Option<usize> = <Packet as SolType>::PACKED_ENCODED_SIZE;
+
+        fn valid_token(token: &Self::Token<'_>) -> bool {
+            <Packet as SolType>::valid_token(token)
+        }
+
+        fn detokenize(token: Self::Token<'_>) -> Self::RustType {
+            <Packet as SolType>::detokenize(token)
+        }
+    }
+
     impl alloy_sol_types::private::SolTypeValue<Self> for Packet {
         fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
             (
@@ -122,6 +142,54 @@ pub mod ethabi {
 
         fn stv_eip712_data_word(&self) -> alloy_sol_types::Word {
             <Self as SolStruct>::eip712_hash_struct(self)
+        }
+    }
+
+    impl alloy_sol_types::private::SolTypeValue<Self> for &Packet {
+        fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
+            <Packet as alloy_sol_types::private::SolTypeValue<Packet>>::stv_to_tokens(self)
+        }
+
+        fn stv_abi_encode_packed_to(&self, out: &mut Vec<u8>) {
+            <Packet as alloy_sol_types::private::SolTypeValue<Packet>>::stv_abi_encode_packed_to(
+                self, out,
+            )
+        }
+
+        fn stv_eip712_data_word(&self) -> alloy_sol_types::Word {
+            <Packet as alloy_sol_types::private::SolTypeValue<Packet>>::stv_eip712_data_word(self)
+        }
+    }
+
+    impl alloy_sol_types::private::SolTypeValue<Packet> for &Packet {
+        fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
+            <Packet as alloy_sol_types::private::SolTypeValue<Packet>>::stv_to_tokens(self)
+        }
+
+        fn stv_abi_encode_packed_to(&self, out: &mut Vec<u8>) {
+            <Packet as alloy_sol_types::private::SolTypeValue<Packet>>::stv_abi_encode_packed_to(
+                self, out,
+            )
+        }
+
+        fn stv_eip712_data_word(&self) -> alloy_sol_types::Word {
+            <Packet as alloy_sol_types::private::SolTypeValue<Packet>>::stv_eip712_data_word(self)
+        }
+    }
+
+    impl alloy_sol_types::private::SolTypeValue<&Packet> for Packet {
+        fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
+            <Packet as alloy_sol_types::private::SolTypeValue<Packet>>::stv_to_tokens(self)
+        }
+
+        fn stv_abi_encode_packed_to(&self, out: &mut Vec<u8>) {
+            <Packet as alloy_sol_types::private::SolTypeValue<Packet>>::stv_abi_encode_packed_to(
+                self, out,
+            )
+        }
+
+        fn stv_eip712_data_word(&self) -> alloy_sol_types::Word {
+            <Packet as alloy_sol_types::private::SolTypeValue<Packet>>::stv_eip712_data_word(self)
         }
     }
 

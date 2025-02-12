@@ -1,10 +1,14 @@
+use alloy_sol_types::SolValue;
 use enumorph::Enumorph;
 use sha3::{Digest, Keccak256};
-use unionlabs::primitives::{Bytes, H256, U256};
+use unionlabs::{
+    ethereum::keccak256,
+    primitives::{Bytes, H256, U256},
+};
 use voyager_core::IbcStorePathKey;
 
 use super::IbcUnion;
-use crate::types::{Channel, ChannelId, ClientId, Connection, ConnectionId};
+use crate::types::{Channel, ChannelId, ClientId, Connection, ConnectionId, Packet};
 
 /// 0x0100000000000000000000000000000000000000000000000000000000000000
 pub const COMMITMENT_MAGIC: H256 = {
@@ -180,6 +184,17 @@ pub struct BatchReceiptsPath {
 
 impl BatchReceiptsPath {
     #[must_use]
+    pub fn from_packets(channel_id: ChannelId, packets: &[&Packet]) -> Self {
+        Self {
+            channel_id,
+            batch_hash: match packets {
+                [packet] => keccak256(packet.abi_encode()),
+                packets => keccak256(packets.abi_encode()),
+            },
+        }
+    }
+
+    #[must_use]
     pub fn key(&self) -> H256 {
         Keccak256::new()
             .chain_update(PACKET_ACKS.to_be_bytes())
@@ -193,7 +208,7 @@ impl BatchReceiptsPath {
 impl IbcStorePathKey for BatchReceiptsPath {
     type Spec = IbcUnion;
 
-    type Value = H256;
+    type Value = Option<H256>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -210,6 +225,17 @@ pub struct BatchPacketsPath {
 
 impl BatchPacketsPath {
     #[must_use]
+    pub fn from_packets(channel_id: ChannelId, packets: &[&Packet]) -> Self {
+        Self {
+            channel_id,
+            batch_hash: match packets {
+                [packet] => keccak256(packet.abi_encode()),
+                packets => keccak256(packets.abi_encode()),
+            },
+        }
+    }
+
+    #[must_use]
     pub fn key(&self) -> H256 {
         Keccak256::new()
             .chain_update(PACKETS.to_be_bytes())
@@ -223,7 +249,7 @@ impl BatchPacketsPath {
 impl IbcStorePathKey for BatchPacketsPath {
     type Spec = IbcUnion;
 
-    type Value = H256;
+    type Value = Option<H256>;
 }
 
 #[test]
