@@ -2,7 +2,8 @@ import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import {
   transfersLatestQuery,
-  transfersTimestampQuery
+  transfersTimestampQuery,
+  transfersIncompleteQuery
   // transfersByAddressesLatestQuery,
   // transfersByAddressesTimestampQuery
 } from "$lib/graphql/queries/transfers.ts"
@@ -59,6 +60,11 @@ export async function transfersLatest({
   return data.map(transferTransform)
 }
 
+export async function transfersIncomplete(): TransfersReturnType {
+  const { data } = await request(URLS().GRAPHQL, transfersIncompleteQuery, {})
+  return data.map(transferTransform)
+}
+
 export async function transfersTimestamp({
   limit,
   timestamp
@@ -106,6 +112,8 @@ export async function transfersTimestamp({
 //   const allTransfers = [...newer.toReversed(), ...older]
 //   return allTransfers.map(transferTransform)
 // }
+//
+// todo: fix this awful naming
 
 export const transfersQuery = (
   _normalizedAddresses: Array<string> | null,

@@ -44,6 +44,22 @@ export const transfersLatestQuery = graphql(
   [transferListDataFragment]
 )
 
+export const transfersIncompleteQuery = graphql(
+  /* GraphQL */ `
+    query TransfersLatestQuery($cutoff: timestamptz! = "2025-02-11") {
+      data:   v1_ibc_union_fungible_asset_orders(where: {packet_send_timestamp: {_gt: $cutoff}, status: {_neq: "PACKET_ACK"}}
+        order_by: [
+          { packet_send_timestamp: desc }
+          { packet_send_transaction_hash: desc }
+        ]
+      ) {
+        ...TransferListData
+      }
+    }
+  `,
+  [transferListDataFragment]
+)
+
 // export const transfersByAddressesTimestampQuery = graphql(
 //   /* graphql */ `
 //     query TransfersByAddressesTimestampQuery(
