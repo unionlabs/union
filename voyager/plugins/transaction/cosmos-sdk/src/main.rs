@@ -290,6 +290,13 @@ impl Module {
         match res {
             Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => Ok(call(rewrap_msg())),
             Some(Err(BroadcastTxCommitError::OutOfGas)) => Ok(call(rewrap_msg())),
+            Some(Err(BroadcastTxCommitError::SimulateTx(err)))
+                if err.code() == tonic::Code::Cancelled =>
+            {
+                info!("tx simulation failed with network error");
+
+                Ok(call(rewrap_msg()))
+            }
             Some(Err(BroadcastTxCommitError::QueryLatestHeight(err))) => {
                 error!(error = %ErrorReporter(err), "error querying latest height");
 
