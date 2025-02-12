@@ -279,7 +279,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 }
 
 impl Module {
-    #[instrument(skip_all, fields(block_number, ?up_to))]
+    #[instrument(skip_all, fields(%block_number, ?up_to))]
     async fn fetch_get_logs(
         &self,
         voyager_client: &VoyagerClient,
@@ -289,7 +289,7 @@ impl Module {
         if up_to.is_some_and(|up_to| up_to < block_number) {
             return Err(ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
-                "`up_to` must be either > `block_number` or null",
+                "`up_to` must be either >= `block_number` or null",
                 None::<()>,
             ));
         }
@@ -455,7 +455,7 @@ impl Module {
         Ok(conc(next_fetch.into_iter().chain(events)))
     }
 
-    #[instrument(skip_all, fields(block_number, %tx_hash))]
+    #[instrument(skip_all, fields(%block_number, %tx_hash))]
     async fn make_full_event(
         &self,
         voyager_client: &VoyagerClient,

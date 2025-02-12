@@ -518,7 +518,7 @@ impl Module {
             for tx_response in response.txs {
                 let _span = info_span!("tx_result.events", tx_hash = %tx_response.hash).entered();
                 for event in tx_response.tx_result.events {
-                    debug!(%event.ty, "observed event");
+                    trace!(%event.ty, "observed event");
 
                     let event = match CosmosSdkEvent::<IbcEvent>::new(event.clone()) {
                         Ok(event) => event,
