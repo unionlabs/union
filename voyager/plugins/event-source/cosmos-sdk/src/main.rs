@@ -1,4 +1,4 @@
-// #![warn(clippy::unwrap_used)]
+#![warn(clippy::unwrap_used)]
 
 use std::{
     cmp::Ordering,
@@ -593,7 +593,9 @@ impl Module {
             if total_count >= (response.total_count as usize) {
                 break;
             } else {
-                page = page.checked_add(1).unwrap();
+                page = page
+                    .checked_add(1)
+                    .expect("how many events does this block have???");
             }
         }
 
@@ -1379,7 +1381,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("connection must exist", None))?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
@@ -1430,7 +1432,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("connection must exist", None))?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
@@ -1481,7 +1483,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("connection must exist", None))?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
@@ -1543,7 +1545,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("channel must exist", None))?;
 
                 let connection = voyager_client
                     .query_ibc_state(
@@ -1553,7 +1555,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("connection must exist", None))?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
@@ -1616,7 +1618,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("channel must exist", None))?;
 
                 let source_connection = voyager_client
                     .query_ibc_state(
@@ -1628,7 +1630,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("connection must exist", None))?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), source_connection.client_id)
@@ -1693,7 +1695,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("channel must exist", None))?;
 
                 let source_connection = voyager_client
                     .query_ibc_state(
@@ -1705,7 +1707,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("connection must exist", None))?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), source_connection.client_id)
@@ -1772,7 +1774,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("channel must exist", None))?;
 
                 let destination_connection = voyager_client
                     .query_ibc_state(
@@ -1784,7 +1786,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("connection must exist", None))?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(
@@ -1811,7 +1813,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("channel must exist", None))?;
 
                 let event = ibc_union_spec::event::PacketRecv {
                     packet_data: packet.data,
@@ -1865,7 +1867,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("channel must exist", None))?;
 
                 let destination_connection = voyager_client
                     .query_ibc_state(
@@ -1877,7 +1879,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("connection must exist", None))?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(
@@ -1904,7 +1906,7 @@ impl Module {
                     )
                     .await?
                     .state
-                    .unwrap();
+                    .ok_or_else(missing_state("channel must exist", None))?;
 
                 let event = ibc_union_spec::event::WriteAck {
                     packet_data: packet.data,

@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -257,6 +257,10 @@ impl Server {
 
                 trace!(%client_state);
 
+                let client_state = serde_json::from_value::<Bytes>(client_state)
+                    .with_context(|| format!("querying client state for client {client_id} at {height} on {chain_id}"))
+                    .map_err(|e| fatal_error(&*e))?;
+
                 let meta = modules
                     .client_module(
                         &client_info.client_type,
@@ -265,7 +269,7 @@ impl Server {
                     )
                     ?
                     .with_id(self.item_id)
-                    .decode_client_state_meta(client_state.as_str().unwrap().parse().unwrap())
+                    .decode_client_state_meta(client_state)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 

@@ -411,7 +411,8 @@ impl IbcEvent {
         }
 
         let mut hasher = Sha256Writer(sha2::Sha256::new());
-        bincode::encode_into_writer(self, &mut hasher, bincode::config::standard()).unwrap();
+        bincode::encode_into_writer(self, &mut hasher, bincode::config::standard())
+            .expect("encoding is infallible; qed;");
         hasher.0.finalize().into()
     }
 
