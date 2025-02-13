@@ -97,7 +97,7 @@ fn default_chunk_block_fetch_size() -> u64 {
 }
 
 fn default_refetch_delay() -> u64 {
-    10
+    120
 }
 
 #[derive(clap::Subcommand)]
@@ -412,7 +412,7 @@ impl Module {
             // height < latest_height
             // fetch transactions on all blocks height..next_height (*exclusive* on the upper bound!)
             // and then queue the continuation starting at next_height
-            Ordering::Less => {
+            Ordering::Equal | Ordering::Less => {
                 let next_height = (latest_height.height() - height.height())
                     .clamp(1, self.chunk_block_fetch_size)
                     + height.height();
@@ -429,7 +429,7 @@ impl Module {
                             call(PluginMessage::new(
                                 self.plugin_name(),
                                 ModuleCall::from(FetchBlock {
-                                    already_seen_events: Default::default(),
+                                    already_seen_events: None,
                                     height: Height::new_with_revision(height.revision(), h),
                                 }),
                             ))
@@ -440,21 +440,21 @@ impl Module {
                         ))]),
                 ))
             }
-            // height == latest_height
-            Ordering::Equal => {
-                info!("requested fetch height is lateset finalized height ({height})");
+            // // height == latest_height
+            //  => {
+            //     info!("requested fetch height is latest finalized height ({height})");
 
-                Ok(conc([
-                    call(PluginMessage::new(
-                        self.plugin_name(),
-                        ModuleCall::from(FetchBlock {
-                            already_seen_events: Default::default(),
-                            height: height.increment(),
-                        }),
-                    )),
-                    continuation(height.increment()),
-                ]))
-            }
+            //     Ok(conc([
+            //         call(PluginMessage::new(
+            //             self.plugin_name(),
+            //             ModuleCall::from(FetchBlock {
+            //                 already_seen_events: None,
+            //                 height,
+            //             }),
+            //         )),
+            //         continuation(height.increment()),
+            //     ]))
+            // }
             // height > latest_height
             Ordering::Greater => {
                 warn!(
@@ -467,7 +467,14 @@ impl Module {
         }
     }
 
-    #[instrument(skip_all, fields(%height, already_seen_events_count = already_seen_events.as_ref().map(|a| a.len())))]
+    #[instrument(
+        skip_all,
+        fields(
+            %height,
+            already_seen_events_count = already_seen_events.as_ref().map(|a| a.len()),
+            refetching = already_seen_events.is_some(),
+        )
+    )]
     async fn fetch_block(
         &self,
         height: Height,
@@ -497,7 +504,7 @@ impl Module {
         let mut total_count = 0;
 
         loop {
-            info!("fetching page {page}");
+            info!(%height, %page, "fetching page {page}");
 
             let response = self
                 .cometbft_client
@@ -528,7 +535,7 @@ impl Module {
                             continue;
                         }
                         Err(err) => {
-                            error!("{err}");
+                            error!("error parsing event: {}", ErrorReporter(err));
                             continue;
                         }
                     };
@@ -545,8 +552,8 @@ impl Module {
                             if event_addr == configured_addr {
                             } else {
                                 debug!(
-                                        "found ibc-union event for contract {event_addr}, but the configured contract address is {configured_addr}",
-                                    );
+                                    "found ibc-union event for contract {event_addr}, but the configured contract address is {configured_addr}",
+                                );
                                 continue;
                             }
                         }
