@@ -9,12 +9,13 @@ use std::{
 
 use either::Either;
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
-use tracing::{debug, info_span, warn, Instrument};
+use tracing::{debug, error, info, info_span, warn, Instrument};
+use unionlabs::ErrorReporter;
 
 use crate::{
     filter::{FilterResult, InterestFilter},
     pass::Pass,
-    Captures, EnqueueResult, ItemId, Op, Queue, QueueMessage,
+    Captures, EnqueueResult, ItemId, Op, Queue, QueueError, QueueMessage,
 };
 
 #[derive(DebugNoBound, CloneNoBound)]
@@ -94,7 +95,7 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
     ) -> Result<Option<R>, Self::Error>
     where
         F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
-        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + Captures<'a>,
+        Fut: Future<Output = (R, Result<Vec<Op<T>>, QueueError>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
     {
         let op = {
@@ -121,12 +122,12 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
                 )
                 .instrument(span)
                 .await;
+
+                let mut optimizer_queue = self.optimizer_queue.lock().expect("mutex is poisoned");
+                let mut ready = self.ready.lock().expect("mutex is poisoned");
+
                 match res {
                     Ok(ops) => {
-                        let mut optimizer_queue =
-                            self.optimizer_queue.lock().expect("mutex is poisoned");
-                        let mut ready = self.ready.lock().expect("mutex is poisoned");
-
                         for op in ops.into_iter().flat_map(Op::normalize) {
                             match filter.check_interest(&op) {
                                 FilterResult::Interest(tag) => {
@@ -152,7 +153,21 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
 
                         Ok(Some(r))
                     }
-                    Err(why) => panic!("{why}"),
+                    Err(why) => match why {
+                        QueueError::Fatal(error) => {
+                            error!(error = %ErrorReporter(&*error), "fatal error");
+                            Ok(None)
+                        }
+                        QueueError::Unprocessable(error) => {
+                            info!(error = %ErrorReporter(&*error), "unprocessable message");
+                            Ok(None)
+                        }
+                        QueueError::Retry(error) => {
+                            info!(error = %ErrorReporter(&*error), "retryable error");
+                            ready.insert(item_id, item);
+                            Ok(None)
+                        }
+                    },
                 }
             }
             None => {

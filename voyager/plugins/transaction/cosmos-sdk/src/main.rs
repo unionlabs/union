@@ -290,6 +290,20 @@ impl Module {
         match res {
             Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => Ok(call(rewrap_msg())),
             Some(Err(BroadcastTxCommitError::OutOfGas)) => Ok(call(rewrap_msg())),
+            Some(Err(BroadcastTxCommitError::SimulateTx(err)))
+                if err.code() == tonic::Code::Cancelled =>
+            {
+                info!("tx simulation failed with network error");
+
+                Ok(call(rewrap_msg()))
+            }
+            Some(Err(BroadcastTxCommitError::SimulateTx(err)))
+                if err.message().contains("spendable balance") =>
+            {
+                warn!("out of gas");
+
+                Ok(call(rewrap_msg()))
+            }
             Some(Err(BroadcastTxCommitError::QueryLatestHeight(err))) => {
                 error!(error = %ErrorReporter(err), "error querying latest height");
 
@@ -670,6 +684,20 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         | BroadcastTxCommitError::OutOfGas
                         | BroadcastTxCommitError::AccountSequenceMismatch(_) => {
                             info!(error = %ErrorReporter(err), "batch tx submission failed with retryable error, message will be requeued");
+                            return Ok(seq([
+                                defer(now() + 5),
+                                call(PluginMessage::new(
+                                    self.plugin_name(),
+                                    ModuleCall::from(msgs),
+                                )),
+                            ]));
+                        }
+
+                        BroadcastTxCommitError::SimulateTx(err)
+                            if err.message().contains("spendable balance") =>
+                        {
+                            warn!(error = %ErrorReporter(err), "out of gas");
+
                             return Ok(seq([
                                 defer(now() + 5),
                                 call(PluginMessage::new(

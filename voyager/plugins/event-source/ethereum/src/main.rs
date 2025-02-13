@@ -33,11 +33,10 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
-    core::{ChainId, ClientInfo, IbcSpec, QueryHeight},
+    core::{ChainId, ClientInfo, IbcSpec},
     data::{ChainEvent, Data},
     into_value,
     module::{PluginInfo, PluginServer},
-    rpc::missing_state,
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
     FATAL_JSONRPC_ERROR_CODE,
 };
@@ -133,77 +132,71 @@ impl Module {
         &self,
         event_height: Height,
         self_channel_id: u32,
-        voyager_rpc_client: &VoyagerClient,
+        voyager_client: &VoyagerClient,
     ) -> RpcResult<(ChainId, ClientInfo, ChannelMetadata, ChannelMetadata)> {
-        let self_channel = voyager_rpc_client
-            .query_ibc_state(
+        let self_channel = voyager_client
+            .must_query_ibc_state(
                 self.chain_id.clone(),
-                event_height.into(),
+                event_height,
                 ChannelPath {
                     channel_id: self_channel_id,
                 },
             )
-            .await?
-            .state
-            .ok_or_else(missing_state("connection must exist", None))?;
+            .await?;
 
         let self_connection_id = self_channel.connection_id;
-        let self_connection = voyager_rpc_client
-            .query_ibc_state(
+        let self_connection = voyager_client
+            .must_query_ibc_state(
                 self.chain_id.clone(),
-                event_height.into(),
+                event_height,
                 ConnectionPath {
                     connection_id: self_connection_id,
                 },
             )
             .await?;
 
-        let self_connection_state = self_connection
-            .state
-            .ok_or_else(missing_state("connection must exist", None))?;
-
-        let client_info = voyager_rpc_client
-            .client_info::<IbcUnion>(self.chain_id.clone(), self_connection_state.client_id)
+        let client_info = voyager_client
+            .client_info::<IbcUnion>(self.chain_id.clone(), self_connection.client_id)
             .await?;
 
-        let client_meta = voyager_rpc_client
+        let client_meta = voyager_client
             .client_meta::<IbcUnion>(
                 self.chain_id.clone(),
                 event_height.into(),
-                self_connection_state.client_id,
+                self_connection.client_id,
             )
+            .await?;
+
+        let counterparty_latest_height = voyager_client
+            .query_latest_height(client_meta.counterparty_chain_id.clone(), false)
             .await?;
 
         let other_channel_id = self_channel.counterparty_channel_id;
 
-        let other_channel = voyager_rpc_client
-            .query_ibc_state(
+        let other_channel = voyager_client
+            .must_query_ibc_state(
                 client_meta.counterparty_chain_id.clone(),
-                QueryHeight::Latest,
+                counterparty_latest_height,
                 ChannelPath {
                     channel_id: other_channel_id,
                 },
             )
             .await?;
 
-        let other_channel_state = other_channel
-            .state
-            .ok_or_else(missing_state("channel must exist", None))?;
-
         let source_channel = ChannelMetadata {
             channel_id: self_channel_id,
             version: self_channel.version,
             connection: ConnectionMetadata {
-                client_id: self_connection_state.client_id,
+                client_id: self_connection.client_id,
                 connection_id: self_connection_id,
             },
         };
         let destination_channel = ChannelMetadata {
             channel_id: other_channel_id,
-            version: other_channel_state.version,
+            version: other_channel.version,
             connection: ConnectionMetadata {
-                client_id: self_connection_state.counterparty_client_id,
-                connection_id: self_connection_state.counterparty_connection_id,
+                client_id: self_connection.counterparty_client_id,
+                connection_id: self_connection.counterparty_connection_id,
             },
         };
 
@@ -279,7 +272,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 }
 
 impl Module {
-    #[instrument(skip_all, fields(block_number, ?up_to))]
+    #[instrument(skip_all, fields(%block_number, ?up_to))]
     async fn fetch_get_logs(
         &self,
         voyager_client: &VoyagerClient,
@@ -289,7 +282,7 @@ impl Module {
         if up_to.is_some_and(|up_to| up_to < block_number) {
             return Err(ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
-                "`up_to` must be either > `block_number` or null",
+                "`up_to` must be either >= `block_number` or null",
                 None::<()>,
             ));
         }
@@ -455,7 +448,7 @@ impl Module {
         Ok(conc(next_fetch.into_iter().chain(events)))
     }
 
-    #[instrument(skip_all, fields(block_number, %tx_hash))]
+    #[instrument(skip_all, fields(%block_number, %tx_hash))]
     async fn make_full_event(
         &self,
         voyager_client: &VoyagerClient,
@@ -662,16 +655,14 @@ impl Module {
             }
             IbcEvents::ChannelOpenInit(raw_event) => {
                 let connection = voyager_client
-                    .query_ibc_state(
+                    .must_query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        provable_height,
                         ConnectionPath {
                             connection_id: raw_event.connection_id,
                         },
                     )
-                    .await?
-                    .state
-                    .ok_or_else(missing_state("connection must exist", None))?;
+                    .await?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
@@ -688,14 +679,12 @@ impl Module {
                 let channel_id = raw_event.channel_id;
 
                 let channel = voyager_client
-                    .query_ibc_state(
+                    .must_query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        provable_height,
                         ChannelPath { channel_id },
                     )
-                    .await?
-                    .state
-                    .ok_or_else(missing_state("connection must exist", None))?;
+                    .await?;
 
                 let event = ChannelOpenInit {
                     port_id: raw_event.port_id.into(),
@@ -720,16 +709,14 @@ impl Module {
             }
             IbcEvents::ChannelOpenTry(raw_event) => {
                 let connection = voyager_client
-                    .query_ibc_state(
+                    .must_query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        provable_height,
                         ConnectionPath {
                             connection_id: raw_event.connection_id,
                         },
                     )
-                    .await?
-                    .state
-                    .ok_or_else(missing_state("connection must exist", None))?;
+                    .await?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
@@ -746,14 +733,12 @@ impl Module {
                 let channel_id = raw_event.channel_id;
 
                 let channel = voyager_client
-                    .query_ibc_state(
+                    .must_query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        provable_height,
                         ChannelPath { channel_id },
                     )
-                    .await?
-                    .state
-                    .ok_or_else(missing_state("channel must exist", None))?;
+                    .await?;
 
                 let event = ChannelOpenTry {
                     port_id: raw_event.port_id.into(),
@@ -779,16 +764,14 @@ impl Module {
             }
             IbcEvents::ChannelOpenAck(raw_event) => {
                 let connection = voyager_client
-                    .query_ibc_state(
+                    .must_query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        provable_height,
                         ConnectionPath {
                             connection_id: raw_event.connection_id,
                         },
                     )
-                    .await?
-                    .state
-                    .ok_or_else(missing_state("connection must exist", None))?;
+                    .await?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
@@ -805,14 +788,12 @@ impl Module {
                 let channel_id = raw_event.channel_id;
 
                 let channel = voyager_client
-                    .query_ibc_state(
+                    .must_query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        provable_height,
                         ChannelPath { channel_id },
                     )
-                    .await?
-                    .state
-                    .ok_or_else(missing_state("channel must exist", None))?;
+                    .await?;
 
                 let event = ChannelOpenAck {
                     port_id: raw_event.port_id.into(),
@@ -838,16 +819,14 @@ impl Module {
             }
             IbcEvents::ChannelOpenConfirm(raw_event) => {
                 let connection = voyager_client
-                    .query_ibc_state(
+                    .must_query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        provable_height,
                         ConnectionPath {
                             connection_id: raw_event.connection_id,
                         },
                     )
-                    .await?
-                    .state
-                    .ok_or_else(missing_state("connection must exist", None))?;
+                    .await?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
@@ -864,14 +843,12 @@ impl Module {
                 let channel_id = raw_event.channel_id;
 
                 let channel = voyager_client
-                    .query_ibc_state(
+                    .must_query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        provable_height,
                         ChannelPath { channel_id },
                     )
-                    .await?
-                    .state
-                    .ok_or_else(missing_state("channel must exist", None))?;
+                    .await?;
 
                 let event = ChannelOpenConfirm {
                     port_id: raw_event.port_id.into(),

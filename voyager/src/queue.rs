@@ -18,7 +18,7 @@ use voyager_message::{
 };
 use voyager_vm::{
     engine::Engine, in_memory::InMemoryQueue, pass::Pass, BoxDynError, Captures, EnqueueResult,
-    ItemId, Op, Queue,
+    ItemId, Op, Queue, QueueError,
 };
 
 use crate::{api, config::Config};
@@ -103,7 +103,8 @@ impl Queue<VoyagerMessage> for QueueImpl {
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + Captures<'a>
     where
         F: (FnOnce(Op<VoyagerMessage>, ItemId) -> Fut) + Send + Captures<'a>,
-        Fut: Future<Output = (R, Result<Vec<Op<VoyagerMessage>>, String>)> + Send + Captures<'a>,
+        Fut:
+            Future<Output = (R, Result<Vec<Op<VoyagerMessage>>, QueueError>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
     {
         async move {

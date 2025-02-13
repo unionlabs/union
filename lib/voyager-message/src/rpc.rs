@@ -5,15 +5,15 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
 };
 use macros::model;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
 use voyager_core::{IbcSpecId, Timestamp};
 
 use crate::{
     context::LoadedModulesInfo,
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
-    RawClientId, FATAL_JSONRPC_ERROR_CODE,
+    RawClientId, FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,
 };
 
 pub mod server;
@@ -162,21 +162,24 @@ pub trait VoyagerRpc {
 pub struct IbcState<State> {
     /// The height that the state was read at.
     pub height: Height,
-    pub state: State,
+    /// The state from the chain, as read at `height`.
+    ///
+    /// If the state does not exist on chain at `height`, this will be `None`.
+    pub state: Option<State>,
 }
 
 impl IbcState<Value> {
-    pub fn decode_state<T: DeserializeOwned>(&self) -> RpcResult<T> {
-        serde_json::from_value(self.state.clone()).map_err(|e| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("error decoding IBC state: {}", ErrorReporter(e)),
-                Some(json!({
-                    "raw_state": self.state
-                })),
-            )
-        })
-    }
+    // pub fn decode_state<T: DeserializeOwned>(&self) -> RpcResult<T> {
+    //     serde_json::from_value(self.state.clone()).map_err(|e| {
+    //         ErrorObject::owned(
+    //             FATAL_JSONRPC_ERROR_CODE,
+    //             format!("error decoding IBC state: {}", ErrorReporter(e)),
+    //             Some(json!({
+    //                 "raw_state": self.state
+    //             })),
+    //         )
+    //     })
+    // }
 }
 
 #[model]
@@ -224,5 +227,5 @@ pub fn missing_state(
     message: impl Into<String>,
     data: Option<Value>,
 ) -> impl FnOnce() -> ErrorObjectOwned {
-    move || ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, message, data)
+    move || ErrorObject::owned(MISSING_STATE_ERROR_CODE, message, data)
 }

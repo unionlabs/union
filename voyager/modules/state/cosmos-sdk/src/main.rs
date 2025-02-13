@@ -70,6 +70,12 @@ pub struct Module {
 pub struct Config {
     pub rpc_url: String,
     pub grpc_url: String,
+    #[serde(default = "default_max_drift")]
+    pub max_drift: u64,
+}
+
+fn default_max_drift() -> u64 {
+    10
 }
 
 impl StateModule<IbcClassic> for Module {

@@ -408,27 +408,33 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         )
                         .await?;
 
-                    if decode {
-                        let client_info = voyager_client
-                            .client_info(on, ibc_spec_id.clone(), client_id)
-                            .await?;
+                    match (ibc_state.state, decode) {
+                        (Some(state), true) => {
+                            let client_info = voyager_client
+                                .client_info(on, ibc_spec_id.clone(), client_id)
+                                .await?;
 
-                        let decoded = voyager_client
-                            .decode_client_state(
-                                client_info.client_type,
-                                client_info.ibc_interface,
-                                ibc_spec_id,
-                                serde_json::from_value(ibc_state.state)
-                                    .expect("serialization is infallible; qed;"),
-                            )
-                            .await?;
+                            let decoded = voyager_client
+                                .decode_client_state(
+                                    client_info.client_type,
+                                    client_info.ibc_interface,
+                                    ibc_spec_id,
+                                    serde_json::from_value(state)
+                                        .expect("serialization is infallible; qed;"),
+                                )
+                                .await?;
 
-                        print_json(&IbcState {
-                            height: ibc_state.height,
-                            state: decoded,
-                        });
-                    } else {
-                        print_json(&ibc_state);
+                            print_json(&IbcState {
+                                height: ibc_state.height,
+                                state: Some(decoded),
+                            });
+                        }
+                        (state, _) => {
+                            print_json(&IbcState {
+                                height: ibc_state.height,
+                                state,
+                            });
+                        }
                     }
                 }
                 RpcCmd::ConsensusState {
@@ -455,27 +461,33 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         )
                         .await?;
 
-                    if decode {
-                        let client_info = voyager_client
-                            .client_info(on, ibc_spec_id.clone(), client_id)
-                            .await?;
+                    match (ibc_state.state, decode) {
+                        (Some(state), true) => {
+                            let client_info = voyager_client
+                                .client_info(on, ibc_spec_id.clone(), client_id)
+                                .await?;
 
-                        let decoded = voyager_client
-                            .decode_consensus_state(
-                                client_info.client_type,
-                                client_info.ibc_interface,
-                                ibc_spec_id,
-                                serde_json::from_value(ibc_state.state)
-                                    .expect("serialization is infallible; qed;"),
-                            )
-                            .await?;
+                            let decoded = voyager_client
+                                .decode_consensus_state(
+                                    client_info.client_type,
+                                    client_info.ibc_interface,
+                                    ibc_spec_id,
+                                    serde_json::from_value(state)
+                                        .expect("serialization is infallible; qed;"),
+                                )
+                                .await?;
 
-                        print_json(&IbcState {
-                            height: ibc_state.height,
-                            state: decoded,
-                        });
-                    } else {
-                        print_json(&ibc_state);
+                            print_json(&IbcState {
+                                height: ibc_state.height,
+                                state: Some(decoded),
+                            });
+                        }
+                        (state, _) => {
+                            print_json(&IbcState {
+                                height: ibc_state.height,
+                                state,
+                            });
+                        }
                     }
                 }
             }

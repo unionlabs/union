@@ -32,11 +32,10 @@ use tracing::{debug, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
 use voyager_message::{
     call::{Call, WaitForHeight},
-    core::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
+    core::{ChainId, ClientInfo, ClientType, IbcSpec},
     data::{ChainEvent, Data},
     into_value,
     module::{PluginInfo, PluginServer},
-    rpc::missing_state,
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
@@ -167,76 +166,70 @@ impl Module {
         &self,
         event_height: Height,
         self_channel_id: u32,
-        voyager_rpc_client: &VoyagerClient,
+        voyager_client: &VoyagerClient,
     ) -> RpcResult<(ChainId, ClientInfo, ChannelMetadata, ChannelMetadata)> {
-        let self_channel = voyager_rpc_client
-            .query_ibc_state(
+        let self_channel = voyager_client
+            .must_query_ibc_state(
                 self.chain_id.clone(),
-                event_height.into(),
+                event_height,
                 ChannelPath {
                     channel_id: self_channel_id,
                 },
             )
-            .await?
-            .state
-            .ok_or_else(missing_state("connection must exist", None))?;
+            .await?;
 
         let self_connection_id = self_channel.connection_id;
-        let self_connection = voyager_rpc_client
-            .query_ibc_state(
+        let self_connection = voyager_client
+            .must_query_ibc_state(
                 self.chain_id.clone(),
-                event_height.into(),
+                event_height,
                 ConnectionPath {
                     connection_id: self_connection_id,
                 },
             )
             .await?;
 
-        let self_connection_state = self_connection
-            .state
-            .ok_or_else(missing_state("connection must exist", None))?;
-
-        let client_info = voyager_rpc_client
-            .client_info::<IbcUnion>(self.chain_id.clone(), self_connection_state.client_id)
+        let client_info = voyager_client
+            .client_info::<IbcUnion>(self.chain_id.clone(), self_connection.client_id)
             .await?;
 
-        let client_meta = voyager_rpc_client
+        let client_meta = voyager_client
             .client_meta::<IbcUnion>(
                 self.chain_id.clone(),
                 event_height.into(),
-                self_connection_state.client_id,
+                self_connection.client_id,
             )
             .await?;
 
+        let counterparty_latest_height = voyager_client
+            .query_latest_height(client_meta.counterparty_chain_id.clone(), false)
+            .await?;
+
         let other_channel_id = self_channel.counterparty_channel_id;
-        let other_channel = voyager_rpc_client
-            .query_ibc_state(
+        let other_channel = voyager_client
+            .must_query_ibc_state(
                 client_meta.counterparty_chain_id.clone(),
-                QueryHeight::Latest,
+                counterparty_latest_height,
                 ChannelPath {
                     channel_id: other_channel_id,
                 },
             )
             .await?;
 
-        let other_channel_state = other_channel
-            .state
-            .ok_or_else(missing_state("channel must exist", None))?;
-
         let source_channel = ChannelMetadata {
             channel_id: self_channel_id,
             version: self_channel.version,
             connection: ConnectionMetadata {
-                client_id: self_connection_state.client_id,
+                client_id: self_connection.client_id,
                 connection_id: self_connection_id,
             },
         };
         let destination_channel = ChannelMetadata {
             channel_id: other_channel_id,
-            version: other_channel_state.version,
+            version: other_channel.version,
             connection: ConnectionMetadata {
-                client_id: self_connection_state.counterparty_client_id,
-                connection_id: self_connection_state.counterparty_connection_id,
+                client_id: self_connection.counterparty_client_id,
+                connection_id: self_connection.counterparty_connection_id,
             },
         };
 

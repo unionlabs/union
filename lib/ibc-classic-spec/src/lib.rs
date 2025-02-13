@@ -197,16 +197,13 @@ impl IbcStorePathKey for ClientConsensusStatePath {
     type Value = Bytes;
 }
 
-#[ibc_path("connections/{connection_id:#}", Option<ConnectionEnd>)]
+#[ibc_path("connections/{connection_id:#}", ConnectionEnd)]
 pub struct ConnectionPath {
     #[ibc_path(ConnectionId::from_str_prefixed)]
     pub connection_id: ConnectionId,
 }
 
-#[ibc_path(
-    "channelEnds/ports/{port_id}/channels/{channel_id:#}",
-    Option<Channel>
-)]
+#[ibc_path("channelEnds/ports/{port_id}/channels/{channel_id:#}", Channel)]
 pub struct ChannelEndPath {
     pub port_id: PortId,
     #[ibc_path(ChannelId::from_str_prefixed)]
@@ -215,7 +212,7 @@ pub struct ChannelEndPath {
 
 #[ibc_path(
     "commitments/ports/{port_id}/channels/{channel_id:#}/sequences/{sequence}",
-    Option<H256>
+    H256
 )]
 pub struct CommitmentPath {
     pub port_id: PortId,
@@ -227,7 +224,10 @@ pub struct CommitmentPath {
 /// SHA-256 of the packet acknowledgement.
 ///
 /// If the packet has not yet been acknowledged (either because the packet does not exist or the packet has not been acknowledged yet), then the acknowledgement commitment is unset.
-#[ibc_path("acks/ports/{port_id}/channels/{channel_id:#}/sequences/{sequence}", Option<H256>)]
+#[ibc_path(
+    "acks/ports/{port_id}/channels/{channel_id:#}/sequences/{sequence}",
+    H256
+)]
 pub struct AcknowledgementPath {
     pub port_id: PortId,
     #[ibc_path(ChannelId::from_str_prefixed)]

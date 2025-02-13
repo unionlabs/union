@@ -135,6 +135,49 @@ where
     }
 }
 
+#[cfg(feature = "bincode")]
+impl<Hrp, Data> bincode::Encode for Bech32<Data, Hrp>
+where
+    Hrp: AsRef<str>,
+    Data: AsRef<[u8]>,
+{
+    fn encode<E: bincode::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), bincode::error::EncodeError> {
+        self.to_string().encode(encoder)
+    }
+}
+
+#[cfg(feature = "bincode")]
+impl<Data, Hrp> bincode::Decode for Bech32<Data, Hrp>
+where
+    Data: TryFrom<Vec<u8>>,
+    Hrp: From<String>,
+{
+    fn decode<D: bincode::de::Decoder>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        <String as bincode::Decode>::decode(decoder).and_then(|s| {
+            s.parse::<Self>()
+                .map_err(|e| bincode::error::DecodeError::OtherString(e.to_string()))
+        })
+    }
+}
+
+#[cfg(feature = "bincode")]
+impl<'de, Data, Hrp> bincode::BorrowDecode<'de> for Bech32<Data, Hrp>
+where
+    Data: TryFrom<Vec<u8>>,
+    Hrp: From<String>,
+{
+    fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        bincode::Decode::decode(decoder)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

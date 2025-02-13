@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use std::collections::BTreeSet;
 
 use enumorph::Enumorph;
 use macros::model;
@@ -9,7 +9,7 @@ use unionlabs::{ibc::core::client::height::Height, primitives::H256};
 #[allow(clippy::large_enum_variant)]
 pub enum ModuleCall {
     FetchBlocks(FetchBlocks),
-    FetchTransactions(FetchTransactions),
+    FetchBlock(FetchBlock),
     MakeChainEvent(MakeChainEvent),
 }
 
@@ -20,9 +20,11 @@ pub struct FetchBlocks {
 }
 
 #[model]
-pub struct FetchTransactions {
+pub struct FetchBlock {
+    /// If this is Some, then this message is "re-fetching" the events in this block, to ensure that no events were missed during the original fetch of this block.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub already_seen_events: Option<BTreeSet<H256>>,
     pub height: Height,
-    pub page: NonZeroU32,
 }
 
 #[model]

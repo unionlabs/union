@@ -15,6 +15,7 @@ pub const CONNECTION_ID_PREFIX: &str = "connection";
 pub const CHANNEL_ID_PREFIX: &str = "channel";
 
 #[derive(macros::Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode))]
 #[serde(try_from = "String", into = "String")]
 // #[cfg_attr(feature = "serde", serde(try_from = "String", into = "String"))]
 #[debug("ClientId({}-{})", self.prefix, self.id)]
@@ -91,6 +92,7 @@ impl fmt::Display for ClientId {
 }
 
 #[derive(macros::Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 #[serde(transparent)]
 // #[cfg_attr(feature = "serde", serde(transparent))]
 #[debug("ConnectionId({})", self.0)]
@@ -156,6 +158,7 @@ impl Display for ConnectionId {
 }
 
 #[derive(macros::Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 #[serde(transparent)]
 // #[cfg_attr(feature = "serde", serde(transparent))]
 #[debug("ChannelId({})", self.0)]
@@ -221,6 +224,7 @@ impl Display for ChannelId {
 }
 
 #[derive(macros::Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode))]
 // #[cfg_attr(feature = "serde", serde(try_from = "String", into = "String"))]
 #[serde(try_from = "String", into = "String")]
 #[debug("PortId({})", self.0)]

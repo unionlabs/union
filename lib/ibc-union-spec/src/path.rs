@@ -1,10 +1,13 @@
 use enumorph::Enumorph;
 use sha3::{Digest, Keccak256};
-use unionlabs::primitives::{Bytes, H256, U256};
+use unionlabs::{
+    ethereum::keccak256,
+    primitives::{Bytes, H256, U256},
+};
 use voyager_core::IbcStorePathKey;
 
 use super::IbcUnion;
-use crate::types::{Channel, ChannelId, ClientId, Connection, ConnectionId};
+use crate::types::{Channel, ChannelId, ClientId, Connection, ConnectionId, Packet};
 
 /// 0x0100000000000000000000000000000000000000000000000000000000000000
 pub const COMMITMENT_MAGIC: H256 = {
@@ -77,7 +80,7 @@ impl ClientStatePath {
 impl IbcStorePathKey for ClientStatePath {
     type Spec = IbcUnion;
 
-    type Value = Option<Bytes>;
+    type Value = Bytes;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -107,7 +110,7 @@ impl ConsensusStatePath {
 impl IbcStorePathKey for ConsensusStatePath {
     type Spec = IbcUnion;
 
-    type Value = Option<Bytes>;
+    type Value = Bytes;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -135,7 +138,7 @@ impl ConnectionPath {
 impl IbcStorePathKey for ConnectionPath {
     type Spec = IbcUnion;
 
-    type Value = Option<Connection>;
+    type Value = Connection;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -163,7 +166,7 @@ impl ChannelPath {
 impl IbcStorePathKey for ChannelPath {
     type Spec = IbcUnion;
 
-    type Value = Option<Channel>;
+    type Value = Channel;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -179,6 +182,19 @@ pub struct BatchReceiptsPath {
 }
 
 impl BatchReceiptsPath {
+    #[cfg(feature = "ethabi")]
+    #[must_use]
+    pub fn from_packets(channel_id: ChannelId, packets: &[&Packet]) -> Self {
+        use alloy_sol_types::SolValue;
+        Self {
+            channel_id,
+            batch_hash: match packets {
+                [packet] => keccak256(packet.abi_encode()),
+                packets => keccak256(packets.abi_encode()),
+            },
+        }
+    }
+
     #[must_use]
     pub fn key(&self) -> H256 {
         Keccak256::new()
@@ -209,6 +225,19 @@ pub struct BatchPacketsPath {
 }
 
 impl BatchPacketsPath {
+    #[cfg(feature = "ethabi")]
+    #[must_use]
+    pub fn from_packets(channel_id: ChannelId, packets: &[&Packet]) -> Self {
+        use alloy_sol_types::SolValue;
+        Self {
+            channel_id,
+            batch_hash: match packets {
+                [packet] => keccak256(packet.abi_encode()),
+                packets => keccak256(packets.abi_encode()),
+            },
+        }
+    }
+
     #[must_use]
     pub fn key(&self) -> H256 {
         Keccak256::new()

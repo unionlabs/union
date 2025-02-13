@@ -2,10 +2,8 @@ use std::{future::Future, time::Duration};
 
 use futures::{stream, FutureExt, Stream, StreamExt};
 use tokio::time::sleep;
-use tracing::{error, info, warn};
-use unionlabs::ErrorReporter;
 
-use crate::{defer, now, seq, BoxDynError, Context, Queue, QueueError, QueueMessage};
+use crate::{BoxDynError, Context, Queue, QueueMessage};
 
 pub struct Engine<'a, T: QueueMessage, Q: Queue<T>> {
     store: &'a T::Context,
@@ -43,22 +41,23 @@ impl<'a, T: QueueMessage, Q: Queue<T>> Engine<'a, T, Q> {
                         .process(Context::new(id, self.store), 0)
                         .map(|res| match res {
                             Ok(op) => (None, Ok(op.into_iter().collect())),
-                            Err(QueueError::Fatal(fatal)) => {
-                                let full_err = ErrorReporter(&*fatal);
-                                error!(error = %full_err, "fatal error");
-                                (None, Err(full_err.to_string()))
-                            }
-                            Err(QueueError::Unprocessable(unprocessable)) => {
-                                let full_err = ErrorReporter(&*unprocessable);
-                                info!(error = %full_err, "unprocessable message");
-                                (None, Err(full_err.to_string()))
-                            }
-                            Err(QueueError::Retry(retry)) => {
-                                // TODO: Add some backoff logic here based on `full_err`?
-                                let full_err = ErrorReporter(&*retry);
-                                warn!(error = %full_err, "retryable error");
-                                (None, Ok(vec![seq([defer(now() + 3), op])]))
-                            }
+                            // Err(QueueError::Fatal(fatal)) => {
+                            //     let full_err = ErrorReporter(&*fatal);
+                            //     error!(error = %full_err, "fatal error");
+                            //     (None, Err(full_err.to_string()))
+                            // }
+                            // Err(QueueError::Unprocessable(unprocessable)) => {
+                            //     let full_err = ErrorReporter(&*unprocessable);
+                            //     info!(error = %full_err, "unprocessable message");
+                            //     (None, Err(full_err.to_string()))
+                            // }
+                            // Err(QueueError::Retry(retry)) => {
+                            //     // TODO: Add some backoff logic here based on `full_err`?
+                            //     let full_err = ErrorReporter(&*retry);
+                            //     warn!(error = %full_err, "retryable error");
+                            //     (None, Ok(vec![seq([defer(now() + 3), op])]))
+                            // }
+                            Err(err) => (None, Err(err)),
                         })
                 })
                 .map(|data| match data {
