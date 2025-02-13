@@ -272,19 +272,30 @@ async function doTransfer(task) {
             });
             // no need to approve for EVM, already approved all holesky & sepolia it will be waste
             // of time.
-            // const approveResponse = await unionClient.approveErc20(txPayload)
-            // consola.info("approve response: ", approveResponse)
-            // if (approveResponse.isErr()) {
-            //   consola.error(approveResponse.error)
-            //   return
-            // }
+            const approveResponse = await unionClient.approveErc20(txPayload);
+            consola.info("approve response: ", approveResponse);
+            if (approveResponse.isErr()) {
+                consola.error(approveResponse.error);
+                return;
+            }
         }
-        const transferResp = await unionClient.transferAsset(txPayload);
-        if (transferResp.isErr()) {
-            consola.error("[%s] [%s->%s] Transfer error:", chainType, isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM, task.destinationChainId, transferResp.error);
-            return;
+        for (let j = 0; j < 3; j++) {
+            const transferResp = await unionClient.transferAsset(txPayload);
+            if (transferResp.isErr()) {
+                consola.error("[%s] [%s->%s] Transfer error:", chainType, isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM, task.destinationChainId, transferResp.error);
+                consola.info("retrying transfer");
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            else {
+                if (j === 0) {
+                    consola.info("[%s] [%s->%s] Transfer success:", chainType, isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM, task.destinationChainId, transferResp.value);
+                }
+                else {
+                    consola.info("[%s] [%s->%s] Transfer success after retry:", chainType, isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM, task.destinationChainId, transferResp.value);
+                }
+                break;
+            }
         }
-        consola.info("[%s] [%s->%s] Transfer success:", chainType, isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM, task.destinationChainId, transferResp.value);
     }
     catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
@@ -360,6 +371,7 @@ function sleepSync(ms) {
  * @param privKeys Optional array of private keys to rotate through
  */
 async function doTransferLoadTest(transfers, privKeys) {
+    let counter = 0;
     while (true) {
         for (const task of transfers) {
             if (!task.enabled) {
@@ -378,6 +390,11 @@ async function doTransferLoadTest(transfers, privKeys) {
             }
         }
         // Use non-blocking sleep instead of the synchronous busy-wait.
+        counter += 1;
+        // if (counter == 2){
+        //   consola.info("counter is 2, brewaking.!!!!!!!!!!!!!!!!!!!!!1")
+        //   break;
+        // }
         await new Promise(resolve => setTimeout(resolve, 15000));
     }
 }
