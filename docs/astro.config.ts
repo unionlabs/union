@@ -286,22 +286,11 @@ export default defineConfig({
                 },
                 {
                   label: "TypeScript SDK",
-                  link: "/integrations/typescript",
-                  badge: { variant: "success", text: "new" }
+                  link: "/integrations/typescript"
                 },
                 {
-                  label: "API",
-                  collapsed: true,
-                  autogenerate: {
-                    directory: "/integrations/api"
-                  }
-                },
-                {
-                  label: "CometBFT",
-                  collapsed: true,
-                  autogenerate: {
-                    directory: "/integrations/cometbft"
-                  }
+                  label: "GraphQL",
+                  link: "/integrations/api/graphql"
                 }
               ]
             },
