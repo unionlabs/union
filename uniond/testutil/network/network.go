@@ -3,23 +3,11 @@ package network
 import (
 	"fmt"
 	"testing"
-	"time"
 
-	"cosmossdk.io/log"
-	pruningtypes "cosmossdk.io/store/pruning/types"
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	dbm "github.com/cosmos/cosmos-db"
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"
 
-	"union/app"
+	"github.com/unionlabs/union/uniond/app"
 )
 
 type (
@@ -29,7 +17,8 @@ type (
 
 // New creates instance with fully configured cosmos network.
 // Accepts optional config, that will be used in place of the DefaultConfig() if provided.
-func New(t *testing.T, configs ...Config) *network.NetworkI {
+func New(t *testing.T, configs ...Config) *Network {
+	t.Helper()
 	if len(configs) > 1 {
 		panic("at most one config should be provided")
 	}
@@ -44,56 +33,48 @@ func New(t *testing.T, configs ...Config) *network.NetworkI {
 	_, err = net.WaitForHeight(1)
 	require.NoError(t, err)
 	t.Cleanup(net.Cleanup)
-	return &net
+	return net
 }
 
 // DefaultConfig will initialize config for the network with custom application,
 // genesis and single validator. All other parameters are inherited from cosmos-sdk/testutil/network.DefaultConfig
 func DefaultConfig() network.Config {
-	var (
-		chainID = "chain-testconfig"
-	)
-
-	unionApp := app.NewUnionApp(
-		log.NewNopLogger(),
-		dbm.NewMemDB(),
-		nil,
-		true,
-		simtestutil.AppOptionsMap{},
-		[]wasmkeeper.Option{},
-	)
-
-	return network.Config{
-		Codec:             unionApp.AppCodec(),
-		TxConfig:          unionApp.TxConfig(),
-		LegacyAmino:       unionApp.LegacyAmino(),
-		InterfaceRegistry: unionApp.InterfaceRegistry(),
-		AccountRetriever:  authtypes.AccountRetriever{},
-		AppConstructor: func(val network.ValidatorI) servertypes.Application {
-			return app.NewUnionApp(
-				val.GetLogger(),
-				dbm.NewMemDB(),
-				nil,
-				true,
-				simtestutil.AppOptionsMap{},
-				[]wasmkeeper.Option{},
-				baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.GetAppConfig().Pruning)),
-				baseapp.SetMinGasPrices(val.GetAppConfig().MinGasPrices),
-				baseapp.SetChainID(chainID),
-			)
-		},
-		GenesisState:    unionApp.DefaultGenesis(),
-		TimeoutCommit:   2 * time.Second,
-		ChainID:         chainID,
-		NumValidators:   1,
-		BondDenom:       sdk.DefaultBondDenom,
-		MinGasPrices:    fmt.Sprintf("0.000006%s", sdk.DefaultBondDenom),
-		AccountTokens:   sdk.TokensFromConsensusPower(1000, sdk.DefaultPowerReduction),
-		StakingTokens:   sdk.TokensFromConsensusPower(500, sdk.DefaultPowerReduction),
-		BondedTokens:    sdk.TokensFromConsensusPower(100, sdk.DefaultPowerReduction),
-		PruningStrategy: pruningtypes.PruningOptionNothing,
-		CleanupDir:      true,
-		SigningAlgo:     string(hd.Secp256k1Type),
-		KeyringOptions:  []keyring.Option{},
+	cfg, err := network.DefaultConfigWithAppConfig(app.AppConfig())
+	if err != nil {
+		panic(err)
 	}
+	ports, err := freePorts(3)
+	if err != nil {
+		panic(err)
+	}
+	if cfg.APIAddress == "" {
+		cfg.APIAddress = fmt.Sprintf("tcp://0.0.0.0:%s", ports[0])
+	}
+	if cfg.RPCAddress == "" {
+		cfg.RPCAddress = fmt.Sprintf("tcp://0.0.0.0:%s", ports[1])
+	}
+	if cfg.GRPCAddress == "" {
+		cfg.GRPCAddress = fmt.Sprintf("0.0.0.0:%s", ports[2])
+	}
+	return cfg
+}
+
+// freePorts return the available ports based on the number of requested ports.
+func freePorts(n int) ([]string, error) {
+	closeFns := make([]func() error, n)
+	ports := make([]string, n)
+	for i := 0; i < n; i++ {
+		_, port, closeFn, err := network.FreeTCPAddr()
+		if err != nil {
+			return nil, err
+		}
+		ports[i] = port
+		closeFns[i] = closeFn
+	}
+	for _, closeFn := range closeFns {
+		if err := closeFn(); err != nil {
+			return nil, err
+		}
+	}
+	return ports, nil
 }

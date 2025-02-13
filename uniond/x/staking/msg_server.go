@@ -3,16 +3,12 @@ package staking
 import (
 	"context"
 	"fmt"
-
-	anytypes "github.com/cosmos/gogoproto/types/any"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	bn254key "github.com/cosmos/cosmos-sdk/crypto/keys/bn254"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
-
-	types "cosmossdk.io/x/staking/types"
+	types "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 type msgServer struct {
@@ -23,11 +19,11 @@ type msgServer struct {
 var (
 	_ MsgServer = &msgServer{}
 
-	_ sdk.Msg                          = &MsgCreateUnionValidator{}
-	_ anytypes.UnpackInterfacesMessage = (*MsgCreateUnionValidator)(nil)
+	_ sdk.Msg                            = &MsgCreateUnionValidator{}
+	_ codectypes.UnpackInterfacesMessage = (*MsgCreateUnionValidator)(nil)
 )
 
-func (msg MsgCreateUnionValidator) UnpackInterfaces(unpacker anytypes.AnyUnpacker) error {
+func (msg MsgCreateUnionValidator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	return msg.Underlying.UnpackInterfaces(unpacker)
 }
 
