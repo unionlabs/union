@@ -1,6 +1,6 @@
 use std::{
-    borrow::Borrow, cmp::Eq, collections::HashMap, future::Future, hash::Hash, marker::PhantomData,
-    time::Duration,
+    borrow::Borrow, cmp::Eq, collections::HashMap, fmt::Write, future::Future, hash::Hash,
+    marker::PhantomData, time::Duration,
 };
 
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
@@ -8,12 +8,15 @@ use futures_util::TryStreamExt;
 use itertools::Itertools;
 use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use sqlx::{postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, Executor, PgPool};
-use tracing::{debug, debug_span, info_span, instrument, trace, Instrument};
+use sqlx::{
+    postgres::PgPoolOptions, prelude::FromRow, types::Json, Either, Executor, PgPool, Postgres,
+    Transaction,
+};
+use tracing::{debug, debug_span, error, info, info_span, instrument, trace, warn, Instrument};
 use voyager_vm::{
     filter::{FilterResult, InterestFilter},
     pass::{Pass, PassResult},
-    Captures, EnqueueResult, ItemId, Op, QueueMessage,
+    BoxDynError, Captures, EnqueueResult, ItemId, Op, QueueError, QueueMessage,
 };
 
 use crate::metrics::{ITEM_PROCESSING_DURATION, OPTIMIZE_ITEM_COUNT, OPTIMIZE_PROCESSING_DURATION};
@@ -301,7 +304,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
     ) -> Result<Option<R>, Self::Error>
     where
         F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
-        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + Captures<'a>,
+        Fut: Future<Output = (R, Result<Vec<Op<T>>, QueueError>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
     {
         trace!("process");
@@ -335,93 +338,97 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         .await?;
 
         match row {
-            Some(row) => {
-                let span = info_span!("processing item", item_id = row.id);
+            Some(record) => {
+                let span = info_span!("processing item", item_id = record.id);
 
-                trace!(%row.item);
+                trace!(%record.item);
 
                 // really don't feel like defining a new error type right now
-                let op = de(&row.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+                let op = de(&record.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
 
                 let timer = ITEM_PROCESSING_DURATION.start_timer();
-                let (r, res) = f(op, ItemId::new(row.id).unwrap()).instrument(span).await;
+                let (r, res) = f(op, ItemId::new(record.id).unwrap())
+                    .instrument(span.clone())
+                    .await;
                 let _ = timer.stop_and_record();
 
-                match res {
-                    Err(error) => {
-                        // insert error message and the op into failed
-                        sqlx::query(
-                            r#"
-                            INSERT INTO
-                            failed (id, parents, item,      created_at, message)
-                            VALUES ($1, $2,      $3::JSONB, $4,         $5     )
-                            "#,
-                        )
-                        .bind(row.id)
-                        .bind(row.parents)
-                        .bind(row.item)
-                        .bind(row.created_at)
-                        .bind(error)
-                        .execute(tx.as_mut())
-                        .await?;
-                        tx.commit().await?;
-                    }
-                    Ok(ops) => {
-                        'block: {
-                            // insert the op we just processed into done
-                            sqlx::query(
-                                "
+                async move {
+                    match res {
+                        Err(QueueError::Fatal(error)) => {
+                            let error = full_error_string(error);
+                            error!(%error, "fatal error");
+                            insert_error(record, error, tx).await?;
+                        }
+                        Err(QueueError::Unprocessable(error)) => {
+                            let error = full_error_string(error);
+                            info!(%error, "unprocessable message");
+                            insert_error(record, error, tx).await?;
+                        }
+                        Err(QueueError::Retry(error)) => {
+                            warn!(error = %full_error_string(error), "retryable error");
+                            tx.rollback().await?;
+                        }
+                        Ok(ops) => {
+                            'block: {
+                                // insert the op we just processed into done
+                                sqlx::query(
+                                    "
                                 INSERT INTO
                                 done   (id, parents, item,      created_at)
                                 VALUES ($1, $2,      $3::JSONB, $4        )
                                 ",
-                            )
-                            .bind(row.id)
-                            .bind(row.parents)
-                            .bind(row.item)
-                            .bind(row.created_at)
-                            .execute(tx.as_mut())
-                            .await?;
+                                )
+                                .bind(record.id)
+                                .bind(record.parents)
+                                .bind(record.item)
+                                .bind(record.created_at)
+                                .execute(tx.as_mut())
+                                .await?;
 
-                            if ops.is_empty() {
-                                break 'block;
-                            }
+                                if ops.is_empty() {
+                                    break 'block;
+                                }
 
-                            let (optimize, ready): (Vec<_>, Vec<_>) = ops
-                                .into_iter()
-                                .flat_map(Op::normalize)
-                                .partition_map(|op| match filter.check_interest(&op) {
-                                    FilterResult::Interest(tag) => Either::Left((op, tag)),
-                                    FilterResult::NoInterest => Either::Right(op),
-                                });
+                                let (optimize, ready): (Vec<_>, Vec<_>) = ops
+                                    .into_iter()
+                                    .flat_map(Op::normalize)
+                                    .partition_map(|op| match filter.check_interest(&op) {
+                                        FilterResult::Interest(tag) => Either::Left((op, tag)),
+                                        FilterResult::NoInterest => Either::Right(op),
+                                    });
 
-                            sqlx::query(
-                                "
+                                sqlx::query(
+                                    "
                                 INSERT INTO queue (item, parents)
                                 SELECT *, $1 as parents FROM UNNEST($2::JSONB[])
                                 ",
-                            )
-                            .bind(vec![row.id])
-                            .bind(ready.into_iter().map(Json).collect::<Vec<_>>())
-                            .execute(tx.as_mut())
-                            .await?;
+                                )
+                                .bind(vec![record.id])
+                                .bind(ready.into_iter().map(Json).collect::<Vec<_>>())
+                                .execute(tx.as_mut())
+                                .await?;
 
-                            sqlx::query(
-                                "
+                                sqlx::query(
+                                    "
                                 INSERT INTO optimize (item, tag, parents)
                                 SELECT *, $1 as parents FROM UNNEST($2::JSONB[], $3::TEXT[])
                                 ",
-                            )
-                            .bind(vec![row.id])
-                            .bind(optimize.iter().map(|(op, _)| Json(op)).collect::<Vec<_>>())
-                            .bind(optimize.iter().map(|(_, tag)| *tag).collect::<Vec<_>>())
-                            .execute(tx.as_mut())
-                            .await?;
-                        }
+                                )
+                                .bind(vec![record.id])
+                                .bind(optimize.iter().map(|(op, _)| Json(op)).collect::<Vec<_>>())
+                                .bind(optimize.iter().map(|(_, tag)| *tag).collect::<Vec<_>>())
+                                .execute(tx.as_mut())
+                                .await?;
+                            }
 
-                        tx.commit().await?;
+                            tx.commit().await?;
+                        }
                     }
+
+                    Ok::<_, Self::Error>(())
                 }
+                .instrument(span)
+                .await?;
 
                 Ok(Some(r))
             }
@@ -579,6 +586,46 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 
         Ok(())
     }
+}
+
+async fn insert_error(
+    record: Record,
+    error: String,
+    mut tx: Transaction<'static, Postgres>,
+) -> Result<(), sqlx::Error> {
+    // insert error message and the op into failed
+
+    sqlx::query(
+        r#"
+        INSERT INTO
+        failed (id, parents, item,      created_at, message)
+        VALUES ($1, $2,      $3::JSONB, $4,         $5     )
+        "#,
+    )
+    .bind(record.id)
+    .bind(record.parents)
+    .bind(record.item)
+    .bind(record.created_at)
+    .bind(error)
+    .execute(tx.as_mut())
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(())
+}
+
+// copied from unionlabs::ErrorReporter
+fn full_error_string(error: BoxDynError) -> String {
+    let mut s = String::new();
+
+    write!(s, "{}", error).unwrap();
+
+    for e in core::iter::successors(error.source(), |e| (*e).source()) {
+        write!(s, ": {e}").unwrap();
+    }
+
+    s
 }
 
 fn de<T: DeserializeOwned>(s: &str) -> Result<T, serde_json::Error> {

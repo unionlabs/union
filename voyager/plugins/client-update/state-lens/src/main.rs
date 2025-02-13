@@ -21,7 +21,7 @@ use voyager_message::{
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     into_value,
     module::{PluginInfo, PluginServer},
-    rpc::{missing_state, ProofType},
+    rpc::ProofType,
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
     FATAL_JSONRPC_ERROR_CODE,
 };
@@ -114,19 +114,18 @@ impl Module {
         update_from: Height,
         update_to: Height,
     ) -> RpcResult<Op<VoyagerMessage>> {
+        let counterparty_latest_height = voyager_client
+            .query_latest_height(counterparty_chain_id.clone(), false)
+            .await?;
+
         // state lens client running on the counterparty, tracking self.chain_id
         let raw_state_lens_client_state = voyager_client
-            .query_ibc_state(
+            .must_query_ibc_state(
                 counterparty_chain_id.clone(),
-                QueryHeight::Latest,
+                counterparty_latest_height,
                 ClientStatePath { client_id },
             )
-            .await?
-            .state
-            .ok_or_else(missing_state(
-                "state lens client state doesn't exist?",
-                None,
-            ))?;
+            .await?;
 
         debug!(?raw_state_lens_client_state);
 
@@ -440,14 +439,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 };
 
                 let l2_consensus_state = voyager_client
-                    .query_ibc_state(
+                    .must_query_ibc_state(
                         l1_client_meta.counterparty_chain_id.clone(),
-                        QueryHeight::Specific(l1_latest_height),
+                        l1_latest_height,
                         l2_consensus_state_path.clone(),
                     )
-                    .await?
-                    .state
-                    .ok_or_else(missing_state("l2 consensus on l1 doesn't exist", None))?;
+                    .await?;
 
                 debug!(?l2_consensus_state);
 

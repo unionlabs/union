@@ -314,7 +314,10 @@ impl Server {
                 // TODO: Use valuable here
                 debug!(%state, "fetched ibc state");
 
-                Ok(IbcState { height, state })
+                Ok(IbcState {
+                    height,
+                    state: if state.is_null() { None } else { Some(state) },
+                })
             })
             .await
     }

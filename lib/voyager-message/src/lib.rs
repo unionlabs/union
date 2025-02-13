@@ -152,6 +152,10 @@ pub const FATAL_JSONRPC_ERROR_CODE: i32 = -0xBADBEEF;
 /// will be treated as fatal and not retried.
 pub const UNPROCESSABLE_JSONRPC_ERROR_CODE: i32 = -0xDEADC0D; // 🐟
 
+/// Error code for missing state. If a plugin or module responds with this error code, it will be
+/// requeued and retried.
+pub const MISSING_STATE_ERROR_CODE: i32 = -0xBADB10B;
+
 /// Convert a [`jsonrpsee::core::client::Error`] to a `voyager-vm` [`QueueError`].
 ///
 /// All errors are treated as retryable, unless `error` is a `Call` variant and the contained
@@ -729,16 +733,50 @@ impl VoyagerClient {
 
         Ok(IbcState {
             height: ibc_state.height,
-            state: serde_json::from_value(ibc_state.state.clone()).map_err(|e| {
+            state: ibc_state
+                .state
+                .map(|state| {
+                    serde_json::from_value(state.clone()).map_err(|e| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("error decoding IBC state: {}", ErrorReporter(e)),
+                            Some(json!({
+                                "raw_state": state
+                            })),
+                        )
+                    })
+                })
+                .transpose()?,
+        })
+    }
+
+    pub async fn must_query_ibc_state<P: IbcStorePathKey>(
+        &self,
+        chain_id: ChainId,
+        height: Height,
+        path: P,
+    ) -> RpcResult<P::Value> {
+        let state = self
+            .query_ibc_state(
+                chain_id.clone(),
+                QueryHeight::Specific(height),
+                path.clone(),
+            )
+            .await?
+            .state
+            .ok_or_else(|| {
                 ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("error decoding IBC state: {}", ErrorReporter(e)),
+                    MISSING_STATE_ERROR_CODE,
+                    "state must exist",
                     Some(json!({
-                        "raw_state": ibc_state.state
+                        "chain_id": chain_id,
+                        "height": height,
+                        "path": path
                     })),
                 )
-            })?,
-        })
+            })?;
+
+        Ok(state)
     }
 
     pub async fn query_ibc_proof<P: IbcStorePathKey>(

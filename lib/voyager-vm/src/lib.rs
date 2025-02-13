@@ -62,7 +62,7 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + Captures<'a>
     where
         F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
-        Fut: Future<Output = (R, Result<Vec<Op<T>>, String>)> + Send + Captures<'a>,
+        Fut: Future<Output = (R, Result<Vec<Op<T>>, QueueError>)> + Send + Captures<'a>,
         R: Send + Sync + 'static;
 
     fn optimize<'a, O: Pass<T>>(

@@ -80,7 +80,7 @@ impl ClientStatePath {
 impl IbcStorePathKey for ClientStatePath {
     type Spec = IbcUnion;
 
-    type Value = Option<Bytes>;
+    type Value = Bytes;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -110,7 +110,7 @@ impl ConsensusStatePath {
 impl IbcStorePathKey for ConsensusStatePath {
     type Spec = IbcUnion;
 
-    type Value = Option<Bytes>;
+    type Value = Bytes;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -138,7 +138,7 @@ impl ConnectionPath {
 impl IbcStorePathKey for ConnectionPath {
     type Spec = IbcUnion;
 
-    type Value = Option<Connection>;
+    type Value = Connection;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -166,7 +166,7 @@ impl ChannelPath {
 impl IbcStorePathKey for ChannelPath {
     type Spec = IbcUnion;
 
-    type Value = Option<Channel>;
+    type Value = Channel;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -209,7 +209,7 @@ impl BatchReceiptsPath {
 impl IbcStorePathKey for BatchReceiptsPath {
     type Spec = IbcUnion;
 
-    type Value = Option<H256>;
+    type Value = H256;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -252,7 +252,7 @@ impl BatchPacketsPath {
 impl IbcStorePathKey for BatchPacketsPath {
     type Spec = IbcUnion;
 
-    type Value = Option<H256>;
+    type Value = H256;
 }
 
 #[test]
