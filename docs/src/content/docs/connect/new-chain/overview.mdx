@@ -5,13 +5,19 @@ title: "Connect a new Chain"
 import { Tabs, LinkCard, TabItem, FileTree, Steps } from '@astrojs/starlight/components'
 
 
-If your chain is not yet [connected to Union](/protocol/chains/overview/), then you can permissionlessly add support. Union supports L1s, L2s, L3s, and Rollups. The steps to connect are simple:
+If your chain is not yet [connected to Union](/protocol/chains/overview/), then you can permissionlessly add support. Union supports L1s, L2s, L3s, and Rollups. All you need is a VM. We currently support EVM, CosmWasm, and Move. The steps to connect are simple:
+
+
+:::note
+Below is an overview of the steps involved in connecting a new chain. **For Testnet 9 new connections are initially created by Union Labs.** Soon these docs will be updated with more details so that anyone can open connections.
+
+If you want to get connected, just ensure your chain has a EVM/CosmWasm/Move VM and send us a message, we'll open the connection for you.
+:::
 
 <Steps>
 1. Upload `ibc-union` and `light-client` contracts
 
     This means deploying and initializing both the [`ibc-union`](https://github.com/unionlabs/union/tree/ab76fd72e114a2b8db8ad469dc587aec865e2095/cosmwasm/ibc-union/core) contract and the respective light clients for the chain you're trying to connect.
-    Union maintains both Solidity and CosmWasm implementations of `ibc-union`.
     You will then need to deploy the CometBLS light client on your chain as well as the respective light client of your chain on Union.
     Union has implementations the following [light clients](https://github.com/unionlabs/union/tree/main/cosmwasm/ibc-union/light-clients):
     - Arbitrum (CosmWasm)
