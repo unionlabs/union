@@ -90,7 +90,7 @@
         }
       }
     },
-    "channels": [1, 3, 4, 5]
+    "channels": [1, 3, 4, 5, 8]
   },
   {
     "chain_id": "elgafar-1",
@@ -121,7 +121,7 @@
         }
       }
     },
-    "channels": [1, 3, 4]
+    "channels": [1, 3, 4, 5]
   },
   {
     "chain_id": "osmo-test-5",
@@ -178,7 +178,7 @@
         }
       }
     },
-    "channels": [1, 2]
+    "channels": [1, 2, 3]
   },
   {
     "chain_id": "17000",
@@ -254,7 +254,7 @@
         }
       }
     },
-    "channels": [8]
+    "channels": [8, 9, 10, 11]
   },
   {
     "chain_id": "16600",
