@@ -23,7 +23,7 @@ use voyager_message::{
     module::{PluginInfo, PluginServer},
     rpc::ProofType,
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE,
+    FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit};
 
@@ -458,7 +458,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                 if l2_consensus_state_proof.proof_type != ProofType::Membership {
                     return Err(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
+                        MISSING_STATE_ERROR_CODE,
                         "proof of the l2 consensus state must be a membership proof",
                         None::<()>,
                     ));
