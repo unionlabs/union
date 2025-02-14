@@ -15,7 +15,12 @@
     },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "LICENSE", "README.md", "package.json"],
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "package.json"
+  ],
   "scripts": {
     "build": "tsup --config='tsup.config.ts'",
     "typecheck": "tsc --project tsconfig.json --noEmit",
@@ -29,7 +34,7 @@
     "check-package": "bunx publint --strict && bunx @arethetypeswrong/cli@latest --pack --ignore-rules 'cjs-resolves-to-esm'"
   },
   "dependencies": {
-    "@aptos-labs/ts-sdk": "^1.33.2",
+    "@aptos-labs/ts-sdk": "1.35.0",
     "@cosmjs/amino": "^0.33.0",
     "@cosmjs/cosmwasm-stargate": "0.33.0",
     "@cosmjs/proto-signing": "^0.33.0",
@@ -41,16 +46,17 @@
     "ofetch": "^1.4.1",
     "ox": "^0.6.9",
     "patch-package": "^8.0.0",
+    "tsconfig-paths": "^4.2.0",
     "viem": "^2.22.21"
   },
   "devDependencies": {
-    "gql.tada": "^1.8.10",
     "@total-typescript/ts-reset": "^0.6.1",
     "@tsconfig/strictest": "^2.0.5",
     "@types/bun": "^1.2.2",
     "@types/node": "^22.13.1",
     "consola": "^3.4.0",
     "cosmjs-types": "^0.9.0",
+    "gql.tada": "^1.8.10",
     "jsr": "^0.13.3",
     "knip": "^5.43.6",
     "tsup": "^8.3.6",
@@ -70,5 +76,9 @@
   "publishConfig": {
     "access": "public"
   },
-  "keywords": ["web3", "cross-chain", "ibc"]
+  "keywords": [
+    "web3",
+    "cross-chain",
+    "ibc"
+  ]
 }

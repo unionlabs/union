@@ -22,50 +22,44 @@ module zkgm::acknowledgement {
 
     public fun encode(ack: &Acknowledgement): vector<u8> {
         let buf = vector::empty<u8>();
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
         zkgm_ethabi::encode_uint<u256>(&mut buf, ack.tag);
 
         let version_offset = 0x40;
         zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
+        zkgm_ethabi::encode_bytes(&mut buf, &ack.inner_ack);
 
-        zkgm_ethabi::encode_vector<u8>(
-            &mut buf,
-            &ack.inner_ack,
-            |some_variable, data| {
-                zkgm_ethabi::encode_uint<u8>(some_variable, *data);
-            }
-        );
 
         buf
     }
 
     public fun decode(buf: &vector<u8>): Acknowledgement {
-        let index = 0x20;
+        let index = 0x0;
         let tag = zkgm_ethabi::decode_uint(buf, &mut index);
         index = index + 0x20;
-        let inner_ack =
-            zkgm_ethabi::decode_vector<u8>(
-                buf,
-                &mut index,
-                |buf, index| {
-                    (zkgm_ethabi::decode_uint(buf, index) as u8)
-                }
-            );
-
+        let inner_ack = zkgm_ethabi::decode_bytes(buf, &mut index);
         Acknowledgement { tag: tag, inner_ack: inner_ack }
     }
 
     #[test]
     fun test_encode_decode_ack() {
         let output =
-            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
+            x"000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000768656c6c6c6f6f00000000000000000000000000000000000000000000000000";
         let ack_data = Acknowledgement { tag: 7788909223344, inner_ack: b"hellloo" };
 
         let ack_bytes = encode(&ack_data);
+        std::debug::print(&ack_bytes);
         assert!(ack_bytes == output, 0);
 
         let ack_data_decoded = decode(&ack_bytes);
         assert!(ack_data_decoded.tag == 7788909223344, 1);
         assert!(ack_data_decoded.inner_ack == b"hellloo", 3);
+    }
+
+    #[test]
+    fun test_decode_ack(){
+        let output = x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
+
+        let ack_data_decoded = decode(&output);
+        std::debug::print(&ack_data_decoded);
     }
 }

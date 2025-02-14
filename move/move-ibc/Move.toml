@@ -4,7 +4,7 @@ name    = "ibc"
 version = "1.0.0"
 
 [addresses]
-ibc = "_"
+ibc = "0x4462dcd2422972dc3002a60403c15450982e88bc9c7999863ea8e2117f0b4d23"
 
 [dev-addresses]
 ibc = "0x22222"
