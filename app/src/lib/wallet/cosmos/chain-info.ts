@@ -224,7 +224,12 @@ export const elgafarKeplrChainInfo: KeplrChainInfo = {
       coinMinimalDenom: "ustars",
       coinDecimals: 6,
       coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stargaze/ustars.png"
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stargaze/ustars.png",
+      gasPriceStep: {
+        low: 0.0005,
+        average: 0.0025,
+        high: 0.025
+      }
     }
   ],
   features: []
