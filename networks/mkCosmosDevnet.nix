@@ -874,7 +874,7 @@ let
                   --api.address            tcp://0.0.0.0:1317 \
                   --api.rpc-max-body-bytes 100000000 \
                   --grpc.address           0.0.0.0:9090 \
-                  --minimum-gas-prices     "0${denom}"
+                  --minimum-gas-prices     "0${denom}" \
                   --log_level rpc-server:warn,x/wasm:debug,*:info
               ''
             else
