@@ -346,7 +346,7 @@ pub trait RawStateModule {
     async fn query_ibc_state_raw(&self, at: Height, path: Value) -> RpcResult<Value>;
 
     #[method(name = "clientInfo")]
-    async fn client_info_raw(&self, client_id: RawClientId) -> RpcResult<ClientInfo>;
+    async fn client_info_raw(&self, client_id: RawClientId) -> RpcResult<Option<ClientInfo>>;
 }
 
 #[rpc(client,

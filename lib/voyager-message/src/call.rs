@@ -285,26 +285,37 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
-                if trusted_client_state_meta.counterparty_height.height() >= height.height() {
-                    debug!(
-                        "client height reached ({} >= {})",
-                        trusted_client_state_meta.counterparty_height, height
-                    );
+                let continuation = seq([
+                    // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
+                    // require a new method on chain
+                    defer(now() + 1),
+                    call(WaitForTrustedHeight {
+                        chain_id: chain_id.clone(),
+                        ibc_spec_id,
+                        client_id: client_id.clone(),
+                        height,
+                        finalized,
+                    }),
+                ]);
 
-                    Ok(noop())
-                } else {
-                    Ok(seq([
-                        // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
-                        // require a new method on chain
-                        defer(now() + 1),
-                        call(WaitForTrustedHeight {
-                            chain_id,
-                            ibc_spec_id,
-                            client_id,
-                            height,
-                            finalized,
-                        }),
-                    ]))
+                match trusted_client_state_meta {
+                    Some(trusted_client_state_meta) => {
+                        if trusted_client_state_meta.counterparty_height.height() >= height.height()
+                        {
+                            debug!(
+                                "client height reached ({} >= {})",
+                                trusted_client_state_meta.counterparty_height, height
+                            );
+
+                            Ok(noop())
+                        } else {
+                            Ok(continuation)
+                        }
+                    }
+                    None => {
+                        debug!("client {client_id} not found on chain {chain_id}");
+                        Ok(continuation)
+                    }
                 }
             }
             Call::Plugin(PluginMessage { plugin, message }) => {

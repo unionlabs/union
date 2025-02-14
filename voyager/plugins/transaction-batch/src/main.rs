@@ -433,7 +433,7 @@ async fn do_make_msg_union(
 
             // the connection end as stored by the origin chain after open_init/try
             let connection_state = voyager_client
-                .query_ibc_state(
+                .maybe_query_ibc_state(
                     origin_chain_id.clone(),
                     origin_chain_proof_height.into(),
                     ibc_union_spec::path::ConnectionPath { connection_id },
@@ -517,7 +517,7 @@ async fn do_make_msg_union(
 
             // the connection end as stored by the origin chain after open_init/try
             let connection_state = voyager_client
-                .query_ibc_state(
+                .maybe_query_ibc_state(
                     origin_chain_id.clone(),
                     origin_chain_proof_height.into(),
                     ibc_union_spec::path::ConnectionPath { connection_id },
@@ -600,7 +600,7 @@ async fn do_make_msg_union(
 
             // the connection end as stored by the origin chain after open_init/ack
             let connection_state = voyager_client
-                .query_ibc_state(
+                .maybe_query_ibc_state(
                     origin_chain_id.clone(),
                     origin_chain_proof_height.into(),
                     ibc_union_spec::path::ConnectionPath { connection_id },
@@ -1337,7 +1337,7 @@ async fn mk_connection_handshake_state_and_proofs(
 
     // the connection end as stored by the origin chain after open_init/try
     let connection_state = voyager_client
-        .query_ibc_state(
+        .maybe_query_ibc_state(
             origin_chain_id.clone(),
             origin_chain_proof_height.into(),
             ibc_classic_spec::ConnectionPath {

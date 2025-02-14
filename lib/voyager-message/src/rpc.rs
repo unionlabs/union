@@ -57,7 +57,7 @@ pub trait VoyagerRpc {
         chain_id: ChainId,
         ibc_spec_id: IbcSpecId,
         client_id: RawClientId,
-    ) -> RpcResult<ClientInfo>;
+    ) -> RpcResult<Option<ClientInfo>>;
 
     #[method(name = "clientMeta", with_extensions)]
     async fn client_meta(
@@ -66,7 +66,7 @@ pub trait VoyagerRpc {
         ibc_spec_id: IbcSpecId,
         at: QueryHeight,
         client_id: RawClientId,
-    ) -> RpcResult<ClientStateMeta>;
+    ) -> RpcResult<Option<ClientStateMeta>>;
 
     #[method(name = "queryIbcState", with_extensions)]
     async fn query_ibc_state(

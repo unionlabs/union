@@ -347,7 +347,7 @@ pub struct IbcGo08WasmClientMetadata {
     pub checksum: H256<HexUnprefixed>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
