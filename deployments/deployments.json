@@ -117,7 +117,7 @@
       "app": {
         "ucs03": {
           "address": "stars1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqsnqksg",
-          "height": 14775531
+          "height": 14775528
         }
       }
     },
@@ -148,7 +148,7 @@
       "app": {
         "ucs03": {
           "address": "osmo1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqnfufgk",
-          "height": 22422709
+          "height": 22422699
         }
       }
     }
@@ -178,7 +178,7 @@
       "app": {
         "ucs03": {
           "address": "bbn1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqaa99ye",
-          "height": 266258
+          "height": 248732
         }
       }
     },
