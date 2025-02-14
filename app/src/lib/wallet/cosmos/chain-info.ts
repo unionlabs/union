@@ -10,7 +10,7 @@ interface LeapExtendedInfo extends LeapChainInfo {
   image: string
 }
 
-//todo handle this for main-net
+//Keplr
 export const unionKeplrChainInfo: KeplrChainInfo = {
   chainId: "union-testnet-9",
   chainName: "uniontestnet",
@@ -111,58 +111,6 @@ export const babylonKeplrChaininfo: KeplrChainInfo = {
       "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png"
   },
   features: ["cosmwasm"]
-}
-
-//todo handle this for main-net
-export const unionLeapChainInfo: LeapExtendedInfo = {
-  chainId: "union-testnet-9",
-  chainName: "uniontestnet",
-  rest: "https://rest.testnet-9.union.build",
-  rpc: "https://rpc.testnet-9.union.build",
-  bip44: {
-    coinType: 118
-  },
-  bech32Config: {
-    bech32PrefixAccAddr: "union",
-    bech32PrefixAccPub: "unionpub",
-    bech32PrefixValAddr: "unionvaloper",
-    bech32PrefixValPub: "unionvaloperpub",
-    bech32PrefixConsAddr: "unionvalcons",
-    bech32PrefixConsPub: "unionvalconspub"
-  },
-  currencies: [
-    {
-      coinDenom: "UNO",
-      coinMinimalDenom: "muno",
-      coinDecimals: 6,
-      coinGeckoId: "cosmos"
-    }
-  ],
-  feeCurrencies: [
-    {
-      coinDenom: "UNO",
-      coinMinimalDenom: "muno",
-      coinDecimals: 6,
-      coinGeckoId: "union"
-    }
-  ],
-  gasPriceStep: {
-    low: 0.0025,
-    average: 0.025,
-    high: 0.04
-  },
-  stakeCurrency: {
-    coinDenom: "UNO",
-    coinMinimalDenom: "muno",
-    coinDecimals: 6,
-    coinGeckoId: "union"
-  },
-  theme: {
-    primaryColor: "#fff",
-    gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)"
-  },
-  image:
-    "https://raw.githubusercontent.com/cosmos/chain-registry/master/testnets/uniontestnet/images/union.png"
 }
 
 export const strideKeplrChainInfo: KeplrChainInfo = {
@@ -282,6 +230,58 @@ export const elgafarKeplrChainInfo: KeplrChainInfo = {
   features: []
 }
 
+//Leap
+export const unionLeapChainInfo: LeapExtendedInfo = {
+  chainId: "union-testnet-9",
+  chainName: "uniontestnet",
+  rest: "https://rest.testnet-9.union.build",
+  rpc: "https://rpc.testnet-9.union.build",
+  bip44: {
+    coinType: 118
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "union",
+    bech32PrefixAccPub: "unionpub",
+    bech32PrefixValAddr: "unionvaloper",
+    bech32PrefixValPub: "unionvaloperpub",
+    bech32PrefixConsAddr: "unionvalcons",
+    bech32PrefixConsPub: "unionvalconspub"
+  },
+  currencies: [
+    {
+      coinDenom: "UNO",
+      coinMinimalDenom: "muno",
+      coinDecimals: 6,
+      coinGeckoId: "cosmos"
+    }
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "UNO",
+      coinMinimalDenom: "muno",
+      coinDecimals: 6,
+      coinGeckoId: "union",
+      gasPriceStep: {
+        low: 0.0025,
+        average: 0.025,
+        high: 0.04
+      }
+    }
+  ],
+  stakeCurrency: {
+    coinDenom: "UNO",
+    coinMinimalDenom: "muno",
+    coinDecimals: 6,
+    coinGeckoId: "union"
+  },
+  theme: {
+    primaryColor: "#fff",
+    gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)"
+  },
+  image:
+    "https://raw.githubusercontent.com/cosmos/chain-registry/master/testnets/uniontestnet/images/union.png"
+}
+
 export const elgafarLeapChainInfo: LeapExtendedInfo = {
   chainId: "elgafar-1",
   chainName: "Stargaze Testnet",
@@ -311,14 +311,14 @@ export const elgafarLeapChainInfo: LeapExtendedInfo = {
       coinDenom: "STARS",
       coinMinimalDenom: "ustars",
       coinDecimals: 6,
-      coinGeckoId: "stargaze"
+      coinGeckoId: "stargaze",
+      gasPriceStep: {
+        low: 0.03,
+        average: 0.04,
+        high: 0.05
+      }
     }
   ],
-  gasPriceStep: {
-    low: 0.03,
-    average: 0.04,
-    high: 0.05
-  },
   stakeCurrency: {
     coinDenom: "STARS",
     coinMinimalDenom: "ustars",
@@ -390,6 +390,58 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
     "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stride-internal/chain.png"
 }
 
+export const babylonLeapChaininfo: LeapExtendedInfo = {
+  chainId: "bbn-test-5",
+  chainName: "Babylon Phase-2 Testnet",
+  rest: "https://babylon-testnet-api.nodes.guru",
+  rpc: "https://babylon-testnet-rpc.nodes.guru",
+  bip44: {
+    coinType: 118
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "bbn",
+    bech32PrefixAccPub: "bbnpub",
+    bech32PrefixValAddr: "bbnvaloper",
+    bech32PrefixValPub: "bbnvaloperpub",
+    bech32PrefixConsAddr: "bbnvalcons",
+    bech32PrefixConsPub: "bbnvalconspub"
+  },
+  currencies: [
+    {
+      coinDenom: "BABY",
+      coinMinimalDenom: "ubbn",
+      coinDecimals: 6,
+      coinGeckoId: ""
+    }
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "BABY",
+      coinMinimalDenom: "ubbn",
+      coinDecimals: 6,
+      coinGeckoId: "",
+      gasPriceStep: {
+        low: 0.007,
+        average: 0.007,
+        high: 0.01
+      }
+    }
+  ],
+  stakeCurrency: {
+    coinDenom: "BABY",
+    coinMinimalDenom: "ubbn",
+    coinDecimals: 6,
+    coinGeckoId: ""
+  },
+  image:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
+  theme: {
+    primaryColor: "#fff",
+    gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)"
+  }
+}
+
+//Maps
 const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
   "union-testnet-9": unionKeplrChainInfo,
   "stride-internal-1": strideKeplrChainInfo,
@@ -400,10 +452,12 @@ const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
 const leapChainInfoMap: Record<string, LeapChainInfo> = {
   "union-testnet-9": unionLeapChainInfo,
   "stride-internal-1": strideLeapChainInfo,
-  "elgafar-1": elgafarLeapChainInfo
+  "elgafar-1": elgafarLeapChainInfo,
+  "bbn-test-5": babylonLeapChaininfo
   // TODO: add stargaze leap definition
 }
 
+//Helper functions
 export function getCosmosChainInfo(
   chainId: string,
   connectedWallet: string | undefined
