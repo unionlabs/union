@@ -1,4 +1,4 @@
-use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, Response, StdResult};
+use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
 use ibc_union_light_client::{
     msg::{InitMsg, QueryMsg},
     IbcClientError,
@@ -6,6 +6,11 @@ use ibc_union_light_client::{
 use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::client::MovementLightClient;
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
+    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
+}
 
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {

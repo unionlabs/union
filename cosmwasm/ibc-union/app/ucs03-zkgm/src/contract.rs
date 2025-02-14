@@ -1104,6 +1104,11 @@ fn transfer(
 pub struct MigrateMsg {}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
+pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
+    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
     deps: DepsMut,
     _env: Env,

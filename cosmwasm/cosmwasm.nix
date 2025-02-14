@@ -342,7 +342,7 @@
           rpc_url = "https://babylon-testnet-rpc.polkachu.com";
           private_key = ''"$1"'';
           gas_config = {
-            gas_price = "1.0";
+            gas_price = "0.003";
             gas_denom = "ubbn";
             gas_multiplier = "1.1";
             max_gas = 10000000;
@@ -351,6 +351,26 @@
             ucs03 = ucs03-configs.cw20;
           };
           bech32_prefix = "bbn";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          name = "stride-testnet";
+          rpc_url = "https://stride-testnet-rpc.polkachu.com";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_price = "0.1";
+            gas_denom = "ustrd";
+            gas_multiplier = "1.1";
+            max_gas = 60000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "stride";
           lightclients = [
             "cometbls"
             "tendermint"

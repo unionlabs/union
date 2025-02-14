@@ -5,6 +5,7 @@ use alloy::sol_types::SolValue;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
+    StdResult,
 };
 use cw_storage_plus::Item;
 use ibc_union_msg::{
@@ -441,6 +442,11 @@ fn migrate_state(
     )?;
 
     Ok(Response::new())
+}
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
+    panic!("this contract cannot be instantiated directly, but must be migrated from an existing instantiated contract.");
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
