@@ -48,9 +48,9 @@ func (app *App) registerIBCModules(appOpts servertypes.AppOptions, wasmOpts []wa
 		storetypes.NewKVStoreKey(ibcexported.StoreKey),
 		storetypes.NewKVStoreKey(ibctransfertypes.StoreKey),
 		storetypes.NewKVStoreKey(ibcfeetypes.StoreKey),
+		storetypes.NewKVStoreKey(wasmtypes.StoreKey),
 		storetypes.NewMemoryStoreKey(capabilitytypes.MemStoreKey),
 		storetypes.NewTransientStoreKey(paramstypes.TStoreKey),
-		storetypes.NewKVStoreKey(wasmtypes.StoreKey),
 	); err != nil {
 		return err
 	}
@@ -211,6 +211,7 @@ func RegisterIBC(registry cdctypes.InterfaceRegistry) map[string]appmodule.AppMo
 		capabilitytypes.ModuleName:  capability.AppModule{},
 		ibctm.ModuleName:            ibctm.AppModule{},
 		solomachine.ModuleName:      solomachine.AppModule{},
+		wasmtypes.ModuleName:        wasm.AppModule{},
 	}
 
 	for name, m := range modules {
