@@ -1,0 +1,27 @@
+{
+  "tasks": {
+    "dev": "deno run -A --node-modules-dir=auto npm:vite",
+    "build": "deno run -A --node-modules-dir=auto npm:vite build",
+    "server:start": "deno run -A --node-modules-dir --watch ./server/main.ts",
+    "serve": "deno task build && deno task server:start"
+  },
+  "imports": {
+    "@apollo/client": "npm:@apollo/client@^3.13.0",
+    "@deno/vite-plugin": "npm:@deno/vite-plugin@^1.0.0",
+    "@oak/oak": "jsr:@oak/oak@^17.1.3",
+    "@std/assert": "jsr:@std/assert@1",
+    "@types/react": "npm:@types/react@^18.3.12",
+    "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^4.3.3",
+    "axios": "npm:axios@^1.7.9",
+    "react": "npm:react@^18.3.1",
+    "react-dom": "npm:react-dom@^18.3.1",
+    "react-router-dom": "npm:react-router-dom@^6.28.0",
+    "vite": "npm:vite@^5.4.11"
+  },
+  "compilerOptions": {
+    "types": ["react", "react-dom", "@types/react"],
+    "lib": ["dom", "dom.iterable", "deno.ns"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  }
+}
