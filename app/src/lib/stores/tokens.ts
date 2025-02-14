@@ -143,7 +143,7 @@ export async function fetchTokenInfo(chain: Chain, denom: Denom): Promise<TokenI
       }
 
       if (result.isErr()) {
-        toast.error(`error getting metadata for asset, ${denom}`)
+        console.error(`error getting metadata for asset, ${denom}`)
       }
     }
   }
