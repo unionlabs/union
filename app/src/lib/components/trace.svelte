@@ -56,7 +56,7 @@ const DISPLAY_NAMES: Record<StepStatus, Record<string, string>> = {
 
 $: pTraces = ((): Array<Trace> => {
   let processedTraces = traces.map(t => {
-    let chain = chains.find(c => c.chain_id === t.chain.chain_id)
+    let chain = chains.find(c => c.chain_id === t.chain?.chain_id)
     let explorer = chain?.explorers?.at(0)
 
     // For cosmos explorer, transaction hashes must not have 0x and must be all-uppercase.
@@ -126,7 +126,7 @@ $: pTraces = ((): Array<Trace> => {
     </div>
     <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-80px)] break-words justify-center">
       {#if trace.timestamp}
-        <p class="text-xs -mb-1 text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain.chain_id, chains)} at {#if trace.block_url}<a class="underline" target="_blank" href={trace.block_url}>{trace.height}</a>{:else}{trace.height}{/if}</p>
+        <p class="text-xs -mb-1 text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain?.chain_id, chains)} at {#if trace.block_url}<a class="underline" target="_blank" href={trace.block_url}>{trace.height}</a>{:else}{trace.height}{/if}</p>
       {/if}
       <div>{trace.type}</div>
       {#if trace.transaction_hash}
