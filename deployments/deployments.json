@@ -121,7 +121,7 @@
         }
       }
     },
-    "channels": [1, 3, 4, 5]
+    "channels": [1, 3, 4, 5, 7]
   },
   {
     "chain_id": "osmo-test-5",
@@ -169,16 +169,20 @@
         "state-lens/ics23/mpt": {
           "address": "bbn13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqxnd4q0",
           "height": 240568
+        },
+        "tendermint": {
+          "address": "bbn1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqss4zy57u",
+          "height": 289957
         }
       },
       "app": {
         "ucs03": {
           "address": "bbn1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqaa99ye",
-          "height": 248735
+          "height": 266258
         }
       }
     },
-    "channels": [1, 2, 3]
+    "channels": [1, 2, 3, 4]
   },
   {
     "chain_id": "17000",
