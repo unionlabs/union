@@ -1,17 +1,14 @@
-import { fromHex, http } from "viem"
+import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { Account, AccountAddress, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { bech32AddressToHex, createUnionClient, hexToBytes } from "#mod.ts"
+import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
+import { createUnionClient } from "#mod.ts"
 
 import {
   getChannelInfo,
   getQuoteToken,
   getRecommendedChannels
 } from "#query/offchain/ucs03-channels"
-// import { Channel } from "../src/query/offchain/ucs03-channels" // Adjust path if needed
-
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 type Channel = {
   source_chain_id: string
