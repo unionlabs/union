@@ -28,7 +28,7 @@ use voyager_message::{
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
     rpc::ProofType,
-    ProofModule, FATAL_JSONRPC_ERROR_CODE,
+    ProofModule, FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
@@ -150,7 +150,7 @@ impl ProofModuleServer<IbcUnion> for Module {
             .proof_ops
             .ok_or_else(|| {
                 ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
+                    MISSING_STATE_ERROR_CODE,
                     "proofOps must be present on abci query when called with prove = true",
                     None::<()>,
                 )
