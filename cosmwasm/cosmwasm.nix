@@ -373,6 +373,26 @@
           bech32_prefix = "stride";
           lightclients = [
             "cometbls"
+            # "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          name = "xion-testnet";
+          rpc_url = "https://rpc.xion-testnet-2.burnt.com/";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_price = "0.002";
+            gas_denom = "uxion";
+            gas_multiplier = "1.5";
+            max_gas = 60000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "xion";
+          lightclients = [
+            "cometbls"
             "tendermint"
             "state-lens-ics23-mpt"
           ];

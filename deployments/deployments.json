@@ -291,5 +291,35 @@
       }
     },
     "channels": []
+  },
+  {
+    "chain_id": "xion-testnet-2",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "core": {
+        "address": "xion1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tes6lvrfu",
+        "height": 298029
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "xion1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ks8em4vn",
+          "height": 298034
+        },
+        "state-lens/ics23/mpt": {
+          "address": "xion13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejq80ldza",
+          "height": 298041
+        },
+        "tendermint": {
+          "address": "xion1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqss57kvuw",
+          "height": 298045
+        }
+      },
+      "app": {
+        "ucs03": {
+          "address": "xion1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cquphaxt",
+          "height": 298051
+        }
+      }
+    }
   }
 ]
