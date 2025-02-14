@@ -8,7 +8,6 @@ import {
   queryCosmosC20TokenMetadata,
   type CosmosChainId
 } from "@unionlabs/client"
-import { toast } from "svelte-sonner"
 import { persisted } from "svelte-persisted-store"
 
 export type TokenInfos = Record<ChainId, Record<Denom, TokenInfo>>
