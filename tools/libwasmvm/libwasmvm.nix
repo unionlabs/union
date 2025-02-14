@@ -135,10 +135,17 @@ _: {
         rev = "v2.1.3";
         hash = "sha256-gYrK2EHhXnearJgLX38O6NLI6TfoGtpzA9be/7S/0ZU=";
       };
+      wasmvm-2_2_1 = pkgs.fetchFromGitHub {
+        owner = "CosmWasm";
+        repo = "wasmvm";
+        rev = "v2.2.1";
+        hash = "sha256-HA/YPdE1yy2/vfiQWOTE0z75agYZL/kWTvpXKyKbfLk=";
+      };
     in
     {
       packages.libwasmvm-1_5_2 = mkLibwasmvm_v1 wasmvm-1_5_2;
       packages.libwasmvm-2_1_2 = mkLibwasmvm_v2 wasmvm-2_1_2;
       packages.libwasmvm-2_1_3 = mkLibwasmvm_v2 wasmvm-2_1_3;
+      packages.libwasmvm-2_2_1 = mkLibwasmvm_v2 wasmvm-2_2_1;
     };
 }

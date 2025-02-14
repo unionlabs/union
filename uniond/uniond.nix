@@ -14,7 +14,7 @@ _: {
       ...
     }:
     let
-      libwasmvm = self'.packages.libwasmvm-2_1_2;
+      libwasmvm = self'.packages.libwasmvm-2_2_1;
       CGO_LDFLAGS = "-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib -s -w";
 
       mkUniondImage =
