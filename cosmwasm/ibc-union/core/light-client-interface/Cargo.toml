@@ -23,3 +23,8 @@ serde-utils                   = { workspace = true }
 thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true }
 unionlabs-cosmwasm-upgradable = { workspace = true }
+
+[features]
+default = ["dummy-instantiate"]
+
+dummy-instantiate = [] # exports a panicking instantiate entrypoint
