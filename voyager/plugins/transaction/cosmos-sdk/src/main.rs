@@ -34,7 +34,7 @@ use unionlabs::{
     },
     encoding::{EncodeAs, Proto},
     google::protobuf::any::{mk_any, Any},
-    primitives::H256,
+    primitives::{Bytes, H256},
     signer::CosmosSigner,
     ErrorReporter,
 };
@@ -172,6 +172,22 @@ impl Module {
 
                     let ibc_host_contract_address = self.ibc_host_contract_address.clone();
                     let msgs = process_msgs(msgs, signer, ibc_host_contract_address);
+
+                    let msgs = msgs
+                        .into_iter()
+                        .filter_map(|msg| match msg {
+                            Ok(msg) => Some(msg),
+                            Err(err) => {
+                                error!("invalid msg: {}", ErrorReporter(err));
+                                None
+                            },
+                        })
+                        .collect::<Vec<_>>();
+
+                    if msgs.is_empty() {
+                        info!("no msgs left to submit after filtering out invalid msgs");
+                        return Ok(());
+                    }
 
                     // let simulation_results = stream::iter(msgs.clone().into_iter().enumerate())
                     //     .then(move |(idx, (effect, msg))| async move {
@@ -784,7 +800,7 @@ fn process_msgs(
     msgs: Vec<IbcMessage>,
     signer: &CosmosSigner,
     ibc_host_contract_address: Bech32<H256>,
-) -> Vec<(IbcMessage, protos::google::protobuf::Any)> {
+) -> Vec<RpcResult<(IbcMessage, protos::google::protobuf::Any)>> {
     msgs.into_iter()
         .map(|msg| {
             let encoded = match msg.clone() {
@@ -1046,8 +1062,7 @@ fn process_msgs(
                     ibc_union_spec::datagram::Datagram::ChannelOpenInit(msg_channel_open_init) => {
                         let channel_open_init = ibc_union_msg::msg::ExecuteMsg::ChannelOpenInit(
                             ibc_union_msg::msg::MsgChannelOpenInit {
-                                port_id: String::from_utf8(msg_channel_open_init.port_id.to_vec())
-                                    .unwrap(),
+                                port_id: parse_port_id(msg_channel_open_init.port_id.to_vec())?,
                                 relayer: signer.to_string(),
                                 counterparty_port_id: msg_channel_open_init.counterparty_port_id,
                                 connection_id: msg_channel_open_init.connection_id,
@@ -1065,8 +1080,7 @@ fn process_msgs(
                     ibc_union_spec::datagram::Datagram::ChannelOpenTry(msg_channel_open_try) => {
                         let channel_open_try = ibc_union_msg::msg::ExecuteMsg::ChannelOpenTry(
                             ibc_union_msg::msg::MsgChannelOpenTry {
-                                port_id: String::from_utf8(msg_channel_open_try.port_id.to_vec())
-                                    .unwrap(),
+                                port_id: parse_port_id(msg_channel_open_try.port_id.to_vec())?,
                                 channel: msg_channel_open_try.channel,
                                 counterparty_version: msg_channel_open_try.counterparty_version,
                                 proof_init: msg_channel_open_try.proof_init,
@@ -1187,7 +1201,17 @@ fn process_msgs(
                 },
             };
 
-            (msg, encoded)
+            Ok((msg, encoded))
         })
         .collect()
+}
+
+fn parse_port_id(bz: Vec<u8>) -> RpcResult<String> {
+    String::from_utf8(bz).map_err(|e| {
+        ErrorObject::owned(
+            FATAL_JSONRPC_ERROR_CODE,
+            format!("invalid utf8: {}", <Bytes>::new(e.into_bytes())),
+            None::<()>,
+        )
+    })
 }
