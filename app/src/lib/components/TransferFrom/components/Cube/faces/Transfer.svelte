@@ -39,6 +39,13 @@ let transferState: Writable<TransferState> = writable({ kind: "PRE_TRANSFER" })
 
 let confirmed = false
 
+const isNewAccount = (error: Error): boolean => {
+  return (
+    error.cause.message.includes("Account") &&
+    error.cause.message.includes("does not exist on chain")
+  )
+}
+
 const transfer = async () => {
   confirmed = true
 
@@ -253,7 +260,16 @@ const transfer = async () => {
         console.log("args", realArgs)
         const transfer = await unionClient.transferAsset(realArgs)
         console.log("output", transfer)
-        if (transfer.isErr()) throw transfer.error
+
+        if (transfer.isErr()) {
+          if (isNewAccount(transfer.error)) {
+            throw new Error(
+              `Your wallet address isn’t recognized because it has never made a transaction. Transfer a small amount (e.g. 0.000001) to your own address on ${transferContext.sourceChain.display_name} using your wallet’s UI to activate it, then retry this transfer.`
+            )
+          }
+          // If it's not a new account error, throw the original error
+          throw transfer.error
+        }
         transferState.set({ kind: "TRANSFERRING", transferHash: transfer.value })
       } catch (error) {
         if (error instanceof Error) {
