@@ -920,13 +920,11 @@ module zkgm::ibc_app {
             );
         if (packet::timeout_timestamp(parent) != 0
             || packet::timeout_height(parent) != 0) {
-                // abort 44444;
             ibc::ibc::write_acknowledgement(*parent, acknowledgement);
             smart_table::upsert(
                 &mut store.in_flight_packet, packet_hash, packet::default()
             );
-        }
-         else {
+        } else {
             let zkgm_packet = zkgm_packet::decode(ibc::packet::data(&ibc_packet));
             let zkgm_ack = acknowledgement::decode(&acknowledgement);
             acknowledge_internal(
