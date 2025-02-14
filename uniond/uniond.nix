@@ -14,7 +14,7 @@ _: {
       ...
     }:
     let
-      libwasmvm = self'.packages.libwasmvm-2_1_3;
+      libwasmvm = self'.packages.libwasmvm-2_1_2;
       CGO_LDFLAGS = "-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib -s -w";
 
       mkUniondImage =
@@ -54,7 +54,7 @@ _: {
                     (nix-filter.matchExt "md")
                   ];
                 };
-                vendorHash = "sha256-SsE08ltX9p/SyfZfZjFmwvMgGigIt9/EXPaNh1GWHlw=";
+                vendorHash = "sha256-T3pXfBlF0OMmvqXWFtpQsKsYD5AjdX44Rjjii76OiHw=";
                 doCheck = true;
                 meta.mainProgram = "uniond";
               }

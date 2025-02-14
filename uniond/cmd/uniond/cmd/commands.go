@@ -24,6 +24,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+
 	"github.com/unionlabs/union/uniond/app"
 )
 
@@ -130,6 +132,7 @@ func newApp(
 	app, err := app.New(
 		logger, db, traceStore, true,
 		appOpts,
+		[]wasmkeeper.Option{},
 		baseappOptions...,
 	)
 	if err != nil {
@@ -171,7 +174,7 @@ func appExport(
 	appOpts = viperAppOpts
 
 	if height != -1 {
-		bApp, err = app.New(logger, db, traceStore, false, appOpts)
+		bApp, err = app.New(logger, db, traceStore, false, appOpts, []wasmkeeper.Option{})
 		if err != nil {
 			return servertypes.ExportedApp{}, err
 		}
@@ -180,7 +183,7 @@ func appExport(
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		bApp, err = app.New(logger, db, traceStore, true, appOpts)
+		bApp, err = app.New(logger, db, traceStore, true, appOpts, []wasmkeeper.Option{})
 		if err != nil {
 			return servertypes.ExportedApp{}, err
 		}

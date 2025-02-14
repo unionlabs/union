@@ -14,6 +14,8 @@ import (
 	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 	"github.com/stretchr/testify/require"
 
+	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+
 	"github.com/unionlabs/union/uniond/app"
 )
 
@@ -43,7 +45,7 @@ func BenchmarkFullAppSimulation(b *testing.B) {
 	appOptions[flags.FlagHome] = app.DefaultNodeHome
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
-	bApp, err := app.New(logger, db, nil, true, appOptions, interBlockCacheOpt())
+	bApp, err := app.New(logger, db, nil, true, appOptions, []wasmkeeper.Option{}, interBlockCacheOpt())
 	require.NoError(b, err)
 	require.Equal(b, app.Name, bApp.Name())
 
@@ -100,7 +102,7 @@ func BenchmarkInvariants(b *testing.B) {
 	appOptions[flags.FlagHome] = app.DefaultNodeHome
 	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
 
-	bApp, err := app.New(logger, db, nil, true, appOptions, interBlockCacheOpt())
+	bApp, err := app.New(logger, db, nil, true, appOptions, []wasmkeeper.Option{}, interBlockCacheOpt())
 	require.NoError(b, err)
 	require.Equal(b, app.Name, bApp.Name())
 
