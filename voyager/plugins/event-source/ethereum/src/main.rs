@@ -135,7 +135,7 @@ impl Module {
         voyager_client: &VoyagerClient,
     ) -> RpcResult<(ChainId, ClientInfo, ChannelMetadata, ChannelMetadata)> {
         let self_channel = voyager_client
-            .must_query_ibc_state(
+            .query_ibc_state(
                 self.chain_id.clone(),
                 event_height,
                 ChannelPath {
@@ -146,7 +146,7 @@ impl Module {
 
         let self_connection_id = self_channel.connection_id;
         let self_connection = voyager_client
-            .must_query_ibc_state(
+            .query_ibc_state(
                 self.chain_id.clone(),
                 event_height,
                 ConnectionPath {
@@ -174,7 +174,7 @@ impl Module {
         let other_channel_id = self_channel.counterparty_channel_id;
 
         let other_channel = voyager_client
-            .must_query_ibc_state(
+            .query_ibc_state(
                 client_meta.counterparty_chain_id.clone(),
                 counterparty_latest_height,
                 ChannelPath {
@@ -655,7 +655,7 @@ impl Module {
             }
             IbcEvents::ChannelOpenInit(raw_event) => {
                 let connection = voyager_client
-                    .must_query_ibc_state(
+                    .query_ibc_state(
                         self.chain_id.clone(),
                         provable_height,
                         ConnectionPath {
@@ -679,7 +679,7 @@ impl Module {
                 let channel_id = raw_event.channel_id;
 
                 let channel = voyager_client
-                    .must_query_ibc_state(
+                    .query_ibc_state(
                         self.chain_id.clone(),
                         provable_height,
                         ChannelPath { channel_id },
@@ -709,7 +709,7 @@ impl Module {
             }
             IbcEvents::ChannelOpenTry(raw_event) => {
                 let connection = voyager_client
-                    .must_query_ibc_state(
+                    .query_ibc_state(
                         self.chain_id.clone(),
                         provable_height,
                         ConnectionPath {
@@ -733,7 +733,7 @@ impl Module {
                 let channel_id = raw_event.channel_id;
 
                 let channel = voyager_client
-                    .must_query_ibc_state(
+                    .query_ibc_state(
                         self.chain_id.clone(),
                         provable_height,
                         ChannelPath { channel_id },
@@ -764,7 +764,7 @@ impl Module {
             }
             IbcEvents::ChannelOpenAck(raw_event) => {
                 let connection = voyager_client
-                    .must_query_ibc_state(
+                    .query_ibc_state(
                         self.chain_id.clone(),
                         provable_height,
                         ConnectionPath {
@@ -788,7 +788,7 @@ impl Module {
                 let channel_id = raw_event.channel_id;
 
                 let channel = voyager_client
-                    .must_query_ibc_state(
+                    .query_ibc_state(
                         self.chain_id.clone(),
                         provable_height,
                         ChannelPath { channel_id },
@@ -819,7 +819,7 @@ impl Module {
             }
             IbcEvents::ChannelOpenConfirm(raw_event) => {
                 let connection = voyager_client
-                    .must_query_ibc_state(
+                    .query_ibc_state(
                         self.chain_id.clone(),
                         provable_height,
                         ConnectionPath {
@@ -843,7 +843,7 @@ impl Module {
                 let channel_id = raw_event.channel_id;
 
                 let channel = voyager_client
-                    .must_query_ibc_state(
+                    .query_ibc_state(
                         self.chain_id.clone(),
                         provable_height,
                         ChannelPath { channel_id },

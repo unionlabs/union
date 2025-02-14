@@ -18,6 +18,7 @@ use crate::{
     data::{Data, IbcDatagram, OrderedHeaders},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{ClientModuleClient, PluginClient},
+    rpc::missing_state,
     Context, PluginMessage, RawClientId, VoyagerMessage,
 };
 
@@ -84,6 +85,8 @@ impl CallbackT<VoyagerMessage> for Callback {
                     .with_id(Some(ctx.id()))
                     .client_info(&chain_id, &ibc_spec_id, client_id.clone())
                     .await
+                    .map_err(error_object_to_queue_error)?
+                    .ok_or_else(missing_state("client not found", None))
                     .map_err(error_object_to_queue_error)?;
 
                 let client_module = ctx

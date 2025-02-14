@@ -412,7 +412,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         (Some(state), true) => {
                             let client_info = voyager_client
                                 .client_info(on, ibc_spec_id.clone(), client_id)
-                                .await?;
+                                .await?
+                                .ok_or(anyhow!("client info not found"))?;
 
                             let decoded = voyager_client
                                 .decode_client_state(
@@ -465,7 +466,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         (Some(state), true) => {
                             let client_info = voyager_client
                                 .client_info(on, ibc_spec_id.clone(), client_id)
-                                .await?;
+                                .await?
+                                .ok_or(anyhow!("client info not found"))?;
 
                             let decoded = voyager_client
                                 .decode_consensus_state(
@@ -570,12 +572,14 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 let client_info = ctx
                     .rpc_server
                     .client_info(&on, &ibc_spec_id, client_id.clone())
-                    .await?;
+                    .await?
+                    .ok_or(anyhow!("client info not found"))?;
 
                 let client_meta = ctx
                     .rpc_server
                     .client_meta(&on, &ibc_spec_id, QueryHeight::Latest, client_id.clone())
-                    .await?;
+                    .await?
+                    .ok_or(anyhow!("client info not found"))?;
 
                 let update_to = match update_to {
                     Some(update_to) => update_to,

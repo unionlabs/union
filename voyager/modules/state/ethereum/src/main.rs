@@ -32,7 +32,7 @@ use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcInterface},
     into_value,
     module::{StateModuleInfo, StateModuleServer},
-    StateModule, FATAL_JSONRPC_ERROR_CODE,
+    StateModule, MISSING_STATE_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
@@ -129,7 +129,7 @@ impl Module {
             .map_err(|err| {
                 ErrorObject::owned(
                     match err {
-                        alloy::contract::Error::AbiError(_) => FATAL_JSONRPC_ERROR_CODE,
+                        alloy::contract::Error::AbiError(_) => MISSING_STATE_ERROR_CODE,
                         _ => -1,
                     },
                     format!("error fetching client state: {}", ErrorReporter(err)),

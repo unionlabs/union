@@ -291,7 +291,7 @@ impl Module {
             Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => Ok(call(rewrap_msg())),
             Some(Err(BroadcastTxCommitError::OutOfGas)) => Ok(call(rewrap_msg())),
             Some(Err(BroadcastTxCommitError::SimulateTx(err)))
-                if err.code() == tonic::Code::Cancelled =>
+                if err.code() == tonic::Code::Cancelled || err.code() == tonic::Code::Internal =>
             {
                 info!("tx simulation failed with network error");
 

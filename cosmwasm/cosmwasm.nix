@@ -67,6 +67,24 @@
         };
         tendermint = {
           client-type = "tendermint";
+          # remove the cosmwasm 2.1 export such that the tendermint light client can work on chains that don't need bls verification (which is the only reason the export exists on this client)
+          # in order to not mess with any potential offsets in the blob, overwrite the export with a string of the same length
+          hook =
+            drv:
+            drv.overrideAttrs (old: {
+              installPhase =
+                (old.installPhase or "")
+                + ''
+                  ${pkgs.lib.getExe pkgs.bbe} \
+                    -e 's/requires_cosmwasm_2_1/AAAAAAAAAAAAAAAAAAAAA/' \
+                    -e 's/requires_cosmwasm_2_0/BBBBBBBBBBBBBBBBBBBBB/' \
+                    $out \
+                    -o replaced.wasm
+
+                  # can't write directly to $out for some reason
+                  mv replaced.wasm $out
+                '';
+            });
         };
         movement = {
           client-type = "movement";
@@ -335,6 +353,7 @@
           bech32_prefix = "bbn";
           lightclients = [
             "cometbls"
+            "tendermint"
             "state-lens-ics23-mpt"
           ];
         }
@@ -342,9 +361,11 @@
 
       mk-lightclient =
         dir:
-        (crane.buildWasmContract {
-          crateDirFromRoot = "cosmwasm/ibc-union/lightclient/${dir}";
-        });
+        (all-lightclients.${dir}.hook or (d: d)) (
+          crane.buildWasmContract {
+            crateDirFromRoot = "cosmwasm/ibc-union/lightclient/${dir}";
+          }
+        );
 
       mk-app =
         dir:

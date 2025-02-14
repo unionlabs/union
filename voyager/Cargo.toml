@@ -37,6 +37,8 @@ sqlx               = { workspace = true, features = ["postgres", "migrate", "tls
 thiserror          = { workspace = true }
 tikv-jemallocator  = "0.5"
 tokio              = { workspace = true, features = ["macros"] }
+tower              = "0.4.13"
+tower-http         = { version = "0.6.2", features = ["cors"] }
 tracing            = { workspace = true, features = ["max_level_trace"] }
 tracing-futures    = { version = "0.2.5", features = ["futures-03"] }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }

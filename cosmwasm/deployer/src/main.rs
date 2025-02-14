@@ -508,9 +508,9 @@ async fn do_main() -> Result<()> {
                     .await??
                     .unwrap()
                     .entries
-                    .pop()
+                    .first()
                 {
-                    let height = entry.updated.unwrap().block_height;
+                    let height = entry.updated.as_ref().unwrap().block_height;
 
                     info!("app ucs03 was initiated at {height}");
 

@@ -190,7 +190,7 @@ impl Server {
         chain_id: &ChainId,
         ibc_spec_id: &IbcSpecId,
         client_id: RawClientId,
-    ) -> RpcResult<ClientInfo> {
+    ) -> RpcResult<Option<ClientInfo>> {
         self.span()
             .in_scope(|| async {
                 trace!("fetching client info");
@@ -204,11 +204,18 @@ impl Server {
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
-                trace!(
-                    %client_info.ibc_interface,
-                    %client_info.client_type,
-                    "fetched client info"
-                );
+                match client_info {
+                    Some(ref client_info) => {
+                        trace!(
+                            %client_info.ibc_interface,
+                            %client_info.client_type,
+                            "fetched client info"
+                        );
+                    }
+                    None => {
+                        trace!("client not found");
+                    }
+                }
 
                 Ok(client_info)
             })
@@ -222,7 +229,7 @@ impl Server {
         ibc_spec_id: &IbcSpecId,
         at: QueryHeight,
         client_id: RawClientId,
-    ) -> RpcResult<ClientStateMeta> {
+    ) -> RpcResult<Option<ClientStateMeta>> {
         self.span()
             .in_scope(|| async {
                 trace!("fetching client meta");
@@ -239,6 +246,11 @@ impl Server {
                     .client_info_raw(client_id.clone())
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
+
+                let Some(client_info) = client_info else {
+                    trace!("client info for client {client_id} not found at height {height} on chain {chain_id}");
+                    return Ok(None);
+                };
 
                 let client_state = state_module
                     .query_ibc_state_raw(
@@ -257,9 +269,14 @@ impl Server {
 
                 trace!(%client_state);
 
-                let client_state = serde_json::from_value::<Bytes>(client_state)
+                let client_state = serde_json::from_value::<Option<Bytes>>(client_state)
                     .with_context(|| format!("querying client state for client {client_id} at {height} on {chain_id}"))
                     .map_err(|e| fatal_error(&*e))?;
+
+                let Some(client_state) = client_state else {
+                    trace!("client state for client {client_id} not found at height {height} on chain {chain_id}");
+                    return Ok(None);
+                };
 
                 let meta = modules
                     .client_module(
@@ -281,7 +298,7 @@ impl Server {
                     "fetched client meta"
                 );
 
-                Ok(meta)
+                Ok(Some(meta))
             })
             .await
     }
@@ -695,7 +712,7 @@ impl VoyagerRpcServer for Server {
         chain_id: ChainId,
         ibc_spec_id: IbcSpecId,
         client_id: RawClientId,
-    ) -> RpcResult<ClientInfo> {
+    ) -> RpcResult<Option<ClientInfo>> {
         self.with_id(e.try_get().ok().cloned())
             .client_info(&chain_id, &ibc_spec_id, client_id)
             .await
@@ -708,7 +725,7 @@ impl VoyagerRpcServer for Server {
         ibc_spec_id: IbcSpecId,
         at: QueryHeight,
         client_id: RawClientId,
-    ) -> RpcResult<ClientStateMeta> {
+    ) -> RpcResult<Option<ClientStateMeta>> {
         self.with_id(e.try_get().ok().cloned())
             .client_meta(&chain_id, &ibc_spec_id, at, client_id)
             .await

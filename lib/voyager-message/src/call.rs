@@ -2,7 +2,7 @@ use enumorph::Enumorph;
 use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, traits::Member};
 use voyager_core::{ClientType, IbcSpecId, QueryHeight, Timestamp};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
@@ -216,7 +216,7 @@ impl CallT<VoyagerMessage> for Call {
                     ));
                 }
 
-                debug!("latest height is {chain_height}, waiting for {height}");
+                trace!("latest height is {chain_height}, waiting for {height}");
 
                 if chain_height.height() >= height.height() {
                     Ok(noop())
@@ -285,26 +285,37 @@ impl CallT<VoyagerMessage> for Call {
                     .await
                     .map_err(error_object_to_queue_error)?;
 
-                if trusted_client_state_meta.counterparty_height.height() >= height.height() {
-                    debug!(
-                        "client height reached ({} >= {})",
-                        trusted_client_state_meta.counterparty_height, height
-                    );
+                let continuation = seq([
+                    // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
+                    // require a new method on chain
+                    defer(now() + 1),
+                    call(WaitForTrustedHeight {
+                        chain_id: chain_id.clone(),
+                        ibc_spec_id,
+                        client_id: client_id.clone(),
+                        height,
+                        finalized,
+                    }),
+                ]);
 
-                    Ok(noop())
-                } else {
-                    Ok(seq([
-                        // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
-                        // require a new method on chain
-                        defer(now() + 1),
-                        call(WaitForTrustedHeight {
-                            chain_id,
-                            ibc_spec_id,
-                            client_id,
-                            height,
-                            finalized,
-                        }),
-                    ]))
+                match trusted_client_state_meta {
+                    Some(trusted_client_state_meta) => {
+                        if trusted_client_state_meta.counterparty_height.height() >= height.height()
+                        {
+                            debug!(
+                                "client height reached ({} >= {})",
+                                trusted_client_state_meta.counterparty_height, height
+                            );
+
+                            Ok(noop())
+                        } else {
+                            Ok(continuation)
+                        }
+                    }
+                    None => {
+                        debug!("client {client_id} not found on chain {chain_id}");
+                        Ok(continuation)
+                    }
                 }
             }
             Call::Plugin(PluginMessage { plugin, message }) => {

@@ -120,7 +120,7 @@ impl Module {
 
         // state lens client running on the counterparty, tracking self.chain_id
         let raw_state_lens_client_state = voyager_client
-            .must_query_ibc_state(
+            .query_ibc_state(
                 counterparty_chain_id.clone(),
                 counterparty_latest_height,
                 ClientStatePath { client_id },
@@ -188,7 +188,7 @@ impl Module {
         // assert_eq!(state_lens_client_state.l2_chain_id, self.chain_id.as_str());
 
         let l2_consensus_state = voyager_client
-            .query_ibc_state(
+            .maybe_query_ibc_state(
                 l1_client_meta.counterparty_chain_id.clone(),
                 QueryHeight::Specific(l1_latest_height),
                 ConsensusStatePath {
@@ -439,7 +439,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 };
 
                 let l2_consensus_state = voyager_client
-                    .must_query_ibc_state(
+                    .query_ibc_state(
                         l1_client_meta.counterparty_chain_id.clone(),
                         l1_latest_height,
                         l2_consensus_state_path.clone(),

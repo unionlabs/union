@@ -717,6 +717,35 @@ impl VoyagerClient {
     pub async fn query_ibc_state<P: IbcStorePathKey>(
         &self,
         chain_id: ChainId,
+        height: Height,
+        path: P,
+    ) -> RpcResult<P::Value> {
+        let state = self
+            .maybe_query_ibc_state(
+                chain_id.clone(),
+                QueryHeight::Specific(height),
+                path.clone(),
+            )
+            .await?
+            .state
+            .ok_or_else(|| {
+                ErrorObject::owned(
+                    MISSING_STATE_ERROR_CODE,
+                    "state must exist",
+                    Some(json!({
+                        "chain_id": chain_id,
+                        "height": height,
+                        "path": path
+                    })),
+                )
+            })?;
+
+        Ok(state)
+    }
+
+    pub async fn maybe_query_ibc_state<P: IbcStorePathKey>(
+        &self,
+        chain_id: ChainId,
         height: QueryHeight,
         path: P,
     ) -> RpcResult<IbcState<P::Value>> {
@@ -748,35 +777,6 @@ impl VoyagerClient {
                 })
                 .transpose()?,
         })
-    }
-
-    pub async fn must_query_ibc_state<P: IbcStorePathKey>(
-        &self,
-        chain_id: ChainId,
-        height: Height,
-        path: P,
-    ) -> RpcResult<P::Value> {
-        let state = self
-            .query_ibc_state(
-                chain_id.clone(),
-                QueryHeight::Specific(height),
-                path.clone(),
-            )
-            .await?
-            .state
-            .ok_or_else(|| {
-                ErrorObject::owned(
-                    MISSING_STATE_ERROR_CODE,
-                    "state must exist",
-                    Some(json!({
-                        "chain_id": chain_id,
-                        "height": height,
-                        "path": path
-                    })),
-                )
-            })?;
-
-        Ok(state)
     }
 
     pub async fn query_ibc_proof<P: IbcStorePathKey>(
@@ -811,6 +811,27 @@ impl VoyagerClient {
         chain_id: ChainId,
         client_id: V::ClientId,
     ) -> RpcResult<ClientInfo> {
+        self.maybe_client_info::<V>(chain_id.clone(), client_id.clone())
+            .await
+            .and_then(|client_info| {
+                client_info.ok_or_else(|| {
+                    ErrorObject::owned(
+                        MISSING_STATE_ERROR_CODE,
+                        "client info must exist",
+                        Some(json!({
+                            "chain_id": chain_id,
+                            "client_id": client_id
+                        })),
+                    )
+                })
+            })
+    }
+
+    pub async fn maybe_client_info<V: IbcSpec>(
+        &self,
+        chain_id: ChainId,
+        client_id: V::ClientId,
+    ) -> RpcResult<Option<ClientInfo>> {
         self.0
             .client_info(chain_id, V::ID, RawClientId::new(client_id))
             .await
@@ -823,6 +844,28 @@ impl VoyagerClient {
         ibc_spec_id: IbcSpecId,
         client_id: RawClientId,
     ) -> RpcResult<ClientInfo> {
+        self.maybe_client_info_raw(chain_id.clone(), ibc_spec_id, client_id.clone())
+            .await
+            .and_then(|client_info| {
+                client_info.ok_or_else(|| {
+                    ErrorObject::owned(
+                        MISSING_STATE_ERROR_CODE,
+                        "client info must exist",
+                        Some(json!({
+                            "chain_id": chain_id,
+                            "client_id": client_id
+                        })),
+                    )
+                })
+            })
+    }
+
+    pub async fn maybe_client_info_raw(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        client_id: RawClientId,
+    ) -> RpcResult<Option<ClientInfo>> {
         self.0
             .client_info(chain_id, ibc_spec_id, client_id)
             .await
@@ -835,6 +878,29 @@ impl VoyagerClient {
         at: QueryHeight,
         client_id: V::ClientId,
     ) -> RpcResult<ClientStateMeta> {
+        self.maybe_client_meta::<V>(chain_id.clone(), at, client_id.clone())
+            .await
+            .and_then(|client_meta| {
+                client_meta.ok_or_else(|| {
+                    ErrorObject::owned(
+                        MISSING_STATE_ERROR_CODE,
+                        "client meta must exist",
+                        Some(json!({
+                            "chain_id": chain_id,
+                            "height": at,
+                            "client_id": client_id
+                        })),
+                    )
+                })
+            })
+    }
+
+    pub async fn maybe_client_meta<V: IbcSpec>(
+        &self,
+        chain_id: ChainId,
+        at: QueryHeight,
+        client_id: V::ClientId,
+    ) -> RpcResult<Option<ClientStateMeta>> {
         self.0
             .client_meta(chain_id, V::ID, at, RawClientId::new(client_id))
             .await
@@ -848,6 +914,30 @@ impl VoyagerClient {
         at: QueryHeight,
         client_id: RawClientId,
     ) -> RpcResult<ClientStateMeta> {
+        self.maybe_client_meta_raw(chain_id.clone(), ibc_spec_id, at, client_id.clone())
+            .await
+            .and_then(|client_meta| {
+                client_meta.ok_or_else(|| {
+                    ErrorObject::owned(
+                        MISSING_STATE_ERROR_CODE,
+                        "client meta must exist",
+                        Some(json!({
+                            "chain_id": chain_id,
+                            "height": at,
+                            "client_id": client_id
+                        })),
+                    )
+                })
+            })
+    }
+
+    pub async fn maybe_client_meta_raw(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        at: QueryHeight,
+        client_id: RawClientId,
+    ) -> RpcResult<Option<ClientStateMeta>> {
         self.0
             .client_meta(chain_id, ibc_spec_id, at, client_id)
             .await

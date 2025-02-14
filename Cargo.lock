@@ -426,7 +426,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-stream",
- "tower 0.5.0",
+ "tower 0.5.2",
  "tracing",
 ]
 
@@ -471,7 +471,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-stream",
- "tower 0.5.0",
+ "tower 0.5.2",
  "tracing",
  "url",
  "wasmtimer",
@@ -636,7 +636,7 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tokio",
- "tower 0.5.0",
+ "tower 0.5.2",
  "tracing",
  "url",
  "wasmtimer",
@@ -652,7 +652,7 @@ dependencies = [
  "alloy-transport",
  "reqwest 0.12.5",
  "serde_json",
- "tower 0.5.0",
+ "tower 0.5.2",
  "tracing",
  "url",
 ]
@@ -12481,14 +12481,28 @@ dependencies = [
 
 [[package]]
 name = "tower"
-version = "0.5.0"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36b837f86b25d7c0d7988f00a54e74739be6477f2aac6201b8f429a7569991b7"
+checksum = "d039ad9159c98b70ecfd540b2573b97f7f52c3e8d9f8ad57a24b916a536975f9"
 dependencies = [
  "futures-core",
  "futures-util",
  "pin-project-lite",
- "sync_wrapper 0.1.2",
+ "sync_wrapper 1.0.1",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "tower-http"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "403fa3b783d4b626a8ad51d766ab03cb6d2dbfc46b1c5d4448395e6628dc9697"
+dependencies = [
+ "bitflags 2.5.0",
+ "bytes",
+ "http 1.1.0",
+ "pin-project-lite",
  "tower-layer",
  "tower-service",
 ]
@@ -12501,9 +12515,9 @@ checksum = "121c2a6cda46980bb0fcd1647ffaf6cd3fc79a013de288782836f6df9c48780e"
 
 [[package]]
 name = "tower-service"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6bc1c9ce2b5135ac7f93c72918fc37feb872bdc6a5533a8b85eb4b86bfdae52"
+checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
 
 [[package]]
 name = "tracing"
@@ -13211,6 +13225,8 @@ dependencies = [
  "thiserror",
  "tikv-jemallocator",
  "tokio",
+ "tower 0.4.13",
+ "tower-http",
  "tracing",
  "tracing-futures",
  "tracing-subscriber 0.3.18",
