@@ -264,7 +264,7 @@ const transfer = async () => {
         if (transfer.isErr()) {
           if (isNewAccount(transfer.error)) {
             throw new Error(
-              `Your wallet address isn’t recognized because it’s never made a transaction. Transfer a tiny amount to your own address on ${transferContext.sourceChain.display_name} in your wallet’s UI to activate it and retry this transfer.`
+              `Your wallet address isn’t recognized because it has never made a transaction. Transfer a small amount (e.g. 0.000001) to your own address on ${transferContext.sourceChain.display_name} using your wallet’s UI to activate it, then retry this transfer.`
             )
           }
           // If it's not a new account error, throw the original error
