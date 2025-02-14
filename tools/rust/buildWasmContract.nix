@@ -112,7 +112,7 @@ in
       name = "${packageName}.wasm";
       passthru.packageName = packageName;
       src = all.packages.${packageName};
-      buildPhase = ''
+      installPhase = ''
         cp "$src/lib/${contract-basename}.wasm" $out
       '';
     };
