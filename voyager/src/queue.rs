@@ -192,6 +192,10 @@ impl Voyager {
             tasks.push(Box::pin(
                 AssertUnwindSafe(async {
                     let server = jsonrpsee::server::Server::builder()
+                        .set_http_middleware(
+                            tower::ServiceBuilder::new()
+                                .layer(tower_http::cors::CorsLayer::permissive()),
+                        )
                         .build(&self.rpc_laddr)
                         .await?;
                     let addr = server.local_addr()?;
