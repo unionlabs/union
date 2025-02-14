@@ -5,7 +5,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, instrument};
+use tracing::{debug, error, instrument, trace};
 use unionlabs::{
     bech32::Bech32, ibc::core::client::height::Height, primitives::H256, traits::Member,
 };
@@ -102,7 +102,7 @@ impl Module {
             .expect("value is >= 0; qed;");
 
         if finalized && !commit_response.canonical {
-            debug!(
+            trace!(
                 "commit is not canonical and finalized height was requested, \
                 latest finalized height is the previous block"
             );
@@ -140,7 +140,7 @@ impl ConsensusModuleServer for Module {
             .map_err(json_rpc_error_to_error_object)?;
 
         if finalized && commit_response.canonical {
-            debug!(
+            trace!(
                 "commit is not canonical and finalized timestamp was \
                 requested, fetching commit at previous block"
             );

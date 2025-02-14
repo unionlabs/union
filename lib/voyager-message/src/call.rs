@@ -2,7 +2,7 @@ use enumorph::Enumorph;
 use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, traits::Member};
 use voyager_core::{ClientType, IbcSpecId, QueryHeight, Timestamp};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
@@ -216,7 +216,7 @@ impl CallT<VoyagerMessage> for Call {
                     ));
                 }
 
-                debug!("latest height is {chain_height}, waiting for {height}");
+                trace!("latest height is {chain_height}, waiting for {height}");
 
                 if chain_height.height() >= height.height() {
                     Ok(noop())
