@@ -8,7 +8,6 @@ import {
   queryCosmosC20TokenMetadata,
   type CosmosChainId
 } from "@unionlabs/client"
-import { toast } from "svelte-sonner"
 import { persisted } from "svelte-persisted-store"
 
 export type TokenInfos = Record<ChainId, Record<Denom, TokenInfo>>
@@ -143,7 +142,7 @@ export async function fetchTokenInfo(chain: Chain, denom: Denom): Promise<TokenI
       }
 
       if (result.isErr()) {
-        toast.error(`error getting metadata for asset, ${denom}`)
+        console.error(`error getting metadata for asset, ${denom}`)
       }
     }
   }
