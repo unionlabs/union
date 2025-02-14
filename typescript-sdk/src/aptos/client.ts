@@ -39,9 +39,9 @@ async function getAptosClient(
   parameters: AptosClientParameters & { authAccess: "key" }
 ): Promise<{ authAccess: "key"; aptos: Aptos; signer: AptosAccount }>
 
-async function getAptosClient(
-  parameters: AptosClientParameters & { authAccess: "wallet" }
-): Promise<{ authAccess: "wallet"; aptos: Aptos; signer: AptosBrowserWallet }>
+// async function getAptosClient(
+//   parameters: AptosClientParameters & { authAccess: "wallet" }
+// ): Promise<{ authAccess: "wallet"; aptos: Aptos; signer: AptosBrowserWallet }>
 
 async function getAptosClient(
   parameters: AptosClientParameters & { authAccess: AuthAccess }
@@ -105,10 +105,10 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
     .extend(_ => ({
       // A helper to get the underlying Aptos client.
       // We default to "key" if an account was provided.
-      getAptosClient: async () =>
-        clientParameters.account
-          ? await getAptosClient({ ...clientParameters, authAccess: "key" })
-          : await getAptosClient({ ...clientParameters, authAccess: "wallet" })
+      getAptosClient: async () => await getAptosClient({ ...clientParameters, authAccess: "key" })
+      // clientParameters.account
+      //   ? await getAptosClient({ ...clientParameters, authAccess: "key" })
+      //   : await getAptosClient({ ...clientParameters, authAccess: "wallet" })
     }))
     .extend(client => ({
       waitForTransactionReceipt: async ({ hash }: { hash: string }) => {
@@ -140,25 +140,24 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
         const rawSalt = new Uint8Array(32)
         crypto.getRandomValues(rawSalt)
         const salt = MoveVector.U8(rawSalt)
-        let data = {
-          function: `${ucs03address}::ibc_app::transfer`,
-          typeArguments: [],
-          functionArguments: [
-            sourceChannelId,
-            receiverVec,
-            AccountAddress.fromString(baseToken),
-            baseAmount,
-            quoteTokenVec,
-            quoteAmount,
-            18446744073709551615n,
-            18446744073709551615n,
-            salt
-          ]
-        }
 
         const payload = await aptos.transaction.build.simple({
           sender: signer.accountAddress,
-          data: data
+          data: {
+            function: `${ucs03address}::ibc_app::transfer`,
+            typeArguments: [],
+            functionArguments: [
+              sourceChannelId,
+              receiverVec,
+              AccountAddress.fromString(baseToken),
+              baseAmount,
+              quoteTokenVec,
+              quoteAmount,
+              18446744073709551615n,
+              18446744073709551615n,
+              salt
+            ]
+          }
         })
 
         try {
