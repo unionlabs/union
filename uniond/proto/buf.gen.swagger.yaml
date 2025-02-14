@@ -1,0 +1,14 @@
+# This file is auto-generated from Ignite. You can edit
+# the file content but do not change the file name or path.
+#
+# buf.gen.swagger.yaml
+#
+version: v1
+plugins:
+  - name: openapiv2
+    out: .
+    opt:
+      - logtostderr=true
+      - openapi_naming_strategy=fqn
+      - json_names_for_fields=false
+      - generate_unbound_methods=true
