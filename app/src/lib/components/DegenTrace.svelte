@@ -1,4 +1,5 @@
 <script lang="ts">
+import { onDestroy } from "svelte"
 import LoadingDots from "$lib/components/loading-dots.svelte"
 import { createQuery } from "@tanstack/svelte-query"
 import request from "graphql-request"
@@ -9,9 +10,11 @@ import { OrderStatsDocument } from "$lib/graphql/queries/stats.ts"
 export let transferStatus: "acknowledged" | "transferred" | "transferring"
 export let sourceChainId: string
 export let destinationChainId: string
+export let sentTimestamp: string
 
+// Formats a number of seconds into a human-readable string
 const formatSeconds = (seconds: number | undefined) => {
-  if (seconds === undefined) return undefined
+  if (seconds === undefined || Number.isNaN(seconds)) return "N/A"
   if (seconds < 60) return `${seconds.toFixed(0)}s`
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
@@ -23,9 +26,10 @@ const formatSeconds = (seconds: number | undefined) => {
   return result
 }
 
+// Query returns only the daily stats (interval_secs === 86400)
 let stats = createQuery({
   queryKey: ["order-stats", sourceChainId, destinationChainId],
-  refetchInterval: 5000,
+  refetchInterval: 60000,
   placeholderData: previousData => previousData,
   queryFn: async () => {
     const response = await request(URLS().GRAPHQL, OrderStatsDocument, {
@@ -35,6 +39,7 @@ let stats = createQuery({
     if (!response?.v1_ibc_union_fungible_asset_order_stats) {
       raise("Error fetching order stats")
     }
+    // Return the daily stats object (interval_secs === 86400)
     return response.v1_ibc_union_fungible_asset_order_stats[0]
   }
 })
@@ -46,7 +51,7 @@ const progressMap = {
   acknowledged: 100
 }
 
-// Map statuses to corresponding display texts:
+// Display texts
 const statusText = {
   transferring: "Your funds are on the way. Please hold tight.",
   transferred: "Your funds are now available, pending final confirmation.",
@@ -62,11 +67,34 @@ const statusTitle = {
 $: progress = progressMap[transferStatus]
 $: text = statusText[transferStatus]
 $: title = statusTitle[transferStatus]
+
+// Reactive declarations for ETA calculations using daily stats
+$: medianRecv = $stats.data?.secs_until_packet_recv?.median
+$: worstRecv = $stats.data?.secs_until_packet_recv?.p95
+$: medianAck = $stats.data?.secs_until_packet_ack?.median
+$: worstAck = $stats.data?.secs_until_packet_ack?.p95
+
+$: effectiveStart = new Date(sentTimestamp).getTime()
+
+// Set up a reactive current time updated every second
+let now = Date.now()
+const interval = setInterval(() => {
+  now = Date.now()
+}, 1000)
+onDestroy(() => clearInterval(interval))
+
+// Calculate elapsed time in seconds since effectiveStart
+$: elapsed = (now - effectiveStart) / 1000
+// Remaining time = median - elapsed, but not less than 0
+$: remainingRecv = medianRecv ? Math.max(0, medianRecv - elapsed) : undefined
+$: remainingAck = medianAck ? Math.max(0, medianAck - elapsed) : undefined
+// Delay = elapsed - median, if elapsed exceeds median
+$: delayRecv = medianRecv ? Math.max(0, elapsed - medianRecv) : 0
+$: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
 </script>
 
 {#if !$stats.isError}
   <div class="border border-2 p-4 space-y-4 w-full">
-
     <h2 class="text-lg font-bold">{title}</h2>
 
     <!-- PROGRESS LINE -->
@@ -76,60 +104,48 @@ $: title = statusTitle[transferStatus]
         <div class="absolute left-[33%] top-0 h-full w-[2px] bg-black"></div>
         <div class="absolute left-[66%] top-0 h-full w-[2px] bg-black"></div>
         <!-- Progress bar fill -->
-        <div
-                class="h-full bg-accent transition-all duration-300"
-                style="width: {progress}%;"
-        ></div>
+        <div class="h-full bg-accent transition-all duration-300" style="width: {progress}%;"></div>
       </div>
-      <div class="mt-4 text-sm font-medium">
-        {text}
-      </div>
+      <div class="mt-4 text-sm font-medium">{text}</div>
     </div>
 
-    <!-- HEADER & MAIN CONTENT AREA -->
+    <!-- MAIN CONTENT AREA -->
     {#if transferStatus === "transferring"}
       <div>
-        {#if $stats.isLoading}
-          <div class="grid grid-cols-[auto_1fr] gap-2 text-neutral-400 mt-1">
-            <span>Best:</span>
-            <LoadingDots class="h-4 w-4" />
-            <span>Avg:</span>
-            <LoadingDots class="h-4 w-4" />
-            <span>Worst:</span>
-            <LoadingDots class="h-4 w-4" />
-          </div>
+        {#if $stats.isLoading || !medianRecv}
+          <p class="mt-1 text-neutral-400 text-sm">Calculating ETA...</p>
         {:else}
-          <div class="grid grid-cols-[auto_1fr] gap-2 text-muted-foreground mt-1">
-            <span>Best:</span>
-            <span class="font-bold">{formatSeconds($stats.data?.secs_until_packet_recv?.p5)}</span>
-            <span>Avg:</span>
-            <span class="font-bold">{formatSeconds($stats.data?.secs_until_packet_recv?.median)}</span>
-            <span>Worst:</span>
-            <span class="font-bold">{formatSeconds($stats.data?.secs_until_packet_recv?.p95)}</span>
-          </div>
+          {#if delayRecv > 0.2 * medianRecv}
+            <p class="mt-1 text-sm">
+              Your transfer is taking {formatSeconds(delayRecv)} longer than the average transfer.
+              The slowest transfer for this connection in the past day was {formatSeconds(worstRecv)}.
+            </p>
+          {:else}
+            <p class="mt-1 text-sm">
+              On average, this transfer will be completed in {formatSeconds(remainingRecv)} from now.
+            </p>
+          {/if}
         {/if}
       </div>
     {:else if transferStatus === "transferred"}
       <div>
         <h3 class="text-sm font-semibold">ACK ETA:</h3>
-        {#if $stats.isLoading || !$stats.data?.secs_until_packet_ack}
-          <div class="grid grid-cols-[auto_1fr] gap-2 text-neutral-400 mt-1">
-            <span>Best:</span>
-            <LoadingDots class="h-4 w-4" />
-            <span>Avg:</span>
-            <LoadingDots class="h-4 w-4" />
-            <span>Worst:</span>
-            <LoadingDots class="h-4 w-4" />
-          </div>
+        {#if $stats.isLoading || !medianAck}
+          <p class="mt-1 text-neutral-400 text-sm">Calculating ACK ETA...</p>
         {:else}
-          <div class="grid grid-cols-[auto_1fr] gap-2 text-muted-foreground mt-1">
-            <span>Best:</span>
-            <span class="font-bold">{formatSeconds($stats.data.secs_until_packet_ack.p5)}</span>
-            <span>Avg:</span>
-            <span class="font-bold">{formatSeconds($stats.data.secs_until_packet_ack.median)}</span>
-            <span>Worst:</span>
-            <span class="font-bold">{formatSeconds($stats.data.secs_until_packet_ack.p95)}</span>
-          </div>
+          {#if delayAck > 0.2 * medianAck}
+            <p class="mt-1 text-sm">
+              Your transfer is taking {formatSeconds(delayAck)} longer than the average acknowledgment.
+              The slowest acknowledgment for this connection in the past day was {formatSeconds(worstAck)}.
+            </p>
+          {:else}
+            <p class="mt-1 text-sm">
+              On average, this transfer will be acknowledged in {formatSeconds(remainingAck)} from now.
+            </p>
+          {/if}
+          <p class="mt-1 text-sm text-muted-foreground">
+            For developers: ACK ETA is {formatSeconds(remainingAck)}.
+          </p>
         {/if}
       </div>
     {/if}

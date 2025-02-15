@@ -75,7 +75,7 @@ let processedTransfers = derived(
 </script>
 
 {#if $processedTransfers !== null && $processedTransfers.length > 0}
-  <div class="flex flex-col w-full items-center gap-6">
+  <div class="flex flex-col w-full items-center gap-6 max-w-2xl">
     {#each $processedTransfers as transfer, transferIndex}
       {@const sourceExplorer = chains
         .find((c) => c.chain_id === transfer.source_chain_id)
@@ -141,6 +141,7 @@ let processedTransfers = derived(
                       traces={transfer.traces}
                       sourceChainId={transfer.source_chain_id}
                       destinationChainId={transfer.destination_chain_id}
+                      sentTimestamp={transfer.packet_send_timestamp}
               />
             {:else}
               <LoadingLogo />
