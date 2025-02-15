@@ -22,6 +22,7 @@ import PacketPath from "./packet-path.svelte"
 import Token from "./token.svelte"
 import Address from "./address.svelte"
 import { showTokenDetails } from "$lib/stores/user"
+import DegenTrace from "$lib/components/DegenTrace.svelte"
 
 // prefix a source with 0x if not there for cosmos tx hashes
 const source = $page.params.source.startsWith("0x")
@@ -133,9 +134,14 @@ let processedTransfers = derived(
             </section>
           </Card.Content>
           <Card.Footer class="items-start flex flex-col w-full gap-4">
-            <div class="font-bold text-md">{transfer.transfer_day}</div>
+<!--            <div class="font-bold text-md">{transfer.transfer_day}</div>-->
             {#if transfer.traces}
-              <Trace traces={transfer.traces} {chains} />
+              <Trace
+                      {chains}
+                      traces={transfer.traces}
+                      sourceChainId={transfer.source_chain_id}
+                      destinationChainId={transfer.destination_chain_id}
+              />
             {:else}
               <LoadingLogo />
             {/if}
