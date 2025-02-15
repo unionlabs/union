@@ -25,3 +25,26 @@ export const packetsPerDayQueryDocument = graphql(/* GraphQL */ `
         }
     }
 `)
+
+export const OrderStatsDocument = graphql(/* GraphQL */ `
+    query OrderStats($sourceChainId: String!, $destinationChainId: String!) {
+        v1_ibc_union_fungible_asset_order_stats(
+            where: {
+                source_chain: { chain_id: { _eq: $sourceChainId } }
+                destination_chain: { chain_id: { _eq: $destinationChainId } }
+                interval_secs: {_eq: 86400}
+            }
+        ) {
+            source_chain {
+                chain_id
+            }
+            destination_chain {
+                chain_id
+            }
+            interval_secs
+            secs_until_packet_ack
+            secs_until_packet_recv
+            secs_until_write_ack
+        }
+    }
+`)
