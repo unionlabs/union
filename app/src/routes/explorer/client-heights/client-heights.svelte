@@ -71,9 +71,9 @@ function getClient(clients, counterpartyChainId) {
               {@const client = getClient(values, counterpartyChainId)}
               <td class="p-2 bg-muted">
                 <div class="text-xs text-union-accent-950 font-bold dark:text-union-accent ">Client {client.client_id}</div>
-                <div><span class="text-muted-foreground">D</span> {counterpartyChain.index_status.height - client.max_counterparty_height}</div>
-                <div><span class="text-muted-foreground">C</span> {client.max_counterparty_height}</div>
-                <div><span class="text-muted-foreground">I</span> {counterpartyChain.index_status.height}</div>
+                <div><span class="text-muted-foreground italic">Δ</span> {counterpartyChain.index_status.height - client.max_counterparty_height}</div>
+                <div><span class="text-muted-foreground italic">C</span> {client.max_counterparty_height}</div>
+                <div><span class="text-muted-foreground italic">I</span> {counterpartyChain.index_status.height}</div>
               </td>
             {/if}
           {/each}
