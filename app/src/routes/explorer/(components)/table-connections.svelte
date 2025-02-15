@@ -19,9 +19,9 @@ let connections = createQuery({
   retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000), // expo backoff
   queryFn: async () => request(URLS().GRAPHQL, connectionsQuery, {}),
   select: data => {
-    if (!data.v1_ibc_union_connections) raise("error fetching transfers")
+    if (!data.v1_ibc_union_channel_recommendations) raise("error fetching transfers")
 
-    return data.v1_ibc_union_connections.map(connection => ({
+    return data.v1_ibc_union_channel_recommendations.map(connection => ({
       source: {
         chain_display_name: connection.source_chain?.display_name,
         chain_id: connection.destination_chain_id ?? "unknown",
