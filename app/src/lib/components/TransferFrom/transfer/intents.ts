@@ -34,12 +34,7 @@ export const createIntents = (
       : null
 
   // Receiver
-  const receiver =
-    destinationChain && rawIntents.receiver
-      ? destinationChain.rpc_type === "cosmos" && isValidBech32Address(rawIntents.receiver)
-        ? bech32AddressToHex({ address: rawIntents.receiver })
-        : rawIntents.receiver
-      : rawIntents.receiver
+  const receiver = rawIntents.receiver
 
   // UCS03 Address
   const ucs03address =
