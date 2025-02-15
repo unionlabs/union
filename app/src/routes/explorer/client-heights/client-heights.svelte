@@ -6,6 +6,7 @@ import { clientHeightsQuery } from "$lib/graphql/queries/client-heights.ts"
 import { createQuery } from "@tanstack/svelte-query"
 import LoadingLogo from "$lib/components/loading-logo.svelte"
 import { derived } from "svelte/store"
+import ChainDetails from "$lib/chain-details.svelte"
 
 export const clientHeights = createQuery({
   queryKey: ["client-heights"],
@@ -41,16 +42,15 @@ function getClient(clients, counterpartyChainId) {
 
 {#if $clientHeights.data && $tableChains && $tableClients}
 <div class="table-responsive">
-  <table class="center">
-    <caption>clients</caption>
+  <table class="gap-x-2">
     <thead>
       <tr>
         <th colspan="2" rowspan="2"></th>
-        <th colspan={length}>tracker</th>
+        <th colspan={Object.keys($tableClients).length} class="text-muted-foreground pb-4">tracker</th>
       </tr>
       <tr>
         {#each Object.keys($tableClients) as chain}
-          <th>{chain}</th>
+          <th class="pb-2 px-4"><ChainDetails {chains} chainId={chain}/></th>
         {/each}
       </tr>
     </thead>
@@ -59,21 +59,21 @@ function getClient(clients, counterpartyChainId) {
         <tr>
           {#if counterpartyIndex === 0}
             <th rowspan={length}>
-              <div>tracked</div>
+              <div class="text-muted-foreground -rotate-90">tracked</div>
             </th>
           {/if}
-          <th>{counterpartyChainId}</th>
+          <th class="text-right pr-4"><ChainDetails {chains} chainId={counterpartyChainId}/></th>
           {#each Object.entries($tableClients) as [chainId, values] (chainId)}
             {#if chainId === counterpartyChainId}
-              <td class="bg-default"></td>
+              <td></td>
             {:else}
               {@const counterpartyChain = getCounterpartyChain($tableChains, counterpartyChainId)}
               {@const client = getClient(values, counterpartyChainId)}
-              <td class="p-2">
-                <div class="text-xs text-green-600 ">Client {client.client_id}</div>
-                <div>D {counterpartyChain.index_status.height - client.max_counterparty_height}</div>
-                <div>C {client.max_counterparty_height}</div>
-                <div>I {counterpartyChain.index_status.height}</div>
+              <td class="p-2 bg-muted">
+                <div class="text-xs text-union-accent-950 font-bold dark:text-union-accent ">Client {client.client_id}</div>
+                <div><span class="text-muted-foreground">D</span> {counterpartyChain.index_status.height - client.max_counterparty_height}</div>
+                <div><span class="text-muted-foreground">C</span> {client.max_counterparty_height}</div>
+                <div><span class="text-muted-foreground">I</span> {counterpartyChain.index_status.height}</div>
               </td>
             {/if}
           {/each}
