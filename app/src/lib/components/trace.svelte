@@ -9,9 +9,13 @@ import Truncate from "$lib/components/truncate.svelte"
 import { createEventDispatcher } from "svelte"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import type { Chain } from "$lib/types"
+import DegenTrace from "$lib/components/DegenTrace.svelte"
 
 export let traces: Array<RawTrace>
 export let chains: Array<Chain>
+export let sourceChainId: string
+export let destinationChainId: string
+export let sentTimestamp: string
 
 const DISPLAY_NAMES: Record<StepStatus, Record<string, string>> = {
   COMPLETED: {
@@ -83,7 +87,16 @@ $: pTraces = ((): Array<Trace> => {
   }
   return processedTraces.map(t => ({ ...t, type: DISPLAY_NAMES[t.status][t.type] ?? t.type }))
 })()
+
+$: recv = pTraces.some(t => t.type === "Packet Received" && t.status === "COMPLETED")
+$: ack = pTraces.some(t => t.type === "Packet Acknowledged" && t.status === "COMPLETED")
+let transferStatus: "acknowledged" | "transferred" | "transferring"
+$: transferStatus = ack ? "acknowledged" : recv ? "transferred" : "transferring"
+
+$: console.log(pTraces)
 </script>
+
+<DegenTrace {sourceChainId} {destinationChainId} {transferStatus} {sentTimestamp}/>
 
 <ol class="max-w-full w-full -my-4"> <!-- offset padding surplus !-->
 {#each pTraces as trace, index}
