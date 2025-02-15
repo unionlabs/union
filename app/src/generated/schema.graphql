@@ -409,12 +409,28 @@ input jsonb_comparison_exp {
   _nin: [jsonb!]
 }
 
+scalar latency_percentiles_scalar
+
+"""
+Boolean expression to compare columns of type "latency_percentiles_scalar". All fields are combined with logical 'AND'.
+"""
+input latency_percentiles_scalar_comparison_exp {
+  _eq: latency_percentiles_scalar
+  _gt: latency_percentiles_scalar
+  _gte: latency_percentiles_scalar
+  _in: [latency_percentiles_scalar!]
+  _is_null: Boolean
+  _lt: latency_percentiles_scalar
+  _lte: latency_percentiles_scalar
+  _neq: latency_percentiles_scalar
+  _nin: [latency_percentiles_scalar!]
+}
+
 """mutation root"""
 type mutation_root {
   dydx_faucet: dydx_faucetMutation
   faucet2: faucet2Mutation
   send(address: String!, captchaToken: String!, chainId: String!, denom: String!): String!
-  stride_faucet: stride_faucetMutation
 }
 
 scalar numeric
@@ -557,7 +573,6 @@ type query_root {
     """filter the rows returned"""
     where: hubble_streaks_bool_exp
   ): [hubble_streaks!]!
-  stride_faucet: stride_faucetQuery
   transfersForAddress(address: String!, limit: Int, offsetTime: String): [Request!]!
   unhandledTransfers(limit: Int, offsetTime: String): [Request!]!
 
@@ -662,6 +677,46 @@ type query_root {
   ): [v1_ibc_union_channels!]!
 
   """
+  fetch data from the table: "v1_ibc_union.client_heights"
+  """
+  v1_ibc_union_client_heights(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_client_heights_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_client_heights_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_client_heights_bool_exp
+  ): [v1_ibc_union_client_heights!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.client_heights_max"
+  """
+  v1_ibc_union_client_heights_max(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_client_heights_max_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_client_heights_max_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_client_heights_max_bool_exp
+  ): [v1_ibc_union_client_heights_max!]!
+
+  """
   fetch data from the table: "v1_ibc_union.clients"
   """
   v1_ibc_union_clients(
@@ -700,6 +755,26 @@ type query_root {
     """filter the rows returned"""
     where: v1_ibc_union_config_bool_exp
   ): [v1_ibc_union_config!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.connection_recommendations"
+  """
+  v1_ibc_union_connection_recommendations(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_connection_recommendations_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_connection_recommendations_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_connection_recommendations_bool_exp
+  ): [v1_ibc_union_connection_recommendations!]!
 
   """
   fetch data from the table: "v1_ibc_union.connections"
@@ -840,6 +915,26 @@ type query_root {
     """filter the rows returned"""
     where: v1_ibc_union_faucets_bool_exp
   ): [v1_ibc_union_faucets!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.fungible_asset_order_stats"
+  """
+  v1_ibc_union_fungible_asset_order_stats(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_fungible_asset_order_stats_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_fungible_asset_order_stats_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_fungible_asset_order_stats_bool_exp
+  ): [v1_ibc_union_fungible_asset_order_stats!]!
 
   """
   fetch data from the table: "v1_ibc_union.fungible_asset_orders"
@@ -1204,16 +1299,6 @@ input streak_order_by {
   start_timestamp: order_by
 }
 
-type stride_faucetMutation {
-  send(captchaToken: String!, toAddress: String!): String!
-}
-
-type stride_faucetQuery {
-  handledTransfers(limit: Int, offsetTime: String): [Request!]!
-  transfersForAddress(address: String!, limit: Int, offsetTime: String): [Request!]!
-  unhandledTransfers(limit: Int, offsetTime: String): [Request!]!
-}
-
 type subscription_root {
   get_route(
     """get_routeNative Query Arguments"""
@@ -1499,6 +1584,74 @@ type subscription_root {
   ): [v1_ibc_union_channels!]!
 
   """
+  fetch data from the table: "v1_ibc_union.client_heights"
+  """
+  v1_ibc_union_client_heights(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_client_heights_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_client_heights_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_client_heights_bool_exp
+  ): [v1_ibc_union_client_heights!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.client_heights_max"
+  """
+  v1_ibc_union_client_heights_max(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_client_heights_max_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_client_heights_max_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_client_heights_max_bool_exp
+  ): [v1_ibc_union_client_heights_max!]!
+
+  """
+  fetch data from the table in a streaming manner: "v1_ibc_union.client_heights_max"
+  """
+  v1_ibc_union_client_heights_max_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v1_ibc_union_client_heights_max_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v1_ibc_union_client_heights_max_bool_exp
+  ): [v1_ibc_union_client_heights_max!]!
+
+  """
+  fetch data from the table in a streaming manner: "v1_ibc_union.client_heights"
+  """
+  v1_ibc_union_client_heights_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v1_ibc_union_client_heights_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v1_ibc_union_client_heights_bool_exp
+  ): [v1_ibc_union_client_heights!]!
+
+  """
   fetch data from the table: "v1_ibc_union.clients"
   """
   v1_ibc_union_clients(
@@ -1565,6 +1718,40 @@ type subscription_root {
     """filter the rows returned"""
     where: v1_ibc_union_config_bool_exp
   ): [v1_ibc_union_config!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.connection_recommendations"
+  """
+  v1_ibc_union_connection_recommendations(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_connection_recommendations_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_connection_recommendations_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_connection_recommendations_bool_exp
+  ): [v1_ibc_union_connection_recommendations!]!
+
+  """
+  fetch data from the table in a streaming manner: "v1_ibc_union.connection_recommendations"
+  """
+  v1_ibc_union_connection_recommendations_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v1_ibc_union_connection_recommendations_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v1_ibc_union_connection_recommendations_bool_exp
+  ): [v1_ibc_union_connection_recommendations!]!
 
   """
   fetch data from the table: "v1_ibc_union.connections"
@@ -1803,6 +1990,40 @@ type subscription_root {
     """filter the rows returned"""
     where: v1_ibc_union_faucets_bool_exp
   ): [v1_ibc_union_faucets!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.fungible_asset_order_stats"
+  """
+  v1_ibc_union_fungible_asset_order_stats(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_fungible_asset_order_stats_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_fungible_asset_order_stats_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_fungible_asset_order_stats_bool_exp
+  ): [v1_ibc_union_fungible_asset_order_stats!]!
+
+  """
+  fetch data from the table in a streaming manner: "v1_ibc_union.fungible_asset_order_stats"
+  """
+  v1_ibc_union_fungible_asset_order_stats_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v1_ibc_union_fungible_asset_order_stats_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v1_ibc_union_fungible_asset_order_stats_bool_exp
+  ): [v1_ibc_union_fungible_asset_order_stats!]!
 
   """
   fetch data from the table: "v1_ibc_union.fungible_asset_orders"
@@ -3199,6 +3420,134 @@ input v1_ibc_union_channels_stream_cursor_value_input {
 }
 
 """
+columns and relationships of "v1_ibc_union.client_heights"
+"""
+type v1_ibc_union_client_heights {
+  """An object relationship"""
+  client_chain: v1_ibc_union_chains
+  client_id: bigint
+
+  """An object relationship"""
+  counterparty_chain: v1_ibc_union_chains
+  max_counterparty_height: bigint
+}
+
+"""
+Boolean expression to filter rows from the table "v1_ibc_union.client_heights". All fields are combined with a logical 'AND'.
+"""
+input v1_ibc_union_client_heights_bool_exp {
+  _and: [v1_ibc_union_client_heights_bool_exp!]
+  _not: v1_ibc_union_client_heights_bool_exp
+  _or: [v1_ibc_union_client_heights_bool_exp!]
+  client_chain: v1_ibc_union_chains_bool_exp
+  client_id: bigint_comparison_exp
+  counterparty_chain: v1_ibc_union_chains_bool_exp
+  max_counterparty_height: bigint_comparison_exp
+}
+
+"""
+columns and relationships of "v1_ibc_union.client_heights_max"
+"""
+type v1_ibc_union_client_heights_max {
+  """An object relationship"""
+  client_chain: v1_ibc_union_chains
+  client_id: bigint
+
+  """An object relationship"""
+  counterparty_chain: v1_ibc_union_chains
+  max_counterparty_height: bigint
+}
+
+"""
+Boolean expression to filter rows from the table "v1_ibc_union.client_heights_max". All fields are combined with a logical 'AND'.
+"""
+input v1_ibc_union_client_heights_max_bool_exp {
+  _and: [v1_ibc_union_client_heights_max_bool_exp!]
+  _not: v1_ibc_union_client_heights_max_bool_exp
+  _or: [v1_ibc_union_client_heights_max_bool_exp!]
+  client_chain: v1_ibc_union_chains_bool_exp
+  client_id: bigint_comparison_exp
+  counterparty_chain: v1_ibc_union_chains_bool_exp
+  max_counterparty_height: bigint_comparison_exp
+}
+
+"""
+Ordering options when selecting data from "v1_ibc_union.client_heights_max".
+"""
+input v1_ibc_union_client_heights_max_order_by {
+  client_chain: v1_ibc_union_chains_order_by
+  client_id: order_by
+  counterparty_chain: v1_ibc_union_chains_order_by
+  max_counterparty_height: order_by
+}
+
+"""
+select columns of table "v1_ibc_union.client_heights_max"
+"""
+enum v1_ibc_union_client_heights_max_select_column {
+  """column name"""
+  client_id
+
+  """column name"""
+  max_counterparty_height
+}
+
+"""
+Streaming cursor of the table "v1_ibc_union_client_heights_max"
+"""
+input v1_ibc_union_client_heights_max_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v1_ibc_union_client_heights_max_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v1_ibc_union_client_heights_max_stream_cursor_value_input {
+  client_id: bigint
+  max_counterparty_height: bigint
+}
+
+"""
+Ordering options when selecting data from "v1_ibc_union.client_heights".
+"""
+input v1_ibc_union_client_heights_order_by {
+  client_chain: v1_ibc_union_chains_order_by
+  client_id: order_by
+  counterparty_chain: v1_ibc_union_chains_order_by
+  max_counterparty_height: order_by
+}
+
+"""
+select columns of table "v1_ibc_union.client_heights"
+"""
+enum v1_ibc_union_client_heights_select_column {
+  """column name"""
+  client_id
+
+  """column name"""
+  max_counterparty_height
+}
+
+"""
+Streaming cursor of the table "v1_ibc_union_client_heights"
+"""
+input v1_ibc_union_client_heights_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v1_ibc_union_client_heights_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v1_ibc_union_client_heights_stream_cursor_value_input {
+  client_id: bigint
+  max_counterparty_height: bigint
+}
+
+"""
 columns and relationships of "v1_ibc_union.clients"
 """
 type v1_ibc_union_clients {
@@ -3326,6 +3675,98 @@ input v1_ibc_union_config_stream_cursor_input {
 input v1_ibc_union_config_stream_cursor_value_input {
   key: String
   value: String
+}
+
+"""
+columns and relationships of "v1_ibc_union.connection_recommendations"
+"""
+type v1_ibc_union_connection_recommendations {
+  """An object relationship"""
+  destination_chain: v1_ibc_union_chains
+  destination_chain_id: String
+  destination_client_id: Int
+  destination_connection_id: Int
+
+  """An object relationship"""
+  source_chain: v1_ibc_union_chains
+  source_chain_id: String
+  source_client_id: Int
+  source_connection_id: Int
+}
+
+"""
+Boolean expression to filter rows from the table "v1_ibc_union.connection_recommendations". All fields are combined with a logical 'AND'.
+"""
+input v1_ibc_union_connection_recommendations_bool_exp {
+  _and: [v1_ibc_union_connection_recommendations_bool_exp!]
+  _not: v1_ibc_union_connection_recommendations_bool_exp
+  _or: [v1_ibc_union_connection_recommendations_bool_exp!]
+  destination_chain: v1_ibc_union_chains_bool_exp
+  destination_chain_id: String_comparison_exp
+  destination_client_id: Int_comparison_exp
+  destination_connection_id: Int_comparison_exp
+  source_chain: v1_ibc_union_chains_bool_exp
+  source_chain_id: String_comparison_exp
+  source_client_id: Int_comparison_exp
+  source_connection_id: Int_comparison_exp
+}
+
+"""
+Ordering options when selecting data from "v1_ibc_union.connection_recommendations".
+"""
+input v1_ibc_union_connection_recommendations_order_by {
+  destination_chain: v1_ibc_union_chains_order_by
+  destination_chain_id: order_by
+  destination_client_id: order_by
+  destination_connection_id: order_by
+  source_chain: v1_ibc_union_chains_order_by
+  source_chain_id: order_by
+  source_client_id: order_by
+  source_connection_id: order_by
+}
+
+"""
+select columns of table "v1_ibc_union.connection_recommendations"
+"""
+enum v1_ibc_union_connection_recommendations_select_column {
+  """column name"""
+  destination_chain_id
+
+  """column name"""
+  destination_client_id
+
+  """column name"""
+  destination_connection_id
+
+  """column name"""
+  source_chain_id
+
+  """column name"""
+  source_client_id
+
+  """column name"""
+  source_connection_id
+}
+
+"""
+Streaming cursor of the table "v1_ibc_union_connection_recommendations"
+"""
+input v1_ibc_union_connection_recommendations_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v1_ibc_union_connection_recommendations_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v1_ibc_union_connection_recommendations_stream_cursor_value_input {
+  destination_chain_id: String
+  destination_client_id: Int
+  destination_connection_id: Int
+  source_chain_id: String
+  source_client_id: Int
+  source_connection_id: Int
 }
 
 """
@@ -3974,6 +4415,84 @@ input v1_ibc_union_faucets_stream_cursor_value_input {
 }
 
 """
+columns and relationships of "v1_ibc_union.fungible_asset_order_stats"
+"""
+type v1_ibc_union_fungible_asset_order_stats {
+  """An object relationship"""
+  destination_chain: v1_ibc_union_chains
+  interval_secs: numeric
+  secs_until_packet_ack: latency_percentiles_scalar
+  secs_until_packet_recv: latency_percentiles_scalar
+  secs_until_write_ack: latency_percentiles_scalar
+
+  """An object relationship"""
+  source_chain: v1_ibc_union_chains
+}
+
+"""
+Boolean expression to filter rows from the table "v1_ibc_union.fungible_asset_order_stats". All fields are combined with a logical 'AND'.
+"""
+input v1_ibc_union_fungible_asset_order_stats_bool_exp {
+  _and: [v1_ibc_union_fungible_asset_order_stats_bool_exp!]
+  _not: v1_ibc_union_fungible_asset_order_stats_bool_exp
+  _or: [v1_ibc_union_fungible_asset_order_stats_bool_exp!]
+  destination_chain: v1_ibc_union_chains_bool_exp
+  interval_secs: numeric_comparison_exp
+  secs_until_packet_ack: latency_percentiles_scalar_comparison_exp
+  secs_until_packet_recv: latency_percentiles_scalar_comparison_exp
+  secs_until_write_ack: latency_percentiles_scalar_comparison_exp
+  source_chain: v1_ibc_union_chains_bool_exp
+}
+
+"""
+Ordering options when selecting data from "v1_ibc_union.fungible_asset_order_stats".
+"""
+input v1_ibc_union_fungible_asset_order_stats_order_by {
+  destination_chain: v1_ibc_union_chains_order_by
+  interval_secs: order_by
+  secs_until_packet_ack: order_by
+  secs_until_packet_recv: order_by
+  secs_until_write_ack: order_by
+  source_chain: v1_ibc_union_chains_order_by
+}
+
+"""
+select columns of table "v1_ibc_union.fungible_asset_order_stats"
+"""
+enum v1_ibc_union_fungible_asset_order_stats_select_column {
+  """column name"""
+  interval_secs
+
+  """column name"""
+  secs_until_packet_ack
+
+  """column name"""
+  secs_until_packet_recv
+
+  """column name"""
+  secs_until_write_ack
+}
+
+"""
+Streaming cursor of the table "v1_ibc_union_fungible_asset_order_stats"
+"""
+input v1_ibc_union_fungible_asset_order_stats_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v1_ibc_union_fungible_asset_order_stats_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v1_ibc_union_fungible_asset_order_stats_stream_cursor_value_input {
+  interval_secs: numeric
+  secs_until_packet_ack: latency_percentiles_scalar
+  secs_until_packet_recv: latency_percentiles_scalar
+  secs_until_write_ack: latency_percentiles_scalar
+}
+
+"""
 columns and relationships of "v1_ibc_union.fungible_asset_orders"
 """
 type v1_ibc_union_fungible_asset_orders {
@@ -4061,7 +4580,7 @@ type v1_ibc_union_fungible_asset_orders {
   source_connection_id: Int
   source_port_id: String
   status: String
-  timeout_height: bigint
+  timeout_height: numeric
   timeout_timestamp: numeric
 
   """
@@ -4163,7 +4682,7 @@ input v1_ibc_union_fungible_asset_orders_bool_exp {
   source_connection_id: Int_comparison_exp
   source_port_id: String_comparison_exp
   status: String_comparison_exp
-  timeout_height: bigint_comparison_exp
+  timeout_height: numeric_comparison_exp
   timeout_timestamp: numeric_comparison_exp
   traces: v1_ibc_union_traces_type_bool_exp
   write_ack_block_hash: String_comparison_exp
@@ -4528,7 +5047,7 @@ input v1_ibc_union_fungible_asset_orders_stream_cursor_value_input {
   source_connection_id: Int
   source_port_id: String
   status: String
-  timeout_height: bigint
+  timeout_height: numeric
   timeout_timestamp: numeric
   write_ack_block_hash: String
   write_ack_event_index: Int
@@ -4734,7 +5253,7 @@ type v1_ibc_union_packets {
   source_connection_id: Int
   source_port_id: String
   status: String
-  timeout_height: bigint
+  timeout_height: numeric
   timeout_timestamp: numeric
 
   """
@@ -4813,7 +5332,7 @@ input v1_ibc_union_packets_bool_exp {
   source_connection_id: Int_comparison_exp
   source_port_id: String_comparison_exp
   status: String_comparison_exp
-  timeout_height: bigint_comparison_exp
+  timeout_height: numeric_comparison_exp
   timeout_timestamp: numeric_comparison_exp
   traces: v1_ibc_union_traces_type_bool_exp
   write_ack_block_hash: String_comparison_exp
@@ -5077,7 +5596,7 @@ input v1_ibc_union_packets_stream_cursor_value_input {
   source_connection_id: Int
   source_port_id: String
   status: String
-  timeout_height: bigint
+  timeout_height: numeric
   timeout_timestamp: numeric
   write_ack_block_hash: String
   write_ack_event_index: Int
@@ -5397,6 +5916,7 @@ type v1_ibc_union_token_representation_source_unwrapping {
   """An object relationship"""
   unwrapped_chain: v1_ibc_union_chains
   unwrapped_denom: String
+  wrapper: String
 }
 
 """
@@ -5438,6 +5958,7 @@ input v1_ibc_union_token_representation_source_unwrapping_bool_exp {
   unwrapped_address_hex: String_comparison_exp
   unwrapped_chain: v1_ibc_union_chains_bool_exp
   unwrapped_denom: String_comparison_exp
+  wrapper: String_comparison_exp
 }
 
 """
@@ -5449,6 +5970,7 @@ input v1_ibc_union_token_representation_source_unwrapping_max_order_by {
   internal_source_id: order_by
   unwrapped_address_hex: order_by
   unwrapped_denom: order_by
+  wrapper: order_by
 }
 
 """
@@ -5460,6 +5982,7 @@ input v1_ibc_union_token_representation_source_unwrapping_min_order_by {
   internal_source_id: order_by
   unwrapped_address_hex: order_by
   unwrapped_denom: order_by
+  wrapper: order_by
 }
 
 """
@@ -5472,6 +5995,7 @@ input v1_ibc_union_token_representation_source_unwrapping_order_by {
   unwrapped_address_hex: order_by
   unwrapped_chain: v1_ibc_union_chains_order_by
   unwrapped_denom: order_by
+  wrapper: order_by
 }
 
 """
@@ -5492,6 +6016,9 @@ enum v1_ibc_union_token_representation_source_unwrapping_select_column {
 
   """column name"""
   unwrapped_denom
+
+  """column name"""
+  wrapper
 }
 
 """
@@ -5539,6 +6066,7 @@ input v1_ibc_union_token_representation_source_unwrapping_stream_cursor_value_in
   internal_source_id: Int
   unwrapped_address_hex: String
   unwrapped_denom: String
+  wrapper: String
 }
 
 """
@@ -5939,6 +6467,7 @@ type v1_ibc_union_token_unwrapping {
 
   """An object relationship"""
   wrapped_chain: v1_ibc_union_chains
+  wrapper: String
 }
 
 """
@@ -5979,6 +6508,7 @@ input v1_ibc_union_token_unwrapping_bool_exp {
   unwrapped_chain: v1_ibc_union_chains_bool_exp
   unwrapped_denom: String_comparison_exp
   wrapped_chain: v1_ibc_union_chains_bool_exp
+  wrapper: String_comparison_exp
 }
 
 """
@@ -5989,6 +6519,7 @@ input v1_ibc_union_token_unwrapping_max_order_by {
   index: order_by
   unwrapped_address_hex: order_by
   unwrapped_denom: order_by
+  wrapper: order_by
 }
 
 """
@@ -5999,6 +6530,7 @@ input v1_ibc_union_token_unwrapping_min_order_by {
   index: order_by
   unwrapped_address_hex: order_by
   unwrapped_denom: order_by
+  wrapper: order_by
 }
 
 """
@@ -6011,6 +6543,7 @@ input v1_ibc_union_token_unwrapping_order_by {
   unwrapped_chain: v1_ibc_union_chains_order_by
   unwrapped_denom: order_by
   wrapped_chain: v1_ibc_union_chains_order_by
+  wrapper: order_by
 }
 
 """
@@ -6028,6 +6561,9 @@ enum v1_ibc_union_token_unwrapping_select_column {
 
   """column name"""
   unwrapped_denom
+
+  """column name"""
+  wrapper
 }
 
 """
@@ -6071,6 +6607,7 @@ input v1_ibc_union_token_unwrapping_stream_cursor_value_input {
   index: Int
   unwrapped_address_hex: String
   unwrapped_denom: String
+  wrapper: String
 }
 
 """
