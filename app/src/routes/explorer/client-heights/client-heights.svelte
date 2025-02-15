@@ -69,16 +69,11 @@ function getClient(clients, counterpartyChainId) {
             {:else}
               {@const counterpartyChain = getCounterpartyChain($tableChains, counterpartyChainId)}
               {@const client = getClient(values, counterpartyChainId)}
-              <td class="bg-muted">
-                <i class="smaller success">{client.client_id}</i>
-                <br>
-                <span class="small">
-                  {counterpartyChain.index_status.height - client.max_counterparty_height}
-                </span>
-                <br>
-                <span>{client.max_counterparty_height}</span>
-                <br>
-                <span>{counterpartyChain.index_status.height}</span>
+              <td class="p-2">
+                <div class="text-xs text-green-600 ">Client {client.client_id}</div>
+                <div>D {counterpartyChain.index_status.height - client.max_counterparty_height}</div>
+                <div>C {client.max_counterparty_height}</div>
+                <div>I {counterpartyChain.index_status.height}</div>
               </td>
             {/if}
           {/each}
