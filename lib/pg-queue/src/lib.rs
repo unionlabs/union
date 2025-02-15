@@ -322,7 +322,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                 FROM
                   queue
                 ORDER BY
-                  id ASC
+                  created_at ASC
                 FOR UPDATE
                   SKIP LOCKED
                 LIMIT 1)
@@ -366,17 +366,28 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                         }
                         Err(QueueError::Retry(error)) => {
                             warn!(error = %full_error_string(error), "retryable error");
-                            tx.rollback().await?;
+                            sqlx::query(
+                                "
+                                INSERT INTO
+                                queue  (id, item,      parents)
+                                VALUES ($1, $2::JSONB, $3     )
+                                ",
+                            )
+                            .bind(record.id)
+                            .bind(record.item)
+                            .bind(record.parents)
+                            .execute(tx.as_mut())
+                            .await?;
                         }
                         Ok(ops) => {
                             'block: {
                                 // insert the op we just processed into done
                                 sqlx::query(
                                     "
-                                INSERT INTO
-                                done   (id, parents, item,      created_at)
-                                VALUES ($1, $2,      $3::JSONB, $4        )
-                                ",
+                                    INSERT INTO
+                                    done   (id, parents, item,      created_at)
+                                    VALUES ($1, $2,      $3::JSONB, $4        )
+                                    ",
                                 )
                                 .bind(record.id)
                                 .bind(record.parents)
@@ -399,9 +410,9 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 
                                 sqlx::query(
                                     "
-                                INSERT INTO queue (item, parents)
-                                SELECT *, $1 as parents FROM UNNEST($2::JSONB[])
-                                ",
+                                    INSERT INTO queue (item, parents)
+                                    SELECT *, $1 as parents FROM UNNEST($2::JSONB[])
+                                    ",
                                 )
                                 .bind(vec![record.id])
                                 .bind(ready.into_iter().map(Json).collect::<Vec<_>>())
@@ -410,9 +421,9 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 
                                 sqlx::query(
                                     "
-                                INSERT INTO optimize (item, tag, parents)
-                                SELECT *, $1 as parents FROM UNNEST($2::JSONB[], $3::TEXT[])
-                                ",
+                                    INSERT INTO optimize (item, tag, parents)
+                                    SELECT *, $1 as parents FROM UNNEST($2::JSONB[], $3::TEXT[])
+                                    ",
                                 )
                                 .bind(vec![record.id])
                                 .bind(optimize.iter().map(|(op, _)| Json(op)).collect::<Vec<_>>())
