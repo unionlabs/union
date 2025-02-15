@@ -41,7 +41,7 @@ function getClient(clients, counterpartyChainId) {
 </script>
 
 {#if $clientHeights.data && $tableChains && $tableClients}
-<div class="table-responsive">
+<div class="overflow-x-auto">
   <table class="gap-x-2">
     <thead>
       <tr>
@@ -69,11 +69,13 @@ function getClient(clients, counterpartyChainId) {
             {:else}
               {@const counterpartyChain = getCounterpartyChain($tableChains, counterpartyChainId)}
               {@const client = getClient(values, counterpartyChainId)}
-              <td class="p-2 bg-muted">
-                <div class="text-xs text-union-accent-950 font-bold dark:text-union-accent ">Client {client.client_id}</div>
-                <div><span class="text-muted-foreground italic">Δ</span> {counterpartyChain.index_status.height - client.max_counterparty_height}</div>
-                <div><span class="text-muted-foreground italic">C</span> {client.max_counterparty_height}</div>
-                <div><span class="text-muted-foreground italic">I</span> {counterpartyChain.index_status.height}</div>
+              <td class="py-[3px] px-[3px]">
+                <div class="px-2 pb-1 pt-[6px] bg-muted">
+                  <div class="text-xs text-union-accent-950 font-bold dark:text-union-accent ">Client {client.client_id}</div>
+                  <div class="text-nowrap"><span class="text-muted-foreground italic">Δ</span> {counterpartyChain.index_status.height - client.max_counterparty_height}</div>
+                  <div class="text-nowrap"><span class="text-muted-foreground italic">C</span> {client.max_counterparty_height}</div>
+                  <div class="text-nowrap"><span class="text-muted-foreground italic">I</span> {counterpartyChain.index_status.height}</div>
+                </div>
               </td>
             {/if}
           {/each}
