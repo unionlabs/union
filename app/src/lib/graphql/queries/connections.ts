@@ -1,4 +1,4 @@
-import {graphql} from "gql.tada"
+import { graphql } from "gql.tada"
 
 export const connectionsQuery = graphql(/* GraphQL */ `
     query ConnectionsQuery($limit: Int = 100) @cached(ttl: 30) {
@@ -31,4 +31,3 @@ export const connectionsQuery = graphql(/* GraphQL */ `
         }
     }
 `)
-
