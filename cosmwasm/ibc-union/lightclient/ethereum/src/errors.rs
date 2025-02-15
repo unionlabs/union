@@ -52,6 +52,9 @@ pub enum Error {
         client_state_latest_slot: u64,
         consensus_state_slot: u64,
     },
+
+    #[error("the misbehaviour headers must be different")]
+    IdenticalMisbehaviourHeaders,
 }
 
 impl From<Error> for StdError {

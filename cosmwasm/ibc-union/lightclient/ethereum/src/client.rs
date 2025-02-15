@@ -323,6 +323,12 @@ pub fn verify_misbehaviour<C: ChainSpec>(
         Error::MisbehaviourCannotExist(slot_1, slot_2),
     )?;
 
+    ensure(
+        misbehaviour.update_1.update_data().finalized_header
+            != misbehaviour.update_2.update_data().finalized_header,
+        Error::IdenticalMisbehaviourHeaders,
+    )?;
+
     let current_slot =
         compute_slot_at_timestamp::<C>(client_state.genesis_time, ctx.env.block.time.seconds())
             .ok_or(Error::IntegerOverflow)?;
