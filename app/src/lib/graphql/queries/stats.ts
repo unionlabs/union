@@ -37,9 +37,11 @@ export const OrderStatsDocument = graphql(/* GraphQL */ `
         ) {
             source_chain {
                 chain_id
+                display_name
             }
             destination_chain {
                 chain_id
+                display_name
             }
             interval_secs
             secs_until_packet_ack

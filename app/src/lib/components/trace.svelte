@@ -89,9 +89,11 @@ $: pTraces = ((): Array<Trace> => {
 })()
 
 $: recv = pTraces.some(t => t.type === "Packet Received" && t.status === "COMPLETED")
-$: ack = pTraces.some(t => t.type === "Acknowledge Packet" && t.status === "COMPLETED")
+$: ack = pTraces.some(t => t.type === "Packet Acknowledged" && t.status === "COMPLETED")
 let transferStatus: "acknowledged" | "transferred" | "transferring"
 $: transferStatus = ack ? "acknowledged" : recv ? "transferred" : "transferring"
+
+$: console.log(pTraces)
 </script>
 
 <DegenTrace {sourceChainId} {destinationChainId} {transferStatus} {sentTimestamp}/>

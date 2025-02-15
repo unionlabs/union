@@ -52,9 +52,9 @@ const progressMap = {
 }
 
 // Display texts
-const statusText = {
+$: statusText = {
   transferring: "Your funds are on the way. Please hold tight.",
-  transferred: "Your funds are now available, pending final confirmation.",
+  transferred: `This transfer is complete. Your funds are ready to use on ${$stats.data?.destination_chain?.display_name}`,
   acknowledged: "Transfer complete. Your funds are confirmed."
 }
 
@@ -129,17 +129,17 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
       </div>
     {:else if transferStatus === "transferred"}
       <div>
-        <h3 class="text-sm font-semibold">ACK ETA:</h3>
+        <h3 class="text-xs font-semibold">Acknowledgement ETA (for developers):</h3>
         {#if $stats.isLoading || !medianAck}
-          <p class="mt-1 text-neutral-400 text-sm">Calculating ACK ETA...</p>
+          <p class="mt-1 text-neutral-400 text-xs">Calculating ACK ETA...</p>
         {:else}
           {#if delayAck > 0.2 * medianAck}
-            <p class="mt-1 text-sm">
+            <p class="mt-1 text-xs">
               Your transfer is taking {formatSeconds(delayAck)} longer than the average acknowledgment.
               The slowest acknowledgment for this connection in the past day was {formatSeconds(worstAck)}.
             </p>
           {:else}
-            <p class="mt-1 text-sm">
+            <p class="mt-1 text-xs">
               On average, this transfer will be acknowledged in {formatSeconds(remainingAck)} from now.
             </p>
           {/if}
