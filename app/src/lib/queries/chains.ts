@@ -11,6 +11,6 @@ export const chainsQuery = (environment: string) =>
     queryFn: async () =>
       (await request(URLS().GRAPHQL, chainsQueryDocument, { environment })).v1_ibc_union_chains,
     enabled: true,
-    refetchInterval: 6_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: false
   })
