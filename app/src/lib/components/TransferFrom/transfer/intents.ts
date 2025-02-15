@@ -1,12 +1,7 @@
 import type { Chain, Ucs03Channel, UserAddresses } from "$lib/types"
 import type { FormFields } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import { fromHex } from "viem"
-import {
-  bech32AddressToHex,
-  bech32ToBech32Address,
-  getChannelInfo,
-  isValidBech32Address
-} from "@unionlabs/client"
+import { bech32ToBech32Address, getChannelInfo } from "@unionlabs/client"
 import type { Intents, QuoteResponse } from "$lib/components/TransferFrom/transfer/types.ts"
 import type { Balances } from "$lib/stores/balances.ts"
 import type { Result } from "neverthrow"
