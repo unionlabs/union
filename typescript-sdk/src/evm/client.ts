@@ -8,7 +8,7 @@ import {
   type CustomTransport,
   type FallbackTransport,
   createPublicClient,
-  http
+  http, toHex
 } from "viem"
 import {
   // evmSameChainTransfer,
@@ -109,7 +109,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
             sourceChannelId,
             receiver.startsWith("0x")
               ? getAddress(receiver)
-              : bech32AddressToHex({ address: receiver }),
+              : toHex(receiver),
             baseToken,
             baseAmount,
             quoteToken,
