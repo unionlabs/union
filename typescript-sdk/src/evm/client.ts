@@ -8,7 +8,8 @@ import {
   type CustomTransport,
   type FallbackTransport,
   createPublicClient,
-  http
+  http,
+  toHex
 } from "viem"
 import {
   // evmSameChainTransfer,
@@ -33,7 +34,6 @@ import type {
   TransferAssetParameters
 } from "../types.ts"
 import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
-import { bech32AddressToHex } from "../convert.ts"
 import { generateSalt, timestamp } from "../utilities/index.ts"
 export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
 
@@ -107,9 +107,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
              */
           args: [
             sourceChannelId,
-            receiver.startsWith("0x")
-              ? getAddress(receiver)
-              : bech32AddressToHex({ address: receiver }),
+            receiver.startsWith("0x") ? getAddress(receiver) : toHex(receiver),
             baseToken,
             baseAmount,
             quoteToken,
