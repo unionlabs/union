@@ -16,7 +16,7 @@ import { page } from "$app/stores"
 
 let indexStatus = createQuery({
   queryKey: ["index-status"],
-  refetchInterval: 500,
+  refetchInterval: 60_000,
   queryFn: async () => request(URLS().GRAPHQL, indexStatusQuery, {}),
   select: data => {
     const enabledChains = data.chains.flatMap(chain => chain.chain_id)
