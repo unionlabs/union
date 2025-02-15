@@ -58,7 +58,7 @@ function getClient(clients, counterpartyChainId) {
       {#each Object.entries($tableClients) as [counterpartyChainId, _], counterpartyIndex (counterpartyChainId)}
         <tr>
           {#if counterpartyIndex === 0}
-            <th rowspan={length}>
+            <th rowspan={Object.keys($tableClients).length}>
               <div class="text-muted-foreground -rotate-90">tracked</div>
             </th>
           {/if}
