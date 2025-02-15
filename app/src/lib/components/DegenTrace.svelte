@@ -143,9 +143,6 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
               On average, this transfer will be acknowledged in {formatSeconds(remainingAck)} from now.
             </p>
           {/if}
-          <p class="mt-1 text-sm text-muted-foreground">
-            For developers: ACK ETA is {formatSeconds(remainingAck)}.
-          </p>
         {/if}
       </div>
     {/if}
