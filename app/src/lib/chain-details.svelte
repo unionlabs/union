@@ -26,7 +26,7 @@ $: chain_id = chain?.chain_id ? chain.chain_id : chainId
 {#if !ch}
   Invalid chain: {#if chain_id}{chain_id}{/if}
 {:else}
-    <div class={cn(highlightEnabled && $highlightItem?.kind === "chain" && $highlightItem.chainId === chain_id ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}>{ch.display_name}</div>
+    <div class={cn(highlightEnabled && $highlightItem?.kind === "chain" && $highlightItem.chainId === chain_id ? "bg-union-accent-300 dark:bg-union-accent-950" : "", "text-nowrap")}>{ch.display_name}</div>
 {#if ch.relayer_status.status !== "HEALTHY"}<Tooltip.Root><Tooltip.Trigger><TokenQualityLevel level={ch.relayer_status.status === "WARNING" ? "ONCHAIN" : "NONE"}/></Tooltip.Trigger><Tooltip.Content>{ch.relayer_status.message}</Tooltip.Content></Tooltip.Root>{/if}
 {/if}
 </span>
