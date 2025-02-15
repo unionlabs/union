@@ -24,8 +24,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-
+	"github.com/CosmWasm/wasmd/x/wasm"
+	wasmcli "github.com/CosmWasm/wasmd/x/wasm/client/cli"
 	"github.com/unionlabs/union/uniond/app"
 )
 
@@ -54,10 +54,14 @@ func initRootCmd(
 		txCommand(),
 		keys.Commands(),
 	)
+	wasmcli.ExtendUnsafeResetAllCmd(rootCmd)
+
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
+	wasm.AddModuleInitFlags(startCmd)
+
 }
 
 // genesisCommand builds genesis-related `uniondd genesis` command. Users may provide application specific commands as a parameter
@@ -132,7 +136,6 @@ func newApp(
 	app, err := app.New(
 		logger, db, traceStore, true,
 		appOpts,
-		[]wasmkeeper.Option{},
 		baseappOptions...,
 	)
 	if err != nil {
@@ -174,7 +177,7 @@ func appExport(
 	appOpts = viperAppOpts
 
 	if height != -1 {
-		bApp, err = app.New(logger, db, traceStore, false, appOpts, []wasmkeeper.Option{})
+		bApp, err = app.New(logger, db, traceStore, false, appOpts)
 		if err != nil {
 			return servertypes.ExportedApp{}, err
 		}
@@ -183,7 +186,7 @@ func appExport(
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		bApp, err = app.New(logger, db, traceStore, true, appOpts, []wasmkeeper.Option{})
+		bApp, err = app.New(logger, db, traceStore, true, appOpts)
 		if err != nil {
 			return servertypes.ExportedApp{}, err
 		}
