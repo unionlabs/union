@@ -21,7 +21,7 @@ export let tokenInfos: Writable<TokenInfos> = persisted("token-infos", {})
 
 function isStale(info: TokenInfo): boolean {
   if (info.kind !== "tokenInfo") return false
-  const oneMinute = 60 * 1000 // 1 minutes in milliseconds
+  const oneMinute = 60 * 60 * 1000 // 1 hour in milliseconds
   return Date.now() - info.timestamp > oneMinute
 }
 
