@@ -62,7 +62,7 @@ $: filteredTokens =
     <div class="absolute inset-0 overflow-y-auto overflow-x-hidden -webkit-overflow-scrolling-touch">
       {#each filteredTokens as token}
         <button
-                class="px-2 py-1 flex flex-col hover:bg-neutral-400 dark:hover:bg-neutral-800 text-sm justify-start items-start w-full"
+                class="px-2 py-1 flex flex-col hover:bg-neutral-400 dark:hover:bg-neutral-800 text-sm justify-start items-start w-full overflow-x-auto"
                 on:click={() => setAsset(token.denom)}
         >
           {#if token.balance && token.balance.kind === "balance"}
@@ -73,12 +73,14 @@ $: filteredTokens =
             <div>
               <Token stackedView highlightEnabled={false} chainId={$rawIntents.source} denom={token.denom} {chains}/>
             </div>
-            <div>
+            <div class="text-muted-foreground text-xs self-start text-left">
             {#if !token.balance}
               No balance fetched.
             {:else if token.balance.kind === "error"}
-              Error loading balance:
-              {token.balance.error}
+              <div class="text-red-500">
+                Error loading balance:
+                {token.balance.error}
+              </div>
             {:else if token.balance.kind === "loading"}
               <InlineLoadingDots>Loading Balance</InlineLoadingDots>
             {/if}

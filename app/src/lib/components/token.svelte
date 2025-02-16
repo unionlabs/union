@@ -72,7 +72,7 @@ let cosmosDenom = derived(tokenInfo, $tokenInfo => {
       <span class={cn("inline-flex gap-1", highlightEnabled && $highlightItem?.kind === "token" && $highlightItem.denom === denom  ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}><b>{truncate(token.combined.symbol, 8)}</b>
               {#if showWrapping}
     {#if !stackedView}
-    <div class="text-muted-foreground text-xs flex gap-1 items-center">
+    <div class="text-muted-foreground text-nowrap text-xs flex gap-1 items-center">
       {toDisplayName(chainId, chains)}
       {#each token.combined.wrapping as wrapping}
         <ArrowLeftIcon/>{toDisplayName(
@@ -85,7 +85,7 @@ let cosmosDenom = derived(tokenInfo, $tokenInfo => {
     <TokenQualityLevel level={token.graphql != null ? "GRAPHQL" : token.onchain != null ? "ONCHAIN" : "NONE"}/>
     </div>
     {#if stackedView}
-    <div class="text-muted-foreground text-xs flex gap-1 items-center -mt-1">
+    <div class="text-muted-foreground text-xs text-nowrap flex gap-1 items-center -mt-1">
       {toDisplayName(chainId, chains)}
       {#each token.combined.wrapping as wrapping}
         <ArrowLeftIcon/>{toDisplayName(
