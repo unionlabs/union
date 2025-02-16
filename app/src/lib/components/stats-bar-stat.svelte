@@ -2,6 +2,7 @@
 import { deviceWidth } from "$lib/utilities/device.ts"
 import { cn } from "$lib/utilities/shadcn.ts"
 import LoadingDots from "$lib/components/loading-dots.svelte"
+import NumberFlow from "@number-flow/svelte"
 
 export let label: string
 export let value: number | string
@@ -12,6 +13,12 @@ function formatValue(value: number | string): string {
     value = value.toLocaleString()
   }
   return value
+}
+
+let valueAnimated = 0
+
+$: if (!Number.isNaN(+value)) {
+  valueAnimated = +value
 }
 </script>
 
@@ -26,9 +33,7 @@ function formatValue(value: number | string): string {
         <LoadingDots class="size-6"/>
       </div>
     {:else }
-      {#key value}
-        <p class="text-xl font-bold">{formatValue(value)}</p>
-      {/key}
+      <p class="text-xl font-bold"><NumberFlow value={valueAnimated}/></p>
     {/if}
   </div>
   <slot/>
