@@ -212,9 +212,11 @@ let dydxBalance = createQuery(
                 <div class="text-xs">
                   <p>
                     {#if $dydxAddress?.indexOf("dydx") === 0 && $dydxBalance.status === "success"}
+                      <!--
                       <span>Balance: </span>
                       {$dydxBalance?.data?.balance ?? 0}
                       adv4tnt
+                      !-->
                     {:else}
                       Connect cosmos wallet
                     {/if}

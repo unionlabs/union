@@ -212,9 +212,11 @@ let strideBalance = createQuery(
                 <div class="text-xs">
                   <p>
                     {#if $strideAddress?.indexOf("stride") === 0 && $strideBalance.status === "success"}
+                      <!--
                       <span>Balance: </span>
                       {$strideBalance?.data?.balance ?? 0}
                       ustrd
+                      !-->
                     {:else}
                       Connect cosmos wallet
                     {/if}
