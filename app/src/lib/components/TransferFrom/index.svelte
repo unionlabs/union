@@ -15,6 +15,8 @@ import { checkValidation } from "$lib/components/TransferFrom/transfer/validatio
 import { createIntents } from "$lib/components/TransferFrom/transfer/intents.ts"
 import { balances } from "$lib/stores/balances.ts"
 import { tokenInfos } from "$lib/stores/tokens.ts"
+import { onMount } from "svelte"
+import { queryBalances } from "$lib/stores/balances.ts"
 
 export let chains: Array<Chain>
 export let ucs03channels: Array<Ucs03Channel>
@@ -76,7 +78,29 @@ const transfer = derived(
   }
 )
 
-$: console.log($tokenInfos)
+// fetch balances for chain, useraddr pair on change
+let previousSourceChain = ""
+let previousUserAddr = ""
+onMount(() => {
+  const unsubscribe = transfer.subscribe(trans => {
+    const chain = trans.intents.sourceChain
+    if (chain) {
+      const userAddr =
+        chain.rpc_type === "evm"
+          ? $userAddress.evm?.canonical.toLowerCase()
+          : $userAddrCosmos?.canonical
+      if (userAddr && (previousSourceChain !== chain.chain_id || previousUserAddr !== userAddr)) {
+        previousUserAddr = userAddr
+        previousSourceChain = chain.chain_id
+        console.log(
+          `[UserBalances] detected new pair ${chain.chain_id} ${userAddr}, fetching balances.`
+        )
+        queryBalances(chain, userAddr)
+      }
+    }
+  })
+  return unsubscribe
+})
 </script>
 
 <Cube>

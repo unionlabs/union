@@ -80,6 +80,10 @@ export const createIntents = (
     sourceChain && baseToken?.denom ? tokenInfos[sourceChain.chain_id]?.[baseToken.denom] : null
   const baseTokenInfo = (tokenInfo?.kind === "tokenInfo" ? tokenInfo.info : null) ?? null
 
+  if (!quoteToken) {
+    console.log(`[QuoteToken] is null`)
+  }
+
   const quoteTokenDenom = quoteToken
     ? quoteToken.isErr()
       ? null
@@ -87,7 +91,11 @@ export const createIntents = (
         ? "NO_QUOTE_AVAILABLE"
         : quoteToken.value.quote_token
     : null
-  console.log("quoteTokenDenom", quoteTokenDenom)
+
+  console.log(
+    `[QuoteToken] quote for ${baseToken.denom} from ${sourceChain.chain_id} -> ${destinationChain.chain_id}:`,
+    quoteTokenDenom
+  )
 
   // Own Wallet
   const ownWallet = (() => {

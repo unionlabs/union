@@ -40,7 +40,6 @@ function findShortestRotation(current: number, target: number): number {
 
 function handleTransitionEnd(e: TransitionEvent) {
   if (e.propertyName === "transform") {
-    console.log(`Rotation completed at ${new Date().toISOString()}`)
     isRotating = false
     currentFace = targetFace
   }
