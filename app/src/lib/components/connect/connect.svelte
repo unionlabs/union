@@ -63,7 +63,7 @@ $: if ($navigating) sheetOpen = false
       size="sm"
     >
       <WalletIcon class="size-6 text-black" />
-      <span class="font-supermolot font-bold uppercase lg:block hidden">
+      <span class="font-supermolot font-bold lg:block hidden">
         {buttonText}
       </span>
       <span class={cn($connectedWallets === 1 ? "font-supermolot font-bold uppercase" : "hidden")}>

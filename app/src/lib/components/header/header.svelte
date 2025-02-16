@@ -43,7 +43,7 @@ import { routes } from "$lib/components/navigation/index.ts"
             : [
                 "h-9",
                 currentRoute
-                  ? "bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground"
+                  ? "rounded bg-foreground text-primary-foreground !hover:bg-foreground !hover:text-primary-foreground"
                   : "",
               ],
         )}

@@ -69,12 +69,11 @@ onMount(() => {
           class={cn($page.route.id?.split("/").length === 3 ? "" : "hidden")}
         >
           <h2
-            class="text-2xl sm:text-4xl font-extrabold font-expanded sm:!font-extra-expanded uppercase font-supermolot pt-4 sm:pt-0"
+            class="text-2xl sm:text-4xl font-extrabold capitalize font-supermolot pt-4 sm:pt-0"
           >
             {explorerRoute?.replaceAll("-", " ")}
           </h2>
           <p class="pb-4 -mt-1 text-muted-foreground">
-            {">"}
             {explorerPageDescription}
           </p>
         </div>
