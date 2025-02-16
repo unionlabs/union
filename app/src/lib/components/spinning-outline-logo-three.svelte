@@ -15,7 +15,7 @@ let cubeCount = 16
 let logoWidth = cubeWidth * cubeCount + gap * (cubeCount - 1)
 let cubesY = cubeWidth * 2 + gap
 $: cubeDelta = (20 - cubeWidth) / 2
-let strokeWidth = 2.5
+let strokeWidth = 1
 
 let threeContainer: HTMLElement
 let threeCanvas: HTMLCanvasElement

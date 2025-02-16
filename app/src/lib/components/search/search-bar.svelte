@@ -10,7 +10,7 @@ export let onInputChange: ((event: InputEvent) => void) | undefined = undefined
 export let windowWidth = window.innerWidth
 </script>
 
-<div class="flex justify-end">
+<div class="flex justify-end rounded">
     <Button size="icon" variant="outline" class="sm:hidden" on:click={onInputClick}>
         <SearchIcon class="size-5 text-muted-foreground"/>
     </Button>
@@ -34,10 +34,10 @@ export let windowWidth = window.innerWidth
       ? 'Search for address or tx hash...'
       : 'Search...'}
                 class={cn(
-      'h-10 cursor-pointer',
+      'h-10 cursor-pointer rounded',
       'dark:hover:bg-muted hover:bg-secondary',
       'shadow-sm transition-colors placeholder:text-muted-foreground',
-      'w-full bg-background pl-8 self-stretch lowercase border-[1px] border-input',
+      'w-full bg-background pl-8 self-stretch border border-input',
       'focus-visible:border-secondary focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
     )}
         />
@@ -46,7 +46,7 @@ export let windowWidth = window.innerWidth
       'h-7 gap-0.5 px-1.5',
       'text-white dark:text-black',
       'absolute select-none pointer-events-none',
-      'right-1.5 top-1.5 items-center border bg-primary font-mono text-xs font-medium opacity-100 hidden md:inline-flex',
+      'right-1.5 top-1.5 items-center rounded bg-primary font-mono text-xs font-medium opacity-100 hidden md:inline-flex',
     )}
         >
             <span class="text-sm mb-1"><span class="text-lg mr-0.25">⌘</span>K</span>
