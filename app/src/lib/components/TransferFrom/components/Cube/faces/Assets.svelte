@@ -28,7 +28,12 @@ const hideZeroBalances = writable(true)
 
 $: filteredTokens =
   $hideZeroBalances && intents.baseTokens
-    ? intents.baseTokens.filter(token => token.balance !== "0")
+    ? intents.baseTokens.filter(
+        token =>
+          token.balance?.kind === "balance" &&
+          token.balance.amount !== null &&
+          token.balance.amount !== "0"
+      )
     : (intents.baseTokens ?? [])
 </script>
 
@@ -56,10 +61,28 @@ $: filteredTokens =
     <div class="absolute inset-0 overflow-y-auto overflow-x-hidden -webkit-overflow-scrolling-touch">
       {#each filteredTokens as token}
         <button
-                class="px-2 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-sm flex justify-start items-center w-full"
+                class="px-2 py-1 flex flex-col hover:bg-neutral-400 dark:hover:bg-neutral-800 text-sm justify-start items-start w-full"
                 on:click={() => setAsset(token.denom)}
         >
-          <Token stackedView highlightEnabled={false} chainId={$rawIntents.source} denom={token.denom} amount={token.balance} {chains}/>
+          {#if token.balance && token.balance.kind === "balance"}
+            <div class="text-sm flex justify-start items-center">
+              <Token stackedView highlightEnabled={false} chainId={$rawIntents.source} denom={token.denom} amount={token.balance.amount || 0} {chains}/>
+            </div>
+          {:else}
+            <div>
+              <Token stackedView highlightEnabled={false} chainId={$rawIntents.source} denom={token.denom} {chains}/>
+            </div>
+            <div>
+            {#if !token.balance}
+              No balance fetched.
+            {:else if token.balance.kind === "error"}
+              Error loading balance:
+              {token.balance.error}
+            {:else if token.balance.kind === "loading"}
+              Loading balance...
+            {/if}
+            </div>
+          {/if}
         </button>
       {/each}
     </div>

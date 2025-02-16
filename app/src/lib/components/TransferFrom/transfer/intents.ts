@@ -45,12 +45,28 @@ export const createIntents = (
           const balance = balances[rawIntents.source]?.[token.denom]
           return {
             denom: token.denom,
-            balance: balance?.kind === "balance" ? (balance.amount ?? "0") : "0"
+            balance
           }
         })
         .sort((a, b) => {
-          const balanceA = BigInt(a.balance)
-          const balanceB = BigInt(b.balance)
+          if (
+            !a.balance ||
+            a.balance.kind === "loading" ||
+            a.balance.kind === "error" ||
+            a.balance.amount === null
+          ) {
+            return -1
+          }
+          if (
+            !b.balance ||
+            b.balance.kind === "loading" ||
+            b.balance.kind === "error" ||
+            b.balance.amount === null
+          ) {
+            return -1
+          }
+          const balanceA = BigInt(a.balance.amount)
+          const balanceB = BigInt(b.balance.amount)
           return balanceB > balanceA ? 1 : balanceB < balanceA ? -1 : 0
         })
     : []
