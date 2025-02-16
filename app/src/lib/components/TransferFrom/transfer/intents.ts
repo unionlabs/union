@@ -45,12 +45,28 @@ export const createIntents = (
           const balance = balances[rawIntents.source]?.[token.denom]
           return {
             denom: token.denom,
-            balance: balance?.kind === "balance" ? (balance.amount ?? "0") : "0"
+            balance
           }
         })
         .sort((a, b) => {
-          const balanceA = BigInt(a.balance)
-          const balanceB = BigInt(b.balance)
+          if (
+            !a.balance ||
+            a.balance.kind === "loading" ||
+            a.balance.kind === "error" ||
+            a.balance.amount === null
+          ) {
+            return -1
+          }
+          if (
+            !b.balance ||
+            b.balance.kind === "loading" ||
+            b.balance.kind === "error" ||
+            b.balance.amount === null
+          ) {
+            return -1
+          }
+          const balanceA = BigInt(a.balance.amount)
+          const balanceB = BigInt(b.balance.amount)
           return balanceB > balanceA ? 1 : balanceB < balanceA ? -1 : 0
         })
     : []
@@ -64,6 +80,10 @@ export const createIntents = (
     sourceChain && baseToken?.denom ? tokenInfos[sourceChain.chain_id]?.[baseToken.denom] : null
   const baseTokenInfo = (tokenInfo?.kind === "tokenInfo" ? tokenInfo.info : null) ?? null
 
+  if (!quoteToken) {
+    console.log(`[QuoteToken] is null`)
+  }
+
   const quoteTokenDenom = quoteToken
     ? quoteToken.isErr()
       ? null
@@ -71,7 +91,11 @@ export const createIntents = (
         ? "NO_QUOTE_AVAILABLE"
         : quoteToken.value.quote_token
     : null
-  console.log("quoteTokenDenom", quoteTokenDenom)
+
+  console.log(
+    `[QuoteToken] quote for ${baseToken?.denom} from ${sourceChain?.chain_id} -> ${destinationChain?.chain_id}:`,
+    quoteTokenDenom
+  )
 
   // Own Wallet
   const ownWallet = (() => {

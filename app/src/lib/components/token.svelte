@@ -5,7 +5,6 @@ import Truncate from "./truncate.svelte"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import { formatUnits, fromHex, isHex } from "viem"
-import LoadingDots from "./loading-dots.svelte"
 import { highlightItem } from "$lib/stores/highlight"
 import { cn } from "$lib/utilities/shadcn"
 import { derived } from "svelte/store"
@@ -15,6 +14,7 @@ import * as Tooltip from "$lib/components/ui/tooltip"
 import { truncate } from "$lib/utilities/format"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
 import Address from "./address.svelte"
+import InlineLoadingDots from "./InlineLoadingDots.svelte"
 
 export let chains: Array<Chain>
 export let chainId: string
@@ -72,7 +72,7 @@ let cosmosDenom = derived(tokenInfo, $tokenInfo => {
       <span class={cn("inline-flex gap-1", highlightEnabled && $highlightItem?.kind === "token" && $highlightItem.denom === denom  ? "bg-union-accent-300 dark:bg-union-accent-950" : "")}><b>{truncate(token.combined.symbol, 8)}</b>
               {#if showWrapping}
     {#if !stackedView}
-    <div class="text-muted-foreground text-xs flex gap-1 items-center">
+    <div class="text-muted-foreground text-nowrap text-xs flex gap-1 items-center">
       {toDisplayName(chainId, chains)}
       {#each token.combined.wrapping as wrapping}
         <ArrowLeftIcon/>{toDisplayName(
@@ -85,7 +85,7 @@ let cosmosDenom = derived(tokenInfo, $tokenInfo => {
     <TokenQualityLevel level={token.graphql != null ? "GRAPHQL" : token.onchain != null ? "ONCHAIN" : "NONE"}/>
     </div>
     {#if stackedView}
-    <div class="text-muted-foreground text-xs flex gap-1 items-center -mt-1">
+    <div class="text-muted-foreground text-xs text-nowrap flex gap-1 items-center -mt-1">
       {toDisplayName(chainId, chains)}
       {#each token.combined.wrapping as wrapping}
         <ArrowLeftIcon/>{toDisplayName(
@@ -160,11 +160,6 @@ let cosmosDenom = derived(tokenInfo, $tokenInfo => {
 </Tooltip.Root>
 
 {:else}
-  <div class="flex max-h-auto overflow-hidden text-muted-foreground">
-    <div class="relative w-12 h-4">
-      <LoadingDots class="absolute -top-4 size-12 h-12 w-12"/>
-    </div>
-    <Truncate value={denom} type="address"/>
-  </div>
+<InlineLoadingDots><Truncate value={denom} type="address"/></InlineLoadingDots>
 {/if}
 

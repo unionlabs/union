@@ -90,7 +90,10 @@ export const checkValidation = (
           if (parsedAmount < 0n) {
             errors.amount = "Amount must be greater than 0"
           }
-          if (parsedAmount > BigInt(intents.baseToken.balance)) {
+          if (
+            intents.baseToken?.balance?.kind === "balance" &&
+            parsedAmount > BigInt(intents.baseToken.balance.amount || 0)
+          ) {
             errors.amount = "Amount exceeds balance"
           }
         } catch {

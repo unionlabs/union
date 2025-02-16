@@ -1,5 +1,5 @@
 import type { Chain, TokenInfoMulti } from "$lib/types.ts"
-import { get, type Writable } from "svelte/store"
+import { get, writable, type Writable } from "svelte/store"
 import type { ChainId, Denom } from "./balances.ts" // hack, move to proper place
 import { fromHex, hexToString, isHex, type Address } from "viem"
 import { erc20ReadMulticall } from "$lib/queries/balance/evm/multicall"
@@ -8,7 +8,7 @@ import {
   queryCosmosC20TokenMetadata,
   type CosmosChainId
 } from "@unionlabs/client"
-import { persisted } from "svelte-persisted-store"
+// import { persisted } from "svelte-persisted-store"
 
 export type TokenInfos = Record<ChainId, Record<Denom, TokenInfo>>
 
@@ -17,7 +17,8 @@ export type TokenInfo =
   | { kind: "tokenInfo"; info: TokenInfoMulti | null; timestamp: number }
   | { kind: "error"; error: string; timestamp: number }
 
-export let tokenInfos: Writable<TokenInfos> = persisted("token-infos", {})
+export let tokenInfos: Writable<TokenInfos> = writable({})
+// export let tokenInfos: Writable<TokenInfos> = persisted("token-infos", {})
 
 function isStale(info: TokenInfo): boolean {
   if (info.kind !== "tokenInfo") return false

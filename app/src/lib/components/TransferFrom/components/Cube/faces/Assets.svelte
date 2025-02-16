@@ -5,6 +5,7 @@ import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-
 import Token from "$lib/components/token.svelte"
 import type { Chain } from "$lib/types"
 import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
+import InlineLoadingDots from "$lib/components/InlineLoadingDots.svelte"
 
 interface Props {
   rawIntents: RawIntentsStore
@@ -28,7 +29,12 @@ const hideZeroBalances = writable(true)
 
 $: filteredTokens =
   $hideZeroBalances && intents.baseTokens
-    ? intents.baseTokens.filter(token => token.balance !== "0")
+    ? intents.baseTokens.filter(
+        token =>
+          token.balance?.kind === "balance" &&
+          token.balance.amount !== null &&
+          token.balance.amount !== "0"
+      )
     : (intents.baseTokens ?? [])
 </script>
 
@@ -56,10 +62,30 @@ $: filteredTokens =
     <div class="absolute inset-0 overflow-y-auto overflow-x-hidden -webkit-overflow-scrolling-touch">
       {#each filteredTokens as token}
         <button
-                class="px-2 py-1 hover:bg-neutral-400 dark:hover:bg-neutral-800 text-sm flex justify-start items-center w-full"
+                class="px-2 py-1 flex flex-col hover:bg-neutral-400 dark:hover:bg-neutral-800 text-sm justify-start items-start w-full overflow-x-auto"
                 on:click={() => setAsset(token.denom)}
         >
-          <Token stackedView highlightEnabled={false} chainId={$rawIntents.source} denom={token.denom} amount={token.balance} {chains}/>
+          {#if token.balance && token.balance.kind === "balance"}
+            <div class="text-sm flex justify-start items-center">
+              <Token stackedView highlightEnabled={false} chainId={$rawIntents.source} denom={token.denom} amount={token.balance.amount || 0} {chains}/>
+            </div>
+          {:else}
+            <div>
+              <Token stackedView highlightEnabled={false} chainId={$rawIntents.source} denom={token.denom} {chains}/>
+            </div>
+            <div class="text-muted-foreground text-xs self-start text-left">
+            {#if !token.balance}
+              No balance fetched.
+            {:else if token.balance.kind === "error"}
+              <div class="text-red-500">
+                Error loading balance:
+                {token.balance.error}
+              </div>
+            {:else if token.balance.kind === "loading"}
+              <InlineLoadingDots>Loading Balance</InlineLoadingDots>
+            {/if}
+            </div>
+          {/if}
         </button>
       {/each}
     </div>

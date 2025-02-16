@@ -2,6 +2,7 @@ import type { getChannelInfo } from "@unionlabs/client"
 import type { Chain, UserAddresses } from "$lib/types.ts"
 import type { FormFields } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import type { Result } from "neverthrow"
+import type { Balance } from "$lib/stores/balances"
 
 export type TransferArgs =
   | {
@@ -29,8 +30,8 @@ export type BaseToken = {
 export interface Intents {
   sourceChain: Chain | null
   destinationChain: Chain | null
-  baseTokens: Array<{ denom: string; balance: string }>
-  baseToken: { denom: string; balance: string } | null
+  baseTokens: Array<{ denom: string; balance: Balance }>
+  baseToken: { denom: string; balance: Balance } | null
   baseTokenInfo: TokenInfo | null
   channel: NonNullable<ReturnType<typeof getChannelInfo>> | null
   receiver: string | null
