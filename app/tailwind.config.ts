@@ -142,9 +142,9 @@ export default (<Config>{
         "9xl": "96rem"
       }),
       fontFamily: _ => ({
-        gunship: ["gunship", ...defaultTheme.fontFamily.sans],
+        // gunship: ["gunship", ...defaultTheme.fontFamily.sans],
         supermolot: ["tt-supermolot-neue", ...defaultTheme.fontFamily.sans],
-        sans: ["jetbrains-mono", ...defaultTheme.fontFamily.sans],
+        sans: ["inter", ...defaultTheme.fontFamily.sans],
         mono: ["jetbrains-mono", ...defaultTheme.fontFamily.mono]
       }),
       animation: _ => ({

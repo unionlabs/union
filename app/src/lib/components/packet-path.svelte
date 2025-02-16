@@ -18,7 +18,7 @@ export let packet: {
 <section class="flex flex-col sm:flex-row">
   <div class="flex-1 lex-col text-muted-foreground">
     <h2
-      class="font-supermolot capitalize md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
+      class="capitalize md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
     >
       <ChainDetails highlightEnabled={false} {chains} chainId={packet.source_chain_id}/>
     </h2>
@@ -53,7 +53,7 @@ export let packet: {
   </div>
   <div class="flex-1 sm:text-right flex-col text-muted-foreground">
     <h2
-      class="font-supermolot capitalize md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
+      class="capitalize md:font-expanded text-2xl font-extrabold text-foreground whitespace-nowrap"
     >
       <ChainDetails highlightEnabled={false} {chains} chainId={packet.destination_chain_id}/>
     </h2>

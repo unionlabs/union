@@ -44,7 +44,7 @@ onMount(() => {
         : "hidden sm:block sm:w-[174px]"
     )}
   >
-    <h2 class="sm:hidden ml-3 mt-6 mb-3 text-2xl font-bold font-supermolot">
+    <h2 class="sm:hidden ml-3 mt-6 mb-3 text-2xl font-bold">
       Explorer
     </h2>
     <Menu tableRoutes={data.tables} />
@@ -69,7 +69,7 @@ onMount(() => {
           class={cn($page.route.id?.split("/").length === 3 ? "" : "hidden")}
         >
           <h2
-            class="text-2xl sm:text-4xl font-extrabold capitalize font-supermolot pt-4 sm:pt-0"
+            class="text-2xl sm:text-4xl font-bold capitalize pt-4 sm:pt-0"
           >
             {explorerRoute?.replaceAll("-", " ")}
           </h2>

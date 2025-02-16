@@ -71,7 +71,7 @@ function hasInfoProperty(assets: Object) {
 onDestroy(unsubscribe)
 </script>
 
-<Card.Root class="bg-card">
+<Card.Root>
   <div bind:this={virtualListElement}>
     <Table.Root>
       <Table.Header>

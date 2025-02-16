@@ -27,21 +27,9 @@ function formatValue(value: number | string): string {
       </div>
     {:else }
       {#key value}
-        <p class="text-xl pt-2 font-bold" class:blink={blink}>{formatValue(value)}</p>
+        <p class="text-xl font-bold">{formatValue(value)}</p>
       {/key}
     {/if}
   </div>
   <slot/>
 </div>
-
-<style lang="postcss">
-    .blink {
-        animation: blink-animation 0.5s;
-    }
-
-    @keyframes blink-animation {
-        0% { @apply text-accent; }
-        100% { @apply text-primary; }
-    }
-</style>
-
