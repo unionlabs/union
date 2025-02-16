@@ -93,7 +93,7 @@ export const createIntents = (
     : null
 
   console.log(
-    `[QuoteToken] quote for ${baseToken.denom} from ${sourceChain.chain_id} -> ${destinationChain.chain_id}:`,
+    `[QuoteToken] quote for ${baseToken?.denom} from ${sourceChain?.chain_id} -> ${destinationChain?.chain_id}:`,
     quoteTokenDenom
   )
 

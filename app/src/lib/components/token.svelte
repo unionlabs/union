@@ -5,7 +5,6 @@ import Truncate from "./truncate.svelte"
 import ArrowLeftIcon from "virtual:icons/lucide/arrow-left"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import { formatUnits, fromHex, isHex } from "viem"
-import LoadingDots from "./loading-dots.svelte"
 import { highlightItem } from "$lib/stores/highlight"
 import { cn } from "$lib/utilities/shadcn"
 import { derived } from "svelte/store"
@@ -15,6 +14,7 @@ import * as Tooltip from "$lib/components/ui/tooltip"
 import { truncate } from "$lib/utilities/format"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
 import Address from "./address.svelte"
+import InlineLoadingDots from "./InlineLoadingDots.svelte"
 
 export let chains: Array<Chain>
 export let chainId: string
@@ -160,11 +160,6 @@ let cosmosDenom = derived(tokenInfo, $tokenInfo => {
 </Tooltip.Root>
 
 {:else}
-  <div class="flex max-h-auto overflow-hidden text-muted-foreground">
-    <div class="relative w-12 h-4">
-      <LoadingDots class="absolute -top-4 size-12 h-12 w-12"/>
-    </div>
-    <Truncate value={denom} type="address"/>
-  </div>
+<InlineLoadingDots><Truncate value={denom} type="address"/></InlineLoadingDots>
 {/if}
 
