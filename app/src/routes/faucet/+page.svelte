@@ -15,7 +15,6 @@ import SpinnerSVG from "$lib/components/spinner-svg.svelte"
 import WalletGateCosmos from "$lib/components/wallet-gate-cosmos.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import TokenBalance from "./(components)/token-balance.svelte"
 import type { DiscriminatedUnion } from "$lib/utilities/types.ts"
 import ExternalFaucets from "./(components)/external-faucets.svelte"
 import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts"
@@ -201,6 +200,7 @@ const requestUnoFromFaucet = async () => {
                   <div class="text-xs">
                     <ChainsGate let:chains>
                       <WalletGateCosmos>
+                        <!--
                         <p slot="connected" let:userAddrCosmos>
                           <span class="text-muted-foreground">Balance: </span>
                             <TokenBalance
@@ -209,6 +209,7 @@ const requestUnoFromFaucet = async () => {
                               symbol="muno"
                             />
                         </p>
+                        !-->
 
                         <p slot="disconnected">
                             Connect cosmos wallet
