@@ -41,7 +41,7 @@
     "ofetch": "^1.4.1",
     "ox": "^0.6.9",
     "patch-package": "^8.0.0",
-    "viem": "^2.22.21"
+    "viem": "2.23.2"
   },
   "devDependencies": {
     "gql.tada": "^1.8.10",
