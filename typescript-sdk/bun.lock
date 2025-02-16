@@ -1,5 +1,5 @@
 {
-  "lockfileVersion": 1,
+  "lockfileVersion": 0,
   "workspaces": {
     "": {
       "name": "@unionlabs/client",
@@ -16,6 +16,7 @@
         "ofetch": "^1.4.1",
         "ox": "^0.6.9",
         "patch-package": "^8.0.0",
+        "valibot": "^1.0.0-beta.15",
         "viem": "^2.22.21",
       },
       "devDependencies": {
@@ -47,7 +48,11 @@
 
     "@aptos-labs/aptos-client": ["@aptos-labs/aptos-client@0.1.1", "", { "dependencies": { "axios": "1.7.4", "got": "^11.8.6" } }, "sha512-kJsoy4fAPTOhzVr7Vwq8s/AUg6BQiJDa7WOqRzev4zsuIS3+JCuIZ6vUd7UBsjnxtmguJJulMRs9qWCzVBt2XA=="],
 
-    "@aptos-labs/ts-sdk": ["@aptos-labs/ts-sdk@1.33.2", "", { "dependencies": { "@aptos-labs/aptos-cli": "^1.0.2", "@aptos-labs/aptos-client": "^0.1.1", "@noble/curves": "^1.4.0", "@noble/hashes": "^1.4.0", "@scure/bip32": "^1.4.0", "@scure/bip39": "^1.3.0", "eventemitter3": "^5.0.1", "form-data": "^4.0.0", "js-base64": "^3.7.7", "jwt-decode": "^4.0.0", "poseidon-lite": "^0.2.0" } }, "sha512-nbro7x9HudBDLngOW8IpRCAysb6si1kE0F4pUfDesRHzRcqivnQzv8O5ePZma7jkTgpjGNx6gdEBXKI6YcJbww=="],
+    "@aptos-labs/aptos-dynamic-transaction-composer": ["@aptos-labs/aptos-dynamic-transaction-composer@0.1.3", "", {}, "sha512-bJl+Zq5QbhpcPIJakAkl9tnT3T02mxCYhZThQDhUmjsOZ5wMRlKJ0P7aaq1dmlybSHkVj7vRgOy2t86/NDKKng=="],
+
+    "@aptos-labs/script-composer-pack": ["@aptos-labs/script-composer-pack@0.0.9", "", { "dependencies": { "@aptos-labs/aptos-dynamic-transaction-composer": "^0.1.3" } }, "sha512-Y3kA1rgF65HETgoTn2omDymsgO+fnZouPLrKJZ9sbxTGdOekIIHtGee3A2gk84eCqa02ZKBumZmP+IDCXRtU/g=="],
+
+    "@aptos-labs/ts-sdk": ["@aptos-labs/ts-sdk@1.34.0", "", { "dependencies": { "@aptos-labs/aptos-cli": "^1.0.2", "@aptos-labs/aptos-client": "^0.1.1", "@aptos-labs/script-composer-pack": "^0.0.9", "@noble/curves": "^1.4.0", "@noble/hashes": "^1.4.0", "@scure/bip32": "^1.4.0", "@scure/bip39": "^1.3.0", "eventemitter3": "^5.0.1", "form-data": "^4.0.0", "js-base64": "^3.7.7", "jwt-decode": "^4.0.0", "poseidon-lite": "^0.2.0" } }, "sha512-+mKsx41L+g7F5HhB5Z8/pouiHYN/ajpCrbKZxQsDLqi5gf37IpZ44F6qZMklQO0LCTBQwhBkq4y67p9AGXjO4g=="],
 
     "@cosmjs/amino": ["@cosmjs/amino@0.33.0", "", { "dependencies": { "@cosmjs/crypto": "^0.33.0", "@cosmjs/encoding": "^0.33.0", "@cosmjs/math": "^0.33.0", "@cosmjs/utils": "^0.33.0" } }, "sha512-a4qnWGzuM2IrlkDTFQmU7bDd+wNIzyvfcRIZ43i00ZHvTEtrCcWopT94rIv/Zy6fdgkhQ3HWrsGVlIPDT/ibRw=="],
 
@@ -716,6 +721,8 @@
     "undici-types": ["undici-types@6.20.0", "", {}, "sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg=="],
 
     "universalify": ["universalify@2.0.1", "", {}, "sha512-gptHNQghINnc/vTGIk0SOFGFNXw7JVrlRUtConJRlvaw6DuX0wO5Jeko9sWrMBhh+PsYAZ7oXAiOnf/UKogyiw=="],
+
+    "valibot": ["valibot@1.0.0-beta.15", "", { "peerDependencies": { "typescript": ">=5" }, "optionalPeers": ["typescript"] }, "sha512-BKy8XosZkDHWmYC+cJG74LBzP++Gfntwi33pP3D3RKztz2XV9jmFWnkOi21GoqARP8wAWARwhV6eTr1JcWzjGw=="],
 
     "viem": ["viem@2.22.22", "", { "dependencies": { "@noble/curves": "1.8.1", "@noble/hashes": "1.7.1", "@scure/bip32": "1.6.2", "@scure/bip39": "1.5.4", "abitype": "1.0.8", "isows": "1.0.6", "ox": "0.6.7", "ws": "8.18.0" }, "peerDependencies": { "typescript": ">=5.0.4" }, "optionalPeers": ["typescript"] }, "sha512-0z7EFheP+paC/KRlVpu7zXYiqkTX6GR86G0p84LnYr5NgaVxGz0mGsiERy41ThERX1ahkTdEWGGiNgfi6wVqBQ=="],
 
