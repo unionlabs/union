@@ -18,9 +18,10 @@ export let chains: Array<Chain>
         deleteBalancesForRpcType(chains, rpcType)
         return
       }
-      chains
-        .filter(chain => chain.rpc_type === rpcType && chain.features[0].transfer_submission)
-        .forEach(chain => queryBalances(chain, addr.canonical))
+      // uncomment to always fetch all balances
+      // chains
+      //   .filter(chain => chain.rpc_type === rpcType && chain.features[0].transfer_submission)
+      //   .forEach(chain => queryBalances(chain, addr.canonical))
     })
     return unsubscribe
   })
