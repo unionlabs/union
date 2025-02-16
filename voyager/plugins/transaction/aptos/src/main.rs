@@ -176,8 +176,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     .map(|message| {
                                         message.decode_datagram::<IbcUnion>().unwrap().unwrap()
                                     })
-                                    .collect(),
-                                // .collect::<Result<_, _>>()?,
+                                    .collect(), // .collect::<Result<_, _>>()?,
                             ),
                         )
                         .into()
@@ -225,7 +224,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         for (i, (_, entry_fn)) in msgs.into_iter().enumerate() {
                             let raw = RawTransaction::new_entry_function(
                                 sender,
-                                account.sequence_number + i as u64,
+                                account.sequence_number + (i as u64),
                                 entry_fn,
                                 400000,
                                 100,
@@ -471,11 +470,28 @@ async fn process_msgs<
                 )
             }
             Datagram::PacketAcknowledgement(data) => {
-                let (source_channels, destination_channels) = data
+                let (
+                    source_channels,
+                    (destination_channels, (packet_data, (timeout_heights, timeout_timestamps))),
+                ): (Vec<_>, (Vec<_>, (Vec<_>, (Vec<_>, Vec<_>)))) = data
                     .packets
                     .into_iter()
-                    .map(|p| (p.source_channel_id, p.destination_channel_id))
-                    .collect::<(Vec<u32>, Vec<u32>)>();
+                    .map(|p| {
+                        (
+                            p.source_channel_id,
+                            (
+                                p.destination_channel_id,
+                                (p.data.to_vec(), (p.timeout_height, p.timeout_timestamp)),
+                            ),
+                        )
+                    })
+                    .unzip();
+
+                let acknowledgements = data
+                    .acknowledgements
+                    .into_iter()
+                    .map(|ack| ack.into_vec())
+                    .collect::<Vec<_>>();
 
                 let port_id = client
                     .get_module(ibc_handler_address, None, (source_channels[0],))
@@ -490,17 +506,18 @@ async fn process_msgs<
                             port_id.into(),
                             source_channels,
                             destination_channels,
-                            vec![],
-                            vec![],
-                            vec![],
-                            vec![],
-                            vec![],
-                            0,
+                            packet_data,
+                            timeout_heights,
+                            timeout_timestamps,
+                            acknowledgements,
+                            data.proof.into_vec(),
+                            data.proof_height,
                         ),
                         (ibc_app_witness(port_id.into()),),
                     ),
                 )
             }
+
             _ => todo!(),
         };
         data.push(item);

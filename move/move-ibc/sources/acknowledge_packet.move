@@ -52,16 +52,19 @@ module ibc::acknowledge_packet {
         let client_id = ibc::ensure_connection_state(channel::connection_id(&channel));
 
         let commitment_key;
+        let commitment_value;
         if (l == 1) {
             commitment_key = commitment::batch_receipts_commitment_key(
                 destination_channel,
                 commitment::commit_packet(&first_packet)
-            )
+            );
+            commitment_value = commitment::commit_ack(*vector::borrow(&acknowledgements, 0));
         } else {
             commitment_key = commitment::batch_receipts_commitment_key(
                 destination_channel,
                 commitment::commit_packets(&packets)
-            )
+            );
+            commitment_value = commitment::commit_acks(acknowledgements);
         };
 
         let err =
@@ -70,7 +73,7 @@ module ibc::acknowledge_packet {
                 proof_height,
                 proof,
                 commitment_key,
-                commitment::commit_acks(acknowledgements)
+                commitment_value
             );
 
         if (err != 0) {
