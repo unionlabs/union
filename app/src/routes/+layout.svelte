@@ -62,7 +62,7 @@ $: updateTheme({ path: $page.url.pathname, activeTheme: "dark" })
   <Toaster position="bottom-right" expand />
 
   <Header />
-  <div class="flex flex-1 overflow-y-auto bg-background">
+  <div class="flex flex-1 overflow-y-auto bg-muted">
     <!-- <DeprecationNotice /> -->
     <slot />
   </div>

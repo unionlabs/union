@@ -59,9 +59,9 @@ $: statusText = {
 }
 
 const statusTitle = {
-  transferring: "TRANSFER IN PROGRESS",
-  transferred: "TRANSFER COMPLETE",
-  acknowledged: "TRANSFER CONFIRMED"
+  transferring: "Transfer in progress",
+  transferred: "Transfer complete",
+  acknowledged: "Transfer confirmed"
 }
 
 $: progress = progressMap[transferStatus]
@@ -94,12 +94,12 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
 </script>
 
 {#if !$stats.isError}
-  <div class="border border-2 p-4 space-y-4 w-full">
+  <div class="border rounded p-4 space-y-4 w-full">
     <h2 class="text-lg font-bold">{title}</h2>
 
     <!-- PROGRESS LINE -->
     <div class="w-full">
-      <div class="relative h-4 bg-gray-200 overflow-hidden border border-2 border-black">
+      <div class="relative h-4 bg-neutral-800 overflow-hidden border-2  border-black">
         <!-- Vertical markers at 33% and 66% -->
         <div class="absolute left-[33%] top-0 h-full w-[2px] bg-black"></div>
         <div class="absolute left-[66%] top-0 h-full w-[2px] bg-black"></div>

@@ -38,7 +38,7 @@ onMount(() => {
 <div class="flex flex-row sm:divide-x overflow-x-none max-w-full w-full">
   <nav
     class={cn(
-      "sm:bg-muted h-full overflow-y-auto",
+      "h-full overflow-y-auto",
       explorerRoute === null
         ? "flex-1 sm:flex-none"
         : "hidden sm:block sm:w-[174px]"
