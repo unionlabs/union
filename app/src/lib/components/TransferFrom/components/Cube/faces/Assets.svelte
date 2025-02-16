@@ -5,6 +5,7 @@ import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-
 import Token from "$lib/components/token.svelte"
 import type { Chain } from "$lib/types"
 import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
+import InlineLoadingDots from "$lib/components/InlineLoadingDots.svelte"
 
 interface Props {
   rawIntents: RawIntentsStore
@@ -79,7 +80,7 @@ $: filteredTokens =
               Error loading balance:
               {token.balance.error}
             {:else if token.balance.kind === "loading"}
-              Loading balance...
+              <InlineLoadingDots>Loading Balance</InlineLoadingDots>
             {/if}
             </div>
           {/if}
