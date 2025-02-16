@@ -109,6 +109,16 @@ export async function fetchTokenInfo(chain: Chain, denom: Denom): Promise<TokenI
     }
   }
 
+  // START OF TEMP FIX DELETE WHEN RPC CACHING ENABLED
+  let graphqlRepr = tokenInfoMulti.graphql?.primaryRepresentation
+  if (graphqlRepr) {
+    tokenInfoMulti.combined.symbol = graphqlRepr.symbol
+    tokenInfoMulti.combined.decimals = graphqlRepr.decimals
+
+    return tokenInfoMulti
+  }
+  // END OF TEMP FIX
+
   // Onchain info
   if (chain.rpc_type === "evm") {
     const results = await erc20ReadMulticall({
@@ -147,7 +157,6 @@ export async function fetchTokenInfo(chain: Chain, denom: Denom): Promise<TokenI
     }
   }
 
-  let graphqlRepr = tokenInfoMulti.graphql?.primaryRepresentation
   if (graphqlRepr) {
     tokenInfoMulti.combined.symbol = graphqlRepr.symbol
     tokenInfoMulti.combined.decimals = graphqlRepr.decimals
