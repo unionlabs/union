@@ -8,7 +8,7 @@ use std::{
 
 use alloy::sol_types::SolValue;
 use either::Either;
-use futures::{stream::FuturesOrdered, StreamExt, TryStreamExt};
+use futures::{stream::FuturesOrdered, StreamExt};
 use ibc_classic_spec::IbcClassic;
 use ibc_solidity::Packet;
 use ibc_union_spec::{
@@ -35,7 +35,7 @@ use unionlabs::{
     id::{ClientId, ConnectionId},
     primitives::Bytes,
     traits::Member,
-    DELAY_PERIOD,
+    ErrorReporter, DELAY_PERIOD,
 };
 use voyager_message::{
     call::WaitForHeight,
@@ -1260,26 +1260,36 @@ impl Module {
 
             let voyager_client = e.try_get::<VoyagerClient>()?;
 
-            let ready_v1 = ready_v1
+            let (ready_v1_errored, ready_v1) = ready_v1
                 .into_iter()
                 .into_group_map()
                 .into_iter()
                 .map(|(client_id, events)| mk_ready_ops(client_id, events, self, voyager_client))
-                .collect::<FuturesOrdered<_>>();
+                .collect::<FuturesOrdered<_>>()
+                .collect::<Vec<_>>()
+                .await
+                .into_iter()
+                .partition_map::<Vec<_>, Vec<_>, _, _, _>(Either::from);
 
-            let ready_union = ready_union
+            let (ready_union_errored, ready_union) = ready_union
                 .into_iter()
                 .into_group_map()
                 .into_iter()
                 .map(|(client_id, events)| mk_ready_ops(client_id, events, self, voyager_client))
-                .collect::<FuturesOrdered<_>>();
+                .collect::<FuturesOrdered<_>>()
+                .collect::<Vec<_>>()
+                .await
+                .into_iter()
+                .partition_map::<Vec<_>, Vec<_>, _, _, _>(Either::from);
 
             Ok(PassResult {
                 optimize_further: optimize_further_v1
                     .into_iter()
                     .chain(optimize_further_union)
+                    .chain(ready_v1_errored.into_iter().flatten())
+                    .chain(ready_union_errored.into_iter().flatten())
                     .collect(),
-                ready: ready_v1.chain(ready_union).map(|x| x).try_collect().await?,
+                ready: ready_v1.into_iter().chain(ready_union).collect(),
             })
         })
     }
@@ -1477,9 +1487,10 @@ async fn mk_ready_ops<V: IbcSpecExt>(
     events: Vec<(Vec<usize>, Vec<BatchableEvent<V>>)>,
     module: &Module,
     voyager_client: &VoyagerClient,
-) -> RpcResult<(Vec<usize>, Op<VoyagerMessage>)>
+) -> Result<(Vec<usize>, Op<VoyagerMessage>), Vec<(Vec<usize>, Op<VoyagerMessage>, String)>>
 where
     ModuleCall: From<MakeTransactionBatchesWithUpdate<V>>,
+    ModuleData: From<EventBatch<V>>,
 {
     // the height on the counterparty chain that all of the events in these batches are provable at
     // we only want to generate one update for all of these batches
@@ -1494,13 +1505,39 @@ where
 
     debug!(%client_id, "querying client meta for client");
 
-    let client_meta = voyager_client
+    let client_meta = match voyager_client
         .client_meta::<V>(
             module.chain_id.clone(),
             QueryHeight::Latest,
             client_id.clone(),
         )
-        .await?;
+        .await
+    {
+        Ok(ok) => ok,
+        Err(err) => {
+            error!(
+                error = %ErrorReporter(err),
+                "error fetching client meta for client {client_id} on chain {}", module.chain_id
+            );
+
+            return Err(events
+                .into_iter()
+                .map(|(idxs, events)| {
+                    (
+                        idxs,
+                        data(PluginMessage::new(
+                            module.plugin_name(),
+                            ModuleData::from(EventBatch {
+                                client_id: client_id.clone(),
+                                events,
+                            }),
+                        )),
+                        module.plugin_name(),
+                    )
+                })
+                .collect());
+        }
+    };
 
     let (idxs, events): (Vec<_>, Vec<_>) = events.into_iter().unzip();
 
