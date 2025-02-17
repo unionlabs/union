@@ -125,7 +125,8 @@ module zkgm::ibc_app {
     const E_INVALID_FILL_TYPE: u64 = 12;
     const E_UNIMPLEMENTED: u64 = 13;
     const E_ACK_EMPTY: u64 = 14;
-    const E_ONLY_MAKER: u64 = 15;
+    const E_ONLY_MAKER_OTHER: u64 = 15;
+    const E_ONLY_MAKER_RECV_PACKET: u64 = 16;
 
     struct IbcAppWitness has drop, store, key {}
 
@@ -175,8 +176,16 @@ module zkgm::ibc_app {
         port_id: address
     }
 
+    #[view]
     public fun get_metadata(asset_addr: address): Object<Metadata> {
         object::address_to_object<Metadata>(asset_addr)
+    }
+
+    #[view]
+    public fun get_balance(
+        acc: address, token: address
+    ): u64 {
+        primary_fungible_store::balance(acc, get_metadata(token))
     }
 
     #[view]
@@ -438,10 +447,10 @@ module zkgm::ibc_app {
                 bcs::to_bytes(&signer::address_of(sender)),
                 receiver,
                 bcs::to_bytes(&base_token),
-                origin,
+                base_amount,
                 symbol,
                 name,
-                base_amount,
+                origin,
                 quote_token,
                 quote_amount
             );
@@ -690,7 +699,7 @@ module zkgm::ibc_app {
         if (vector::length(&acknowledgement) == 0) {
             abort E_ACK_EMPTY
         } else if (acknowledgement == ACK_ERR_ONLYMAKER) {
-            abort E_ONLY_MAKER
+            abort E_ONLY_MAKER_RECV_PACKET
         } else {
             let new_ack = acknowledgement::new(ACK_SUCCESS, acknowledgement);
             let return_value = acknowledgement::encode(&new_ack);
@@ -949,7 +958,7 @@ module zkgm::ibc_app {
                 }
             }
             else {
-                abort E_ONLY_MAKER
+                abort E_ONLY_MAKER_OTHER
             };
         };
         let new_asset_order_ack =
@@ -1104,6 +1113,7 @@ module zkgm::ibc_app {
                 success,
                 syscall_ack
             );
+            i = i + 1
         }
     }
 
@@ -1624,3 +1634,4 @@ module zkgm::ibc_app {
         std::debug::print(&(wrapped_address == quote_token));
     }
 }
+
