@@ -7,8 +7,15 @@ use unionlabs::primitives::H256;
 #[model]
 #[derive(Enumorph, SubsetOf)]
 pub enum ModuleCall {
+    FetchBlocks(FetchBlocks),
     FetchGetLogs(FetchGetLogs),
     MakeFullEvent(MakeFullEvent),
+}
+
+/// Fetch a block at the specified height, requeuing a seq(wait(H+1), fetch(H+1)).
+#[model]
+pub struct FetchBlocks {
+    pub block_number: u64,
 }
 
 /// Fetch all events in `block_number` emitted by the `IBCHandler` via [`eth_getLogs`].
@@ -17,9 +24,6 @@ pub enum ModuleCall {
 #[model]
 pub struct FetchGetLogs {
     pub block_number: u64,
-    /// If set, only fetch blocks up to this range; otherwise indefinitely unfold.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub up_to: Option<u64>,
 }
 
 /// Construct a full ChainEvent from the given EVM event and associated metadata.
