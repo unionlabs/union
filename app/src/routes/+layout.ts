@@ -12,6 +12,11 @@ export const load = async ({ url }) => {
     environment = "PRODUCTION"
   }
 
-  const features = await fetchFeatures(environment)
-  return { features, environment }
+  try {
+    const features = await fetchFeatures(environment)
+    return { features, environment }
+  } catch (error) {
+    console.log(error)
+    return {}
+  }
 }
