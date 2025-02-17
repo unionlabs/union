@@ -45,12 +45,16 @@ let stats = createQuery({
   }
 })
 
-// Map transferStatus to progress percentages in 33% steps:
-const progressMap = {
-  transferring: 33,
-  transferred: 66,
-  acknowledged: 100
-}
+$: progressMap = $showDetailedTrace
+  ? {
+      transferring: 33,
+      transferred: 66,
+      acknowledged: 100
+    }
+  : {
+      transferring: 50,
+      transferred: 100
+    }
 
 // Display texts
 $: statusText = {
@@ -102,8 +106,12 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
     <div class="w-full">
       <div class="relative h-4 bg-gray-200 overflow-hidden border border-2 border-black">
         <!-- Vertical markers at 33% and 66% -->
+        {#if $showDetailedTrace}
         <div class="absolute left-[33%] top-0 h-full w-[2px] bg-black"></div>
         <div class="absolute left-[66%] top-0 h-full w-[2px] bg-black"></div>
+          {:else}
+          <div class="absolute left-[50%] top-0 h-full w-[2px] bg-black"></div>
+        {/if}
         <!-- Progress bar fill -->
         <div class="h-full bg-accent transition-all duration-300" style="width: {progress}%;"></div>
       </div>
