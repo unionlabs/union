@@ -18,6 +18,7 @@ import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.ts"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.ts"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.ts"
 import { onMount } from "svelte"
+import DevSettings from "$lib/components/DevSettings/index.svelte"
 
 let buttonText: string
 
@@ -129,15 +130,8 @@ $: if ($navigating) sheetOpen = false
       onConnectClick={cosmosStore.connect}
       onDisconnectClick={cosmosStore.disconnect}
     />
-    <div class="flex items-center space-x-2">
-      <Switch bind:checked={$showTokenDetails} id="show-token-details" />
-      <Label for="show-token-details">Show Token Details</Label>
-    </div>
-    <div class="mt-auto flex justify-between">
-      <div class="flex items-center space-x-2">
-        <Switch bind:checked={$crtEffectEnabled} id="crt-effect-enabled" />
-        <Label for="unsupported-assets">CRT effect</Label>
-      </div>
+    <DevSettings />
+    <div class="flex justify-end w-full">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
           <Button
@@ -165,6 +159,12 @@ $: if ($navigating) sheetOpen = false
             </DropdownMenu.Item>
             <DropdownMenu.Item on:click={() => setMode("light")} class="cursor-pointer">
               Light
+            </DropdownMenu.Item>
+            <DropdownMenu.Item>
+              <div class="flex items-center space-x-2">
+                <Switch bind:checked={$crtEffectEnabled} id="crt-effect-enabled" />
+                <Label for="crt-effect-enabled">CRT effect</Label>
+              </div>
             </DropdownMenu.Item>
           </DropdownMenu.Group>
         </DropdownMenu.Content>

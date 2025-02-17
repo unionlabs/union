@@ -15,7 +15,7 @@ import { page } from "$app/stores"
 export let chains: Array<Chain>
 let channels = createQuery({
   queryKey: ["channels"],
-  refetchInterval: 60_000,
+  refetchInterval: 3_600_000, // runs every hour
   retryDelay: attempt => Math.min(attempt > 1 ? 2 ** attempt * 1000 : 1000, 30 * 1000),
   queryFn: async () => request(URLS().GRAPHQL, channelsQuery, {}),
   select: data =>

@@ -6,6 +6,7 @@ import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import { raise } from "$lib/utilities"
 import { OrderStatsDocument } from "$lib/graphql/queries/stats.ts"
+import { showDetailedTrace } from "$lib/stores/user.ts"
 
 export let transferStatus: "acknowledged" | "transferred" | "transferring"
 export let sourceChainId: string
@@ -44,12 +45,16 @@ let stats = createQuery({
   }
 })
 
-// Map transferStatus to progress percentages in 33% steps:
-const progressMap = {
-  transferring: 33,
-  transferred: 66,
-  acknowledged: 100
-}
+$: progressMap = $showDetailedTrace
+  ? {
+      transferring: 33,
+      transferred: 66,
+      acknowledged: 100
+    }
+  : {
+      transferring: 50,
+      transferred: 100
+    }
 
 // Display texts
 $: statusText = {
@@ -94,15 +99,19 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
 </script>
 
 {#if !$stats.isError}
-  <div class="border border-2 p-4 space-y-4 w-full">
+  <div class="border-2 p-4 space-y-4 w-full">
     <h2 class="text-lg font-bold">{title}</h2>
 
     <!-- PROGRESS LINE -->
     <div class="w-full">
       <div class="relative h-4 bg-gray-200 overflow-hidden border border-2 border-black">
         <!-- Vertical markers at 33% and 66% -->
+        {#if $showDetailedTrace}
         <div class="absolute left-[33%] top-0 h-full w-[2px] bg-black"></div>
         <div class="absolute left-[66%] top-0 h-full w-[2px] bg-black"></div>
+          {:else}
+          <div class="absolute left-[50%] top-0 h-full w-[2px] bg-black"></div>
+        {/if}
         <!-- Progress bar fill -->
         <div class="h-full bg-accent transition-all duration-300" style="width: {progress}%;"></div>
       </div>
@@ -110,7 +119,7 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
     </div>
 
     <!-- MAIN CONTENT AREA -->
-    {#if transferStatus === "transferring"}
+    {#if transferStatus === "transferring" || !showDetailedTrace}
       <div>
         {#if $stats.isLoading || !medianRecv}
           <p class="mt-1 text-neutral-400 text-sm">Calculating ETA...</p>
@@ -127,7 +136,7 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
           {/if}
         {/if}
       </div>
-    {:else if transferStatus === "transferred"}
+    {:else if transferStatus === "transferred" && $showDetailedTrace}
       <div>
         <h3 class="text-xs font-semibold">Acknowledgement ETA (for developers):</h3>
         {#if $stats.isLoading || !medianAck}

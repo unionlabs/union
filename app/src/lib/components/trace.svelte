@@ -10,12 +10,17 @@ import { createEventDispatcher } from "svelte"
 import { toDisplayName } from "$lib/utilities/chains.ts"
 import type { Chain } from "$lib/types"
 import DegenTrace from "$lib/components/DegenTrace.svelte"
+import { showDetailedTrace } from "$lib/stores/user.ts"
+import ChevronDown from "virtual:icons/lucide/chevron-down"
+import { fade } from "svelte/transition"
 
 export let traces: Array<RawTrace>
 export let chains: Array<Chain>
 export let sourceChainId: string
 export let destinationChainId: string
 export let sentTimestamp: string
+
+let showDetails = false
 
 const DISPLAY_NAMES: Record<StepStatus, Record<string, string>> = {
   COMPLETED: {
@@ -58,6 +63,30 @@ const DISPLAY_NAMES: Record<StepStatus, Record<string, string>> = {
   ERROR: {}
 }
 
+const NON_ACK_KEYS = [
+  "PACKET_SEND",
+  "PACKET_RECV",
+  "PACKET_SEND_LC_UPDATE_L0",
+  "PACKET_SEND_LC_UPDATE_L1",
+  "PACKET_SEND_LC_UPDATE_L2"
+] as const
+
+export const filteredDisplayNames = derived(showDetailedTrace, $showAcknowledgement => ({
+  ...Object.fromEntries(
+    Object.entries(DISPLAY_NAMES).map(([status, statusNames]) => [
+      status,
+      Object.fromEntries(
+        Object.entries(statusNames).filter(
+          ([key]) =>
+            $showAcknowledgement || NON_ACK_KEYS.includes(key as (typeof NON_ACK_KEYS)[number])
+        )
+      )
+    ])
+  )
+}))
+
+$: console.log($filteredDisplayNames)
+
 $: pTraces = ((): Array<Trace> => {
   let processedTraces = traces.map(t => {
     let chain = chains.find(c => c.chain_id === t.chain?.chain_id)
@@ -76,6 +105,12 @@ $: pTraces = ((): Array<Trace> => {
     }
   })
 
+  // First filter out non-PACKET traces if showAcknowledgement is false
+  processedTraces = processedTraces.filter(
+    trace =>
+      $showDetailedTrace || NON_ACK_KEYS.includes(trace.type as (typeof NON_ACK_KEYS)[number])
+  )
+
   for (const [index, step] of processedTraces.entries()) {
     if (step.status === "COMPLETED") {
       const next = processedTraces.at(index + 1)
@@ -85,29 +120,32 @@ $: pTraces = ((): Array<Trace> => {
       next.status = "IN_PROGRESS"
     }
   }
-  return processedTraces.map(t => ({ ...t, type: DISPLAY_NAMES[t.status][t.type] ?? t.type }))
+
+  return processedTraces.map(t => ({
+    ...t,
+    type: $filteredDisplayNames[t.status][t.type] ?? t.type
+  }))
 })()
 
 $: recv = pTraces.some(t => t.type === "Packet Received" && t.status === "COMPLETED")
 $: ack = pTraces.some(t => t.type === "Packet Acknowledged" && t.status === "COMPLETED")
 let transferStatus: "acknowledged" | "transferred" | "transferring"
 $: transferStatus = ack ? "acknowledged" : recv ? "transferred" : "transferring"
-
-$: console.log(pTraces)
 </script>
 
 <DegenTrace {sourceChainId} {destinationChainId} {transferStatus} {sentTimestamp}/>
 
-<ol class="max-w-full w-full -my-4"> <!-- offset padding surplus !-->
-{#each pTraces as trace, index}
-  <li class="flex gap-4 w-full">
-    <div class="flex flex-col items-center">
-      <!-- top trace connector !-->
-      <div class={cn(
+{#if showDetails}
+  <ol class="max-w-full w-full -my-4"> <!-- offset padding surplus !-->
+    {#each pTraces as trace, index}
+      <li class="flex gap-4 w-full animate-fade-in opacity-0" style="--index: {index}">
+        <div class="flex flex-col items-center">
+          <!-- top trace connector !-->
+          <div class={cn(
           "w-1 flex-1",
           index !== 0 ?  "dark:bg-neutral-500 bg-black" : "",
           )}></div>
-      <div class={cn(
+          <div class={cn(
         "size-12 border-4 dark:border-neutral-500 relative transition-all duration-300",
         trace.status === "PENDING" ? "bg-white dark:bg-neutral-700" :
         trace.status === "IN_PROGRESS" ? "bg-white dark:bg-neutral-700" :
@@ -115,43 +153,86 @@ $: console.log(pTraces)
         trace.status === "ERROR" ? "bg-black" :
         trace.status === "WARNING" ? "bg-yellow-300" : ""
       )}>
-        <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2  rounded-full bg-black transition-all duration-300",
+            <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2  rounded-full bg-black transition-all duration-300",
           trace.status === "COMPLETED" ? "w-1 h-7 rotate-45 translate-x-[2px]" :
           trace.status === "ERROR" ? "w-1 h-8 rotate-45 bg-white" :
           trace.status === "WARNING" ? "w-1 h-4 -translate-y-[12px]" : "w-2 h-2"
           )}></div>
-        <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black transition-all duration-300",
+            <div class={cn("absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black transition-all duration-300",
           trace.status === "COMPLETED" ? "w-1 h-4 -rotate-45 -translate-x-3 -translate-y-[2px]" :
           trace.status === "ERROR" ? "w-1 h-8 -rotate-45 bg-white" :
           trace.status === "WARNING" ? "w-1 h-1 translate-y-[8px]" : "w-2 h-2"
           )}></div>
-        {#if trace.status === "IN_PROGRESS"}
-          <SpinnerSvg className="absolute text-accent w-8 h-8 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"/>
-        {/if}
-      </div>
-      <!-- bottom trace connector !-->
-      <div class={cn("w-1 flex-1",
+            {#if trace.status === "IN_PROGRESS"}
+              <SpinnerSvg className="absolute text-accent w-8 h-8 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"/>
+            {/if}
+          </div>
+          <!-- bottom trace connector !-->
+          <div class={cn("w-1 flex-1",
       index === pTraces.length - 1 ? "bg-transparent" : "dark:bg-neutral-500 bg-black",
       index !== pTraces.length - 1  &&
       trace.status !== "ERROR" &&
       trace.status !== "WARNING" ?  "bg-black" : "")
       }></div>
-    </div>
-    <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-80px)] break-words justify-center">
-      {#if trace.timestamp}
-        <p class="text-xs -mb-1 text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain?.chain_id, chains)} at {#if trace.block_url}<a class="underline" target="_blank" href={trace.block_url}>{trace.height}</a>{:else}{trace.height}{/if}</p>
-      {/if}
-      <div>{trace.type}</div>
-      {#if trace.transaction_hash}
-        {#if trace.transaction_url}
-          <a href={trace.transaction_url} target="_blank"  class="-mt-1 block underline text-xs text-muted-foreground"><Truncate class="underline" value={trace.transaction_hash} type="hash"/></a>
-        {:else}
-          <p class="text-xs text-muted-foreground"><Truncate value={trace.transaction_hash} type="hash"/></p>
-        {/if}
-      {/if}
-    </div>
-  </li>
-{/each}
-</ol>
+        </div>
+        <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-80px)] break-words justify-center">
+          {#if trace.timestamp}
+            <p class="text-xs -mb-1 text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]}
+              on {toDisplayName(trace.chain?.chain_id, chains)} at
+              {#if trace.block_url}<a class="underline" target="_blank"
+                                      href={trace.block_url}>{trace.height}</a>{:else}{trace.height}{/if}
+            </p>
+          {/if}
+          <div>{trace.type}</div>
+          {#if trace.transaction_hash}
+            {#if trace.transaction_url}
+              <a href={trace.transaction_url} target="_blank"
+                 class="-mt-1 block underline text-xs text-muted-foreground">
+                <Truncate class="underline" value={trace.transaction_hash} type="hash"/>
+              </a>
+            {:else}
+              <p class="text-xs text-muted-foreground">
+                <Truncate value={trace.transaction_hash} type="hash"/>
+              </p>
+            {/if}
+          {/if}
+        </div>
+      </li>
+    {/each}
+  </ol>
+{/if}
+<div class="flex justify-between w-full text-muted-foreground">
+  <button class="text-sm flex justify-between w-full items-center hover:text-accent"
+          on:click={() => showDetails = !showDetails}>
+    <span>{showDetails ? "Hide details" : "Show more details"}</span>
+    <span class="size-4" class:rotate-180={showDetails}>
+        <ChevronDown/>
+    </span>
+  </button>
+</div>
+
+<style>
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translatey(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translatey(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease forwards;
+  }
+
+  /* Staggered delay using nth-child with --index provided by tailwind */
+  li:nth-child(n) {
+    animation-delay: calc(var(--index) * 0.1s);
+  }
+</style>
+
+
 
 
