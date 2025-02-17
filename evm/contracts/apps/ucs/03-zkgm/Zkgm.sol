@@ -21,6 +21,7 @@ import "../../../core/05-port/IIBCModule.sol";
 import "./IEurekaModule.sol";
 import "./IZkgmERC20.sol";
 import "./ZkgmERC20.sol";
+import "./IWETH.sol";
 
 struct ZkgmPacket {
     bytes32 salt;
@@ -308,6 +309,7 @@ contract UCS03Zkgm is
     mapping(bytes32 => IBCPacket) public inFlightPacket;
     mapping(uint32 => mapping(address => uint256)) public channelBalance;
     mapping(address => uint256) public tokenOrigin;
+    IWETH public weth;
 
     constructor() {
         _disableInitializers();
@@ -315,10 +317,18 @@ contract UCS03Zkgm is
 
     function initialize(
         IIBCPacket _ibcHandler,
-        address admin
+        address admin,
+        IWETH _weth
     ) public initializer {
         __Ownable_init(admin);
         ibcHandler = _ibcHandler;
+        weth = _weth;
+    }
+
+    function setWeth(
+        IWETH _weth
+    ) public onlyOwner {
+        weth = _weth;
     }
 
     function ibcAddress() public view virtual override returns (address) {
@@ -441,6 +451,111 @@ contract UCS03Zkgm is
                                 contractAddress: contractAddress,
                                 contractCalldata: contractCalldata
                             })
+                        )
+                    })
+                })
+            )
+        );
+    }
+
+    function transferV2(
+        uint32 channelId,
+        bytes calldata receiver,
+        address baseToken,
+        uint256 baseAmount,
+        bytes calldata quoteToken,
+        uint256 quoteAmount,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes32 salt,
+        bytes calldata wethQuoteToken
+    ) public payable {
+        if (baseAmount == 0) {
+            revert ZkgmLib.ErrInvalidAmount();
+        }
+        // TODO: make this non-failable as it's not guaranteed to exist
+        IERC20Metadata sentTokenMeta = IERC20Metadata(baseToken);
+        string memory tokenName = sentTokenMeta.name();
+        string memory tokenSymbol = sentTokenMeta.symbol();
+        uint256 origin = tokenOrigin[baseToken];
+        // Verify the unwrap
+        (address wrappedToken,) =
+            internalPredictWrappedTokenMemory(0, channelId, quoteToken);
+        // Only allow unwrapping if the quote asset is the unwrapped asset.
+        if (
+            ZkgmLib.lastChannelFromPath(origin) == channelId
+                && abi.encodePacked(baseToken).eq(abi.encodePacked(wrappedToken))
+        ) {
+            IZkgmERC20(baseToken).burn(msg.sender, baseAmount);
+        } else {
+            // We reset the origin, the asset will not be unescrowed on the destination
+            origin = 0;
+            // TODO: extract this as a step before verifying to allow for ERC777
+            // send hook
+            SafeERC20.safeTransferFrom(
+                sentTokenMeta, msg.sender, address(this), baseAmount
+            );
+            channelBalance[channelId][address(baseToken)] += baseAmount;
+        }
+
+        uint256 nbOfInstructions = 1;
+        if (msg.value > 0) {
+            nbOfInstructions = 2;
+        }
+        Instruction[] memory instructions = new Instruction[](nbOfInstructions);
+        instructions[0] = Instruction({
+            version: ZkgmLib.ZKGM_VERSION_0,
+            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            operand: ZkgmLib.encodeFungibleAssetOrder(
+                FungibleAssetOrder({
+                    sender: abi.encodePacked(msg.sender),
+                    receiver: receiver,
+                    baseToken: abi.encodePacked(baseToken),
+                    baseTokenPath: origin,
+                    baseTokenSymbol: tokenSymbol,
+                    baseTokenName: tokenName,
+                    baseAmount: baseAmount,
+                    quoteToken: quoteToken,
+                    quoteAmount: quoteAmount
+                })
+            )
+        });
+        if (msg.value > 0) {
+            weth.deposit{value: msg.value}();
+            address wethBaseToken = address(weth);
+            instructions[1] = Instruction({
+                version: ZkgmLib.ZKGM_VERSION_0,
+                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                operand: ZkgmLib.encodeFungibleAssetOrder(
+                    FungibleAssetOrder({
+                        sender: abi.encodePacked(msg.sender),
+                        receiver: receiver,
+                        baseToken: abi.encodePacked(wethBaseToken),
+                        baseTokenPath: 0,
+                        baseTokenSymbol: "WETH",
+                        baseTokenName: "Wrapped ETH",
+                        baseAmount: msg.value,
+                        quoteToken: wethQuoteToken,
+                        // means we pay the relayer on destination for 100% of the value
+                        quoteAmount: 0
+                    })
+                )
+            });
+            channelBalance[channelId][address(wethBaseToken)] += msg.value;
+        }
+        ibcHandler.sendPacket(
+            channelId,
+            timeoutHeight,
+            timeoutTimestamp,
+            ZkgmLib.encode(
+                ZkgmPacket({
+                    salt: salt,
+                    path: 0,
+                    instruction: Instruction({
+                        version: ZkgmLib.ZKGM_VERSION_0,
+                        opcode: ZkgmLib.OP_BATCH,
+                        operand: ZkgmLib.encodeBatch(
+                            Batch({instructions: instructions})
                         )
                     })
                 })
@@ -583,9 +698,17 @@ contract UCS03Zkgm is
             revert ZkgmLib.ErrInvalidAssetSymbol();
         }
         uint256 origin = tokenOrigin[address(baseToken)];
-        if (ZkgmLib.lastChannelFromPath(origin) == channelId) {
+        (address wrappedToken,) =
+            internalPredictWrappedTokenMemory(0, channelId, order.quoteToken);
+        if (
+            ZkgmLib.lastChannelFromPath(origin) == channelId
+                && abi.encodePacked(order.baseToken).eq(
+                    abi.encodePacked(wrappedToken)
+                )
+        ) {
             IZkgmERC20(address(baseToken)).burn(msg.sender, order.baseAmount);
         } else {
+            origin = 0;
             // TODO: extract this as a step before verifying to allow for ERC777
             // send hook
             SafeERC20.safeTransferFrom(

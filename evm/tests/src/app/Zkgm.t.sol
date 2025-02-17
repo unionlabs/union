@@ -16,7 +16,8 @@ contract ZkgmTests is Test {
             abi.encodeWithSelector(
                 UCS03Zkgm.initialize.selector,
                 IIBCPacket(address(this)),
-                address(this)
+                address(this),
+                address(0)
             )
         );
         zkgm = UCS03Zkgm(address(proxy));

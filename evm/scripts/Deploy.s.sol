@@ -24,6 +24,7 @@ import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/01-relay/Relay.sol";
 import "../contracts/apps/ucs/02-nft/NFT.sol";
 import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
+import "../contracts/apps/ucs/03-zkgm/IWETH.sol";
 import "../contracts/lib/Hex.sol";
 
 import "./Deployer.sol";
@@ -234,14 +235,17 @@ abstract contract UnionScript is UnionBase {
 
     function deployUCS03(
         IBCHandler handler,
-        address owner
+        address owner,
+        address weth
     ) internal returns (UCS03Zkgm) {
         return UCS03Zkgm(
             deploy(
                 Protocols.make(Protocols.UCS03),
                 abi.encode(
                     address(new UCS03Zkgm()),
-                    abi.encodeCall(UCS03Zkgm.initialize, (handler, owner))
+                    abi.encodeCall(
+                        UCS03Zkgm.initialize, (handler, owner, IWETH(weth))
+                    )
                 )
             )
         );
@@ -391,6 +395,7 @@ contract DeployUCS03 is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        address wethAddress = vm.envAddress("WETH_ADDRESS");
 
         address owner = vm.addr(privateKey);
 
@@ -398,7 +403,7 @@ contract DeployUCS03 is UnionScript {
 
         vm.startBroadcast(privateKey);
 
-        UCS03Zkgm zkgm = deployUCS03(IBCHandler(handler), owner);
+        UCS03Zkgm zkgm = deployUCS03(IBCHandler(handler), owner, wethAddress);
 
         vm.stopBroadcast();
 
@@ -818,7 +823,8 @@ contract GetDeployed is Script {
             abi.encode(
                 implOf(ucs03),
                 abi.encodeCall(
-                    UCS03Zkgm.initialize, (IIBCPacket(handler), sender)
+                    UCS03Zkgm.initialize,
+                    (IIBCPacket(handler), sender, UCS03Zkgm(ucs03).weth())
                 )
             )
         );
@@ -953,9 +959,13 @@ contract UpgradeUCS03 is Script {
 
         console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
 
+        IWETH weth = IWETH(vm.envAddress("WETH"));
+
         vm.startBroadcast(privateKey);
         address newImplementation = address(new UCS03Zkgm());
-        UCS03Zkgm(ucs03).upgradeToAndCall(newImplementation, new bytes(0));
+        UCS03Zkgm(ucs03).upgradeToAndCall(
+            newImplementation, abi.encodeCall(UCS03Zkgm.setWeth, (weth))
+        );
         vm.stopBroadcast();
     }
 }
