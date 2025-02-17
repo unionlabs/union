@@ -6,6 +6,7 @@ import request from "graphql-request"
 import { URLS } from "$lib/constants"
 import { raise } from "$lib/utilities"
 import { OrderStatsDocument } from "$lib/graphql/queries/stats.ts"
+import { showDetailedTrace } from "$lib/stores/user.ts"
 
 export let transferStatus: "acknowledged" | "transferred" | "transferring"
 export let sourceChainId: string
@@ -110,7 +111,7 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
     </div>
 
     <!-- MAIN CONTENT AREA -->
-    {#if transferStatus === "transferring"}
+    {#if transferStatus === "transferring" || !showDetailedTrace}
       <div>
         {#if $stats.isLoading || !medianRecv}
           <p class="mt-1 text-neutral-400 text-sm">Calculating ETA...</p>
@@ -127,7 +128,7 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
           {/if}
         {/if}
       </div>
-    {:else if transferStatus === "transferred"}
+    {:else if transferStatus === "transferred" && $showDetailedTrace}
       <div>
         <h3 class="text-xs font-semibold">Acknowledgement ETA (for developers):</h3>
         {#if $stats.isLoading || !medianAck}
