@@ -2,11 +2,13 @@ package app
 
 import (
 	"fmt"
+	"path/filepath"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+	wasmvm "github.com/CosmWasm/wasmvm/v2"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -20,6 +22,10 @@ import (
 	ibcfee "github.com/cosmos/ibc-go/v8/modules/apps/29-fee"
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
 )
+
+// ContractMemoryLimit is the memory limit of each contract execution (in MiB)
+// constant value so all nodes run with the same limit.
+const ContractMemoryLimit = 32
 
 // registerWasmModules register CosmWasm keepers and non dependency inject modules.
 func (app *App) registerWasmModules(
@@ -39,6 +45,20 @@ func (app *App) registerWasmModules(
 	if err != nil {
 		return nil, fmt.Errorf("error while reading wasm config: %s", err)
 	}
+
+	// create a new wasmvm with our own settings
+	wasmDir := filepath.Join(DefaultNodeHome, "wasm")
+	wasmer, err := wasmvm.NewVM(
+		wasmDir,
+		wasmkeeper.BuiltInCapabilities(),
+		ContractMemoryLimit,
+		wasmConfig.ContractDebugMode,
+		wasmConfig.MemoryCacheSize,
+	)
+	if err != nil {
+		panic(err)
+	}
+	wasmOpts = append(wasmOpts, wasmkeeper.WithWasmEngine(wasmer))
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
