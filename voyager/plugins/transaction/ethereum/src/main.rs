@@ -391,11 +391,11 @@ impl Module {
                         result._0.into_iter().zip(msg_names).enumerate()
                     {
                         if result.success {
-                            info_span!(
-                                "evm tx",
+                            info!(
                                 msg = msg_name,
                                 %idx,
                                 data = %serde_json::to_string(&msg).unwrap(),
+                                "evm tx",
                             );
                         } else if let Ok(known_revert) =
                             IbcErrors::abi_decode(&result.returnData, true)
