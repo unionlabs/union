@@ -290,10 +290,17 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     if fetch.client_type == self.0.state_lens_client_type =>
                                 {
                                     info!(
-                                        "hooking for state lens update (`{}` on `{}` tracking `{}`, {} to {})",
+                                        %fetch.client_type,
+                                        %fetch.chain_id,
+                                        %fetch.counterparty_chain_id,
+                                        %fetch.client_id,
+                                        %fetch.update_from,
+                                        %fetch.update_to,
+                                        "hooking for state lens update (`{}` on `{}` tracking `{}`, id {}, {} to {})",
                                         fetch.client_type,
                                         fetch.chain_id,
                                         fetch.counterparty_chain_id,
+                                        fetch.client_id,
                                         fetch.update_from,
                                         fetch.update_to
                                     );
