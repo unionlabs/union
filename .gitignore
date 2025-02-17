@@ -76,7 +76,7 @@ db.sqlite
 db.sqlite3*
 
 *.movement
-move/*/build
+aptos/*/build
 .tsup
 docs/generated
 dev-dist
