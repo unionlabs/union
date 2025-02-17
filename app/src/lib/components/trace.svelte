@@ -98,19 +98,19 @@ $: console.log(pTraces)
 
 <DegenTrace {sourceChainId} {destinationChainId} {transferStatus} {sentTimestamp}/>
 
-<ol class="max-w-full w-full -my-4"> <!-- offset padding surplus !-->
+<ol class="max-w-full w-full -mb-2 mt-2"> <!-- offset padding surplus !-->
 {#each pTraces as trace, index}
   <li class="flex gap-4 w-full">
     <div class="flex flex-col items-center">
       <!-- top trace connector !-->
       <div class={cn(
-          "w-1 flex-1",
-          index !== 0 ?  "dark:bg-neutral-500 bg-black" : "",
+          "w-[2px] flex-1",
+          index !== 0 ?  "dark:bg-neutral-800 bg-black" : "",
           )}></div>
       <div class={cn(
-        "size-12 border-4 dark:border-neutral-500 relative transition-all duration-300",
-        trace.status === "PENDING" ? "bg-white dark:bg-neutral-700" :
-        trace.status === "IN_PROGRESS" ? "bg-white dark:bg-neutral-700" :
+        "size-10 border-2 rounded dark:border-neutral-800 relative transition-all duration-300",
+        trace.status === "PENDING" ? "bg-white dark:bg-neutral-900" :
+        trace.status === "IN_PROGRESS" ? "bg-white dark:bg-neutral-900" :
         trace.status === "COMPLETED" ? "bg-accent" :
         trace.status === "ERROR" ? "bg-black" :
         trace.status === "WARNING" ? "bg-yellow-300" : ""
@@ -130,14 +130,14 @@ $: console.log(pTraces)
         {/if}
       </div>
       <!-- bottom trace connector !-->
-      <div class={cn("w-1 flex-1",
-      index === pTraces.length - 1 ? "bg-transparent" : "dark:bg-neutral-500 bg-black",
+      <div class={cn("w-[2px] flex-1",
+      index === pTraces.length - 1 ? "bg-transparent" : "dark:bg-neutral-800 bg-black",
       index !== pTraces.length - 1  &&
       trace.status !== "ERROR" &&
       trace.status !== "WARNING" ?  "bg-black" : "")
       }></div>
     </div>
-    <div class="font-bold py-4 flex flex-col min-h-[80px] max-w-[calc(100%-80px)] break-words justify-center">
+    <div class="font-bold flex flex-col min-h-[60px] max-w-[calc(100%-80px)] break-words justify-center">
       {#if trace.timestamp}
         <p class="text-xs -mb-1 text-muted-foreground">{toIsoString(new Date(trace.timestamp)).split('T')[1]} on {toDisplayName(trace.chain?.chain_id, chains)} at {#if trace.block_url}<a class="underline" target="_blank" href={trace.block_url}>{trace.height}</a>{:else}{trace.height}{/if}</p>
       {/if}

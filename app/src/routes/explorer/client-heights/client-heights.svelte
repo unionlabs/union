@@ -70,7 +70,7 @@ function getClient(clients, counterpartyChainId) {
               {@const counterpartyChain = getCounterpartyChain($tableChains, counterpartyChainId)}
               {@const client = getClient(values, counterpartyChainId)}
               <td class="py-[3px] px-[3px]">
-                <div class="px-2 pb-1 pt-[6px] bg-muted">
+                <div class="px-2 pb-1 pt-[6px] font-mono bg-card rounded">
                   <div class="text-xs text-union-accent-950 font-bold dark:text-union-accent ">Client {client.client_id}</div>
                   <div class="text-nowrap"><span class="text-muted-foreground italic">Δ</span> {counterpartyChain.index_status.height - client.max_counterparty_height}</div>
                   <div class="text-nowrap"><span class="text-muted-foreground italic">C</span> {client.max_counterparty_height}</div>

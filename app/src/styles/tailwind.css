@@ -91,19 +91,19 @@
   }
 
   .dark {
-    --background: 240 3.7% 15%;
+    --background: 240 3.7% 7%;
     --foreground: 0 0% 98%;
 
-    --muted: 240 3.7% 10%;
+    --muted: 240 3.7% 5%;
     --muted-foreground: 240 5% 64.9%;
 
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    --card: 240 10% 3.9%;
+    --card: 240 3.7% 8%;
     --card-foreground: 0 0% 98%;
 
-    --border: 240 3.7% 30%;
+    --border: 240 3.7% 20%;
     --input: 240 3.7% 15.9%;
 
     --primary: 0 0% 98%;

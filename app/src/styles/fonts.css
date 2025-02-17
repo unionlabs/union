@@ -3,6 +3,15 @@
   font-display: swap;
   src: url("/fonts/tt-supermolot-neue/TT-Supermolot-Neue-Variable.ttf") format("truetype");
 }
+
+@font-face {
+  font-family: "inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter/InterVariable.woff2") format("woff2");
+}
+
 @font-face {
   font-family: "jetbrains-mono";
   font-style: normal;

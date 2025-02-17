@@ -24,7 +24,7 @@ export const statsQuery = (): Readable<QueryObserverResult<Array<Statistic>, Err
       return response.v1_ibc_union_statistics
     },
     enabled: true,
-    refetchInterval: 12_000,
+    refetchInterval: 1_000,
     refetchOnWindowFocus: false
   })
 

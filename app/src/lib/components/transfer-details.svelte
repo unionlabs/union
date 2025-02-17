@@ -85,7 +85,7 @@ let processedTransfers = derived(
         ?.explorers?.at(0)}
       {#if transfer.source_chain_id !== null && transfer.destination_chain_id !== null}
         <Card.Root
-          class="flex flex-col w-full lg:w-auto max-w-full overflow-y-hidden overflow-x-auto justify-self-center dark:bg-muted"
+          class="flex flex-col w-full lg:w-auto max-w-full overflow-y-hidden overflow-x-auto justify-self-center"
         >
           <Card.Header
             class="font-bold text-md text-center break-words text-muted-foreground flex flex-row gap-2 justify-center"

@@ -25,7 +25,7 @@ onMount(() => {
 })
 </script>
 
-<div class="bg-muted dark:bg-background border-b flex">
+<div class=" border-b flex">
   <div class="w-full flex flex-1">
     {#if $deviceWidth > 888 || show === 0}
       <StatsBarStat blink={true} label={"Total Transfers"} value={$statsData?.data?.[1].value || 0}/>
