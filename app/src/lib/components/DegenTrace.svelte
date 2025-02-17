@@ -99,7 +99,7 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
 </script>
 
 {#if !$stats.isError}
-  <div class="border border-2 p-4 space-y-4 w-full">
+  <div class="border-2 p-4 space-y-4 w-full">
     <h2 class="text-lg font-bold">{title}</h2>
 
     <!-- PROGRESS LINE -->
