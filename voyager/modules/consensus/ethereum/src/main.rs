@@ -2,13 +2,8 @@
 
 use alloy::{
     eips::BlockNumberOrTag,
-    network::Ethereum,
-    providers::{
-        layers::{CacheLayer, CacheProvider},
-        Provider, ProviderBuilder, RootProvider,
-    },
+    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
     rpc::types::BlockTransactionsKind,
-    transports::BoxTransport,
 };
 use beacon_api::client::BeaconApiClient;
 use beacon_api_types::{PresetBaseKind, Slot};
@@ -38,7 +33,7 @@ pub struct Module {
 
     pub chain_spec: PresetBaseKind,
 
-    pub provider: CacheProvider<RootProvider<BoxTransport>, BoxTransport, Ethereum>,
+    pub provider: DynProvider,
     pub beacon_api_client: BeaconApiClient,
 }
 
@@ -108,10 +103,12 @@ impl ConsensusModule for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .layer(CacheLayer::new(config.max_cache_size))
-            .on_builtin(&config.rpc_url)
-            .await?;
+        let provider = DynProvider::new(
+            ProviderBuilder::new()
+                .layer(CacheLayer::new(config.max_cache_size))
+                .on_builtin(&config.rpc_url)
+                .await?,
+        );
 
         let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 

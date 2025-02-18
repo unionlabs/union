@@ -1,9 +1,6 @@
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 
-use alloy::{
-    providers::{Provider, ProviderBuilder, RootProvider},
-    transports::BoxTransport,
-};
+use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use beacon_api_types::{ExecutionPayloadHeaderSsz, Mainnet};
 use berachain_light_client_types::Header;
 use ethereum_light_client_types::AccountProof;
@@ -51,7 +48,7 @@ pub struct Module {
     pub l1_chain_id: ChainId,
     pub l2_chain_id: ChainId,
     pub ibc_handler_address: H160,
-    pub eth_provider: RootProvider<BoxTransport>,
+    pub eth_provider: DynProvider,
     pub cometbft_client: cometbft_rpc::Client,
 }
 
@@ -74,9 +71,11 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let eth_provider = ProviderBuilder::new()
-            .on_builtin(&config.eth_rpc_url)
-            .await?;
+        let eth_provider = DynProvider::new(
+            ProviderBuilder::new()
+                .on_builtin(&config.eth_rpc_url)
+                .await?,
+        );
 
         let chain_id = ChainId::new(eth_provider.get_chain_id().await?.to_string());
 

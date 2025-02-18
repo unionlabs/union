@@ -3,13 +3,8 @@
 use std::{collections::VecDeque, ops::Div};
 
 use alloy::{
-    network::Ethereum,
-    providers::{
-        layers::{CacheLayer, CacheProvider},
-        Provider, ProviderBuilder, RootProvider,
-    },
+    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
     rpc::types::BlockTransactionsKind,
-    transports::BoxTransport,
 };
 use beacon_api::{client::BeaconApiClient, types::Spec};
 use beacon_api_types::{
@@ -67,7 +62,7 @@ pub struct Module {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    pub provider: CacheProvider<RootProvider<BoxTransport>, BoxTransport, Ethereum>,
+    pub provider: DynProvider,
     pub beacon_api_client: BeaconApiClient,
 }
 
@@ -137,10 +132,12 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .layer(CacheLayer::new(config.max_cache_size))
-            .on_builtin(&config.rpc_url)
-            .await?;
+        let provider = DynProvider::new(
+            ProviderBuilder::new()
+                .layer(CacheLayer::new(config.max_cache_size))
+                .on_builtin(&config.rpc_url)
+                .await?,
+        );
 
         let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 

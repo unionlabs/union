@@ -239,9 +239,9 @@ impl Voyager {
                             .for_each(|res| async move {
                                 match res {
                                     Ok(data) => {
-                                        info!(
-                                            "received data outside of an aggregation: {}",
-                                            into_value(&data)
+                                        debug!(
+                                            data = %into_value(&data),
+                                            "received data outside of an aggregation",
                                         );
                                     }
                                     Err(error) => {

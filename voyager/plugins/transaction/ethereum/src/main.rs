@@ -4,12 +4,12 @@ use alloy::{
     contract::{Error, RawCallBuilder},
     network::{AnyNetwork, EthereumWallet},
     providers::{
-        layers::{CacheLayer, CacheProvider},
-        PendingTransactionError, Provider, ProviderBuilder, RootProvider,
+        fillers::RecommendedFillers, layers::CacheLayer, DynProvider, PendingTransactionError,
+        Provider, ProviderBuilder,
     },
     signers::local::LocalSigner,
     sol_types::{SolEvent, SolInterface},
-    transports::{BoxTransport, Transport, TransportError},
+    transports::TransportError,
 };
 use bip32::secp256k1::ecdsa::{self, SigningKey};
 use chain_utils::{
@@ -24,7 +24,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, info_span, instrument, trace, warn, Instrument};
+use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
 use unionlabs::{
     primitives::{H160, H256},
     ErrorReporter,
@@ -62,7 +62,7 @@ pub struct Module {
     pub ibc_handler_address: H160,
     pub multicall_address: H160,
 
-    pub provider: CacheProvider<RootProvider<BoxTransport, AnyNetwork>, BoxTransport, AnyNetwork>,
+    pub provider: DynProvider<AnyNetwork>,
 
     pub keyring: ConcurrentKeyring<alloy::primitives::Address, LocalSigner<SigningKey>>,
 
@@ -111,11 +111,13 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .network::<AnyNetwork>()
-            .layer(CacheLayer::new(config.max_cache_size))
-            .on_builtin(&config.rpc_url)
-            .await?;
+        let provider = DynProvider::new(
+            ProviderBuilder::new()
+                .network::<AnyNetwork>()
+                .layer(CacheLayer::new(config.max_cache_size))
+                .on_builtin(&config.rpc_url)
+                .await?,
+        );
 
         let raw_chain_id = provider.get_chain_id().await?;
         let chain_id = ChainId::new(raw_chain_id.to_string());
@@ -320,13 +322,15 @@ impl Module {
         wallet: &LocalSigner<SigningKey>,
         ibc_messages: Vec<Datagram>,
     ) -> Result<(), TxSubmitError> {
-        let signer = ProviderBuilder::new()
-            .network::<AnyNetwork>()
-            .with_recommended_fillers()
-            // .filler(<NonceFiller>::default())
-            // .filler(ChainIdFiller::default())
-            .wallet(EthereumWallet::new(wallet.clone()))
-            .on_provider(self.provider.clone());
+        let signer = DynProvider::new(
+            ProviderBuilder::new()
+                .network::<AnyNetwork>()
+                .filler(AnyNetwork::recommended_fillers())
+                // .filler(<NonceFiller>::default())
+                // .filler(ChainIdFiller::default())
+                .wallet(EthereumWallet::new(wallet.clone()))
+                .on_provider(self.provider.clone()),
+        );
 
         if let Some(max_gas_price) = self.max_gas_price {
             let gas_price = self
@@ -351,7 +355,7 @@ impl Module {
 
         let msgs = process_msgs(&ibc, ibc_messages, wallet.address().0.into())?;
 
-        debug!(?msgs);
+        trace!(?msgs);
 
         let msg_names = msgs
             .iter()
@@ -496,11 +500,16 @@ impl Module {
 }
 
 #[allow(clippy::type_complexity)]
-fn process_msgs<T: Transport + Clone, P: Provider<T, AnyNetwork>>(
-    ibc_handler: &ibc_solidity::Ibc::IbcInstance<T, P, AnyNetwork>,
+fn process_msgs<'a>(
+    ibc_handler: &'a ibc_solidity::Ibc::IbcInstance<(), &'a DynProvider<AnyNetwork>, AnyNetwork>,
     msgs: Vec<Datagram>,
     relayer: H160,
-) -> RpcResult<Vec<(Datagram, RawCallBuilder<T, &P, AnyNetwork>)>> {
+) -> RpcResult<
+    Vec<(
+        Datagram,
+        RawCallBuilder<(), &'a &'a DynProvider<AnyNetwork>, AnyNetwork>,
+    )>,
+> {
     trace!(?msgs);
 
     msgs.clone()

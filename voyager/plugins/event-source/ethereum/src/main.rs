@@ -3,14 +3,9 @@
 use std::{cmp::Ordering, collections::VecDeque};
 
 use alloy::{
-    network::Ethereum,
-    providers::{
-        layers::{CacheLayer, CacheProvider},
-        Provider, ProviderBuilder, RootProvider,
-    },
+    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
     rpc::types::Filter,
     sol_types::SolEventInterface,
-    transports::BoxTransport,
 };
 use ibc_solidity::Ibc;
 use ibc_union_spec::{
@@ -67,7 +62,7 @@ pub struct Module {
 
     pub chunk_block_fetch_size: u64,
 
-    pub provider: CacheProvider<RootProvider<BoxTransport>, BoxTransport, Ethereum>,
+    pub provider: DynProvider,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -131,10 +126,12 @@ impl Module {
     }
 
     pub async fn new(config: Config) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .layer(CacheLayer::new(config.max_cache_size))
-            .on_builtin(&config.rpc_url)
-            .await?;
+        let provider = DynProvider::new(
+            ProviderBuilder::new()
+                .layer(CacheLayer::new(config.max_cache_size))
+                .on_builtin(&config.rpc_url)
+                .await?,
+        );
 
         // TODO: Assert chain id is correct
         let chain_id = provider.get_chain_id().await?;

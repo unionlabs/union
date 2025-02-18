@@ -1,12 +1,9 @@
 use alloy::{
     eips::BlockId,
     network::{AnyNetwork, AnyRpcBlock},
-    providers::{Provider as AlloyProvider, ProviderBuilder, RootProvider},
+    providers::{DynProvider, Provider as AlloyProvider, ProviderBuilder},
     rpc::types::{BlockTransactionsKind, Filter, Log},
-    transports::{
-        http::{Client, Http},
-        RpcError, TransportErrorKind,
-    },
+    transports::{RpcError, TransportErrorKind},
 };
 use url::Url;
 
@@ -14,7 +11,7 @@ use crate::race_client::{RaceClient, RaceClientId, RaceClientResponse};
 
 #[derive(Clone, Debug)]
 pub struct Provider {
-    pub rpc_client: RaceClient<RootProvider<Http<Client>, AnyNetwork>>,
+    pub rpc_client: RaceClient<DynProvider<AnyNetwork>>,
 }
 
 #[derive(Clone, Debug, Copy)]
@@ -55,7 +52,11 @@ impl Provider {
             rpc_client: RaceClient::new(
                 rpc_urls
                     .into_iter()
-                    .map(|url| ProviderBuilder::new().network::<AnyNetwork>().on_http(url))
+                    .map(|url| {
+                        DynProvider::new(
+                            ProviderBuilder::new().network::<AnyNetwork>().on_http(url),
+                        )
+                    })
                     .collect(),
             ),
         }
