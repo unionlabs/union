@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -104,8 +104,9 @@ module zkgm::batch_ack {
             let prev_length = vector::length(
                 vector::borrow(&ack.acknowledgements, idx - 1)
             );
-            zkgm_ethabi::encode_uint<u32>(&mut buf, prev_val
-                + 0x20 * (prev_length + 1 as u32));
+            zkgm_ethabi::encode_uint<u32>(
+                &mut buf, prev_val + 0x20 * (prev_length + 1 as u32)
+            );
             prev_val = prev_val + 0x20 * (prev_length + 1 as u32);
             idx = idx + 1;
         };

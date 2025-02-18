@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -103,7 +103,7 @@ module ibc::state_lens_ics23_ics23_lc {
 
     struct ConsensusState has copy, drop, store {
         timestamp: u64,
-        app_hash: vector<u8>,
+        app_hash: vector<u8>
     }
 
     // Function to mock the creation of a client
@@ -149,8 +149,7 @@ module ibc::state_lens_ics23_ics23_lc {
 
     public fun verify_header(
         _header: &Header, _state: &State, _consensus_state: &ConsensusState
-    ) {
-    }
+    ) {}
 
     public fun update_client(
         client_id: u32, client_msg: vector<u8>
@@ -170,7 +169,9 @@ module ibc::state_lens_ics23_ics23_lc {
             app_hash: l2_consensus_state.app_hash
         };
 
-        smart_table::upsert(&mut state.consensus_states, updated_height, new_consensus_state);
+        smart_table::upsert(
+            &mut state.consensus_states, updated_height, new_consensus_state
+        );
 
         (
             encode_client_state(&state.client_state),
@@ -182,8 +183,7 @@ module ibc::state_lens_ics23_ics23_lc {
     // Checks whether `misbehaviour` is valid and freezes the client
     public fun report_misbehaviour(
         _client_id: u32, _misbehaviour: vector<u8>
-    ) {
-    }
+    ) {}
 
     public fun verify_membership(
         _client_id: u32,
@@ -206,7 +206,6 @@ module ibc::state_lens_ics23_ics23_lc {
         //     path,
         //     value
         // );
-
         0
     }
 
@@ -275,10 +274,7 @@ module ibc::state_lens_ics23_ics23_lc {
         let timestamp = ethabi::decode_uint(&buf, &mut index);
         let app_hash = vector::slice(&buf, 32, 64);
 
-        ConsensusState {
-            timestamp: (timestamp as u64),
-            app_hash
-        }
+        ConsensusState { timestamp: (timestamp as u64), app_hash }
     }
 
     fun decode_tm_consensus_state(buf: vector<u8>): TendermintConsensusState {
@@ -308,7 +304,7 @@ module ibc::state_lens_ics23_ics23_lc {
         l2_chain_id: String,
         l1_client_id: u32,
         l2_client_id: u32,
-        l2_latest_height: u64,
+        l2_latest_height: u64
     }
 
     fun encode_client_state(cs: &ClientState): vector<u8> {
@@ -318,7 +314,7 @@ module ibc::state_lens_ics23_ics23_lc {
             l2_chain_id: cs.l2_chain_id,
             l1_client_id: cs.l1_client_id,
             l2_client_id: cs.l2_client_id,
-            l2_latest_height: cs.l2_latest_height,
+            l2_latest_height: cs.l2_latest_height
         };
 
         vector::append(&mut buf, bcs::to_bytes(&partial));
@@ -340,7 +336,8 @@ module ibc::state_lens_ics23_ics23_lc {
 
     #[test]
     fun see_client_state() {
-        let cs = x"0a62626e2d746573742d3506000000150000003fca020000000000470680b0f0eb26976b5fc59c29d456f24312d7e1ceb5e6df9eebaa7e55ff96a5";
+        let cs =
+            x"0a62626e2d746573742d3506000000150000003fca020000000000470680b0f0eb26976b5fc59c29d456f24312d7e1ceb5e6df9eebaa7e55ff96a5";
         std::debug::print(&decode_client_state(cs));
     }
 }

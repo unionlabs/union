@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -433,9 +433,7 @@ module ibc::cometbls_lc {
         return (data1, data2)
     }
 
-    public fun check_for_misbehaviour(
-        client_id: u32, header: vector<u8>
-    ): bool acquires State {
+    public fun check_for_misbehaviour(client_id: u32, header: vector<u8>): bool acquires State {
         let state = borrow_global_mut<State>(get_client_address(client_id));
 
         let header = decode_header(header);
@@ -449,7 +447,9 @@ module ibc::cometbls_lc {
                 timestamp,
                 app_hash: MerkleRoot { hash },
                 next_validators_hash
-            } = smart_table::borrow(&state.consensus_states, header.signed_header.height);
+            } = smart_table::borrow(
+                &state.consensus_states, header.signed_header.height
+            );
 
             if (timestamp != &expected_timestamp
                 || hash != &header.signed_header.app_hash
