@@ -1,4 +1,7 @@
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    time::Duration,
+};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -33,6 +36,8 @@ pub struct VoyagerConfig {
     // TODO: Specify per plugin
     #[serde(default = "default_optimizer_delay_milliseconds")]
     pub optimizer_delay_milliseconds: u64,
+    #[serde(default = "default_ipc_client_request_timeout")]
+    pub ipc_client_request_timeout: Duration,
 }
 
 #[must_use]
@@ -51,4 +56,10 @@ pub const fn default_rpc_laddr() -> SocketAddr {
 #[inline]
 pub const fn default_optimizer_delay_milliseconds() -> u64 {
     100
+}
+
+#[must_use]
+#[inline]
+pub const fn default_ipc_client_request_timeout() -> Duration {
+    Duration::new(60, 0)
 }

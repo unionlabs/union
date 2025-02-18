@@ -158,6 +158,7 @@ impl Voyager {
                     h.register::<IbcClassic>();
                     h.register::<IbcUnion>();
                 },
+                config.voyager.ipc_client_request_timeout,
             )
             .await
             .context("error initializing plugins")?,

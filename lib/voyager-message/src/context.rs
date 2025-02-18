@@ -95,7 +95,7 @@ pub struct ModuleRpcClient {
 }
 
 impl ModuleRpcClient {
-    fn new(name: &str) -> Self {
+    fn new(name: &str, request_timeout: Duration) -> Self {
         let socket = Self::make_socket_path(name);
 
         let client = reconnecting_jsonrpc_ws_client::Client::new({
@@ -107,6 +107,7 @@ impl ModuleRpcClient {
                 async move {
                     trace!("connecting to socket at {socket}");
                     reth_ipc::client::IpcClientBuilder::default()
+                        .request_timeout(request_timeout)
                         .build(socket)
                         .await
                 }
@@ -270,6 +271,7 @@ impl Context {
         module_configs: ModulesConfig,
         equivalent_chain_ids: EquivalentChainIds,
         register_ibc_spec_handlers: fn(&mut IbcSpecHandlers),
+        ipc_client_request_timeout: Duration,
     ) -> anyhow::Result<Self> {
         let cancellation_token = CancellationToken::new();
 
@@ -346,7 +348,7 @@ impl Context {
                         cancellation_token.clone(),
                     ));
 
-                    let rpc_client = ModuleRpcClient::new(&name);
+                    let rpc_client = ModuleRpcClient::new(&name, ipc_client_request_timeout);
 
                     let prev = plugins.insert(name.clone(), rpc_client.clone());
 
@@ -369,6 +371,7 @@ impl Context {
             module_configs.state,
             cancellation_token.clone(),
             main_rpc_server.clone(),
+            ipc_client_request_timeout,
             |info| info.id(),
             |StateModuleInfo {
                  chain_id,
@@ -402,6 +405,7 @@ impl Context {
             module_configs.proof,
             cancellation_token.clone(),
             main_rpc_server.clone(),
+            ipc_client_request_timeout,
             |info| info.id(),
             |ProofModuleInfo {
                  chain_id,
@@ -435,6 +439,7 @@ impl Context {
             module_configs.consensus,
             cancellation_token.clone(),
             main_rpc_server.clone(),
+            ipc_client_request_timeout,
             |info| info.id(),
             |ConsensusModuleInfo {
                  chain_id,
@@ -474,6 +479,7 @@ impl Context {
             module_configs.client,
             cancellation_token.clone(),
             main_rpc_server.clone(),
+            ipc_client_request_timeout,
             |info| info.id(),
             |ClientModuleInfo {
                  client_type,
@@ -528,6 +534,7 @@ impl Context {
             module_configs.client_bootstrap,
             cancellation_token.clone(),
             main_rpc_server.clone(),
+            ipc_client_request_timeout,
             |info| info.id(),
             |ClientBootstrapModuleInfo {
                  client_type,
@@ -1097,6 +1104,7 @@ async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
     configs: Vec<ModuleConfig<Info>>,
     cancellation_token: CancellationToken,
     main_rpc_server: Server,
+    ipc_client_request_timeout: Duration,
     id_f: fn(&Info) -> String,
     mut push_f: impl FnMut(&Info, ModuleRpcClient) -> anyhow::Result<()>,
 ) -> anyhow::Result<()> {
@@ -1145,7 +1153,7 @@ async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
                 cancellation_token.clone(),
             ));
 
-            let rpc_client = ModuleRpcClient::new(&id);
+            let rpc_client = ModuleRpcClient::new(&id, ipc_client_request_timeout);
 
             push_f(&module_config.info, rpc_client)?;
 

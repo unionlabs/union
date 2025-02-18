@@ -10150,8 +10150,8 @@ dependencies = [
 
 [[package]]
 name = "reth-ipc"
-version = "1.0.7"
-source = "git+https://github.com/paradigmxyz/reth#6e1cc1b948f5025daf365d1bd3d39d819accfaa0"
+version = "1.2.0"
+source = "git+https://github.com/benluelo/reth?branch=client-request-timeout#62249fa2a291a6625780f49724b0fc0be5385eaa"
 dependencies = [
  "async-trait",
  "bytes",
@@ -10161,7 +10161,7 @@ dependencies = [
  "jsonrpsee",
  "pin-project",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.11",
  "tokio",
  "tokio-stream",
  "tokio-util",
