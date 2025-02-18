@@ -61,7 +61,7 @@
 module ibc::cometbls_lc {
     use std::vector;
     use std::bcs;
-    use std::string::{Self};
+    use std::string::{Self, String};
     use aptos_std::smart_table::{Self, SmartTable};
     use std::object;
     use std::timestamp;
@@ -70,6 +70,7 @@ module ibc::cometbls_lc {
     use ibc::bcs_utils;
     use ibc::groth16_verifier::{Self, ZKP};
     use ibc::height::{Self, Height};
+    use ibc::consensus_state_update::{Self, ConsensusStateUpdate};
 
     const E_INVALID_CLIENT_STATE: u64 = 35100;
     const E_CONSENSUS_STATE_TIMESTAMP_ZERO: u64 = 35101;
@@ -113,7 +114,7 @@ module ibc::cometbls_lc {
     }
 
     struct ClientState has copy, drop, store {
-        chain_id: string::String,
+        chain_id: String,
         trusting_period: u64,
         max_clock_drift: u64,
         frozen_height: Height,
@@ -137,7 +138,7 @@ module ibc::cometbls_lc {
         client_id: u32,
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>
-    ): (vector<u8>, vector<u8>) {
+    ): (ConsensusStateUpdate, String) {
         let client_state = decode_client_state(client_state_bytes);
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
@@ -163,8 +164,12 @@ module ibc::cometbls_lc {
         let client_signer = object::generate_signer(&store_constructor);
 
         move_to(&client_signer, state);
-
-        (client_state_bytes, consensus_state_bytes)
+        let state_update = ConsensusStateUpdate {
+            client_state_commitment: encode_client_state(&client_state),
+            consensus_state_commitment: encode_consensus_state(&consensus_state),
+            height: client_state.latest_height
+        };
+        (state_update, client_state.chain_id)
     }
 
     public fun latest_height(client_id: u32): u64 acquires State {

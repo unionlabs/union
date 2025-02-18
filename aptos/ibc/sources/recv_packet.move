@@ -121,8 +121,8 @@ module ibc::recv_packet {
         assert!(l > 0, 2);
 
         let first_packet = *vector::borrow(&packets, 0);
-        let source_channel = packet::source_channel(&first_packet);
-        let destination_channel = packet::destination_channel(&first_packet);
+        let source_channel = packet::source_channel_id(&first_packet);
+        let destination_channel = packet::destination_channel_id(&first_packet);
 
         let channel = ibc::ensure_channel_state(destination_channel);
         let client_id = ibc::ensure_connection_state(channel::connection_id(&channel));
