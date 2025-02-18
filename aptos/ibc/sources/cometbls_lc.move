@@ -131,7 +131,6 @@ module ibc::cometbls_lc {
         next_validators_hash: vector<u8>
     }
 
-    // Function to mock the creation of a client
     public fun create_client(
         ibc_signer: &signer,
         client_id: u32,
@@ -213,15 +212,15 @@ module ibc::cometbls_lc {
             );
         };
 
-        // assert!(
-        //     groth16_verifier::verify_zkp(
-        //         &state.client_state.chain_id,
-        //         &consensus_state.next_validators_hash,
-        //         light_header_as_input_hash(&header.signed_header),
-        //         &header.zero_knowledge_proof
-        //     ),
-        //     E_INVALID_ZKP
-        // );
+        assert!(
+            groth16_verifier::verify_zkp(
+                &state.client_state.chain_id,
+                &consensus_state.next_validators_hash,
+                light_header_as_input_hash(&header.signed_header),
+                &header.zero_knowledge_proof
+            ),
+            E_INVALID_ZKP
+        );
     }
 
     public fun update_client(
@@ -435,31 +434,30 @@ module ibc::cometbls_lc {
     }
 
     public fun check_for_misbehaviour(
-        _client_id: u32, _header: vector<u8>
-    ): bool {
-        // let state = borrow_global_mut<State>(get_client_address(client_id));
+        client_id: u32, header: vector<u8>
+    ): bool acquires State {
+        let state = borrow_global_mut<State>(get_client_address(client_id));
 
-        // let header = decode_header(header);
+        let header = decode_header(header);
 
-        // let expected_timestamp =
-        //     header.signed_header.time.seconds * 1_000_000_000
-        //         + (header.signed_header.time.nanos as u64);
+        let expected_timestamp =
+            header.signed_header.time.seconds * 1_000_000_000
+                + (header.signed_header.time.nanos as u64);
 
-        // if (smart_table::contains(&state.consensus_states, header.signed_header.height)) {
-        //     let ConsensusState {
-        //         timestamp,
-        //         app_hash: MerkleRoot { hash },
-        //         next_validators_hash
-        //     } = smart_table::borrow(&state.consensus_states, header.signed_header.height);
+        if (smart_table::contains(&state.consensus_states, header.signed_header.height)) {
+            let ConsensusState {
+                timestamp,
+                app_hash: MerkleRoot { hash },
+                next_validators_hash
+            } = smart_table::borrow(&state.consensus_states, header.signed_header.height);
 
-        //     if (timestamp != &expected_timestamp
-        //         || hash != &header.signed_header.app_hash
-        //         || next_validators_hash != &header.signed_header.next_validators_hash) {
-        //         height::set_revision_height(&mut state.client_state.frozen_height, 1);
-        //     };
-        // };
+            if (timestamp != &expected_timestamp
+                || hash != &header.signed_header.app_hash
+                || next_validators_hash != &header.signed_header.next_validators_hash) {
+                height::set_revision_height(&mut state.client_state.frozen_height, 1);
+            };
+        };
 
-        // // TODO(aeryz): implement consensus state metadata tracking here
         false
     }
 
@@ -562,9 +560,8 @@ module ibc::cometbls_lc {
 
         let trusted_height = height::decode_bcs(buf);
 
-        // let proof_bz = bcs_utils::peel_bytes(buf);
-        // let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
-        let zero_knowledge_proof = groth16_verifier::default();
+        let proof_bz = bcs_utils::peel_bytes(buf);
+        let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
 
         Header { signed_header, trusted_height, zero_knowledge_proof }
     }
