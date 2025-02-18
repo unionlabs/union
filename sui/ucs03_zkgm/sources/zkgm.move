@@ -2,11 +2,21 @@ module zkgm::zkgm_relay {
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
     use zkgm::fungible_token::{Self, FUNGIBLE_TOKEN};
+    use zkgm::batch::{Self, Batch};
+    use zkgm::batch_ack::{Self};
+    use zkgm::instruction::{Self, Instruction};
+    use zkgm::zkgm_packet::{Self};
+    use zkgm::forward::{Self, Forward};
+    use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
+    use zkgm::fungible_asset_order_ack::{Self};
+    use zkgm::multiplex::{Self, Multiplex};
+    use zkgm::acknowledgement::{Self};
+    use zkgm::zkgm_ethabi;
+    
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
 
     use std::string::{Self, String, utf8};
     use sui::table::{Self, Table};
-    use zkgm::zkgm_ethabi;
     use ibc::commitment;
     use sui::bcs;
     use sui::clock;
@@ -60,12 +70,6 @@ module zkgm::zkgm_relay {
     //     operand: vector<u8>
     // }
 
-    public struct Instruction has copy, drop, store {
-        version: u8,
-        opcode: u8,
-        operand: vector<u8>
-    }
-
     public struct SyscallPacket has copy, drop, store {
         version: u8,
         index: u8,
@@ -91,10 +95,6 @@ module zkgm::zkgm_relay {
         sender: vector<u8>,
         contract_calldata: vector<u8>,
         contract_address: vector<u8>
-    }
-
-    public struct Batch has copy, drop, store {
-        instructions: vector<Instruction>
     }
 
     public struct OnZkgmParams has copy, drop, store {
@@ -254,40 +254,6 @@ module zkgm::zkgm_relay {
     //     relay_store.address_to_coin.add(denom_address, coin);
     // }
 
-    public fun decode_ack(buf: vector<u8>): Acknowledgement {
-        let mut index = 0x20;
-        let tag = zkgm_ethabi::decode_uint(&buf, &mut index);
-        index = index + 0x20;
-        let inner_ack =
-            zkgm_ethabi::decode_vector!<u8>(
-                &buf,
-                &mut index,
-                |buf, index| {
-                    (zkgm_ethabi::decode_uint(buf, index) as u8)
-                }
-            );
-
-        Acknowledgement { tag: tag, inner_ack: inner_ack }
-    }
-
-    public fun encode_ack(packet: &Acknowledgement): vector<u8> {
-        let mut buf = vector::empty<u8>();
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
-        zkgm_ethabi::encode_uint<u256>(&mut buf, packet.tag);
-
-        let version_offset = 0x40;
-        zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
-
-        zkgm_ethabi::encode_vector!<u8>(
-            &mut buf,
-            &packet.inner_ack,
-            |some_variable, data| {
-                zkgm_ethabi::encode_uint<u8>(some_variable, *data);
-            }
-        );
-
-        buf
-    }
 
     public fun encode_asset_transfer_ack(
         ack: &AssetTransferAcknowledgement
@@ -1367,16 +1333,16 @@ module zkgm::zkgm_relay {
                     );
             } else {
                 let zkgm_packet = decode_packet(*packet::data(&ibc_packet));
-                let zkgm_ack = decode_ack(acknowledgement);
+                let zkgm_ack = acknowledgement::decode(&acknowledgement);
                 acknowledge_internal(
                     ibc_store,
                     relay_store,
                     ibc_packet,
                     relayer,
-                    zkgm_packet.salt,
-                    zkgm_packet.instruction,
-                    zkgm_ack.tag == ACK_SUCCESS,
-                    zkgm_ack.inner_ack,
+                    zkgm_packet::salt(&zkgm_packet),
+                    zkgm_packet::instruction(&zkgm_packet),
+                    acknowledgement::tag(&zkgm_ack) == ACK_SUCCESS,
+                    *acknowledgement::inner_ack(&zkgm_ack)
                     ctx
                 )
             };
@@ -1595,21 +1561,15 @@ module zkgm::zkgm_relay {
         let parent = relay_store.in_flight_packet.borrow(packet_hash);
         if (packet::timeout_timestamp(parent) != 0 ||
             packet::timeout_height(parent) != 0) {
-                let ack = Acknowledgement { tag: ACK_FAILURE, inner_ack: ACK_EMPTY };
-                ibc::write_acknowledgement(
-                    ibc_store,
-                    *parent,
-                    encode_ack(&ack)
-                );
+                let ack = acknowledgement::new(ACK_FAILURE, ACK_EMPTY);
+                ibc::write_acknowledgement(*parent, acknowledgement::encode(&ack));
                 add_or_update_table<vector<u8>, Packet>(
                     &mut relay_store.in_flight_packet,
                     packet_hash,
                     packet::default()
                 );
         } else {
-
             let zkgm_packet = decode_packet(packet_data);
-
             timeout_internal(
                 ibc_store,
                 relay_store,
@@ -1838,19 +1798,7 @@ module zkgm::zkgm_relay {
     }
 
 
-    #[test]
-    fun test_encode_decode_ack() {
-        let output =
-            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
-        let ack_data = Acknowledgement { tag: 7788909223344, inner_ack: b"hellloo" };
 
-        let ack_bytes = encode_ack(&ack_data);
-        assert!(ack_bytes == output, 0);
-
-        let ack_data_decoded = decode_ack(ack_bytes);
-        assert!(ack_data_decoded.tag == 7788909223344, 1);
-        assert!(ack_data_decoded.inner_ack == b"hellloo", 3);
-    }
 
     #[test]
     fun test_encode_decode_asset_transfer_ack() {
