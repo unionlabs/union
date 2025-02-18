@@ -18,6 +18,6 @@ rev    = "movement"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dependencies]
-ibc = { local = "../move-ibc" }
+ibc = { local = "../ibc" }
 
 [dev-dependencies]

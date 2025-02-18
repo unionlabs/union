@@ -75,34 +75,34 @@ module ibc::light_client {
         client_id: u32,
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>
-    ): (vector<u8>, vector<u8>) {
+    ): (vector<u8>, vector<u8>, String) {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
-            let (client_state, consensus_state) =
+            let (client_state, consensus_state, counterparty_chain_id) =
                 cometbls_lc::create_client(
                     ibc_signer,
                     client_id,
                     client_state_bytes,
                     consensus_state_bytes
                 );
-            return (client_state, consensus_state)
+            return (client_state, consensus_state, counterparty_chain_id)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            let (client_state, consensus_state) =
+            let (client_state, consensus_state, counterparty_chain_id) =
                 state_lens_ics23_mpt_lc::create_client(
                     ibc_signer,
                     client_id,
                     client_state_bytes,
                     consensus_state_bytes
                 );
-            return (client_state, consensus_state)
+            return (client_state, consensus_state, counterparty_chain_id)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            let (client_state, consensus_state) =
+            let (client_state, consensus_state, counterparty_chain_id) =
                 state_lens_ics23_ics23_lc::create_client(
                     ibc_signer,
                     client_id,
                     client_state_bytes,
                     consensus_state_bytes
                 );
-            return (client_state, consensus_state)
+            return (client_state, consensus_state, counterparty_chain_id)
         };
         abort E_UNKNOWN_CLIENT_TYPE
 

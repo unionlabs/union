@@ -61,7 +61,7 @@
 module ibc::cometbls_lc {
     use std::vector;
     use std::bcs;
-    use std::string::{Self};
+    use std::string::{Self, String};
     use aptos_std::smart_table::{Self, SmartTable};
     use std::object;
     use std::timestamp;
@@ -113,7 +113,7 @@ module ibc::cometbls_lc {
     }
 
     struct ClientState has copy, drop, store {
-        chain_id: string::String,
+        chain_id: String,
         trusting_period: u64,
         max_clock_drift: u64,
         frozen_height: Height,
@@ -137,7 +137,7 @@ module ibc::cometbls_lc {
         client_id: u32,
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>
-    ): (vector<u8>, vector<u8>) {
+    ): (vector<u8>, vector<u8>, String) {
         let client_state = decode_client_state(client_state_bytes);
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
@@ -164,7 +164,7 @@ module ibc::cometbls_lc {
 
         move_to(&client_signer, state);
 
-        (client_state_bytes, consensus_state_bytes)
+        (client_state_bytes, consensus_state_bytes, client_state.chain_id)
     }
 
     public fun latest_height(client_id: u32): u64 acquires State {
@@ -703,7 +703,7 @@ module ibc::cometbls_lc {
             next_validators_hash: x"0000000000000000000000000000000000000000000000000000000000000000"
         };
 
-        let (cs, cons) =
+        let (cs, cons, _counterparty_channel_id) =
             create_client(
                 ibc_signer,
                 0,
@@ -730,7 +730,7 @@ module ibc::cometbls_lc {
         client_state.trusting_period = 2;
         consensus_state.timestamp = 20000;
 
-        let (cs, cons) =
+        let (cs, cons, _counterparty_channel_id) =
             create_client(
                 ibc_signer,
                 2,

@@ -49,10 +49,10 @@ const cliArgs = parseArgs({
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
 const MUNO_DENOM = "muno"
-const AMOUNT = 1n
-const RECEIVER = "0xcb6c475d746a54c1e4a77c49a030f45622b710d40be444dbd6afe82514fc2ffa"
+const AMOUNT = 15n
+const RECEIVER = "0x4d8a66ece11f6352224942bd1dabc456b4bb5316124f02b9a7b6292ad61f7777"
 const SOURCE_CHAIN_ID = "union-testnet-9"
-const DESTINATION_CHAIN_ID = "177"
+const DESTINATION_CHAIN_ID = "250"
 
 const channels = await getRecommendedChannels()
 
@@ -63,12 +63,12 @@ if (channel_info === null) {
     source_chain_id: SOURCE_CHAIN_ID,
     source_port_id:
       "756e696f6e3178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c32343763717a3636396565",
-    source_channel_id: 7,
-    source_connection_id: 11,
+    source_channel_id: 16,
+    source_connection_id: 17,
     destination_chain_id: DESTINATION_CHAIN_ID,
-    destination_port_id: "0xcebf41f47bdde649131694af50980b70ecd328d88a9b6c2993dae6405b0c88ed",
-    destination_channel_id: 5,
-    destination_connection_id: 15
+    destination_port_id: "0x88ce60bb48d0a4499c3d8aea70860d088b4abc0a09ed64a9678a8a1203f0fbab",
+    destination_channel_id: 1,
+    destination_connection_id: 1
   }
 }
 
@@ -85,7 +85,7 @@ let quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, MUNO_DENOM, channel_info)
 quoteToken = {
   type: "UNWRAPPED",
   value: {
-    quote_token: `0xe464e3224064bab061d6dc1602ba74a1f15768d1fb40e4051b968a8f071641dd`
+    quote_token: `0xdc380d94af18d322b40cac307659794064ec2549dabc3b23fd3d6cacc00cb3dc`
   }
 }
 

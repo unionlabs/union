@@ -318,8 +318,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     })
                     .map(|(typ, data, hash)| {
                         let event = match dbg!(typ).name.0.as_str() {
-                            "ClientCreatedEvent" => from_raw_event::<ibc::ClientCreatedEvent>(data),
-                            "ClientUpdated" => from_raw_event::<ibc::ClientUpdated>(data),
+                            "CreateClient" => from_raw_event::<ibc::CreateClient>(data),
+                            "UpdateClient" => from_raw_event::<ibc::UpdateClient>(data),
                             "ConnectionOpenInit" => from_raw_event::<ibc::ConnectionOpenInit>(data),
                             "ConnectionOpenTry" => from_raw_event::<ibc::ConnectionOpenTry>(data),
                             "ConnectionOpenAck" => from_raw_event::<ibc::ConnectionOpenAck>(data),
@@ -330,12 +330,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             "ChannelOpenTry" => from_raw_event::<ibc::ChannelOpenTry>(data),
                             "ChannelOpenAck" => from_raw_event::<ibc::ChannelOpenAck>(data),
                             "ChannelOpenConfirm" => from_raw_event::<ibc::ChannelOpenConfirm>(data),
-                            "WriteAcknowledgement" => {
-                                from_raw_event::<ibc::WriteAcknowledgement>(data)
-                            }
-                            "RecvPacket" => from_raw_event::<ibc::RecvPacket>(data),
-                            "SendPacket" => from_raw_event::<ibc::SendPacket>(data),
-                            "AcknowledgePacket" => from_raw_event::<ibc::AcknowledgePacket>(data),
+                            "WriteAck" => from_raw_event::<ibc::WriteAck>(data),
+                            "PacketRecv" => from_raw_event::<ibc::PacketRecv>(data),
+                            "PacketSend" => from_raw_event::<ibc::PacketSend>(data),
+                            "PacketAck" => from_raw_event::<ibc::PacketAck>(data),
                             "TimeoutPacket" => from_raw_event::<ibc::TimeoutPacket>(data),
                             unknown => panic!("unknown event `{unknown}`"),
                         };
@@ -417,7 +415,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         UpdateClient {
                             client_id: event.client_id,
                             client_type: ClientType::new(event.client_type),
-                            height: event.height,
+                            height: event.counterparty_height,
                         }
                         .into(),
                         event.client_id,
@@ -608,7 +606,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.destination_channel,
+                                event.packet.destination_channel_id,
                                 e.try_get()?,
                             )
                             .await?;
@@ -639,7 +637,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.destination_channel,
+                                event.packet.destination_channel_id,
                                 e.try_get()?,
                             )
                             .await?;
@@ -700,7 +698,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.source_channel,
+                                event.packet.source_channel_id,
                                 e.try_get()?,
                             )
                             .await?;

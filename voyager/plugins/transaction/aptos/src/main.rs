@@ -216,8 +216,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         dbg!(&account);
 
-                        let msgs =
-                            process_msgs(self.ibc_handler_address.into(), self, msgs.clone()).await;
+                        let msgs = process_msgs(
+                            self.ibc_handler_address.into(),
+                            self,
+                            msgs.clone(),
+                            sender,
+                        )
+                        .await;
 
                         let mut txs = vec![];
 
@@ -292,6 +297,7 @@ async fn process_msgs<
     ibc_handler_address: AccountAddress,
     client: &T,
     msgs: Vec<Datagram>,
+    relayer: AccountAddress,
 ) -> Vec<(Datagram, EntryFunction)> {
     let mut data = vec![];
     for msg in msgs {
@@ -462,6 +468,8 @@ async fn process_msgs<
                             packet_data,
                             timeout_heights,
                             timeout_timestamps,
+                            data.relayer_msgs.into_iter().map(Into::into).collect(),
+                            relayer,
                             data.proof.into_vec(),
                             data.proof_height,
                         ),
@@ -510,6 +518,7 @@ async fn process_msgs<
                             timeout_heights,
                             timeout_timestamps,
                             acknowledgements,
+                            relayer,
                             data.proof.into_vec(),
                             data.proof_height,
                         ),

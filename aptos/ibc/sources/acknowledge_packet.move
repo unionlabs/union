@@ -78,6 +78,7 @@ module ibc::acknowledge_packet {
         packet_timeout_heights: vector<u64>,
         packet_timeout_timestamps: vector<u64>,
         acknowledgements: vector<vector<u8>>,
+        maker: address,
         proof: vector<u8>,
         proof_height: u64
     ) {
@@ -105,23 +106,23 @@ module ibc::acknowledge_packet {
         assert!(l > 0, 1);
 
         let first_packet = *vector::borrow(&packets, 0);
-        let source_channel = packet::source_channel(&first_packet);
-        let destination_channel = packet::destination_channel(&first_packet);
+        let source_channel_id = packet::source_channel_id(&first_packet);
+        let destination_channel_id = packet::destination_channel_id(&first_packet);
 
-        let channel = ibc::ensure_channel_state(source_channel);
+        let channel = ibc::ensure_channel_state(source_channel_id);
         let client_id = ibc::ensure_connection_state(channel::connection_id(&channel));
 
         let commitment_key;
         let commitment_value;
         if (l == 1) {
             commitment_key = commitment::batch_receipts_commitment_key(
-                destination_channel,
+                destination_channel_id,
                 commitment::commit_packet(&first_packet)
             );
             commitment_value = commitment::commit_ack(*vector::borrow(&acknowledgements, 0));
         } else {
             commitment_key = commitment::batch_receipts_commitment_key(
-                destination_channel,
+                destination_channel_id,
                 commitment::commit_packets(&packets)
             );
             commitment_value = commitment::commit_acks(acknowledgements);
@@ -145,7 +146,7 @@ module ibc::acknowledge_packet {
             let packet = *vector::borrow(&packets, i);
             let commitment_key =
                 commitment::batch_packets_commitment_key(
-                    source_channel, commitment::commit_packet(&packet)
+                    source_channel_id, commitment::commit_packet(&packet)
                 );
             ibc::remove_commitment(commitment_key);
 
@@ -157,7 +158,7 @@ module ibc::acknowledge_packet {
 
             dispatcher::delete_storage<T>();
 
-            ibc::emit_acknowledge_packet(packet, acknowledgement);
+            ibc::emit_acknowledge_packet(packet, acknowledgement, maker);
 
             i = i + 1;
         }
