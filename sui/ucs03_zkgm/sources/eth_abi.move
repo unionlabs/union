@@ -62,6 +62,22 @@ module zkgm::zkgm_ethabi {
         byte_data // Return the decoded bytes
     }
 
+    public fun decode_bytes_from_offset(buf: &vector<u8>, index: &mut u64): vector<u8> {
+        let mut i = *index;
+        let mut offset = (decode_uint(buf, &mut i) as u64);
+        *index = *index + 32;
+        decode_bytes(buf, &mut offset)
+    }
+
+    public fun decode_string_from_offset(
+        buf: &vector<u8>, index: &mut u64
+    ): String {
+        let mut i = *index;
+        let mut offset = (decode_uint(buf, &mut i) as u64);
+        *index = *index + 32;
+        decode_string(buf, &mut offset)
+    }
+
     public fun decode_bytes(buf: &vector<u8>, index: &mut u64): vector<u8> {
         // Decode the length of the bytes array
         let mut len_bytes = vector_slice(buf, *index, *index + 32); // Extract the next 32 bytes for length
