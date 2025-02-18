@@ -1,6 +1,6 @@
 #![warn(clippy::unwrap_used)]
 
-use std::collections::VecDeque;
+use std::{cmp::Ordering, collections::VecDeque};
 
 use alloy::{
     providers::{Provider, ProviderBuilder, RootProvider},
@@ -32,18 +32,17 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    call::Call,
+    call::{Call, WaitForHeight},
     core::{ChainId, ClientInfo, IbcSpec},
     data::{ChainEvent, Data},
     into_value,
     module::{PluginInfo, PluginServer},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, conc, data, defer, noop, now, pass::PassResult, seq, BoxDynError, Op};
+use voyager_vm::{call, conc, data, noop, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
-    call::{FetchGetLogs, IbcEvents, MakeFullEvent, ModuleCall},
+    call::{FetchBlocks, FetchGetLogs, IbcEvents, MakeFullEvent, ModuleCall},
     callback::ModuleCallback,
 };
 
@@ -62,6 +61,8 @@ pub struct Module {
 
     pub ibc_handler_address: H160,
 
+    pub chunk_block_fetch_size: u64,
+
     pub provider: RootProvider<BoxTransport>,
 }
 
@@ -74,8 +75,15 @@ pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
+    #[serde(default = "default_chunk_block_fetch_size")]
+    pub chunk_block_fetch_size: u64,
+
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
+}
+
+fn default_chunk_block_fetch_size() -> u64 {
+    10
 }
 
 impl Plugin for Module {
@@ -124,6 +132,7 @@ impl Module {
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
+            chunk_block_fetch_size: config.chunk_block_fetch_size,
             provider,
         })
     }
@@ -225,9 +234,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     Op::Call(Call::FetchBlocks(fetch)) if fetch.chain_id == self.chain_id => {
                         call(PluginMessage::new(
                             self.plugin_name(),
-                            ModuleCall::from(FetchGetLogs {
+                            ModuleCall::from(FetchBlocks {
                                 block_number: fetch.start_height.height(),
-                                up_to: None,
                             }),
                         ))
                     }
@@ -252,6 +260,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
+            ModuleCall::FetchBlocks(FetchBlocks { block_number }) => {
+                self.fetch_blocks(e.try_get::<VoyagerClient>()?, block_number)
+                    .await
+            }
+            ModuleCall::FetchGetLogs(FetchGetLogs { block_number }) => {
+                self.fetch_get_logs(block_number).await
+            }
             ModuleCall::MakeFullEvent(MakeFullEvent {
                 block_number,
                 tx_hash,
@@ -260,52 +275,81 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 self.make_full_event(e.try_get::<VoyagerClient>()?, block_number, tx_hash, event)
                     .await
             }
-            ModuleCall::FetchGetLogs(FetchGetLogs {
-                block_number,
-                up_to,
-            }) => {
-                self.fetch_get_logs(e.try_get::<VoyagerClient>()?, block_number, up_to)
-                    .await
-            }
         }
     }
 }
 
 impl Module {
-    #[instrument(skip_all, fields(%block_number, ?up_to))]
-    async fn fetch_get_logs(
+    #[instrument(skip_all, fields(%block_number))]
+    async fn fetch_blocks(
         &self,
         voyager_client: &VoyagerClient,
         block_number: u64,
-        up_to: Option<u64>,
     ) -> RpcResult<Op<VoyagerMessage>> {
-        if up_to.is_some_and(|up_to| up_to < block_number) {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "`up_to` must be either >= `block_number` or null",
-                None::<()>,
-            ));
-        }
-
         let latest_height = voyager_client
             .query_latest_height(self.chain_id.clone(), true)
-            .await?;
+            .await?
+            .height();
 
-        if latest_height.height() < block_number {
-            debug!(block_number, "block is not yet finalized");
+        info!(%latest_height, %block_number, "fetching blocks");
 
-            return Ok(seq([
-                defer(now() + 1),
-                call(Call::Plugin(PluginMessage::new(
+        let continuation = |next_height: u64| {
+            seq([
+                // TODO: Make this a config param
+                call(WaitForHeight {
+                    chain_id: self.chain_id.clone(),
+                    height: Height::new(next_height),
+                    finalized: true,
+                }),
+                call(PluginMessage::new(
                     self.plugin_name(),
-                    ModuleCall::from(FetchGetLogs {
-                        block_number,
-                        up_to,
+                    ModuleCall::from(FetchBlocks {
+                        block_number: next_height,
                     }),
-                ))),
-            ]));
-        }
+                )),
+            ])
+        };
 
+        match block_number.cmp(&latest_height) {
+            // height < latest_height
+            // fetch transactions on all blocks height..next_height (*exclusive* on the upper bound!)
+            // and then queue the continuation starting at next_height
+            Ordering::Equal | Ordering::Less => {
+                let next_height = (latest_height - block_number)
+                    .clamp(1, self.chunk_block_fetch_size)
+                    + block_number;
+
+                info!(
+                    from_height = block_number,
+                    to_height = next_height,
+                    "batch fetching blocks in range {block_number}..{next_height}"
+                );
+
+                Ok(conc(
+                    (block_number..next_height)
+                        .map(|block_number| {
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(FetchGetLogs { block_number }),
+                            ))
+                        })
+                        .chain([continuation(next_height)]),
+                ))
+            }
+            // height > latest_height
+            Ordering::Greater => {
+                warn!(
+                    "the latest finalized height ({latest_height}) \
+                    is less than the requested height ({block_number})"
+                );
+
+                Ok(continuation(block_number))
+            }
+        }
+    }
+
+    #[instrument(skip_all, fields(%block_number))]
+    async fn fetch_get_logs(&self, block_number: u64) -> RpcResult<Op<VoyagerMessage>> {
         debug!("fetching logs in execution block");
 
         let logs = self
@@ -330,7 +374,7 @@ impl Module {
                 )
             })?;
 
-        info!("found {} logs", logs.len());
+        info!(logs_count = logs.len(), "found logs");
 
         let events = logs.into_iter().flat_map(|log| {
             let tx_hash = log
@@ -422,30 +466,7 @@ impl Module {
             })
         });
 
-        let next_fetch = match up_to {
-            Some(up_to) => {
-                if up_to > block_number {
-                    Some(call(Call::Plugin(PluginMessage::new(
-                        self.plugin_name(),
-                        ModuleCall::from(FetchGetLogs {
-                            block_number: block_number + 1,
-                            up_to: Some(up_to),
-                        }),
-                    ))))
-                } else {
-                    None
-                }
-            }
-            None => Some(call(Call::Plugin(PluginMessage::new(
-                self.plugin_name(),
-                ModuleCall::from(FetchGetLogs {
-                    block_number: block_number + 1,
-                    up_to: None,
-                }),
-            )))),
-        };
-
-        Ok(conc(next_fetch.into_iter().chain(events)))
+        Ok(conc(events))
     }
 
     #[instrument(skip_all, fields(%block_number, %tx_hash))]
