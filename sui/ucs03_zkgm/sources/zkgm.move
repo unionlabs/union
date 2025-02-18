@@ -1,12 +1,12 @@
-module ucs03::zkgm_relay {
+module zkgm::zkgm_relay {
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
-    use ucs03::fungible_token::{Self, FUNGIBLE_TOKEN};
+    use zkgm::fungible_token::{Self, FUNGIBLE_TOKEN};
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
 
     use std::string::{Self, String, utf8};
     use sui::table::{Self, Table};
-    use ucs03::ethabi;
+    use zkgm::zkgm_ethabi;
     use ibc::commitment;
     use sui::bcs;
     use sui::clock;
@@ -15,7 +15,7 @@ module ucs03::zkgm_relay {
 
     // Constants
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
-    const VERSION: vector<u8> = b"ucs03-zkgm-0";
+    const VERSION: vector<u8> = b"zkgm-zkgm-0";
     const ACK_SUCCESS: u256 = 1;
     const ACK_FAILURE: u256 = 0;
     const ACK_LENGTH: u64 = 1;
@@ -256,14 +256,14 @@ module ucs03::zkgm_relay {
 
     public fun decode_ack(buf: vector<u8>): Acknowledgement {
         let mut index = 0x20;
-        let tag = ethabi::decode_uint(&buf, &mut index);
+        let tag = zkgm_ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
         let inner_ack =
-            ethabi::decode_vector!<u8>(
+            zkgm_ethabi::decode_vector!<u8>(
                 &buf,
                 &mut index,
                 |buf, index| {
-                    (ethabi::decode_uint(buf, index) as u8)
+                    (zkgm_ethabi::decode_uint(buf, index) as u8)
                 }
             );
 
@@ -272,17 +272,17 @@ module ucs03::zkgm_relay {
 
     public fun encode_ack(packet: &Acknowledgement): vector<u8> {
         let mut buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u256>(&mut buf, packet.tag);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, packet.tag);
 
         let version_offset = 0x40;
-        ethabi::encode_uint<u32>(&mut buf, version_offset);
+        zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
 
-        ethabi::encode_vector!<u8>(
+        zkgm_ethabi::encode_vector!<u8>(
             &mut buf,
             &packet.inner_ack,
             |some_variable, data| {
-                ethabi::encode_uint<u8>(some_variable, *data);
+                zkgm_ethabi::encode_uint<u8>(some_variable, *data);
             }
         );
 
@@ -293,17 +293,17 @@ module ucs03::zkgm_relay {
         ack: &AssetTransferAcknowledgement
     ): vector<u8> {
         let mut buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
 
         let version_offset = 0x40;
-        ethabi::encode_uint<u32>(&mut buf, version_offset);
+        zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
 
-        ethabi::encode_vector!<u8>(
+        zkgm_ethabi::encode_vector!<u8>(
             &mut buf,
             &ack.market_maker,
             |some_variable, data| {
-                ethabi::encode_uint<u8>(some_variable, *data);
+                zkgm_ethabi::encode_uint<u8>(some_variable, *data);
             }
         );
 
@@ -312,14 +312,14 @@ module ucs03::zkgm_relay {
 
     public fun decode_asset_transfer_ack(buf: vector<u8>): AssetTransferAcknowledgement {
         let mut index = 0x20;
-        let fill_type = ethabi::decode_uint(&buf, &mut index);
+        let fill_type = zkgm_ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
         let market_maker =
-            ethabi::decode_vector!<u8>(
+            zkgm_ethabi::decode_vector!<u8>(
                 &buf,
                 &mut index,
                 |buf, index| {
-                    (ethabi::decode_uint(buf, index) as u8)
+                    (zkgm_ethabi::decode_uint(buf, index) as u8)
                 }
             );
 
@@ -328,18 +328,18 @@ module ucs03::zkgm_relay {
 
     public fun decode_batch_ack(buf: vector<u8>): BatchAcknowledgement {
         let mut index = 0x40;
-        let main_arr_length = ethabi::decode_uint(&buf, &mut index);
+        let main_arr_length = zkgm_ethabi::decode_uint(&buf, &mut index);
         index = index + (0x20 * main_arr_length as u64);
 
         let mut idx = 0;
         let mut acknowledgements = vector::empty();
         while (idx < main_arr_length) {
             let inner_vec =
-                ethabi::decode_vector!<u8>(
+                zkgm_ethabi::decode_vector!<u8>(
                     &buf,
                     &mut index,
                     |buf, index| {
-                        (ethabi::decode_uint(buf, index) as u8)
+                        (zkgm_ethabi::decode_uint(buf, index) as u8)
                     }
                 );
             vector::push_back(&mut acknowledgements, inner_vec);
@@ -351,18 +351,18 @@ module ucs03::zkgm_relay {
 
     public fun encode_batch_ack(ack: &BatchAcknowledgement): vector<u8> {
         let mut buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
         let ack_arr_len = vector::length(&ack.acknowledgements);
-        ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
         if (ack_arr_len < 2) {
             if (ack_arr_len == 1) {
-                ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
-                ethabi::encode_vector!<u8>(
+                zkgm_ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
+                zkgm_ethabi::encode_vector!<u8>(
                     &mut buf,
                     vector::borrow(&ack.acknowledgements, 0),
                     |some_variable, data| {
-                        ethabi::encode_uint<u8>(some_variable, *data);
+                        zkgm_ethabi::encode_uint<u8>(some_variable, *data);
                     }
                 );
                 return buf
@@ -373,23 +373,23 @@ module ucs03::zkgm_relay {
         let initial_stage = 0x20 * (ack_arr_len as u32);
         let mut idx = 1;
         let mut prev_val = initial_stage;
-        ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
+        zkgm_ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
         while (idx < ack_arr_len) {
             let prev_length = vector::length(
                 vector::borrow(&ack.acknowledgements, idx - 1)
             );
-            ethabi::encode_uint<u32>(&mut buf, prev_val
+            zkgm_ethabi::encode_uint<u32>(&mut buf, prev_val
                 + 0x20 * (prev_length + 1 as u32));
             prev_val = prev_val + 0x20 * (prev_length + 1 as u32);
             idx = idx + 1;
         };
         idx = 0;
         while (idx < ack_arr_len) {
-            ethabi::encode_vector!<u8>(
+            zkgm_ethabi::encode_vector!<u8>(
                 &mut buf,
                 vector::borrow(&ack.acknowledgements, idx),
                 |some_variable, data| {
-                    ethabi::encode_uint<u8>(some_variable, *data);
+                    zkgm_ethabi::encode_uint<u8>(some_variable, *data);
                 }
             );
             idx = idx + 1;
@@ -400,16 +400,16 @@ module ucs03::zkgm_relay {
 
     public fun decode_batch_packet(buf: vector<u8>): Batch {
         let mut index = 0x20;
-        let main_arr_length = ethabi::decode_uint(&buf, &mut index);
+        let main_arr_length = zkgm_ethabi::decode_uint(&buf, &mut index);
         index = index + (0x20 * main_arr_length as u64);
 
         let mut idx = 0;
         let mut instructions = vector::empty<Instruction>();
         while (idx < main_arr_length) {
-            let version = (ethabi::decode_uint(&buf, &mut index) as u8);
-            let opcode = (ethabi::decode_uint(&buf, &mut index) as u8);
+            let version = (zkgm_ethabi::decode_uint(&buf, &mut index) as u8);
+            let opcode = (zkgm_ethabi::decode_uint(&buf, &mut index) as u8);
             index = index + 0x20;
-            let operand = ethabi::decode_bytes(&buf, &mut index);
+            let operand = zkgm_ethabi::decode_bytes(&buf, &mut index);
 
             let instruction = Instruction {
                 version: (version as u8),
@@ -426,13 +426,13 @@ module ucs03::zkgm_relay {
 
     public fun encode_batch_packet(pack: &Batch): vector<u8> {
         let mut buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
 
         let ack_arr_len = vector::length(&pack.instructions);
-        ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
         if (ack_arr_len < 2) {
             if (ack_arr_len == 1) {
-                ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
+                zkgm_ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
                 let instructions_encoded =
                     encode_instruction(*vector::borrow(&pack.instructions, 0));
                 vector::append(&mut buf, instructions_encoded);
@@ -444,14 +444,14 @@ module ucs03::zkgm_relay {
         let initial_stage = 0x20 * (ack_arr_len as u32);
         let mut idx = 1;
         let mut prev_val = initial_stage;
-        ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
+        zkgm_ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
         while (idx < ack_arr_len) {
             let prev_length =
                 ((
                     vector::length(&vector::borrow(&pack.instructions, idx - 1).operand)
                         / 32
                 ) as u32) + 1;
-            ethabi::encode_uint<u32>(
+            zkgm_ethabi::encode_uint<u32>(
                 &mut buf,
                 prev_val + (0x20 * 4) + ((prev_length * 0x20) as u32)
             );
@@ -471,16 +471,16 @@ module ucs03::zkgm_relay {
 
     public fun decode_syscall(buf: vector<u8>): SyscallPacket {
         let mut index = 0x20;
-        let version = ethabi::decode_uint(&buf, &mut index);
-        let mut index_syscall = ethabi::decode_uint(&buf, &mut index);
+        let version = zkgm_ethabi::decode_uint(&buf, &mut index);
+        let mut index_syscall = zkgm_ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
 
         let packet =
-            ethabi::decode_vector!<u8>(
+            zkgm_ethabi::decode_vector!<u8>(
                 &buf,
                 &mut index,
                 |buf, index| {
-                    (ethabi::decode_uint(buf, index) as u8)
+                    (zkgm_ethabi::decode_uint(buf, index) as u8)
                 }
             );
 
@@ -493,11 +493,11 @@ module ucs03::zkgm_relay {
 
     public fun encode_forward(packet: &ForwardPacket): vector<u8> {
         let mut buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u32>(&mut buf, packet.channel_id);
-        ethabi::encode_uint<u64>(&mut buf, packet.timeout_height);
-        ethabi::encode_uint<u64>(&mut buf, packet.timeout_timestamp);
-        ethabi::encode_uint<u8>(&mut buf, 0x80);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u32>(&mut buf, packet.channel_id);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, packet.timeout_height);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, packet.timeout_timestamp);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x80);
         let ins_buf = encode_instruction(packet.instruction);
         vector::append(&mut buf, ins_buf);
         buf
@@ -505,15 +505,15 @@ module ucs03::zkgm_relay {
 
     public fun decode_forward(buf: vector<u8>): ForwardPacket {
         let mut index = 0x20;
-        let channel_id = ethabi::decode_uint(&buf, &mut index);
-        let timeout_height = ethabi::decode_uint(&buf, &mut index);
-        let timeout_timestamp = ethabi::decode_uint(&buf, &mut index);
+        let channel_id = zkgm_ethabi::decode_uint(&buf, &mut index);
+        let timeout_height = zkgm_ethabi::decode_uint(&buf, &mut index);
+        let timeout_timestamp = zkgm_ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
 
-        let version = (ethabi::decode_uint(&buf, &mut index) as u8);
-        let opcode = (ethabi::decode_uint(&buf, &mut index) as u8);
+        let version = (zkgm_ethabi::decode_uint(&buf, &mut index) as u8);
+        let opcode = (zkgm_ethabi::decode_uint(&buf, &mut index) as u8);
         index = index + 0x20;
-        let operand = ethabi::decode_bytes(&buf, &mut index);
+        let operand = zkgm_ethabi::decode_bytes(&buf, &mut index);
 
         let instruction = Instruction { version: version, opcode: opcode, operand: operand };
 
@@ -527,11 +527,11 @@ module ucs03::zkgm_relay {
 
     public fun decode_multiplex(buf: vector<u8>): MultiplexPacket {
         let mut index = 0x40;
-        let eureka = ethabi::decode_uint(&buf, &mut index) == 1;
+        let eureka = zkgm_ethabi::decode_uint(&buf, &mut index) == 1;
         index = index + 0x20 * 2;
-        let sender = ethabi::decode_bytes(&buf, &mut index);
-        let contract_address = ethabi::decode_bytes(&buf, &mut index);
-        let contract_calldata = ethabi::decode_bytes(&buf, &mut index);
+        let sender = zkgm_ethabi::decode_bytes(&buf, &mut index);
+        let contract_address = zkgm_ethabi::decode_bytes(&buf, &mut index);
+        let contract_calldata = zkgm_ethabi::decode_bytes(&buf, &mut index);
 
         MultiplexPacket {
             sender: sender,
@@ -545,29 +545,29 @@ module ucs03::zkgm_relay {
         sender: vector<u8>, contract_calldata: vector<u8>
     ): vector<u8> {
         let mut buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_uint<u8>(&mut buf, 0x40);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x40);
         let length_of_first = vector::length(&sender);
-        ethabi::encode_uint<u64>(&mut buf, ((length_of_first / 32) * 0x20) + 0x80);
-        ethabi::encode_bytes(&mut buf, &sender);
-        ethabi::encode_bytes(&mut buf, &contract_calldata);
+        zkgm_ethabi::encode_uint<u64>(&mut buf, ((length_of_first / 32) * 0x20) + 0x80);
+        zkgm_ethabi::encode_bytes(&mut buf, &sender);
+        zkgm_ethabi::encode_bytes(&mut buf, &contract_calldata);
         buf
     }
 
     public fun decode_fungible_asset_transfer(buf: vector<u8>): FungibleAssetTransferPacket {
         let mut index = 0x80;
-        let sent_token_prefix = ethabi::decode_uint(&buf, &mut index);
+        let sent_token_prefix = zkgm_ethabi::decode_uint(&buf, &mut index);
         index = index + 0x40;
-        let sent_amount = ethabi::decode_uint(&buf, &mut index);
+        let sent_amount = zkgm_ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
-        let ask_amount = ethabi::decode_uint(&buf, &mut index);
-        let only_maker = (ethabi::decode_uint(&buf, &mut index) == 1);
-        let sender = ethabi::decode_bytes(&buf, &mut index);
-        let receiver = ethabi::decode_bytes(&buf, &mut index);
-        let sent_token = ethabi::decode_address(&buf, &mut index);
-        let sent_symbol = ethabi::decode_string(&buf, &mut index);
-        let sent_name = ethabi::decode_string(&buf, &mut index);
-        let ask_token = ethabi::decode_bytes(&buf, &mut index);
+        let ask_amount = zkgm_ethabi::decode_uint(&buf, &mut index);
+        let only_maker = (zkgm_ethabi::decode_uint(&buf, &mut index) == 1);
+        let sender = zkgm_ethabi::decode_bytes(&buf, &mut index);
+        let receiver = zkgm_ethabi::decode_bytes(&buf, &mut index);
+        let sent_token = zkgm_ethabi::decode_address(&buf, &mut index);
+        let sent_symbol = zkgm_ethabi::decode_string(&buf, &mut index);
+        let sent_name = zkgm_ethabi::decode_string(&buf, &mut index);
+        let ask_token = zkgm_ethabi::decode_bytes(&buf, &mut index);
 
         FungibleAssetTransferPacket {
             sender: sender,
@@ -585,10 +585,10 @@ module ucs03::zkgm_relay {
 
     public fun encode_instruction(instruction: Instruction): vector<u8> {
         let mut buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, instruction.version);
-        ethabi::encode_uint<u8>(&mut buf, instruction.opcode);
-        ethabi::encode_uint<u8>(&mut buf, 0x60);
-        ethabi::encode_bytes(&mut buf, &instruction.operand);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, instruction.version);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, instruction.opcode);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
+        zkgm_ethabi::encode_bytes(&mut buf, &instruction.operand);
 
         buf
     }
@@ -596,10 +596,10 @@ module ucs03::zkgm_relay {
 
     public fun encode_packet(packet: &ZkgmPacket): vector<u8> {
         let mut buf = vector::empty<u8>();
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
-        ethabi::encode_bytes32(&mut buf, &packet.salt);
-        ethabi::encode_uint<u256>(&mut buf, packet.path);
-        ethabi::encode_uint<u8>(&mut buf, 0x60);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
+        zkgm_ethabi::encode_bytes32(&mut buf, &packet.salt);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, packet.path);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
 
         let ins_buf = encode_instruction(packet.instruction);
         vector::append(&mut buf, ins_buf);
@@ -609,13 +609,13 @@ module ucs03::zkgm_relay {
 
     public fun decode_packet(buf: vector<u8>): ZkgmPacket {
         let mut index = 0x20;
-        let salt = ethabi::decode_bytes32(&buf, &mut index);
-        let path = ethabi::decode_uint(&buf, &mut index);
+        let salt = zkgm_ethabi::decode_bytes32(&buf, &mut index);
+        let path = zkgm_ethabi::decode_uint(&buf, &mut index);
         index = index + 0x20;
-        let version = (ethabi::decode_uint(&buf, &mut index) as u8);
-        let opcode = (ethabi::decode_uint(&buf, &mut index) as u8);
+        let version = (zkgm_ethabi::decode_uint(&buf, &mut index) as u8);
+        let opcode = (zkgm_ethabi::decode_uint(&buf, &mut index) as u8);
         index = index + 0x20;
-        let operand = ethabi::decode_bytes(&buf, &mut index);
+        let operand = zkgm_ethabi::decode_bytes(&buf, &mut index);
 
         let instruction = Instruction { version: version, opcode: opcode, operand: operand };
 

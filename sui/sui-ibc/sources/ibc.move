@@ -1396,7 +1396,6 @@ module ibc::ibc {
 
             ibc_store.commitments.remove(commitment_key);
             
-
             let acknowledgement = *vector::borrow(&acknowledgements, i);
 
             // TODO: verify if its all good

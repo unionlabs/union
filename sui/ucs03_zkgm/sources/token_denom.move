@@ -2,7 +2,7 @@
 // /// Module: ucs01_relay
 // module ucs01_relay::ucs01_relay;
 // */
-module ucs03::fungible_token{
+module zkgm::fungible_token{
     //import library
     use sui::table::{Self, Table};
     use std::option;

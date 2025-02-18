@@ -19,8 +19,8 @@ ibc = { local = "../sui-ibc" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc   = "_"
-ucs03 = "_"
+ibc  = "_"
+zkgm = "_"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
@@ -32,8 +32,8 @@ ucs03 = "_"
 # Local = { local = "../path/to/dev-build" }
 
 [dev-addresses]
-ibc   = "0x22222"
-ucs03 = "0x4444444444444"
+ibc  = "0x22222"
+zkgm = "0x4444444444444"
 # The dev-addresses section allows overwriting named addresses for the `--test`
 # and `--dev` modes.
 # alice = "0xB0B"

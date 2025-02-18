@@ -1,4 +1,4 @@
-module ucs03::ethabi {
+module zkgm::zkgm_ethabi {
     use sui::bcs;
     use std::vector;
     use std::string::{Self, String};
