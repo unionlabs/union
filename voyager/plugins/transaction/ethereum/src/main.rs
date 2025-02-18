@@ -194,6 +194,8 @@ pub enum TxSubmitError {
     GasPriceTooHigh { max: u128, price: u128 },
     #[error("rpc error (this is just the IbcDatagram conversion functions but i need to make those errors better)")]
     RpcError(#[from] ErrorObjectOwned),
+    #[error("batch too large")]
+    BatchTooLarge,
 }
 
 #[async_trait]
@@ -236,7 +238,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
-            ModuleCall::SubmitMulticall(msgs) => {
+            ModuleCall::SubmitMulticall(mut msgs) => {
                 let res = self
                     .keyring
                     .with({
@@ -248,8 +250,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     })
                     .await;
 
-                let rewrap_msg =
-                    || PluginMessage::new(self.plugin_name(), ModuleCall::SubmitMulticall(msgs));
+                let rewrap_msg = || {
+                    PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::SubmitMulticall(msgs.clone()),
+                    )
+                };
 
                 match res {
                     Some(Ok(())) => Ok(Op::Noop),
@@ -266,6 +272,19 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ModuleCall::SubmitMulticall(msgs),
                         )),
                     ])),
+                    Some(Err(TxSubmitError::BatchTooLarge)) => {
+                        let new = msgs.split_off(msgs.len() / 2);
+                        Ok(seq([
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::SubmitMulticall(new),
+                            )),
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::SubmitMulticall(msgs),
+                            )),
+                        ]))
+                    }
                     Some(Err(err)) => Err(ErrorObject::owned(
                         -1,
                         ErrorReporter(err).to_string(),
@@ -334,7 +353,8 @@ impl Module {
             .collect::<Vec<_>>();
 
         let mut call = multicall.multicall(
-            msgs.into_iter()
+            msgs.clone()
+                .into_iter()
                 .map(|(_, call)| Call3 {
                     target: self.ibc_handler_address.into(),
                     allowFailure: true,
@@ -448,6 +468,20 @@ impl Module {
             {
                 error!("out of gas");
                 Err(TxSubmitError::OutOfGas)
+            }
+            Err(
+                Error::PendingTransactionError(PendingTransactionError::TransportError(
+                    TransportError::ErrorResp(e),
+                ))
+                | Error::TransportError(TransportError::ErrorResp(e)),
+            ) if e.message.contains("oversized data") => {
+                if msgs.len() == 1 {
+                    error!(error = %e.message, msg = ?msgs[0], "message is too large");
+                    Ok(()) // drop the message
+                } else {
+                    warn!(error = %e.message, "batch is too large");
+                    Err(TxSubmitError::BatchTooLarge)
+                }
             }
             Err(err) => Err(TxSubmitError::Error(err)),
         }

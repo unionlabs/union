@@ -211,6 +211,8 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             );
 
             CREATE INDEX IF NOT EXISTS index_queue_id ON queue(id);
+
+            CREATE INDEX IF NOT EXISTS index_queue_created_at ON queue(created_at) include (id);
             "#,
         )
         .try_for_each(|result| async move {

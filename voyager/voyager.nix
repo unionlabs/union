@@ -25,11 +25,17 @@
         (pkgs.lib.hasPrefix "voyager/modules" member) || (pkgs.lib.hasPrefix "voyager/plugins" member)
       ) (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
 
-      voyager-modules = crane.buildWorkspaceMember {
+      voyager-modules-dev = crane.buildWorkspaceMember {
         crateDirFromRoot = voy-modules-list;
         pname = "voyager-modules";
         version = "0.0.0";
         dev = true;
+      };
+
+      voyager-modules = crane.buildWorkspaceMember {
+        crateDirFromRoot = voy-modules-list;
+        pname = "voyager-modules";
+        version = "0.0.0";
       };
 
       voyager = crane.buildWorkspaceMember attrs;
@@ -52,6 +58,7 @@
           # );
           voyager-dev = mkCi false voyager-dev.packages.voyager-dev;
         }
+        // voyager-modules-dev.packages
         // voyager-modules.packages;
       # we don't actually have any tests currently
       # checks = voyager.checks // voyager-modules.checks;
