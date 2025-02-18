@@ -196,6 +196,7 @@
         ./lib/scroll-verifier/scroll-verifier.nix
         ./uniond/proto.nix
         ./app/app.nix
+        ./app2/app2.nix
         ./docs/docs.nix
         ./docs/openapi.nix
         ./ceremony/ceremony.nix
