@@ -5,7 +5,7 @@ upgrade_policy = "compatible"
 version        = "1.0.0"
 
 [addresses]
-ibc  = "0x8230e4a17bb9c6858054d9826b2ecc7b8e216b52b49e4e99b1dec8d2c744cda5"
+ibc  = "_"
 zkgm = "_"
 
 [dev-addresses]
