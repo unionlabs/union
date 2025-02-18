@@ -63,32 +63,43 @@ module ibc::bytes_bit_iterator {
 
     struct BytesBitIterator has drop {
         bz: vector<u8>,
-        pos: u32
+        pos: u32,
+        little_endian: bool,
+        reverse: bool
     }
 
-    public fun new(bytes: vector<u8>, skip: u32): BytesBitIterator {
+    public fun new(bytes: vector<u8>, skip: u32, little_endian: bool): BytesBitIterator {
         // TODO(aeryz): assert skip
-        BytesBitIterator { bz: bytes, pos: skip }
+        BytesBitIterator { bz: bytes, pos: skip, little_endian, reverse: false }
     }
 
-    public fun new_rev(bytes: vector<u8>, skip: u32): BytesBitIterator {
+    public fun new_rev(bytes: vector<u8>, skip: u32, little_endian: bool): BytesBitIterator {
         // TODO(aeryz): assert skip
-        vector::reverse(&mut bytes);
-        BytesBitIterator { bz: bytes, pos: skip }
-    }
-
-    public fun rev(self: &mut BytesBitIterator) {
-        vector::reverse(&mut self.bz);
-    }
-
-    public fun skip(self: &mut BytesBitIterator, count: u32) {
-        self.pos = self.pos + count;
+        BytesBitIterator {
+            bz: bytes,
+            pos: ((vector::length(&bytes) * 8) as u32) - skip,
+            little_endian,
+            reverse: true
+        }
     }
 
     public fun get_bit(self: &BytesBitIterator, index: u64): bool {
-        let pos = 7 - index / 8;
+        let pos = index / 8;
         let bit = ((index % 8) as u8);
+        if (self.little_endian) {
+            bit = 7 - bit;
+        };
         (*vector::borrow(&self.bz, pos) >> bit)
         & 1 != 0
+    }
+
+    public fun next(self: &mut BytesBitIterator): bool {
+        self.pos = if (self.reverse) {
+            self.pos - 1
+        } else {
+            self.pos + 1
+        };
+        let pos = self.pos;
+        get_bit(self, (pos as u64))
     }
 }
