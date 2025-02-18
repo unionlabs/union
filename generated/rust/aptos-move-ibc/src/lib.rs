@@ -25,10 +25,10 @@ pub mod channel_handshake {
             (t0,): (impl Into<::move_bindgen::move_core_types::language_storage::TypeTag>,),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(channel_handshake).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(channel_open_ack).parse().unwrap(),
                 vec![t0.into().into()],
@@ -54,10 +54,10 @@ pub mod channel_handshake {
             (t0,): (impl Into<::move_bindgen::move_core_types::language_storage::TypeTag>,),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(channel_handshake).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(channel_open_confirm).parse().unwrap(),
                 vec![t0.into().into()],
@@ -81,10 +81,10 @@ pub mod channel_handshake {
             (t0,): (impl Into<::move_bindgen::move_core_types::language_storage::TypeTag>,),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(channel_handshake).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(channel_open_init).parse().unwrap(),
                 vec![t0.into().into()],
@@ -112,10 +112,10 @@ pub mod channel_handshake {
             (t0,): (impl Into<::move_bindgen::move_core_types::language_storage::TypeTag>,),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(channel_handshake).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(channel_open_try).parse().unwrap(),
                 vec![t0.into().into()],
@@ -140,7 +140,7 @@ pub mod acknowledge_packet {
         fn acknowledge_packet(
             &self,
             contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
-            (_0, _1, _2, _3, _4, _5, _6, _7, _8): (
+            (_0, _1, _2, _3, _4, _5, _6, _7, _8, _9): (
                 ::move_bindgen::aptos_types::account_address::AccountAddress,
                 Vec<u32>,
                 Vec<u32>,
@@ -148,16 +148,17 @@ pub mod acknowledge_packet {
                 Vec<u64>,
                 Vec<u64>,
                 Vec<Vec<u8>>,
+                ::move_bindgen::aptos_types::account_address::AccountAddress,
                 Vec<u8>,
                 u64,
             ),
             (t0,): (impl Into<::move_bindgen::move_core_types::language_storage::TypeTag>,),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(acknowledge_packet).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(acknowledge_packet).parse().unwrap(),
                 vec![t0.into().into()],
@@ -171,6 +172,7 @@ pub mod acknowledge_packet {
                     ::move_bindgen::bcs::to_bytes(&_6).unwrap(),
                     ::move_bindgen::bcs::to_bytes(&_7).unwrap(),
                     ::move_bindgen::bcs::to_bytes(&_8).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(&_9).unwrap(),
                 ],
             )
         }
@@ -195,7 +197,7 @@ pub mod move_in_cosmos_client {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
@@ -205,25 +207,23 @@ pub mod move_in_cosmos_client {
                         },
                         type_arguments: vec![],
                         arguments: vec![],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
             let (ret_0,) = ::move_bindgen::serde_json::from_value::<
                 (
                     <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::Raw,
-                ),
+                )
             >(value)?;
             Ok(
                 (
                     <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::from_raw(
-                        ret_0,
+                        ret_0
                     ),
-                )
-                    .0,
+                ).0
             )
         }
     }
@@ -287,7 +287,7 @@ pub mod dispatcher {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
@@ -297,25 +297,23 @@ pub mod dispatcher {
                         },
                         type_arguments: vec![],
                         arguments: vec![],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
             let (ret_0,) = ::move_bindgen::serde_json::from_value::<
                 (
                     <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::Raw,
-                ),
+                )
             >(value)?;
             Ok(
                 (
                     <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::from_raw(
-                        ret_0,
+                        ret_0
                     ),
-                )
-                    .0,
+                ).0
             )
         }
     }
@@ -327,23 +325,25 @@ pub mod recv_packet {
         fn recv_packet(
             &self,
             contract_address: ::move_bindgen::aptos_types::account_address::AccountAddress,
-            (_0, _1, _2, _3, _4, _5, _6, _7): (
+            (_0, _1, _2, _3, _4, _5, _6, _7, _8, _9): (
                 ::move_bindgen::aptos_types::account_address::AccountAddress,
                 Vec<u32>,
                 Vec<u32>,
                 Vec<Vec<u8>>,
                 Vec<u64>,
                 Vec<u64>,
+                Vec<Vec<u8>>,
+                ::move_bindgen::aptos_types::account_address::AccountAddress,
                 Vec<u8>,
                 u64,
             ),
             (t0,): (impl Into<::move_bindgen::move_core_types::language_storage::TypeTag>,),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(recv_packet).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(recv_packet).parse().unwrap(),
                 vec![t0.into().into()],
@@ -356,6 +356,8 @@ pub mod recv_packet {
                     ::move_bindgen::bcs::to_bytes(&_5).unwrap(),
                     ::move_bindgen::bcs::to_bytes(&_6).unwrap(),
                     ::move_bindgen::bcs::to_bytes(&_7).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(&_8).unwrap(),
+                    ::move_bindgen::bcs::to_bytes(&_9).unwrap(),
                 ],
             )
         }
@@ -382,10 +384,10 @@ pub mod timeout_packet {
             (t0,): (impl Into<::move_bindgen::move_core_types::language_storage::TypeTag>,),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(timeout_packet).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(timeout_packet).parse().unwrap(),
                 vec![t0.into().into()],
@@ -443,7 +445,7 @@ pub mod ibc {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
@@ -453,13 +455,13 @@ pub mod ibc {
                         },
                         type_arguments: vec![],
                         arguments: vec![
-                            ::move_bindgen::serde_json::to_value(& < u32 as
-                            ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
+                            ::move_bindgen::serde_json
+                                ::to_value(&<u32 as ::move_bindgen::MoveOutputType>::into_raw(_0))
+                                .unwrap()
                         ],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
@@ -482,7 +484,7 @@ pub mod ibc {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
@@ -492,13 +494,13 @@ pub mod ibc {
                         },
                         type_arguments: vec![],
                         arguments: vec![
-                            ::move_bindgen::serde_json::to_value(& < u32 as
-                            ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
+                            ::move_bindgen::serde_json
+                                ::to_value(&<u32 as ::move_bindgen::MoveOutputType>::into_raw(_0))
+                                .unwrap()
                         ],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
@@ -513,10 +515,10 @@ pub mod ibc {
             (_0, _1, _2, _3): (u32, u32, Vec<u8>, u64),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(ibc).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(connection_open_ack).parse().unwrap(),
                 vec![],
@@ -534,10 +536,10 @@ pub mod ibc {
             (_0, _1, _2): (u32, Vec<u8>, u64),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(ibc).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(connection_open_confirm).parse().unwrap(),
                 vec![],
@@ -554,10 +556,10 @@ pub mod ibc {
             (_0, _1): (u32, u32),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(ibc).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(connection_open_init).parse().unwrap(),
                 vec![],
@@ -573,10 +575,10 @@ pub mod ibc {
             (_0, _1, _2, _3, _4): (u32, u32, u32, Vec<u8>, u64),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(ibc).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(connection_open_try).parse().unwrap(),
                 vec![],
@@ -603,7 +605,7 @@ pub mod ibc {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
@@ -613,15 +615,16 @@ pub mod ibc {
                         },
                         type_arguments: vec![],
                         arguments: vec![
-                            ::move_bindgen::serde_json::to_value(& < u32 as
-                            ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
-                            ::move_bindgen::serde_json::to_value(& < u64 as
-                            ::move_bindgen::MoveOutputType > ::into_raw(_1)).unwrap(),
+                            ::move_bindgen::serde_json
+                                ::to_value(&<u32 as ::move_bindgen::MoveOutputType>::into_raw(_0))
+                                .unwrap(),
+                            ::move_bindgen::serde_json
+                                ::to_value(&<u64 as ::move_bindgen::MoveOutputType>::into_raw(_1))
+                                .unwrap()
                         ],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
@@ -636,10 +639,10 @@ pub mod ibc {
             (_0, _1, _2): (String, Vec<u8>, Vec<u8>),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(ibc).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(create_client).parse().unwrap(),
                 vec![],
@@ -666,7 +669,7 @@ pub mod ibc {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
@@ -676,13 +679,13 @@ pub mod ibc {
                         },
                         type_arguments: vec![],
                         arguments: vec![
-                            ::move_bindgen::serde_json::to_value(& < u32 as
-                            ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
+                            ::move_bindgen::serde_json
+                                ::to_value(&<u32 as ::move_bindgen::MoveOutputType>::into_raw(_0))
+                                .unwrap()
                         ],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
@@ -710,7 +713,7 @@ pub mod ibc {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
@@ -720,13 +723,15 @@ pub mod ibc {
                         },
                         type_arguments: vec![],
                         arguments: vec![
-                            ::move_bindgen::serde_json::to_value(& < Vec < u8 > as
-                            ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
+                            ::move_bindgen::serde_json
+                                ::to_value(
+                                    &<Vec<u8> as ::move_bindgen::MoveOutputType>::into_raw(_0)
+                                )
+                                .unwrap()
                         ],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
@@ -751,7 +756,7 @@ pub mod ibc {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
@@ -761,30 +766,27 @@ pub mod ibc {
                         },
                         type_arguments: vec![],
                         arguments: vec![
-                            ::move_bindgen::serde_json::to_value(& < u32 as
-                            ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
+                            ::move_bindgen::serde_json
+                                ::to_value(&<u32 as ::move_bindgen::MoveOutputType>::into_raw(_0))
+                                .unwrap()
                         ],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
             let (ret_0,) = ::move_bindgen::serde_json::from_value::<
                 (
-                    <Option<
-                        super::connection_end::ConnectionEnd,
-                    > as ::move_bindgen::MoveOutputType>::Raw,
-                ),
+                    <Option<super::connection_end::ConnectionEnd> as ::move_bindgen::MoveOutputType>::Raw,
+                )
             >(value)?;
             Ok(
                 (
-                    <Option<
-                        super::connection_end::ConnectionEnd,
-                    > as ::move_bindgen::MoveOutputType>::from_raw(ret_0),
-                )
-                    .0,
+                    <Option<super::connection_end::ConnectionEnd> as ::move_bindgen::MoveOutputType>::from_raw(
+                        ret_0
+                    ),
+                ).0
             )
         }
         #[::move_bindgen::tracing::instrument(
@@ -801,25 +803,23 @@ pub mod ibc {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
                                 name: stringify!(ibc).parse().unwrap(),
                             },
-                            name: stringify!(get_counterparty_connection)
-                                .parse()
-                                .unwrap(),
+                            name: stringify!(get_counterparty_connection).parse().unwrap(),
                         },
                         type_arguments: vec![],
                         arguments: vec![
-                            ::move_bindgen::serde_json::to_value(& < u32 as
-                            ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
+                            ::move_bindgen::serde_json
+                                ::to_value(&<u32 as ::move_bindgen::MoveOutputType>::into_raw(_0))
+                                .unwrap()
                         ],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
@@ -844,7 +844,7 @@ pub mod ibc {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
@@ -854,28 +854,27 @@ pub mod ibc {
                         },
                         type_arguments: vec![],
                         arguments: vec![
-                            ::move_bindgen::serde_json::to_value(& < u32 as
-                            ::move_bindgen::MoveOutputType > ::into_raw(_0)).unwrap(),
+                            ::move_bindgen::serde_json
+                                ::to_value(&<u32 as ::move_bindgen::MoveOutputType>::into_raw(_0))
+                                .unwrap()
                         ],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
             let (ret_0,) = ::move_bindgen::serde_json::from_value::<
                 (
                     <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::Raw,
-                ),
+                )
             >(value)?;
             Ok(
                 (
                     <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::from_raw(
-                        ret_0,
+                        ret_0
                     ),
-                )
-                    .0,
+                ).0
             )
         }
         #[::move_bindgen::tracing::instrument(
@@ -891,7 +890,7 @@ pub mod ibc {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
@@ -901,10 +900,9 @@ pub mod ibc {
                         },
                         type_arguments: vec![],
                         arguments: vec![],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
@@ -928,7 +926,7 @@ pub mod ibc {
             let response = self
                 .client()
                 .view(
-                    &::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
+                    &(::move_bindgen::aptos_rest_client::aptos_api_types::ViewRequest {
                         function: ::move_bindgen::aptos_rest_client::aptos_api_types::EntryFunctionId {
                             module: ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                                 address: contract_address.into(),
@@ -938,25 +936,23 @@ pub mod ibc {
                         },
                         type_arguments: vec![],
                         arguments: vec![],
-                    },
-                    ledger_version,
-                )
-                .await?
+                    }),
+                    ledger_version
+                ).await?
                 .into_inner();
             let value = ::move_bindgen::serde_json::Value::from(response);
             ::move_bindgen::tracing::debug!(% value, "fetched response");
             let (ret_0,) = ::move_bindgen::serde_json::from_value::<
                 (
                     <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::Raw,
-                ),
+                )
             >(value)?;
             Ok(
                 (
                     <::move_bindgen::aptos_rest_client::aptos_api_types::Address as ::move_bindgen::MoveOutputType>::from_raw(
-                        ret_0,
+                        ret_0
                     ),
-                )
-                    .0,
+                ).0
             )
         }
         fn submit_misbehaviour(
@@ -965,10 +961,10 @@ pub mod ibc {
             (_0, _1): (u32, Vec<u8>),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(ibc).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(submit_misbehaviour).parse().unwrap(),
                 vec![],
@@ -984,10 +980,10 @@ pub mod ibc {
             (_0, _1): (u32, Vec<u8>),
         ) -> ::move_bindgen::aptos_types::transaction::EntryFunction {
             ::move_bindgen::aptos_types::transaction::EntryFunction::new(
-                ::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
+                (::move_bindgen::aptos_rest_client::aptos_api_types::MoveModuleId {
                     address: contract_address.into(),
                     name: stringify!(ibc).parse().unwrap(),
-                }
+                })
                 .into(),
                 stringify!(update_client).parse().unwrap(),
                 vec![],
@@ -1010,10 +1006,10 @@ pub mod ibc {
         ::move_bindgen::MoveOutputType,
     )]
     #[serde(crate = "::move_bindgen::serde")]
-    pub struct ClientCreatedEvent {
+    pub struct CreateClient {
         pub client_id: u32,
         pub client_type: String,
-        pub consensus_height: u64,
+        pub counterparty_chain_id: String,
     }
     #[derive(
         Debug,
@@ -1046,7 +1042,7 @@ pub mod ibc {
         ::move_bindgen::MoveOutputType,
     )]
     #[serde(crate = "::move_bindgen::serde")]
-    pub struct WriteAcknowledgement {
+    pub struct WriteAck {
         pub packet: super::packet::Packet,
         pub acknowledgement: Vec<u8>,
     }
@@ -1062,7 +1058,7 @@ pub mod ibc {
         ::move_bindgen::MoveOutputType,
     )]
     #[serde(crate = "::move_bindgen::serde")]
-    pub struct SendPacket {
+    pub struct PacketSend {
         pub source_channel: u32,
         pub destination_channel: u32,
         pub data: Vec<u8>,
@@ -1081,10 +1077,10 @@ pub mod ibc {
         ::move_bindgen::MoveOutputType,
     )]
     #[serde(crate = "::move_bindgen::serde")]
-    pub struct ClientUpdated {
+    pub struct UpdateClient {
         pub client_id: u32,
         pub client_type: String,
-        pub height: u64,
+        pub counterparty_height: u64,
     }
     #[derive(
         Debug,
@@ -1136,7 +1132,7 @@ pub mod ibc {
         ::move_bindgen::MoveOutputType,
     )]
     #[serde(crate = "::move_bindgen::serde")]
-    pub struct RecvPacket {
+    pub struct PacketRecv {
         pub packet: super::packet::Packet,
     }
     #[derive(
@@ -1166,7 +1162,7 @@ pub mod ibc {
         ::move_bindgen::MoveOutputType,
     )]
     #[serde(crate = "::move_bindgen::serde")]
-    pub struct AcknowledgePacket {
+    pub struct PacketAck {
         pub packet: super::packet::Packet,
         pub acknowledgement: Vec<u8>,
     }
@@ -1308,8 +1304,8 @@ pub mod packet {
     )]
     #[serde(crate = "::move_bindgen::serde")]
     pub struct Packet {
-        pub source_channel: u32,
-        pub destination_channel: u32,
+        pub source_channel_id: u32,
+        pub destination_channel_id: u32,
         pub data: Vec<u8>,
         pub timeout_height: u64,
         pub timeout_timestamp: u64,

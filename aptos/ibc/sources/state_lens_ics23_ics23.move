@@ -61,14 +61,13 @@
 module ibc::state_lens_ics23_ics23_lc {
     use std::vector;
     use std::bcs;
-    use std::string::String;
+    use std::string::{Self, String};
     use aptos_std::smart_table::{Self, SmartTable};
     use std::object;
     // use std::timestamp;
     // use ibc::ics23;
     use ibc::ethabi;
     use ibc::bcs_utils;
-    use ibc::consensus_state_update::{ConsensusStateUpdate, Self};
     use ibc::height::{Self, Height};
 
     struct TendermintConsensusState has drop {
@@ -95,11 +94,10 @@ module ibc::state_lens_ics23_ics23_lc {
     }
 
     struct ClientState has copy, drop, store {
-        chain_id: vector<u8>,
-        trusting_period: u64,
-        max_clock_drift: u64,
-        frozen_height: u64,
-        latest_height: u64,
+        l2_chain_id: String,
+        l1_client_id: u32,
+        l2_client_id: u32,
+        l2_latest_height: u64,
         contract_address: vector<u8>
     }
 
@@ -114,7 +112,7 @@ module ibc::state_lens_ics23_ics23_lc {
         client_id: u32,
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>
-    ): (ConsensusStateUpdate, String) {
+    ): (vector<u8>, vector<u8>, String) {
         let client_state = decode_client_state(client_state_bytes);
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
@@ -141,18 +139,7 @@ module ibc::state_lens_ics23_ics23_lc {
 
         move_to(&client_signer, state);
 
-        let state_update = consensus_state_update::new(
-            client_state_bytes,
-            consensus_state_bytes,
-            client_state.latest_height
-        );
-        // let state_update = ConsensusStateUpdate {
-        //     client_state_commitment: encode_client_state(&client_state),
-        //     consensus_state_commitment: encode_consensus_state(&consensus_state),
-        //     height: client_state.latest_height
-        // };
-
-        (state_update, client_state.chain_id)
+        (client_state_bytes, consensus_state_bytes, client_state.l2_chain_id)
     }
 
     public fun latest_height(client_id: u32): u64 acquires State {
@@ -275,11 +262,10 @@ module ibc::state_lens_ics23_ics23_lc {
         let buf = bcs_utils::new(buf);
 
         ClientState {
-            chain_id: bcs_utils::peel_fixed_bytes(&mut buf, 31)
-            trusting_period: bcs_utils::peel_u64(&mut buf),
-            max_clock_drift: bcs_utils::peel_u64(&mut buf),
-            frozen_height: bcs_utils::peel_u64(&mut buf),
-            latest_height: bcs_utils::peel_u64(&mut buf),
+            l2_chain_id: bcs_utils::peel_string(&mut buf),
+            l1_client_id: bcs_utils::peel_u32(&mut buf),
+            l2_client_id: bcs_utils::peel_u32(&mut buf),
+            l2_latest_height: bcs_utils::peel_u64(&mut buf),
             contract_address: bcs_utils::peel_fixed_bytes(&mut buf, 32)
         }
     }

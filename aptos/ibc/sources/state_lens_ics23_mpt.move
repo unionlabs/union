@@ -60,7 +60,7 @@
 
 module ibc::state_lens_ics23_mpt_lc {
     use std::vector;
-    use std::string::String;
+    use std::string::{String, Self};
 
     use aptos_std::smart_table::{Self, SmartTable};
     use aptos_std::aptos_hash::keccak256;
@@ -68,7 +68,6 @@ module ibc::state_lens_ics23_mpt_lc {
     use aptos_std::bcs;
     use aptos_std::object;
 
-    use ibc::consensus_state_update::{ConsensusStateUpdate, Self};
     use ibc::height::{Self, Height};
     use ibc::ethabi;
     use ibc::bcs_utils;
@@ -146,7 +145,7 @@ module ibc::state_lens_ics23_mpt_lc {
         client_id: u32,
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>
-    ): (ConsensusStateUpdate, String) {
+    ): (vector<u8>, vector<u8>, String) {
         let client_state = decode_client_state(client_state_bytes);
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
@@ -170,13 +169,7 @@ module ibc::state_lens_ics23_mpt_lc {
 
         move_to(&client_signer, state);
 
-        let state_update = ConsensusStateUpdate {
-            client_state_commitment: encode_client_state(&client_state),
-            consensus_state_commitment: encode_consensus_state(&consensus_state),
-            height: client_state.latest_height
-        };
-
-        (state_update, client_state.chain_id)
+        (client_state_bytes, consensus_state_bytes, client_state.l2_chain_id)
     }
 
     public fun latest_height(client_id: u32): u64 acquires State {

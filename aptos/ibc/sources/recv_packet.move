@@ -84,6 +84,8 @@ module ibc::recv_packet {
         packet_data: vector<vector<u8>>,
         packet_timeout_heights: vector<u64>,
         packet_timeout_timestamps: vector<u64>,
+        relayer_msgs: vector<vector<u8>>,
+        relayer: address,
         proof: vector<u8>,
         proof_height: u64
     ) {
@@ -106,11 +108,13 @@ module ibc::recv_packet {
             i = i + 1;
         };
 
-        process_receive<T>(packets, proof_height, proof, false);
+        process_receive<T>(packets, relayer, relayer_msgs, proof_height, proof, false);
     }
 
     public fun process_receive<T: key + store + drop>(
         packets: vector<Packet>,
+        maker: address,
+        maker_msgs: vector<vector<u8>>,
         proof_height: u64,
         proof: vector<u8>,
         intent: bool
@@ -183,6 +187,7 @@ module ibc::recv_packet {
                 );
 
             if (!set_packet_receive(commitment_key)) {
+                let maker_msg = *vector::borrow(&maker_msgs, i);
                 let acknowledgement =
                     if (intent) {
                         let param = helpers::pack_recv_intent_packet_params(packet, @ibc, b"");
@@ -191,7 +196,7 @@ module ibc::recv_packet {
                         let ack = dispatcher::get_return_value<T>();
 
                         dispatcher::delete_storage<T>();
-                        ibc::emit_recv_intent_packet(packet);
+                        ibc::emit_recv_intent_packet(packet, maker, maker_msg);
                         ack
                     } else {
                         let param = helpers::pack_recv_packet_params(packet, @ibc, b"");
@@ -200,7 +205,7 @@ module ibc::recv_packet {
                         let ack = dispatcher::get_return_value<T>();
 
                         dispatcher::delete_storage<T>();
-                        ibc::emit_recv_packet(packet);
+                        ibc::emit_recv_packet(packet, maker, maker_msg);
                         ack
                     };
                 if (vector::length(&acknowledgement) > 0) {

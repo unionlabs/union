@@ -78,6 +78,7 @@ module ibc::acknowledge_packet {
         packet_timeout_heights: vector<u64>,
         packet_timeout_timestamps: vector<u64>,
         acknowledgements: vector<vector<u8>>,
+        maker: address,
         proof: vector<u8>,
         proof_height: u64
     ) {
@@ -157,7 +158,7 @@ module ibc::acknowledge_packet {
 
             dispatcher::delete_storage<T>();
 
-            ibc::emit_acknowledge_packet(packet, acknowledgement);
+            ibc::emit_acknowledge_packet(packet, acknowledgement, maker);
 
             i = i + 1;
         }

@@ -2,7 +2,7 @@ import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { createUnionClient } from "#mod.ts"
+import { createUnionClient, bech32AddressToHex } from "#mod.ts"
 
 import {
   getChannelInfo,
@@ -51,20 +51,21 @@ const cliArgs = parseArgs({
 // npx tsx playground/movement-to-union.ts --private-key
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const WRAPPED_MUNO_DENOM = "0xe464e3224064bab061d6dc1602ba74a1f15768d1fb40e4051b968a8f071641dd"
+const WRAPPED_MUNO_DENOM = "0xdc380d94af18d322b40cac307659794064ec2549dabc3b23fd3d6cacc00cb3dc"
 const AMOUNT = 1n
-const SOURCE_CHAIN_ID = "177"
+const SOURCE_CHAIN_ID = "250"
 const DESTINATION_CHAIN_ID = "union-testnet-9"
 
-const RECEIVER =
-  "756E696F6E31336B6B73687A74716C79396D63326D6C366D66676D716B6566353676366A656B6D7A37777934"
+const RECEIVER = bech32AddressToHex({ address: "bbn14vcpe0yt8xdzaapm8yy6tm26sf45rdgu4u2ka9" })
+// const RECEIVER =
+//   "756E696F6E31786434787A356E346371657638643378657270666A656367706565706C34667834323263676A"
 /* 
 --------------------------------------------------------
 -------------- HOW TO CALCULATE RECEIVER :-------------- 
 --------------------------------------------------------
 
-~/dev/union (movement_integration) ✗) $ printf "%s" union13kkshztqly9mc2ml6mfgmqkef56v6jekmz7wy4  | xxd -p -u -c 10000
-756E696F6E31336B6B73687A74716C79396D63326D6C366D66676D716B6566353676366A656B6D7A37777934
+~/dev/union (movement_integration) ✗) $ printf "%s" union1xd4xz5n4cqev8d3xerpfjecgpeepl4fx422cgj  | xxd -p -u -c 10000
+756E696F6E31786434787A356E346371657638643378657270666A656367706565706C34667834323263676A
 */
 
 const channels = await getRecommendedChannels()
@@ -76,14 +77,14 @@ if (channel_info === null) {
   // process.exit(1)
   channel_info = {
     source_chain_id: SOURCE_CHAIN_ID,
-    source_port_id: "cebf41f47bdde649131694af50980b70ecd328d88a9b6c2993dae6405b0c88ed",
-    source_channel_id: 5,
-    source_connection_id: 15,
+    source_port_id: "88ce60bb48d0a4499c3d8aea70860d088b4abc0a09ed64a9678a8a1203f0fbab",
+    source_channel_id: 1,
+    source_connection_id: 1,
     destination_chain_id: DESTINATION_CHAIN_ID,
     destination_port_id:
       "756e696f6e3178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c32343763717a3636396565",
-    destination_channel_id: 7,
-    destination_connection_id: 11
+    destination_channel_id: 16,
+    destination_connection_id: 17
   }
 }
 
@@ -121,7 +122,7 @@ const account = Account.fromPrivateKey({ privateKey })
 const unionClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
   account: account,
-  transport: http("https://aptos.testnet.porto.movementlabs.xyz/v1")
+  transport: http("https://aptos.testnet.bardock.movementlabs.xyz/v1")
 })
 
 const transfer = await unionClient.transferAsset({

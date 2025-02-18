@@ -149,7 +149,7 @@ module ibc::ibc {
     struct CreateClient has copy, drop, store {
         client_id: u32,
         client_type: String,
-        counterpaty_chain_id: String
+        counterparty_chain_id: String
     }
 
     #[event]
@@ -229,18 +229,22 @@ module ibc::ibc {
 
     #[event]
     struct RecvIntentPacket has drop, store {
-        packet: Packet
+        packet: Packet,
+        maker: address,
+        maker_msg: vector<u8>
     }
 
     #[event]
     struct PacketRecv has drop, store {
-        packet: Packet
+        packet: Packet,
+        maker: address,
+        maker_msg: vector<u8>
     }
 
     #[event]
     struct PacketSend has drop, store {
-        source_channel_id: u32,
-        destination_channel_id: u32,
+        source_channel: u32,
+        destination_channel: u32,
         data: vector<u8>,
         timeout_height: u64,
         timeout_timestamp: u64
@@ -254,7 +258,8 @@ module ibc::ibc {
     #[event]
     struct PacketAck has drop, store {
         packet: Packet,
-        acknowledgement: vector<u8>
+        acknowledgement: vector<u8>,
+        maker: address,
     }
 
     #[event]
@@ -330,7 +335,7 @@ module ibc::ibc {
         let client_id = generate_client_identifier();
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        let (update, counterparty_chain_id) =
+        let (client_state, consensus_state, counterparty_chain_id) =
             light_client::create_client(
                 client_type,
                 &get_ibc_signer(),
@@ -348,7 +353,7 @@ module ibc::ibc {
         table::upsert(
             &mut store.commitments,
             commitment::client_state_commitment_key(client_id),
-            update.client_state_commitment
+            client_state
         );
 
         let latest_height = light_client::latest_height(client_type, client_id);
@@ -356,11 +361,11 @@ module ibc::ibc {
         table::upsert(
             &mut store.commitments,
             commitment::consensus_state_commitment_key(client_id, latest_height),
-            update.consensus_state_commitment
+            consensus_state
         );
 
         event::emit(
-            CreateClient { client_id, client_type, counterpaty_chain_id: latest_height }
+            CreateClient { client_id, client_type, counterparty_chain_id: counterparty_chain_id }
         );
     }
 
@@ -1036,7 +1041,7 @@ module ibc::ibc {
     ///
     /// * `ibc_app`: The signer of the calling contract.
     /// * `source_port`: The address of the calling contract.
-    /// * `source_channel_id`: The source channel that will be used for sending this packet.
+    /// * `source_channel`: The source channel that will be used for sending this packet.
     /// * `timeout_height`: The height in the COUNTERPARTY chain when this packet will time out. `0` means none, but note that both
     ///   `timeout_height` and `timeout_timestamp` cannot be `0`.
     /// * `timeout_timestamp`: The timestamp when this packet will time out. `0` means none, but note that both `timeout_height`
@@ -1045,7 +1050,7 @@ module ibc::ibc {
     public fun send_packet(
         ibc_app: &signer,
         source_port: address,
-        source_channel_id: u32,
+        source_channel: u32,
         timeout_height: u64,
         timeout_timestamp: u64,
         data: vector<u8>
@@ -1056,13 +1061,13 @@ module ibc::ibc {
             abort E_TIMEOUT_MUST_BE_SET
         };
 
-        let channel = ensure_channel_state(source_channel_id);
+        let channel = ensure_channel_state(source_channel);
 
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let packet =
             packet::new(
-                source_channel_id,
+                source_channel,
                 channel::counterparty_channel_id(&channel),
                 data,
                 timeout_height,
@@ -1070,7 +1075,7 @@ module ibc::ibc {
             );
         let commitment_key =
             commitment::batch_packets_commitment_key(
-                source_channel_id, commitment::commit_packet(&packet)
+                source_channel, commitment::commit_packet(&packet)
             );
         table::upsert(
             &mut store.commitments,
@@ -1080,8 +1085,8 @@ module ibc::ibc {
 
         event::emit(
             PacketSend {
-                source_channel_id: source_channel_id,
-                destination_channel_id: channel::counterparty_channel_id(&channel),
+                source_channel: source_channel,
+                destination_channel: channel::counterparty_channel_id(&channel),
                 data: data,
                 timeout_height: timeout_height,
                 timeout_timestamp: timeout_timestamp
@@ -1155,9 +1160,9 @@ module ibc::ibc {
                 packet_timeout_timestamp
             );
 
-        let source_channel_id = packet::source_channel_id(&packet);
-        let destination_channel_id = packet::destination_channel_id(&packet);
-        let channel = ensure_channel_state(source_channel_id);
+        let source_channel = packet::source_channel_id(&packet);
+        let destination_channel = packet::destination_channel_id(&packet);
+        let channel = ensure_channel_state(source_channel);
         let client_id = ensure_connection_state(channel::connection_id(&channel));
         let client_type = client_id_to_type(client_id);
 
@@ -1167,7 +1172,7 @@ module ibc::ibc {
 
         let commitment_key =
             commitment::batch_receipts_commitment_key(
-                destination_channel_id, commitment::commit_packet(&packet)
+                destination_channel, commitment::commit_packet(&packet)
             );
         let err =
             verify_absent_commitment(
@@ -1195,7 +1200,7 @@ module ibc::ibc {
 
         let commitment_key =
             commitment::batch_packets_commitment_key(
-                source_channel_id, commitment::commit_packet(&packet)
+                source_channel, commitment::commit_packet(&packet)
             );
         table::remove(
             &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,
@@ -1345,12 +1350,12 @@ module ibc::ibc {
     }
 
     fun set_next_sequence_recv(
-        destination_channel_id: u32, received_sequence: u64
+        destination_channel: u32, received_sequence: u64
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let next_sequence_recv_key =
-            commitment::next_sequence_recv_commitment_key(destination_channel_id);
+            commitment::next_sequence_recv_commitment_key(destination_channel);
 
         let expected_recv_sequence =
             from_bcs::to_u64(
@@ -1368,10 +1373,10 @@ module ibc::ibc {
         );
     }
 
-    fun set_next_sequence_ack(source_channel_id: u32, ack_sequence: u64) acquires IBCStore {
+    fun set_next_sequence_ack(source_channel: u32, ack_sequence: u64) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        let commitment_key = commitment::next_sequence_ack_commitment_key(source_channel_id);
+        let commitment_key = commitment::next_sequence_ack_commitment_key(source_channel);
 
         let expected_ack_sequence =
             from_bcs::to_u64(*table::borrow(&store.commitments, commitment_key));
@@ -1583,18 +1588,18 @@ module ibc::ibc {
         string_utils::to_string(&bcs::to_bytes(&addr))
     }
 
-    public(friend) fun emit_recv_packet(packet: Packet) {
-        event::emit(PacketRecv { packet })
+    public(friend) fun emit_recv_packet(packet: Packet, maker: address, maker_msg: vector<u8>) {
+        event::emit(PacketRecv { packet, maker, maker_msg })
     }
 
-    public(friend) fun emit_recv_intent_packet(packet: Packet) {
-        event::emit(RecvIntentPacket { packet })
+    public(friend) fun emit_recv_intent_packet(packet: Packet, maker: address, maker_msg: vector<u8>) {
+        event::emit(RecvIntentPacket { packet, maker, maker_msg })
     }
 
     public(friend) fun emit_acknowledge_packet(
-        packet: Packet, acknowledgement: vector<u8>
+        packet: Packet, acknowledgement: vector<u8>, maker: address
     ) {
-        event::emit(PacketAck { packet, acknowledgement });
+        event::emit(PacketAck { packet, acknowledgement, maker });
     }
 
     // #[test(ibc_signer = @ibc)]

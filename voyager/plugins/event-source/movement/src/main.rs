@@ -318,8 +318,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     })
                     .map(|(typ, data, hash)| {
                         let event = match dbg!(typ).name.0.as_str() {
-                            "ClientCreatedEvent" => from_raw_event::<ibc::ClientCreatedEvent>(data),
-                            "ClientUpdated" => from_raw_event::<ibc::ClientUpdated>(data),
+                            "CreateClient" => from_raw_event::<ibc::CreateClient>(data),
+                            "UpdateClient" => from_raw_event::<ibc::UpdateClient>(data),
                             "ConnectionOpenInit" => from_raw_event::<ibc::ConnectionOpenInit>(data),
                             "ConnectionOpenTry" => from_raw_event::<ibc::ConnectionOpenTry>(data),
                             "ConnectionOpenAck" => from_raw_event::<ibc::ConnectionOpenAck>(data),
@@ -330,12 +330,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             "ChannelOpenTry" => from_raw_event::<ibc::ChannelOpenTry>(data),
                             "ChannelOpenAck" => from_raw_event::<ibc::ChannelOpenAck>(data),
                             "ChannelOpenConfirm" => from_raw_event::<ibc::ChannelOpenConfirm>(data),
-                            "WriteAcknowledgement" => {
-                                from_raw_event::<ibc::WriteAcknowledgement>(data)
-                            }
-                            "RecvPacket" => from_raw_event::<ibc::RecvPacket>(data),
-                            "SendPacket" => from_raw_event::<ibc::SendPacket>(data),
-                            "AcknowledgePacket" => from_raw_event::<ibc::AcknowledgePacket>(data),
+                            "WriteAck" => from_raw_event::<ibc::WriteAck>(data),
+                            "PacketRecv" => from_raw_event::<ibc::PacketRecv>(data),
+                            "PacketSend" => from_raw_event::<ibc::PacketSend>(data),
+                            "PacketAck" => from_raw_event::<ibc::PacketAck>(data),
                             "TimeoutPacket" => from_raw_event::<ibc::TimeoutPacket>(data),
                             unknown => panic!("unknown event `{unknown}`"),
                         };
@@ -370,7 +368,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Ordering::Less => {
                             let next_height = (latest_height - height).clamp(1, 10) + height;
                             conc(
-                                ((height + 1)..next_height)
+                                (height + 1..next_height)
                                     .map(|height| {
                                         call(PluginMessage::new(
                                             self.plugin_name(),
@@ -406,58 +404,58 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             }) => {
                 let (full_event, client_id): (FullEvent, u32) = match event {
                     events::IbcEvent::CreateClient(event) => (
-                        CreateClient {
+                        (CreateClient {
                             client_id: event.client_id,
                             client_type: ClientType::new(event.client_type),
-                        }
+                        })
                         .into(),
                         event.client_id,
                     ),
                     events::IbcEvent::UpdateClient(event) => (
-                        UpdateClient {
+                        (UpdateClient {
                             client_id: event.client_id,
                             client_type: ClientType::new(event.client_type),
-                            height: event.height,
-                        }
+                            height: event.counterparty_height,
+                        })
                         .into(),
                         event.client_id,
                     ),
                     events::IbcEvent::ConnectionOpenInit(event) => (
-                        ConnectionOpenInit {
+                        (ConnectionOpenInit {
                             client_id: event.client_id,
                             connection_id: event.connection_id,
                             counterparty_client_id: event.counterparty_client_id,
-                        }
+                        })
                         .into(),
                         event.client_id,
                     ),
                     events::IbcEvent::ConnectionOpenTry(event) => (
-                        ConnectionOpenTry {
+                        (ConnectionOpenTry {
                             client_id: event.client_id,
                             connection_id: event.connection_id,
                             counterparty_client_id: event.counterparty_client_id,
                             counterparty_connection_id: event.counterparty_connection_id,
-                        }
+                        })
                         .into(),
                         event.client_id,
                     ),
                     events::IbcEvent::ConnectionOpenAck(event) => (
-                        ConnectionOpenAck {
+                        (ConnectionOpenAck {
                             client_id: event.client_id,
                             connection_id: event.connection_id,
                             counterparty_client_id: event.counterparty_client_id,
                             counterparty_connection_id: event.counterparty_connection_id,
-                        }
+                        })
                         .into(),
                         event.client_id,
                     ),
                     events::IbcEvent::ConnectionOpenConfirm(event) => (
-                        ConnectionOpenConfirm {
+                        (ConnectionOpenConfirm {
                             client_id: event.client_id,
                             connection_id: event.connection_id,
                             counterparty_client_id: event.counterparty_client_id,
                             counterparty_connection_id: event.counterparty_connection_id,
-                        }
+                        })
                         .into(),
                         event.client_id,
                     ),
@@ -478,13 +476,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = connection.client_id;
 
                         (
-                            ChannelOpenInit {
+                            (ChannelOpenInit {
                                 port_id: event.port_id.parse().unwrap(),
                                 channel_id: event.channel_id,
                                 counterparty_port_id: event.counterparty_port_id.into(),
                                 connection,
                                 version: event.version,
-                            }
+                            })
                             .into(),
                             client_id,
                         )
@@ -507,14 +505,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = connection.client_id;
 
                         (
-                            ChannelOpenTry {
+                            (ChannelOpenTry {
                                 port_id: event.port_id.parse().unwrap(),
                                 channel_id: event.channel_id,
                                 counterparty_port_id: event.counterparty_port_id.into(),
                                 counterparty_channel_id: event.counterparty_channel_id,
                                 connection,
                                 version: event.version,
-                            }
+                            })
                             .into(),
                             client_id,
                         )
@@ -547,14 +545,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = connection.client_id;
 
                         (
-                            ChannelOpenAck {
+                            (ChannelOpenAck {
                                 port_id: event.port_id.parse().unwrap(),
                                 channel_id: event.channel_id,
                                 counterparty_port_id: event.counterparty_port_id.into(),
                                 counterparty_channel_id: event.counterparty_channel_id,
                                 connection,
                                 version: channel.version,
-                            }
+                            })
                             .into(),
                             client_id,
                         )
@@ -587,14 +585,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = connection.client_id;
 
                         (
-                            ChannelOpenConfirm {
+                            (ChannelOpenConfirm {
                                 port_id: event.port_id.parse().unwrap(),
                                 channel_id: event.channel_id,
                                 counterparty_port_id: event.counterparty_port_id.into(),
                                 counterparty_channel_id: event.counterparty_channel_id,
                                 connection,
                                 version: channel.version,
-                            }
+                            })
                             .into(),
                             client_id,
                         )
@@ -608,7 +606,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.destination_channel,
+                                event.packet.destination_channel_id,
                                 e.try_get()?,
                             )
                             .await?;
@@ -616,7 +614,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = destination_channel.connection.client_id;
 
                         (
-                            WriteAck {
+                            (WriteAck {
                                 packet_data: event.packet.data.into(),
                                 acknowledgement: event.acknowledgement.into(),
                                 packet: PacketMetadata {
@@ -625,7 +623,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     timeout_height: event.packet.timeout_height,
                                     timeout_timestamp: event.packet.timeout_timestamp,
                                 },
-                            }
+                            })
                             .into(),
                             client_id,
                         )
@@ -639,7 +637,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.destination_channel,
+                                event.packet.destination_channel_id,
                                 e.try_get()?,
                             )
                             .await?;
@@ -647,7 +645,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = destination_channel.connection.client_id;
 
                         (
-                            PacketRecv {
+                            (PacketRecv {
                                 packet_data: event.packet.data.into(),
                                 packet: PacketMetadata {
                                     source_channel,
@@ -656,7 +654,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     timeout_timestamp: event.packet.timeout_timestamp,
                                 },
                                 maker_msg: Default::default(),
-                            }
+                            })
                             .into(),
                             client_id,
                         )
@@ -678,7 +676,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = source_channel.connection.client_id;
 
                         (
-                            PacketSend {
+                            (PacketSend {
                                 packet_data: event.data.into(),
                                 packet: PacketMetadata {
                                     source_channel,
@@ -686,7 +684,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     timeout_height: event.timeout_height,
                                     timeout_timestamp: event.timeout_timestamp,
                                 },
-                            }
+                            })
                             .into(),
                             client_id,
                         )
@@ -700,7 +698,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.source_channel,
+                                event.packet.source_channel_id,
                                 e.try_get()?,
                             )
                             .await?;
@@ -708,7 +706,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         let client_id = source_channel.connection.client_id;
 
                         (
-                            PacketAck {
+                            (PacketAck {
                                 packet_data: event.packet.data.into(),
                                 packet: PacketMetadata {
                                     source_channel,
@@ -717,7 +715,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     timeout_timestamp: event.packet.timeout_timestamp,
                                 },
                                 acknowledgement: event.acknowledgement.into(),
-                            }
+                            })
                             .into(),
                             client_id,
                         )

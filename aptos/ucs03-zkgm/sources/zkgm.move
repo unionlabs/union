@@ -155,7 +155,7 @@ module zkgm::ibc_app {
         contract_calldata: vector<u8>
     }
 
-    struct IIBCModuleOnRecvPacketParams has copy, drop, store {
+    struct IIBCModuleOnPacketRecvParams has copy, drop, store {
         packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>
@@ -261,20 +261,20 @@ module zkgm::ibc_app {
     }
 
     fun serialize_salt(
-        path: u256, destination_channel: u32, token: vector<u8>
+        path: u256, destination_channel_id: u32, token: vector<u8>
     ): vector<u8> {
         let data = vector::empty<u8>();
         vector::append(&mut data, bcs::to_bytes(&path));
-        vector::append(&mut data, bcs::to_bytes(&destination_channel));
+        vector::append(&mut data, bcs::to_bytes(&destination_channel_id));
         vector::append(&mut data, token);
         data
     }
 
     #[view]
     public fun predict_wrapped_token(
-        path: u256, destination_channel: u32, token: vector<u8>
+        path: u256, destination_channel_id: u32, token: vector<u8>
     ): (address, vector<u8>) {
-        let salt = hash::sha3_256(serialize_salt(path, destination_channel, token));
+        let salt = hash::sha3_256(serialize_salt(path, destination_channel_id, token));
 
         let wrapped_address = object::create_object_address(&get_vault_addr(), salt);
         (wrapped_address, salt)
@@ -805,7 +805,7 @@ module zkgm::ibc_app {
             zkgm_packet::new(
                 salt,
                 update_channel_path(
-                    path, ibc::packet::destination_channel(&ibc_packet)
+                    path, ibc::packet::destination_channel_id(&ibc_packet)
                 ),
                 *forward::instruction(&forward_packet)
             );
@@ -846,8 +846,8 @@ module zkgm::ibc_app {
         };
         let multiplex_ibc_packet =
             ibc::packet::new(
-                ibc::packet::source_channel(&ibc_packet),
-                ibc::packet::destination_channel(&ibc_packet),
+                ibc::packet::source_channel_id(&ibc_packet),
+                ibc::packet::destination_channel_id(&ibc_packet),
                 multiplex::encode_multiplex_sender_and_calldata(
                     *multiplex::sender(&multiplex_packet),
                     *multiplex::contract_calldata(&multiplex_packet)
@@ -856,8 +856,8 @@ module zkgm::ibc_app {
                 ibc::packet::timeout_timestamp(&ibc_packet)
             );
         let param =
-            copyable_any::pack<IIBCModuleOnRecvPacketParams>(
-                IIBCModuleOnRecvPacketParams {
+            copyable_any::pack<IIBCModuleOnPacketRecvParams>(
+                IIBCModuleOnPacketRecvParams {
                     packet: multiplex_ibc_packet,
                     relayer: relayer,
                     relayer_msg: relayer_msg
@@ -892,7 +892,7 @@ module zkgm::ibc_app {
         let (wrapped_address, salt) =
             predict_wrapped_token(
                 path,
-                ibc::packet::destination_channel(&ibc_packet),
+                ibc::packet::destination_channel_id(&ibc_packet),
                 *fungible_asset_order::base_token(&order)
             );
         let quote_token =
@@ -909,7 +909,7 @@ module zkgm::ibc_app {
                 deploy_token(salt);
                 let value =
                     update_channel_path(
-                        path, ibc::packet::destination_channel(&ibc_packet)
+                        path, ibc::packet::destination_channel_id(&ibc_packet)
                     );
                 smart_table::upsert(&mut store.token_origin, wrapped_address, value);
             };
@@ -929,9 +929,9 @@ module zkgm::ibc_app {
             }
         } else {
             if (fungible_asset_order::base_token_path(&order)
-                == (ibc::packet::source_channel(&ibc_packet) as u256)) {
+                == (ibc::packet::source_channel_id(&ibc_packet) as u256)) {
                 let balance_key = ChannelBalancePair {
-                    channel: ibc::packet::destination_channel(&ibc_packet),
+                    channel: ibc::packet::destination_channel_id(&ibc_packet),
                     token: quote_token
                 };
 
@@ -1061,8 +1061,8 @@ module zkgm::ibc_app {
         if (success && !multiplex::eureka(&multiplex_packet)) {
             let multiplex_ibc_packet =
                 ibc::packet::new(
-                    ibc::packet::source_channel(&ibc_packet),
-                    ibc::packet::destination_channel(&ibc_packet),
+                    ibc::packet::source_channel_id(&ibc_packet),
+                    ibc::packet::destination_channel_id(&ibc_packet),
                     multiplex::encode_multiplex_sender_and_calldata(
                         *multiplex::contract_address(&multiplex_packet),
                         *multiplex::contract_calldata(&multiplex_packet)
@@ -1150,7 +1150,7 @@ module zkgm::ibc_app {
                 let asset = get_metadata(base_token);
                 if (last_channel_from_path(
                     fungible_asset_order::base_token_path(&transfer_packet)
-                ) == ibc::packet::source_channel(&ibc_packet)) {
+                ) == ibc::packet::source_channel_id(&ibc_packet)) {
                     zkgm::fa_coin::mint_with_metadata(
                         &get_signer(),
                         market_maker,
@@ -1169,12 +1169,12 @@ module zkgm::ibc_app {
                 abort E_INVALID_FILL_TYPE
             }
         } else {
-            refund(ibc::packet::source_channel(&ibc_packet), transfer_packet);
+            refund(ibc::packet::source_channel_id(&ibc_packet), transfer_packet);
         };
     }
 
     fun refund(
-        source_channel: u32, asset_order_packet: FungibleAssetOrder
+        source_channel_id: u32, asset_order_packet: FungibleAssetOrder
     ) acquires SignerRef {
         let sender =
             from_bcs::to_address(*fungible_asset_order::sender(&asset_order_packet));
@@ -1185,7 +1185,7 @@ module zkgm::ibc_app {
 
         if (last_channel_from_path(
             fungible_asset_order::base_token_path(&asset_order_packet)
-        ) == source_channel) {
+        ) == source_channel_id) {
             zkgm::fa_coin::mint_with_metadata(
                 &get_signer(),
                 sender,
@@ -1280,7 +1280,7 @@ module zkgm::ibc_app {
     fun timeout_fungible_asset_order(
         ibc_packet: Packet, _salt: vector<u8>, transfer_packet: FungibleAssetOrder
     ) acquires SignerRef {
-        refund(ibc::packet::source_channel(&ibc_packet), transfer_packet);
+        refund(ibc::packet::source_channel_id(&ibc_packet), transfer_packet);
     }
 
     fun timeout_batch(
@@ -1315,8 +1315,8 @@ module zkgm::ibc_app {
         if (!multiplex::eureka(&multiplex_packet)) {
             let multiplex_ibc_packet =
                 ibc::packet::new(
-                    ibc::packet::source_channel(&ibc_packet),
-                    ibc::packet::destination_channel(&ibc_packet),
+                    ibc::packet::source_channel_id(&ibc_packet),
+                    ibc::packet::destination_channel_id(&ibc_packet),
                     multiplex::encode_multiplex_sender_and_calldata(
                         *multiplex::contract_address(&multiplex_packet),
                         *multiplex::contract_calldata(&multiplex_packet)
@@ -1435,10 +1435,10 @@ module zkgm::ibc_app {
         init_module_for_testing(admin);
 
         let path = 1;
-        let destination_channel = 1;
+        let destination_channel_id = 1;
         let token = b"test_token";
         let (wrapped_address, salt) =
-            predict_wrapped_token(path, destination_channel, token);
+            predict_wrapped_token(path, destination_channel_id, token);
         let deployed_token_addr = deploy_token(salt);
 
         std::debug::print(&string::utf8(b"wrapped address is: "));
@@ -1456,10 +1456,10 @@ module zkgm::ibc_app {
         init_module_for_testing(admin);
 
         let path = 1;
-        let destination_channel = 1;
+        let destination_channel_id = 1;
         let token = b"never_deployed_salt";
         let (wrapped_address, _salt) =
-            predict_wrapped_token(path, destination_channel, token);
+            predict_wrapped_token(path, destination_channel_id, token);
 
         assert!(!is_deployed(wrapped_address), 102);
     }
