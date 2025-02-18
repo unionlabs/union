@@ -277,11 +277,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         Ok(seq([
                             call(PluginMessage::new(
                                 self.plugin_name(),
-                                ModuleCall::SubmitMulticall(new),
+                                ModuleCall::SubmitMulticall(msgs),
                             )),
                             call(PluginMessage::new(
                                 self.plugin_name(),
-                                ModuleCall::SubmitMulticall(msgs),
+                                ModuleCall::SubmitMulticall(new),
                             )),
                         ]))
                     }
