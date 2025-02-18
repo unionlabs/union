@@ -90,7 +90,7 @@
         }
       }
     },
-    "channels": [1, 3, 4, 5, 8]
+    "channels": [1, 3, 4, 5, 8, 12]
   },
   {
     "chain_id": "elgafar-1",
@@ -321,5 +321,22 @@
         }
       }
     }
+  },
+  {
+    "chain_id": "250",
+    "ibc_interface": "ibc-move/aptos",
+    "deployments": {
+      "core": {
+        "address": "0xb307441e9bd2aec7f46ea221f0f26f11a080d94eb5ee3d5f493203098f037105",
+        "height": 1013470
+      },
+      "app": {
+        "ucs03": {
+          "address": "0x2541d488d3257ba8a85caac5ecf904511eebdb94bd02328e1453edf3621249ce",
+          "height": 1013853
+        }
+      }
+    },
+    "channels": [1]
   }
 ]
