@@ -3,7 +3,10 @@ use std::{collections::VecDeque, panic::AssertUnwindSafe};
 use alloy::{
     contract::{Error, RawCallBuilder},
     network::{AnyNetwork, EthereumWallet},
-    providers::{PendingTransactionError, Provider, ProviderBuilder, RootProvider},
+    providers::{
+        layers::{CacheLayer, CacheProvider},
+        PendingTransactionError, Provider, ProviderBuilder, RootProvider,
+    },
     signers::local::LocalSigner,
     sol_types::{SolEvent, SolInterface},
     transports::{BoxTransport, Transport, TransportError},
@@ -59,7 +62,7 @@ pub struct Module {
     pub ibc_handler_address: H160,
     pub multicall_address: H160,
 
-    pub provider: RootProvider<BoxTransport, AnyNetwork>,
+    pub provider: CacheProvider<RootProvider<BoxTransport, AnyNetwork>, BoxTransport, AnyNetwork>,
 
     pub keyring: ConcurrentKeyring<alloy::primitives::Address, LocalSigner<SigningKey>>,
 
@@ -95,6 +98,9 @@ pub struct Config {
 
     #[serde(default)]
     pub legacy: bool,
+
+    #[serde(default)]
+    pub max_cache_size: u32,
 }
 
 impl Plugin for Module {
@@ -107,6 +113,7 @@ impl Plugin for Module {
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let provider = ProviderBuilder::new()
             .network::<AnyNetwork>()
+            .layer(CacheLayer::new(config.max_cache_size))
             .on_builtin(&config.rpc_url)
             .await?;
 

@@ -1,7 +1,11 @@
 #![warn(clippy::unwrap_used)]
 
 use alloy::{
-    providers::{Provider, ProviderBuilder, RootProvider},
+    network::Ethereum,
+    providers::{
+        layers::{CacheLayer, CacheProvider},
+        Provider, ProviderBuilder, RootProvider,
+    },
     rpc::types::{TransactionInput, TransactionRequest},
     sol_types::{SolCall, SolValue},
     transports::BoxTransport,
@@ -47,7 +51,7 @@ pub struct Module {
 
     pub ibc_handler_address: H160,
 
-    pub provider: RootProvider<BoxTransport>,
+    pub provider: CacheProvider<RootProvider<BoxTransport>, BoxTransport, Ethereum>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,13 +62,19 @@ pub struct Config {
 
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
+
+    #[serde(default)]
+    pub max_cache_size: u32,
 }
 
 impl StateModule<IbcUnion> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
+        let provider = ProviderBuilder::new()
+            .layer(CacheLayer::new(config.max_cache_size))
+            .on_builtin(&config.rpc_url)
+            .await?;
 
         let chain_id = provider.get_chain_id().await?;
 
@@ -84,7 +94,10 @@ impl Module {
         Height::new(height)
     }
 
-    fn ibc_handler(&self) -> IbcInstance<BoxTransport, RootProvider<BoxTransport>> {
+    fn ibc_handler(
+        &self,
+    ) -> IbcInstance<BoxTransport, CacheProvider<RootProvider<BoxTransport>, BoxTransport, Ethereum>>
+    {
         Ibc::new(self.ibc_handler_address.get().into(), self.provider.clone())
     }
 

@@ -3,7 +3,11 @@
 use std::{cmp::Ordering, collections::VecDeque};
 
 use alloy::{
-    providers::{Provider, ProviderBuilder, RootProvider},
+    network::Ethereum,
+    providers::{
+        layers::{CacheLayer, CacheProvider},
+        Provider, ProviderBuilder, RootProvider,
+    },
     rpc::types::Filter,
     sol_types::SolEventInterface,
     transports::BoxTransport,
@@ -63,7 +67,7 @@ pub struct Module {
 
     pub chunk_block_fetch_size: u64,
 
-    pub provider: RootProvider<BoxTransport>,
+    pub provider: CacheProvider<RootProvider<BoxTransport>, BoxTransport, Ethereum>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -80,6 +84,9 @@ pub struct Config {
 
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
+
+    #[serde(default)]
+    pub max_cache_size: u32,
 }
 
 fn default_chunk_block_fetch_size() -> u64 {
@@ -124,7 +131,10 @@ impl Module {
     }
 
     pub async fn new(config: Config) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
+        let provider = ProviderBuilder::new()
+            .layer(CacheLayer::new(config.max_cache_size))
+            .on_builtin(&config.rpc_url)
+            .await?;
 
         // TODO: Assert chain id is correct
         let chain_id = provider.get_chain_id().await?;
