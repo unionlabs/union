@@ -101,7 +101,7 @@
             }
           );
         };
-        optimizer-delay-milliseconds = mkOption {
+        optimize_batch_limit = mkOption {
           type = types.int;
           default = 100;
         };
@@ -178,6 +178,7 @@
                   max_connections = cfg.db-max-conn;
                   idle_timeout = null;
                   max_lifetime = null;
+                  inherit (cfg) optimize_batch_limit;
                 };
               };
             }
