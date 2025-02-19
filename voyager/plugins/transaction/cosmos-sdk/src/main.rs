@@ -669,6 +669,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             .into()
         });
 
+        debug!(msgs = msgs.len(), "optimizing messages");
+
         Ok(PassResult {
             optimize_further: vec![],
             ready: msgs
