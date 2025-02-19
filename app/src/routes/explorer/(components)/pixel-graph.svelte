@@ -30,7 +30,7 @@ $: normalizedData =
     : []
 </script>
 
-<div class="flex flex-row-reverse items-end gap-[2.5px]">
+<div class="flex flex-row-reverse items-end gap-[2px]">
   {#each normalizedData as data}
     <Tooltip.Root>
       <Tooltip.Trigger>
