@@ -79,6 +79,7 @@ module ibc::ibc {
     use ibc::channel::{Self, Channel};
     use ibc::packet::{Self, Packet};
     use ibc::dispatcher;
+    use ibc::create_lens_client_event;
 
     friend ibc::recv_packet;
     friend ibc::channel_handshake;
@@ -150,6 +151,14 @@ module ibc::ibc {
         client_id: u32,
         client_type: String,
         counterparty_chain_id: String
+    }
+
+    #[event]
+    struct CreateLensClient has copy, drop, store {
+        client_id: u32,
+        l2_chain_id: String,
+        l1_client_id: u32,
+        l2_client_id: u32
     }
 
     #[event]
@@ -335,7 +344,7 @@ module ibc::ibc {
         let client_id = generate_client_identifier();
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
-        let (client_state, consensus_state, counterparty_chain_id) =
+        let (client_state, consensus_state, counterparty_chain_id, lens_client_event) =
             light_client::create_client(
                 client_type,
                 &get_ibc_signer(),
@@ -343,6 +352,16 @@ module ibc::ibc {
                 client_state,
                 consensus_state
             );
+
+        if (option::is_some(&lens_client_event)) {
+            let event = option::extract(&mut lens_client_event);
+            event::emit(CreateLensClient {        
+                client_id: create_lens_client_event::client_id(&event),
+                l2_chain_id: create_lens_client_event::l2_chain_id(&event),
+                l1_client_id: create_lens_client_event::l1_client_id(&event),
+                l2_client_id: create_lens_client_event::l2_client_id(&event)
+            });
+        };
 
         smart_table::upsert(&mut store.client_id_to_type, client_id, client_type);
 

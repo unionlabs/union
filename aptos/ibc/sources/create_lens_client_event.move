@@ -58,27 +58,43 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module ibc::consensus_state_update {
-    struct ConsensusStateUpdate {
-        client_state_commitment: vector<u8>,
-        consensus_state_commitment: vector<u8>,
-        height: u64
+module ibc::create_lens_client_event {
+    use std::string::String;
+
+    struct CreateLensClientEvent has copy, drop, store {
+        client_id: u32,
+        l2_chain_id: String,
+        l1_client_id: u32,
+        l2_client_id: u32
     }
 
-    public fun new(client_state_commitment: vector<u8>, consensus_state_commitment: vector<u8>, height: u64): ConsensusStateUpdate {
-        ConsensusStateUpdate { client_state_commitment, consensus_state_commitment, height }
+    public fun new(
+        client_id: u32,
+        l2_chain_id: String,
+        l1_client_id: u32,
+        l2_client_id: u32
+    ): CreateLensClientEvent {
+        CreateLensClientEvent {        
+            client_id,
+            l2_chain_id,
+            l1_client_id,
+            l2_client_id
+        }
     }
 
-    public fun client_state_commitment(update: &ConsensusStateUpdate): vector<u8> {
-        update.client_state_commitment
+    public fun client_id(self: &CreateLensClientEvent): u32 {
+        self.client_id
     }
 
-    public fun consensus_state_commitment(update: &ConsensusStateUpdate): vector<u8> {
-        update.consensus_state_commitment
+    public fun l2_chain_id(self: &CreateLensClientEvent): String {
+        self.l2_chain_id
     }
 
-    public fun height(update: &ConsensusStateUpdate): u64 {
-        update.height
+    public fun l1_client_id(self: &CreateLensClientEvent): u32 {
+        self.l1_client_id
     }
 
+    public fun l2_client_id(self: &CreateLensClientEvent): u32 {
+        self.l2_client_id
+    }
 }

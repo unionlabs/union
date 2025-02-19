@@ -62,7 +62,10 @@ module ibc::light_client {
     use ibc::cometbls_lc;
     use ibc::state_lens_ics23_mpt_lc;
     use ibc::state_lens_ics23_ics23_lc;
+    use ibc::create_lens_client_event::CreateLensClientEvent;
+
     use std::string::{Self, String};
+    use std::option::Option;
 
     const E_UNKNOWN_CLIENT_TYPE: u64 = 1;
     const CLIENT_TYPE_STATE_LENS_ICS23_MPT: vector<u8> = b"state-lens/ics23/mpt";
@@ -75,37 +78,31 @@ module ibc::light_client {
         client_id: u32,
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>
-    ): (vector<u8>, vector<u8>, String) {
+    ): (vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>) {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
-            let (client_state, consensus_state, counterparty_chain_id) =
-                cometbls_lc::create_client(
-                    ibc_signer,
-                    client_id,
-                    client_state_bytes,
-                    consensus_state_bytes
-                );
-            return (client_state, consensus_state, counterparty_chain_id)
+            return cometbls_lc::create_client(
+                ibc_signer,
+                client_id,
+                client_state_bytes,
+                consensus_state_bytes
+            )
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            let (client_state, consensus_state, counterparty_chain_id) =
-                state_lens_ics23_mpt_lc::create_client(
-                    ibc_signer,
-                    client_id,
-                    client_state_bytes,
-                    consensus_state_bytes
-                );
-            return (client_state, consensus_state, counterparty_chain_id)
+            return state_lens_ics23_mpt_lc::create_client(
+                ibc_signer,
+                client_id,
+                client_state_bytes,
+                consensus_state_bytes
+            )
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            let (client_state, consensus_state, counterparty_chain_id) =
-                state_lens_ics23_ics23_lc::create_client(
-                    ibc_signer,
-                    client_id,
-                    client_state_bytes,
-                    consensus_state_bytes
-                );
-            return (client_state, consensus_state, counterparty_chain_id)
+            return state_lens_ics23_ics23_lc::create_client(
+                ibc_signer,
+                client_id,
+                client_state_bytes,
+                consensus_state_bytes
+            )
         };
-        abort E_UNKNOWN_CLIENT_TYPE
 
+        abort E_UNKNOWN_CLIENT_TYPE
     }
 
     public fun status(client_type: String, client_id: u32): u64 {

@@ -59,15 +59,19 @@
 // TITLE.
 
 module ibc::cometbls_lc {
+    use aptos_std::smart_table::{Self, SmartTable};
+
     use std::vector;
     use std::bcs;
     use std::string::{Self, String};
-    use aptos_std::smart_table::{Self, SmartTable};
     use std::object;
     use std::timestamp;
+    use std::option::{Self, Option};
+
     use ibc::ics23;
     use ibc::ethabi;
     use ibc::bcs_utils;
+    use ibc::create_lens_client_event::CreateLensClientEvent;
     use ibc::groth16_verifier::{Self, ZKP};
     use ibc::height::{Self, Height};
 
@@ -137,7 +141,7 @@ module ibc::cometbls_lc {
         client_id: u32,
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>
-    ): (vector<u8>, vector<u8>, String) {
+    ): (vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>) {
         let client_state = decode_client_state(client_state_bytes);
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
@@ -164,7 +168,7 @@ module ibc::cometbls_lc {
 
         move_to(&client_signer, state);
 
-        (client_state_bytes, consensus_state_bytes, client_state.chain_id)
+        (client_state_bytes, consensus_state_bytes, client_state.chain_id, option::none())
     }
 
     public fun latest_height(client_id: u32): u64 acquires State {
