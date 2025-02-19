@@ -12,7 +12,7 @@ import {
   isValidBech32ContractAddress
 } from "@unionlabs/client"
 import { custom, getConnectorClient, switchChain, waitForTransactionReceipt } from "@wagmi/core"
-import {fromHex, isHex, type HttpTransport, toHex} from "viem"
+import { fromHex, isHex, type HttpTransport, toHex } from "viem"
 import { config, userAddrEvm } from "$lib/wallet/evm/config.ts"
 import { toast } from "svelte-sonner"
 import { aptosStore, getAptosWallet, userAddressAptos } from "$lib/wallet/aptos"
