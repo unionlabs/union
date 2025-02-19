@@ -1059,8 +1059,8 @@ pub mod ibc {
     )]
     #[serde(crate = "::move_bindgen::serde")]
     pub struct PacketSend {
-        pub source_channel: u32,
-        pub destination_channel: u32,
+        pub source_channel_id: u32,
+        pub destination_channel_id: u32,
         pub data: Vec<u8>,
         pub timeout_height: u64,
         pub timeout_timestamp: u64,

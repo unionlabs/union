@@ -252,8 +252,8 @@ module ibc::ibc {
 
     #[event]
     struct PacketSend has drop, store {
-        source_channel: u32,
-        destination_channel: u32,
+        source_channel_id: u32,
+        destination_channel_id: u32,
         data: vector<u8>,
         timeout_height: u64,
         timeout_timestamp: u64
@@ -1104,8 +1104,8 @@ module ibc::ibc {
 
         event::emit(
             PacketSend {
-                source_channel: source_channel,
-                destination_channel: channel::counterparty_channel_id(&channel),
+                source_channel_id: source_channel,
+                destination_channel_id: channel::counterparty_channel_id(&channel),
                 data: data,
                 timeout_height: timeout_height,
                 timeout_timestamp: timeout_timestamp

@@ -668,7 +668,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.source_channel,
+                                event.source_channel_id,
                                 e.try_get()?,
                             )
                             .await?;
