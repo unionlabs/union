@@ -43,4 +43,11 @@ impl IbcMessage {
             },
         }
     }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            IbcMessage::IbcV1(datagram) => datagram.name(),
+            IbcMessage::IbcUnion(datagram) => datagram.name(),
+        }
+    }
 }

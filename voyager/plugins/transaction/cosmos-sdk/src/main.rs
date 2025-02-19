@@ -249,7 +249,7 @@ impl Module {
                     // }
 
                     let batch_size = msgs.len();
-                    let msg_names = msgs.iter().map(|x| x.1.type_url.clone()).collect::<Vec<_>>();
+                    let msg_names = msgs.iter().map(|x| x.0.name()).collect::<Vec<_>>();
 
                     match self.broadcast_tx_commit(
                         signer,
