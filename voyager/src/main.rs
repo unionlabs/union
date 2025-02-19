@@ -160,6 +160,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         min_connections: None,
                         idle_timeout: None,
                         max_lifetime: None,
+                        optimize_batch_limit: None,
                     }),
                     optimizer_delay_milliseconds: 100,
                     ipc_client_request_timeout: Duration::new(60, 0),

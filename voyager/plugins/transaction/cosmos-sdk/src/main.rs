@@ -653,28 +653,29 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
     ) -> RpcResult<PassResult<VoyagerMessage>> {
+        let mut hook = SubmitTxHook::new(&self.chain_id, |submit_tx| {
+            PluginMessage::new(
+                self.plugin_name(),
+                ModuleCall::SubmitTransaction(
+                    submit_tx
+                        .datagrams
+                        .clone()
+                        .into_iter()
+                        .map(IbcMessage::from_raw_datagram)
+                        .collect::<Result<_, _>>()
+                        .unwrap(),
+                ),
+            )
+            .into()
+        });
+
         Ok(PassResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()
                 .enumerate()
                 .map(|(idx, mut op)| {
-                    SubmitTxHook::new(&self.chain_id, |submit_tx| {
-                        PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::SubmitTransaction(
-                                submit_tx
-                                    .datagrams
-                                    .clone()
-                                    .into_iter()
-                                    .map(IbcMessage::from_raw_datagram)
-                                    .collect::<Result<_, _>>()
-                                    .unwrap(),
-                            ),
-                        )
-                        .into()
-                    })
-                    .visit_op(&mut op);
+                    hook.visit_op(&mut op);
 
                     (vec![idx], op)
                 })

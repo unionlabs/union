@@ -36,6 +36,7 @@ pub mod metrics;
 #[derive(DebugNoBound, CloneNoBound)]
 pub struct PgQueue<T> {
     client: PgPool,
+    optimize_batch_limit: Option<i64>,
     __marker: PhantomData<fn() -> T>,
 }
 
@@ -47,6 +48,7 @@ pub struct PgQueueConfig {
     pub min_connections: Option<u32>,
     pub idle_timeout: Option<Duration>,
     pub max_lifetime: Option<Duration>,
+    pub optimize_batch_limit: Option<i64>,
 }
 
 impl PgQueueConfig {
@@ -174,6 +176,8 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         //     }
         // });
 
+        let optimize_batch_limit = config.optimize_batch_limit;
+
         let pool = config.into_pg_pool().await?;
 
         pool.execute_many(
@@ -224,6 +228,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 
         Ok(Self {
             client: pool,
+            optimize_batch_limit,
             __marker: PhantomData,
         })
     }
@@ -486,7 +491,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                   id ASC
                 FOR UPDATE
                   SKIP LOCKED
-                LIMIT 100)
+                LIMIT $2)
             RETURNING
               id,
               parents,
@@ -495,6 +500,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             "#,
         )
         .bind(tag)
+        .bind(self.optimize_batch_limit)
         .try_map(|x| Record::from_row(&x))
         .fetch_all(tx.as_mut())
         .await
