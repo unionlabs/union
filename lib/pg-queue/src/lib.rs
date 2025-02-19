@@ -486,7 +486,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                   id ASC
                 FOR UPDATE
                   SKIP LOCKED
-              )
+                LIMIT 100)
             RETURNING
               id,
               parents,
