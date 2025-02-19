@@ -62,13 +62,16 @@ module ibc::state_lens_ics23_ics23_lc {
     use std::vector;
     use std::bcs;
     use std::string::{Self, String};
-    use aptos_std::smart_table::{Self, SmartTable};
+    use std::option::{Self, Option};
     use std::object;
-    // use std::timestamp;
+
+    use aptos_std::smart_table::{Self, SmartTable};
+
     // use ibc::ics23;
     use ibc::ethabi;
     use ibc::bcs_utils;
     use ibc::height::{Self, Height};
+    use ibc::create_lens_client_event::{Self, CreateLensClientEvent};
 
     struct TendermintConsensusState has drop {
         timestamp: u64,
@@ -112,7 +115,7 @@ module ibc::state_lens_ics23_ics23_lc {
         client_id: u32,
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>
-    ): (vector<u8>, vector<u8>, String) {
+    ): (vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>) {
         let client_state = decode_client_state(client_state_bytes);
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
@@ -139,7 +142,14 @@ module ibc::state_lens_ics23_ics23_lc {
 
         move_to(&client_signer, state);
 
-        (client_state_bytes, consensus_state_bytes, client_state.l2_chain_id)
+        let lens_client_event = create_lens_client_event::new(
+            client_id,
+            client_state.l2_chain_id,
+            client_state.l1_client_id,
+            client_state.l2_client_id,
+        );
+
+        (client_state_bytes, consensus_state_bytes, client_state.l2_chain_id, option::some(lens_client_event))
     }
 
     public fun latest_height(client_id: u32): u64 acquires State {

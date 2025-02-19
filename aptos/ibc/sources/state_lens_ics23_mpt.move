@@ -59,6 +59,7 @@
 // TITLE.
 
 module ibc::state_lens_ics23_mpt_lc {
+    use std::option::{Self, Option};
     use std::vector;
     use std::string::{String, Self};
 
@@ -73,6 +74,7 @@ module ibc::state_lens_ics23_mpt_lc {
     use ibc::bcs_utils;
     use ibc::commitment;
     use ibc::cometbls_lc;
+    use ibc::create_lens_client_event::{Self, CreateLensClientEvent};
 
     const E_INVALID_CLIENT_STATE: u64 = 35200;
     const E_CONSENSUS_STATE_TIMESTAMP_ZERO: u64 = 35201;
@@ -145,7 +147,7 @@ module ibc::state_lens_ics23_mpt_lc {
         client_id: u32,
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>
-    ): (vector<u8>, vector<u8>, String) {
+    ): (vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>) {
         let client_state = decode_client_state(client_state_bytes);
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
@@ -169,7 +171,14 @@ module ibc::state_lens_ics23_mpt_lc {
 
         move_to(&client_signer, state);
 
-        (client_state_bytes, consensus_state_bytes, client_state.l2_chain_id)
+        let lens_client_event = create_lens_client_event::new(
+            client_id,
+            client_state.l2_chain_id,
+            client_state.l1_client_id,
+            client_state.l2_client_id,
+        );
+
+        (client_state_bytes, consensus_state_bytes, client_state.l2_chain_id, option::some(lens_client_event))
     }
 
     public fun latest_height(client_id: u32): u64 acquires State {
