@@ -376,7 +376,16 @@ impl Module {
 
         info!("submitting evm tx");
 
-        let gas_estimate = call.estimate_gas().await.map_err(TxSubmitError::Estimate)?;
+        let gas_estimate = call.estimate_gas().await.map_err(|e| {
+            if ErrorReporter(&e)
+                .to_string()
+                .contains("gas required exceeds")
+            {
+                TxSubmitError::BatchTooLarge
+            } else {
+                TxSubmitError::Estimate(e)
+            }
+        })?;
         //     .map_err(|e| {
         //     ErrorObject::owned(
         //         -1,
