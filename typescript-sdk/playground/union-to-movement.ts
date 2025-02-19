@@ -63,10 +63,10 @@ if (channel_info === null) {
     source_chain_id: SOURCE_CHAIN_ID,
     source_port_id:
       "756e696f6e3178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c32343763717a3636396565",
-    source_channel_id: 16,
-    source_connection_id: 17,
+    source_channel_id: 18,
+    source_connection_id: 23,
     destination_chain_id: DESTINATION_CHAIN_ID,
-    destination_port_id: "0x88ce60bb48d0a4499c3d8aea70860d088b4abc0a09ed64a9678a8a1203f0fbab",
+    destination_port_id: "0x7e385b7c720b279f6871bbd409dd2fb026d3193e2b40c705e8896d51141c1076",
     destination_channel_id: 1,
     destination_connection_id: 1
   }
@@ -85,7 +85,7 @@ let quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, MUNO_DENOM, channel_info)
 quoteToken = {
   type: "UNWRAPPED",
   value: {
-    quote_token: `0xdc380d94af18d322b40cac307659794064ec2549dabc3b23fd3d6cacc00cb3dc`
+    quote_token: `0x5b8dc541f42c8f31fceaf74f40e3e450a058406ca370779f96b25776c88f672e`
   }
 }
 

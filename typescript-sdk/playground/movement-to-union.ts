@@ -51,7 +51,7 @@ const cliArgs = parseArgs({
 // npx tsx playground/movement-to-union.ts --private-key
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const WRAPPED_MUNO_DENOM = "0xdc380d94af18d322b40cac307659794064ec2549dabc3b23fd3d6cacc00cb3dc"
+const WRAPPED_MUNO_DENOM = "0x5b8dc541f42c8f31fceaf74f40e3e450a058406ca370779f96b25776c88f672e"
 const AMOUNT = 1n
 const SOURCE_CHAIN_ID = "250"
 const DESTINATION_CHAIN_ID = "union-testnet-9"
@@ -77,14 +77,14 @@ if (channel_info === null) {
   // process.exit(1)
   channel_info = {
     source_chain_id: SOURCE_CHAIN_ID,
-    source_port_id: "88ce60bb48d0a4499c3d8aea70860d088b4abc0a09ed64a9678a8a1203f0fbab",
+    source_port_id: "7e385b7c720b279f6871bbd409dd2fb026d3193e2b40c705e8896d51141c1076",
     source_channel_id: 1,
     source_connection_id: 1,
     destination_chain_id: DESTINATION_CHAIN_ID,
     destination_port_id:
       "756e696f6e3178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c32343763717a3636396565",
-    destination_channel_id: 16,
-    destination_connection_id: 17
+    destination_channel_id: 18,
+    destination_connection_id: 23
   }
 }
 
