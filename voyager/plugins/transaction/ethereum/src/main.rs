@@ -485,7 +485,9 @@ impl Module {
                     TransportError::ErrorResp(e),
                 ))
                 | Error::TransportError(TransportError::ErrorResp(e)),
-            ) if e.message.contains("oversized data") => {
+            ) if e.message.contains("oversized data")
+                || e.message.contains("exceeds block gas limit") =>
+            {
                 if msgs.len() == 1 {
                     error!(error = %e.message, msg = ?msgs[0], "message is too large");
                     Ok(()) // drop the message
