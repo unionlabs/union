@@ -52,6 +52,12 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	"google.golang.org/protobuf/types/known/durationpb"
+
+	"github.com/strangelove-ventures/poa"
+	poamodule "github.com/strangelove-ventures/poa/api/module/v1"
+	_ "github.com/strangelove-ventures/poa/api/v1"
+	_ "github.com/strangelove-ventures/poa/keeper"
+	_ "github.com/strangelove-ventures/poa/module"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -69,6 +75,7 @@ var (
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
+		poa.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
 		minttypes.ModuleName,
@@ -103,6 +110,7 @@ var (
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
+		poa.ModuleName,
 		stakingtypes.ModuleName,
 		authz.ModuleName,
 		genutiltypes.ModuleName,
@@ -120,6 +128,7 @@ var (
 		// cosmos sdk modules
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
+		poa.ModuleName,
 		stakingtypes.ModuleName,
 		feegrant.ModuleName,
 		group.ModuleName,
@@ -285,6 +294,12 @@ var (
 			{
 				Name:   circuittypes.ModuleName,
 				Config: appconfig.WrapAny(&circuitmodulev1.Module{}),
+			},
+			{
+				Name: poa.ModuleName,
+				Config: appconfig.WrapAny(&poamodule.Module{
+					Authority: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua",
+				}),
 			},
 			// this line is used by starport scaffolding # stargate/app/moduleConfig
 		},

@@ -73,6 +73,12 @@ import (
 	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 
+	_ "github.com/strangelove-ventures/poa"               // import for side-effects
+	_ "github.com/strangelove-ventures/poa/api/module/v1" // import for side-effects
+	_ "github.com/strangelove-ventures/poa/api/v1"        // import for side-effects
+	poakeeper "github.com/strangelove-ventures/poa/keeper"
+	_ "github.com/strangelove-ventures/poa/module" // import for side-effects
+
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
@@ -139,6 +145,9 @@ type App struct {
 	// CosmWasm
 	WasmKeeper       wasmkeeper.Keeper
 	ScopedWasmKeeper capabilitykeeper.ScopedKeeper
+
+	// POA
+	POAKeeper poakeeper.Keeper
 
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
@@ -243,6 +252,7 @@ func New(
 		&app.NFTKeeper,
 		&app.GroupKeeper,
 		&app.CircuitBreakerKeeper,
+		&app.POAKeeper,
 		// this line is used by starport scaffolding # stargate/app/keeperDefinition
 	); err != nil {
 		panic(err)
