@@ -932,6 +932,43 @@ contract GetDeployed is Script {
     }
 }
 
+contract DryUpgradeUCS03 is Script {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    address immutable owner;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        owner = vm.envAddress("OWNER");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address ucs03 = getDeployed(Protocols.make(Protocols.UCS03));
+
+        console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
+
+        IWETH weth = IWETH(vm.envAddress("WETH"));
+
+        address newImplementation = address(new UCS03Zkgm());
+        vm.prank(owner);
+        UCS03Zkgm(ucs03).upgradeToAndCall(
+            newImplementation, abi.encodeCall(UCS03Zkgm.setWeth, (weth))
+        );
+    }
+}
+
 contract UpgradeUCS03 is Script {
     using LibString for *;
 

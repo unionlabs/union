@@ -210,12 +210,14 @@ _: {
           rpc-url = "https://rpc-sepolia.rockx.com";
           private-key = ''"$1"'';
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+          weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
         }
         {
           network = "holesky";
           rpc-url = "https://1rpc.io/holesky";
           private-key = ''"$1"'';
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+          weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
         }
         {
           network = "0g-testnet";
@@ -395,6 +397,7 @@ _: {
           dry ? false,
           rpc-url,
           protocol,
+          weth ? "",
           ...
         }:
         mkCi false (
@@ -433,6 +436,7 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              WETH=${weth} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               OWNER="${pkgs.lib.optionalString dry "$argc_owner_pk"}" \
@@ -753,6 +757,18 @@ _: {
                 {
                   dry = true;
                   protocol = "UCS01";
+                }
+                // args
+              );
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-dryupgrade-${args.network}-ucs03";
+              value = eth-upgrade (
+                {
+                  dry = true;
+                  protocol = "UCS03";
                 }
                 // args
               );
