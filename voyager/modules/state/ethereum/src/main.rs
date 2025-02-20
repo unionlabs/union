@@ -1,10 +1,9 @@
 #![warn(clippy::unwrap_used)]
 
 use alloy::{
-    providers::{Provider, ProviderBuilder, RootProvider},
+    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
     rpc::types::{TransactionInput, TransactionRequest},
     sol_types::{SolCall, SolValue},
-    transports::BoxTransport,
 };
 use ibc_solidity::{
     ILightClient,
@@ -41,13 +40,12 @@ async fn main() {
     Module::run().await
 }
 
-#[derive(Debug, Clone)]
 pub struct Module {
     pub chain_id: ChainId,
 
     pub ibc_handler_address: H160,
 
-    pub provider: RootProvider<BoxTransport>,
+    pub provider: DynProvider,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,13 +56,21 @@ pub struct Config {
 
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
+
+    #[serde(default)]
+    pub max_cache_size: u32,
 }
 
 impl StateModule<IbcUnion> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
+        let provider = DynProvider::new(
+            ProviderBuilder::new()
+                .layer(CacheLayer::new(config.max_cache_size))
+                .on_builtin(&config.rpc_url)
+                .await?,
+        );
 
         let chain_id = provider.get_chain_id().await?;
 
@@ -84,7 +90,7 @@ impl Module {
         Height::new(height)
     }
 
-    fn ibc_handler(&self) -> IbcInstance<BoxTransport, RootProvider<BoxTransport>> {
+    fn ibc_handler(&self) -> IbcInstance<(), DynProvider> {
         Ibc::new(self.ibc_handler_address.get().into(), self.provider.clone())
     }
 
@@ -184,28 +190,36 @@ impl Module {
         let ibc_handler = self.ibc_handler();
 
         let raw = ibc_handler
-            .connections(connection_id)
+            .provider()
+            .call(&TransactionRequest {
+                from: None,
+                to: Some(alloy::primitives::Address::from(self.ibc_handler_address).into()),
+                input: TransactionInput::new(
+                    Ibc::connectionsCall { _0: connection_id }
+                        .abi_encode()
+                        .into(),
+                ),
+                ..Default::default()
+            })
             .block(execution_height.into())
-            .call()
             .await
-            .map_err(|err| {
+            .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching connection: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?
-            ._0
-            .try_into()
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!("invalid connection: {}", ErrorReporter(err)),
+                    format!("error querying channel: {}", ErrorReporter(e)),
                     None::<()>,
                 )
             })?;
 
-        Ok(Some(raw))
+        let connection = Connection::abi_decode_params(&raw, true).map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                format!("error decoding channel: {}", ErrorReporter(e)),
+                None::<()>,
+            )
+        })?;
+
+        Ok(Some(connection))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]

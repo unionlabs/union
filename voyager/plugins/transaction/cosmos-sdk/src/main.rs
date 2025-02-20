@@ -249,7 +249,7 @@ impl Module {
                     // }
 
                     let batch_size = msgs.len();
-                    let msg_names = msgs.iter().map(|x| x.1.type_url.clone()).collect::<Vec<_>>();
+                    let msg_names = msgs.iter().map(|x| x.0.name()).collect::<Vec<_>>();
 
                     match self.broadcast_tx_commit(
                         signer,
@@ -653,28 +653,31 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
     ) -> RpcResult<PassResult<VoyagerMessage>> {
+        let mut hook = SubmitTxHook::new(&self.chain_id, |submit_tx| {
+            PluginMessage::new(
+                self.plugin_name(),
+                ModuleCall::SubmitTransaction(
+                    submit_tx
+                        .datagrams
+                        .clone()
+                        .into_iter()
+                        .map(IbcMessage::from_raw_datagram)
+                        .collect::<Result<_, _>>()
+                        .unwrap(),
+                ),
+            )
+            .into()
+        });
+
+        debug!(msgs = msgs.len(), "optimizing messages");
+
         Ok(PassResult {
             optimize_further: vec![],
             ready: msgs
                 .into_iter()
                 .enumerate()
                 .map(|(idx, mut op)| {
-                    SubmitTxHook::new(&self.chain_id, |submit_tx| {
-                        PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::SubmitTransaction(
-                                submit_tx
-                                    .datagrams
-                                    .clone()
-                                    .into_iter()
-                                    .map(IbcMessage::from_raw_datagram)
-                                    .collect::<Result<_, _>>()
-                                    .unwrap(),
-                            ),
-                        )
-                        .into()
-                    })
-                    .visit_op(&mut op);
+                    hook.visit_op(&mut op);
 
                     (vec![idx], op)
                 })

@@ -25,7 +25,7 @@ jaq-syn                        = "1.6.0"
 jsonrpsee                      = { workspace = true, features = ["server", "client", "async-client", "macros", "tracing"] }
 macros                         = { workspace = true }
 reconnecting-jsonrpc-ws-client = { workspace = true }
-reth-ipc                       = { git = "https://github.com/paradigmxyz/reth" }
+reth-ipc                       = { git = "https://github.com/benluelo/reth", branch = "client-request-timeout" }
 schemars                       = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde_json                     = { workspace = true }

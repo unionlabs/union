@@ -1,9 +1,6 @@
 #![warn(clippy::unwrap_used)]
 
-use alloy::{
-    providers::{Provider, ProviderBuilder, RootProvider},
-    transports::BoxTransport,
-};
+use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
 use ethereum_light_client_types::StorageProof;
 use ibc_union_spec::{path::StorePath, IbcUnion};
 use jsonrpsee::{
@@ -40,7 +37,7 @@ pub struct Module {
 
     pub ibc_handler_address: H160,
 
-    pub provider: RootProvider<BoxTransport>,
+    pub provider: DynProvider,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,13 +48,21 @@ pub struct Config {
 
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
+
+    #[serde(default)]
+    pub max_cache_size: u32,
 }
 
 impl ProofModule<IbcUnion> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ProofModuleInfo) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
+        let provider = DynProvider::new(
+            ProviderBuilder::new()
+                .layer(CacheLayer::new(config.max_cache_size))
+                .on_builtin(&config.rpc_url)
+                .await?,
+        );
 
         let chain_id = provider.get_chain_id().await?;
 

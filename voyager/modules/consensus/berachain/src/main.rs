@@ -1,9 +1,6 @@
 use std::fmt::Debug;
 
-use alloy::{
-    providers::{Provider, ProviderBuilder, RootProvider},
-    transports::BoxTransport,
-};
+use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use beacon_api_types::{ExecutionPayloadHeaderSsz, Mainnet};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -35,7 +32,7 @@ pub struct Module {
     pub l1_chain_id: ChainId,
     pub l2_chain_id: ChainId,
     pub ibc_handler_address: H160,
-    pub eth_provider: RootProvider<BoxTransport>,
+    pub eth_provider: DynProvider,
     pub tm_client: cometbft_rpc::Client,
 }
 
@@ -55,7 +52,8 @@ impl ConsensusModule for Module {
     async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
         let tm_client = cometbft_rpc::Client::new(config.comet_ws_url).await?;
 
-        let eth_provider = ProviderBuilder::new().on_builtin(&config.rpc_url).await?;
+        let eth_provider =
+            DynProvider::new(ProviderBuilder::new().on_builtin(&config.rpc_url).await?);
 
         let l2_chain_id = ChainId::new(eth_provider.get_chain_id().await?.to_string());
 

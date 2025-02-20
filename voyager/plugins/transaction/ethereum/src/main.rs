@@ -3,10 +3,13 @@ use std::{collections::VecDeque, panic::AssertUnwindSafe};
 use alloy::{
     contract::{Error, RawCallBuilder},
     network::{AnyNetwork, EthereumWallet},
-    providers::{PendingTransactionError, Provider, ProviderBuilder, RootProvider},
+    providers::{
+        fillers::RecommendedFillers, layers::CacheLayer, DynProvider, PendingTransactionError,
+        Provider, ProviderBuilder,
+    },
     signers::local::LocalSigner,
     sol_types::{SolEvent, SolInterface},
-    transports::{BoxTransport, Transport, TransportError},
+    transports::TransportError,
 };
 use bip32::secp256k1::ecdsa::{self, SigningKey};
 use chain_utils::{
@@ -21,7 +24,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, info_span, instrument, trace, warn, Instrument};
+use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
 use unionlabs::{
     primitives::{H160, H256},
     ErrorReporter,
@@ -59,7 +62,7 @@ pub struct Module {
     pub ibc_handler_address: H160,
     pub multicall_address: H160,
 
-    pub provider: RootProvider<BoxTransport, AnyNetwork>,
+    pub provider: DynProvider<AnyNetwork>,
 
     pub keyring: ConcurrentKeyring<alloy::primitives::Address, LocalSigner<SigningKey>>,
 
@@ -95,6 +98,9 @@ pub struct Config {
 
     #[serde(default)]
     pub legacy: bool,
+
+    #[serde(default)]
+    pub max_cache_size: u32,
 }
 
 impl Plugin for Module {
@@ -105,10 +111,13 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let provider = ProviderBuilder::new()
-            .network::<AnyNetwork>()
-            .on_builtin(&config.rpc_url)
-            .await?;
+        let provider = DynProvider::new(
+            ProviderBuilder::new()
+                .network::<AnyNetwork>()
+                .layer(CacheLayer::new(config.max_cache_size))
+                .on_builtin(&config.rpc_url)
+                .await?,
+        );
 
         let raw_chain_id = provider.get_chain_id().await?;
         let chain_id = ChainId::new(raw_chain_id.to_string());
@@ -194,6 +203,8 @@ pub enum TxSubmitError {
     GasPriceTooHigh { max: u128, price: u128 },
     #[error("rpc error (this is just the IbcDatagram conversion functions but i need to make those errors better)")]
     RpcError(#[from] ErrorObjectOwned),
+    #[error("batch too large")]
+    BatchTooLarge,
 }
 
 #[async_trait]
@@ -236,7 +247,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
-            ModuleCall::SubmitMulticall(msgs) => {
+            ModuleCall::SubmitMulticall(mut msgs) => {
                 let res = self
                     .keyring
                     .with({
@@ -248,8 +259,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     })
                     .await;
 
-                let rewrap_msg =
-                    || PluginMessage::new(self.plugin_name(), ModuleCall::SubmitMulticall(msgs));
+                let rewrap_msg = || {
+                    PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::SubmitMulticall(msgs.clone()),
+                    )
+                };
 
                 match res {
                     Some(Ok(())) => Ok(Op::Noop),
@@ -266,6 +281,19 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ModuleCall::SubmitMulticall(msgs),
                         )),
                     ])),
+                    Some(Err(TxSubmitError::BatchTooLarge)) => {
+                        let new = msgs.split_off(msgs.len() / 2);
+                        Ok(seq([
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::SubmitMulticall(msgs),
+                            )),
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::SubmitMulticall(new),
+                            )),
+                        ]))
+                    }
                     Some(Err(err)) => Err(ErrorObject::owned(
                         -1,
                         ErrorReporter(err).to_string(),
@@ -294,13 +322,15 @@ impl Module {
         wallet: &LocalSigner<SigningKey>,
         ibc_messages: Vec<Datagram>,
     ) -> Result<(), TxSubmitError> {
-        let signer = ProviderBuilder::new()
-            .network::<AnyNetwork>()
-            .with_recommended_fillers()
-            // .filler(<NonceFiller>::default())
-            // .filler(ChainIdFiller::default())
-            .wallet(EthereumWallet::new(wallet.clone()))
-            .on_provider(self.provider.clone());
+        let signer = DynProvider::new(
+            ProviderBuilder::new()
+                .network::<AnyNetwork>()
+                .filler(AnyNetwork::recommended_fillers())
+                // .filler(<NonceFiller>::default())
+                // .filler(ChainIdFiller::default())
+                .wallet(EthereumWallet::new(wallet.clone()))
+                .on_provider(self.provider.clone()),
+        );
 
         if let Some(max_gas_price) = self.max_gas_price {
             let gas_price = self
@@ -325,7 +355,7 @@ impl Module {
 
         let msgs = process_msgs(&ibc, ibc_messages, wallet.address().0.into())?;
 
-        debug!(?msgs);
+        trace!(?msgs);
 
         let msg_names = msgs
             .iter()
@@ -334,7 +364,8 @@ impl Module {
             .collect::<Vec<_>>();
 
         let mut call = multicall.multicall(
-            msgs.into_iter()
+            msgs.clone()
+                .into_iter()
                 .map(|(_, call)| Call3 {
                     target: self.ibc_handler_address.into(),
                     allowFailure: true,
@@ -345,7 +376,16 @@ impl Module {
 
         info!("submitting evm tx");
 
-        let gas_estimate = call.estimate_gas().await.map_err(TxSubmitError::Estimate)?;
+        let gas_estimate = call.estimate_gas().await.map_err(|e| {
+            if ErrorReporter(&e)
+                .to_string()
+                .contains("gas required exceeds")
+            {
+                TxSubmitError::BatchTooLarge
+            } else {
+                TxSubmitError::Estimate(e)
+            }
+        })?;
         //     .map_err(|e| {
         //     ErrorObject::owned(
         //         -1,
@@ -449,17 +489,39 @@ impl Module {
                 error!("out of gas");
                 Err(TxSubmitError::OutOfGas)
             }
+            Err(
+                Error::PendingTransactionError(PendingTransactionError::TransportError(
+                    TransportError::ErrorResp(e),
+                ))
+                | Error::TransportError(TransportError::ErrorResp(e)),
+            ) if e.message.contains("oversized data")
+                || e.message.contains("exceeds block gas limit")
+                || e.message.contains("gas required exceeds") =>
+            {
+                if msgs.len() == 1 {
+                    error!(error = %e.message, msg = ?msgs[0], "message is too large");
+                    Ok(()) // drop the message
+                } else {
+                    warn!(error = %e.message, "batch is too large");
+                    Err(TxSubmitError::BatchTooLarge)
+                }
+            }
             Err(err) => Err(TxSubmitError::Error(err)),
         }
     }
 }
 
 #[allow(clippy::type_complexity)]
-fn process_msgs<T: Transport + Clone, P: Provider<T, AnyNetwork>>(
-    ibc_handler: &ibc_solidity::Ibc::IbcInstance<T, P, AnyNetwork>,
+fn process_msgs<'a>(
+    ibc_handler: &'a ibc_solidity::Ibc::IbcInstance<(), &'a DynProvider<AnyNetwork>, AnyNetwork>,
     msgs: Vec<Datagram>,
     relayer: H160,
-) -> RpcResult<Vec<(Datagram, RawCallBuilder<T, &P, AnyNetwork>)>> {
+) -> RpcResult<
+    Vec<(
+        Datagram,
+        RawCallBuilder<(), &'a &'a DynProvider<AnyNetwork>, AnyNetwork>,
+    )>,
+> {
     trace!(?msgs);
 
     msgs.clone()

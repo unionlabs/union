@@ -11,7 +11,7 @@
 
 use std::{
     collections::HashMap, ffi::OsStr, fmt::Write, fs::read_to_string, iter, path::PathBuf,
-    process::ExitCode,
+    process::ExitCode, time::Duration,
 };
 
 use anyhow::{anyhow, Context as _};
@@ -160,8 +160,10 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         min_connections: None,
                         idle_timeout: None,
                         max_lifetime: None,
+                        optimize_batch_limit: None,
                     }),
                     optimizer_delay_milliseconds: 100,
+                    ipc_client_request_timeout: Duration::new(60, 0),
                 },
             }),
             ConfigCmd::Schema => print_json(
@@ -518,6 +520,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         h.register::<IbcClassic>();
                         h.register::<IbcUnion>();
                     },
+                    Duration::new(60, 0),
                 )
                 .await?;
 
@@ -563,6 +566,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         h.register::<IbcClassic>();
                         h.register::<IbcUnion>();
                     },
+                    Duration::new(60, 0),
                 )
                 .await?;
 

@@ -57,7 +57,7 @@ builds:
       - 'packages.*.uniond-release'
       - 'packages.*.uniond-release-image'
       - 'packages.*.voyager'
-      - 'packages.*.voyager-dev'
+      - 'packages.*.voyager-modules'
     branch: main
   # build x86_64 on all branches
   - include:
