@@ -53,7 +53,7 @@ const quoteToken: Readable<Nullable<QuoteData>> = derived<
   ],
   ([$source, $asset, $destination], set) => {
     set(null)
-    
+
     if (!($source && $asset && $destination && ucs03channels)) return
 
     const channel = getChannelInfo($source, $destination, ucs03channels)
