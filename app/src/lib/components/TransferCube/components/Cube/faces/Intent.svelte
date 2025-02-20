@@ -1,17 +1,17 @@
 <script lang="ts">
-import Direction from "$lib/components/TransferFrom/components/Direction.svelte"
-import SelectedAsset from "$lib/components/TransferFrom/components/SelectedAsset.svelte"
+import Direction from "$lib/components/TransferCube/components/Direction.svelte"
+import SelectedAsset from "$lib/components/TransferCube/components/SelectedAsset.svelte"
 import { Button } from "$lib/components/ui/button"
-import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
-import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { CubeFaces } from "$lib/components/TransferCube/components/Cube/types.ts"
+import type { RawIntentsStore } from "$lib/components/TransferCube/transfer/raw-intents.ts"
 import { Input } from "$lib/components/ui/input"
 import Token from "$lib/components/token.svelte"
 import ArrowRightIcon from "virtual:icons/lucide/arrow-right"
 import { toDisplayName } from "$lib/utilities/chains"
 import Address from "$lib/components/address.svelte"
-import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
+import type { Intents } from "$lib/components/TransferCube/transfer/types.ts"
 import type { Chain } from "$lib/types.ts"
-import TokenBalance from "$lib/components/TransferFrom/components/TokenBalance.svelte"
+import TokenBalance from "$lib/components/TransferCube/components/TokenBalance.svelte"
 import InlineLoadingDots from "$lib/components/InlineLoadingDots.svelte"
 
 interface Props {

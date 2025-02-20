@@ -1,18 +1,18 @@
 <script lang="ts">
-import Intent from "$lib/components/TransferFrom/components/Cube/faces/Intent.svelte"
-import Chains from "$lib/components/TransferFrom/components/Cube/faces/Chains.svelte"
-import Assets from "$lib/components/TransferFrom/components/Cube/faces/Assets.svelte"
-import Transfer from "$lib/components/TransferFrom/components/Cube/faces/Transfer.svelte"
-import Cube from "$lib/components/TransferFrom/components/Cube/index.svelte"
+import Intent from "$lib/components/TransferCube/components/Cube/faces/Intent.svelte"
+import Chains from "$lib/components/TransferCube/components/Cube/faces/Chains.svelte"
+import Assets from "$lib/components/TransferCube/components/Cube/faces/Assets.svelte"
+import Transfer from "$lib/components/TransferCube/components/Cube/faces/Transfer.svelte"
+import Cube from "$lib/components/TransferCube/components/Cube/index.svelte"
 import type { Chain, Ucs03Channel } from "$lib/types.ts"
 import { derived, get, type Readable } from "svelte/store"
 import { getChannelInfo, getQuoteToken } from "@unionlabs/client"
-import { createRawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import { createRawIntentsStore } from "$lib/components/TransferCube/transfer/raw-intents.ts"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { userAddrEvm } from "$lib/wallet/evm"
 import { userAddressAptos } from "$lib/wallet/aptos"
-import { checkValidation } from "$lib/components/TransferFrom/transfer/validation.ts"
-import { createIntents } from "$lib/components/TransferFrom/transfer/intents.ts"
+import { checkValidation } from "$lib/components/TransferCube/transfer/validation.ts"
+import { createIntents } from "$lib/components/TransferCube/transfer/intents.ts"
 import { balances } from "$lib/stores/balances.ts"
 import { tokenInfos } from "$lib/stores/tokens.ts"
 import { onMount } from "svelte"
@@ -21,7 +21,7 @@ import type {
   DerivedSource,
   Nullable,
   QuoteData
-} from "$lib/components/TransferFrom/transfer/types.ts"
+} from "$lib/components/TransferCube/transfer/types.ts"
 import { persisted } from "svelte-persisted-store"
 
 export let chains: Array<Chain>

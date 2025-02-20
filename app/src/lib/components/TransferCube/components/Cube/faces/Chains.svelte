@@ -1,8 +1,8 @@
 <!-- ChainSelector.svelte -->
 <script lang="ts">
-import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
-import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
-import { TRANSFER_DEBUG } from "$lib/components/TransferFrom/transfer/config.ts"
+import type { RawIntentsStore } from "$lib/components/TransferCube/transfer/raw-intents.ts"
+import type { CubeFaces } from "$lib/components/TransferCube/components/Cube/types.ts"
+import { TRANSFER_DEBUG } from "$lib/components/TransferCube/transfer/config.ts"
 import type { Chain } from "$lib/types.ts"
 import { page } from "$app/stores"
 import ChainDetails from "$lib/chain-details.svelte"

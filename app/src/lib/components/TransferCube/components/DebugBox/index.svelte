@@ -7,8 +7,8 @@ import CollapsibleDisplay from "./CollapsibleDisplay.svelte"
 import CopyUrlButton from "./CopyUrlButton.svelte"
 import ResetButton from "./ResetButton.svelte"
 import { ScrollArea } from "$lib/components/ui/scroll-area"
-import type { IntentsStore } from "$lib/components/TransferFrom/transfer/intents.ts"
-import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { IntentsStore } from "$lib/components/TransferCube/transfer/intents.ts"
+import type { RawIntentsStore } from "$lib/components/TransferCube/transfer/raw-intents.ts"
 
 interface Props {
   stores: {

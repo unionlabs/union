@@ -1,8 +1,8 @@
 import type { Chain, Ucs03Channel, UserAddresses } from "$lib/types"
-import type { FormFields } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { FormFields } from "$lib/components/TransferCube/transfer/raw-intents.ts"
 import { fromHex } from "viem"
 import { bech32ToBech32Address, getChannelInfo } from "@unionlabs/client"
-import type { Intents, QuoteData } from "$lib/components/TransferFrom/transfer/types.ts"
+import type { Intents, QuoteData } from "$lib/components/TransferCube/transfer/types.ts"
 import type { Balances } from "$lib/stores/balances.ts"
 import type { TokenInfos } from "$lib/stores/tokens.ts"
 

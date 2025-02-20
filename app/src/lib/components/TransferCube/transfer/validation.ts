@@ -1,4 +1,4 @@
-import type { FormFields } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { FormFields } from "$lib/components/TransferCube/transfer/raw-intents.ts"
 import { isValidBech32Address } from "@unionlabs/client"
 import { isHex, parseUnits } from "viem"
 import { evmChainId, aptosChainId, cosmosChainId, isValidEvmAddress } from "@unionlabs/client"
@@ -6,7 +6,7 @@ import type { Chain } from "$lib/types"
 import type { Balances } from "$lib/stores/balances.ts"
 import type { UserAddresses } from "$lib/types"
 import type { getChannelInfo } from "@unionlabs/client"
-import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
+import type { Intents } from "$lib/components/TransferCube/transfer/types.ts"
 
 export type FieldErrors = Partial<Record<keyof FormFields, string>>
 
