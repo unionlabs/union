@@ -56,11 +56,7 @@ let checkedChains: Readable<Array<Chain>> = derived([chains, page], ([$chains, $
       features: chain.features,
       // this as statement should no longer be required in the next typescript release
       tokens: chain.tokens,
-      relayer_status: chain.relayer_status,
-      // @deprecated
-      assets: chain.assets.filter(
-        asset => asset.display_symbol !== null && asset.decimals !== null && asset.denom !== null
-      ) as Chain["assets"]
+      relayer_status: chain.relayer_status
     } as Chain
   })
 })

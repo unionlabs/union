@@ -33,17 +33,6 @@ export const chainsQueryDocument =
       block_url
       address_url
     }
-    assets {
-      denom
-      display_symbol
-      display_name
-      decimals
-      faucets(where: { enabled: {_eq: true}}) {
-        url
-        display_name
-      }
-      gas_token
-    }
     tokens {
       denom
       cw20 {

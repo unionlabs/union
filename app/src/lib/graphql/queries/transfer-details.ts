@@ -19,31 +19,9 @@ export const transfersBySourceHashBaseQueryDocument = graphql(/* GraphQL */ `
             packet_send_timestamp
             packet_recv_timestamp
             base_token
-            base_token_details {
-              decimals
-              denom
-              display_name
-              display_symbol
-              gas_token
-              logo_uri
-              origin
-              unwrapped_denom
-            }
-            base_token_name
-            base_token_symbol
             base_amount
             quote_amount
             quote_token
-            quote_token_details {
-              decimals
-              denom
-              display_name
-              display_symbol
-              gas_token
-              logo_uri
-              origin
-              unwrapped_denom
-            }
 
             traces {
                 type
