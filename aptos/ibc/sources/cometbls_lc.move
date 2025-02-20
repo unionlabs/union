@@ -707,7 +707,7 @@ module ibc::cometbls_lc {
             next_validators_hash: x"0000000000000000000000000000000000000000000000000000000000000000"
         };
 
-        let (cs, cons, _counterparty_channel_id) =
+        let (cs, cons, _counterparty_channel_id, _) =
             create_client(
                 ibc_signer,
                 0,
@@ -734,7 +734,7 @@ module ibc::cometbls_lc {
         client_state.trusting_period = 2;
         consensus_state.timestamp = 20000;
 
-        let (cs, cons, _counterparty_channel_id) =
+        let (cs, cons, _counterparty_channel_id, _) =
             create_client(
                 ibc_signer,
                 2,

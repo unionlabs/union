@@ -452,7 +452,8 @@ module zkgm::ibc_app {
                 name,
                 origin,
                 quote_token,
-                quote_amount
+                quote_amount,
+                zkgm::fa_coin::decimals_with_metadata(asset)
             );
         let operand = fungible_asset_order::encode(&fungible_asset_order);
         let zkgm_pack =
@@ -901,24 +902,11 @@ module zkgm::ibc_app {
         let fee =
             fungible_asset_order::base_amount(&order)
                 - fungible_asset_order::quote_amount(&order);
-        // ------------------------------------------------------------------
-        // TODO: no idea if the code below will work lol, it looks promising though
-        // ------------------------------------------------------------------
         if (quote_token == wrapped_address) {
             if (!is_deployed(wrapped_address)) {
                 let token_name = *fungible_asset_order::base_token_name(&order);
                 let token_symbol = *fungible_asset_order::base_token_symbol(&order);
-                // Truncate the name to max 32 characters
-                if (string::length(&token_name) > 32) {
-                    token_name = string::sub_string(&token_name, 0, 32);
-                };
-
-                // Truncate the symbol to max 10 characters
-                if (string::length(&token_symbol) > 10) {
-                    token_symbol = string::sub_string(&token_symbol, 0, 10);
-                };
-
-                deploy_token(salt, token_name, token_symbol, 18);
+                deploy_token(salt, token_name, token_symbol, fungible_asset_order::decimals(&order));
                 let value =
                     update_channel_path(
                         path, ibc::packet::destination_channel_id(&ibc_packet)
@@ -1410,7 +1398,7 @@ module zkgm::ibc_app {
     }
 
     #[test]
-    public fun test_fls() {
+    fun test_fls() {
         assert!(fls(0) == 256, 1);
         assert!(fls(22) == 4, 23);
         assert!(fls(32) == 5, 33);
