@@ -31,9 +31,10 @@ $: filteredTokens =
   $hideZeroBalances && intents.baseTokens
     ? intents.baseTokens.filter(
         token =>
-          token.balance?.kind === "balance" &&
-          token.balance.amount !== null &&
-          token.balance.amount !== "0"
+          token.balance?.kind === "loading" ||
+          (token.balance?.kind === "balance" &&
+            token.balance.amount !== null &&
+            token.balance.amount !== "0")
       )
     : (intents.baseTokens ?? [])
 </script>
