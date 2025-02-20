@@ -276,7 +276,9 @@ const requestUnoFromFaucet = async () => {
   <!-- dydx faucet -->
   <DydxFaucet />
   <StrideFaucet />
+  <!--
   <ChainsGate let:chains>
     <ExternalFaucets {chains} />
   </ChainsGate>
+  !-->
 </main>
