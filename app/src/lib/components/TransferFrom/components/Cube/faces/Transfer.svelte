@@ -284,10 +284,15 @@ const transfer = async () => {
     const connectorClient = await getConnectorClient(config)
     const selectedChain = evmChainFromChainId(sourceChain.chain_id)
 
+    const provider = connectorClient.transport;
+    if (!provider) {
+      throw new Error("Provider not available from connector");
+    }
+
     const unionClient = createUnionClient({
       account: connectorClient.account,
       chainId: sourceChain.chain_id as EvmChainId,
-      transport: custom(window.ethereum) as unknown as HttpTransport
+      transport: custom(provider) as unknown as HttpTransport
     })
 
     if (!selectedChain) {
