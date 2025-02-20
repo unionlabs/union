@@ -9,7 +9,7 @@ use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::FetchUpdateHeaders,
     core::{ChainId, QueryHeight},
-    PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, MISSING_STATE_ERROR_CODE,
 };
 use voyager_vm::{now, promise, Op};
 
@@ -75,7 +75,8 @@ where
         // at this point we assume that a valid update exists - we only ever enqueue this message behind the relevant WaitForHeight on the counterparty chain. to prevent explosions, we do a sanity check here.
         if latest_height < target_height {
             return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
+                // we treat this as a missing state error, since this message assumes the state exists.
+                MISSING_STATE_ERROR_CODE,
                 format!(
                     "the latest height of the counterparty chain ({counterparty_chain_id}) \
                     is {latest_height} and the latest trusted height on the client tracking \
