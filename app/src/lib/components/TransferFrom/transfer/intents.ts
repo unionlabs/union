@@ -49,22 +49,17 @@ export const createIntents = (
           }
         })
         .sort((a, b) => {
-          if (
-            !a.balance ||
-            a.balance.kind === "loading" ||
-            a.balance.kind === "error" ||
-            a.balance.amount === null
-          ) {
-            return -1
-          }
-          if (
-            !b.balance ||
-            b.balance.kind === "loading" ||
-            b.balance.kind === "error" ||
-            b.balance.amount === null
-          ) {
-            return -1
-          }
+          if (!a?.balance) return 1
+          if (!b?.balance) return -1
+          if (a.balance.kind === "error") return 1
+          if (b.balance.kind === "error") return -1
+
+          if (a.balance.kind === "loading") return 1
+          if (b.balance.kind === "loading") return -1
+
+          if (a.balance.amount === null) return 1
+          if (b.balance.amount === null) return -1
+
           const balanceA = BigInt(a.balance.amount)
           const balanceB = BigInt(b.balance.amount)
           return balanceB > balanceA ? 1 : balanceB < balanceA ? -1 : 0
