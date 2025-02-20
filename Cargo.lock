@@ -4218,10 +4218,10 @@ dependencies = [
 name = "cw20-multibalance"
 version = "0.0.0"
 dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
- "ethabi",
+ "cosmwasm-schema 2.1.4",
+ "cosmwasm-std 2.1.4",
+ "cw-storage-plus 2.0.0",
+ "cw20",
  "thiserror 1.0.69",
 ]
 

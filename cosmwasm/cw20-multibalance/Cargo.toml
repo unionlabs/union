@@ -18,8 +18,8 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-cosmwasm-schema = { version = "1.5" }
-cosmwasm-std    = { version = "1.5.4", features = ["stargate"] }
-cw-storage-plus = { version = "1.2" }
-ethabi          = { workspace = true }
+cosmwasm-schema = { workspace = true  }
+cosmwasm-std    = { workspace = true,  features = ["stargate"] }
+cw20            = { version = "2.0" }
+cw-storage-plus = { workspace = true }
 thiserror       = { workspace = true }
