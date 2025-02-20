@@ -76,6 +76,16 @@ pub fn execute(
                 channel,
                 token,
             } => {
+                let token_name = if metadata.name.is_empty() {
+                    restrict_name(denom.clone())
+                } else {
+                    restrict_name(metadata.name)
+                };
+                let token_symbol = if metadata.symbol.is_empty() {
+                    restrict_symbol(denom.clone())
+                } else {
+                    restrict_symbol(metadata.symbol)
+                };
                 Response::new()
                     .add_message(
                         // Instantiating the dummy contract first to be able to get the deterministic address
@@ -103,8 +113,8 @@ pub fn execute(
                             new_code_id: config.cw20_base_code_id,
                             msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
                                 // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set
-                                name: restrict_name(metadata.name),
-                                symbol: restrict_symbol(metadata.symbol),
+                                name: token_name,
+                                symbol: token_symbol,
                                 decimals: 0,
                                 initial_balances: vec![],
                                 mint: Some(cw20::MinterResponse {
@@ -314,6 +324,12 @@ fn restrict_name(name: String) -> String {
     }
 }
 
+/// Restricts the token symbol by the following rules:
+/// 1. symbol.len() > 12:
+///     Since the symbol can be `factory/ADDR/real_denom`, we try to get the `real_denom` part.
+///     Then do sanity check to the characters. And postfix to match the length 3.
+/// 2. symbol.len() <= 12:
+///     We only do sanity checks and postfix to match the length 3.
 fn restrict_symbol(symbol: String) -> String {
     if symbol.len() > 12 {
         // truncate the symbol to get the last 12 chars
@@ -328,7 +344,12 @@ fn restrict_symbol(symbol: String) -> String {
         // filtering might make the token length < 3, so postfix the denom with '-'
         format!("{symbol:-<3}")
     } else {
-        symbol
+        let symbol = symbol
+            .chars()
+            .filter(|c| *c == '-' || c.is_ascii_alphabetic())
+            .collect::<String>();
+        // filtering might make the token length < 3, so postfix the denom with '-'
+        format!("{symbol:-<3}")
     }
 }
 
@@ -372,5 +393,7 @@ mod tests {
             &restrict_symbol("factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/a12c".into()),
             "ac-"
         );
+        assert_eq!(restrict_symbol("u.".into()), "u--");
+        assert_eq!(restrict_symbol("uasd..__".into()), "uasd");
     }
 }
