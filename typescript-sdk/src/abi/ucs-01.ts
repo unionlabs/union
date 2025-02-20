@@ -1,463 +1,5 @@
 export const ucs01RelayAbi = [
   {
-    type: "function",
-    name: "getDenomAddress",
-    inputs: [
-      {
-        name: "sourceChannel",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "denom",
-        type: "string",
-        internalType: "string"
-      }
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "getOutstanding",
-    inputs: [
-      {
-        name: "sourceChannel",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "token",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "onAcknowledgementPacket",
-    inputs: [
-      {
-        name: "packet",
-        type: "tuple",
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      },
-      {
-        name: "acknowledgement",
-        type: "bytes",
-        internalType: "bytes"
-      },
-      {
-        name: "relayer",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "onChanCloseConfirm",
-    inputs: [
-      {
-        name: "channelId",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "relayer",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "onChanCloseInit",
-    inputs: [
-      {
-        name: "channelId",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "relayer",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "onChanOpenAck",
-    inputs: [
-      {
-        name: "channelId",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "counterpartyChannelId",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "counterpartyVersion",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "relayer",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "onChanOpenConfirm",
-    inputs: [
-      {
-        name: "channelId",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "relayer",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "onChanOpenInit",
-    inputs: [
-      {
-        name: "connectionId",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "channelId",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "version",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "relayer",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "onChanOpenTry",
-    inputs: [
-      {
-        name: "connectionId",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "channelId",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "counterpartyChannelId",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "version",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "counterpartyVersion",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "relayer",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "onRecvIntentPacket",
-    inputs: [
-      {
-        name: "packet",
-        type: "tuple",
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      },
-      {
-        name: "marketMaker",
-        type: "address",
-        internalType: "address"
-      },
-      {
-        name: "marketMakerMsg",
-        type: "bytes",
-        internalType: "bytes"
-      }
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "bytes",
-        internalType: "bytes"
-      }
-    ],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "onRecvPacket",
-    inputs: [
-      {
-        name: "packet",
-        type: "tuple",
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      },
-      {
-        name: "relayer",
-        type: "address",
-        internalType: "address"
-      },
-      {
-        name: "relayerMsg",
-        type: "bytes",
-        internalType: "bytes"
-      }
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "bytes",
-        internalType: "bytes"
-      }
-    ],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "onTimeoutPacket",
-    inputs: [
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      },
-      {
-        name: "relayer",
-        type: "address",
-        internalType: "address"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "send",
-    inputs: [
-      {
-        name: "sourceChannel",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "receiver",
-        type: "bytes",
-        internalType: "bytes"
-      },
-      {
-        name: "tokens",
-        type: "tuple[]",
-        internalType: "struct LocalToken[]",
-        components: [
-          {
-            name: "denom",
-            type: "address",
-            internalType: "address"
-          },
-          {
-            name: "amount",
-            type: "uint128",
-            internalType: "uint128"
-          },
-          {
-            name: "fee",
-            type: "uint128",
-            internalType: "uint128"
-          }
-        ]
-      },
-      {
-        name: "extension",
-        type: "string",
-        internalType: "string"
-      },
-      {
-        name: "timeoutHeight",
-        type: "uint64",
-        internalType: "uint64"
-      },
-      {
-        name: "timeoutTimestamp",
-        type: "uint64",
-        internalType: "uint64"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
     type: "constructor",
     inputs: [],
     stateMutability: "nonpayable"
@@ -481,8 +23,8 @@ export const ucs01RelayAbi = [
     inputs: [
       {
         name: "sourceChannel",
-        type: "uint32",
-        internalType: "uint32"
+        type: "string",
+        internalType: "string"
       },
       {
         name: "denom",
@@ -505,8 +47,8 @@ export const ucs01RelayAbi = [
     inputs: [
       {
         name: "sourceChannel",
-        type: "uint32",
-        internalType: "uint32"
+        type: "string",
+        internalType: "string"
       },
       {
         name: "token",
@@ -561,17 +103,32 @@ export const ucs01RelayAbi = [
       {
         name: "ibcPacket",
         type: "tuple",
-        internalType: "struct IBCPacket",
+        internalType: "struct IbcCoreChannelV1Packet.Data",
         components: [
           {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
+            name: "sequence",
+            type: "uint64",
+            internalType: "uint64"
           },
           {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
+            name: "source_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "source_channel",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_channel",
+            type: "string",
+            internalType: "string"
           },
           {
             name: "data",
@@ -579,12 +136,24 @@ export const ucs01RelayAbi = [
             internalType: "bytes"
           },
           {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
+            name: "timeout_height",
+            type: "tuple",
+            internalType: "struct IbcCoreClientV1Height.Data",
+            components: [
+              {
+                name: "revision_number",
+                type: "uint64",
+                internalType: "uint64"
+              },
+              {
+                name: "revision_height",
+                type: "uint64",
+                internalType: "uint64"
+              }
+            ]
           },
           {
-            name: "timeoutTimestamp",
+            name: "timeout_timestamp",
             type: "uint64",
             internalType: "uint64"
           }
@@ -610,13 +179,13 @@ export const ucs01RelayAbi = [
     inputs: [
       {
         name: "",
-        type: "uint32",
-        internalType: "uint32"
+        type: "string",
+        internalType: "string"
       },
       {
         name: "",
-        type: "address",
-        internalType: "address"
+        type: "string",
+        internalType: "string"
       }
     ],
     outputs: [],
@@ -628,13 +197,13 @@ export const ucs01RelayAbi = [
     inputs: [
       {
         name: "",
-        type: "uint32",
-        internalType: "uint32"
+        type: "string",
+        internalType: "string"
       },
       {
         name: "",
-        type: "address",
-        internalType: "address"
+        type: "string",
+        internalType: "string"
       }
     ],
     outputs: [],
@@ -646,23 +215,23 @@ export const ucs01RelayAbi = [
     inputs: [
       {
         name: "",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "",
-        type: "uint32",
-        internalType: "uint32"
-      },
-      {
-        name: "counterpartyVersion",
         type: "string",
         internalType: "string"
       },
       {
         name: "",
-        type: "address",
-        internalType: "address"
+        type: "string",
+        internalType: "string"
+      },
+      {
+        name: "",
+        type: "string",
+        internalType: "string"
+      },
+      {
+        name: "counterpartyVersion",
+        type: "string",
+        internalType: "string"
       }
     ],
     outputs: [],
@@ -674,13 +243,13 @@ export const ucs01RelayAbi = [
     inputs: [
       {
         name: "",
-        type: "uint32",
-        internalType: "uint32"
+        type: "string",
+        internalType: "string"
       },
       {
         name: "",
-        type: "address",
-        internalType: "address"
+        type: "string",
+        internalType: "string"
       }
     ],
     outputs: [],
@@ -691,24 +260,46 @@ export const ucs01RelayAbi = [
     name: "onChanOpenInit",
     inputs: [
       {
-        name: "",
-        type: "uint32",
-        internalType: "uint32"
+        name: "order",
+        type: "uint8",
+        internalType: "enum IbcCoreChannelV1GlobalEnums.Order"
       },
       {
         name: "",
-        type: "uint32",
-        internalType: "uint32"
+        type: "string[]",
+        internalType: "string[]"
       },
       {
-        name: "version",
+        name: "",
         type: "string",
         internalType: "string"
       },
       {
         name: "",
-        type: "address",
-        internalType: "address"
+        type: "string",
+        internalType: "string"
+      },
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct IbcCoreChannelV1Counterparty.Data",
+        components: [
+          {
+            name: "port_id",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "channel_id",
+            type: "string",
+            internalType: "string"
+          }
+        ]
+      },
+      {
+        name: "version",
+        type: "string",
+        internalType: "string"
       }
     ],
     outputs: [],
@@ -719,19 +310,41 @@ export const ucs01RelayAbi = [
     name: "onChanOpenTry",
     inputs: [
       {
-        name: "",
-        type: "uint32",
-        internalType: "uint32"
+        name: "order",
+        type: "uint8",
+        internalType: "enum IbcCoreChannelV1GlobalEnums.Order"
       },
       {
         name: "",
-        type: "uint32",
-        internalType: "uint32"
+        type: "string[]",
+        internalType: "string[]"
       },
       {
         name: "",
-        type: "uint32",
-        internalType: "uint32"
+        type: "string",
+        internalType: "string"
+      },
+      {
+        name: "",
+        type: "string",
+        internalType: "string"
+      },
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct IbcCoreChannelV1Counterparty.Data",
+        components: [
+          {
+            name: "port_id",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "channel_id",
+            type: "string",
+            internalType: "string"
+          }
+        ]
       },
       {
         name: "version",
@@ -742,71 +355,10 @@ export const ucs01RelayAbi = [
         name: "counterpartyVersion",
         type: "string",
         internalType: "string"
-      },
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
       }
     ],
     outputs: [],
     stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "onRecvIntentPacket",
-    inputs: [
-      {
-        name: "",
-        type: "tuple",
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      },
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      },
-      {
-        name: "",
-        type: "bytes",
-        internalType: "bytes"
-      }
-    ],
-    outputs: [
-      {
-        name: "",
-        type: "bytes",
-        internalType: "bytes"
-      }
-    ],
-    stateMutability: "nonpayable"
   },
   {
     type: "function",
@@ -815,17 +367,32 @@ export const ucs01RelayAbi = [
       {
         name: "ibcPacket",
         type: "tuple",
-        internalType: "struct IBCPacket",
+        internalType: "struct IbcCoreChannelV1Packet.Data",
         components: [
           {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
+            name: "sequence",
+            type: "uint64",
+            internalType: "uint64"
           },
           {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
+            name: "source_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "source_channel",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_channel",
+            type: "string",
+            internalType: "string"
           },
           {
             name: "data",
@@ -833,12 +400,24 @@ export const ucs01RelayAbi = [
             internalType: "bytes"
           },
           {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
+            name: "timeout_height",
+            type: "tuple",
+            internalType: "struct IbcCoreClientV1Height.Data",
+            components: [
+              {
+                name: "revision_number",
+                type: "uint64",
+                internalType: "uint64"
+              },
+              {
+                name: "revision_height",
+                type: "uint64",
+                internalType: "uint64"
+              }
+            ]
           },
           {
-            name: "timeoutTimestamp",
+            name: "timeout_timestamp",
             type: "uint64",
             internalType: "uint64"
           }
@@ -848,11 +427,6 @@ export const ucs01RelayAbi = [
         name: "relayer",
         type: "address",
         internalType: "address"
-      },
-      {
-        name: "",
-        type: "bytes",
-        internalType: "bytes"
       }
     ],
     outputs: [
@@ -871,17 +445,32 @@ export const ucs01RelayAbi = [
       {
         name: "ibcPacket",
         type: "tuple",
-        internalType: "struct IBCPacket",
+        internalType: "struct IbcCoreChannelV1Packet.Data",
         components: [
           {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
+            name: "sequence",
+            type: "uint64",
+            internalType: "uint64"
           },
           {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
+            name: "source_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "source_channel",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_channel",
+            type: "string",
+            internalType: "string"
           },
           {
             name: "data",
@@ -889,19 +478,31 @@ export const ucs01RelayAbi = [
             internalType: "bytes"
           },
           {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
+            name: "timeout_height",
+            type: "tuple",
+            internalType: "struct IbcCoreClientV1Height.Data",
+            components: [
+              {
+                name: "revision_number",
+                type: "uint64",
+                internalType: "uint64"
+              },
+              {
+                name: "revision_height",
+                type: "uint64",
+                internalType: "uint64"
+              }
+            ]
           },
           {
-            name: "timeoutTimestamp",
+            name: "timeout_timestamp",
             type: "uint64",
             internalType: "uint64"
           }
         ]
       },
       {
-        name: "relayer",
+        name: "",
         type: "address",
         internalType: "address"
       }
@@ -916,17 +517,32 @@ export const ucs01RelayAbi = [
       {
         name: "ibcPacket",
         type: "tuple",
-        internalType: "struct IBCPacket",
+        internalType: "struct IbcCoreChannelV1Packet.Data",
         components: [
           {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
+            name: "sequence",
+            type: "uint64",
+            internalType: "uint64"
           },
           {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
+            name: "source_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "source_channel",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_port",
+            type: "string",
+            internalType: "string"
+          },
+          {
+            name: "destination_channel",
+            type: "string",
+            internalType: "string"
           },
           {
             name: "data",
@@ -934,12 +550,24 @@ export const ucs01RelayAbi = [
             internalType: "bytes"
           },
           {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
+            name: "timeout_height",
+            type: "tuple",
+            internalType: "struct IbcCoreClientV1Height.Data",
+            components: [
+              {
+                name: "revision_number",
+                type: "uint64",
+                internalType: "uint64"
+              },
+              {
+                name: "revision_height",
+                type: "uint64",
+                internalType: "uint64"
+              }
+            ]
           },
           {
-            name: "timeoutTimestamp",
+            name: "timeout_timestamp",
             type: "uint64",
             internalType: "uint64"
           }
@@ -1006,8 +634,8 @@ export const ucs01RelayAbi = [
     inputs: [
       {
         name: "sourceChannel",
-        type: "uint32",
-        internalType: "uint32"
+        type: "string",
+        internalType: "string"
       },
       {
         name: "receiver",
@@ -1028,11 +656,6 @@ export const ucs01RelayAbi = [
             name: "amount",
             type: "uint128",
             internalType: "uint128"
-          },
-          {
-            name: "fee",
-            type: "uint128",
-            internalType: "uint128"
           }
         ]
       },
@@ -1043,8 +666,20 @@ export const ucs01RelayAbi = [
       },
       {
         name: "timeoutHeight",
-        type: "uint64",
-        internalType: "uint64"
+        type: "tuple",
+        internalType: "struct IbcCoreClientV1Height.Data",
+        components: [
+          {
+            name: "revision_number",
+            type: "uint64",
+            internalType: "uint64"
+          },
+          {
+            name: "revision_height",
+            type: "uint64",
+            internalType: "uint64"
+          }
+        ]
       },
       {
         name: "timeoutTimestamp",
@@ -1119,37 +754,16 @@ export const ucs01RelayAbi = [
     name: "DenomCreated",
     inputs: [
       {
-        name: "packet",
-        type: "tuple",
+        name: "packetSequence",
+        type: "uint64",
+        indexed: true,
+        internalType: "uint64"
+      },
+      {
+        name: "channelId",
+        type: "string",
         indexed: false,
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
+        internalType: "string"
       },
       {
         name: "denom",
@@ -1162,76 +776,6 @@ export const ucs01RelayAbi = [
         type: "address",
         indexed: false,
         internalType: "address"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "FeePaid",
-    inputs: [
-      {
-        name: "packet",
-        type: "tuple",
-        indexed: false,
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      },
-      {
-        name: "sender",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "receiver",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "denom",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "token",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
       }
     ],
     anonymous: false
@@ -1286,37 +830,16 @@ export const ucs01RelayAbi = [
     name: "Received",
     inputs: [
       {
-        name: "packet",
-        type: "tuple",
+        name: "packetSequence",
+        type: "uint64",
         indexed: false,
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
+        internalType: "uint64"
+      },
+      {
+        name: "channelId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
       },
       {
         name: "sender",
@@ -1356,37 +879,16 @@ export const ucs01RelayAbi = [
     name: "Refunded",
     inputs: [
       {
-        name: "packet",
-        type: "tuple",
+        name: "packetSequence",
+        type: "uint64",
         indexed: false,
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
+        internalType: "uint64"
+      },
+      {
+        name: "channelId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
       },
       {
         name: "sender",
@@ -1426,37 +928,16 @@ export const ucs01RelayAbi = [
     name: "Sent",
     inputs: [
       {
-        name: "packet",
-        type: "tuple",
+        name: "packetSequence",
+        type: "uint64",
         indexed: false,
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
+        internalType: "uint64"
+      },
+      {
+        name: "channelId",
+        type: "string",
+        indexed: false,
+        internalType: "string"
       },
       {
         name: "sender",
@@ -1587,17 +1068,17 @@ export const ucs01RelayAbi = [
   },
   {
     type: "error",
+    name: "ErrInvalidProtocolOrdering",
+    inputs: []
+  },
+  {
+    type: "error",
     name: "ErrInvalidProtocolVersion",
     inputs: []
   },
   {
     type: "error",
     name: "ErrNotIBC",
-    inputs: []
-  },
-  {
-    type: "error",
-    name: "ErrNotImplemented",
     inputs: []
   },
   {
@@ -1623,11 +1104,6 @@ export const ucs01RelayAbi = [
   {
     type: "error",
     name: "InvalidInitialization",
-    inputs: []
-  },
-  {
-    type: "error",
-    name: "MathOverflowedMulDiv",
     inputs: []
   },
   {
@@ -1683,424 +1159,5 @@ export const ucs01RelayAbi = [
         internalType: "bytes32"
       }
     ]
-  },
-  {
-    type: "function",
-    name: "ACK_FAILURE",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "bytes1",
-        internalType: "bytes1"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "ACK_LENGTH",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "uint256",
-        internalType: "uint256"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "ACK_SUCCESS",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "bytes1",
-        internalType: "bytes1"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "VERSION",
-    inputs: [],
-    outputs: [
-      {
-        name: "",
-        type: "string",
-        internalType: "string"
-      }
-    ],
-    stateMutability: "view"
-  },
-  {
-    type: "event",
-    name: "DenomCreated",
-    inputs: [
-      {
-        name: "packet",
-        type: "tuple",
-        indexed: false,
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      },
-      {
-        name: "denom",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "token",
-        type: "address",
-        indexed: false,
-        internalType: "address"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "FeePaid",
-    inputs: [
-      {
-        name: "packet",
-        type: "tuple",
-        indexed: false,
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      },
-      {
-        name: "sender",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "receiver",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "denom",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "token",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "Received",
-    inputs: [
-      {
-        name: "packet",
-        type: "tuple",
-        indexed: false,
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      },
-      {
-        name: "sender",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "receiver",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "denom",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "token",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "Refunded",
-    inputs: [
-      {
-        name: "packet",
-        type: "tuple",
-        indexed: false,
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      },
-      {
-        name: "sender",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "receiver",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "denom",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "token",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "event",
-    name: "Sent",
-    inputs: [
-      {
-        name: "packet",
-        type: "tuple",
-        indexed: false,
-        internalType: "struct IBCPacket",
-        components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "destinationChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
-          {
-            name: "timeoutHeight",
-            type: "uint64",
-            internalType: "uint64"
-          },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
-        ]
-      },
-      {
-        name: "sender",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "receiver",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "denom",
-        type: "string",
-        indexed: false,
-        internalType: "string"
-      },
-      {
-        name: "token",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
-      {
-        name: "amount",
-        type: "uint256",
-        indexed: false,
-        internalType: "uint256"
-      }
-    ],
-    anonymous: false
-  },
-  {
-    type: "error",
-    name: "ErrInvalidAcknowledgement",
-    inputs: []
-  },
-  {
-    type: "error",
-    name: "ErrInvalidAmount",
-    inputs: []
-  },
-  {
-    type: "error",
-    name: "ErrInvalidBytesAddress",
-    inputs: []
-  },
-  {
-    type: "error",
-    name: "ErrInvalidCounterpartyProtocolVersion",
-    inputs: []
-  },
-  {
-    type: "error",
-    name: "ErrInvalidProtocolVersion",
-    inputs: []
-  },
-  {
-    type: "error",
-    name: "ErrUnauthorized",
-    inputs: []
-  },
-  {
-    type: "error",
-    name: "ErrUnstoppable",
-    inputs: []
   }
 ] as const
