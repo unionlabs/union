@@ -152,6 +152,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           transport: http()
         })
 
+        
         // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
         // we do this by calling the ucs03 instance on the counterparty chain.
         const [quoteToken, _] = (await destinationChainClient.readContract({
