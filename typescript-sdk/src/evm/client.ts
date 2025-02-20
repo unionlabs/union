@@ -79,7 +79,8 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         quoteToken,
         receiver,
         sourceChannelId,
-        ucs03address
+        ucs03address,
+        wethQuoteToken
       }: TransferAssetParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
         if (!client.account) return err(new Error("No account found"))
 
@@ -114,7 +115,8 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
             quoteAmount,
             0n, // TODO: customize timeoutheight
             "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
-            generateSalt()
+            generateSalt(),
+            wethQuoteToken
           ]
         } as const
 
