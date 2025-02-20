@@ -12,6 +12,6 @@ export const recommendedUcs03ChannelsQuery = () =>
       (await request(URLS().GRAPHQL, recommendedUcs03ChannelsQueryDocument, {}))
         .v1_ibc_union_channel_recommendations,
     enabled: true,
-    refetchInterval: 6_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: false
   })

@@ -37,7 +37,7 @@ export const channelsQuery =
 }`)
 
 export const recommendedUcs03ChannelsQueryDocument = graphql(/*  GraphQL */ `
-  query Ucs03Channels {
+  query Ucs03Channels @cached(ttl: 60) {
     v1_ibc_union_channel_recommendations(where: {version: {_eq: "ucs03-zkgm-0"}}) {
       source_port_id
       source_chain_id
