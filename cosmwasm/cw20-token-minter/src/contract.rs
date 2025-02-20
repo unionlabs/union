@@ -286,7 +286,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
 
                 let (name, symbol, decimals) = match denom_metadata {
                     Ok(DenomMetadataResponse { metadata, .. }) => {
-                        let decimals = match metadata.denom_units.get(0) {
+                        let decimals = match metadata.denom_units.first() {
                             Some(unit) => unit.exponent.try_into().unwrap_or(0),
                             None => 0,
                         };
