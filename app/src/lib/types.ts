@@ -60,7 +60,6 @@ export type Chain = {
   }>
   addr_prefix: string
   features: ChainFeature["features"]
-  assets: Array<ChainAsset>
   tokens: Array<ChainToken>
 }
 
@@ -73,19 +72,6 @@ export type Ucs03Channel = {
   destination_channel_id: number
   destination_chain_id: string
   destination_port_id: Hex
-}
-
-/** @deprecated */
-export type ChainAsset = {
-  denom: string
-  display_symbol: string
-  display_name: string | null
-  decimals: number
-  faucets: Array<{
-    url: string
-    display_name: string
-  }>
-  gas_token: boolean
 }
 
 export type ChainToken = {
