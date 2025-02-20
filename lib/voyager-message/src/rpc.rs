@@ -8,7 +8,7 @@ use macros::model;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
-use voyager_core::{IbcSpecId, Timestamp};
+use voyager_core::{ConsensusStateMeta, IbcSpecId, Timestamp};
 
 use crate::{
     context::LoadedModulesInfo,
@@ -59,14 +59,24 @@ pub trait VoyagerRpc {
         client_id: RawClientId,
     ) -> RpcResult<Option<ClientInfo>>;
 
-    #[method(name = "clientMeta", with_extensions)]
-    async fn client_meta(
+    #[method(name = "clientStateMeta", with_extensions)]
+    async fn client_state_meta(
         &self,
         chain_id: ChainId,
         ibc_spec_id: IbcSpecId,
         at: QueryHeight,
         client_id: RawClientId,
     ) -> RpcResult<Option<ClientStateMeta>>;
+
+    #[method(name = "consensusStateMeta", with_extensions)]
+    async fn consensus_state_meta(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        at: QueryHeight,
+        client_id: RawClientId,
+        counterparty_height: Height,
+    ) -> RpcResult<Option<ConsensusStateMeta>>;
 
     #[method(name = "queryIbcState", with_extensions)]
     async fn query_ibc_state(

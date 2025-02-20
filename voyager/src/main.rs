@@ -374,11 +374,16 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     ibc_spec_id,
                     height,
                 } => {
-                    let client_meta = voyager_client
-                        .client_meta(on.clone(), ibc_spec_id.clone(), height, client_id.clone())
+                    let client_state_meta = voyager_client
+                        .client_state_meta(
+                            on.clone(),
+                            ibc_spec_id.clone(),
+                            height,
+                            client_id.clone(),
+                        )
                         .await?;
 
-                    print_json(&client_meta);
+                    print_json(&client_state_meta);
                 }
                 RpcCmd::ClientInfo {
                     on,
@@ -579,9 +584,9 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     .await?
                     .ok_or(anyhow!("client info not found"))?;
 
-                let client_meta = ctx
+                let client_state_meta = ctx
                     .rpc_server
-                    .client_meta(&on, &ibc_spec_id, QueryHeight::Latest, client_id.clone())
+                    .client_state_meta(&on, &ibc_spec_id, QueryHeight::Latest, client_id.clone())
                     .await?
                     .ok_or(anyhow!("client info not found"))?;
 
@@ -589,7 +594,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     Some(update_to) => update_to,
                     None => {
                         ctx.rpc_server
-                            .query_latest_height(&client_meta.counterparty_chain_id, true)
+                            .query_latest_height(&client_state_meta.counterparty_chain_id, true)
                             .await?
                     }
                 };
@@ -597,10 +602,10 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 let op = promise::<VoyagerMessage>(
                     [call(FetchUpdateHeaders {
                         client_type: client_info.client_type,
-                        chain_id: client_meta.counterparty_chain_id,
+                        chain_id: client_state_meta.counterparty_chain_id,
                         counterparty_chain_id: on.clone(),
                         client_id: client_id.clone(),
-                        update_from: client_meta.counterparty_height,
+                        update_from: client_state_meta.counterparty_height,
                         update_to,
                     })],
                     [],

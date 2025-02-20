@@ -113,8 +113,8 @@ impl Module {
         client_id: RawClientId,
         max_age: u64,
     ) -> RpcResult<Op<VoyagerMessage>> {
-        let client_meta = voyager_client
-            .client_meta_raw(
+        let client_state_meta = voyager_client
+            .client_state_meta_raw(
                 chain_id.clone(),
                 ibc_spec_id.clone(),
                 QueryHeight::Latest,
@@ -127,20 +127,22 @@ impl Module {
             .await?;
 
         let latest_finalized_height = voyager_client
-            .query_latest_height(client_meta.counterparty_chain_id.clone(), true)
+            .query_latest_height(client_state_meta.counterparty_chain_id.clone(), true)
             .await?;
 
-        if client_meta.counterparty_height.height() + max_age < latest_finalized_height.height() {
+        if client_state_meta.counterparty_height.height() + max_age
+            < latest_finalized_height.height()
+        {
             info!("client is older than threshold");
 
             Ok(conc([
                 promise(
                     [call(FetchUpdateHeaders {
                         client_type: client_info.client_type,
-                        chain_id: client_meta.counterparty_chain_id,
+                        chain_id: client_state_meta.counterparty_chain_id,
                         counterparty_chain_id: chain_id.clone(),
                         client_id: client_id.clone(),
-                        update_from: client_meta.counterparty_height,
+                        update_from: client_state_meta.counterparty_height,
                         update_to: latest_finalized_height,
                     })],
                     [],
@@ -156,8 +158,8 @@ impl Module {
                         ibc_spec_id: ibc_spec_id.clone(),
                         client_id: client_id.clone(),
                         height: Height::new_with_revision(
-                            client_meta.counterparty_height.revision(),
-                            client_meta.counterparty_height.height() + max_age,
+                            client_state_meta.counterparty_height.revision(),
+                            client_state_meta.counterparty_height.height() + max_age,
                         ),
                         finalized: false,
                     }),

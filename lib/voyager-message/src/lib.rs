@@ -40,8 +40,8 @@ use unionlabs::{
     ibc::core::client::height::Height, primitives::Bytes, traits::Member, ErrorReporter,
 };
 use voyager_core::{
-    ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, IbcSpec, IbcSpecId,
-    IbcStorePathKey, QueryHeight, Timestamp,
+    ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcSpec,
+    IbcSpecId, IbcStorePathKey, QueryHeight, Timestamp,
 };
 use voyager_vm::{BoxDynError, ItemId, QueueError, QueueMessage};
 
@@ -872,19 +872,19 @@ impl VoyagerClient {
             .map_err(json_rpc_error_to_error_object)
     }
 
-    pub async fn client_meta<V: IbcSpec>(
+    pub async fn client_state_meta<V: IbcSpec>(
         &self,
         chain_id: ChainId,
         at: QueryHeight,
         client_id: V::ClientId,
     ) -> RpcResult<ClientStateMeta> {
-        self.maybe_client_meta::<V>(chain_id.clone(), at, client_id.clone())
+        self.maybe_client_state_meta::<V>(chain_id.clone(), at, client_id.clone())
             .await
-            .and_then(|client_meta| {
-                client_meta.ok_or_else(|| {
+            .and_then(|client_state_meta| {
+                client_state_meta.ok_or_else(|| {
                     ErrorObject::owned(
                         MISSING_STATE_ERROR_CODE,
-                        "client meta must exist",
+                        "client state meta must exist",
                         Some(json!({
                             "chain_id": chain_id,
                             "height": at,
@@ -895,32 +895,32 @@ impl VoyagerClient {
             })
     }
 
-    pub async fn maybe_client_meta<V: IbcSpec>(
+    pub async fn maybe_client_state_meta<V: IbcSpec>(
         &self,
         chain_id: ChainId,
         at: QueryHeight,
         client_id: V::ClientId,
     ) -> RpcResult<Option<ClientStateMeta>> {
         self.0
-            .client_meta(chain_id, V::ID, at, RawClientId::new(client_id))
+            .client_state_meta(chain_id, V::ID, at, RawClientId::new(client_id))
             .await
             .map_err(json_rpc_error_to_error_object)
     }
 
-    pub async fn client_meta_raw(
+    pub async fn client_state_meta_raw(
         &self,
         chain_id: ChainId,
         ibc_spec_id: IbcSpecId,
         at: QueryHeight,
         client_id: RawClientId,
     ) -> RpcResult<ClientStateMeta> {
-        self.maybe_client_meta_raw(chain_id.clone(), ibc_spec_id, at, client_id.clone())
+        self.maybe_client_state_meta_raw(chain_id.clone(), ibc_spec_id, at, client_id.clone())
             .await
-            .and_then(|client_meta| {
-                client_meta.ok_or_else(|| {
+            .and_then(|client_state_meta| {
+                client_state_meta.ok_or_else(|| {
                     ErrorObject::owned(
                         MISSING_STATE_ERROR_CODE,
-                        "client meta must exist",
+                        "client state meta must exist",
                         Some(json!({
                             "chain_id": chain_id,
                             "height": at,
@@ -931,7 +931,7 @@ impl VoyagerClient {
             })
     }
 
-    pub async fn maybe_client_meta_raw(
+    pub async fn maybe_client_state_meta_raw(
         &self,
         chain_id: ChainId,
         ibc_spec_id: IbcSpecId,
@@ -939,7 +939,102 @@ impl VoyagerClient {
         client_id: RawClientId,
     ) -> RpcResult<Option<ClientStateMeta>> {
         self.0
-            .client_meta(chain_id, ibc_spec_id, at, client_id)
+            .client_state_meta(chain_id, ibc_spec_id, at, client_id)
+            .await
+            .map_err(json_rpc_error_to_error_object)
+    }
+
+    pub async fn consensus_state_meta<V: IbcSpec>(
+        &self,
+        chain_id: ChainId,
+        at: QueryHeight,
+        client_id: V::ClientId,
+        counterparty_height: Height,
+    ) -> RpcResult<ConsensusStateMeta> {
+        self.maybe_consensus_state_meta::<V>(
+            chain_id.clone(),
+            at,
+            client_id.clone(),
+            counterparty_height,
+        )
+        .await
+        .and_then(|consensus_state_meta| {
+            consensus_state_meta.ok_or_else(|| {
+                ErrorObject::owned(
+                    MISSING_STATE_ERROR_CODE,
+                    "client state meta must exist",
+                    Some(json!({
+                        "chain_id": chain_id,
+                        "height": at,
+                        "client_id": client_id,
+                        "counterparty_height": counterparty_height
+                    })),
+                )
+            })
+        })
+    }
+
+    pub async fn maybe_consensus_state_meta<V: IbcSpec>(
+        &self,
+        chain_id: ChainId,
+        at: QueryHeight,
+        client_id: V::ClientId,
+        counterparty_height: Height,
+    ) -> RpcResult<Option<ConsensusStateMeta>> {
+        self.0
+            .consensus_state_meta(
+                chain_id,
+                V::ID,
+                at,
+                RawClientId::new(client_id),
+                counterparty_height,
+            )
+            .await
+            .map_err(json_rpc_error_to_error_object)
+    }
+
+    pub async fn consensus_state_meta_raw(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        at: QueryHeight,
+        client_id: RawClientId,
+        counterparty_height: Height,
+    ) -> RpcResult<ConsensusStateMeta> {
+        self.maybe_consensus_state_meta_raw(
+            chain_id.clone(),
+            ibc_spec_id,
+            at,
+            client_id.clone(),
+            counterparty_height,
+        )
+        .await
+        .and_then(|consensus_state_meta| {
+            consensus_state_meta.ok_or_else(|| {
+                ErrorObject::owned(
+                    MISSING_STATE_ERROR_CODE,
+                    "client state meta must exist",
+                    Some(json!({
+                        "chain_id": chain_id,
+                        "height": at,
+                        "client_id": client_id,
+                        "counterparty_height": counterparty_height
+                    })),
+                )
+            })
+        })
+    }
+
+    pub async fn maybe_consensus_state_meta_raw(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        at: QueryHeight,
+        client_id: RawClientId,
+        counterparty_height: Height,
+    ) -> RpcResult<Option<ConsensusStateMeta>> {
+        self.0
+            .consensus_state_meta(chain_id, ibc_spec_id, at, client_id, counterparty_height)
             .await
             .map_err(json_rpc_error_to_error_object)
     }

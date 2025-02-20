@@ -14,7 +14,7 @@ use jsonrpsee::{
 use serde_json::Value;
 use tracing::{debug, info_span, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
-use voyager_core::{IbcSpecId, Timestamp};
+use voyager_core::{ConsensusStateMeta, IbcSpecId, Timestamp};
 use voyager_vm::ItemId;
 
 // use valuable::Valuable;
@@ -43,6 +43,7 @@ pub struct Server {
 #[derive(Debug, Clone)]
 pub struct ServerInner {
     modules: OnceLock<Arc<Modules>>,
+    // cache: moka::
 }
 
 impl Server {
@@ -223,7 +224,7 @@ impl Server {
     }
 
     #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, height = %at, client_id = %client_id.0))]
-    pub async fn client_meta(
+    pub async fn client_state_meta(
         &self,
         chain_id: &ChainId,
         ibc_spec_id: &IbcSpecId,
@@ -232,7 +233,7 @@ impl Server {
     ) -> RpcResult<Option<ClientStateMeta>> {
         self.span()
             .in_scope(|| async {
-                trace!("fetching client meta");
+                trace!("fetching client state meta");
 
                 let height = self.query_height(chain_id, at).await?;
 
@@ -252,7 +253,7 @@ impl Server {
                     return Ok(None);
                 };
 
-                let client_state = state_module
+                let raw_client_state = state_module
                     .query_ibc_state_raw(
                         height,
                         (self
@@ -267,9 +268,9 @@ impl Server {
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
-                trace!(%client_state);
+                trace!(%raw_client_state);
 
-                let client_state = serde_json::from_value::<Option<Bytes>>(client_state)
+                let client_state = serde_json::from_value::<Option<Bytes>>(raw_client_state)
                     .with_context(|| format!("querying client state for client {client_id} at {height} on {chain_id}"))
                     .map_err(|e| fatal_error(&*e))?;
 
@@ -295,7 +296,88 @@ impl Server {
                     client_state_meta.chain_id = %meta.counterparty_chain_id,
                     %client_info.ibc_interface,
                     %client_info.client_type,
-                    "fetched client meta"
+                    "fetched client state meta"
+                );
+
+                Ok(Some(meta))
+            })
+            .await
+    }
+
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, height = %at, client_id = %client_id.0))]
+    pub async fn consensus_state_meta(
+        &self,
+        chain_id: &ChainId,
+        ibc_spec_id: &IbcSpecId,
+        at: QueryHeight,
+        client_id: RawClientId,
+        counterparty_height: Height,
+    ) -> RpcResult<Option<ConsensusStateMeta>> {
+        self.span()
+            .in_scope(|| async {
+                trace!("fetching consensus state meta");
+
+                let height = self.query_height(chain_id, at).await?;
+
+                let modules = self.inner.modules()?;
+
+                let state_module = modules
+                    .state_module(chain_id, ibc_spec_id)?
+                    .with_id(self.item_id);
+
+                let client_info = state_module
+                    .client_info_raw(client_id.clone())
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                let Some(client_info) = client_info else {
+                    trace!("client info for client {client_id} not found at height {height} on chain {chain_id}");
+                    return Ok(None);
+                };
+
+                let raw_consensus_state = state_module
+                    .query_ibc_state_raw(
+                        height,
+                        (self
+                            .modules()?
+                            .ibc_spec_handlers
+                            .handlers
+                            .get(ibc_spec_id)
+                            .ok_or_else(|| fatal_error(&*anyhow!("ibc spec {ibc_spec_id} is not supported in this build of voyager")))?
+                            .consensus_state_path)(client_id.clone(), counterparty_height.to_string())
+                        .map_err(|err| fatal_error(&*err))?,
+                    )
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                trace!(%raw_consensus_state);
+
+                let client_state = serde_json::from_value::<Option<Bytes>>(raw_consensus_state)
+                    .with_context(|| format!("querying consensus state for client {client_id} at {height} on {chain_id}"))
+                    .map_err(|e| fatal_error(&*e))?;
+
+                let Some(consensus_state) = client_state else {
+                    trace!("consensus state for client {client_id} not found at height {height} on chain {chain_id}");
+                    return Ok(None);
+                };
+
+                let meta = modules
+                    .client_module(
+                        &client_info.client_type,
+                        &client_info.ibc_interface,
+                        ibc_spec_id,
+                    )
+                    ?
+                    .with_id(self.item_id)
+                    .decode_consensus_state_meta(consensus_state)
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                trace!(
+                    consensus_state_meta.timestamp = %meta.timestamp,
+                    %client_info.ibc_interface,
+                    %client_info.client_type,
+                    "fetched consensus state meta"
                 );
 
                 Ok(Some(meta))
@@ -718,7 +800,7 @@ impl VoyagerRpcServer for Server {
             .await
     }
 
-    async fn client_meta(
+    async fn client_state_meta(
         &self,
         e: &Extensions,
         chain_id: ChainId,
@@ -727,7 +809,21 @@ impl VoyagerRpcServer for Server {
         client_id: RawClientId,
     ) -> RpcResult<Option<ClientStateMeta>> {
         self.with_id(e.try_get().ok().cloned())
-            .client_meta(&chain_id, &ibc_spec_id, at, client_id)
+            .client_state_meta(&chain_id, &ibc_spec_id, at, client_id)
+            .await
+    }
+
+    async fn consensus_state_meta(
+        &self,
+        e: &Extensions,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        at: QueryHeight,
+        client_id: RawClientId,
+        counterparty_height: Height,
+    ) -> RpcResult<Option<ConsensusStateMeta>> {
+        self.with_id(e.try_get().ok().cloned())
+            .consensus_state_meta(&chain_id, &ibc_spec_id, at, client_id, counterparty_height)
             .await
     }
 
