@@ -70,6 +70,7 @@ const quoteToken: Readable<Nullable<QuoteData>> = derived<
       return
     }
 
+    //@ts-ignore
     getQuoteToken($source, $asset, channel)
       .then(result => {
         if (result.isOk()) {
