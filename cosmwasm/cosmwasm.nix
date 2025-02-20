@@ -432,6 +432,10 @@
         crateDirFromRoot = "cosmwasm/cw20-base";
       };
 
+      cw20-multibalance = crane.buildWasmContract {
+        crateDirFromRoot = "cosmwasm/cw20-multibalance";
+      };
+
       ibc-union = crane.buildWasmContract {
         crateDirFromRoot = "cosmwasm/ibc-union/core";
       };
@@ -515,6 +519,7 @@
             # native-token-minter
             cw20-token-minter
             ibc-union
+            cw20-multibalance
             multicall
             ;
           cosmwasm-scripts =

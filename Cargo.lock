@@ -4215,6 +4215,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw20-multibalance"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-schema 1.5.8",
+ "cosmwasm-std 1.5.8",
+ "cw-storage-plus 1.2.0",
+ "ethabi",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "cw20-token-minter"
 version = "0.0.0"
 dependencies = [
