@@ -1378,4 +1378,4 @@ export const ucs03ZkgmAbi = [
       }
     ]
   }
-] as const
+]
