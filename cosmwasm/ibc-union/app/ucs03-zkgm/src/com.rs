@@ -1,7 +1,7 @@
 use alloy::{primitives::U256, sol_types::SolValue};
 
-pub const ZKGM_VERSION_0: u8 = 0x00;
-pub const ZKGM_VERSION_1: u8 = 0x01;
+pub const INSTR_VERSION_0: u8 = 0x00;
+pub const INSTR_VERSION_1: u8 = 0x01;
 
 pub const OP_FORWARD: u8 = 0x00;
 pub const OP_MULTIPLEX: u8 = 0x01;
@@ -112,10 +112,10 @@ pub fn decode_fungible_asset(
     instruction: &Instruction,
 ) -> Result<FungibleAssetOrder, alloy::sol_types::Error> {
     match instruction.version {
-        ZKGM_VERSION_0 => {
+        INSTR_VERSION_0 => {
             FungibleAssetOrderV0::abi_decode_params(&instruction.operand, true).map(Into::into)
         }
-        ZKGM_VERSION_1 => FungibleAssetOrder::abi_decode_params(&instruction.operand, true),
+        INSTR_VERSION_1 => FungibleAssetOrder::abi_decode_params(&instruction.operand, true),
         _ => panic!("the protocol must handle an incorrect version"),
     }
 }

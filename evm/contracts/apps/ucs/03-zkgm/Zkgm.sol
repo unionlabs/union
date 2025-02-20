@@ -72,10 +72,10 @@ struct FungibleAssetOrder {
     uint256 baseAmount;
     string baseTokenSymbol;
     string baseTokenName;
+    uint8 baseTokenDecimals;
     uint256 baseTokenPath;
     bytes quoteToken;
     uint256 quoteAmount;
-    uint8 decimals;
 }
 
 struct Ack {
@@ -108,8 +108,8 @@ library ZkgmLib {
     uint8 public constant OP_BATCH = 0x02;
     uint8 public constant OP_FUNGIBLE_ASSET_ORDER = 0x03;
 
-    uint8 public constant ZKGM_VERSION_0 = 0x00;
-    uint8 public constant ZKGM_VERSION_1 = 0x01;
+    uint8 public constant INSTR_VERSION_0 = 0x00;
+    uint8 public constant INSTR_VERSION_1 = 0x01;
 
     bytes32 public constant IBC_VERSION = keccak256("ucs03-zkgm-0");
 
@@ -126,6 +126,7 @@ library ZkgmLib {
     error ErrInvalidHops();
     error ErrInvalidAssetOrigin();
     error ErrInvalidAssetSymbol();
+    error ErrInvalidAssetDecimals();
     error ErrInvalidAssetName();
     error ErrInvalidBatchInstruction();
     error ErrInvalidMultiplexSender();
@@ -251,10 +252,10 @@ library ZkgmLib {
             order.baseAmount,
             order.baseTokenSymbol,
             order.baseTokenName,
+            order.baseTokenDecimals,
             order.baseTokenPath,
             order.quoteToken,
-            order.quoteAmount,
-            order.decimals
+            order.quoteAmount
         );
     }
 
@@ -376,10 +377,6 @@ contract UCS03Zkgm is
         if (baseAmount == 0) {
             revert ZkgmLib.ErrInvalidAmount();
         }
-        // TODO: make this non-failable as it's not guaranteed to exist
-        IERC20Metadata sentTokenMeta = IERC20Metadata(baseToken);
-        string memory tokenName = sentTokenMeta.name();
-        string memory tokenSymbol = sentTokenMeta.symbol();
         uint256 origin = tokenOrigin[baseToken];
         // Verify the unwrap
         (address wrappedToken,) =
@@ -396,13 +393,18 @@ contract UCS03Zkgm is
             // TODO: extract this as a step before verifying to allow for ERC777
             // send hook
             SafeERC20.safeTransferFrom(
-                sentTokenMeta, msg.sender, address(this), baseAmount
+                IERC20(baseToken), msg.sender, address(this), baseAmount
             );
             channelBalance[channelId][address(baseToken)] += baseAmount;
         }
+        // TODO: make this non-failable as it's not guaranteed to exist
         Instruction[] memory instructions = new Instruction[](2);
+        IERC20Metadata sentTokenMeta = IERC20Metadata(baseToken);
+        string memory symbol = sentTokenMeta.symbol();
+        string memory name = sentTokenMeta.name();
+        uint8 decimals = sentTokenMeta.decimals();
         instructions[0] = Instruction({
-            version: ZkgmLib.ZKGM_VERSION_1,
+            version: ZkgmLib.INSTR_VERSION_1,
             opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
             operand: ZkgmLib.encodeFungibleAssetOrder(
                 FungibleAssetOrder({
@@ -410,17 +412,17 @@ contract UCS03Zkgm is
                     receiver: receiver,
                     baseToken: abi.encodePacked(baseToken),
                     baseTokenPath: origin,
-                    baseTokenSymbol: tokenSymbol,
-                    baseTokenName: tokenName,
+                    baseTokenSymbol: symbol,
+                    baseTokenName: name,
+                    baseTokenDecimals: decimals,
                     baseAmount: baseAmount,
                     quoteToken: quoteToken,
-                    quoteAmount: quoteAmount,
-                    decimals: sentTokenMeta.decimals()
+                    quoteAmount: quoteAmount
                 })
             )
         });
         instructions[1] = Instruction({
-            version: ZkgmLib.ZKGM_VERSION_1,
+            version: ZkgmLib.INSTR_VERSION_0,
             opcode: ZkgmLib.OP_MULTIPLEX,
             operand: ZkgmLib.encodeMultiplex(
                 Multiplex({
@@ -440,7 +442,7 @@ contract UCS03Zkgm is
                     salt: salt,
                     path: 0,
                     instruction: Instruction({
-                        version: ZkgmLib.ZKGM_VERSION_1,
+                        version: ZkgmLib.INSTR_VERSION_0,
                         opcode: ZkgmLib.OP_BATCH,
                         operand: ZkgmLib.encodeBatch(
                             Batch({instructions: instructions})
@@ -468,7 +470,7 @@ contract UCS03Zkgm is
                     salt: keccak256(abi.encodePacked(msg.sender, salt)),
                     path: 0,
                     instruction: Instruction({
-                        version: ZkgmLib.ZKGM_VERSION_1,
+                        version: ZkgmLib.INSTR_VERSION_0,
                         opcode: ZkgmLib.OP_MULTIPLEX,
                         operand: ZkgmLib.encodeMultiplex(
                             Multiplex({
@@ -496,40 +498,6 @@ contract UCS03Zkgm is
         bytes32 salt,
         bytes calldata wethQuoteToken
     ) public payable {
-        // TODO: make this non-failable as it's not guaranteed to exist
-        IERC20Metadata sentTokenMeta = IERC20Metadata(baseToken);
-
-        uint256 origin = transferV2SendTokens(
-            channelId,
-            baseToken,
-            baseAmount,
-            quoteToken,
-            sentTokenMeta
-        );
-
-        transferV2SendInstructions(
-            channelId,
-            receiver,
-            baseToken,
-            baseAmount,
-            quoteToken,
-            quoteAmount,
-            timeoutHeight,
-            timeoutTimestamp,
-            salt,
-            wethQuoteToken,
-            sentTokenMeta,
-            origin
-        );
-    }
-
-    function transferV2SendTokens(
-        uint32 channelId,
-        address baseToken,
-        uint256 baseAmount,
-        bytes calldata quoteToken,
-        IERC20Metadata sentTokenMeta
-    ) internal returns (uint256) {
         if (baseAmount == 0) {
             revert ZkgmLib.ErrInvalidAmount();
         }
@@ -549,38 +517,20 @@ contract UCS03Zkgm is
             // TODO: extract this as a step before verifying to allow for ERC777
             // send hook
             SafeERC20.safeTransferFrom(
-                sentTokenMeta, msg.sender, address(this), baseAmount
+                IERC20(baseToken), msg.sender, address(this), baseAmount
             );
             channelBalance[channelId][address(baseToken)] += baseAmount;
         }
-        return origin;
-    }
 
-    function transferV2SendInstructions(
-        uint32 channelId,
-        bytes calldata receiver,
-        address baseToken,
-        uint256 baseAmount,
-        bytes calldata quoteToken,
-        uint256 quoteAmount,
-        uint64 timeoutHeight,
-        uint64 timeoutTimestamp,
-        bytes32 salt,
-        bytes calldata wethQuoteToken,
-        IERC20Metadata sentTokenMeta,
-        uint256 origin
-    ) internal {
-        string memory tokenName = sentTokenMeta.name();
-        string memory tokenSymbol = sentTokenMeta.symbol();
-        uint8 tokenDecimals = sentTokenMeta.decimals();
-
+        // TODO: make calls to sentTokenMeta non-failable as it's not guaranteed to exist
+        IERC20Metadata sentTokenMeta = IERC20Metadata(baseToken);
         uint256 nbOfInstructions = 1;
         if (msg.value > 0) {
             nbOfInstructions = 2;
         }
         Instruction[] memory instructions = new Instruction[](nbOfInstructions);
         instructions[0] = Instruction({
-            version: ZkgmLib.ZKGM_VERSION_1,
+            version: ZkgmLib.INSTR_VERSION_1,
             opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
             operand: ZkgmLib.encodeFungibleAssetOrder(
                 FungibleAssetOrder({
@@ -588,12 +538,12 @@ contract UCS03Zkgm is
                     receiver: receiver,
                     baseToken: abi.encodePacked(baseToken),
                     baseTokenPath: origin,
-                    baseTokenSymbol: tokenSymbol,
-                    baseTokenName: tokenName,
+                    baseTokenSymbol: sentTokenMeta.symbol(),
+                    baseTokenName: sentTokenMeta.name(),
+                    baseTokenDecimals: sentTokenMeta.decimals(),
                     baseAmount: baseAmount,
                     quoteToken: quoteToken,
-                    quoteAmount: quoteAmount,
-                    decimals: tokenDecimals
+                    quoteAmount: quoteAmount
                 })
             )
         });
@@ -601,7 +551,7 @@ contract UCS03Zkgm is
             weth.deposit{value: msg.value}();
             address wethBaseToken = address(weth);
             instructions[1] = Instruction({
-                version: ZkgmLib.ZKGM_VERSION_1,
+                version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
                 operand: ZkgmLib.encodeFungibleAssetOrder(
                     FungibleAssetOrder({
@@ -611,11 +561,11 @@ contract UCS03Zkgm is
                         baseTokenPath: 0,
                         baseTokenSymbol: "WETH",
                         baseTokenName: "Wrapped ETH",
+                        baseTokenDecimals: 18,
                         baseAmount: msg.value,
                         quoteToken: wethQuoteToken,
                         // means we pay the relayer on destination for 100% of the value
-                        quoteAmount: 0,
-                        decimals: tokenDecimals
+                        quoteAmount: 0
                     })
                 )
             });
@@ -630,7 +580,7 @@ contract UCS03Zkgm is
                     salt: salt,
                     path: 0,
                     instruction: Instruction({
-                        version: ZkgmLib.ZKGM_VERSION_1,
+                        version: ZkgmLib.INSTR_VERSION_0,
                         opcode: ZkgmLib.OP_BATCH,
                         operand: ZkgmLib.encodeBatch(
                             Batch({instructions: instructions})
@@ -655,10 +605,6 @@ contract UCS03Zkgm is
         if (baseAmount == 0) {
             revert ZkgmLib.ErrInvalidAmount();
         }
-        // TODO: make this non-failable as it's not guaranteed to exist
-        IERC20Metadata sentTokenMeta = IERC20Metadata(baseToken);
-        string memory tokenName = sentTokenMeta.name();
-        string memory tokenSymbol = sentTokenMeta.symbol();
         uint256 origin = tokenOrigin[baseToken];
         // Verify the unwrap
         (address wrappedToken,) =
@@ -675,10 +621,12 @@ contract UCS03Zkgm is
             // TODO: extract this as a step before verifying to allow for ERC777
             // send hook
             SafeERC20.safeTransferFrom(
-                sentTokenMeta, msg.sender, address(this), baseAmount
+                IERC20(baseToken), msg.sender, address(this), baseAmount
             );
             channelBalance[channelId][address(baseToken)] += baseAmount;
         }
+        // TODO: make this non-failable as it's not guaranteed to exist
+        IERC20Metadata sentTokenMeta = IERC20Metadata(baseToken);
         ibcHandler.sendPacket(
             channelId,
             timeoutHeight,
@@ -688,7 +636,7 @@ contract UCS03Zkgm is
                     salt: salt,
                     path: 0,
                     instruction: Instruction({
-                        version: ZkgmLib.ZKGM_VERSION_1,
+                        version: ZkgmLib.INSTR_VERSION_1,
                         opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
                         operand: ZkgmLib.encodeFungibleAssetOrder(
                             FungibleAssetOrder({
@@ -696,12 +644,12 @@ contract UCS03Zkgm is
                                 receiver: receiver,
                                 baseToken: abi.encodePacked(baseToken),
                                 baseTokenPath: origin,
-                                baseTokenSymbol: tokenSymbol,
-                                baseTokenName: tokenName,
+                                baseTokenSymbol: sentTokenMeta.symbol(),
+                                baseTokenName: sentTokenMeta.name(),
+                                baseTokenDecimals: sentTokenMeta.decimals(),
                                 baseAmount: baseAmount,
                                 quoteToken: quoteToken,
-                                quoteAmount: quoteAmount,
-                                decimals: sentTokenMeta.decimals()
+                                quoteAmount: quoteAmount
                             })
                         )
                     })
@@ -734,11 +682,11 @@ contract UCS03Zkgm is
         uint256 path,
         Instruction calldata instruction
     ) internal {
-        if (instruction.version > ZkgmLib.ZKGM_VERSION_1) {
-            revert ZkgmLib.ErrUnsupportedVersion();
-        }
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version == ZkgmLib.ZKGM_VERSION_1) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_1) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
+            if (instruction.version == ZkgmLib.INSTR_VERSION_0) {
                 FungibleAssetOrderV0 calldata order =
                     ZkgmLib.decodeFungibleAssetOrderV0(instruction.operand);
                 verifyFungibleAssetOrder(
@@ -768,14 +716,23 @@ contract UCS03Zkgm is
                 );
             }
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             verifyBatch(
                 channelId, path, ZkgmLib.decodeBatch(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             verifyForward(
                 channelId, path, ZkgmLib.decodeForward(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             verifyMultiplex(
                 channelId, path, ZkgmLib.decodeMultiplex(instruction.operand)
             );
@@ -930,11 +887,11 @@ contract UCS03Zkgm is
         uint256 path,
         Instruction calldata instruction
     ) internal returns (bytes memory) {
-        if (instruction.version > ZkgmLib.ZKGM_VERSION_1) {
-            revert ZkgmLib.ErrUnsupportedVersion();
-        }
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version == ZkgmLib.ZKGM_VERSION_0) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_1) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
+            if (instruction.version == ZkgmLib.INSTR_VERSION_0) {
                 FungibleAssetOrderV0 calldata order =
                     ZkgmLib.decodeFungibleAssetOrderV0(instruction.operand);
                 return executeFungibleAssetOrder(
@@ -951,8 +908,7 @@ contract UCS03Zkgm is
                     order.baseTokenName,
                     order.baseTokenPath,
                     order.quoteToken,
-                    order.quoteAmount,
-                    0
+                    order.quoteAmount
                 );
             } else {
                 FungibleAssetOrder calldata order =
@@ -971,11 +927,13 @@ contract UCS03Zkgm is
                     order.baseTokenName,
                     order.baseTokenPath,
                     order.quoteToken,
-                    order.quoteAmount,
-                    order.decimals
+                    order.quoteAmount
                 );
             }
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             return executeBatch(
                 ibcPacket,
                 relayer,
@@ -985,6 +943,9 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeBatch(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             return executeForward(
                 ibcPacket,
                 relayer,
@@ -994,6 +955,9 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeForward(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             return executeMultiplex(
                 ibcPacket,
                 relayer,
@@ -1146,8 +1110,7 @@ contract UCS03Zkgm is
         string calldata orderBaseTokenName,
         uint256 orderBaseTokenPath,
         bytes calldata orderQuoteToken,
-        uint256 orderQuoteAmount,
-        uint8 orderDecimals
+        uint256 orderQuoteAmount
     ) internal returns (bytes memory) {
         // The protocol can only wrap or unwrap an asset, hence 1:1 baked.
         // The fee is the difference, which can only be positive.
@@ -1240,11 +1203,11 @@ contract UCS03Zkgm is
         bool successful,
         bytes calldata ack
     ) internal {
-        if (instruction.version > ZkgmLib.ZKGM_VERSION_1) {
-            revert ZkgmLib.ErrUnsupportedVersion();
-        }
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version == ZkgmLib.ZKGM_VERSION_0) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_1) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
+            if (instruction.version == ZkgmLib.INSTR_VERSION_0) {
                 FungibleAssetOrderV0 calldata order =
                     ZkgmLib.decodeFungibleAssetOrderV0(instruction.operand);
                 acknowledgeFungibleAssetOrder(
@@ -1274,6 +1237,9 @@ contract UCS03Zkgm is
                 );
             }
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             acknowledgeBatch(
                 ibcPacket,
                 relayer,
@@ -1283,6 +1249,9 @@ contract UCS03Zkgm is
                 ack
             );
         } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             acknowledgeForward(
                 ibcPacket,
                 relayer,
@@ -1292,6 +1261,9 @@ contract UCS03Zkgm is
                 ack
             );
         } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             acknowledgeMultiplex(
                 ibcPacket,
                 relayer,
@@ -1443,11 +1415,11 @@ contract UCS03Zkgm is
         bytes32 salt,
         Instruction calldata instruction
     ) internal {
-        if (instruction.version > ZkgmLib.ZKGM_VERSION_1) {
-            revert ZkgmLib.ErrUnsupportedVersion();
-        }
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version == ZkgmLib.ZKGM_VERSION_0) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_1) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
+            if (instruction.version == ZkgmLib.INSTR_VERSION_0) {
                 FungibleAssetOrderV0 calldata order =
                     ZkgmLib.decodeFungibleAssetOrderV0(instruction.operand);
                 timeoutFungibleAssetOrder(
@@ -1473,6 +1445,9 @@ contract UCS03Zkgm is
                 );
             }
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             timeoutBatch(
                 ibcPacket,
                 relayer,
@@ -1480,6 +1455,9 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeBatch(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             timeoutForward(
                 ibcPacket,
                 relayer,
@@ -1487,6 +1465,9 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeForward(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
             timeoutMultiplex(
                 ibcPacket,
                 relayer,

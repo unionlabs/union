@@ -27,8 +27,8 @@ use crate::{
     com::{
         decode_fungible_asset, Ack, Batch, BatchAck, FungibleAssetOrder, FungibleAssetOrderAck,
         Instruction, Multiplex, ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER,
-        FILL_TYPE_PROTOCOL, OP_BATCH, OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE,
-        TAG_ACK_SUCCESS, ZKGM_VERSION_0, ZKGM_VERSION_1,
+        FILL_TYPE_PROTOCOL, INSTR_VERSION_0, INSTR_VERSION_1, OP_BATCH, OP_FUNGIBLE_ASSET_ORDER,
+        OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
     },
     msg::{EurekaMsg, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg},
     state::{
@@ -230,17 +230,22 @@ fn timeout_internal(
     _path: alloy::primitives::U256,
     instruction: Instruction,
 ) -> Result<Response, ContractError> {
-    if instruction.version > ZKGM_VERSION_1 {
-        return Err(ContractError::UnsupportedVersion {
-            version: instruction.version,
-        });
-    }
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
+            if instruction.version > INSTR_VERSION_1 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
             let order = decode_fungible_asset(&instruction)?;
             refund(deps, packet.source_channel_id, order)
         }
         OP_BATCH => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
             let mut response = Response::new();
             let batch = Batch::abi_decode_params(&instruction.operand, true)?;
             for (i, instruction) in batch.instructions.into_iter().enumerate() {
@@ -264,6 +269,11 @@ fn timeout_internal(
             Ok(response)
         }
         OP_MULTIPLEX => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
             if !multiplex.eureka {
                 // TODO: implement when execute is implemented
@@ -315,13 +325,13 @@ fn acknowledge_internal(
     successful: bool,
     ack: Bytes,
 ) -> Result<Response, ContractError> {
-    if instruction.version > ZKGM_VERSION_0 {
-        return Err(ContractError::UnsupportedVersion {
-            version: instruction.version,
-        });
-    }
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
+            if instruction.version > INSTR_VERSION_1 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
             let order = decode_fungible_asset(&instruction)?;
             let order_ack = if successful {
                 Some(FungibleAssetOrderAck::abi_decode_params(&ack, true)?)
@@ -333,6 +343,11 @@ fn acknowledge_internal(
             )
         }
         OP_BATCH => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
             let mut response = Response::new();
             let batch = Batch::abi_decode_params(&instruction.operand, true)?;
             let batch_ack = if successful {
@@ -366,6 +381,11 @@ fn acknowledge_internal(
             Ok(response)
         }
         OP_MULTIPLEX => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
             if !multiplex.eureka {
                 // TODO: implement when execute is implemented
@@ -525,13 +545,13 @@ fn execute_internal(
     path: alloy::primitives::U256,
     instruction: Instruction,
 ) -> Result<(Bytes, Response), ContractError> {
-    if instruction.version > ZKGM_VERSION_0 {
-        return Err(ContractError::UnsupportedVersion {
-            version: instruction.version,
-        });
-    }
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
+            if instruction.version > INSTR_VERSION_1 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
             let order = decode_fungible_asset(&instruction)?;
             execute_fungible_asset_order(
                 deps,
@@ -546,6 +566,11 @@ fn execute_internal(
             )
         }
         OP_BATCH => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
             let batch = Batch::abi_decode_params(&instruction.operand, true)?;
             execute_batch(
                 deps,
@@ -560,6 +585,11 @@ fn execute_internal(
             )
         }
         OP_MULTIPLEX => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
             execute_multiplex(
                 deps,
@@ -1074,7 +1104,7 @@ fn transfer(
                 salt: salt.into(),
                 path: alloy::primitives::U256::ZERO,
                 instruction: Instruction {
-                    version: ZKGM_VERSION_1,
+                    version: INSTR_VERSION_1,
                     opcode: OP_FUNGIBLE_ASSET_ORDER,
                     operand: FungibleAssetOrder {
                         sender: info.sender.as_bytes().to_vec().into(),
