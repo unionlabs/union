@@ -1,6 +1,8 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
 pub mod contract;
+#[cfg(feature = "cw-orch-interface")]
+pub mod interface;
 pub mod state;
 
 #[cfg(test)]

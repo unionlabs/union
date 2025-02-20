@@ -15,7 +15,8 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [features]
-library = []
+cw-orch-interface = ["dep:cw-orch", "ibc-union-msg/cw-orch-interface"]
+library           = []
 
 [dependencies]
 alloy                         = { workspace = true, features = ["sol-types"] }
@@ -32,3 +33,4 @@ strum                         = { version = "0.26.3", features = ["derive"] }
 thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true, features = ["ethabi"] }
 unionlabs-cosmwasm-upgradable = { workspace = true }
+cw-orch                       = { workspace = true, optional = true }

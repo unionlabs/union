@@ -1,8 +1,9 @@
 use ibc_union_spec::types::Packet;
 use unionlabs_primitives::Bytes;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum IbcUnionMsg {
     OnChannelOpenInit {
         connection_id: u32,
