@@ -1,4 +1,4 @@
-import { cosmosChainId, evmChainFromChainId, evmChainId, GRAQPHQL_URL } from "#mod"
+import {cosmosChainId, evmChainFromChainId, type EvmChainId, evmChainId, GRAQPHQL_URL} from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
 import { createPublicClient, fromHex, http, isHex, type Hex } from "viem"
@@ -174,6 +174,36 @@ export const getQuoteToken = async (
 
   return err(new Error("unknown chain in token prediction"))
 }
+
+export const getWethQuoteToken = async (
+  sourceChainId: EvmChainId,
+  ucs03Address: Hex
+): Promise<Result<{ wethQuoteToken: string } | { type: "NO_WETH_QUOTE" }, Error>> => {
+  const publicClient = createPublicClient({
+    chain: evmChainFromChainId(sourceChainId),
+    transport: http()
+  })
+
+  const wethAddressResult = await ResultAsync.fromPromise(
+    publicClient.readContract({
+      address: ucs03Address,
+      abi: ucs03ZkgmAbi,
+      functionName: "weth",
+      args: []
+    }),
+    error => new Error("Failed to get WETH address from zkgm contract", { cause: error })
+  )
+
+  if (wethAddressResult.isErr()) {
+    return err(wethAddressResult.error)
+  }
+
+  const wethAddress = wethAddressResult.value as Hex
+  console.log(`Fetched WETH address: ${wethAddress}`)
+  
+  return ok({ wethQuoteToken: wethAddress})
+}
+
 
 export const getRecommendedChannels = async () => {
   return (await request(GRAQPHQL_URL, channelsQuery)).v1_ibc_union_channel_recommendations
