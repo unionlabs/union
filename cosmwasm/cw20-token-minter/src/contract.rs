@@ -115,7 +115,7 @@ pub fn execute(
                                 // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set
                                 name: token_name,
                                 symbol: token_symbol,
-                                decimals: 0,
+                                decimals: metadata.decimals,
                                 initial_balances: vec![],
                                 mint: Some(cw20::MinterResponse {
                                     minter: env.contract.address.to_string(),
@@ -267,9 +267,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
             })?)
         }
         QueryMsg::Metadata { denom } => match query_token_info(deps, &denom) {
-            Ok(TokenInfoResponse { name, symbol, .. }) => {
-                Ok(to_json_binary(&MetadataResponse { name, symbol })?)
-            }
+            Ok(TokenInfoResponse {
+                name,
+                symbol,
+                decimals,
+                ..
+            }) => Ok(to_json_binary(&MetadataResponse {
+                name,
+                symbol,
+                decimals,
+            })?),
             Err(_) => {
                 let denom_metadata = deps.querier.query(&QueryRequest::Bank(
                     cosmwasm_std::BankQuery::DenomMetadata {
@@ -277,12 +284,22 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
                     },
                 ));
 
-                let (name, symbol) = match denom_metadata {
-                    Ok(DenomMetadataResponse { metadata, .. }) => (metadata.name, metadata.symbol),
-                    _ => (denom.clone(), denom.clone()),
+                let (name, symbol, decimals) = match denom_metadata {
+                    Ok(DenomMetadataResponse { metadata, .. }) => {
+                        let decimals = match metadata.denom_units.get(0) {
+                            Some(unit) => unit.exponent.try_into().unwrap_or(0),
+                            None => 0,
+                        };
+                        (metadata.name, metadata.symbol, decimals)
+                    }
+                    _ => (denom.clone(), denom.clone(), 0),
                 };
 
-                Ok(to_json_binary(&MetadataResponse { name, symbol })?)
+                Ok(to_json_binary(&MetadataResponse {
+                    name,
+                    symbol,
+                    decimals,
+                })?)
             }
         },
     }

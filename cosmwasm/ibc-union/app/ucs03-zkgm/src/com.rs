@@ -1,6 +1,7 @@
-use alloy::primitives::U256;
+use alloy::{primitives::U256, sol_types::SolValue};
 
 pub const ZKGM_VERSION_0: u8 = 0x00;
+pub const ZKGM_VERSION_1: u8 = 0x01;
 
 pub const OP_FORWARD: u8 = 0x00;
 pub const OP_MULTIPLEX: u8 = 0x01;
@@ -49,6 +50,19 @@ alloy::sol! {
   }
 
   #[derive(Debug)]
+  struct FungibleAssetOrderV0 {
+      bytes sender;
+      bytes receiver;
+      bytes base_token;
+      uint256 base_amount;
+      string base_token_symbol;
+      string base_token_name;
+      uint256 base_token_path;
+      bytes quote_token;
+      uint256 quote_amount;
+  }
+
+  #[derive(Debug, PartialEq)]
   struct FungibleAssetOrder {
       bytes sender;
       bytes receiver;
@@ -59,6 +73,7 @@ alloy::sol! {
       uint256 base_token_path;
       bytes quote_token;
       uint256 quote_amount;
+      uint8 decimals;
   }
 
   struct Ack {
@@ -74,4 +89,39 @@ alloy::sol! {
       uint256 fill_type;
       bytes market_maker;
   }
+}
+
+impl From<FungibleAssetOrderV0> for FungibleAssetOrder {
+    fn from(value: FungibleAssetOrderV0) -> Self {
+        FungibleAssetOrder {
+            sender: value.sender,
+            receiver: value.receiver,
+            base_token: value.base_token,
+            base_amount: value.base_amount,
+            base_token_symbol: value.base_token_symbol,
+            base_token_name: value.base_token_name,
+            base_token_path: value.base_token_path,
+            quote_token: value.quote_token,
+            quote_amount: value.quote_amount,
+            decimals: 0,
+        }
+    }
+}
+
+pub fn decode_fungible_asset(
+    instruction: &Instruction,
+) -> Result<FungibleAssetOrder, alloy::sol_types::Error> {
+    match instruction.version {
+        ZKGM_VERSION_0 => {
+            FungibleAssetOrderV0::abi_decode_params(&instruction.operand, true).map(Into::into)
+        }
+        ZKGM_VERSION_1 => FungibleAssetOrder::abi_decode_params(&instruction.operand, true),
+        _ => panic!("the protocol must handle an incorrect version"),
+    }
+}
+
+pub fn decode_fungible_asset_order_from_v0(
+    data: &[u8],
+) -> Result<FungibleAssetOrder, alloy::sol_types::Error> {
+    FungibleAssetOrderV0::abi_decode_params(data, true).map(Into::into)
 }

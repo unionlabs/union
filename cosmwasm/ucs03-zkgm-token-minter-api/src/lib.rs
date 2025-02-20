@@ -31,6 +31,7 @@ pub struct Metadata {
     /// symbol is the token symbol usually shown on exchanges (eg: ATOM). This can
     /// be the same as the display.
     pub symbol: String,
+    pub decimals: u8,
 }
 
 #[cw_serde]
@@ -81,6 +82,7 @@ pub enum QueryMsg {
 pub struct MetadataResponse {
     pub name: String,
     pub symbol: String,
+    pub decimals: u8,
 }
 
 #[cw_serde]

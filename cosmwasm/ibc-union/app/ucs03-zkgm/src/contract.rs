@@ -25,9 +25,10 @@ use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::{
     com::{
-        Ack, Batch, BatchAck, FungibleAssetOrder, FungibleAssetOrderAck, Instruction, Multiplex,
-        ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, OP_BATCH,
-        OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS, ZKGM_VERSION_0,
+        decode_fungible_asset, Ack, Batch, BatchAck, FungibleAssetOrder, FungibleAssetOrderAck,
+        Instruction, Multiplex, ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER,
+        FILL_TYPE_PROTOCOL, OP_BATCH, OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE,
+        TAG_ACK_SUCCESS, ZKGM_VERSION_0, ZKGM_VERSION_1,
     },
     msg::{EurekaMsg, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg},
     state::{
@@ -229,14 +230,14 @@ fn timeout_internal(
     _path: alloy::primitives::U256,
     instruction: Instruction,
 ) -> Result<Response, ContractError> {
-    if instruction.version != ZKGM_VERSION_0 {
+    if instruction.version > ZKGM_VERSION_1 {
         return Err(ContractError::UnsupportedVersion {
             version: instruction.version,
         });
     }
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
-            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
+            let order = decode_fungible_asset(&instruction)?;
             refund(deps, packet.source_channel_id, order)
         }
         OP_BATCH => {
@@ -314,14 +315,14 @@ fn acknowledge_internal(
     successful: bool,
     ack: Bytes,
 ) -> Result<Response, ContractError> {
-    if instruction.version != ZKGM_VERSION_0 {
+    if instruction.version > ZKGM_VERSION_0 {
         return Err(ContractError::UnsupportedVersion {
             version: instruction.version,
         });
     }
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
-            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
+            let order = decode_fungible_asset(&instruction)?;
             let order_ack = if successful {
                 Some(FungibleAssetOrderAck::abi_decode_params(&ack, true)?)
             } else {
@@ -524,14 +525,14 @@ fn execute_internal(
     path: alloy::primitives::U256,
     instruction: Instruction,
 ) -> Result<(Bytes, Response), ContractError> {
-    if instruction.version != ZKGM_VERSION_0 {
+    if instruction.version > ZKGM_VERSION_0 {
         return Err(ContractError::UnsupportedVersion {
             version: instruction.version,
         });
     }
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
-            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
+            let order = decode_fungible_asset(&instruction)?;
             execute_fungible_asset_order(
                 deps,
                 env,
@@ -760,6 +761,7 @@ fn execute_fungible_asset_order(
                         metadata: Metadata {
                             name: order.base_token_name,
                             symbol: order.base_token_symbol,
+                            decimals: order.decimals,
                         },
                         path: path.to_be_bytes_vec().into(),
                         channel: packet.destination_channel_id,
@@ -1052,6 +1054,7 @@ fn transfer(
     let MetadataResponse {
         name: base_token_name,
         symbol: base_token_symbol,
+        decimals,
     } = deps.querier.query::<MetadataResponse>(&QueryRequest::Wasm(
         cosmwasm_std::WasmQuery::Smart {
             contract_addr: minter.to_string(),
@@ -1071,7 +1074,7 @@ fn transfer(
                 salt: salt.into(),
                 path: alloy::primitives::U256::ZERO,
                 instruction: Instruction {
-                    version: ZKGM_VERSION_0,
+                    version: ZKGM_VERSION_1,
                     opcode: OP_FUNGIBLE_ASSET_ORDER,
                     operand: FungibleAssetOrder {
                         sender: info.sender.as_bytes().to_vec().into(),
@@ -1087,6 +1090,7 @@ fn transfer(
                         quote_amount: alloy::primitives::U256::from_be_bytes(
                             quote_amount.to_be_bytes(),
                         ),
+                        decimals,
                     }
                     .abi_encode_params()
                     .into(),
