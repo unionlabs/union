@@ -1,7 +1,7 @@
 <script lang="ts">
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import BalanceFetcher from "$lib/components/balance-fetcher.svelte"
-import TransferCube from "$lib/components/TransferCube/index.svelte";
+import TransferCube from "$lib/components/TransferCube/index.svelte"
 </script>
 
 <svelte:head>
