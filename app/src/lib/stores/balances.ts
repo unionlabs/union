@@ -1,11 +1,7 @@
 import { erc20ReadMulticall } from "$lib/queries/balance/evm/multicall"
 import * as v from "valibot"
 import type { Chain } from "$lib/types"
-import {
-  bech32ToBech32Address,
-  isValidBech32ContractAddress,
-  queryCosmosCW20AddressBalance
-} from "@unionlabs/client"
+import { bech32ToBech32Address, isValidBech32ContractAddress } from "@unionlabs/client"
 import { writable, type Writable } from "svelte/store"
 import { fromHex, isAddress, toHex, type Address } from "viem"
 import { fetchJson } from "$lib/utilities/neverthrow"
