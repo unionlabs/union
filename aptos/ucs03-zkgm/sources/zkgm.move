@@ -280,12 +280,12 @@ module zkgm::ibc_app {
         (wrapped_address, salt)
     }
 
-    public fun deploy_token(salt: vector<u8>): address acquires SignerRef {
+    public fun deploy_token(salt: vector<u8>, name: string::String, symbol: string::String, decimals: u8): address acquires SignerRef {
         zkgm::fa_coin::initialize(
             &get_signer(),
-            string::utf8(b""),
-            string::utf8(b""),
-            18,
+            name,
+            symbol,
+            decimals,
             string::utf8(b""),
             string::utf8(b""),
             salt
@@ -433,7 +433,7 @@ module zkgm::ibc_app {
 
             let balance_key = ChannelBalancePair { channel: channel_id, token: base_token };
 
-            let curr_balance = *smart_table::borrow(&store.channel_balance, balance_key);
+            let curr_balance = *smart_table::borrow_mut_with_default(&mut store.channel_balance, balance_key, 0);
 
             smart_table::upsert(
                 &mut store.channel_balance,
@@ -906,7 +906,19 @@ module zkgm::ibc_app {
         // ------------------------------------------------------------------
         if (quote_token == wrapped_address) {
             if (!is_deployed(wrapped_address)) {
-                deploy_token(salt);
+                let token_name = *fungible_asset_order::base_token_name(&order);
+                let token_symbol = *fungible_asset_order::base_token_symbol(&order);
+                // Truncate the name to max 32 characters
+                if (string::length(&token_name) > 32) {
+                    token_name = string::sub_string(&token_name, 0, 32);
+                };
+
+                // Truncate the symbol to max 10 characters
+                if (string::length(&token_symbol) > 10) {
+                    token_symbol = string::sub_string(&token_symbol, 0, 10);
+                };
+
+                deploy_token(salt, token_name, token_symbol, 18);
                 let value =
                     update_channel_path(
                         path, ibc::packet::destination_channel_id(&ibc_packet)
@@ -1439,7 +1451,7 @@ module zkgm::ibc_app {
         let token = b"test_token";
         let (wrapped_address, salt) =
             predict_wrapped_token(path, destination_channel_id, token);
-        let deployed_token_addr = deploy_token(salt);
+        let deployed_token_addr = deploy_token(salt, string::utf8(b""), string::utf8(b""), 18);
 
         std::debug::print(&string::utf8(b"wrapped address is: "));
         std::debug::print(&wrapped_address);
@@ -1474,7 +1486,7 @@ module zkgm::ibc_app {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
 
         let salt = b"test_salt";
-        let test_token_addr = deploy_token(salt);
+        let test_token_addr = deploy_token(salt, string::utf8(b""), string::utf8(b""), 18);
 
         transfer(
             admin,
@@ -1504,7 +1516,7 @@ module zkgm::ibc_app {
         let channel_id: u32 = 0;
         let quote_token = b"QUOTE_TOKEN";
         let (wrapped_address, salt) = predict_wrapped_token(0, channel_id, quote_token);
-        let test_token_addr = deploy_token(salt);
+        let test_token_addr = deploy_token(salt, string::utf8(b""), string::utf8(b""), 18);
 
         let admin_balance_before =
             primary_fungible_store::balance(
@@ -1554,7 +1566,7 @@ module zkgm::ibc_app {
 
     //     // 2) Deploy a test token, and mint some to `admin`
     //     let salt = b"test_salt";
-    //     let test_token_addr = deploy_token(salt);
+    //     let test_token_addr = deploy_token(salt, string::utf8(b""), string::utf8(b""), 18);
 
     //     // Mint 1000 units of our newly deployed token to `admin`
     //     zkgm::fa_coin::mint_with_metadata(
