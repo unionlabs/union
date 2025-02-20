@@ -23,7 +23,6 @@ import type {
   QuoteData
 } from "$lib/components/TransferFrom/transfer/types.ts"
 import { persisted } from "svelte-persisted-store"
-import {assets} from "$app/paths";
 
 export let chains: Array<Chain>
 export let ucs03channels: Array<Ucs03Channel>
@@ -40,9 +39,6 @@ const userAddress = derived(
 )
 
 const quoteResults = persisted<Record<string, QuoteData | null>>("quote-results", {})
-const getCacheKey = ($source: string, $asset: string, $destination: string) =>
-  `${$source}-${$asset}-${$destination}`
-
 const quoteToken: Readable<Nullable<QuoteData>> = derived<
   [DerivedSource, DerivedSource, DerivedSource],
   Nullable<QuoteData>
