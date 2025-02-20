@@ -1,8 +1,8 @@
 <script lang="ts">
 import { Button } from "$lib/components/ui/button"
-import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { RawIntentsStore } from "$lib/components/TransferCube/transfer/raw-intents.ts"
 import Token from "$lib/components/token.svelte"
-import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
+import type { Intents } from "$lib/components/TransferCube/transfer/types.ts"
 import type { Chain } from "$lib/types.ts"
 
 interface Props {

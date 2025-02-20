@@ -1,5 +1,5 @@
 <script lang="ts">
-import FaceWrapper from "$lib/components/TransferFrom/components/Cube/FaceWrapper.svelte"
+import FaceWrapper from "$lib/components/TransferCube/components/Cube/FaceWrapper.svelte"
 import { deviceWidth } from "$lib/utilities/device.ts"
 
 type CubeFaces =

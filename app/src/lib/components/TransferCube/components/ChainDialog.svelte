@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Readable } from "svelte/store"
-import type { ContextStore } from "$lib/components/TransferFrom/transfer/context.ts"
+import type { ContextStore } from "$lib/components/TransferCube/transfer/context.ts"
 
 interface Props {
   context: Readable<ContextStore>

@@ -1,10 +1,10 @@
 <script lang="ts">
 import { type Readable, writable } from "svelte/store"
-import type { CubeFaces } from "$lib/components/TransferFrom/components/Cube/types.ts"
-import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
+import type { CubeFaces } from "$lib/components/TransferCube/components/Cube/types.ts"
+import type { RawIntentsStore } from "$lib/components/TransferCube/transfer/raw-intents.ts"
 import Token from "$lib/components/token.svelte"
 import type { Chain } from "$lib/types"
-import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
+import type { Intents } from "$lib/components/TransferCube/transfer/types.ts"
 import InlineLoadingDots from "$lib/components/InlineLoadingDots.svelte"
 
 interface Props {

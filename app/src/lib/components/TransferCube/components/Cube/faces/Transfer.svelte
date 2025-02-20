@@ -26,7 +26,7 @@ import type { Step } from "$lib/stepper-types.ts"
 import { type Chain } from "$lib/types"
 import Token from "$lib/components/token.svelte"
 import Address from "$lib/components/address.svelte"
-import type { TransferArgs, TransferContext } from "$lib/components/TransferFrom/transfer/types.ts"
+import type { TransferArgs, TransferContext } from "$lib/components/TransferCube/transfer/types.ts"
 
 export let chains: Array<Chain>
 export let transferArgs: TransferArgs

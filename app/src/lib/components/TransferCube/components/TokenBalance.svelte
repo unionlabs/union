@@ -1,8 +1,8 @@
 <script lang="ts">
 import InlineLoadingDots from "$lib/components/InlineLoadingDots.svelte"
 import LoadingDots from "$lib/components/loading-dots.svelte"
-import type { RawIntentsStore } from "$lib/components/TransferFrom/transfer/raw-intents.js"
-import type { Intents } from "$lib/components/TransferFrom/transfer/types.js"
+import type { RawIntentsStore } from "$lib/components/TransferCube/transfer/raw-intents.js"
+import type { Intents } from "$lib/components/TransferCube/transfer/types.js"
 import { formatUnits } from "viem"
 
 interface Props {

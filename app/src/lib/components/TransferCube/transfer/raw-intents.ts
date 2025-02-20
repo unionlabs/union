@@ -2,7 +2,7 @@ import { writable } from "svelte/store"
 import { browser } from "$app/environment"
 import { page } from "$app/stores"
 import { debounce } from "$lib/utilities"
-import { defaultParams } from "$lib/components/TransferFrom/transfer/config.ts"
+import { defaultParams } from "$lib/components/TransferCube/transfer/config.ts"
 
 export type FormFields = {
   source: string
