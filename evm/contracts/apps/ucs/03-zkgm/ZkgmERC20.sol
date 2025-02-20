@@ -9,9 +9,14 @@ contract ZkgmERC20 is ERC20, IZkgmERC20 {
     address public admin;
     uint8 private _decimals;
 
-    constructor(string memory n, string memory s, address a) ERC20(n, s) {
+    constructor(
+        string memory n,
+        string memory s,
+        address a,
+        uint8 d
+    ) ERC20(n, s) {
         admin = a;
-        _decimals = 18;
+        _decimals = d;
     }
 
     function decimals()
