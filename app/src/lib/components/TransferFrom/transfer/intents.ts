@@ -79,9 +79,11 @@ export const createIntents = (
   }
 
   const quoteTokenDenom =
-    quoteToken && quoteToken.type === "NO_QUOTE_AVAILABLE"
-      ? "NO_QUOTE_AVAILABLE"
-      : (quoteToken?.quote_token ?? null)
+    quoteToken?.type === "QUOTE_LOADING"
+      ? "QUOTE_LOADING"
+      : quoteToken?.type === "NO_QUOTE_AVAILABLE"
+        ? "NO_QUOTE_AVAILABLE"
+        : (quoteToken?.quote_token ?? null)
 
   console.log(
     `[QuoteToken] quote for ${baseToken?.denom} from ${sourceChain?.chain_id} -> ${destinationChain?.chain_id}:`,

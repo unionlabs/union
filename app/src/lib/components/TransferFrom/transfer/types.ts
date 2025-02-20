@@ -56,3 +56,4 @@ export type QuoteTokenType = "UNWRAPPED" | "NEW_WRAPPED" | "NO_QUOTE_AVAILABLE"
 export type QuoteData =
   | { quote_token: string; type: Extract<QuoteTokenType, "UNWRAPPED" | "NEW_WRAPPED"> }
   | { type: Extract<QuoteTokenType, "NO_QUOTE_AVAILABLE"> }
+  | { type: "QUOTE_LOADING" }

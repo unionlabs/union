@@ -70,6 +70,8 @@ const quoteToken: Readable<Nullable<QuoteData>> = derived<
       return
     }
 
+    set({ type: "QUOTE_LOADING" })
+
     //@ts-ignore
     getQuoteToken($source, $asset, channel)
       .then(result => {
