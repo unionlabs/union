@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -62,6 +62,7 @@ module ibc::bcs_utils {
     use std::string::String;
     use std::from_bcs;
     use std::vector;
+    use std::option::{Self, Option};
 
     const E_INVALID_PREFIX: u64 = 9000;
 
@@ -110,6 +111,12 @@ module ibc::bcs_utils {
         let (length, n_read) = parse_length_prefix(buf);
         buf.cursor = buf.cursor + n_read;
         length
+    }
+
+    /// Peel a u8
+    public fun peel_u8(buf: &mut BcsBuf): u8 {
+        buf.cursor = buf.cursor;
+        from_bcs::to_u8(vector::slice(&buf.inner, buf.cursor - 1, buf.cursor))
     }
 
     /// Peel a u16
@@ -174,5 +181,20 @@ module ibc::bcs_utils {
             i = i + 1;
         };
         vec
+    }
+
+    /// Peel an option of T
+    public inline fun peel_option<T>(
+        buf: &mut BcsBuf, parse_fn: |&mut BcsBuf| T
+    ): Option<T> {
+        let is_some = peel_u8(buf);
+        // NOTE(aeryz): you can't throw a constant that is defined in this module
+        // since this is an inline function
+        assert!(is_some == 1 || is_some == 0, 9001);
+        if (is_some == 1) {
+            option::some(parse_fn(buf))
+        } else {
+            option::none()
+        }
     }
 }

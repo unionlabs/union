@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -325,16 +325,20 @@ module ibc::commitment {
     }
 
     #[test]
-    fun test_commit_ack(){
-        let buf = x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
+    fun test_commit_ack() {
+        let buf =
+            x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
         let val = commit_ack(buf);
-        assert!(val == x"01773c7d3e6e60a7ccaa29208f2ef3aa86fe273271dec70f60866a6c8c908762", 13);
+        assert!(
+            val == x"01773c7d3e6e60a7ccaa29208f2ef3aa86fe273271dec70f60866a6c8c908762",
+            13
+        );
     }
 
-
     #[test]
-    fun test_commit_acks(){
-        let buf = x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
+    fun test_commit_acks() {
+        let buf =
+            x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
         let vect = vector::empty();
         vector::push_back(&mut vect, buf);
         let val = commit_acks(vect);

@@ -17,3 +17,6 @@ hex-literal = { workspace = true }
 sha3        = { workspace = true }
 thiserror   = { workspace = true }
 unionlabs   = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
