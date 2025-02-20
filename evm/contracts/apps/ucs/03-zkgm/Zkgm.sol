@@ -420,7 +420,7 @@ contract UCS03Zkgm is
             )
         });
         instructions[1] = Instruction({
-            version: ZkgmLib.ZKGM_VERSION_0,
+            version: ZkgmLib.ZKGM_VERSION_1,
             opcode: ZkgmLib.OP_MULTIPLEX,
             operand: ZkgmLib.encodeMultiplex(
                 Multiplex({
@@ -440,7 +440,7 @@ contract UCS03Zkgm is
                     salt: salt,
                     path: 0,
                     instruction: Instruction({
-                        version: ZkgmLib.ZKGM_VERSION_0,
+                        version: ZkgmLib.ZKGM_VERSION_1,
                         opcode: ZkgmLib.OP_BATCH,
                         operand: ZkgmLib.encodeBatch(
                             Batch({instructions: instructions})
@@ -468,7 +468,7 @@ contract UCS03Zkgm is
                     salt: keccak256(abi.encodePacked(msg.sender, salt)),
                     path: 0,
                     instruction: Instruction({
-                        version: ZkgmLib.ZKGM_VERSION_0,
+                        version: ZkgmLib.ZKGM_VERSION_1,
                         opcode: ZkgmLib.OP_MULTIPLEX,
                         operand: ZkgmLib.encodeMultiplex(
                             Multiplex({
@@ -496,13 +496,43 @@ contract UCS03Zkgm is
         bytes32 salt,
         bytes calldata wethQuoteToken
     ) public payable {
+        // TODO: make this non-failable as it's not guaranteed to exist
+        IERC20Metadata sentTokenMeta = IERC20Metadata(baseToken);
+
+        uint256 origin = transferV2SendTokens(
+            channelId,
+            baseToken,
+            baseAmount,
+            quoteToken,
+            sentTokenMeta
+        );
+
+        transferV2SendInstructions(
+            channelId,
+            receiver,
+            baseToken,
+            baseAmount,
+            quoteToken,
+            quoteAmount,
+            timeoutHeight,
+            timeoutTimestamp,
+            salt,
+            wethQuoteToken,
+            sentTokenMeta,
+            origin
+        );
+    }
+
+    function transferV2SendTokens(
+        uint32 channelId,
+        address baseToken,
+        uint256 baseAmount,
+        bytes calldata quoteToken,
+        IERC20Metadata sentTokenMeta
+    ) internal returns (uint256) {
         if (baseAmount == 0) {
             revert ZkgmLib.ErrInvalidAmount();
         }
-        // TODO: make this non-failable as it's not guaranteed to exist
-        IERC20Metadata sentTokenMeta = IERC20Metadata(baseToken);
-        string memory tokenName = sentTokenMeta.name();
-        string memory tokenSymbol = sentTokenMeta.symbol();
         uint256 origin = tokenOrigin[baseToken];
         // Verify the unwrap
         (address wrappedToken,) =
@@ -523,6 +553,26 @@ contract UCS03Zkgm is
             );
             channelBalance[channelId][address(baseToken)] += baseAmount;
         }
+        return origin;
+    }
+
+    function transferV2SendInstructions(
+        uint32 channelId,
+        bytes calldata receiver,
+        address baseToken,
+        uint256 baseAmount,
+        bytes calldata quoteToken,
+        uint256 quoteAmount,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes32 salt,
+        bytes calldata wethQuoteToken,
+        IERC20Metadata sentTokenMeta,
+        uint256 origin
+    ) internal {
+        string memory tokenName = sentTokenMeta.name();
+        string memory tokenSymbol = sentTokenMeta.symbol();
+        uint8 tokenDecimals = sentTokenMeta.decimals();
 
         uint256 nbOfInstructions = 1;
         if (msg.value > 0) {
@@ -530,7 +580,7 @@ contract UCS03Zkgm is
         }
         Instruction[] memory instructions = new Instruction[](nbOfInstructions);
         instructions[0] = Instruction({
-            version: ZkgmLib.ZKGM_VERSION_0,
+            version: ZkgmLib.ZKGM_VERSION_1,
             opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
             operand: ZkgmLib.encodeFungibleAssetOrder(
                 FungibleAssetOrder({
@@ -542,7 +592,8 @@ contract UCS03Zkgm is
                     baseTokenName: tokenName,
                     baseAmount: baseAmount,
                     quoteToken: quoteToken,
-                    quoteAmount: quoteAmount
+                    quoteAmount: quoteAmount,
+                    decimals: tokenDecimals
                 })
             )
         });
@@ -550,7 +601,7 @@ contract UCS03Zkgm is
             weth.deposit{value: msg.value}();
             address wethBaseToken = address(weth);
             instructions[1] = Instruction({
-                version: ZkgmLib.ZKGM_VERSION_0,
+                version: ZkgmLib.ZKGM_VERSION_1,
                 opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
                 operand: ZkgmLib.encodeFungibleAssetOrder(
                     FungibleAssetOrder({
@@ -563,7 +614,8 @@ contract UCS03Zkgm is
                         baseAmount: msg.value,
                         quoteToken: wethQuoteToken,
                         // means we pay the relayer on destination for 100% of the value
-                        quoteAmount: 0
+                        quoteAmount: 0,
+                        decimals: tokenDecimals
                     })
                 )
             });
@@ -578,7 +630,7 @@ contract UCS03Zkgm is
                     salt: salt,
                     path: 0,
                     instruction: Instruction({
-                        version: ZkgmLib.ZKGM_VERSION_0,
+                        version: ZkgmLib.ZKGM_VERSION_1,
                         opcode: ZkgmLib.OP_BATCH,
                         operand: ZkgmLib.encodeBatch(
                             Batch({instructions: instructions})
@@ -636,7 +688,7 @@ contract UCS03Zkgm is
                     salt: salt,
                     path: 0,
                     instruction: Instruction({
-                        version: ZkgmLib.ZKGM_VERSION_0,
+                        version: ZkgmLib.ZKGM_VERSION_1,
                         opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
                         operand: ZkgmLib.encodeFungibleAssetOrder(
                             FungibleAssetOrder({
@@ -686,7 +738,7 @@ contract UCS03Zkgm is
             revert ZkgmLib.ErrUnsupportedVersion();
         }
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version == ZkgmLib.ZKGM_VERSION_0) {
+            if (instruction.version == ZkgmLib.ZKGM_VERSION_1) {
                 FungibleAssetOrderV0 calldata order =
                     ZkgmLib.decodeFungibleAssetOrderV0(instruction.operand);
                 verifyFungibleAssetOrder(
@@ -756,7 +808,7 @@ contract UCS03Zkgm is
         }
         uint256 origin = tokenOrigin[address(baseToken)];
         (address wrappedToken,) =
-            internalPredictWrappedTokenMemory(0, channelId, order.quoteToken);
+            internalPredictWrappedTokenMemory(0, channelId, orderQuoteToken);
         if (
             ZkgmLib.lastChannelFromPath(origin) == channelId
                 && abi.encodePacked(orderBaseToken).eq(
@@ -878,7 +930,7 @@ contract UCS03Zkgm is
         uint256 path,
         Instruction calldata instruction
     ) internal returns (bytes memory) {
-        if (instruction.version > ZkgmLib.ZKGM_VERSION_0) {
+        if (instruction.version > ZkgmLib.ZKGM_VERSION_1) {
             revert ZkgmLib.ErrUnsupportedVersion();
         }
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
