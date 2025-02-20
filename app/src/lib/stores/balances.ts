@@ -103,6 +103,12 @@ export async function updateBalancesCosmos(chain: Chain, address: string) {
     toPrefix: chain.addr_prefix
   })
   const denoms = chain.tokens.map(token => token.denom.toLowerCase())
+  const bankDenoms = denoms.filter(
+    denom => !isValidBech32ContractAddress(fromHex(denom as Address, "string"))
+  )
+  const cw20Denoms = denoms.filter(denom =>
+    isValidBech32ContractAddress(fromHex(denom as Address, "string"))
+  )
 
   balances.update(val => {
     denoms.forEach(denom => updateBalanceObject(chain.chain_id, denom, { kind: "loading" }, val))
@@ -156,14 +162,20 @@ export async function updateBalancesCosmos(chain: Chain, address: string) {
     })
     return
   }
+
   const rpcUrl = chain.rpcs.find(rpc => rpc.type === "rpc")?.url
   if (!rpcUrl) return toast.error("no rpc url found")
   balances.update(val => {
-    response.value.balances.forEach(({ denom, amount }) => {
+    bankDenoms.forEach(bankDenom => {
+      const bankBalance = response.value.balances.find(b => toHex(b.denom) === bankDenom)
       updateBalanceObject(
         chain.chain_id,
-        toHex(denom),
-        { kind: "balance", amount, timestamp: Date.now() },
+        bankDenom,
+        {
+          kind: "balance",
+          amount: bankBalance?.amount ? bankBalance.amount : "0",
+          timestamp: Date.now()
+        },
         val
       )
     })
@@ -179,33 +191,31 @@ export async function updateBalancesCosmos(chain: Chain, address: string) {
   if (publicClient.isErr()) return err(publicClient.error)
 
   const cw20Balances = await Promise.all(
-    denoms
-      .filter(denom => isValidBech32ContractAddress(fromHex(denom as Address, "string")))
-      .map(async denom => {
-        const balance = await ResultAsync.fromPromise(
-          publicClient.value.queryContractSmart(fromHex(denom as Address, "string"), {
-            balance: { address }
-          }),
-          error => {
-            return new Error(`failed to query balance for contract ${denom}`, { cause: error })
-          }
-        ).andThen(balance => ok(balance.balance))
+    cw20Denoms.map(async denom => {
+      const balance = await ResultAsync.fromPromise(
+        publicClient.value.queryContractSmart(fromHex(denom as Address, "string"), {
+          balance: { address: addr }
+        }),
+        error => {
+          return new Error(`failed to query balance for contract ${denom}`, { cause: error })
+        }
+      ).andThen(balance => ok(balance.balance))
 
-        balances.update(val => {
-          updateBalanceObject(
-            chain.chain_id,
-            denom,
-            balance.isErr()
-              ? {
-                  kind: "error",
-                  error: `${balance.error.message}, cause: ${balance.error.cause}`,
-                  timestamp: Date.now()
-                }
-              : { kind: "balance", amount: balance.value, timestamp: Date.now() },
-            val
-          )
-          return val
-        })
+      balances.update(val => {
+        updateBalanceObject(
+          chain.chain_id,
+          denom,
+          balance.isErr()
+            ? {
+                kind: "error",
+                error: `${balance.error.message}, cause: ${balance.error.cause}`,
+                timestamp: Date.now()
+              }
+            : { kind: "balance", amount: balance.value, timestamp: Date.now() },
+          val
+        )
+        return val
       })
+    })
   )
 }
