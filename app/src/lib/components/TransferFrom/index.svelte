@@ -23,6 +23,7 @@ import type {
   QuoteData
 } from "$lib/components/TransferFrom/transfer/types.ts"
 import { persisted } from "svelte-persisted-store"
+import {assets} from "$app/paths";
 
 export let chains: Array<Chain>
 export let ucs03channels: Array<Ucs03Channel>
@@ -65,7 +66,7 @@ const quoteToken: Readable<Nullable<QuoteData>> = derived<
       return
     }
 
-    const cacheKey = `${$source}-${JSON.stringify(channel)}`
+    const cacheKey = `${$source}-${JSON.stringify(channel)}-${$asset}`
     const cachedResult = get(quoteResults)[cacheKey] ?? null
 
     if (cachedResult) {
