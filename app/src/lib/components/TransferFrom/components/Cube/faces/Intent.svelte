@@ -12,6 +12,7 @@ import Address from "$lib/components/address.svelte"
 import type { Intents } from "$lib/components/TransferFrom/transfer/types.ts"
 import type { Chain } from "$lib/types.ts"
 import TokenBalance from "$lib/components/TransferFrom/components/TokenBalance.svelte"
+import InlineLoadingDots from "$lib/components/InlineLoadingDots.svelte"
 
 interface Props {
   rawIntents: RawIntentsStore
@@ -26,6 +27,7 @@ export let intents: Props["intents"]
 export let validation: Props["validation"]
 export let chains: Props["chains"]
 export let rotateTo: Props["rotateTo"]
+$: console.log(intents.quoteToken)
 </script>
 
 <div class="flex flex-col w-full h-full">
@@ -105,23 +107,28 @@ export let rotateTo: Props["rotateTo"]
     <div>
       {#if !intents.channel}
         <div class="flex justify-center">
-          <p class="text-xs text-center max-w-[230px]">No recommended UCS03 channel to go from {toDisplayName($rawIntents.source, chains)}
-            to {toDisplayName($rawIntents.destination, chains)}</p>
+          <p class="text-xs text-center max-w-[230px]">
+            No recommended UCS03 channel to go from {toDisplayName($rawIntents.source, chains)}
+            to {toDisplayName($rawIntents.destination, chains)}
+          </p>
         </div>
       {:else}
         <div class="flex flex-col gap-1 justify-end items-center">
-          <div class="flex gap-4 text-muted-foreground text-xs">{intents.channel.source_connection_id}
-            | {intents.channel.source_channel_id}
-            <ArrowRightIcon/>{intents.channel.destination_connection_id} | {intents.channel.destination_channel_id}
+          <div class="flex gap-4 text-muted-foreground text-xs">
+            {intents.channel.source_connection_id} | {intents.channel.source_channel_id}
+            <ArrowRightIcon /> {intents.channel.destination_connection_id} | {intents.channel.destination_channel_id}
           </div>
+
           {#if !$rawIntents.asset}
             <p class="text-xs">Select an asset</p>
           {:else if !$rawIntents.source || !$rawIntents.destination}
             <p class="text-xs">Select source and destination</p>
-          {:else if validation.args === "NO_QUOTE_AVAILABLE"}
-            <div class="text-xs text-center">No Quote Token available for this transfer. Sending new assets to Cosmos is
-              currently not supported and will be enabled in an update soon.
+          {:else if intents.quoteToken === "NO_QUOTE_AVAILABLE"}
+            <div class="text-xs text-center">
+              No Quote Token available for this transfer. Sending new assets to Cosmos is currently not supported and will be enabled in an update soon.
             </div>
+          {:else if intents.quoteToken === "QUOTE_LOADING"}
+            <InlineLoadingDots />
           {:else if intents.quoteToken}
             <div class="flex-1 flex flex-col items-center text-xs">
               <Token chainId={$rawIntents.destination} denom={intents.quoteToken} {chains}/>
@@ -132,8 +139,10 @@ export let rotateTo: Props["rotateTo"]
           {/if}
         </div>
       {/if}
-      <Button class="w-full mt-2" disabled={!validation.isValid} on:click={() => rotateTo("verifyFace")}>Transfer
+      <Button class="w-full mt-2" disabled={!validation.isValid} on:click={() => rotateTo("verifyFace")}>
+        Transfer
       </Button>
     </div>
+
   </div>
 </div>

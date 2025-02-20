@@ -2,9 +2,8 @@ import type { Chain, Ucs03Channel, UserAddresses } from "$lib/types"
 import type { FormFields } from "$lib/components/TransferFrom/transfer/raw-intents.ts"
 import { fromHex } from "viem"
 import { bech32ToBech32Address, getChannelInfo } from "@unionlabs/client"
-import type { Intents, QuoteResponse } from "$lib/components/TransferFrom/transfer/types.ts"
+import type { Intents, QuoteData } from "$lib/components/TransferFrom/transfer/types.ts"
 import type { Balances } from "$lib/stores/balances.ts"
-import type { Result } from "neverthrow"
 import type { TokenInfos } from "$lib/stores/tokens.ts"
 
 export const createIntents = (
@@ -14,7 +13,7 @@ export const createIntents = (
   chains: Array<Chain>,
   ucs03channels: Array<Ucs03Channel>,
   tokenInfos: TokenInfos,
-  quoteToken: Result<QuoteResponse, Error> | null
+  quoteToken: QuoteData | null
 ): Intents => {
   // Source Chain
   const sourceChain = chains.find(chain => chain.chain_id === rawIntents.source) ?? null
@@ -79,13 +78,12 @@ export const createIntents = (
     console.log(`[QuoteToken] is null`)
   }
 
-  const quoteTokenDenom = quoteToken
-    ? quoteToken.isErr()
-      ? null
-      : quoteToken.value.type === "NO_QUOTE_AVAILABLE"
+  const quoteTokenDenom =
+    quoteToken?.type === "QUOTE_LOADING"
+      ? "QUOTE_LOADING"
+      : quoteToken?.type === "NO_QUOTE_AVAILABLE"
         ? "NO_QUOTE_AVAILABLE"
-        : quoteToken.value.quote_token
-    : null
+        : (quoteToken?.quote_token ?? null)
 
   console.log(
     `[QuoteToken] quote for ${baseToken?.denom} from ${sourceChain?.chain_id} -> ${destinationChain?.chain_id}:`,
