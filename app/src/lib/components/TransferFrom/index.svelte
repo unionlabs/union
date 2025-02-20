@@ -62,7 +62,7 @@ const quoteToken: Readable<Nullable<QuoteData>> = derived<
       return
     }
 
-    const cacheKey = `${$source}-${JSON.stringify(channel)}-${$asset}`
+    const cacheKey = `${$source}-${JSON.stringify(channel)}-${$asset}-v1`
     const cachedResult = get(quoteResults)[cacheKey] ?? null
 
     if (cachedResult) {
