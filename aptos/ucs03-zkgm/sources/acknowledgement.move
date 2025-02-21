@@ -88,7 +88,6 @@ module zkgm::acknowledgement {
         zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
         zkgm_ethabi::encode_bytes(&mut buf, &ack.inner_ack);
 
-
         buf
     }
 
