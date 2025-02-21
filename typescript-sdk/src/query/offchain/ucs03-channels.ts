@@ -1,4 +1,4 @@
-import {cosmosChainId, evmChainFromChainId, type EvmChainId, evmChainId, GRAQPHQL_URL} from "#mod"
+import { cosmosChainId, evmChainFromChainId, type EvmChainId, evmChainId, GRAQPHQL_URL } from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
 import { createPublicClient, fromHex, http, isHex, type Hex } from "viem"
