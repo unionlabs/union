@@ -599,6 +599,7 @@ module zkgm::ibc_app {
                 path,
                 *vector::borrow(&instructions, i)
             );
+            i = i+1;
         }
     }
 
