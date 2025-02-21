@@ -176,14 +176,16 @@ export const getQuoteToken = async (
 }
 
 export const getWethQuoteToken = async (
-  sourceChainId: EvmChainId,
-  ucs03Address: Hex
+  sourceChainId: string,
+  ucs03Address: Hex,
+  channel: Channel
 ): Promise<Result<{ wethQuoteToken: string } | { type: "NO_WETH_QUOTE" }, Error>> => {
   const publicClient = createPublicClient({
     chain: evmChainFromChainId(sourceChainId),
     transport: http()
   })
 
+  // Step 1: Get the local WETH address
   const wethAddressResult = await ResultAsync.fromPromise(
     publicClient.readContract({
       address: ucs03Address,
@@ -199,10 +201,22 @@ export const getWethQuoteToken = async (
   }
 
   const wethAddress = wethAddressResult.value as Hex
-  console.log(`Fetched WETH address: ${wethAddress}`)
+  console.log(`Fetched local WETH address: ${wethAddress}`)
 
-  return ok({ wethQuoteToken: wethAddress })
+  // Step 2: Predict the quote token for WETH, just like a regular token
+  const quoteResult = await getQuoteToken(sourceChainId, wethAddress, channel)
+
+  if (quoteResult.isErr()) {
+    return err(quoteResult.error)
+  }
+
+  if (quoteResult.value.type === "NO_QUOTE_AVAILABLE") {
+    return ok({ type: "NO_WETH_QUOTE" })
+  }
+
+  return ok({ wethQuoteToken: quoteResult.value.quote_token })
 }
+
 
 export const getRecommendedChannels = async () => {
   return (await request(GRAQPHQL_URL, channelsQuery)).v1_ibc_union_channel_recommendations
