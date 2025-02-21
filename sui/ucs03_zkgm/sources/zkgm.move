@@ -1387,7 +1387,7 @@ module zkgm::zkgm_relay {
         transfer_packet: FungibleAssetOrder,
         ctx: &mut TxContext
     ) {
-        // TOOD: Fill it later
+        // TODO: Fill it later
     }
 
     fun timeout_batch(
