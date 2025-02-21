@@ -93,7 +93,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           account: client.account,
           abi: ucs03ZkgmAbi,
           chain: client.chain,
-          functionName: "transfer",
+          functionName: "transferV2",
           address: ucs03address,
           /**
               "channelId": "uint32"
