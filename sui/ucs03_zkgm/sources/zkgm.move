@@ -29,7 +29,8 @@ module zkgm::zkgm_relay {
     const ACK_SUCCESS: u256 = 1;
     const ACK_FAILURE: u256 = 0;
     const ACK_LENGTH: u64 = 1;
-    const ZKGM_VERSION_0: u8 = 0x00;
+    const INSTR_VERSION_0: u8 = 0x00;
+    const INSTR_VERSION_1: u8 = 0x01;
 
     const OP_FORWARD: u8 = 0x00;
     const OP_MULTIPLEX: u8 = 0x01;
@@ -149,18 +150,7 @@ module zkgm::zkgm_relay {
         contract_address: vector<u8>
     }
 
-    public struct FungibleAssetTransferPacket has copy, drop, store {
-        sender: vector<u8>,
-        receiver: vector<u8>,
-        sent_token: address,
-        sent_token_prefix: u256,
-        sent_symbol: string::String,
-        sent_name: string::String,
-        sent_amount: u64,
-        ask_token: vector<u8>,
-        ask_amount: u64,
-        only_maker: bool
-    }
+
 
     public struct Acknowledgement has copy, drop, store {
         tag: u256,
@@ -570,10 +560,9 @@ module zkgm::zkgm_relay {
         instruction: Instruction,
         ctx: &mut TxContext
     ): (vector<u8>)  {
-        if (instruction::version(&instruction) != ZKGM_VERSION_0) {
-            abort E_UNSUPPORTED_VERSION
-        };
+        let version = instruction::version(&instruction);
         if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
+            assert!(version == INSTR_VERSION_1, E_UNSUPPORTED_VERSION);
             execute_fungible_asset_order(
                 ibc_store,
                 relay_store,
@@ -586,6 +575,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
+            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             let decode_idx = 0x20;
             execute_batch(
                 ibc_store,
@@ -599,6 +589,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_FORWARD) {
+            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             let decode_idx = 0x20;
             execute_forward(
                 ibc_store,
@@ -611,6 +602,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
+            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             execute_multiplex(
                 ibc_store,
                 relay_store,
@@ -749,35 +741,36 @@ module zkgm::zkgm_relay {
 
         if (multiplex::eureka(&multiplex_packet)) {
             // TODO: discuss this, is it ok to do?
-            event::emit(
-                OnZkgmCall {
-                    sender: *multiplex::sender(&multiplex_packet),
-                    contract_calldata: *multiplex::contract_calldata(&multiplex_packet)
-                    contract_address: contract_address
-                }
-            );
+            // event::emit(
+            //     OnZkgmCall {
+            //         sender: *multiplex::sender(&multiplex_packet),
+            //         contract_calldata: *multiplex::contract_calldata(&multiplex_packet),
+            //         contract_address: contract_address
+            //     }
+            // );
             return bcs::to_bytes(&ACK_SUCCESS)
         };
         let multiplex_ibc_packet =
             packet::new(
-                packet::source_channel(&ibc_packet),
-                packet::destination_channel(&ibc_packet),
-                encode_multiplex_sender_and_calldata(
-                    multiplex_packet.sender, multiplex_packet.contract_calldata
+                packet::source_channel_id(&ibc_packet),
+                packet::destination_channel_id(&ibc_packet),
+                multiplex::encode_multiplex_sender_and_calldata(
+                    *multiplex::sender(&multiplex_packet),
+                    *multiplex::contract_calldata(&multiplex_packet)
                 ),
                 packet::timeout_height(&ibc_packet),
                 packet::timeout_timestamp(&ibc_packet)
             );
 
         // TODO: How do we return something from this? investigate
-        event::emit(
-            OnIIBCModuleOnRecvPacketCall {
-                packet: multiplex_ibc_packet,
-                relayer: relayer,
-                relayer_msg: relayer_msg,
-                contract_address: multiplex_packet.contract_address
-            }
-        );
+        // event::emit(
+        //     OnIIBCModuleOnRecvPacketCall {
+        //         packet: multiplex_ibc_packet,
+        //         relayer: relayer,
+        //         relayer_msg: relayer_msg,
+        //         contract_address: multiplex_packet.contract_address
+        //     }
+        // );
         vector::empty() // TODO: investigate
         // Here is the original implementation in aptos
         // let param =
@@ -811,15 +804,17 @@ module zkgm::zkgm_relay {
         operand: vector<u8>,
         ctx: &mut TxContext
     ) {
-        let instruction = Instruction { version: version, opcode: opcode, operand: operand };
+        let instruction = instruction::new(version, opcode, operand);
         let sender = tx_context::sender(ctx);
         verify_internal(ibc_store, relay_store, sender, channel_id, 0, instruction, ctx);
+
+        let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
         ibc::send_packet(
             ibc_store,
             channel_id,
             timeout_height,
             timeout_timestamp,
-            encode_packet(&ZkgmPacket { salt: salt, path: 0, instruction }),
+            zkgm_packet::encode(&zkgm_pack)
         );
     }
     fun verify_internal(
@@ -831,47 +826,51 @@ module zkgm::zkgm_relay {
         instruction: Instruction,
         ctx: &mut TxContext
     ){
-        if (instruction.version != ZKGM_VERSION_0) {
-            abort E_UNSUPPORTED_VERSION
-        };
-        if (instruction.opcode == SYSCALL_FUNGIBLE_ASSET_TRANSFER) {
-            verify_fungible_asset_transfer(
+        let version = instruction::version(&instruction);
+        if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
+            assert!(version == INSTR_VERSION_1, E_UNSUPPORTED_VERSION);
+            verify_fungible_asset_order(
                 ibc_store,
                 relay_store,
                 sender,
                 channel_id,
                 path,
-                decode_fungible_asset_transfer(instruction.operand),
+                fungible_asset_order::decode(instruction::operand(&instruction)),
                 ctx
             )
-        } else if (instruction.opcode == SYSCALL_BATCH) {
+        } else if (instruction::opcode(&instruction) == OP_BATCH) {
+            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
+            let decode_idx = 0x20;
             verify_batch(
                 ibc_store,
                 relay_store,
                 sender,
                 channel_id,
                 path,
-                decode_batch_packet(instruction.operand),
+                batch::decode(instruction::operand(&instruction), &mut decode_idx),
                 ctx
             )
-        } else if (instruction.opcode == SYSCALL_FORWARD) {
+        } else if (instruction::opcode(&instruction) == OP_FORWARD) {
+            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
+            let decode_idx = 0x20;
             verify_forward(
                 ibc_store,
                 relay_store,
                 sender,
                 channel_id,
                 path,
-                decode_forward(instruction.operand),
+                forward::decode(instruction::operand(&instruction), &mut decode_idx),
                 ctx
             )
-        } else if (instruction.opcode == SYSCALL_MULTIPLEX) {
+        } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
+            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             verify_multiplex(
                 ibc_store,
                 relay_store,
                 sender,
                 channel_id,
                 path,
-                decode_multiplex(instruction.operand),
+                multiplex::decode(instruction::operand(&instruction)),
                 ctx
             )
         } else {
@@ -879,13 +878,13 @@ module zkgm::zkgm_relay {
         };
     }
 
-    fun verify_fungible_asset_transfer(
+    fun verify_fungible_asset_order(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         sender: address,
         channel_id: u32,
         path: u256,
-        transfer_packet: FungibleAssetTransferPacket,
+        transfer_packet: FungibleAssetOrder,
         ctx: &mut TxContext
     ){
         let sent_token = transfer_packet.sent_token;
@@ -1103,7 +1102,7 @@ module zkgm::zkgm_relay {
         ibc_packet: Packet,
         relayer: address,
         salt: vector<u8>,
-        transfer_packet: FungibleAssetTransferPacket,
+        transfer_packet: FungibleAssetOrder,
         success: bool,
         ack: vector<u8>,
         ctx: &mut TxContext
@@ -1173,11 +1172,11 @@ module zkgm::zkgm_relay {
         if (success && !multiplex_packet.eureka) {
             let multiplex_ibc_packet =
                 packet::new(
-                    packet::source_channel(&ibc_packet),
-                    packet::destination_channel(&ibc_packet),
-                    encode_multiplex_sender_and_calldata(
-                        multiplex_packet.contract_address,
-                        multiplex_packet.contract_calldata
+                    packet::source_channel_id(&ibc_packet),
+                    packet::destination_channel_id(&ibc_packet),
+                    multiplex::encode_multiplex_sender_and_calldata(
+                        *multiplex::contract_address(&multiplex_packet),
+                        *multiplex::contract_calldata(&multiplex_packet)
                     ),
                     packet::timeout_height(&ibc_packet),
                     packet::timeout_timestamp(&ibc_packet)
@@ -1318,15 +1317,15 @@ module zkgm::zkgm_relay {
         relay_store: &mut RelayStore,
         packet: Packet,
         relayer: address,
-        transfer_packet: FungibleAssetTransferPacket,
+        transfer_packet: FungibleAssetOrder,
         ctx: &mut TxContext
     ) {
-        refund(packet::source_channel(&packet), transfer_packet, ctx);
+        refund(packet::source_channel_id(&packet), transfer_packet, ctx);
     }
 
     fun refund(
         channel_id: u32,
-        transfer_packet: FungibleAssetTransferPacket,
+        transfer_packet: FungibleAssetOrder,
         ctx: &mut TxContext
     ) {
         // TOOD: Fill it later
@@ -1377,11 +1376,11 @@ module zkgm::zkgm_relay {
         if (!multiplex_packet.eureka) {
             let multiplex_ibc_packet =
                 packet::new(
-                    packet::source_channel(&ibc_packet),
-                    packet::destination_channel(&ibc_packet),
-                    encode_multiplex_sender_and_calldata(
-                        multiplex_packet.contract_address,
-                        multiplex_packet.contract_calldata
+                    packet::source_channel_id(&ibc_packet),
+                    packet::destination_channel_id(&ibc_packet),
+                    multiplex::encode_multiplex_sender_and_calldata(
+                        *multiplex::contract_address(&multiplex_packet),
+                        *multiplex::contract_calldata(&multiplex_packet)
                     ),
                     packet::timeout_height(&ibc_packet),
                     packet::timeout_timestamp(&ibc_packet)
