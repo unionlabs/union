@@ -791,7 +791,7 @@ fn execute_fungible_asset_order(
                         metadata: Metadata {
                             name: order.base_token_name,
                             symbol: order.base_token_symbol,
-                            decimals: order.decimals,
+                            decimals: order.base_token_decimals,
                         },
                         path: path.to_be_bytes_vec().into(),
                         channel: packet.destination_channel_id,
@@ -1084,7 +1084,7 @@ fn transfer(
     let MetadataResponse {
         name: base_token_name,
         symbol: base_token_symbol,
-        decimals,
+        decimals: base_token_decimals,
     } = deps.querier.query::<MetadataResponse>(&QueryRequest::Wasm(
         cosmwasm_std::WasmQuery::Smart {
             contract_addr: minter.to_string(),
@@ -1113,6 +1113,7 @@ fn transfer(
                         base_amount: base_amount.u128().try_into().expect("u256>u128"),
                         base_token_symbol,
                         base_token_name,
+                        base_token_decimals,
                         base_token_path: origin
                             .map(|x| alloy::primitives::U256::from_be_bytes(x.to_be_bytes()))
                             .unwrap_or(alloy::primitives::U256::ZERO),
@@ -1120,7 +1121,6 @@ fn transfer(
                         quote_amount: alloy::primitives::U256::from_be_bytes(
                             quote_amount.to_be_bytes(),
                         ),
-                        decimals,
                     }
                     .abi_encode_params()
                     .into(),

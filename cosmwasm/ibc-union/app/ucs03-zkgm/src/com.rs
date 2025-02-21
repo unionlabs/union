@@ -70,12 +70,13 @@ alloy::sol! {
       uint256 base_amount;
       string base_token_symbol;
       string base_token_name;
+      uint8 base_token_decimals;
       uint256 base_token_path;
       bytes quote_token;
       uint256 quote_amount;
-      uint8 decimals;
   }
 
+  #[derive(Debug)]
   struct Ack {
       uint256 tag;
       bytes inner_ack;
@@ -85,6 +86,7 @@ alloy::sol! {
       bytes[] acknowledgements;
   }
 
+  #[derive(Debug)]
   struct FungibleAssetOrderAck {
       uint256 fill_type;
       bytes market_maker;
@@ -100,10 +102,10 @@ impl From<FungibleAssetOrderV0> for FungibleAssetOrder {
             base_amount: value.base_amount,
             base_token_symbol: value.base_token_symbol,
             base_token_name: value.base_token_name,
+            base_token_decimals: 0,
             base_token_path: value.base_token_path,
             quote_token: value.quote_token,
             quote_amount: value.quote_amount,
-            decimals: 0,
         }
     }
 }
