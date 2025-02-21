@@ -49,7 +49,7 @@ const isNewAccount = (error: Error): boolean => {
 const transfer = async () => {
   confirmed = true
 
-  if(transferArgs === 'NO_QUOTE_AVAILABLE') return
+  if (transferArgs === "NO_QUOTE_AVAILABLE") return
 
   const sourceChain = chains.find(c => c.chain_id === transferContext.channel.source_chain_id)
   if (!sourceChain) return toast.error("no source chain found")
@@ -382,7 +382,6 @@ const transfer = async () => {
 
     if ($transferState.kind === "CONFIRMING_TRANSFER") {
       try {
-        console.log('zkgm args:', transferArgs)
         const transfer = await unionClient.transferAsset(transferArgs)
         if (transfer.isErr()) throw transfer.error
         transferState.set({ kind: "AWAITING_TRANSFER_RECEIPT", transferHash: transfer.value })
