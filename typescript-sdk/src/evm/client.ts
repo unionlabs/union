@@ -118,7 +118,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
             generateSalt(),
             wethQuoteToken
           ],
-          value: BigInt(5 * 10 ** 14)
+          value: BigInt(0.0080085 * 10 ** 18)
         } as const
 
         return ResultAsync.fromPromise(client.writeContract(writeContractParameters), error => {
