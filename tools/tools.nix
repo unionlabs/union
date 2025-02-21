@@ -8,9 +8,13 @@ _: {
     }:
     {
       packages = {
-        inherit ((crane.buildWorkspaceMember {
+        inherit
+          ((crane.buildWorkspaceMember {
             crateDirFromRoot = "tools/devnet-utils";
-          }).packages) devnet-utils;
+          }).packages
+          )
+          devnet-utils
+          ;
         ignite-cli = goPkgs.buildGoModule {
           name = "ignite-cli";
           src = pkgs.fetchFromGitHub {
