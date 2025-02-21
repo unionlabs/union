@@ -451,10 +451,10 @@ module zkgm::ibc_app {
                 base_amount,
                 symbol,
                 name,
+                zkgm::fa_coin::decimals_with_metadata(asset),
                 origin,
                 quote_token,
-                quote_amount,
-                zkgm::fa_coin::decimals_with_metadata(asset)
+                quote_amount
             );
         let operand = fungible_asset_order::encode(&fungible_asset_order);
         let zkgm_pack =
@@ -911,7 +911,7 @@ module zkgm::ibc_app {
             if (!is_deployed(wrapped_address)) {
                 let token_name = *fungible_asset_order::base_token_name(&order);
                 let token_symbol = *fungible_asset_order::base_token_symbol(&order);
-                deploy_token(salt, token_name, token_symbol, fungible_asset_order::decimals(&order));
+                deploy_token(salt, token_name, token_symbol, fungible_asset_order::base_token_decimals(&order));
                 let value =
                     update_channel_path(
                         path, ibc::packet::destination_channel_id(&ibc_packet)
