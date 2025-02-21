@@ -26,11 +26,17 @@ const transfersDataStore = derived([transfers, page], ([$transfers, $page]) => {
 
   return (
     $transfers?.data
-      ?.filter(
-        transfer =>
+      ?.filter(transfer => {
+        const quoteAmount = transfer.token?.quote?.amount
+        const parsedAmount = quoteAmount ? Number.parseInt(quoteAmount, 16) : Number.NaN
+
+        return (
           enabledChainIds.includes(transfer.source.chainId) &&
-          enabledChainIds.includes(transfer.destination.chainId)
-      )
+          enabledChainIds.includes(transfer.destination.chainId) &&
+          !Number.isNaN(parsedAmount) &&
+          parsedAmount !== 0
+        )
+      })
       ?.map(d => ({ url: `/explorer/transfers/${d.hash}`, ...d })) ?? []
   )
 })
