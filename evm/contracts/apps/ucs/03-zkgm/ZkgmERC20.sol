@@ -12,8 +12,8 @@ contract ZkgmERC20 is ERC20, IZkgmERC20 {
     constructor(
         string memory n,
         string memory s,
-        address a,
-        uint8 d
+        uint8 d,
+        address a
     ) ERC20(n, s) {
         admin = a;
         _decimals = d;

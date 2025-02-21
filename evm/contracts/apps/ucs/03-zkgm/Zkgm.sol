@@ -897,15 +897,13 @@ contract UCS03Zkgm is
                 return executeFungibleAssetOrder(
                     ibcPacket,
                     relayer,
-                    relayerMsg,
-                    salt,
                     path,
-                    order.sender,
                     order.receiver,
                     order.baseToken,
                     order.baseAmount,
                     order.baseTokenSymbol,
                     order.baseTokenName,
+                    0,
                     order.baseTokenPath,
                     order.quoteToken,
                     order.quoteAmount
@@ -916,15 +914,13 @@ contract UCS03Zkgm is
                 return executeFungibleAssetOrder(
                     ibcPacket,
                     relayer,
-                    relayerMsg,
-                    salt,
                     path,
-                    order.sender,
                     order.receiver,
                     order.baseToken,
                     order.baseAmount,
                     order.baseTokenSymbol,
                     order.baseTokenName,
+                    order.baseTokenDecimals,
                     order.baseTokenPath,
                     order.quoteToken,
                     order.quoteAmount
@@ -1099,15 +1095,13 @@ contract UCS03Zkgm is
     function executeFungibleAssetOrder(
         IBCPacket calldata ibcPacket,
         address relayer,
-        bytes calldata relayerMsg,
-        bytes32 salt,
         uint256 path,
-        bytes calldata orderSender,
         bytes calldata orderReceiver,
         bytes calldata orderBaseToken,
         uint256 orderBaseAmount,
         string calldata orderBaseTokenSymbol,
         string calldata orderBaseTokenName,
+        uint8 orderBaseTokenDecimals,
         uint256 orderBaseTokenPath,
         bytes calldata orderQuoteToken,
         uint256 orderQuoteAmount
@@ -1133,6 +1127,7 @@ contract UCS03Zkgm is
                         abi.encode(
                             orderBaseTokenName,
                             orderBaseTokenSymbol,
+                            orderBaseTokenDecimals,
                             address(this)
                         )
                     ),
@@ -1404,7 +1399,7 @@ contract UCS03Zkgm is
         } else {
             ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
             timeoutInternal(
-                ibcPacket, relayer, zkgmPacket.salt, zkgmPacket.instruction
+                ibcPacket, relayer, zkgmPacket.instruction
             );
         }
     }
@@ -1412,7 +1407,6 @@ contract UCS03Zkgm is
     function timeoutInternal(
         IBCPacket calldata ibcPacket,
         address relayer,
-        bytes32 salt,
         Instruction calldata instruction
     ) internal {
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
@@ -1424,8 +1418,6 @@ contract UCS03Zkgm is
                     ZkgmLib.decodeFungibleAssetOrderV0(instruction.operand);
                 timeoutFungibleAssetOrder(
                     ibcPacket,
-                    relayer,
-                    salt,
                     order.sender,
                     order.baseToken,
                     order.baseTokenPath,
@@ -1436,8 +1428,6 @@ contract UCS03Zkgm is
                     ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
                 timeoutFungibleAssetOrder(
                     ibcPacket,
-                    relayer,
-                    salt,
                     order.sender,
                     order.baseToken,
                     order.baseTokenPath,
@@ -1451,7 +1441,6 @@ contract UCS03Zkgm is
             timeoutBatch(
                 ibcPacket,
                 relayer,
-                salt,
                 ZkgmLib.decodeBatch(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
@@ -1461,7 +1450,6 @@ contract UCS03Zkgm is
             timeoutForward(
                 ibcPacket,
                 relayer,
-                salt,
                 ZkgmLib.decodeForward(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
@@ -1471,7 +1459,6 @@ contract UCS03Zkgm is
             timeoutMultiplex(
                 ibcPacket,
                 relayer,
-                salt,
                 ZkgmLib.decodeMultiplex(instruction.operand)
             );
         } else {
@@ -1482,7 +1469,6 @@ contract UCS03Zkgm is
     function timeoutBatch(
         IBCPacket calldata ibcPacket,
         address relayer,
-        bytes32 salt,
         Batch calldata batch
     ) internal {
         uint256 l = batch.instructions.length;
@@ -1490,7 +1476,7 @@ contract UCS03Zkgm is
             timeoutInternal(
                 ibcPacket,
                 relayer,
-                keccak256(abi.encode(i, salt)),
+                // keccak256(abi.encode(i, salt)),
                 batch.instructions[i]
             );
         }
@@ -1499,14 +1485,12 @@ contract UCS03Zkgm is
     function timeoutForward(
         IBCPacket calldata ibcPacket,
         address relayer,
-        bytes32 salt,
         Forward calldata forward
     ) internal {}
 
     function timeoutMultiplex(
         IBCPacket calldata ibcPacket,
         address relayer,
-        bytes32 salt,
         Multiplex calldata multiplex
     ) internal {
         if (!multiplex.eureka) {
@@ -1527,8 +1511,6 @@ contract UCS03Zkgm is
 
     function timeoutFungibleAssetOrder(
         IBCPacket calldata ibcPacket,
-        address relayer,
-        bytes32 salt,
         bytes calldata orderSender,
         bytes calldata orderBaseToken,
         uint256 orderBaseTokenPath,
