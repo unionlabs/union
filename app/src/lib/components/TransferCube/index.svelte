@@ -6,7 +6,12 @@ import Transfer from "$lib/components/TransferCube/components/Cube/faces/Transfe
 import Cube from "$lib/components/TransferCube/components/Cube/index.svelte"
 import type { Chain, Ucs03Channel } from "$lib/types.ts"
 import { derived, get, type Readable } from "svelte/store"
-import {type EvmChainId, getChannelInfo, getQuoteToken, getWethQuoteToken} from "@unionlabs/client"
+import {
+  type EvmChainId,
+  getChannelInfo,
+  getQuoteToken,
+  getWethQuoteToken
+} from "@unionlabs/client"
 import { createRawIntentsStore } from "$lib/components/TransferCube/transfer/raw-intents.ts"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { userAddrEvm } from "$lib/wallet/evm"
@@ -23,7 +28,7 @@ import type {
   QuoteData
 } from "$lib/components/TransferCube/transfer/types.ts"
 import { persisted } from "svelte-persisted-store"
-import {fromHex, type Hex} from "viem";
+import { fromHex, type Hex } from "viem"
 
 export let chains: Array<Chain>
 export let ucs03channels: Array<Ucs03Channel>
@@ -50,7 +55,7 @@ const quoteToken: Readable<Nullable<QuoteData>> = derived<
     derived(rawIntents, $r => $r.destination)
   ],
   ([$source, $asset, $destination], set) => {
-    console.log('roll')
+    console.log("roll")
     set(null)
 
     if (!($source && $asset && $destination && ucs03channels)) return
@@ -98,10 +103,7 @@ const wethQuoteToken: Readable<Nullable<{ wethAddress: Hex }>> = derived<
   [DerivedSource, DerivedSource],
   Nullable<{ wethAddress: Hex }>
 >(
-  [
-    derived(rawIntents, $r => $r.source),
-    derived(rawIntents, $r => $r.destination)
-  ],
+  [derived(rawIntents, $r => $r.source), derived(rawIntents, $r => $r.destination)],
   ([$source, $destination], set) => {
     set(null)
 
@@ -109,7 +111,6 @@ const wethQuoteToken: Readable<Nullable<{ wethAddress: Hex }>> = derived<
 
     const channel = getChannelInfo($source, $destination, ucs03channels)
     if (!channel) return
-
 
     const sourceChain = chains.find(c => c.chain_id === $source)
     if (!sourceChain) {
@@ -133,7 +134,7 @@ const wethQuoteToken: Readable<Nullable<{ wethAddress: Hex }>> = derived<
       .then(result => {
         if (result.isOk()) {
           const response = result.value
-          if ('wethQuoteToken' in response) {
+          if ("wethQuoteToken" in response) {
             set({ wethAddress: response.wethQuoteToken as Hex })
           } else {
             set(null)
@@ -162,7 +163,7 @@ const transfer = derived(
       ucs03channels,
       $tokenInfos,
       $quoteToken,
-      $wethQuoteToken,
+      $wethQuoteToken
     )
     const validation = checkValidation($rawIntents, intents, $balances, $userAddress)
     return { intents, validation }

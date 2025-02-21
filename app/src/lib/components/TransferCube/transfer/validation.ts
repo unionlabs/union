@@ -186,13 +186,13 @@ export const checkValidation = (
     quoteAmount: parsedAmount,
     receiver: intents.receiver,
     sourceChannelId: intents.channel.source_channel_id,
-    ucs03address: intents.ucs03address,
+    ucs03address: intents.ucs03address
   }
 
   // Create chain-specific args
   let args: TransferArgs
   switch (intents.sourceChain.rpc_type) {
-    case "evm":
+    case "evm": {
       if (!intents.wethQuoteToken) {
         return {
           errors: { ...errors, asset: "WETH token required for EVM chains" },
@@ -207,6 +207,7 @@ export const checkValidation = (
         wethQuoteToken: intents.wethQuoteToken
       }
       break
+    }
 
     case "cosmos":
       args = {

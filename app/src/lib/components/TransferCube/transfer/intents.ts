@@ -2,7 +2,7 @@ import type { Chain, Ucs03Channel, UserAddresses } from "$lib/types"
 import type { FormFields } from "$lib/components/TransferCube/transfer/raw-intents.ts"
 import { fromHex } from "viem"
 import { bech32ToBech32Address, getChannelInfo } from "@unionlabs/client"
-import type {Intents, Nullable, QuoteData} from "$lib/components/TransferCube/transfer/types.ts"
+import type { Intents, Nullable, QuoteData } from "$lib/components/TransferCube/transfer/types.ts"
 import type { Balances } from "$lib/stores/balances.ts"
 import type { TokenInfos } from "$lib/stores/tokens.ts"
 
@@ -14,7 +14,7 @@ export const createIntents = (
   ucs03channels: Array<Ucs03Channel>,
   tokenInfos: TokenInfos,
   quoteToken: QuoteData | null,
-  weth: Nullable<{ wethAddress: `0x${string}`; }>
+  weth: Nullable<{ wethAddress: `0x${string}` }>
 ): Intents => {
   // Source Chain
   const sourceChain = chains.find(chain => chain.chain_id === rawIntents.source) ?? null

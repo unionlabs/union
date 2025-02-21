@@ -2,7 +2,6 @@ import type { getChannelInfo } from "@unionlabs/client"
 import type { Chain } from "$lib/types.ts"
 import type { Balance } from "$lib/stores/balances"
 import type { Readable } from "svelte/store"
-import type {Hex} from "viem";
 
 export type TransferArgs =
   | {
@@ -65,4 +64,3 @@ export type WethQuoteData =
   | { wethQuoteToken: string }
   | { type: "NO_WETH_QUOTE" }
   | { type: "WETH_QUOTE_LOADING" }
-
