@@ -66,9 +66,11 @@ impl Client {
 
                 ClientInner::Ws(client)
             }
-            Some(("http" | "https", _)) => {
-                ClientInner::Http(HttpClientBuilder::default().build(url)?)
-            }
+            Some(("http" | "https", _)) => ClientInner::Http(
+                HttpClientBuilder::default()
+                    .max_response_size(100 * 1024 * 1024)
+                    .build(url)?,
+            ),
             _ => return Err(JsonRpcError::Custom(format!("invalid url {url}"))),
         };
 
