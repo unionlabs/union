@@ -1,4 +1,4 @@
-import { cosmosChainId, evmChainFromChainId, type EvmChainId, evmChainId, GRAQPHQL_URL } from "#mod"
+import { cosmosChainId, evmChainFromChainId, evmChainId, GRAQPHQL_URL } from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
 import { createPublicClient, fromHex, http, isHex, type Hex } from "viem"
@@ -216,7 +216,6 @@ export const getWethQuoteToken = async (
 
   return ok({ wethQuoteToken: quoteResult.value.quote_token })
 }
-
 
 export const getRecommendedChannels = async () => {
   return (await request(GRAQPHQL_URL, channelsQuery)).v1_ibc_union_channel_recommendations
