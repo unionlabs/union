@@ -62,8 +62,11 @@ _: {
                 if pkgs.stdenv.isLinux then
                   {
                     inherit CGO_LDFLAGS;
-                    nativeBuildInputs = [ goPkgs.musl libwasmvm ];
-                    tags = ["musl"];
+                    nativeBuildInputs = [
+                      goPkgs.musl
+                      libwasmvm
+                    ];
+                    tags = [ "musl" ];
                     ldflags = [
                       "-linkmode external"
                       "-extldflags \"-Wl,-z,muldefs -static\""

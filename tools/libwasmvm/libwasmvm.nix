@@ -81,8 +81,7 @@ _: {
           }
         );
       mkLibwasmvm_v2 =
-        wasmvm:
-        rustToolChain:
+        wasmvm: rustToolChain:
         let
           attrs =
             {
