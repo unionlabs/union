@@ -86,7 +86,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
 
         /**
          * @dev
-         * `UCS03` zkgm contract `transfer` function:
+         * `UCS03` zkgm contract `transferV2` function:
          * - https://github.com/unionlabs/union/blob/0fd24893d4a1173e9c6e150c826c162871d63262/evm/contracts/apps/ucs/03-zkgm/Zkgm.sol#L301
          */
         const writeContractParameters = {
