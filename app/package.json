@@ -68,6 +68,7 @@
     "autoprefixer": "10.4.20",
     "clsx": "^2.1.1",
     "fluid-tailwind": "1.0.4",
+    "got": "^14.4.6",
     "graphql": "^16.9.0",
     "patch-package": "^8.0.0",
     "postcss": "8.4.49",
