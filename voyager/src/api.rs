@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, time::Duration};
 
 use axum::{
     extract::State,
@@ -9,6 +9,7 @@ use futures::{
     channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
     SinkExt,
 };
+use opentelemetry_otlp::WithExportConfig;
 use prometheus::TextEncoder;
 use reqwest::StatusCode;
 use tracing::error;
@@ -30,6 +31,25 @@ pub fn run(laddr: &SocketAddr) -> UnboundedReceiver<Op<VoyagerMessage>> {
         //     }),
         // )
         .with_state(queue_tx.clone());
+
+    let exporter = opentelemetry_otlp::MetricExporter::builder()
+        .with_http()
+        .with_endpoint("http://localhost:4318")
+        .with_protocol(opentelemetry_otlp::Protocol::HttpBinary)
+        .with_timeout(Duration::from_secs(3))
+        .build()
+        .expect("unable to build metrics exporter");
+
+    let provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()
+        .with_periodic_exporter(exporter)
+        .with_resource(
+            opentelemetry_sdk::Resource::builder_empty()
+                // .with_attributes([KeyValue::new("voyager.name", "example")])
+                .build(),
+        )
+        .build();
+
+    opentelemetry::global::set_meter_provider(provider);
 
     tokio::spawn(axum::Server::bind(laddr).serve(app.into_make_service()));
 

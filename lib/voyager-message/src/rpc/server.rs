@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::{anyhow, Context};
+use futures::TryFutureExt;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -28,11 +29,125 @@ use crate::{
         RawProofModuleClient, RawStateModuleClient,
     },
     rpc::{
-        json_rpc_error_to_error_object, IbcProof, IbcState, SelfClientState, SelfConsensusState,
-        VoyagerRpcServer,
+        json_rpc_error_to_error_object, server::cache::StateRequest, IbcProof, IbcState,
+        SelfClientState, SelfConsensusState, VoyagerRpcServer,
     },
     ExtensionsExt, IbcSpec, IbcStorePathKey, RawClientId, FATAL_JSONRPC_ERROR_CODE,
 };
+
+pub mod cache {
+    use std::future::Future;
+
+    use futures::TryFutureExt;
+    use jsonrpsee::core::RpcResult;
+    use opentelemetry::KeyValue;
+    use serde::{de::DeserializeOwned, Serialize};
+    use serde_json::Value;
+    use unionlabs::ibc::core::client::height::Height;
+    use voyager_core::{ChainId, IbcSpec, IbcSpecId, IbcStorePathKey};
+
+    #[derive(Debug, Clone)]
+    pub struct Cache {
+        state_cache: moka::future::Cache<StateRequest, Option<Value>>,
+        state_cache_size_metric: opentelemetry::metrics::Gauge<u64>,
+        state_cache_hit_counter_metric: opentelemetry::metrics::Counter<u64>,
+        state_cache_miss_counter_metric: opentelemetry::metrics::Counter<u64>,
+        // proof_cache: moka::future::Cache,
+    }
+
+    impl Cache {
+        #[allow(clippy::new_without_default)]
+        pub fn new() -> Self {
+            Self {
+                state_cache: moka::future::CacheBuilder::new(10000).build(),
+                state_cache_size_metric: opentelemetry::global::meter("state")
+                    .u64_gauge("cache_size")
+                    .build(),
+                state_cache_hit_counter_metric: opentelemetry::global::meter("state")
+                    .u64_counter("cache_hit")
+                    .build(),
+                state_cache_miss_counter_metric: opentelemetry::global::meter("state")
+                    .u64_counter("cache_miss")
+                    .build(),
+            }
+        }
+
+        pub async fn state<T: Serialize + DeserializeOwned>(
+            &self,
+            state_request: StateRequest,
+            fut: impl Future<Output = RpcResult<Option<T>>>,
+        ) -> RpcResult<Option<T>> {
+            let attributes = &[KeyValue::new(
+                "chain_id",
+                state_request.chain_id.to_string(),
+            )];
+
+            self.state_cache_size_metric
+                .record(self.state_cache.entry_count(), attributes);
+
+            self.state_cache
+                .entry(state_request)
+                .or_try_insert_with(fut.map_ok(|state| {
+                    state
+                        .map(serde_json::to_value)
+                        .transpose()
+                        .expect("serialization is infallible; qed;")
+                }))
+                .await
+                .map(|entry| {
+                    if entry.is_fresh() {
+                        self.state_cache_miss_counter_metric.add(1, attributes);
+                    } else {
+                        self.state_cache_hit_counter_metric.add(1, attributes);
+                    }
+
+                    entry
+                        .into_value()
+                        .map(serde_json::from_value)
+                        .transpose()
+                        .expect("infallible; only valid values are inserted into the queue; qed;")
+                })
+                .map_err(|e| (*e).clone())
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct StateRequest {
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        height: Height,
+        path: Value,
+    }
+
+    impl StateRequest {
+        pub fn new<P: IbcStorePathKey>(
+            chain_id: ChainId,
+            height: Height,
+            path: <P::Spec as IbcSpec>::StorePath,
+        ) -> Self {
+            Self {
+                chain_id,
+                ibc_spec_id: P::Spec::ID,
+                height,
+                path: serde_json::to_value(path).expect("serialization is infallible; qed;"),
+            }
+        }
+
+        pub fn new_raw(
+            chain_id: ChainId,
+            ibc_spec_id: IbcSpecId,
+            height: Height,
+            path: Value,
+        ) -> Self {
+            Self {
+                chain_id,
+                ibc_spec_id,
+                height,
+                path,
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Server {
@@ -43,7 +158,7 @@ pub struct Server {
 #[derive(Debug, Clone)]
 pub struct ServerInner {
     modules: OnceLock<Arc<Modules>>,
-    // cache: moka::
+    cache: cache::Cache,
 }
 
 impl Server {
@@ -52,6 +167,7 @@ impl Server {
         Server {
             inner: Arc::new(ServerInner {
                 modules: OnceLock::new(),
+                cache: cache::Cache::new(),
             }),
             item_id: None,
         }
@@ -395,9 +511,9 @@ impl Server {
     ) -> RpcResult<IbcState<Value>> {
         self.span()
             .in_scope(|| async {
-                let height = self.query_height(&chain_id, height).await?;
+                trace!("fetching ibc state");
 
-                debug!("fetching ibc state");
+                let height = self.query_height(&chain_id, height).await?;
 
                 let state_module = self
                     .inner
@@ -405,18 +521,33 @@ impl Server {
                     .state_module(&chain_id, &ibc_spec_id)?
                     .with_id(self.item_id);
 
-                let state = state_module
-                    .query_ibc_state_raw(height, path)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                let state = self
+                    .inner
+                    .cache
+                    .state::<Value>(
+                        StateRequest::new_raw(
+                            chain_id.clone(),
+                            ibc_spec_id.clone(),
+                            height,
+                            path.clone(),
+                        ),
+                        state_module
+                            .query_ibc_state_raw(height, into_value(path.clone()))
+                            .map_ok(|state| {
+                                // TODO: Use valuable here
+                                trace!(%state, "fetched ibc state");
 
-                // TODO: Use valuable here
-                debug!(%state, "fetched ibc state");
+                                if state.is_null() {
+                                    None
+                                } else {
+                                    Some(state)
+                                }
+                            })
+                            .map_err(|e| json_rpc_error_to_error_object(e)),
+                    )
+                    .await?;
 
-                Ok(IbcState {
-                    height,
-                    state: if state.is_null() { None } else { Some(state) },
-                })
+                Ok(IbcState { height, state })
             })
             .await
     }
@@ -475,18 +606,24 @@ impl Server {
                     .state_module(chain_id, &P::Spec::ID)?
                     .with_id(self.item_id);
 
-                let state = state_module
-                    .query_ibc_state_raw(height, into_value(path.clone()))
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                let state = self
+                    .inner
+                    .cache
+                    .state::<P::Value>(
+                        StateRequest::new::<P>(chain_id.clone(), height, path.clone()),
+                        state_module
+                            .query_ibc_state_raw(height, into_value(path.clone()))
+                            .map_ok(|state| {
+                                // TODO: Use valuable here
+                                trace!(%state, "fetched ibc state");
 
-                // TODO: Use valuable here
-                trace!(%state, "fetched ibc state");
+                                serde_json::from_value(state).unwrap()
+                            })
+                            .map_err(|e| json_rpc_error_to_error_object(e)),
+                    )
+                    .await?;
 
-                Ok(IbcState {
-                    height,
-                    state: serde_json::from_value(state).unwrap(),
-                })
+                Ok(IbcState { height, state })
             })
             .await
     }

@@ -25,6 +25,9 @@ jaq-syn                        = "1.6.0"
 jsonrpsee                      = { workspace = true, features = ["server", "client", "async-client", "macros", "tracing"] }
 macros                         = { workspace = true }
 moka                           = { version = "0.12.10", features = ["future"] }
+opentelemetry = "0.28.0"
+opentelemetry-otlp = { version = "0.28.0", features = ["http-json", "metrics"] }
+opentelemetry_sdk = "0.28.0"
 reconnecting-jsonrpc-ws-client = { workspace = true }
 reth-ipc                       = { git = "https://github.com/benluelo/reth", branch = "client-request-timeout" }
 schemars                       = { workspace = true }
