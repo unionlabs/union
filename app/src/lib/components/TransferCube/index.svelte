@@ -123,14 +123,16 @@ const wethQuoteToken: Readable<Nullable<{ wethAddress: Hex }>> = derived<
       return
     }
 
-    const ucs03address = channel.source_port_id ? `0x${channel.source_port_id}` : null
+    const ucs03address: `0x${string}` | null = channel.source_port_id
+      ? `0x${channel.source_port_id}`
+      : null
 
     if (!ucs03address) {
       console.error("UCS03 address not found for chain:", sourceChain.chain_id)
       return
     }
 
-    getWethQuoteToken(sourceChain.chain_id, ucs03address)
+    getWethQuoteToken(sourceChain.chain_id, ucs03address, channel)
       .then(result => {
         if (result.isOk()) {
           const response = result.value
