@@ -8,7 +8,10 @@ export const transfersTimestampQuery = graphql(
       newer: v1_ibc_union_fungible_asset_orders(
         limit: $limit
         order_by: [{ packet_send_timestamp: asc }, { packet_send_transaction_hash: asc }]
-        where: { packet_send_timestamp: { _gte: $timestamp } }
+        where: { 
+            packet_send_timestamp: { _gte: $timestamp }
+            quote_amount: { _neq: "0x00" }
+        }
       ) {
         ...TransferListData
       }
@@ -33,9 +36,12 @@ export const transfersLatestQuery = graphql(
       data: v1_ibc_union_fungible_asset_orders(
         limit: $limit
         order_by: [
-          { packet_send_timestamp: desc }
-          { packet_send_transaction_hash: desc }
+            { packet_send_timestamp: desc }
+            { packet_send_transaction_hash: desc }
         ]
+          where: {
+              quote_amount: { _neq: "0x00" }
+          }
       ) {
         ...TransferListData
       }
@@ -47,7 +53,11 @@ export const transfersLatestQuery = graphql(
 export const transfersIncompleteQuery = graphql(
   /* GraphQL */ `
     query TransfersLatestQuery($cutoff: timestamptz! = "2025-02-11") {
-      data:   v1_ibc_union_fungible_asset_orders(where: {packet_send_timestamp: {_gt: $cutoff}, status: {_neq: "PACKET_ACK"}}
+      data:   v1_ibc_union_fungible_asset_orders(where: {
+          packet_send_timestamp: {_gt: $cutoff}, 
+          status: {_neq: "PACKET_ACK"}
+          quote_amount: { _neq: "0x00" }
+      }
         order_by: [
           { packet_send_timestamp: desc }
           { packet_send_transaction_hash: desc }

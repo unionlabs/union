@@ -37,11 +37,11 @@ let stats = createQuery({
       sourceChainId,
       destinationChainId
     })
-    if (!response?.v1_ibc_union_fungible_asset_order_stats) {
+    if (!response?.v1_ibc_union_fungible_asset_order_stats_2[0]) {
       raise("Error fetching order stats")
     }
-    // Return the daily stats object (interval_secs === 86400)
-    return response.v1_ibc_union_fungible_asset_order_stats[0]
+    console.log(response)
+    return response.v1_ibc_union_fungible_asset_order_stats_2[0]
   }
 })
 
