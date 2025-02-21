@@ -73,7 +73,8 @@ module zkgm::fungible_asset_order {
         base_token_name: String,
         base_token_path: u256,
         quote_token: vector<u8>,
-        quote_amount: u256
+        quote_amount: u256,
+        decimals: u8
     }
 
     public fun new(
@@ -85,7 +86,8 @@ module zkgm::fungible_asset_order {
         base_token_name: String,
         base_token_path: u256,
         quote_token: vector<u8>,
-        quote_amount: u256
+        quote_amount: u256,
+        decimals: u8
     ): FungibleAssetOrder {
         FungibleAssetOrder {
             sender,
@@ -96,7 +98,8 @@ module zkgm::fungible_asset_order {
             base_token_name,
             base_token_path,
             quote_token,
-            quote_amount
+            quote_amount,
+            decimals
         }
     }
 
@@ -136,6 +139,10 @@ module zkgm::fungible_asset_order {
         order.quote_amount
     }
 
+    public fun decimals(order: &FungibleAssetOrder): u8 {
+        order.decimals
+    }
+
     public fun encode(order: &FungibleAssetOrder): vector<u8> {
         let buf = vector::empty();
 
@@ -173,6 +180,7 @@ module zkgm::fungible_asset_order {
         // quote_token offset
         zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
         zkgm_ethabi::encode_uint<u256>(&mut buf, order.quote_amount);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, order.decimals);
 
         vector::append(&mut buf, sender);
         vector::append(&mut buf, receiver);
@@ -195,7 +203,8 @@ module zkgm::fungible_asset_order {
             base_token_name: zkgm_ethabi::decode_string_from_offset(buf, &mut index),
             base_token_path: zkgm_ethabi::decode_uint(buf, &mut index),
             quote_token: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
-            quote_amount: zkgm_ethabi::decode_uint(buf, &mut index)
+            quote_amount: zkgm_ethabi::decode_uint(buf, &mut index),
+            decimals: (zkgm_ethabi::decode_uint(buf, &mut index) as u8)
         }
     }
 
