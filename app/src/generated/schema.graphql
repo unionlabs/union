@@ -937,6 +937,26 @@ type query_root {
   ): [v1_ibc_union_fungible_asset_order_stats!]!
 
   """
+  fetch data from the table: "v1_ibc_union.fungible_asset_order_stats_2"
+  """
+  v1_ibc_union_fungible_asset_order_stats_2(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_fungible_asset_order_stats_2_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_fungible_asset_order_stats_2_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_fungible_asset_order_stats_2_bool_exp
+  ): [v1_ibc_union_fungible_asset_order_stats_2!]!
+
+  """
   fetch data from the table: "v1_ibc_union.fungible_asset_orders"
   """
   v1_ibc_union_fungible_asset_orders(
@@ -995,6 +1015,26 @@ type query_root {
     """filter the rows returned"""
     where: v1_ibc_union_index_status_bool_exp
   ): [v1_ibc_union_index_status!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.missing_token_details"
+  """
+  v1_ibc_union_missing_token_details(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_missing_token_details_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_missing_token_details_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_missing_token_details_bool_exp
+  ): [v1_ibc_union_missing_token_details!]!
 
   """
   fetch data from the table: "v1_ibc_union.packets"
@@ -2012,6 +2052,40 @@ type subscription_root {
   ): [v1_ibc_union_fungible_asset_order_stats!]!
 
   """
+  fetch data from the table: "v1_ibc_union.fungible_asset_order_stats_2"
+  """
+  v1_ibc_union_fungible_asset_order_stats_2(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_fungible_asset_order_stats_2_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_fungible_asset_order_stats_2_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_fungible_asset_order_stats_2_bool_exp
+  ): [v1_ibc_union_fungible_asset_order_stats_2!]!
+
+  """
+  fetch data from the table in a streaming manner: "v1_ibc_union.fungible_asset_order_stats_2"
+  """
+  v1_ibc_union_fungible_asset_order_stats_2_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v1_ibc_union_fungible_asset_order_stats_2_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v1_ibc_union_fungible_asset_order_stats_2_bool_exp
+  ): [v1_ibc_union_fungible_asset_order_stats_2!]!
+
+  """
   fetch data from the table in a streaming manner: "v1_ibc_union.fungible_asset_order_stats"
   """
   v1_ibc_union_fungible_asset_order_stats_stream(
@@ -2126,6 +2200,40 @@ type subscription_root {
     """filter the rows returned"""
     where: v1_ibc_union_index_status_bool_exp
   ): [v1_ibc_union_index_status!]!
+
+  """
+  fetch data from the table: "v1_ibc_union.missing_token_details"
+  """
+  v1_ibc_union_missing_token_details(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_missing_token_details_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_missing_token_details_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_missing_token_details_bool_exp
+  ): [v1_ibc_union_missing_token_details!]!
+
+  """
+  fetch data from the table in a streaming manner: "v1_ibc_union.missing_token_details"
+  """
+  v1_ibc_union_missing_token_details_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v1_ibc_union_missing_token_details_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v1_ibc_union_missing_token_details_bool_exp
+  ): [v1_ibc_union_missing_token_details!]!
 
   """
   fetch data from the table: "v1_ibc_union.packets"
@@ -4430,6 +4538,84 @@ type v1_ibc_union_fungible_asset_order_stats {
 }
 
 """
+columns and relationships of "v1_ibc_union.fungible_asset_order_stats_2"
+"""
+type v1_ibc_union_fungible_asset_order_stats_2 {
+  """An object relationship"""
+  destination_chain: v1_ibc_union_chains
+  packet_send_timestamp_from: timestamptz
+  secs_until_packet_ack: latency_percentiles_scalar
+  secs_until_packet_recv: latency_percentiles_scalar
+  secs_until_write_ack: latency_percentiles_scalar
+
+  """An object relationship"""
+  source_chain: v1_ibc_union_chains
+}
+
+"""
+Boolean expression to filter rows from the table "v1_ibc_union.fungible_asset_order_stats_2". All fields are combined with a logical 'AND'.
+"""
+input v1_ibc_union_fungible_asset_order_stats_2_bool_exp {
+  _and: [v1_ibc_union_fungible_asset_order_stats_2_bool_exp!]
+  _not: v1_ibc_union_fungible_asset_order_stats_2_bool_exp
+  _or: [v1_ibc_union_fungible_asset_order_stats_2_bool_exp!]
+  destination_chain: v1_ibc_union_chains_bool_exp
+  packet_send_timestamp_from: timestamptz_comparison_exp
+  secs_until_packet_ack: latency_percentiles_scalar_comparison_exp
+  secs_until_packet_recv: latency_percentiles_scalar_comparison_exp
+  secs_until_write_ack: latency_percentiles_scalar_comparison_exp
+  source_chain: v1_ibc_union_chains_bool_exp
+}
+
+"""
+Ordering options when selecting data from "v1_ibc_union.fungible_asset_order_stats_2".
+"""
+input v1_ibc_union_fungible_asset_order_stats_2_order_by {
+  destination_chain: v1_ibc_union_chains_order_by
+  packet_send_timestamp_from: order_by
+  secs_until_packet_ack: order_by
+  secs_until_packet_recv: order_by
+  secs_until_write_ack: order_by
+  source_chain: v1_ibc_union_chains_order_by
+}
+
+"""
+select columns of table "v1_ibc_union.fungible_asset_order_stats_2"
+"""
+enum v1_ibc_union_fungible_asset_order_stats_2_select_column {
+  """column name"""
+  packet_send_timestamp_from
+
+  """column name"""
+  secs_until_packet_ack
+
+  """column name"""
+  secs_until_packet_recv
+
+  """column name"""
+  secs_until_write_ack
+}
+
+"""
+Streaming cursor of the table "v1_ibc_union_fungible_asset_order_stats_2"
+"""
+input v1_ibc_union_fungible_asset_order_stats_2_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v1_ibc_union_fungible_asset_order_stats_2_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v1_ibc_union_fungible_asset_order_stats_2_stream_cursor_value_input {
+  packet_send_timestamp_from: timestamptz
+  secs_until_packet_ack: latency_percentiles_scalar
+  secs_until_packet_recv: latency_percentiles_scalar
+  secs_until_write_ack: latency_percentiles_scalar
+}
+
+"""
 Boolean expression to filter rows from the table "v1_ibc_union.fungible_asset_order_stats". All fields are combined with a logical 'AND'.
 """
 input v1_ibc_union_fungible_asset_order_stats_bool_exp {
@@ -4526,36 +4712,39 @@ type v1_ibc_union_fungible_asset_orders {
   destination_chain: v1_ibc_union_chains
   destination_chain_id: String
   destination_channel_id: Int
+  destination_client_id: Int
   destination_connection_id: Int
   destination_port_id: String
+  instruction_hash: bytea
   instruction_path: String
 
   """An object relationship"""
   packet: v1_ibc_union_packets
   packet_ack_block_hash: String
-  packet_ack_event_index: Int
+  packet_ack_event_index: bigint
   packet_ack_height: bigint
   packet_ack_maker: String
   packet_ack_timestamp: timestamptz
-  packet_ack_transaction_event_index: Int
+  packet_ack_transaction_event_index: bigint
   packet_ack_transaction_hash: String
-  packet_ack_transaction_index: Int
+  packet_ack_transaction_index: bigint
+  packet_hash: bytea
   packet_recv_block_hash: String
-  packet_recv_event_index: Int
+  packet_recv_event_index: bigint
   packet_recv_height: bigint
   packet_recv_maker: String
   packet_recv_maker_msg: String
   packet_recv_timestamp: timestamptz
-  packet_recv_transaction_event_index: Int
+  packet_recv_transaction_event_index: bigint
   packet_recv_transaction_hash: String
-  packet_recv_transaction_index: Int
+  packet_recv_transaction_index: bigint
   packet_send_block_hash: String
-  packet_send_event_index: Int
+  packet_send_event_index: bigint
   packet_send_height: bigint
   packet_send_timestamp: timestamptz
-  packet_send_transaction_event_index: Int
+  packet_send_transaction_event_index: bigint
   packet_send_transaction_hash: String
-  packet_send_transaction_index: Int
+  packet_send_transaction_index: bigint
   path: String
   quote_amount: String
   quote_token: String
@@ -4577,6 +4766,7 @@ type v1_ibc_union_fungible_asset_orders {
   source_chain: v1_ibc_union_chains
   source_chain_id: String
   source_channel_id: Int
+  source_client_id: Int
   source_connection_id: Int
   source_port_id: String
   status: String
@@ -4603,12 +4793,12 @@ type v1_ibc_union_fungible_asset_orders {
     where: v1_ibc_union_traces_type_bool_exp
   ): [v1_ibc_union_traces_type!]
   write_ack_block_hash: String
-  write_ack_event_index: Int
+  write_ack_event_index: bigint
   write_ack_height: bigint
   write_ack_timestamp: timestamptz
-  write_ack_transaction_event_index: Int
+  write_ack_transaction_event_index: bigint
   write_ack_transaction_hash: String
-  write_ack_transaction_index: Int
+  write_ack_transaction_index: bigint
 }
 
 """
@@ -4636,34 +4826,37 @@ input v1_ibc_union_fungible_asset_orders_bool_exp {
   destination_chain: v1_ibc_union_chains_bool_exp
   destination_chain_id: String_comparison_exp
   destination_channel_id: Int_comparison_exp
+  destination_client_id: Int_comparison_exp
   destination_connection_id: Int_comparison_exp
   destination_port_id: String_comparison_exp
+  instruction_hash: bytea_comparison_exp
   instruction_path: String_comparison_exp
   packet: v1_ibc_union_packets_bool_exp
   packet_ack_block_hash: String_comparison_exp
-  packet_ack_event_index: Int_comparison_exp
+  packet_ack_event_index: bigint_comparison_exp
   packet_ack_height: bigint_comparison_exp
   packet_ack_maker: String_comparison_exp
   packet_ack_timestamp: timestamptz_comparison_exp
-  packet_ack_transaction_event_index: Int_comparison_exp
+  packet_ack_transaction_event_index: bigint_comparison_exp
   packet_ack_transaction_hash: String_comparison_exp
-  packet_ack_transaction_index: Int_comparison_exp
+  packet_ack_transaction_index: bigint_comparison_exp
+  packet_hash: bytea_comparison_exp
   packet_recv_block_hash: String_comparison_exp
-  packet_recv_event_index: Int_comparison_exp
+  packet_recv_event_index: bigint_comparison_exp
   packet_recv_height: bigint_comparison_exp
   packet_recv_maker: String_comparison_exp
   packet_recv_maker_msg: String_comparison_exp
   packet_recv_timestamp: timestamptz_comparison_exp
-  packet_recv_transaction_event_index: Int_comparison_exp
+  packet_recv_transaction_event_index: bigint_comparison_exp
   packet_recv_transaction_hash: String_comparison_exp
-  packet_recv_transaction_index: Int_comparison_exp
+  packet_recv_transaction_index: bigint_comparison_exp
   packet_send_block_hash: String_comparison_exp
-  packet_send_event_index: Int_comparison_exp
+  packet_send_event_index: bigint_comparison_exp
   packet_send_height: bigint_comparison_exp
   packet_send_timestamp: timestamptz_comparison_exp
-  packet_send_transaction_event_index: Int_comparison_exp
+  packet_send_transaction_event_index: bigint_comparison_exp
   packet_send_transaction_hash: String_comparison_exp
-  packet_send_transaction_index: Int_comparison_exp
+  packet_send_transaction_index: bigint_comparison_exp
   path: String_comparison_exp
   quote_amount: String_comparison_exp
   quote_token: String_comparison_exp
@@ -4679,6 +4872,7 @@ input v1_ibc_union_fungible_asset_orders_bool_exp {
   source_chain: v1_ibc_union_chains_bool_exp
   source_chain_id: String_comparison_exp
   source_channel_id: Int_comparison_exp
+  source_client_id: Int_comparison_exp
   source_connection_id: Int_comparison_exp
   source_port_id: String_comparison_exp
   status: String_comparison_exp
@@ -4686,12 +4880,12 @@ input v1_ibc_union_fungible_asset_orders_bool_exp {
   timeout_timestamp: numeric_comparison_exp
   traces: v1_ibc_union_traces_type_bool_exp
   write_ack_block_hash: String_comparison_exp
-  write_ack_event_index: Int_comparison_exp
+  write_ack_event_index: bigint_comparison_exp
   write_ack_height: bigint_comparison_exp
   write_ack_timestamp: timestamptz_comparison_exp
-  write_ack_transaction_event_index: Int_comparison_exp
+  write_ack_transaction_event_index: bigint_comparison_exp
   write_ack_transaction_hash: String_comparison_exp
-  write_ack_transaction_index: Int_comparison_exp
+  write_ack_transaction_index: bigint_comparison_exp
 }
 
 """
@@ -4716,8 +4910,10 @@ input v1_ibc_union_fungible_asset_orders_order_by {
   destination_chain: v1_ibc_union_chains_order_by
   destination_chain_id: order_by
   destination_channel_id: order_by
+  destination_client_id: order_by
   destination_connection_id: order_by
   destination_port_id: order_by
+  instruction_hash: order_by
   instruction_path: order_by
   packet: v1_ibc_union_packets_order_by
   packet_ack_block_hash: order_by
@@ -4728,6 +4924,7 @@ input v1_ibc_union_fungible_asset_orders_order_by {
   packet_ack_transaction_event_index: order_by
   packet_ack_transaction_hash: order_by
   packet_ack_transaction_index: order_by
+  packet_hash: order_by
   packet_recv_block_hash: order_by
   packet_recv_event_index: order_by
   packet_recv_height: order_by
@@ -4759,6 +4956,7 @@ input v1_ibc_union_fungible_asset_orders_order_by {
   source_chain: v1_ibc_union_chains_order_by
   source_chain_id: order_by
   source_channel_id: order_by
+  source_client_id: order_by
   source_connection_id: order_by
   source_port_id: order_by
   status: order_by
@@ -4824,10 +5022,16 @@ enum v1_ibc_union_fungible_asset_orders_select_column {
   destination_channel_id
 
   """column name"""
+  destination_client_id
+
+  """column name"""
   destination_connection_id
 
   """column name"""
   destination_port_id
+
+  """column name"""
+  instruction_hash
 
   """column name"""
   instruction_path
@@ -4855,6 +5059,9 @@ enum v1_ibc_union_fungible_asset_orders_select_column {
 
   """column name"""
   packet_ack_transaction_index
+
+  """column name"""
+  packet_hash
 
   """column name"""
   packet_recv_block_hash
@@ -4941,6 +5148,9 @@ enum v1_ibc_union_fungible_asset_orders_select_column {
   source_channel_id
 
   """column name"""
+  source_client_id
+
+  """column name"""
   source_connection_id
 
   """column name"""
@@ -5005,33 +5215,36 @@ input v1_ibc_union_fungible_asset_orders_stream_cursor_value_input {
   data_decoded: jsonb
   destination_chain_id: String
   destination_channel_id: Int
+  destination_client_id: Int
   destination_connection_id: Int
   destination_port_id: String
+  instruction_hash: bytea
   instruction_path: String
   packet_ack_block_hash: String
-  packet_ack_event_index: Int
+  packet_ack_event_index: bigint
   packet_ack_height: bigint
   packet_ack_maker: String
   packet_ack_timestamp: timestamptz
-  packet_ack_transaction_event_index: Int
+  packet_ack_transaction_event_index: bigint
   packet_ack_transaction_hash: String
-  packet_ack_transaction_index: Int
+  packet_ack_transaction_index: bigint
+  packet_hash: bytea
   packet_recv_block_hash: String
-  packet_recv_event_index: Int
+  packet_recv_event_index: bigint
   packet_recv_height: bigint
   packet_recv_maker: String
   packet_recv_maker_msg: String
   packet_recv_timestamp: timestamptz
-  packet_recv_transaction_event_index: Int
+  packet_recv_transaction_event_index: bigint
   packet_recv_transaction_hash: String
-  packet_recv_transaction_index: Int
+  packet_recv_transaction_index: bigint
   packet_send_block_hash: String
-  packet_send_event_index: Int
+  packet_send_event_index: bigint
   packet_send_height: bigint
   packet_send_timestamp: timestamptz
-  packet_send_transaction_event_index: Int
+  packet_send_transaction_event_index: bigint
   packet_send_transaction_hash: String
-  packet_send_transaction_index: Int
+  packet_send_transaction_index: bigint
   path: String
   quote_amount: String
   quote_token: String
@@ -5044,18 +5257,19 @@ input v1_ibc_union_fungible_asset_orders_stream_cursor_value_input {
   sender_normalized: String
   source_chain_id: String
   source_channel_id: Int
+  source_client_id: Int
   source_connection_id: Int
   source_port_id: String
   status: String
   timeout_height: numeric
   timeout_timestamp: numeric
   write_ack_block_hash: String
-  write_ack_event_index: Int
+  write_ack_event_index: bigint
   write_ack_height: bigint
   write_ack_timestamp: timestamptz
-  write_ack_transaction_event_index: Int
+  write_ack_transaction_event_index: bigint
   write_ack_transaction_hash: String
-  write_ack_transaction_index: Int
+  write_ack_transaction_index: bigint
 }
 
 """
@@ -5197,6 +5411,72 @@ input v1_ibc_union_index_status_stream_cursor_value_input {
 }
 
 """
+columns and relationships of "v1_ibc_union.missing_token_details"
+"""
+type v1_ibc_union_missing_token_details {
+  """An object relationship"""
+  chain: v1_ibc_union_chains
+  last_timestamp: timestamptz
+  last_transaction_hash: String
+  token: String
+}
+
+"""
+Boolean expression to filter rows from the table "v1_ibc_union.missing_token_details". All fields are combined with a logical 'AND'.
+"""
+input v1_ibc_union_missing_token_details_bool_exp {
+  _and: [v1_ibc_union_missing_token_details_bool_exp!]
+  _not: v1_ibc_union_missing_token_details_bool_exp
+  _or: [v1_ibc_union_missing_token_details_bool_exp!]
+  chain: v1_ibc_union_chains_bool_exp
+  last_timestamp: timestamptz_comparison_exp
+  last_transaction_hash: String_comparison_exp
+  token: String_comparison_exp
+}
+
+"""
+Ordering options when selecting data from "v1_ibc_union.missing_token_details".
+"""
+input v1_ibc_union_missing_token_details_order_by {
+  chain: v1_ibc_union_chains_order_by
+  last_timestamp: order_by
+  last_transaction_hash: order_by
+  token: order_by
+}
+
+"""
+select columns of table "v1_ibc_union.missing_token_details"
+"""
+enum v1_ibc_union_missing_token_details_select_column {
+  """column name"""
+  last_timestamp
+
+  """column name"""
+  last_transaction_hash
+
+  """column name"""
+  token
+}
+
+"""
+Streaming cursor of the table "v1_ibc_union_missing_token_details"
+"""
+input v1_ibc_union_missing_token_details_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v1_ibc_union_missing_token_details_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v1_ibc_union_missing_token_details_stream_cursor_value_input {
+  last_timestamp: timestamptz
+  last_transaction_hash: String
+  token: String
+}
+
+"""
 columns and relationships of "v1_ibc_union.packets"
 """
 type v1_ibc_union_packets {
@@ -5216,40 +5496,42 @@ type v1_ibc_union_packets {
   destination_chain: v1_ibc_union_chains
   destination_chain_id: String
   destination_channel_id: Int
+  destination_client_id: Int
   destination_connection_id: Int
   destination_port_id: String
 
   """An object relationship"""
   fungible_asset_order: v1_ibc_union_fungible_asset_orders
   packet_ack_block_hash: String
-  packet_ack_event_index: Int
+  packet_ack_event_index: bigint
   packet_ack_height: bigint
   packet_ack_maker: String
   packet_ack_timestamp: timestamptz
-  packet_ack_transaction_event_index: Int
+  packet_ack_transaction_event_index: bigint
   packet_ack_transaction_hash: String
-  packet_ack_transaction_index: Int
+  packet_ack_transaction_index: bigint
   packet_recv_block_hash: String
-  packet_recv_event_index: Int
+  packet_recv_event_index: bigint
   packet_recv_height: bigint
   packet_recv_maker: String
   packet_recv_maker_msg: String
   packet_recv_timestamp: timestamptz
-  packet_recv_transaction_event_index: Int
+  packet_recv_transaction_event_index: bigint
   packet_recv_transaction_hash: String
-  packet_recv_transaction_index: Int
+  packet_recv_transaction_index: bigint
   packet_send_block_hash: String
-  packet_send_event_index: Int
+  packet_send_event_index: bigint
   packet_send_height: bigint
   packet_send_timestamp: timestamptz
-  packet_send_transaction_event_index: Int
+  packet_send_transaction_event_index: bigint
   packet_send_transaction_hash: String
-  packet_send_transaction_index: Int
+  packet_send_transaction_index: bigint
 
   """An object relationship"""
   source_chain: v1_ibc_union_chains
   source_chain_id: String
   source_channel_id: Int
+  source_client_id: Int
   source_connection_id: Int
   source_port_id: String
   status: String
@@ -5276,12 +5558,12 @@ type v1_ibc_union_packets {
     where: v1_ibc_union_traces_type_bool_exp
   ): [v1_ibc_union_traces_type!]
   write_ack_block_hash: String
-  write_ack_event_index: Int
+  write_ack_event_index: bigint
   write_ack_height: bigint
   write_ack_timestamp: timestamptz
-  write_ack_transaction_event_index: Int
+  write_ack_transaction_event_index: bigint
   write_ack_transaction_hash: String
-  write_ack_transaction_index: Int
+  write_ack_transaction_index: bigint
 }
 
 """
@@ -5299,36 +5581,38 @@ input v1_ibc_union_packets_bool_exp {
   destination_chain: v1_ibc_union_chains_bool_exp
   destination_chain_id: String_comparison_exp
   destination_channel_id: Int_comparison_exp
+  destination_client_id: Int_comparison_exp
   destination_connection_id: Int_comparison_exp
   destination_port_id: String_comparison_exp
   fungible_asset_order: v1_ibc_union_fungible_asset_orders_bool_exp
   packet_ack_block_hash: String_comparison_exp
-  packet_ack_event_index: Int_comparison_exp
+  packet_ack_event_index: bigint_comparison_exp
   packet_ack_height: bigint_comparison_exp
   packet_ack_maker: String_comparison_exp
   packet_ack_timestamp: timestamptz_comparison_exp
-  packet_ack_transaction_event_index: Int_comparison_exp
+  packet_ack_transaction_event_index: bigint_comparison_exp
   packet_ack_transaction_hash: String_comparison_exp
-  packet_ack_transaction_index: Int_comparison_exp
+  packet_ack_transaction_index: bigint_comparison_exp
   packet_recv_block_hash: String_comparison_exp
-  packet_recv_event_index: Int_comparison_exp
+  packet_recv_event_index: bigint_comparison_exp
   packet_recv_height: bigint_comparison_exp
   packet_recv_maker: String_comparison_exp
   packet_recv_maker_msg: String_comparison_exp
   packet_recv_timestamp: timestamptz_comparison_exp
-  packet_recv_transaction_event_index: Int_comparison_exp
+  packet_recv_transaction_event_index: bigint_comparison_exp
   packet_recv_transaction_hash: String_comparison_exp
-  packet_recv_transaction_index: Int_comparison_exp
+  packet_recv_transaction_index: bigint_comparison_exp
   packet_send_block_hash: String_comparison_exp
-  packet_send_event_index: Int_comparison_exp
+  packet_send_event_index: bigint_comparison_exp
   packet_send_height: bigint_comparison_exp
   packet_send_timestamp: timestamptz_comparison_exp
-  packet_send_transaction_event_index: Int_comparison_exp
+  packet_send_transaction_event_index: bigint_comparison_exp
   packet_send_transaction_hash: String_comparison_exp
-  packet_send_transaction_index: Int_comparison_exp
+  packet_send_transaction_index: bigint_comparison_exp
   source_chain: v1_ibc_union_chains_bool_exp
   source_chain_id: String_comparison_exp
   source_channel_id: Int_comparison_exp
+  source_client_id: Int_comparison_exp
   source_connection_id: Int_comparison_exp
   source_port_id: String_comparison_exp
   status: String_comparison_exp
@@ -5336,12 +5620,12 @@ input v1_ibc_union_packets_bool_exp {
   timeout_timestamp: numeric_comparison_exp
   traces: v1_ibc_union_traces_type_bool_exp
   write_ack_block_hash: String_comparison_exp
-  write_ack_event_index: Int_comparison_exp
+  write_ack_event_index: bigint_comparison_exp
   write_ack_height: bigint_comparison_exp
   write_ack_timestamp: timestamptz_comparison_exp
-  write_ack_transaction_event_index: Int_comparison_exp
+  write_ack_transaction_event_index: bigint_comparison_exp
   write_ack_transaction_hash: String_comparison_exp
-  write_ack_transaction_index: Int_comparison_exp
+  write_ack_transaction_index: bigint_comparison_exp
 }
 
 """Ordering options when selecting data from "v1_ibc_union.packets"."""
@@ -5354,6 +5638,7 @@ input v1_ibc_union_packets_order_by {
   destination_chain: v1_ibc_union_chains_order_by
   destination_chain_id: order_by
   destination_channel_id: order_by
+  destination_client_id: order_by
   destination_connection_id: order_by
   destination_port_id: order_by
   fungible_asset_order: v1_ibc_union_fungible_asset_orders_order_by
@@ -5384,6 +5669,7 @@ input v1_ibc_union_packets_order_by {
   source_chain: v1_ibc_union_chains_order_by
   source_chain_id: order_by
   source_channel_id: order_by
+  source_client_id: order_by
   source_connection_id: order_by
   source_port_id: order_by
   status: order_by
@@ -5423,6 +5709,9 @@ enum v1_ibc_union_packets_select_column {
 
   """column name"""
   destination_channel_id
+
+  """column name"""
+  destination_client_id
 
   """column name"""
   destination_connection_id
@@ -5509,6 +5798,9 @@ enum v1_ibc_union_packets_select_column {
   source_channel_id
 
   """column name"""
+  source_client_id
+
+  """column name"""
   source_connection_id
 
   """column name"""
@@ -5565,46 +5857,48 @@ input v1_ibc_union_packets_stream_cursor_value_input {
   data_decoded: jsonb
   destination_chain_id: String
   destination_channel_id: Int
+  destination_client_id: Int
   destination_connection_id: Int
   destination_port_id: String
   packet_ack_block_hash: String
-  packet_ack_event_index: Int
+  packet_ack_event_index: bigint
   packet_ack_height: bigint
   packet_ack_maker: String
   packet_ack_timestamp: timestamptz
-  packet_ack_transaction_event_index: Int
+  packet_ack_transaction_event_index: bigint
   packet_ack_transaction_hash: String
-  packet_ack_transaction_index: Int
+  packet_ack_transaction_index: bigint
   packet_recv_block_hash: String
-  packet_recv_event_index: Int
+  packet_recv_event_index: bigint
   packet_recv_height: bigint
   packet_recv_maker: String
   packet_recv_maker_msg: String
   packet_recv_timestamp: timestamptz
-  packet_recv_transaction_event_index: Int
+  packet_recv_transaction_event_index: bigint
   packet_recv_transaction_hash: String
-  packet_recv_transaction_index: Int
+  packet_recv_transaction_index: bigint
   packet_send_block_hash: String
-  packet_send_event_index: Int
+  packet_send_event_index: bigint
   packet_send_height: bigint
   packet_send_timestamp: timestamptz
-  packet_send_transaction_event_index: Int
+  packet_send_transaction_event_index: bigint
   packet_send_transaction_hash: String
-  packet_send_transaction_index: Int
+  packet_send_transaction_index: bigint
   source_chain_id: String
   source_channel_id: Int
+  source_client_id: Int
   source_connection_id: Int
   source_port_id: String
   status: String
   timeout_height: numeric
   timeout_timestamp: numeric
   write_ack_block_hash: String
-  write_ack_event_index: Int
+  write_ack_event_index: bigint
   write_ack_height: bigint
   write_ack_timestamp: timestamptz
-  write_ack_transaction_event_index: Int
+  write_ack_transaction_event_index: bigint
   write_ack_transaction_hash: String
-  write_ack_transaction_index: Int
+  write_ack_transaction_index: bigint
 }
 
 """
@@ -6860,7 +7154,7 @@ type v1_ibc_union_traces_type {
 
   """An object relationship"""
   chain: v1_ibc_union_chains
-  event_index: Int
+  event_index: bigint
   height: bigint
   timestamp: timestamptz
   transaction_hash: String
@@ -6901,7 +7195,7 @@ input v1_ibc_union_traces_type_bool_exp {
   _or: [v1_ibc_union_traces_type_bool_exp!]
   block_hash: String_comparison_exp
   chain: v1_ibc_union_chains_bool_exp
-  event_index: Int_comparison_exp
+  event_index: bigint_comparison_exp
   height: bigint_comparison_exp
   timestamp: timestamptz_comparison_exp
   transaction_hash: String_comparison_exp
@@ -7004,7 +7298,7 @@ input v1_ibc_union_traces_type_stream_cursor_input {
 """Initial value of the column from where the streaming should start"""
 input v1_ibc_union_traces_type_stream_cursor_value_input {
   block_hash: String
-  event_index: Int
+  event_index: bigint
   height: bigint
   timestamp: timestamptz
   transaction_hash: String
