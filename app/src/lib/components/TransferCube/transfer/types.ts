@@ -2,6 +2,7 @@ import type { getChannelInfo } from "@unionlabs/client"
 import type { Chain } from "$lib/types.ts"
 import type { Balance } from "$lib/stores/balances"
 import type { Readable } from "svelte/store"
+import type {Hex} from "viem";
 
 export type TransferArgs =
   | {
@@ -12,6 +13,7 @@ export type TransferArgs =
       receiver: string
       sourceChannelId: number
       ucs03address: string
+      wethToken: `0x${string}` | null
     }
   | "NO_QUOTE_AVAILABLE"
 
@@ -33,6 +35,7 @@ export interface Intents {
   amount: string
   ownWallet: string | null
   quoteToken: string | "NO_QUOTE_AVAILABLE" | null
+  wethQuoteToken: `0x${string}` | null
 }
 
 export interface TokenInfo {
@@ -57,3 +60,9 @@ export type QuoteData =
   | { quote_token: string; type: Extract<QuoteTokenType, "UNWRAPPED" | "NEW_WRAPPED"> }
   | { type: Extract<QuoteTokenType, "NO_QUOTE_AVAILABLE"> }
   | { type: "QUOTE_LOADING" }
+
+export type WethQuoteData =
+  | { wethQuoteToken: string }
+  | { type: "NO_WETH_QUOTE" }
+  | { type: "WETH_QUOTE_LOADING" }
+

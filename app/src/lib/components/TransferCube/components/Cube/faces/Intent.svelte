@@ -27,7 +27,6 @@ export let intents: Props["intents"]
 export let validation: Props["validation"]
 export let chains: Props["chains"]
 export let rotateTo: Props["rotateTo"]
-$: console.log(intents.quoteToken)
 </script>
 
 <div class="flex flex-col w-full h-full">

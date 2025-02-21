@@ -6,7 +6,7 @@ import Transfer from "$lib/components/TransferCube/components/Cube/faces/Transfe
 import Cube from "$lib/components/TransferCube/components/Cube/index.svelte"
 import type { Chain, Ucs03Channel } from "$lib/types.ts"
 import { derived, get, type Readable } from "svelte/store"
-import { getChannelInfo, getQuoteToken } from "@unionlabs/client"
+import {type EvmChainId, getChannelInfo, getQuoteToken, getWethQuoteToken} from "@unionlabs/client"
 import { createRawIntentsStore } from "$lib/components/TransferCube/transfer/raw-intents.ts"
 import { userAddrCosmos } from "$lib/wallet/cosmos"
 import { userAddrEvm } from "$lib/wallet/evm"
@@ -23,6 +23,7 @@ import type {
   QuoteData
 } from "$lib/components/TransferCube/transfer/types.ts"
 import { persisted } from "svelte-persisted-store"
+import {fromHex, type Hex} from "viem";
 
 export let chains: Array<Chain>
 export let ucs03channels: Array<Ucs03Channel>
@@ -49,6 +50,7 @@ const quoteToken: Readable<Nullable<QuoteData>> = derived<
     derived(rawIntents, $r => $r.destination)
   ],
   ([$source, $asset, $destination], set) => {
+    console.log('roll')
     set(null)
 
     if (!($source && $asset && $destination && ucs03channels)) return
@@ -92,9 +94,66 @@ const quoteToken: Readable<Nullable<QuoteData>> = derived<
   null
 )
 
+const wethQuoteToken: Readable<Nullable<{ wethAddress: Hex }>> = derived<
+  [DerivedSource, DerivedSource],
+  Nullable<{ wethAddress: Hex }>
+>(
+  [
+    derived(rawIntents, $r => $r.source),
+    derived(rawIntents, $r => $r.destination)
+  ],
+  ([$source, $destination], set) => {
+    set(null)
+
+    if (!($source && $destination && ucs03channels)) return
+
+    const channel = getChannelInfo($source, $destination, ucs03channels)
+    if (!channel) return
+
+
+    const sourceChain = chains.find(c => c.chain_id === $source)
+    if (!sourceChain) {
+      console.error("Invalid source chain in WETH quote token calculation")
+      return
+    }
+
+    if (sourceChain.rpc_type !== "evm") {
+      set(null)
+      return
+    }
+
+    const ucs03address = channel.source_port_id ? `0x${channel.source_port_id}` : null
+
+    if (!ucs03address) {
+      console.error("UCS03 address not found for chain:", sourceChain.chain_id)
+      return
+    }
+
+    getWethQuoteToken(sourceChain.chain_id, ucs03address)
+      .then(result => {
+        if (result.isOk()) {
+          const response = result.value
+          if ('wethQuoteToken' in response) {
+            set({ wethAddress: response.wethQuoteToken as Hex })
+          } else {
+            set(null)
+          }
+        } else {
+          console.error("Error fetching WETH address:", result.error)
+          set(null)
+        }
+      })
+      .catch(err => {
+        console.error("Unexpected error in getWethAddress:", err)
+        set(null)
+      })
+  },
+  null
+)
+
 const transfer = derived(
-  [rawIntents, balances, userAddress, tokenInfos, quoteToken],
-  ([$rawIntents, $balances, $userAddress, $tokenInfos, $quoteToken]) => {
+  [rawIntents, balances, userAddress, tokenInfos, quoteToken, wethQuoteToken],
+  ([$rawIntents, $balances, $userAddress, $tokenInfos, $quoteToken, $wethQuoteToken]) => {
     const intents = createIntents(
       $rawIntents,
       $balances,
@@ -102,7 +161,8 @@ const transfer = derived(
       chains,
       ucs03channels,
       $tokenInfos,
-      $quoteToken
+      $quoteToken,
+      $wethQuoteToken,
     )
     const validation = checkValidation($rawIntents, intents, $balances, $userAddress)
     return { intents, validation }

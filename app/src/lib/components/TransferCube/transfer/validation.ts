@@ -10,7 +10,7 @@ import type { Intents } from "$lib/components/TransferCube/transfer/types.ts"
 
 export type FieldErrors = Partial<Record<keyof FormFields, string>>
 
-export interface TransferArgs {
+export interface BaseTransferArgs {
   baseToken: string
   baseAmount: bigint
   quoteToken: string
@@ -19,6 +19,21 @@ export interface TransferArgs {
   sourceChannelId: number
   ucs03address: string
 }
+
+export interface EvmTransferArgs extends BaseTransferArgs {
+  chainType: "evm"
+  wethQuoteToken: string
+}
+
+export interface CosmosTransferArgs extends BaseTransferArgs {
+  chainType: "cosmos"
+}
+
+export interface AptosTransferArgs extends BaseTransferArgs {
+  chainType: "aptos"
+}
+
+export type TransferArgs = EvmTransferArgs | CosmosTransferArgs | AptosTransferArgs
 
 export interface TransferContext {
   channel: NonNullable<ReturnType<typeof getChannelInfo>>
@@ -164,14 +179,56 @@ export const checkValidation = (
     }
   }
 
-  const args: TransferArgs = {
+  const baseArgs: BaseTransferArgs = {
     baseToken: intents.baseToken.denom,
     baseAmount: parsedAmount,
     quoteToken: intents.quoteToken,
     quoteAmount: parsedAmount,
     receiver: intents.receiver,
     sourceChannelId: intents.channel.source_channel_id,
-    ucs03address: intents.ucs03address
+    ucs03address: intents.ucs03address,
+  }
+
+  // Create chain-specific args
+  let args: TransferArgs
+  switch (intents.sourceChain.rpc_type) {
+    case "evm":
+      if (!intents.wethQuoteToken) {
+        return {
+          errors: { ...errors, asset: "WETH token required for EVM chains" },
+          isValid: false,
+          context,
+          args: null
+        }
+      }
+      args = {
+        ...baseArgs,
+        chainType: "evm",
+        wethQuoteToken: intents.wethQuoteToken
+      }
+      break
+
+    case "cosmos":
+      args = {
+        ...baseArgs,
+        chainType: "cosmos"
+      }
+      break
+
+    case "aptos":
+      args = {
+        ...baseArgs,
+        chainType: "aptos"
+      }
+      break
+
+    default:
+      return {
+        errors: { ...errors, source: "Unsupported chain type" },
+        isValid: false,
+        context,
+        args: null
+      }
   }
 
   return {
