@@ -327,6 +327,7 @@ color-eyre               = { version = "0.6.2", default-features = false }
 cosmwasm-schema          = { version = "2.1.4", default-features = false }
 cosmwasm-std             = { version = "2.1.4", default-features = false }
 crossbeam-queue          = { version = "0.3.8", default-features = false }
+cw-orch                  = {  version = "0.27.0", default-features = false }
 cw-storage-plus          = { version = "2.0.0", default-features = false }
 dashmap                  = { version = "5.5.3", default-features = false }
 derive_more              = { version = "0.99.17", default-features = false }
@@ -365,8 +366,6 @@ tonic                    = { version = "0.10", default-features = false }
 tracing                  = { version = "0.1.40", default-features = false }
 tracing-subscriber       = { version = "0.3", default-features = false, features = ["fmt", "ansi"] }
 typenum                  = { version = "1.17.0", default-features = false }
-
-cw-orch = "0.27.0"
 
 [patch."crates-io"]
 arbitrary = { git = "https://github.com/unionlabs/arbitrary" }
