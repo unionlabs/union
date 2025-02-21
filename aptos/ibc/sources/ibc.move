@@ -859,7 +859,7 @@ module ibc::ibc {
 
         let channel =
             channel::new(
-                CHAN_STATE_INIT,
+                CHAN_STATE_TRYOPEN,
                 connection_id,
                 counterparty_channel_id,
                 counterparty_port_id,
