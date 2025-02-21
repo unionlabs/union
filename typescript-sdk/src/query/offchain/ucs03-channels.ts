@@ -1,4 +1,4 @@
-import { cosmosChainId, evmChainFromChainId, evmChainId, GRAQPHQL_URL } from "#mod"
+import {cosmosChainId, evmChainFromChainId, type EvmChainId, evmChainId, GRAQPHQL_URL} from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
 import { createPublicClient, fromHex, http, isHex, type Hex } from "viem"
@@ -176,7 +176,7 @@ export const getQuoteToken = async (
 }
 
 export const getWethQuoteToken = async (
-  sourceChainId: string,
+  sourceChainId: EvmChainId,
   ucs03Address: Hex,
   channel: Channel
 ): Promise<Result<{ wethQuoteToken: string } | { type: "NO_WETH_QUOTE" }, Error>> => {
