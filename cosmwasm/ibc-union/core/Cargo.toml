@@ -22,6 +22,7 @@ library           = []
 alloy                         = { workspace = true, features = ["sol-types"] }
 cosmwasm-schema               = { workspace = true }
 cosmwasm-std                  = { workspace = true, features = ["abort"] }
+cw-orch                       = { workspace = true, optional = true }
 cw-storage-plus               = { workspace = true }
 ethabi                        = { workspace = true }
 hex                           = { workspace = true }
@@ -33,4 +34,3 @@ strum                         = { version = "0.26.3", features = ["derive"] }
 thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true, features = ["ethabi"] }
 unionlabs-cosmwasm-upgradable = { workspace = true }
-cw-orch                       = { workspace = true, optional = true }
