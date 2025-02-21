@@ -61,15 +61,25 @@ let processedTransfers = derived(
       }
       return [$submittedTransfers[source]]
     }
-    return $transfers.data.map(transfer => {
-      let tx = structuredClone(transfer)
-      return {
-        transfer_day: tx.packet_send_timestamp
-          ? toIsoString(new Date(tx.packet_send_timestamp)).split("T")[0]
-          : null,
-        ...tx
-      }
-    })
+
+    return $transfers.data
+      .map(transfer => {
+        let tx = structuredClone(transfer)
+
+        let quoteAmount = tx.quote_amount ? Number.parseInt(tx.quote_amount, 16) : Number.NaN
+
+        if (!quoteAmount) {
+          return null
+        }
+
+        return {
+          transfer_day: tx.packet_send_timestamp
+            ? toIsoString(new Date(tx.packet_send_timestamp)).split("T")[0]
+            : null,
+          ...tx
+        }
+      })
+      .filter(Boolean)
   }
 )
 </script>
