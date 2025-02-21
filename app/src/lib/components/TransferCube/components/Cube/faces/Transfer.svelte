@@ -49,6 +49,8 @@ const isNewAccount = (error: Error): boolean => {
 const transfer = async () => {
   confirmed = true
 
+  if (transferArgs === "NO_QUOTE_AVAILABLE") return
+
   const sourceChain = chains.find(c => c.chain_id === transferContext.channel.source_chain_id)
   if (!sourceChain) return toast.error("no source chain found")
 
