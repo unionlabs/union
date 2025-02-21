@@ -1091,8 +1091,8 @@ module ibc::ibc {
 
         let first_packet = packets[0];
 
-        let source_channel = packet::source_channel(&first_packet);
-        let destination_channel = packet::destination_channel(&first_packet);
+        let source_channel = packet::source_channel_id(&first_packet);
+        let destination_channel = packet::destination_channel_id(&first_packet);
 
         let channel = ibc_store.channels.borrow(source_channel);
         assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
@@ -1256,12 +1256,12 @@ module ibc::ibc {
     ) {
         assert!(!vector::is_empty(&acknowledgement), E_ACKNOWLEDGEMENT_IS_EMPTY);
 
-        let channel = *ibc_store.channels.borrow(packet::destination_channel(&packet));
+        let channel = *ibc_store.channels.borrow(packet::destination_channel_id(&packet));
         assert!(channel::state(&channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
 
         let commitment_key =
             commitment::batch_receipts_commitment_key(
-                packet::destination_channel(&packet),
+                packet::destination_channel_id(&packet),
                 commitment::commit_packet(&packet)
             );
 
@@ -1278,8 +1278,8 @@ module ibc::ibc {
         proof_height: u64,
         next_sequence_recv: u64
     ) {
-        let source_channel = packet::source_channel(&packet);
-        let destination_channel = packet::destination_channel(&packet);
+        let source_channel = packet::source_channel_id(&packet);
+        let destination_channel = packet::destination_channel_id(&packet);
 
         let channel = ibc_store.channels.borrow(source_channel);
         assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
@@ -1343,8 +1343,8 @@ module ibc::ibc {
 
         let first_packet = packets[0];
 
-        let source_channel = packet::source_channel(&first_packet);
-        let destination_channel = packet::destination_channel(&first_packet);
+        let source_channel = packet::source_channel_id(&first_packet);
+        let destination_channel = packet::destination_channel_id(&first_packet);
 
         let channel = ibc_store.channels.borrow(source_channel);
         assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
@@ -1972,7 +1972,7 @@ module ibc::ibc {
 
         let commitment_key =
                 commitment::batch_receipts_commitment_key(
-                    packet::destination_channel(&packet),
+                    packet::destination_channel_id(&packet),
                     commitment::commit_packet(&packet)
                 );
                 
