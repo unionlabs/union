@@ -117,7 +117,8 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
             "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
             generateSalt(),
             wethQuoteToken
-          ]
+          ],
+          value: BigInt(5 * 10 ** 14)
         } as const
 
         return ResultAsync.fromPromise(client.writeContract(writeContractParameters), error => {
