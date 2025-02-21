@@ -437,7 +437,7 @@ func NewUnionApp(
 		app.ConsensusParamsKeeper,
 		govModuleAddr,
 		signingCtx.ValidatorAddressCodec(),
-		authcodec.NewBech32Codec(sdk.Bech32PrefixConsAddr),
+		authcodec.NewBech32Codec(sdk.GetBech32PrefixConsAddr(AccountAddressPrefix)),
 		cometService,
 	)
 
