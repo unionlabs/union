@@ -54,7 +54,8 @@ export {
 export {
   getRecommendedChannels,
   getChannelInfo,
-  getQuoteToken
+  getQuoteToken,
+  getWethQuoteToken
 } from "./query/offchain/ucs03-channels.ts"
 export { offchainQuery } from "./query/offchain/hubble.ts"
 export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
