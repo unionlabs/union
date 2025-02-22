@@ -1,19 +1,40 @@
 <script lang="ts">
-import { Console, Effect, Fiber, Schedule } from "effect"
+import { Effect, Fiber, Random, Schedule } from "effect"
+import { FetchHttpClient, HttpClient } from "@effect/platform"
 
-let number = $state(0)
-const program = Effect.repeat(
-  Effect.sync(() => {
-    console.log(number)
-    number += 1
-  }),
-  Schedule.spaced("200 millis")
+let posts: "loading" | unknown = $state("loading")
+
+const fetcher = Effect.gen(function* () {
+  const client = yield* HttpClient.HttpClient
+  yield* Effect.log("fetching data")
+  // yield* Effect.sleep("3 seconds")
+  const r = yield* Random.next
+  const response = yield* client.get(
+    r > 0.3 ? "https://rpc.testnet-9.union.build/block" : "thisisnotavalidurl"
+  )
+  const json = yield* response.json
+  yield* Effect.log("fetched data")
+
+  posts = json
+
+  return response
+}).pipe(
+  Effect.catchAll(error => Effect.logError(error.message)),
+  Effect.scoped,
+  Effect.provide(FetchHttpClient.layer)
 )
+
+const program = Effect.repeat(
+  fetcher,
+  Schedule.addDelay(Schedule.repeatForever, () => "2 seconds")
+)
+
 const fiber = Effect.runFork(program)
+Effect.runPromiseExit(fiber)
 </script>
 
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<button class="bg-red-500" onclick={() => {Effect.runPromise(Fiber.interrupt(fiber))}}> stop the fetcher </button>
 
-<button onclick={() => Effect.runFork(Fiber.interrupt(fiber))}>Run effect</button>
-{number}
+<pre class="font-mono">
+  {JSON.stringify(posts, null, 2)}
+</pre>
