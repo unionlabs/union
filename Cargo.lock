@@ -14468,7 +14468,6 @@ version = "0.0.0"
 dependencies = [
  "clap 4.5.4",
  "cometbft-rpc",
- "dashmap 5.5.3",
  "ibc-solidity",
  "ibc-union-msg",
  "ibc-union-spec",

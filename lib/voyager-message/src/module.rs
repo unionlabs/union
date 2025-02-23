@@ -46,6 +46,21 @@ impl StateModuleInfo {
             Ok(())
         }
     }
+
+    // TODO: Add this for ibc_spec_id
+    pub fn ensure_ibc_spec_id(
+        &self,
+        ibc_spec_id: impl AsRef<str>,
+    ) -> Result<(), UnexpectedIbcSpecIdError> {
+        if ibc_spec_id.as_ref() != self.ibc_spec_id.as_str() {
+            Err(UnexpectedIbcSpecIdError {
+                expected: self.ibc_spec_id.clone(),
+                found: ibc_spec_id.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
+        }
+    }
 }
 
 #[model]
@@ -192,9 +207,9 @@ impl ClientModuleInfo {
     pub fn ensure_ibc_spec_id(
         &self,
         ibc_spec_id: impl AsRef<str>,
-    ) -> Result<(), UnexpectedIbcVersionIdError> {
+    ) -> Result<(), UnexpectedIbcSpecIdError> {
         if ibc_spec_id.as_ref() != self.ibc_spec_id.as_str() {
-            Err(UnexpectedIbcVersionIdError {
+            Err(UnexpectedIbcSpecIdError {
                 expected: self.ibc_spec_id.clone(),
                 found: ibc_spec_id.as_ref().to_owned(),
             })
@@ -284,9 +299,9 @@ pub struct UnexpectedIbcInterfaceError {
 
 #[derive(Debug, Clone, thiserror::Error)]
 #[error(
-    "invalid IBC version: this module provides functionality for IBC version `{expected}`, but the config specifies `{found}`"
+    "invalid IBC spec: this module provides functionality for IBC spec `{expected}`, but the config specifies `{found}`"
 )]
-pub struct UnexpectedIbcVersionIdError {
+pub struct UnexpectedIbcSpecIdError {
     pub expected: IbcSpecId,
     pub found: String,
 }

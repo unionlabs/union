@@ -33,7 +33,7 @@ use voyager_message::{
     },
     core::{IbcSpec, QueryHeight},
     filter::{make_filter, run_filter, JaqInterestFilter},
-    rpc::{IbcState, VoyagerRpcClient},
+    rpc::{server::cache, IbcState, VoyagerRpcClient},
     VoyagerMessage,
 };
 use voyager_vm::{call, filter::FilterResult, promise, Op, Queue};
@@ -359,7 +359,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             });
 
             if enqueue {
-                println!("enqueueing op for `{chain_id}` at `{start_height}`");
+                println!("enqueueing op for {chain_id} at {start_height}");
                 send_enqueue(&rest_url, op).await?;
             } else {
                 print_json(&op);
@@ -511,6 +511,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             }
         }
         Command::Msg(msg) => match msg {
+            // TODO: Do this all with rpc calls instead of spinning up a full voyager instance
             MsgCmd::CreateClient {
                 on,
                 tracking,
@@ -535,7 +536,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         h.register::<IbcUnion>();
                     },
                     Duration::new(60, 0),
-                    Default::default(),
+                    cache::Config::default(),
                 )
                 .await?;
 
@@ -557,12 +558,12 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 .await?;
 
                 if enqueue {
-                    println!("enqueueing msg");
                     send_enqueue(&rest_url, op).await?;
                 } else {
                     print_json(&op);
                 }
             }
+            // TODO: Do this all with rpc calls instead of spinning up a full voyager instance
             MsgCmd::UpdateClient {
                 on,
                 client_id,
@@ -582,7 +583,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         h.register::<IbcUnion>();
                     },
                     Duration::new(60, 0),
-                    Default::default(),
+                    cache::Config::default(),
                 )
                 .await?;
 
@@ -628,7 +629,6 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 );
 
                 if enqueue {
-                    println!("enqueueing msg");
                     send_enqueue(&rest_url, op).await?;
                 } else {
                     print_json(&op);

@@ -1,13 +1,11 @@
-// #![warn(clippy::unwrap_used)]
+#![warn(clippy::unwrap_used)]
 
 use std::{
     error::Error,
     fmt::{Debug, Display},
     num::ParseIntError,
-    sync::Arc,
 };
 
-use dashmap::DashMap;
 use ibc_union_spec::{
     path::StorePath,
     types::{Channel, Connection},
@@ -21,15 +19,15 @@ use jsonrpsee::{
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{debug, error, instrument, trace};
+use tracing::{error, instrument, trace};
 use unionlabs::{
     bech32::Bech32,
     ibc::core::client::height::Height,
     primitives::{encoding::Base64, Bytes, H256},
-    ErrorReporter, WasmClientType,
+    ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientInfo, ClientType, IbcInterface},
+    core::{ChainId, ClientInfo, ClientType, IbcInterface, IbcSpec},
     into_value,
     module::{StateModuleInfo, StateModuleServer},
     StateModule, FATAL_JSONRPC_ERROR_CODE,
@@ -56,8 +54,6 @@ pub struct Module {
     pub grpc_url: String,
 
     pub ibc_host_contract_address: Bech32<H256>,
-
-    pub checksum_cache: Arc<DashMap<H256, WasmClientType>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -72,11 +68,12 @@ impl StateModule<IbcUnion> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError> {
-        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
+        let cometbft_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
-        let chain_id = tm_client.status().await?.node_info.network;
+        let chain_id = cometbft_client.status().await?.node_info.network;
 
         info.ensure_chain_id(&chain_id)?;
+        info.ensure_ibc_spec_id(IbcUnion::ID.as_str())?;
 
         let chain_revision = chain_id
             .split('-')
@@ -92,12 +89,11 @@ impl StateModule<IbcUnion> for Module {
             })?;
 
         Ok(Self {
-            cometbft_client: tm_client,
+            cometbft_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
             grpc_url: config.grpc_url,
             ibc_host_contract_address: config.ibc_host_contract_address,
-            checksum_cache: Arc::new(DashMap::default()),
         })
     }
 }
@@ -114,15 +110,14 @@ impl Module {
         query: &Q,
         height: Option<Height>,
     ) -> RpcResult<Option<R>> {
-        let path = "/cosmwasm.wasm.v1.Query/SmartContractState";
-
+        let query_data = serde_json::to_string(query).expect("serialization is infallible; qed;");
         let response = self
             .cometbft_client
             .grpc_abci_query::<_, QuerySmartContractStateResponse>(
-                path,
+                "/cosmwasm.wasm.v1.Query/SmartContractState",
                 &QuerySmartContractStateRequest {
                     address: self.ibc_host_contract_address.to_string(),
-                    query_data: serde_json::to_vec(query).unwrap(),
+                    query_data: query_data.clone().into_bytes(),
                 },
                 height.map(|height| {
                     i64::try_from(height.height())
@@ -135,7 +130,10 @@ impl Module {
             .await
             .map_err(rpc_error(
                 "error fetching abci query",
-                Some(json!({ "height": height, "path": path })),
+                Some(json!({
+                    "height": height,
+                    "query_data": query_data
+                })),
             ))?;
 
         // https://github.com/cosmos/cosmos-sdk/blob/e2027bf62893bb5f82e8f7a8ea59d1a43eb6b78f/baseapp/abci.go#L1272-L1278
@@ -146,20 +144,27 @@ impl Module {
                 potentially due to load balanced rpc endpoints",
                 Some(json!({
                     "height": height,
-                    "path": path
+                    "query_data": query_data
                 })),
             ))
         } else {
             let value = response.value.map(|value| {
                 trace!("raw response: {}", String::from_utf8_lossy(&value.data));
-                serde_json::from_slice(&value.data).unwrap()
+                serde_json::from_slice(&value.data).expect("serialization is infallible; qed;")
             });
 
             Ok(value)
         }
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]
+    #[instrument(
+        skip_all,
+            fields(
+            chain_id = %self.chain_id,
+            %height,
+            %client_id,
+        )
+    )]
     async fn query_client_state(&self, height: Height, client_id: u32) -> RpcResult<Option<Bytes>> {
         let client_state = self
             .query_smart::<_, Bytes<Base64>>(
@@ -171,7 +176,15 @@ impl Module {
         Ok(client_state.map(Bytes::into_encoding))
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id, %trusted_height))]
+    #[instrument(
+        skip_all,
+            fields(
+            chain_id = %self.chain_id,
+            %height,
+            %client_id,
+            %trusted_height
+        )
+    )]
     async fn query_consensus_state(
         &self,
         height: Height,
@@ -191,7 +204,14 @@ impl Module {
         Ok(client_state.map(Bytes::into_encoding))
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %connection_id))]
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %connection_id
+        )
+    )]
     async fn query_connection(
         &self,
         height: Height,
@@ -207,7 +227,14 @@ impl Module {
         Ok(client_state)
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %channel_id
+        )
+    )]
     async fn query_channel(&self, height: Height, channel_id: u32) -> RpcResult<Option<Channel>> {
         let channel = self
             .query_smart::<_, Channel>(
@@ -219,7 +246,15 @@ impl Module {
         Ok(channel)
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %batch_hash))]
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %channel_id,
+            %batch_hash
+        )
+    )]
     async fn query_batch_packets(
         &self,
         height: Height,
@@ -227,7 +262,7 @@ impl Module {
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let commitment = self
-            .query_smart::<_, Option<H256>>(
+            .query_smart::<_, H256>(
                 &ibc_union_msg::query::QueryMsg::GetBatchPackets {
                     channel_id,
                     batch_hash,
@@ -236,10 +271,18 @@ impl Module {
             )
             .await?;
 
-        Ok(commitment.flatten())
+        Ok(commitment)
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %batch_hash))]
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %channel_id,
+            %batch_hash
+        )
+    )]
     async fn query_batch_receipts(
         &self,
         height: Height,
@@ -247,7 +290,7 @@ impl Module {
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let commitment = self
-            .query_smart::<_, Option<H256>>(
+            .query_smart::<_, H256>(
                 &ibc_union_msg::query::QueryMsg::GetBatchReceipts {
                     channel_id,
                     batch_hash,
@@ -256,7 +299,7 @@ impl Module {
             )
             .await?;
 
-        Ok(commitment.flatten())
+        Ok(commitment)
     }
 }
 
