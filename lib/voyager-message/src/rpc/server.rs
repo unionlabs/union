@@ -36,10 +36,11 @@ use crate::{
 };
 
 pub mod cache {
-    use std::future::Future;
+    use std::{future::Future, time::Duration};
 
     use futures::TryFutureExt;
     use jsonrpsee::core::RpcResult;
+    use moka::policy::EvictionPolicy;
     use opentelemetry::KeyValue;
     use schemars::JsonSchema;
     use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -61,7 +62,12 @@ pub mod cache {
         #[allow(clippy::new_without_default)]
         pub fn new(config: Config) -> Self {
             Self {
-                state_cache: moka::future::CacheBuilder::new(config.state.capacity).build(),
+                state_cache: moka::future::CacheBuilder::new(config.state.capacity)
+                    // .expire_after()
+                    .time_to_live(Duration::from_secs(config.state.time_to_live))
+                    .time_to_idle(Duration::from_secs(config.state.time_to_idle))
+                    .eviction_policy(EvictionPolicy::lru())
+                    .build(),
                 state_cache_size_metric: opentelemetry::global::meter("voyager.cache.state")
                     .u64_gauge("size")
                     .build(),
@@ -124,6 +130,8 @@ pub mod cache {
     #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
     pub struct CacheConfig {
         pub capacity: u64,
+        pub time_to_live: u64,
+        pub time_to_idle: u64,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
