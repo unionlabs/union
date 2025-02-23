@@ -150,10 +150,8 @@ impl Module {
                 })),
             ))
         } else {
-            trace!(?response);
-
             let value = response.value.map(|value| {
-                debug!("raw response: {}", String::from_utf8_lossy(&value.data));
+                trace!("raw response: {}", String::from_utf8_lossy(&value.data));
                 serde_json::from_slice(&value.data).unwrap()
             });
 
