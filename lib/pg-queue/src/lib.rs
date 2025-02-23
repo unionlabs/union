@@ -385,6 +385,8 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                             .bind(record.parents)
                             .execute(tx.as_mut())
                             .await?;
+
+                            tokio::time::sleep(Duration::from_millis(500)).await;
                         }
                         Ok(ops) => {
                             'block: {
