@@ -43,7 +43,9 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
     cli::{AppArgs, Command, ConfigCmd, ModuleCmd, MsgCmd, PluginCmd, QueueCmd, RpcCmd},
-    config::{default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig},
+    config::{
+        default_metrics_endpoint, default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig,
+    },
     queue::{QueueConfig, Voyager},
     utils::make_msg_create_client,
 };
@@ -57,6 +59,7 @@ compile_error!(
 pub mod api;
 pub mod cli;
 pub mod config;
+pub mod metrics;
 pub mod queue;
 
 fn main() -> ExitCode {
@@ -154,6 +157,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     num_workers: 1,
                     rest_laddr: default_rest_laddr(),
                     rpc_laddr: default_rpc_laddr(),
+                    metrics_endpoint: default_metrics_endpoint(),
                     queue: QueueConfig::PgQueue(PgQueueConfig {
                         database_url: String::new(),
                         max_connections: None,
@@ -164,6 +168,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     }),
                     optimizer_delay_milliseconds: 100,
                     ipc_client_request_timeout: Duration::new(60, 0),
+                    cache: voyager_message::rpc::server::cache::Config::default(),
                 },
             }),
             ConfigCmd::Schema => print_json(
@@ -175,7 +180,11 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             ),
         },
         Command::Start => {
-            let voyager = Voyager::new(get_voyager_config()?).await?;
+            let config = get_voyager_config()?;
+
+            metrics::init(&config.voyager.metrics_endpoint);
+
+            let voyager = Voyager::new(config).await?;
 
             info!("starting relay service");
 
@@ -526,6 +535,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         h.register::<IbcUnion>();
                     },
                     Duration::new(60, 0),
+                    Default::default(),
                 )
                 .await?;
 
@@ -572,6 +582,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         h.register::<IbcUnion>();
                     },
                     Duration::new(60, 0),
+                    Default::default(),
                 )
                 .await?;
 

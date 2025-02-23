@@ -41,14 +41,15 @@ pub mod cache {
     use futures::TryFutureExt;
     use jsonrpsee::core::RpcResult;
     use opentelemetry::KeyValue;
-    use serde::{de::DeserializeOwned, Serialize};
+    use schemars::JsonSchema;
+    use serde::{de::DeserializeOwned, Deserialize, Serialize};
     use serde_json::Value;
     use unionlabs::ibc::core::client::height::Height;
     use voyager_core::{ChainId, IbcSpec, IbcSpecId, IbcStorePathKey};
 
     #[derive(Debug, Clone)]
     pub struct Cache {
-        state_cache: moka::future::Cache<StateRequest, Option<Value>>,
+        state_cache: moka::future::Cache<StateRequest, Value>,
         state_cache_size_metric: opentelemetry::metrics::Gauge<u64>,
         state_cache_hit_counter_metric: opentelemetry::metrics::Counter<u64>,
         state_cache_miss_counter_metric: opentelemetry::metrics::Counter<u64>,
@@ -57,18 +58,20 @@ pub mod cache {
 
     impl Cache {
         #[allow(clippy::new_without_default)]
-        pub fn new() -> Self {
+        pub fn new(config: Config) -> Self {
             Self {
-                state_cache: moka::future::CacheBuilder::new(10000).build(),
-                state_cache_size_metric: opentelemetry::global::meter("state")
-                    .u64_gauge("cache_size")
+                state_cache: moka::future::CacheBuilder::new(config.state.capacity).build(),
+                state_cache_size_metric: opentelemetry::global::meter("voyager.cache.state")
+                    .u64_gauge("size")
                     .build(),
-                state_cache_hit_counter_metric: opentelemetry::global::meter("state")
-                    .u64_counter("cache_hit")
+                state_cache_hit_counter_metric: opentelemetry::global::meter("voyager.cache.state")
+                    .u64_counter("hit")
                     .build(),
-                state_cache_miss_counter_metric: opentelemetry::global::meter("state")
-                    .u64_counter("cache_miss")
-                    .build(),
+                state_cache_miss_counter_metric: opentelemetry::global::meter(
+                    "voyager.cache.state",
+                )
+                .u64_counter("miss")
+                .build(),
             }
         }
 
@@ -85,30 +88,37 @@ pub mod cache {
             self.state_cache_size_metric
                 .record(self.state_cache.entry_count(), attributes);
 
-            self.state_cache
-                .entry(state_request)
-                .or_try_insert_with(fut.map_ok(|state| {
-                    state
-                        .map(serde_json::to_value)
-                        .transpose()
-                        .expect("serialization is infallible; qed;")
-                }))
-                .await
-                .map(|entry| {
-                    if entry.is_fresh() {
-                        self.state_cache_miss_counter_metric.add(1, attributes);
-                    } else {
-                        self.state_cache_hit_counter_metric.add(1, attributes);
-                    }
-
-                    entry
-                        .into_value()
-                        .map(serde_json::from_value)
-                        .transpose()
-                        .expect("infallible; only valid values are inserted into the queue; qed;")
+            let init = fut
+                .map_ok(|state| {
+                    serde_json::to_value(state).expect("serialization is infallible; qed;")
                 })
-                .map_err(|e| (*e).clone())
+                .await?;
+
+            if init.is_null() {
+                Ok(None)
+            } else {
+                let entry = self.state_cache.entry(state_request).or_insert(init).await;
+
+                if entry.is_fresh() {
+                    self.state_cache_miss_counter_metric.add(1, attributes);
+                } else {
+                    self.state_cache_hit_counter_metric.add(1, attributes);
+                }
+
+                serde_json::from_value(entry.into_value())
+                    .expect("infallible; only valid values are inserted into the cache; qed;")
+            }
         }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+    pub struct Config {
+        pub state: CacheConfig,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+    pub struct CacheConfig {
+        pub capacity: u64,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -163,11 +173,11 @@ pub struct ServerInner {
 
 impl Server {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+    pub fn new(cache_config: cache::Config) -> Self {
         Server {
             inner: Arc::new(ServerInner {
                 modules: OnceLock::new(),
-                cache: cache::Cache::new(),
+                cache: cache::Cache::new(cache_config),
             }),
             item_id: None,
         }
