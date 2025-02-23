@@ -44,6 +44,7 @@ pub mod cache {
     use schemars::JsonSchema;
     use serde::{de::DeserializeOwned, Deserialize, Serialize};
     use serde_json::Value;
+    use tracing::trace;
     use unionlabs::ibc::core::client::height::Height;
     use voyager_core::{ChainId, IbcSpec, IbcSpecId, IbcStorePathKey};
 
@@ -105,8 +106,12 @@ pub mod cache {
                     self.state_cache_hit_counter_metric.add(1, attributes);
                 }
 
-                serde_json::from_value(entry.into_value())
-                    .expect("infallible; only valid values are inserted into the cache; qed;")
+                let value = entry.into_value();
+
+                trace!(%value, "cached value");
+
+                Ok(serde_json::from_value(value)
+                    .expect("infallible; only valid values are inserted into the cache; qed;"))
             }
         }
     }
