@@ -338,5 +338,35 @@
       }
     },
     "channels": [1]
+  },
+  {
+    "chain_id": "stride-internal-1",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "core": {
+        "address": "stride1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tesh26an8",
+        "height": 10727313
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "stride1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ks2vdtkg",
+          "height": 10727476
+        },
+        "state-lens/ics23/mpt": {
+          "address": "stride13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejq26fncx",
+          "height": 10727480
+        },
+        "tendermint": {
+          "address": "stride1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqssetqjx4",
+          "height": 10727482
+        }
+      },
+      "app": {
+        "ucs03": {
+          "address": "stride1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cq35prus",
+          "height": 10727604
+        }
+      }
+    }
   }
 ]
