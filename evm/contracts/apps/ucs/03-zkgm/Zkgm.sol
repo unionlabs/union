@@ -631,38 +631,23 @@ contract UCS03Zkgm is
         Instruction calldata instruction
     ) internal {
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_1) {
+            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            if (instruction.version == ZkgmLib.INSTR_VERSION_0) {
-                FungibleAssetOrderV0 calldata order =
-                    ZkgmLib.decodeFungibleAssetOrderV0(instruction.operand);
-                verifyFungibleAssetOrder(
-                    channelId,
-                    path,
-                    order.baseToken,
-                    order.baseAmount,
-                    order.baseTokenSymbol,
-                    order.baseTokenName,
-                    order.baseTokenPath,
-                    order.quoteToken,
-                    order.quoteAmount
-                );
-            } else {
-                FungibleAssetOrder calldata order =
-                    ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-                verifyFungibleAssetOrder(
-                    channelId,
-                    path,
-                    order.baseToken,
-                    order.baseAmount,
-                    order.baseTokenSymbol,
-                    order.baseTokenName,
-                    order.baseTokenPath,
-                    order.quoteToken,
-                    order.quoteAmount
-                );
-            }
+            FungibleAssetOrder calldata order =
+                ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
+            verifyFungibleAssetOrder(
+                channelId,
+                path,
+                order.baseToken,
+                order.baseAmount,
+                order.baseTokenSymbol,
+                order.baseTokenName,
+                order.baseTokenDecimals,
+                order.baseTokenPath,
+                order.quoteToken,
+                order.quoteAmount
+            );
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
@@ -696,6 +681,7 @@ contract UCS03Zkgm is
         uint256 orderBaseAmount,
         string calldata orderBaseTokenSymbol,
         string calldata orderBaseTokenName,
+        uint8 orderBaseTokenDecimals,
         uint256 orderBaseTokenPath,
         bytes calldata orderQuoteToken,
         uint256 orderQuoteAmount
@@ -710,6 +696,9 @@ contract UCS03Zkgm is
         }
         if (!orderBaseTokenSymbol.eq(baseToken.symbol())) {
             revert ZkgmLib.ErrInvalidAssetSymbol();
+        }
+        if (orderBaseTokenDecimals != baseToken.decimals()) {
+            revert ZkgmLib.ErrInvalidAssetDecimals();
         }
         uint256 origin = tokenOrigin[address(baseToken)];
         (address wrappedToken,) =
