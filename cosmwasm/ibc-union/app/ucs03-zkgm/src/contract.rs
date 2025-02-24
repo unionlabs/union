@@ -67,7 +67,7 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
     TOKEN_MINTER.save(deps.storage, &deps.api.addr_humanize(&minter_address)?)?;
 
     let msg = WasmMsg::Instantiate2 {
-        admin: Some(msg.config.admin.to_string()),
+        admin: Some(env.contract.address.to_string()),
         code_id: msg.config.token_minter_code_id,
         msg: to_json_binary(&msg.minter_init_msg)?,
         funds: vec![],
