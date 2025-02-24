@@ -357,6 +357,13 @@ contract UCS03Zkgm is
         weth = _weth;
     }
 
+    // Temporary function that we need to remove after testnet.
+    function withdrawWeth(
+        uint256 wad
+    ) public onlyOwner {
+        weth.transfer(msg.sender, wad);
+    }
+
     function ibcAddress() public view virtual override returns (address) {
         return address(ibcHandler);
     }
