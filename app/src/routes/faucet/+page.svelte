@@ -20,6 +20,7 @@ import ExternalFaucets from "./(components)/external-faucets.svelte"
 import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
+// Add Turnstile import
 import { Turnstile } from "svelte-turnstile"
 
 type FaucetState = DiscriminatedUnion<
@@ -35,6 +36,7 @@ type FaucetState = DiscriminatedUnion<
 
 let address = ""
 let turnstileToken = ""
+let reset: () => void
 
 onMount(() => {
   address = $cosmosStore.address ?? ""
@@ -84,12 +86,16 @@ const requestUnoFromFaucet = async () => {
           kind: "RESULT_ERR",
           error: "Empty faucet response"
         })
+        turnstileToken = ""
+        reset()
         return
       }
 
       if (result.send.startsWith("ERROR")) {
         console.error(result.send)
         unoFaucetState.set({ kind: "RESULT_ERR", error: `Error from faucet` })
+        turnstileToken = ""
+        reset()
         return
       }
 
@@ -97,11 +103,15 @@ const requestUnoFromFaucet = async () => {
         kind: "RESULT_OK",
         message: result.send
       })
+      turnstileToken = ""
+      reset()
     } catch (error) {
       unoFaucetState.set({
         kind: "RESULT_ERR",
         error: `Faucet error: ${error}`
       })
+      turnstileToken = ""
+      reset()
       return
     }
   }
@@ -220,6 +230,7 @@ const handleTurnstileCallback = (
                   on:callback={handleTurnstileCallback}
                   theme="auto"
                   size="normal"
+                  bind:reset
           />
           <div class="flex flex-row items-center gap-4">
             <Button
