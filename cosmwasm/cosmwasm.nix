@@ -40,7 +40,7 @@
           apps = {
             ucs03 = ucs03-configs.cw20;
           };
-          lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
+          # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
         }
         {
           name = "union-testnet";
@@ -56,7 +56,16 @@
             ucs03 = ucs03-configs.cw20;
           };
           bech32_prefix = "union";
-          lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
+          lightclients = [
+            "arbitrum"
+            "berachain"
+            "ethereum"
+            "ethermint"
+            "tendermint-bls"
+            "movement"
+            "state-lens-ics23-mpt"
+            "state-lens-ics23-smt"
+          ];
         }
         {
           name = "stargaze-testnet";
@@ -135,8 +144,9 @@
           bech32_prefix = "stride";
           lightclients = [
             "cometbls"
-            # "tendermint"
+            "tendermint"
             "state-lens-ics23-mpt"
+            "state-lens-ics23-smt"
           ];
         }
         {
@@ -162,50 +172,59 @@
       ];
 
       # directory => {}
-      all-lightclients = {
-        arbitrum = {
+      all-lightclients = [
+        {
+          name = "arbitrum";
+          dir = "arbitrum";
           client-type = "arbitrum";
-        };
-        berachain = {
+        }
+        {
+          name = "berachain";
+          dir = "berachain";
           client-type = "berachain";
-        };
-        cometbls = {
+        }
+        {
+          name = "cometbls";
+          dir = "cometbls";
           client-type = "cometbls";
-        };
-        ethereum = {
+        }
+        {
+          name = "ethereum";
+          dir = "ethereum";
           client-type = "ethereum";
-        };
-        ethermint = {
+        }
+        {
+          name = "ethermint";
+          dir = "ethermint";
           client-type = "ethermint";
-        };
-        tendermint = {
+        }
+        {
+          name = "tendermint";
+          dir = "tendermint";
           client-type = "tendermint";
-          # remove the cosmwasm 2.1 export such that the tendermint light client can work on chains that don't need bls verification (which is the only reason the export exists on this client)
-          # in order to not mess with any potential offsets in the blob, overwrite the export with a string of the same length
-          hook =
-            drv:
-            drv.overrideAttrs (old: {
-              installPhase =
-                (old.installPhase or "")
-                + ''
-                  ${pkgs.lib.getExe pkgs.bbe} \
-                    -e 's/requires_cosmwasm_2_1/AAAAAAAAAAAAAAAAAAAAA/' \
-                    -e 's/requires_cosmwasm_2_0/BBBBBBBBBBBBBBBBBBBBB/' \
-                    $out \
-                    -o replaced.wasm
-
-                  # can't write directly to $out for some reason
-                  mv replaced.wasm $out
-                '';
-            });
-        };
-        movement = {
+        }
+        {
+          name = "tendermint-bls";
+          dir = "tendermint";
+          client-type = "tendermint";
+          features = [ "bls" ];
+        }
+        {
+          name = "movement";
+          dir = "movement";
           client-type = "movement";
-        };
-        state-lens-ics23-mpt = {
+        }
+        {
+          name = "state-lens-ics23-mpt";
+          dir = "state-lens-ics23-mpt";
           client-type = "state-lens/ics23/mpt";
-        };
-      };
+        }
+        {
+          name = "state-lens-ics23-smt";
+          dir = "state-lens-ics23-smt";
+          client-type = "state-lens/ics23/smt";
+        }
+      ];
 
       # client type => package name
       all-apps = {
@@ -271,7 +290,7 @@
             lightclient = pkgs.lib.mapAttrs' (n: v: {
               name = v.client-type;
               value = mk-lightclient n;
-            }) (pkgs.lib.filterAttrs (n: _: builtins.elem n lightclients) all-lightclients);
+            }) (builtins.filter ({ name, ... }: builtins.elem name lightclients) all-lightclients);
             app = apps;
           }
         );
@@ -310,7 +329,9 @@
                     cosmwasm-deployer \
                     migrate \
                     --rpc-url ${rpc_url} \
-                    --address "$(echo "$ADDRESSES" | jq '.lightclient."${all-lightclients.${lc}.client-type}"' -r)" \
+                    --address "$(echo "$ADDRESSES" | jq '.lightclient."${
+                      (get-lightclient (lc: lc.name == name)).client-type
+                    }"' -r)" \
                     --new-bytecode ${mk-lightclient lc} \
                     --private-key ${private_key} \
                     --gas-price ${toString gas_config.gas_price} \
@@ -391,9 +412,7 @@
           cosmwasm-deployer \
             addresses \
             ${
-              pkgs.lib.strings.concatStrings (
-                map (l: " --lightclient ${all-lightclients.${l}.client-type}") (builtins.attrNames all-lightclients)
-              )
+              pkgs.lib.strings.concatStrings (map (lc: " --lightclient ${lc.client-type}") all-lightclients)
             } \
             ${
               pkgs.lib.strings.concatStrings (map (a: " --${all-apps.${a}.name}") (builtins.attrNames all-apps))
@@ -402,11 +421,18 @@
         '';
       };
 
+      get-lightclient =
+        f: pkgs.lib.lists.findSingle f (throw "not found") (throw "many found") all-lightclients;
+
       mk-lightclient =
-        dir:
-        (all-lightclients.${dir}.hook or (d: d)) (
+        name:
+        let
+          lc = get-lightclient (lc: lc.name == name);
+        in
+        (lc.hook or (d: d)) (
           crane.buildWasmContract {
-            crateDirFromRoot = "cosmwasm/ibc-union/lightclient/${dir}";
+            crateDirFromRoot = "cosmwasm/ibc-union/lightclient/${lc.dir}";
+            features = lc.features or null;
           }
         );
 
@@ -552,10 +578,18 @@
         // cosmwasm-deployer.packages
         //
           # all light clients
-          (pkgs.lib.mapAttrs' (n: _v: rec {
-            name = value.passthru.packageName;
-            value = mk-lightclient n;
-          }) all-lightclients)
+          (builtins.listToAttrs (
+            map (
+              { name, ... }:
+              let
+                lc = mk-lightclient name;
+              in
+              {
+                name = lc.passthru.packageName;
+                value = lc;
+              }
+            ) all-lightclients
+          ))
         //
           # all apps
           (pkgs.lib.mapAttrs' (n: _v: rec {
