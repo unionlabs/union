@@ -619,8 +619,13 @@ contract UCS03Zkgm is
             timeoutHeight,
             timeoutTimestamp,
             ZkgmLib.encode(
-                // TODO: change salt to string and then assert its prefixed with user address and keccak256 it
-                ZkgmPacket({salt: salt, path: 0, instruction: instruction})
+                ZkgmPacket({
+                    salt: keccak256(
+                        abi.encodePacked(abi.encodePacked(msg.sender), salt)
+                    ),
+                    path: 0,
+                    instruction: instruction
+                })
             )
         );
     }
