@@ -34,7 +34,7 @@ let connectedWallets = derived(
 )
 
 // Set to 3 when shipping aptos.
-const WALLET_COUNT = 2
+  const WALLET_COUNT = 3;
 
 $: if ($connectedWallets >= 1) {
   buttonText =
@@ -97,8 +97,6 @@ $: if ($navigating) sheetOpen = false
         </h2>
       </Sheet.Title>
     </Sheet.Header>
-    <!-- Uncomment when shipping Aptos !-->
-    <!--
     <Connection
       address={$aptosStore.address}
       chain="aptos"
@@ -109,7 +107,6 @@ $: if ($navigating) sheetOpen = false
       onConnectClick={aptosStore.connect}
       onDisconnectClick={aptosStore.disconnect}
     />
-    !-->
     <Connection
       address={$sepoliaStore.address}
       chain="evm"
