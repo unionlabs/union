@@ -2,7 +2,7 @@ use ibc_union_spec::types::{Channel, Packet};
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct InitMsg {}
 
@@ -15,6 +15,7 @@ pub struct MsgRegisterClient {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[cfg_attr(feature = "cw-orch-interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     RegisterClient(MsgRegisterClient),
     CreateClient(MsgCreateClient),
