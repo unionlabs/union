@@ -7,9 +7,10 @@ use cosmos_client::{Ctx, GasConfig};
 use cosmwasm_std::Addr;
 use hex_literal::hex;
 use protos::cosmwasm::wasm::v1::{
-    MsgExecuteContract, MsgExecuteContractResponse, MsgInstantiateContract2,
-    MsgInstantiateContract2Response, MsgMigrateContract, MsgMigrateContractResponse, MsgStoreCode,
-    MsgStoreCodeResponse, QuerySmartContractStateRequest, QuerySmartContractStateResponse,
+    AccessConfig, AccessType, MsgExecuteContract, MsgExecuteContractResponse,
+    MsgInstantiateContract2, MsgInstantiateContract2Response, MsgMigrateContract,
+    MsgMigrateContractResponse, MsgStoreCode, MsgStoreCodeResponse, QuerySmartContractStateRequest,
+    QuerySmartContractStateResponse,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -35,6 +36,8 @@ enum App {
         contracts: PathBuf,
         #[arg(long)]
         output: Option<PathBuf>,
+        #[arg(long)]
+        permissioned: bool,
         #[command(flatten)]
         gas_config: GasConfigArgs,
     },
@@ -144,7 +147,12 @@ pub struct Ucs03Config {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum TokenMinterConfig {
-    Cw20 { cw20_base: PathBuf },
+    Cw20 {
+        /// The path to the cw20-base contract code.
+        ///
+        /// This MUST be the unionlabs fork of cw20-base, which forces instantiation through the migrate entrypoint, such that it can have a deterministic address.
+        cw20_base: PathBuf,
+    },
     Native,
 }
 
@@ -231,6 +239,7 @@ async fn do_main() -> Result<()> {
             private_key,
             contracts,
             output,
+            permissioned,
             gas_config,
         } => {
             let contracts = serde_json::from_slice::<ContractPaths>(
@@ -370,14 +379,14 @@ async fn do_main() -> Result<()> {
             if let Some(ucs03_config) = contracts.app.ucs03 {
                 let salt = format!("{APP}/{UCS03}");
 
-                let address = instantiate2_address(
+                let ucs03_address = instantiate2_address(
                     ctx.signer().to_string().parse().unwrap(),
                     sha2(BYTECODE_BASE_BYTECODE),
                     &salt,
                 )
                 .unwrap();
 
-                let state = ctx.contract_deploy_state(address.clone()).await?;
+                let state = ctx.contract_deploy_state(ucs03_address.clone()).await?;
 
                 if let ContractDeployState::None | ContractDeployState::Instantiated = state {
                     let (tx_hash, response) = ctx
@@ -385,16 +394,24 @@ async fn do_main() -> Result<()> {
                             MsgStoreCode {
                                 sender: ctx.signer().to_string(),
                                 wasm_byte_code: std::fs::read(ucs03_config.token_minter_path)?,
-                                ..Default::default()
+                                // on permissioned cosmwasm, we must specify that this contract can be instantiated by the ucs03 contract
+                                instantiate_permission: if permissioned {
+                                    Some(AccessConfig {
+                                        permission: AccessType::AnyOfAddresses.into(),
+                                        addresses: vec![ucs03_address.clone()],
+                                    })
+                                } else {
+                                    None
+                                },
                             },
                             "",
                         )
                         .await
                         .context("store minter code")?;
 
-                    let code_id = response.code_id;
+                    let minter_code_id = response.code_id;
 
-                    info!(%tx_hash, code_id, "minter stored");
+                    info!(%tx_hash, minter_code_id, "minter stored");
 
                     let minter_init_msg = match ucs03_config.token_minter_config {
                         TokenMinterConfig::Cw20 { cw20_base } => {
@@ -403,7 +420,15 @@ async fn do_main() -> Result<()> {
                                     MsgStoreCode {
                                         sender: ctx.signer().to_string(),
                                         wasm_byte_code: std::fs::read(cw20_base)?,
-                                        ..Default::default()
+                                        // on permissioned cosmwasm, we must specify that this contract can be instantiated by the minter contract
+                                        instantiate_permission: if permissioned {
+                                            Some(AccessConfig {
+                                                permission: AccessType::AnyOfAddresses.into(),
+                                                addresses: vec![ucs03_address.clone()],
+                                            })
+                                        } else {
+                                            None
+                                        },
                                     },
                                     "",
                                 )
@@ -429,7 +454,7 @@ async fn do_main() -> Result<()> {
                             config: ucs03_zkgm::msg::Config {
                                 admin: Addr::unchecked(ctx.signer().to_string()),
                                 ibc_host: Addr::unchecked(core_address.clone()),
-                                token_minter_code_id: code_id,
+                                token_minter_code_id: minter_code_id,
                             },
                             minter_init_msg,
                         },
@@ -438,7 +463,7 @@ async fn do_main() -> Result<()> {
                     .await?;
                 }
 
-                contract_addresses.app.ucs03 = Some(address);
+                contract_addresses.app.ucs03 = Some(ucs03_address);
             }
 
             write_output(output, contract_addresses)?;
