@@ -398,7 +398,7 @@ dependencies = [
  "proptest",
  "rand 0.8.5",
  "ruint",
- "rustc-hash 2.1.0",
+ "rustc-hash",
  "serde",
  "sha3 0.10.8",
  "tiny-keccak",
@@ -4635,7 +4635,7 @@ dependencies = [
  "cosmos-client",
  "prost 0.12.6",
  "protos",
- "recaptcha-verify",
+ "reqwest 0.11.27",
  "serde",
  "serde_json",
  "subtle-encoding",
@@ -6333,7 +6333,6 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.26.0",
  "tower-service",
- "webpki-roots 0.26.3",
 ]
 
 [[package]]
@@ -7029,7 +7028,7 @@ dependencies = [
  "parking_lot",
  "pin-project",
  "rand 0.8.5",
- "rustc-hash 2.1.0",
+ "rustc-hash",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -9851,53 +9850,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quinn"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4ceeeeabace7857413798eb1ffa1e9c905a9946a57d81fb69b4b71c4d8eb3ad"
-dependencies = [
- "bytes",
- "pin-project-lite",
- "quinn-proto",
- "quinn-udp",
- "rustc-hash 1.1.0",
- "rustls 0.23.7",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "quinn-proto"
-version = "0.11.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddf517c03a109db8100448a4be38d498df8a210a99fe0e1b9eaf39e78c640efe"
-dependencies = [
- "bytes",
- "rand 0.8.5",
- "ring 0.17.8",
- "rustc-hash 1.1.0",
- "rustls 0.23.7",
- "slab",
- "thiserror 1.0.69",
- "tinyvec",
- "tracing",
-]
-
-[[package]]
-name = "quinn-udp"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9096629c45860fc7fb143e125eb826b5e721e10be3263160c7d60ca832cf8c46"
-dependencies = [
- "libc",
- "once_cell",
- "socket2",
- "tracing",
- "windows-sys 0.52.0",
-]
-
-[[package]]
 name = "quote"
 version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10118,17 +10070,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "recaptcha-verify"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71e3be7b2e46e24637ac96b0c9f70070f188652018573f36f4e511dcad09738a"
-dependencies = [
- "reqwest 0.12.5",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "reconnecting-jsonrpc-ws-client"
 version = "0.0.0"
 dependencies = [
@@ -10295,7 +10236,6 @@ dependencies = [
  "http-body 1.0.0",
  "http-body-util",
  "hyper 1.3.1",
- "hyper-rustls 0.27.2",
  "hyper-tls 0.6.0",
  "hyper-util",
  "ipnet",
@@ -10306,23 +10246,18 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
- "quinn",
- "rustls 0.23.7",
  "rustls-pemfile 2.1.1",
- "rustls-pki-types",
  "serde",
  "serde_json",
  "serde_urlencoded",
  "sync_wrapper 1.0.1",
  "tokio",
  "tokio-native-tls",
- "tokio-rustls 0.26.0",
  "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
- "webpki-roots 0.26.3",
  "winreg 0.52.0",
 ]
 
@@ -10504,12 +10439,6 @@ name = "rustc-demangle"
 version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d626bb9dae77e28219937af045c257c28bfd3f69333c512553507f5f9798cb76"
-
-[[package]]
-name = "rustc-hash"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustc-hash"
