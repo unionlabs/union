@@ -27,7 +27,9 @@ const fetcher = Effect.gen(function* () {
   yield* Effect.log("fetching data")
   const r = yield* Random.next
   const response = yield* client.get(
-    r > 0.3 ? "https://rpc.testnet-9.union.build/block" : "https://thisisnotavalidurl.com"
+    r > 0.3
+      ? "https://rpc.testnet-9.union.build/block"
+      : "https://rpc.testnet-9.union.build/genesis"
   )
   const json = yield* response.json
   yield* Effect.log("fetched data")
@@ -42,6 +44,7 @@ const fetcherPipeline = pipe(
     onSuccess: data =>
       Effect.sync(() => {
         responseData = Option.some(data)
+        responseError = Option.none()
       }),
     onFailure: error =>
       Effect.sync(() => {
