@@ -398,7 +398,10 @@ async fn do_main() -> Result<()> {
                                 instantiate_permission: if permissioned {
                                     Some(AccessConfig {
                                         permission: AccessType::AnyOfAddresses.into(),
-                                        addresses: vec![ucs03_address.clone()],
+                                        addresses: vec![
+                                            // ctx.signer().to_string(),
+                                            ucs03_address.clone(),
+                                        ],
                                     })
                                 } else {
                                     None
@@ -413,6 +416,13 @@ async fn do_main() -> Result<()> {
 
                     info!(%tx_hash, minter_code_id, "minter stored");
 
+                    let token_minter_address = instantiate2_address(
+                        ucs03_address.parse().unwrap(),
+                        response.checksum.try_into().unwrap(),
+                        &ucs03_zkgm::contract::minter_salt(),
+                    )
+                    .unwrap();
+
                     let minter_init_msg = match ucs03_config.token_minter_config {
                         TokenMinterConfig::Cw20 { cw20_base } => {
                             let (tx_hash, response) = ctx
@@ -424,7 +434,7 @@ async fn do_main() -> Result<()> {
                                         instantiate_permission: if permissioned {
                                             Some(AccessConfig {
                                                 permission: AccessType::AnyOfAddresses.into(),
-                                                addresses: vec![ucs03_address.clone()],
+                                                addresses: vec![token_minter_address.clone()],
                                             })
                                         } else {
                                             None
@@ -433,7 +443,7 @@ async fn do_main() -> Result<()> {
                                     "",
                                 )
                                 .await
-                                .context("store minter code")?;
+                                .context("store cw20-base code")?;
 
                             let code_id = response.code_id;
 

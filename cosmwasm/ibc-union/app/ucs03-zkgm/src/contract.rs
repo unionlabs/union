@@ -53,14 +53,12 @@ pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
 pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractError> {
     CONFIG.save(deps.storage, &msg.config)?;
 
-    let salt: Binary = format!("{PROTOCOL_VERSION}/{ZKGM_TOKEN_MINTER_LABEL}")
-        .into_bytes()
-        .into();
+    let salt = minter_salt();
 
     let minter_address = instantiate2_address(
         get_code_hash(deps.as_ref(), msg.config.token_minter_code_id)?.as_ref(),
         &deps.api.addr_canonicalize(env.contract.address.as_str())?,
-        &salt,
+        salt.as_bytes(),
     )
     .expect("valid instantiate2 address");
 
@@ -72,10 +70,15 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
         msg: to_json_binary(&msg.minter_init_msg)?,
         funds: vec![],
         label: ZKGM_TOKEN_MINTER_LABEL.to_string(),
-        salt,
+        salt: salt.into_bytes().into(),
     };
 
     Ok(Response::new().add_submessage(SubMsg::reply_never(msg)))
+}
+
+/// The salt used to instantiate the token minter (using [instantiate2_address]).
+pub fn minter_salt() -> String {
+    format!("{PROTOCOL_VERSION}/{ZKGM_TOKEN_MINTER_LABEL}")
 }
 
 fn get_code_hash(deps: Deps, code_id: u64) -> StdResult<H256> {
