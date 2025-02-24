@@ -24,7 +24,7 @@ use crate::{
         Error, IbcHeightTooLargeForTendermintHeight, InvalidChainId, InvalidHeaderError,
         MathOverflow, RevisionNumberMismatch, TrustedValidatorsMismatch,
     },
-    verifier::{Bls12Verifier, Ed25519Verifier},
+    verifier::Ed25519Verifier,
 };
 
 pub struct TendermintLightClient;
@@ -98,12 +98,13 @@ impl IbcClient for TendermintLightClient {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
         match header.validator_set.validators.first().map(|v| &v.pub_key) {
+            #[cfg(feature = "bls")]
             Some(PublicKey::Bls12_381(_)) => Ok(verify_header(
                 client_state,
                 consensus_state,
                 header,
                 ctx.env.block.time,
-                &SignatureVerifier::new(Bls12Verifier::new(ctx.deps)),
+                &SignatureVerifier::new(crate::verifier::bls::Bls12Verifier::new(ctx.deps)),
             )?),
             Some(PublicKey::Ed25519(_)) => Ok(verify_header(
                 client_state,

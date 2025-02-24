@@ -13,7 +13,7 @@ let
 
   dashesToUnderscores = builtins.replaceStrings [ "-" ] [ "_" ];
 
-  featuresString =
+  mkFeaturesString =
     features: if features == null then "" else (lib.concatMapStrings (feature: "-${feature}") features);
   allChecks =
     checks: _maxSize:
@@ -42,7 +42,7 @@ let
       maxSize,
     }:
     let
-      outputFilePath = "$out/lib/${contractFileNameWithoutExt}${dashesToUnderscores (featuresString features)}.wasm";
+      outputFilePath = "$out/lib/${contractFileNameWithoutExt}${dashesToUnderscores (mkFeaturesString features)}.wasm";
     in
     ''
       mkdir -p $out/lib
@@ -77,9 +77,9 @@ in
       extraNativeBuildInputs ? [ ],
     }:
     let
-      packageName = (crateCargoToml crateDirFromRoot).package.name;
+      packageName = "${(crateCargoToml crateDirFromRoot).package.name}${mkFeaturesString features}";
 
-      contract-basename = dashesToUnderscores packageName;
+      contract-basename = dashesToUnderscores (crateCargoToml crateDirFromRoot).package.name;
 
       all = buildWorkspaceMember {
         # extraEnv = {
@@ -87,7 +87,7 @@ in
         # };
         inherit crateDirFromRoot extraBuildInputs extraNativeBuildInputs;
         buildStdTarget = CARGO_BUILD_TARGET;
-        pnameSuffix = featuresString features;
+        pnameSuffix = mkFeaturesString features;
 
         cargoBuildExtraArgs = cargoBuildExtraArgs features;
         inherit rustflags;
@@ -100,7 +100,6 @@ in
         cargoBuildInstallPhase = cargoBuildInstallPhase {
           inherit
             features
-
             checks
             maxSize
             ;
@@ -113,7 +112,8 @@ in
       passthru.packageName = packageName;
       src = all.packages.${packageName};
       installPhase = ''
-        cp "$src/lib/${contract-basename}.wasm" $out
+        ls $src/lib/
+        cp "$src/lib/${dashesToUnderscores packageName}.wasm" $out
       '';
     };
 
@@ -146,7 +146,7 @@ in
         };
 
         doCheck = false;
-        pnameSuffix = featuresString features;
+        pnameSuffix = mkFeaturesString features;
         cargoCheckExtraArgs = "";
         cargoExtraArgs =
           (cargoBuildExtraArgs features)

@@ -90,7 +90,7 @@
         }
       }
     },
-    "channels": [1, 3, 4, 5, 8, 24]
+    "channels": [1, 3, 4, 5, 8, 23, 24]
   },
   {
     "chain_id": "elgafar-1",
@@ -356,9 +356,13 @@
           "address": "stride13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejq26fncx",
           "height": 10727480
         },
+        "state-lens/ics23/smt": {
+          "address": "stride1sgsy6za4vc6fjylfx5kj3w7u9efsn6ge3rlm38tjnffa3qcfzfws3f60am",
+          "height": 10901097
+        },
         "tendermint": {
           "address": "stride1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqssetqjx4",
-          "height": 10727482
+          "height": 10901100
         }
       },
       "app": {
@@ -367,6 +371,7 @@
           "height": 10727604
         }
       }
-    }
+    },
+    "channels": [1]
   }
 ]
