@@ -691,9 +691,6 @@ contract UCS03Zkgm is
         bytes calldata orderQuoteToken,
         uint256 orderQuoteAmount
     ) internal {
-        if (orderBaseAmount == 0) {
-            revert ZkgmLib.ErrInvalidAmount();
-        }
         IERC20Metadata baseToken =
             IERC20Metadata(address(bytes20(orderBaseToken)));
         if (!orderBaseTokenName.eq(baseToken.name())) {
