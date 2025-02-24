@@ -426,7 +426,7 @@ async fn do_main() -> Result<()> {
                                 "",
                             )
                             .await
-                            .context("update instatiate perms of cw20-base")?;
+                            .context("update instantiate perms of cw20-base")?;
 
                         info!(%tx_hash, "cw20-base instantiate permissions updated");
 
@@ -478,7 +478,7 @@ async fn do_main() -> Result<()> {
                                         "",
                                     )
                                     .await
-                                    .context("update instatiate perms of cw20-base")?;
+                                    .context("update instantiate perms of cw20-base")?;
 
                                 info!(%tx_hash, "cw20-base instantiate permissions updated");
 
