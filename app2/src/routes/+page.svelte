@@ -12,59 +12,63 @@ const Block = Schema.Struct({
   })
 })
 
+const BlockWeird = Schema.Struct({
+  resulty: Schema.Struct({
+    block_id: Schema.Struct({
+      hash: Schema.String
+    })
+  })
+})
+
 let responseData: Option.Option<typeof Block.Type> = $state(Option.none())
 let responseError: Option.Option<unknown> = $state(Option.none())
 
-class SvelteStore extends Context.Tag("SvelteStore")<
-  SvelteStore,
-  { readonly write: (value: unknown) => void }
->() {}
+const createQuery = <S>(
+  url: string,
+  schema: Schema.Schema<S>,
+  writeStore: (value: Option.Option<S>) => void
+) => {
+  const fetcher = Effect.gen(function* () {
+    const client = yield* HttpClient.HttpClient
 
-const fetcher = Effect.gen(function* () {
-  const client = yield* HttpClient.HttpClient
-  const store = yield* SvelteStore
+    yield* Effect.log("fetching data")
+    const r = yield* Random.next
+    const response = yield* client.get(r > 0.3 ? url : "https://rpc.testnet-9.union.build/genesis")
+    const json = yield* response.json
+    yield* Effect.log("fetched data")
 
-  yield* Effect.log("fetching data")
-  const r = yield* Random.next
-  const response = yield* client.get(
-    r > 0.3
-      ? "https://rpc.testnet-9.union.build/block"
-      : "https://rpc.testnet-9.union.build/genesis"
-  )
-  const json = yield* response.json
-  yield* Effect.log("fetched data")
-
-  const block = yield* Schema.decodeUnknown(Block)(json)
-  return block
-})
-
-const fetcherPipeline = pipe(
-  fetcher,
-  Effect.tapBoth({
-    onSuccess: data =>
-      Effect.sync(() => {
-        responseData = Option.some(data)
-        responseError = Option.none()
-      }),
-    onFailure: error =>
-      Effect.sync(() => {
-        responseError = Option.some(error)
-      })
-  }),
-  Effect.catchAll(_ => Effect.succeed(null)),
-  Effect.scoped,
-  Effect.provide(FetchHttpClient.layer),
-  Effect.provideService(SvelteStore, {
-    write: (value: typeof Block.Type) => {
-      responseData = Option.some(value)
-    }
+    const block = yield* Schema.decodeUnknown(schema)(json)
+    return block
   })
-)
 
-const program = Effect.repeat(
-  fetcherPipeline,
-  Schedule.addDelay(Schedule.repeatForever, () => "2 seconds")
-)
+  const fetcherPipeline = pipe(
+    fetcher,
+    Effect.tapBoth({
+      onSuccess: data =>
+        Effect.sync(() => {
+          writeStore(Option.some(data))
+          responseError = Option.none()
+        }),
+      onFailure: error =>
+        Effect.sync(() => {
+          responseError = Option.some(error)
+        })
+    }),
+    Effect.catchAll(_ => Effect.succeed(null)),
+    Effect.scoped,
+    Effect.provide(FetchHttpClient.layer)
+  )
+
+  const program = Effect.repeat(
+    fetcherPipeline,
+    Schedule.addDelay(Schedule.repeatForever, () => "2 seconds")
+  )
+  return program
+}
+
+const program = createQuery("https://rpc.testnet-9.union.build/block", Block, data => {
+  responseData = data
+})
 
 let fiber
 
