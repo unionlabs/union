@@ -641,18 +641,7 @@ contract UCS03Zkgm is
             }
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            verifyFungibleAssetOrder(
-                channelId,
-                path,
-                order.baseToken,
-                order.baseAmount,
-                order.baseTokenSymbol,
-                order.baseTokenName,
-                order.baseTokenDecimals,
-                order.baseTokenPath,
-                order.quoteToken,
-                order.quoteAmount
-            );
+            verifyFungibleAssetOrder(channelId, path, order);
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
@@ -682,46 +671,39 @@ contract UCS03Zkgm is
     function verifyFungibleAssetOrder(
         uint32 channelId,
         uint256 path,
-        bytes calldata orderBaseToken,
-        uint256 orderBaseAmount,
-        string calldata orderBaseTokenSymbol,
-        string calldata orderBaseTokenName,
-        uint8 orderBaseTokenDecimals,
-        uint256 orderBaseTokenPath,
-        bytes calldata orderQuoteToken,
-        uint256 orderQuoteAmount
+        FungibleAssetOrder calldata order
     ) internal {
         IERC20Metadata baseToken =
-            IERC20Metadata(address(bytes20(orderBaseToken)));
-        if (!orderBaseTokenName.eq(baseToken.name())) {
+            IERC20Metadata(address(bytes20(order.baseToken)));
+        if (!order.baseTokenName.eq(baseToken.name())) {
             revert ZkgmLib.ErrInvalidAssetName();
         }
-        if (!orderBaseTokenSymbol.eq(baseToken.symbol())) {
+        if (!order.baseTokenSymbol.eq(baseToken.symbol())) {
             revert ZkgmLib.ErrInvalidAssetSymbol();
         }
-        if (orderBaseTokenDecimals != baseToken.decimals()) {
+        if (order.baseTokenDecimals != baseToken.decimals()) {
             revert ZkgmLib.ErrInvalidAssetDecimals();
         }
         uint256 origin = tokenOrigin[address(baseToken)];
         (address wrappedToken,) =
-            internalPredictWrappedTokenMemory(0, channelId, orderQuoteToken);
+            internalPredictWrappedTokenMemory(0, channelId, order.quoteToken);
         if (
             ZkgmLib.lastChannelFromPath(origin) == channelId
-                && abi.encodePacked(orderBaseToken).eq(
+                && abi.encodePacked(order.baseToken).eq(
                     abi.encodePacked(wrappedToken)
                 )
         ) {
-            IZkgmERC20(address(baseToken)).burn(msg.sender, orderBaseAmount);
+            IZkgmERC20(address(baseToken)).burn(msg.sender, order.baseAmount);
         } else {
             origin = 0;
             // TODO: extract this as a step before verifying to allow for ERC777
             // send hook
             SafeERC20.safeTransferFrom(
-                baseToken, msg.sender, address(this), orderBaseAmount
+                baseToken, msg.sender, address(this), order.baseAmount
             );
-            channelBalance[channelId][address(baseToken)] += orderBaseAmount;
+            channelBalance[channelId][address(baseToken)] += order.baseAmount;
         }
-        if (orderBaseTokenPath != origin) {
+        if (order.baseTokenPath != origin) {
             revert ZkgmLib.ErrInvalidAssetOrigin();
         }
     }
