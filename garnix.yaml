@@ -101,5 +101,5 @@ builds:
       - 'packages.*.uniond-release'
       - 'packages.*.uniond-release-image'
       - 'packages.*.voyager'
-      - 'packages.*.voyager-dev'
+      - 'packages.*.voyager-modules'
 enableGithubOrgAccessTokens: true

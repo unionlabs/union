@@ -334,7 +334,7 @@ pub struct ClientStateMeta {
 pub struct ConsensusStateMeta {
     /// The timestamp of the counterparty at the height represented by this
     /// consensus state.
-    pub timestamp_nanos: Timestamp,
+    pub timestamp: Timestamp,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

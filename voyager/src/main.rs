@@ -33,7 +33,7 @@ use voyager_message::{
     },
     core::{IbcSpec, QueryHeight},
     filter::{make_filter, run_filter, JaqInterestFilter},
-    rpc::{IbcState, VoyagerRpcClient},
+    rpc::{server::cache, IbcState, VoyagerRpcClient},
     VoyagerMessage,
 };
 use voyager_vm::{call, filter::FilterResult, promise, Op, Queue};
@@ -43,7 +43,9 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
     cli::{AppArgs, Command, ConfigCmd, ModuleCmd, MsgCmd, PluginCmd, QueueCmd, RpcCmd},
-    config::{default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig},
+    config::{
+        default_metrics_endpoint, default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig,
+    },
     queue::{QueueConfig, Voyager},
     utils::make_msg_create_client,
 };
@@ -57,6 +59,7 @@ compile_error!(
 pub mod api;
 pub mod cli;
 pub mod config;
+pub mod metrics;
 pub mod queue;
 
 fn main() -> ExitCode {
@@ -154,6 +157,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     num_workers: 1,
                     rest_laddr: default_rest_laddr(),
                     rpc_laddr: default_rpc_laddr(),
+                    metrics_endpoint: default_metrics_endpoint(),
                     queue: QueueConfig::PgQueue(PgQueueConfig {
                         database_url: String::new(),
                         max_connections: None,
@@ -164,6 +168,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     }),
                     optimizer_delay_milliseconds: 100,
                     ipc_client_request_timeout: Duration::new(60, 0),
+                    cache: voyager_message::rpc::server::cache::Config::default(),
                 },
             }),
             ConfigCmd::Schema => print_json(
@@ -175,7 +180,11 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             ),
         },
         Command::Start => {
-            let voyager = Voyager::new(get_voyager_config()?).await?;
+            let config = get_voyager_config()?;
+
+            metrics::init(&config.voyager.metrics_endpoint);
+
+            let voyager = Voyager::new(config).await?;
 
             info!("starting relay service");
 
@@ -350,7 +359,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             });
 
             if enqueue {
-                println!("enqueueing op for `{chain_id}` at `{start_height}`");
+                println!("enqueueing op for {chain_id} at {start_height}");
                 send_enqueue(&rest_url, op).await?;
             } else {
                 print_json(&op);
@@ -374,11 +383,16 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     ibc_spec_id,
                     height,
                 } => {
-                    let client_meta = voyager_client
-                        .client_meta(on.clone(), ibc_spec_id.clone(), height, client_id.clone())
+                    let client_state_meta = voyager_client
+                        .client_state_meta(
+                            on.clone(),
+                            ibc_spec_id.clone(),
+                            height,
+                            client_id.clone(),
+                        )
                         .await?;
 
-                    print_json(&client_meta);
+                    print_json(&client_state_meta);
                 }
                 RpcCmd::ClientInfo {
                     on,
@@ -497,6 +511,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             }
         }
         Command::Msg(msg) => match msg {
+            // TODO: Do this all with rpc calls instead of spinning up a full voyager instance
             MsgCmd::CreateClient {
                 on,
                 tracking,
@@ -521,6 +536,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         h.register::<IbcUnion>();
                     },
                     Duration::new(60, 0),
+                    cache::Config::default(),
                 )
                 .await?;
 
@@ -542,12 +558,12 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 .await?;
 
                 if enqueue {
-                    println!("enqueueing msg");
                     send_enqueue(&rest_url, op).await?;
                 } else {
                     print_json(&op);
                 }
             }
+            // TODO: Do this all with rpc calls instead of spinning up a full voyager instance
             MsgCmd::UpdateClient {
                 on,
                 client_id,
@@ -567,6 +583,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         h.register::<IbcUnion>();
                     },
                     Duration::new(60, 0),
+                    cache::Config::default(),
                 )
                 .await?;
 
@@ -579,9 +596,9 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     .await?
                     .ok_or(anyhow!("client info not found"))?;
 
-                let client_meta = ctx
+                let client_state_meta = ctx
                     .rpc_server
-                    .client_meta(&on, &ibc_spec_id, QueryHeight::Latest, client_id.clone())
+                    .client_state_meta(&on, &ibc_spec_id, QueryHeight::Latest, client_id.clone())
                     .await?
                     .ok_or(anyhow!("client info not found"))?;
 
@@ -589,7 +606,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     Some(update_to) => update_to,
                     None => {
                         ctx.rpc_server
-                            .query_latest_height(&client_meta.counterparty_chain_id, true)
+                            .query_latest_height(&client_state_meta.counterparty_chain_id, true)
                             .await?
                     }
                 };
@@ -597,10 +614,10 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 let op = promise::<VoyagerMessage>(
                     [call(FetchUpdateHeaders {
                         client_type: client_info.client_type,
-                        chain_id: client_meta.counterparty_chain_id,
+                        chain_id: client_state_meta.counterparty_chain_id,
                         counterparty_chain_id: on.clone(),
                         client_id: client_id.clone(),
-                        update_from: client_meta.counterparty_height,
+                        update_from: client_state_meta.counterparty_height,
                         update_to,
                     })],
                     [],
@@ -612,7 +629,6 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 );
 
                 if enqueue {
-                    println!("enqueueing msg");
                     send_enqueue(&rest_url, op).await?;
                 } else {
                     print_json(&op);

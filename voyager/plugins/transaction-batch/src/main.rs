@@ -351,7 +351,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ModuleCall::MakeMsgV1(make_msg_v1) => do_make_msg_v1(voyager_client, make_msg_v1).await,
             ModuleCall::MakeMsgUnion(make_msg_union) => {
                 do_make_msg_union(voyager_client, make_msg_union).await
-            }
+            } // ModuleCall::WaitForClientUpdateV1(wait) => wait.call(voyager_client).await,
+              // ModuleCall::WaitForClientUpdateUnion(wait) => wait.call(voyager_client).await,
         }
     }
 
@@ -1503,10 +1504,10 @@ where
 
     info!("target height of update for batch is {target_height}");
 
-    debug!(%client_id, "querying client meta for client");
+    debug!(%client_id, "querying client state meta for client");
 
-    let client_meta = match voyager_client
-        .client_meta::<V>(
+    let client_state_meta = match voyager_client
+        .client_state_meta::<V>(
             module.chain_id.clone(),
             QueryHeight::Latest,
             client_id.clone(),
@@ -1517,7 +1518,7 @@ where
         Err(err) => {
             error!(
                 error = %ErrorReporter(err),
-                "error fetching client meta for client {client_id} on chain {}", module.chain_id
+                "error fetching client state meta for client {client_id} on chain {}", module.chain_id
             );
 
             return Err(events
@@ -1545,7 +1546,7 @@ where
         idxs.into_iter().flatten().collect::<Vec<_>>(),
         seq([
             call(WaitForHeight {
-                chain_id: client_meta.counterparty_chain_id,
+                chain_id: client_state_meta.counterparty_chain_id,
                 height: target_height,
                 finalized: true,
             }),

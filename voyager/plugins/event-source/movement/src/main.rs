@@ -193,8 +193,8 @@ impl Module {
             .client_info::<IbcUnion>(self.chain_id.clone(), self_connection.client_id)
             .await?;
 
-        let client_meta = voyager_client
-            .client_meta::<IbcUnion>(
+        let client_state_meta = voyager_client
+            .client_state_meta::<IbcUnion>(
                 self.chain_id.clone(),
                 event_height.into(),
                 self_connection.client_id,
@@ -202,13 +202,13 @@ impl Module {
             .await?;
 
         let counterparty_latest_height = voyager_client
-            .query_latest_height(client_meta.counterparty_chain_id.clone(), false)
+            .query_latest_height(client_state_meta.counterparty_chain_id.clone(), false)
             .await?;
 
         let other_channel_id = self_channel.counterparty_channel_id;
         let other_channel = voyager_client
             .query_ibc_state(
-                client_meta.counterparty_chain_id.clone(),
+                client_state_meta.counterparty_chain_id.clone(),
                 counterparty_latest_height,
                 ChannelPath {
                     channel_id: other_channel_id,
@@ -234,7 +234,7 @@ impl Module {
         };
 
         Ok((
-            client_meta.counterparty_chain_id,
+            client_state_meta.counterparty_chain_id,
             client_info,
             source_channel,
             destination_channel,
@@ -729,8 +729,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         self.make_height(height).into(),
                         client_id,
@@ -740,7 +740,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     // TODO: Review this, does it need to be +1?
                     provable_height: self.make_height(height),

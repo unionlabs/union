@@ -14,7 +14,6 @@ workspace = true
 [dependencies]
 clap                     = { workspace = true, features = ["derive"] }
 cometbft-rpc             = { workspace = true }
-dashmap                  = { workspace = true }
 ibc-solidity             = { workspace = true }
 ibc-union-msg            = { workspace = true }
 ibc-union-spec.workspace = true

@@ -26,6 +26,7 @@ pub enum Call {
     WaitForHeight(WaitForHeight),
     WaitForTimestamp(WaitForTimestamp),
     WaitForTrustedHeight(WaitForTrustedHeight),
+    WaitForClientUpdate(WaitForClientUpdate),
 
     Plugin(PluginMessage),
 }
@@ -140,6 +141,17 @@ pub struct WaitForTrustedHeight {
     pub client_id: RawClientId,
     pub height: Height,
     pub finalized: bool,
+}
+
+/// Wait for the client `.client_id` on `.chain_id` to trust a height >=
+/// `.height`.
+#[model]
+pub struct WaitForClientUpdate {
+    pub chain_id: ChainId,
+    pub ibc_spec_id: IbcSpecId,
+    pub client_id: RawClientId,
+    pub height: Height,
+    // pub finalized: bool,
 }
 
 impl CallT<VoyagerMessage> for Call {
@@ -272,7 +284,7 @@ impl CallT<VoyagerMessage> for Call {
                 let trusted_client_state_meta = ctx
                     .rpc_server
                     .with_id(Some(ctx.id()))
-                    .client_meta(
+                    .client_state_meta(
                         &chain_id,
                         &ibc_spec_id,
                         if finalized {
@@ -318,6 +330,51 @@ impl CallT<VoyagerMessage> for Call {
                     }
                 }
             }
+
+            Call::WaitForClientUpdate(WaitForClientUpdate {
+                chain_id,
+                ibc_spec_id,
+                client_id,
+                height,
+                // finalized,
+            }) => {
+                let consensus_state_meta = ctx
+                    .rpc_server
+                    .with_id(Some(ctx.id()))
+                    .consensus_state_meta(
+                        &chain_id,
+                        &ibc_spec_id,
+                        QueryHeight::Latest,
+                        client_id.clone(),
+                        height,
+                    )
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                match consensus_state_meta {
+                    Some(consensus_state_meta) => {
+                        debug!(
+                            consensus_state_meta.timestamp = %consensus_state_meta.timestamp,
+                            "consensus state exists"
+                        );
+                        Ok(noop())
+                    }
+                    None => {
+                        debug!("consensus state for client {client_id} not found at height {height} on chain {chain_id}");
+                        Ok(seq([
+                            defer(now() + 1),
+                            call(WaitForClientUpdate {
+                                chain_id: chain_id.clone(),
+                                ibc_spec_id,
+                                client_id: client_id.clone(),
+                                height,
+                                // finalized,
+                            }),
+                        ]))
+                    }
+                }
+            }
+
             Call::Plugin(PluginMessage { plugin, message }) => {
                 Ok(PluginClient::<Value, Value>::call(
                     &ctx.plugin(plugin)?.with_id(Some(ctx.id())),

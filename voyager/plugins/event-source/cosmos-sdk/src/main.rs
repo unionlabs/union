@@ -218,8 +218,8 @@ impl Module {
             .client_info::<IbcClassic>(self.chain_id.clone(), self_connection.client_id.clone())
             .await?;
 
-        let client_meta = voyager_client
-            .client_meta::<IbcClassic>(
+        let client_state_meta = voyager_client
+            .client_state_meta::<IbcClassic>(
                 self.chain_id.clone(),
                 event_height.into(),
                 self_connection.client_id.clone(),
@@ -238,12 +238,12 @@ impl Module {
             .await?;
 
         let counterparty_latest_height = voyager_client
-            .query_latest_height(client_meta.counterparty_chain_id.clone(), false)
+            .query_latest_height(client_state_meta.counterparty_chain_id.clone(), false)
             .await?;
 
         let counterparty_channel = voyager_client
             .query_ibc_state(
-                client_meta.counterparty_chain_id.clone(),
+                client_state_meta.counterparty_chain_id.clone(),
                 counterparty_latest_height,
                 ibc_classic_spec::ChannelEndPath {
                     port_id: other_port_id.clone(),
@@ -275,7 +275,7 @@ impl Module {
         };
 
         Ok((
-            client_meta.counterparty_chain_id,
+            client_state_meta.counterparty_chain_id,
             client_info,
             source_channel,
             destination_channel,
@@ -648,8 +648,8 @@ impl Module {
                     .client_info::<IbcClassic>(self.chain_id.clone(), client_id.clone())
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcClassic>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcClassic>(
                         self.chain_id.clone(),
                         height.into(),
                         client_id.clone(),
@@ -659,7 +659,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcClassic::ID,
@@ -763,8 +763,8 @@ impl Module {
                     .client_info::<IbcClassic>(self.chain_id.clone(), connection.client_id.clone())
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcClassic>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcClassic>(
                         self.chain_id.clone(),
                         height.into(),
                         connection.client_id.clone(),
@@ -774,7 +774,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcClassic::ID,
@@ -842,8 +842,8 @@ impl Module {
                     .client_info::<IbcClassic>(self.chain_id.clone(), connection.client_id.clone())
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcClassic>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcClassic>(
                         self.chain_id.clone(),
                         height.into(),
                         connection.client_id.clone(),
@@ -864,7 +864,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcClassic::ID,
@@ -1177,8 +1177,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
                     .await?;
 
                 let event = ibc_union_spec::event::CreateClient {
@@ -1192,7 +1192,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1207,8 +1207,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
                     .await?;
 
                 let event = ibc_union_spec::event::UpdateClient {
@@ -1223,7 +1223,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info: client_info.clone(),
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1239,8 +1239,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
                     .await?;
 
                 let event = ibc_union_spec::event::ConnectionOpenInit {
@@ -1255,7 +1255,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1272,8 +1272,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
                     .await?;
 
                 let event = ibc_union_spec::event::ConnectionOpenTry {
@@ -1289,7 +1289,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1306,8 +1306,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
                     .await?;
 
                 let event = ibc_union_spec::event::ConnectionOpenAck {
@@ -1323,7 +1323,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1340,8 +1340,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(self.chain_id.clone(), height.into(), client_id)
                     .await?;
 
                 let event = ibc_union_spec::event::ConnectionOpenConfirm {
@@ -1357,7 +1357,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1383,8 +1383,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         height.into(),
                         connection.client_id,
@@ -1405,7 +1405,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1432,8 +1432,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         height.into(),
                         connection.client_id,
@@ -1455,7 +1455,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1481,8 +1481,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         height.into(),
                         connection.client_id,
@@ -1508,7 +1508,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1543,8 +1543,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), connection.client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         height.into(),
                         connection.client_id,
@@ -1566,7 +1566,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1614,8 +1614,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), source_connection.client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         height.into(),
                         source_connection.client_id,
@@ -1652,7 +1652,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1687,8 +1687,8 @@ impl Module {
                     .client_info::<IbcUnion>(self.chain_id.clone(), source_connection.client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         height.into(),
                         source_connection.client_id,
@@ -1726,7 +1726,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1765,8 +1765,8 @@ impl Module {
                     )
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         height.into(),
                         destination_connection.client_id,
@@ -1774,12 +1774,12 @@ impl Module {
                     .await?;
 
                 let counterparty_latest_height = voyager_client
-                    .query_latest_height(client_meta.counterparty_chain_id.clone(), false)
+                    .query_latest_height(client_state_meta.counterparty_chain_id.clone(), false)
                     .await?;
 
                 let source_channel = voyager_client
                     .query_ibc_state(
-                        client_meta.counterparty_chain_id.clone(),
+                        client_state_meta.counterparty_chain_id.clone(),
                         counterparty_latest_height,
                         ibc_union_spec::path::ChannelPath {
                             channel_id: packet.source_channel_id,
@@ -1818,7 +1818,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,
@@ -1856,8 +1856,8 @@ impl Module {
                     )
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         height.into(),
                         destination_connection.client_id,
@@ -1865,12 +1865,12 @@ impl Module {
                     .await?;
 
                 let counterparty_latest_height = voyager_client
-                    .query_latest_height(client_meta.counterparty_chain_id.clone(), false)
+                    .query_latest_height(client_state_meta.counterparty_chain_id.clone(), false)
                     .await?;
 
                 let source_channel = voyager_client
                     .query_ibc_state(
-                        client_meta.counterparty_chain_id.clone(),
+                        client_state_meta.counterparty_chain_id.clone(),
                         counterparty_latest_height,
                         ibc_union_spec::path::ChannelPath {
                             channel_id: packet.source_channel_id,
@@ -1909,7 +1909,7 @@ impl Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     provable_height,
                     ibc_spec_id: IbcUnion::ID,

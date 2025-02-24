@@ -166,7 +166,7 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp_nanos: Timestamp::from_nanos(cs.timestamp),
+            timestamp: Timestamp::from_nanos(cs.timestamp),
         })
     }
 

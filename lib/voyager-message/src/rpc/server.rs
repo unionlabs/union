@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::{anyhow, Context};
+use futures::TryFutureExt;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -14,7 +15,7 @@ use jsonrpsee::{
 use serde_json::Value;
 use tracing::{debug, info_span, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
-use voyager_core::{IbcSpecId, Timestamp};
+use voyager_core::{ConsensusStateMeta, IbcSpecId, Timestamp};
 use voyager_vm::ItemId;
 
 // use valuable::Valuable;
@@ -28,11 +29,148 @@ use crate::{
         RawProofModuleClient, RawStateModuleClient,
     },
     rpc::{
-        json_rpc_error_to_error_object, IbcProof, IbcState, SelfClientState, SelfConsensusState,
-        VoyagerRpcServer,
+        json_rpc_error_to_error_object, server::cache::StateRequest, IbcProof, IbcState,
+        SelfClientState, SelfConsensusState, VoyagerRpcServer,
     },
     ExtensionsExt, IbcSpec, IbcStorePathKey, RawClientId, FATAL_JSONRPC_ERROR_CODE,
 };
+
+pub mod cache {
+    use std::{future::Future, time::Duration};
+
+    use futures::TryFutureExt;
+    use jsonrpsee::core::RpcResult;
+    use moka::policy::EvictionPolicy;
+    use opentelemetry::KeyValue;
+    use schemars::JsonSchema;
+    use serde::{de::DeserializeOwned, Deserialize, Serialize};
+    use serde_json::Value;
+    use tracing::trace;
+    use unionlabs::ibc::core::client::height::Height;
+    use voyager_core::{ChainId, IbcSpec, IbcSpecId, IbcStorePathKey};
+
+    #[derive(Debug, Clone)]
+    pub struct Cache {
+        state_cache: moka::future::Cache<StateRequest, Value>,
+        state_cache_size_metric: opentelemetry::metrics::Gauge<u64>,
+        state_cache_hit_counter_metric: opentelemetry::metrics::Counter<u64>,
+        state_cache_miss_counter_metric: opentelemetry::metrics::Counter<u64>,
+        // proof_cache: moka::future::Cache,
+    }
+
+    impl Cache {
+        #[allow(clippy::new_without_default)]
+        pub fn new(config: Config) -> Self {
+            Self {
+                state_cache: moka::future::CacheBuilder::new(config.state.capacity)
+                    // .expire_after()
+                    .time_to_live(Duration::from_secs(config.state.time_to_live))
+                    .time_to_idle(Duration::from_secs(config.state.time_to_idle))
+                    .eviction_policy(EvictionPolicy::lru())
+                    .build(),
+                state_cache_size_metric: opentelemetry::global::meter("voyager.cache.state")
+                    .u64_gauge("size")
+                    .build(),
+                state_cache_hit_counter_metric: opentelemetry::global::meter("voyager.cache.state")
+                    .u64_counter("hit")
+                    .build(),
+                state_cache_miss_counter_metric: opentelemetry::global::meter(
+                    "voyager.cache.state",
+                )
+                .u64_counter("miss")
+                .build(),
+            }
+        }
+
+        pub async fn state<T: Serialize + DeserializeOwned>(
+            &self,
+            state_request: StateRequest,
+            fut: impl Future<Output = RpcResult<Option<T>>>,
+        ) -> RpcResult<Option<T>> {
+            let attributes = &[KeyValue::new(
+                "chain_id",
+                state_request.chain_id.to_string(),
+            )];
+
+            self.state_cache_size_metric
+                .record(self.state_cache.entry_count(), attributes);
+
+            let init = fut
+                .map_ok(|state| {
+                    serde_json::to_value(state).expect("serialization is infallible; qed;")
+                })
+                .await?;
+
+            if init.is_null() {
+                Ok(None)
+            } else {
+                let entry = self.state_cache.entry(state_request).or_insert(init).await;
+
+                if entry.is_fresh() {
+                    self.state_cache_miss_counter_metric.add(1, attributes);
+                } else {
+                    self.state_cache_hit_counter_metric.add(1, attributes);
+                }
+
+                let value = entry.into_value();
+
+                trace!(%value, "cached value");
+
+                Ok(serde_json::from_value(value)
+                    .expect("infallible; only valid values are inserted into the cache; qed;"))
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+    pub struct Config {
+        pub state: CacheConfig,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
+    pub struct CacheConfig {
+        pub capacity: u64,
+        pub time_to_live: u64,
+        pub time_to_idle: u64,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct StateRequest {
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        height: Height,
+        path: Value,
+    }
+
+    impl StateRequest {
+        pub fn new<P: IbcStorePathKey>(
+            chain_id: ChainId,
+            height: Height,
+            path: <P::Spec as IbcSpec>::StorePath,
+        ) -> Self {
+            Self {
+                chain_id,
+                ibc_spec_id: P::Spec::ID,
+                height,
+                path: serde_json::to_value(path).expect("serialization is infallible; qed;"),
+            }
+        }
+
+        pub fn new_raw(
+            chain_id: ChainId,
+            ibc_spec_id: IbcSpecId,
+            height: Height,
+            path: Value,
+        ) -> Self {
+            Self {
+                chain_id,
+                ibc_spec_id,
+                height,
+                path,
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Server {
@@ -43,14 +181,16 @@ pub struct Server {
 #[derive(Debug, Clone)]
 pub struct ServerInner {
     modules: OnceLock<Arc<Modules>>,
+    cache: cache::Cache,
 }
 
 impl Server {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+    pub fn new(cache_config: cache::Config) -> Self {
         Server {
             inner: Arc::new(ServerInner {
                 modules: OnceLock::new(),
+                cache: cache::Cache::new(cache_config),
             }),
             item_id: None,
         }
@@ -223,7 +363,7 @@ impl Server {
     }
 
     #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, height = %at, client_id = %client_id.0))]
-    pub async fn client_meta(
+    pub async fn client_state_meta(
         &self,
         chain_id: &ChainId,
         ibc_spec_id: &IbcSpecId,
@@ -232,7 +372,7 @@ impl Server {
     ) -> RpcResult<Option<ClientStateMeta>> {
         self.span()
             .in_scope(|| async {
-                trace!("fetching client meta");
+                trace!("fetching client state meta");
 
                 let height = self.query_height(chain_id, at).await?;
 
@@ -252,7 +392,7 @@ impl Server {
                     return Ok(None);
                 };
 
-                let client_state = state_module
+                let raw_client_state = state_module
                     .query_ibc_state_raw(
                         height,
                         (self
@@ -267,9 +407,9 @@ impl Server {
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
-                trace!(%client_state);
+                trace!(%raw_client_state);
 
-                let client_state = serde_json::from_value::<Option<Bytes>>(client_state)
+                let client_state = serde_json::from_value::<Option<Bytes>>(raw_client_state)
                     .with_context(|| format!("querying client state for client {client_id} at {height} on {chain_id}"))
                     .map_err(|e| fatal_error(&*e))?;
 
@@ -295,7 +435,88 @@ impl Server {
                     client_state_meta.chain_id = %meta.counterparty_chain_id,
                     %client_info.ibc_interface,
                     %client_info.client_type,
-                    "fetched client meta"
+                    "fetched client state meta"
+                );
+
+                Ok(Some(meta))
+            })
+            .await
+    }
+
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, height = %at, client_id = %client_id.0))]
+    pub async fn consensus_state_meta(
+        &self,
+        chain_id: &ChainId,
+        ibc_spec_id: &IbcSpecId,
+        at: QueryHeight,
+        client_id: RawClientId,
+        counterparty_height: Height,
+    ) -> RpcResult<Option<ConsensusStateMeta>> {
+        self.span()
+            .in_scope(|| async {
+                trace!("fetching consensus state meta");
+
+                let height = self.query_height(chain_id, at).await?;
+
+                let modules = self.inner.modules()?;
+
+                let state_module = modules
+                    .state_module(chain_id, ibc_spec_id)?
+                    .with_id(self.item_id);
+
+                let client_info = state_module
+                    .client_info_raw(client_id.clone())
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                let Some(client_info) = client_info else {
+                    trace!("client info for client {client_id} not found at height {height} on chain {chain_id}");
+                    return Ok(None);
+                };
+
+                let raw_consensus_state = state_module
+                    .query_ibc_state_raw(
+                        height,
+                        (self
+                            .modules()?
+                            .ibc_spec_handlers
+                            .handlers
+                            .get(ibc_spec_id)
+                            .ok_or_else(|| fatal_error(&*anyhow!("ibc spec {ibc_spec_id} is not supported in this build of voyager")))?
+                            .consensus_state_path)(client_id.clone(), counterparty_height.to_string())
+                        .map_err(|err| fatal_error(&*err))?,
+                    )
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                trace!(%raw_consensus_state);
+
+                let client_state = serde_json::from_value::<Option<Bytes>>(raw_consensus_state)
+                    .with_context(|| format!("querying consensus state for client {client_id} at {height} on {chain_id}"))
+                    .map_err(|e| fatal_error(&*e))?;
+
+                let Some(consensus_state) = client_state else {
+                    trace!("consensus state for client {client_id} not found at height {height} on chain {chain_id}");
+                    return Ok(None);
+                };
+
+                let meta = modules
+                    .client_module(
+                        &client_info.client_type,
+                        &client_info.ibc_interface,
+                        ibc_spec_id,
+                    )
+                    ?
+                    .with_id(self.item_id)
+                    .decode_consensus_state_meta(consensus_state)
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                trace!(
+                    consensus_state_meta.timestamp = %meta.timestamp,
+                    %client_info.ibc_interface,
+                    %client_info.client_type,
+                    "fetched consensus state meta"
                 );
 
                 Ok(Some(meta))
@@ -313,9 +534,9 @@ impl Server {
     ) -> RpcResult<IbcState<Value>> {
         self.span()
             .in_scope(|| async {
-                let height = self.query_height(&chain_id, height).await?;
+                trace!("fetching ibc state");
 
-                debug!("fetching ibc state");
+                let height = self.query_height(&chain_id, height).await?;
 
                 let state_module = self
                     .inner
@@ -323,18 +544,33 @@ impl Server {
                     .state_module(&chain_id, &ibc_spec_id)?
                     .with_id(self.item_id);
 
-                let state = state_module
-                    .query_ibc_state_raw(height, path)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                let state = self
+                    .inner
+                    .cache
+                    .state::<Value>(
+                        StateRequest::new_raw(
+                            chain_id.clone(),
+                            ibc_spec_id.clone(),
+                            height,
+                            path.clone(),
+                        ),
+                        state_module
+                            .query_ibc_state_raw(height, into_value(path.clone()))
+                            .map_ok(|state| {
+                                // TODO: Use valuable here
+                                trace!(%state, "fetched ibc state");
 
-                // TODO: Use valuable here
-                debug!(%state, "fetched ibc state");
+                                if state.is_null() {
+                                    None
+                                } else {
+                                    Some(state)
+                                }
+                            })
+                            .map_err(|e| json_rpc_error_to_error_object(e)),
+                    )
+                    .await?;
 
-                Ok(IbcState {
-                    height,
-                    state: if state.is_null() { None } else { Some(state) },
-                })
+                Ok(IbcState { height, state })
             })
             .await
     }
@@ -393,18 +629,24 @@ impl Server {
                     .state_module(chain_id, &P::Spec::ID)?
                     .with_id(self.item_id);
 
-                let state = state_module
-                    .query_ibc_state_raw(height, into_value(path.clone()))
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                let state = self
+                    .inner
+                    .cache
+                    .state::<P::Value>(
+                        StateRequest::new::<P>(chain_id.clone(), height, path.clone()),
+                        state_module
+                            .query_ibc_state_raw(height, into_value(path.clone()))
+                            .map_ok(|state| {
+                                // TODO: Use valuable here
+                                trace!(%state, "fetched ibc state");
 
-                // TODO: Use valuable here
-                trace!(%state, "fetched ibc state");
+                                serde_json::from_value(state).unwrap()
+                            })
+                            .map_err(|e| json_rpc_error_to_error_object(e)),
+                    )
+                    .await?;
 
-                Ok(IbcState {
-                    height,
-                    state: serde_json::from_value(state).unwrap(),
-                })
+                Ok(IbcState { height, state })
             })
             .await
     }
@@ -718,7 +960,7 @@ impl VoyagerRpcServer for Server {
             .await
     }
 
-    async fn client_meta(
+    async fn client_state_meta(
         &self,
         e: &Extensions,
         chain_id: ChainId,
@@ -727,7 +969,21 @@ impl VoyagerRpcServer for Server {
         client_id: RawClientId,
     ) -> RpcResult<Option<ClientStateMeta>> {
         self.with_id(e.try_get().ok().cloned())
-            .client_meta(&chain_id, &ibc_spec_id, at, client_id)
+            .client_state_meta(&chain_id, &ibc_spec_id, at, client_id)
+            .await
+    }
+
+    async fn consensus_state_meta(
+        &self,
+        e: &Extensions,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        at: QueryHeight,
+        client_id: RawClientId,
+        counterparty_height: Height,
+    ) -> RpcResult<Option<ConsensusStateMeta>> {
+        self.with_id(e.try_get().ok().cloned())
+            .consensus_state_meta(&chain_id, &ibc_spec_id, at, client_id, counterparty_height)
             .await
     }
 

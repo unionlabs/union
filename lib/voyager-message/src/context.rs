@@ -272,6 +272,7 @@ impl Context {
         equivalent_chain_ids: EquivalentChainIds,
         register_ibc_spec_handlers: fn(&mut IbcSpecHandlers),
         ipc_client_request_timeout: Duration,
+        cache_config: crate::rpc::server::cache::Config,
     ) -> anyhow::Result<Self> {
         let cancellation_token = CancellationToken::new();
 
@@ -297,7 +298,7 @@ impl Context {
 
         let mut interest_filters = HashMap::default();
 
-        let main_rpc_server = Server::new();
+        let main_rpc_server = Server::new(cache_config);
 
         info!("spawning {} plugins", plugin_configs.len());
 
