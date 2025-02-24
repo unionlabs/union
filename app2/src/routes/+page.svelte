@@ -1,18 +1,29 @@
 <script lang="ts">
-import { Console, Context, Option, Effect, Fiber, pipe, Random, Schedule } from "effect"
+import { Console, Context, Option, Effect, Fiber, Schema, pipe, Random, Schedule } from "effect"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
 import { onMount } from "svelte"
+import { decodeUnknown } from "effect/Duration"
 
-let responseData: Option.Option<unknown> = $state(Option.none())
+const Block = Schema.Struct({
+  result: Schema.Struct({
+    block_id: Schema.Struct({
+      hash: Schema.String
+    })
+  })
+})
+
+let responseData: Option.Option<typeof Block.Type> = $state(Option.none())
 let responseError: Option.Option<unknown> = $state(Option.none())
 
 class SvelteStore extends Context.Tag("SvelteStore")<
   SvelteStore,
-  { readonly next: Effect.Effect<number> }
+  { readonly write: (value: unknown) => void }
 >() {}
 
 const fetcher = Effect.gen(function* () {
   const client = yield* HttpClient.HttpClient
+  const store = yield* SvelteStore
+
   yield* Effect.log("fetching data")
   const r = yield* Random.next
   const response = yield* client.get(
@@ -20,7 +31,9 @@ const fetcher = Effect.gen(function* () {
   )
   const json = yield* response.json
   yield* Effect.log("fetched data")
-  return json
+
+  const block = yield* Schema.decodeUnknown(Block)(json)
+  return block
 })
 
 const fetcherPipeline = pipe(
@@ -37,7 +50,12 @@ const fetcherPipeline = pipe(
   }),
   Effect.catchAll(_ => Effect.succeed(null)),
   Effect.scoped,
-  Effect.provide(FetchHttpClient.layer)
+  Effect.provide(FetchHttpClient.layer),
+  Effect.provideService(SvelteStore, {
+    write: (value: typeof Block.Type) => {
+      responseData = Option.some(value)
+    }
+  })
 )
 
 const program = Effect.repeat(
@@ -62,10 +80,10 @@ onMount(() => {
 
 {#if Option.isSome(responseData)}
   <pre class="font-mono">
-    {JSON.stringify(responseData.value.result.block_id.hash, null, 2)}
+    {JSON.stringify(responseData.value, null, 2)}
   </pre>
 {:else}
-  Loading... yeah wahooo
+  Loading...
 {/if}
 {#if Option.isSome(responseError)}
   <pre class="font-mono bg-red-500">
