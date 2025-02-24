@@ -7,9 +7,11 @@ use cosmos_client::{Ctx, GasConfig};
 use cosmwasm_std::Addr;
 use hex_literal::hex;
 use protos::cosmwasm::wasm::v1::{
-    MsgExecuteContract, MsgExecuteContractResponse, MsgInstantiateContract2,
-    MsgInstantiateContract2Response, MsgMigrateContract, MsgMigrateContractResponse, MsgStoreCode,
-    MsgStoreCodeResponse, QuerySmartContractStateRequest, QuerySmartContractStateResponse,
+    AccessConfig, AccessType, MsgExecuteContract, MsgExecuteContractResponse,
+    MsgInstantiateContract2, MsgInstantiateContract2Response, MsgMigrateContract,
+    MsgMigrateContractResponse, MsgStoreCode, MsgStoreCodeResponse, MsgUpdateInstantiateConfig,
+    MsgUpdateInstantiateConfigResponse, QuerySmartContractStateRequest,
+    QuerySmartContractStateResponse,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -35,6 +37,8 @@ enum App {
         contracts: PathBuf,
         #[arg(long)]
         output: Option<PathBuf>,
+        #[arg(long)]
+        permissioned: bool,
         #[command(flatten)]
         gas_config: GasConfigArgs,
     },
@@ -144,7 +148,12 @@ pub struct Ucs03Config {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum TokenMinterConfig {
-    Cw20 { cw20_base: PathBuf },
+    Cw20 {
+        /// The path to the cw20-base contract code.
+        ///
+        /// This MUST be the unionlabs fork of cw20-base, which forces instantiation through the migrate entrypoint, such that it can have a deterministic address.
+        cw20_base: PathBuf,
+    },
     Native,
 }
 
@@ -231,6 +240,7 @@ async fn do_main() -> Result<()> {
             private_key,
             contracts,
             output,
+            permissioned,
             gas_config,
         } => {
             let contracts = serde_json::from_slice::<ContractPaths>(
@@ -257,7 +267,10 @@ async fn do_main() -> Result<()> {
                             MsgStoreCode {
                                 sender: ctx.signer().to_string(),
                                 wasm_byte_code: BYTECODE_BASE_BYTECODE.to_vec(),
-                                ..Default::default()
+                                instantiate_permission: Some(AccessConfig {
+                                    permission: AccessType::Everybody.into(),
+                                    addresses: vec![],
+                                }), // ..Default::default()
                             },
                             "",
                         )
@@ -370,14 +383,16 @@ async fn do_main() -> Result<()> {
             if let Some(ucs03_config) = contracts.app.ucs03 {
                 let salt = format!("{APP}/{UCS03}");
 
-                let address = instantiate2_address(
+                let ucs03_address = instantiate2_address(
                     ctx.signer().to_string().parse().unwrap(),
                     sha2(BYTECODE_BASE_BYTECODE),
                     &salt,
                 )
                 .unwrap();
 
-                let state = ctx.contract_deploy_state(address.clone()).await?;
+                info!("ucs03 address is {ucs03_address}");
+
+                let state = ctx.contract_deploy_state(ucs03_address.clone()).await?;
 
                 if let ContractDeployState::None | ContractDeployState::Instantiated = state {
                     let (tx_hash, response) = ctx
@@ -385,16 +400,50 @@ async fn do_main() -> Result<()> {
                             MsgStoreCode {
                                 sender: ctx.signer().to_string(),
                                 wasm_byte_code: std::fs::read(ucs03_config.token_minter_path)?,
-                                ..Default::default()
+                                instantiate_permission: None,
                             },
                             "",
                         )
                         .await
                         .context("store minter code")?;
 
-                    let code_id = response.code_id;
+                    let minter_code_id = response.code_id;
 
-                    info!(%tx_hash, code_id, "minter stored");
+                    info!(%tx_hash, minter_code_id, "minter stored");
+
+                    // on permissioned cosmwasm, we must specify that this code can be instantiated by the ucs03 contract
+                    if permissioned {
+                        let (tx_hash, _) = ctx
+                            .tx::<_, MsgUpdateInstantiateConfigResponse>(
+                                MsgUpdateInstantiateConfig {
+                                    sender: ctx.signer().to_string(),
+                                    code_id: minter_code_id,
+                                    new_instantiate_permission: Some(AccessConfig {
+                                        permission: AccessType::AnyOfAddresses.into(),
+                                        addresses: vec![ucs03_address.clone()],
+                                    }),
+                                },
+                                "",
+                            )
+                            .await
+                            .context("update instantiate perms of cw20-base")?;
+
+                        info!(%tx_hash, "cw20-base instantiate permissions updated");
+
+                        // the bytecode base code id must be instantiable by ucs03
+                        ctx.update_bytecode_base_instantiate_permissions(
+                            bytecode_base_code_id,
+                            &ucs03_address,
+                        )
+                        .await?;
+                    }
+
+                    let token_minter_address = instantiate2_address(
+                        ucs03_address.parse().unwrap(),
+                        response.checksum.try_into().unwrap(),
+                        &ucs03_zkgm::contract::minter_salt(),
+                    )
+                    .unwrap();
 
                     let minter_init_msg = match ucs03_config.token_minter_config {
                         TokenMinterConfig::Cw20 { cw20_base } => {
@@ -403,16 +452,43 @@ async fn do_main() -> Result<()> {
                                     MsgStoreCode {
                                         sender: ctx.signer().to_string(),
                                         wasm_byte_code: std::fs::read(cw20_base)?,
-                                        ..Default::default()
+                                        instantiate_permission: None,
                                     },
                                     "",
                                 )
                                 .await
-                                .context("store minter code")?;
+                                .context("store cw20-base code")?;
 
                             let code_id = response.code_id;
 
                             info!(%tx_hash, code_id, "cw20-base stored");
+
+                            // on permissioned cosmwasm, we must specify that this code can be instantiated by the token minter
+                            if permissioned {
+                                let (tx_hash, _) = ctx
+                                    .tx::<_, MsgUpdateInstantiateConfigResponse>(
+                                        MsgUpdateInstantiateConfig {
+                                            sender: ctx.signer().to_string(),
+                                            code_id,
+                                            new_instantiate_permission: Some(AccessConfig {
+                                                permission: AccessType::AnyOfAddresses.into(),
+                                                addresses: vec![token_minter_address.clone()],
+                                            }),
+                                        },
+                                        "",
+                                    )
+                                    .await
+                                    .context("update instantiate perms of cw20-base")?;
+
+                                info!(%tx_hash, "cw20-base instantiate permissions updated");
+
+                                // the bytecode-base code must also be instantiable by the token minter
+                                ctx.update_bytecode_base_instantiate_permissions(
+                                    bytecode_base_code_id,
+                                    &token_minter_address,
+                                )
+                                .await?;
+                            }
 
                             TokenMinterInitMsg::Cw20 {
                                 cw20_base_code_id: code_id,
@@ -429,7 +505,7 @@ async fn do_main() -> Result<()> {
                             config: ucs03_zkgm::msg::Config {
                                 admin: Addr::unchecked(ctx.signer().to_string()),
                                 ibc_host: Addr::unchecked(core_address.clone()),
-                                token_minter_code_id: code_id,
+                                token_minter_code_id: minter_code_id,
                             },
                             minter_init_msg,
                         },
@@ -438,7 +514,7 @@ async fn do_main() -> Result<()> {
                     .await?;
                 }
 
-                contract_addresses.app.ucs03 = Some(address);
+                contract_addresses.app.ucs03 = Some(ucs03_address);
             }
 
             write_output(output, contract_addresses)?;
@@ -882,6 +958,74 @@ impl Deployer {
             }
             None => Ok(ContractDeployState::None),
         }
+    }
+
+    #[instrument(skip_all, fields(bytecode_base_code_id, address))]
+    async fn update_bytecode_base_instantiate_permissions(
+        &self,
+        bytecode_base_code_id: u64,
+        address: &str,
+    ) -> Result<()> {
+        let bytecode_base_code_info = self
+            .client()
+            .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryCodeResponse>(
+                "/cosmwasm.wasm.v1.Query/Code",
+                &protos::cosmwasm::wasm::v1::QueryCodeRequest {
+                    code_id: bytecode_base_code_id,
+                },
+                None,
+                false,
+            )
+            .await?
+            .into_result()
+            .context("querying bytecode base code id")?
+            .expect("must exist");
+
+        assert_eq!(
+            bytecode_base_code_info.data, BYTECODE_BASE_BYTECODE,
+            "invalid bytecode-base code"
+        );
+
+        if !bytecode_base_code_info
+            .code_info
+            .as_ref()
+            .unwrap()
+            .instantiate_permission
+            .as_ref()
+            .unwrap()
+            .addresses
+            .iter()
+            .any(|a| a == address)
+        {
+            let (tx_hash, _) = self
+                .tx::<_, MsgUpdateInstantiateConfigResponse>(
+                    MsgUpdateInstantiateConfig {
+                        sender: self.signer().to_string(),
+                        code_id: bytecode_base_code_id,
+                        new_instantiate_permission: Some(AccessConfig {
+                            permission: AccessType::AnyOfAddresses.into(),
+                            addresses: bytecode_base_code_info
+                                .code_info
+                                .unwrap()
+                                .instantiate_permission
+                                .unwrap()
+                                .addresses
+                                .into_iter()
+                                .chain([address.to_owned()])
+                                .collect(),
+                        }),
+                    },
+                    "",
+                )
+                .await
+                .context("update bytecode-base instantiate permissions")?;
+
+            info!(%tx_hash, "{address} added to bytecode-base instantiate permissions");
+        } else {
+            info!("{address} is already in bytecode-base instantiate permissions");
+        };
+
+        Ok(())
     }
 }
 

@@ -23,30 +23,143 @@
         crateDirFromRoot = "cosmwasm/deployer";
       };
 
-      deploy-full =
-        args@{
-          name,
-          rpc_url,
-          gas_config,
-          private_key,
-          ...
-        }:
-        pkgs.writeShellApplication {
-          name = "${name}-deploy-full";
-          runtimeInputs = [ cosmwasm-deployer.packages.cosmwasm-deployer ];
-          text = ''
-            RUST_LOG=info \
-              cosmwasm-deployer \
-              deploy-full \
-              --private-key ${private_key} \
-              --gas-price ${toString gas_config.gas_price} \
-              --gas-denom ${toString gas_config.gas_denom} \
-              --gas-multiplier ${toString gas_config.gas_multiplier} \
-              --max-gas ${toString gas_config.max_gas} \
-              --contracts ${chain-deployments-json args} \
-              --rpc-url ${rpc_url}
-          '';
-        };
+      networks = [
+        {
+          name = "union-devnet";
+          rpc_url = "http://localhost:26657";
+          # alice from the devnet keyring
+          private_key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
+          gas_config = {
+            gas_denom = "muno";
+            gas_multiplier = "1.1";
+            gas_price = "1.0";
+            max_gas = 10000000;
+          };
+          ucs03_type = "cw20";
+          bech32_prefix = "union";
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
+        }
+        {
+          name = "union-testnet";
+          rpc_url = "https://rpc.testnet-9.union.build";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_denom = "muno";
+            gas_multiplier = "1.1";
+            gas_price = "1.0";
+            max_gas = 10000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "union";
+          lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
+        }
+        {
+          name = "stargaze-testnet";
+          rpc_url = "https://rpc.elgafar-1.stargaze.chain.kitchen";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_price = "1.0";
+            gas_denom = "ustars";
+            gas_multiplier = "1.1";
+            max_gas = 10000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "stars";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          name = "osmosis-testnet";
+          rpc_url = "https://osmosis-testnet-rpc.polkachu.com";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_price = "0.05";
+            gas_denom = "uosmo";
+            gas_multiplier = "1.1";
+            max_gas = 300000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "osmo";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          name = "babylon-testnet";
+          rpc_url = "https://babylon-testnet-rpc.polkachu.com";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_price = "0.003";
+            gas_denom = "ubbn";
+            gas_multiplier = "1.1";
+            max_gas = 10000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "bbn";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          name = "stride-testnet";
+          rpc_url = "https://stride-testnet-rpc.polkachu.com";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_price = "0.1";
+            gas_denom = "ustrd";
+            gas_multiplier = "1.1";
+            max_gas = 60000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          permissioned = true;
+          bech32_prefix = "stride";
+          lightclients = [
+            "cometbls"
+            # "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          name = "xion-testnet";
+          rpc_url = "https://rpc.xion-testnet-2.burnt.com/";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_price = "0.002";
+            gas_denom = "uxion";
+            gas_multiplier = "1.5";
+            max_gas = 60000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "xion";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+      ];
 
       # directory => {}
       all-lightclients = {
@@ -94,6 +207,16 @@
         };
       };
 
+      # client type => package name
+      all-apps = {
+        # ucs00-pingpong = {
+        #   name = "ucs00";
+        # };
+        ucs03-zkgm = {
+          name = "ucs03";
+        };
+      };
+
       ucs03-configs = {
         cw20 = {
           path = "${self'.packages.ucs03-zkgm}";
@@ -113,15 +236,32 @@
         };
       };
 
-      # client type => package name
-      all-apps = {
-        # ucs00-pingpong = {
-        #   name = "ucs00";
-        # };
-        ucs03-zkgm = {
-          name = "ucs03";
+      deploy-full =
+        args@{
+          name,
+          rpc_url,
+          gas_config,
+          private_key,
+          permissioned ? false,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "${name}-deploy-full";
+          runtimeInputs = [ cosmwasm-deployer.packages.cosmwasm-deployer ];
+          text = ''
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              deploy-full \
+              --private-key ${private_key} \
+              --gas-price ${toString gas_config.gas_price} \
+              --gas-denom ${toString gas_config.gas_denom} \
+              --gas-multiplier ${toString gas_config.gas_multiplier} \
+              --max-gas ${toString gas_config.max_gas} \
+              --contracts ${chain-deployments-json args} \
+              ${if permissioned then "--permissioned " else ""} \
+              --rpc-url ${rpc_url}
+          '';
         };
-      };
 
       chain-deployments-json =
         { lightclients, apps, ... }:
@@ -261,143 +401,6 @@
             --deployer "$1" ''${2+--output $2} 
         '';
       };
-
-      networks = [
-        {
-          name = "union-devnet";
-          rpc_url = "http://localhost:26657";
-          # alice from the devnet keyring
-          private_key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
-          gas_config = {
-            gas_denom = "muno";
-            gas_multiplier = "1.1";
-            gas_price = "1.0";
-            max_gas = 10000000;
-          };
-          ucs03_type = "cw20";
-          bech32_prefix = "union";
-          apps = {
-            ucs03 = ucs03-configs.cw20;
-          };
-          lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
-        }
-        {
-          name = "union-testnet";
-          rpc_url = "https://rpc.testnet-9.union.build";
-          private_key = ''"$1"'';
-          gas_config = {
-            gas_denom = "muno";
-            gas_multiplier = "1.1";
-            gas_price = "1.0";
-            max_gas = 10000000;
-          };
-          apps = {
-            ucs03 = ucs03-configs.cw20;
-          };
-          bech32_prefix = "union";
-          lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
-        }
-        {
-          name = "stargaze-testnet";
-          rpc_url = "https://rpc.elgafar-1.stargaze.chain.kitchen";
-          private_key = ''"$1"'';
-          gas_config = {
-            gas_price = "1.0";
-            gas_denom = "ustars";
-            gas_multiplier = "1.1";
-            max_gas = 10000000;
-          };
-          apps = {
-            ucs03 = ucs03-configs.cw20;
-          };
-          bech32_prefix = "stars";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "state-lens-ics23-mpt"
-          ];
-        }
-        {
-          name = "osmosis-testnet";
-          rpc_url = "https://osmosis-testnet-rpc.polkachu.com";
-          private_key = ''"$1"'';
-          gas_config = {
-            gas_price = "0.05";
-            gas_denom = "uosmo";
-            gas_multiplier = "1.1";
-            max_gas = 300000000;
-          };
-          apps = {
-            ucs03 = ucs03-configs.cw20;
-          };
-          bech32_prefix = "osmo";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "state-lens-ics23-mpt"
-          ];
-        }
-        {
-          name = "babylon-testnet";
-          rpc_url = "https://babylon-testnet-rpc.polkachu.com";
-          private_key = ''"$1"'';
-          gas_config = {
-            gas_price = "0.003";
-            gas_denom = "ubbn";
-            gas_multiplier = "1.1";
-            max_gas = 10000000;
-          };
-          apps = {
-            ucs03 = ucs03-configs.cw20;
-          };
-          bech32_prefix = "bbn";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "state-lens-ics23-mpt"
-          ];
-        }
-        {
-          name = "stride-testnet";
-          rpc_url = "https://stride-testnet-rpc.polkachu.com";
-          private_key = ''"$1"'';
-          gas_config = {
-            gas_price = "0.1";
-            gas_denom = "ustrd";
-            gas_multiplier = "1.1";
-            max_gas = 60000000;
-          };
-          apps = {
-            ucs03 = ucs03-configs.cw20;
-          };
-          bech32_prefix = "stride";
-          lightclients = [
-            "cometbls"
-            # "tendermint"
-            "state-lens-ics23-mpt"
-          ];
-        }
-        {
-          name = "xion-testnet";
-          rpc_url = "https://rpc.xion-testnet-2.burnt.com/";
-          private_key = ''"$1"'';
-          gas_config = {
-            gas_price = "0.002";
-            gas_denom = "uxion";
-            gas_multiplier = "1.5";
-            max_gas = 60000000;
-          };
-          apps = {
-            ucs03 = ucs03-configs.cw20;
-          };
-          bech32_prefix = "xion";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "state-lens-ics23-mpt"
-          ];
-        }
-      ];
 
       mk-lightclient =
         dir:

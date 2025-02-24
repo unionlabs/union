@@ -129,6 +129,10 @@ impl Ctx {
         msg: M,
         memo: impl AsRef<str>,
     ) -> Result<(H256, R)> {
+        // dbg!(&msg);
+
+        // panic!();
+
         let (tx_hash, result) = self
             .broadcast_tx_commit(
                 [protos::google::protobuf::Any {
