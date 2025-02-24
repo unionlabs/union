@@ -1135,7 +1135,9 @@ fn transfer(
 }
 
 #[cosmwasm_schema::cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    token_minter_code_id: u64,
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Response> {
@@ -1155,7 +1157,17 @@ pub fn migrate(
 
             Ok((res, None))
         },
-        |_deps, _migrate_msg, _current_version| Ok((Response::default(), None)),
+        |deps, migrate_msg, _current_version| {
+            let token_minter = TOKEN_MINTER.load(deps.storage)?;
+            Ok((
+                Response::default().add_message(WasmMsg::Migrate {
+                    contract_addr: token_minter.to_string(),
+                    new_code_id: migrate_msg.token_minter_code_id,
+                    msg: to_json_binary(&cosmwasm_std::Empty {})?,
+                }),
+                None,
+            ))
+        },
     )
 }
 
