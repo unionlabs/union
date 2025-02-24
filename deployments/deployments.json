@@ -90,7 +90,7 @@
         }
       }
     },
-    "channels": [1, 3, 4, 5, 8, 27]
+    "channels": [1, 3, 4, 5, 8, 21]
   },
   {
     "chain_id": "elgafar-1",
