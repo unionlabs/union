@@ -4,9 +4,9 @@ use alloy::{primitives::U256, sol_types::SolValue};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, to_json_string, wasm_execute, Addr, Attribute, Binary, Coin, CosmosMsg, Deps,
-    DepsMut, Env, Event, MessageInfo, QueryRequest, Reply, Response, StdError, StdResult, SubMsg,
-    SubMsgResult, Uint128, Uint256, WasmMsg,
+    instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Attribute, Binary,
+    CodeInfoResponse, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, QueryRequest, Reply,
+    Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
@@ -50,18 +50,44 @@ pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
 /// Instantiate `ucs03-zkgm`.
 ///
 /// This will instantiate the minter contract with the provided [`TokenMinterInitMsg`][crate::msg::TokenMinterInitMsg]. The admin of the minter contract is set to the instantiator of `ucs03-zkgm`, under the assumption that the caller will also set themselves as admin, as it is not possible for a contract to check the admin of itself during instantiation.
-pub fn init(deps: DepsMut, msg: InitMsg) -> Result<Response, ContractError> {
+pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractError> {
     CONFIG.save(deps.storage, &msg.config)?;
 
-    let msg = WasmMsg::Instantiate {
+    let salt: Binary = format!("{PROTOCOL_VERSION}/{ZKGM_TOKEN_MINTER_LABEL}")
+        .into_bytes()
+        .into();
+
+    let minter_address = instantiate2_address(
+        get_code_hash(deps.as_ref(), msg.config.token_minter_code_id)?.as_ref(),
+        &deps.api.addr_canonicalize(env.contract.address.as_str())?,
+        &salt,
+    )
+    .expect("valid instantiate2 address");
+
+    TOKEN_MINTER.save(deps.storage, &deps.api.addr_humanize(&minter_address)?)?;
+
+    let msg = WasmMsg::Instantiate2 {
         admin: Some(msg.config.admin.to_string()),
         code_id: msg.config.token_minter_code_id,
         msg: to_json_binary(&msg.minter_init_msg)?,
         funds: vec![],
         label: ZKGM_TOKEN_MINTER_LABEL.to_string(),
+        salt,
     };
 
-    Ok(Response::new().add_submessage(SubMsg::reply_on_success(msg, TOKEN_INIT_REPLY_ID)))
+    Ok(Response::new().add_submessage(SubMsg::reply_never(msg)))
+}
+
+fn get_code_hash(deps: Deps, code_id: u64) -> StdResult<H256> {
+    Ok(H256::new(
+        *deps
+            .querier
+            .query::<CodeInfoResponse>(&QueryRequest::Wasm(cosmwasm_std::WasmQuery::CodeInfo {
+                code_id,
+            }))?
+            .checksum
+            .as_ref(),
+    ))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -986,25 +1012,6 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
                 }
             }
         }
-        TOKEN_INIT_REPLY_ID => {
-            let addr = reply
-                .result
-                .into_result()
-                .expect("token init only captures success case")
-                .events
-                .into_iter()
-                .find(|e| &e.ty == "instantiate")
-                .ok_or(ContractError::ContractCreationEventNotFound)?
-                .attributes
-                .into_iter()
-                .find(|a| &a.key == "_contract_address")
-                .ok_or(ContractError::ContractCreationEventNotFound)?
-                .value;
-
-            TOKEN_MINTER.save(deps.storage, &deps.api.addr_validate(&addr)?)?;
-
-            Ok(Response::new())
-        }
         _ => Err(ContractError::UnknownReply { id: reply.id }),
     }
 }
@@ -1157,13 +1164,13 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     msg: UpgradeMsg<InitMsg, MigrateMsg>,
 ) -> Result<Response, ContractError> {
     msg.run(
         deps,
         |deps, init_msg| {
-            let res = init(deps, init_msg)?;
+            let res = init(deps, env, init_msg)?;
 
             Ok((res, None))
         },
