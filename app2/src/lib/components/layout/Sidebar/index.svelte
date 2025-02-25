@@ -14,7 +14,7 @@ import ChainList from "$lib/components/ChainList.svelte"
   <section>
     <h2 class="font-bold text-xl m2-4">Explorer</h2>
     <ul>
-      <li>Transfers</li>
+      <li><a href="/explorer/transfers" class="underline">Transfers</a></li>
       <li>Packets</li>
       <li>Connections</li>
       <li>Channels</li>
