@@ -16,7 +16,7 @@ nix build .#app2 -L
 
 ## Component naming conventions
 
-We use hypenated components
+We use hyphenated components
 
 ## Resource Naming Conventions
 
@@ -25,7 +25,7 @@ Imagine you have a resource `Block` that you fetch from the api, want to store g
 - The `Schema` is called `Block` and stored in `src/lib/schemas/block.ts`
 - The `Store` class is called `BlockStore` and stored in `src/lib/stores/block.svelte.ts`
 - The concrete instance of `BlockStore` is called `block`
-- The coponent displaying blocks is called `BlockComponent` and stored in `src/lib/components/data/block-component.svelte`
+- The component displaying blocks is called `BlockComponent` and stored in `src/lib/components/data/block-component.svelte`
 
 ## UI Components Naming Conventions
 
