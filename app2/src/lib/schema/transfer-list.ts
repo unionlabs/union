@@ -1,6 +1,6 @@
 import { Schema } from "effect"
-import { ChainId } from "$lib/schemas/chain"
-import { AddressNormalized } from "$lib/schemas/address"
+import { ChainId } from "$lib/schema/chain"
+import { AddressNormalized } from "$lib/schema/address"
 
 export class TransferListItem extends Schema.Class<TransferListItem>("TransferListItem")({
   source_chain_id: ChainId,
