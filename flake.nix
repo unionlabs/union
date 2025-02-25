@@ -90,6 +90,10 @@
       url = "github:babylonlabs-io/babylon/v1.0.0-rc.3";
       flake = false;
     };
+    stride = {
+      url = "github:Stride-Labs/stride/v24.0.0";
+      flake = false;
+    };
 
     public-awesome-launchpad = {
       type = "github";
@@ -222,6 +226,7 @@
         ./networks/stargaze.nix
         ./networks/osmosis.nix
         ./networks/babylon.nix
+        ./networks/stride.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
         ./devnet-compose/devnet-compose.nix

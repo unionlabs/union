@@ -628,6 +628,7 @@
         "rust-overlay": "rust-overlay",
         "solc": "solc",
         "stargaze": "stargaze",
+        "stride": "stride",
         "treefmt-nix": "treefmt-nix",
         "v0_25_0": "v0_25_0",
         "v0_26_0": "v0_26_0",
@@ -705,6 +706,23 @@
         "submodules": true,
         "type": "git",
         "url": "https://github.com/public-awesome/stargaze"
+      }
+    },
+    "stride": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1724989162,
+        "narHash": "sha256-bN+5OUJ/ObexhlZ+XqhQaQuBzGFsjLk/q2+zrllJn3Y=",
+        "owner": "Stride-Labs",
+        "repo": "stride",
+        "rev": "4cfda614e8fb9664ce72861d32824d72430d4436",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Stride-Labs",
+        "ref": "v24.0.0",
+        "repo": "stride",
+        "type": "github"
       }
     },
     "systems": {
