@@ -1,65 +1,50 @@
 <script lang="ts">
 import { onMount } from "svelte"
-import { decodeUnknown } from "effect/Duration"
-import { createQuery } from "$lib/create-query"
-import { Effect, Fiber, Option, Schema } from "effect"
-import type { HttpClientError } from "@effect/platform/HttpClientError"
-import type { ParseError } from "effect/ParseResult"
-
-const Block = Schema.Struct({
-  result: Schema.Struct({
-    block_id: Schema.Struct({
-      hash: Schema.String
-    })
-  })
-})
-
-let blockData: Option.Option<typeof Block.Type> = $state(Option.none())
-let blockError: Option.Option<HttpClientError | ParseError> = $state(Option.none())
+import { createQuery, type FetchDecodeError } from "$lib/utils/queries"
+import { Effect, Fiber, Option } from "effect"
+import { Block } from "$lib/schemas/block"
+import { block } from "$lib/stores/block.svelte"
 
 const program = createQuery({
   url: "https://rpc.testnet-9.union.build/block",
   schema: Block,
   refetchInterval: "4 seconds",
   writeData: data => {
-    blockData = data
+    block.data = data
   },
   writeError: error => {
-    blockError = error
+    block.error = error
   }
 })
 
-let fiber
-
-const stop = Effect.gen(function* () {
-  yield* Fiber.interrupt(fiber)
-  blockData = Option.none()
-})
 onMount(() => {
-  fiber = Effect.runFork(program)
-  return () => Effect.runPromise(stop)
+  const fiber = Effect.runFork(program)
+  return () =>
+    Effect.runPromise(
+      Effect.gen(function* () {
+        yield* Fiber.interrupt(fiber)
+        block.data = Option.none()
+      })
+    )
 })
 </script>
 
-<button class="bg-red-500" onclick={() => {Effect.runPromise(stop)}}> stop the fetcher </button>
-
-
-{#if Option.isSome(blockData)}
-  <pre class="font-mono">
-    {JSON.stringify(blockData.value, null, 2)}
-  </pre>
-  {#if Option.isSome(blockError)}
+{#if Option.isSome(block.data)}
+  <div class="font-mono">
+    {block.data.value.result.block_id.hash}
+  </div>
+  {#if Option.isSome(block.error)}
     There was an error refetching this data. the data you see is stale
     <pre class="font-mono bg-red-500">
-      {JSON.stringify(blockError.value, null, 2)}
+      {JSON.stringify(block.error.value, null, 2)}
     </pre>
   {/if}
 {:else}
   Loading...
-  {#if Option.isSome(blockError)}
+  {#if Option.isSome(block.error)}
     There was an error fetching this data. We will retry automatically. Error:
     <pre class="font-mono bg-red-500">
-      {JSON.stringify(blockError.value, null, 2)}
+      {JSON.stringify(block.error.value, null, 2)}
     </pre>
   {/if}
 {/if}

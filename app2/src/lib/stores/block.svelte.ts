@@ -1,0 +1,10 @@
+import type { FetchDecodeError } from "$lib/utils/queries"
+import { Option } from "effect"
+import type { Block } from "$lib/schemas/block"
+
+class BlockStore {
+  data: Option.Option<typeof Block.Type> = $state(Option.none())
+  error: Option.Option<FetchDecodeError> = $state(Option.none())
+}
+
+export const block = new BlockStore()

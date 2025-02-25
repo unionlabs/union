@@ -4,6 +4,8 @@ import type { DurationInput } from "effect/Duration"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
 import type { ParseError } from "effect/ParseResult"
 
+export type FetchDecodeError = HttpClientError | ParseError
+
 export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
   Effect.gen(function* () {
     const client = yield* HttpClient.HttpClient
@@ -23,7 +25,7 @@ export const createQuery = <S>({
   schema: Schema.Schema<S>
   refetchInterval: DurationInput
   writeData: (data: Option.Option<S>) => void
-  writeError: (error: Option.Option<ParseError | HttpClientError>) => void
+  writeError: (error: Option.Option<FetchDecodeError>) => void
 }) => {
   const fetcherPipeline = pipe(
     fetchDecode(schema, url),
