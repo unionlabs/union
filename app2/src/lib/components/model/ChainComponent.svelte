@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Chain } from "$lib/schemas/chain"
-	interface Props {
-		chain: Chain;
-	}
+import { Chain } from "$lib/schemas/chain"
+interface Props {
+  chain: Chain
+}
 
-	let { chain }: Props = $props(); 
+let { chain }: Props = $props()
 </script>
 
 <div class="p-4">
