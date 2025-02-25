@@ -217,15 +217,15 @@ module ibc::cometbls_lc {
             );
         };
 
-        // assert!(
-        //     groth16_verifier::verify_zkp(
-        //         &state.client_state.chain_id,
-        //         &consensus_state.next_validators_hash,
-        //         light_header_as_input_hash(&header.signed_header),
-        //         &header.zero_knowledge_proof
-        //     ),
-        //     E_INVALID_ZKP
-        // );
+        assert!(
+            groth16_verifier::verify_zkp(
+                &state.client_state.chain_id,
+                &consensus_state.next_validators_hash,
+                light_header_as_input_hash(&header.signed_header),
+                &header.zero_knowledge_proof
+            ),
+            E_INVALID_ZKP
+        );
     }
 
     public fun update_client(
@@ -439,29 +439,29 @@ module ibc::cometbls_lc {
     }
 
     public fun check_for_misbehaviour(
-        _client_id: u32, _header: vector<u8>
-    ): bool {
-        // let state = borrow_global_mut<State>(get_client_address(client_id));
+        client_id: u32, header: vector<u8>
+    ): bool acquires State {
+        let state = borrow_global_mut<State>(get_client_address(client_id));
 
-        // let header = decode_header(header);
+        let header = decode_header(header);
 
-        // let expected_timestamp =
-        //     header.signed_header.time.seconds * 1_000_000_000
-        //         + (header.signed_header.time.nanos as u64);
+        let expected_timestamp =
+            header.signed_header.time.seconds * 1_000_000_000
+                + (header.signed_header.time.nanos as u64);
 
-        // if (smart_table::contains(&state.consensus_states, header.signed_header.height)) {
-        //     let ConsensusState {
-        //         timestamp,
-        //         app_hash: MerkleRoot { hash },
-        //         next_validators_hash
-        //     } = smart_table::borrow(&state.consensus_states, header.signed_header.height);
+        if (smart_table::contains(&state.consensus_states, header.signed_header.height)) {
+            let ConsensusState {
+                timestamp,
+                app_hash: MerkleRoot { hash },
+                next_validators_hash
+            } = smart_table::borrow(&state.consensus_states, header.signed_header.height);
 
-        //     if (timestamp != &expected_timestamp
-        //         || hash != &header.signed_header.app_hash
-        //         || next_validators_hash != &header.signed_header.next_validators_hash) {
-        //         height::set_revision_height(&mut state.client_state.frozen_height, 1);
-        //     };
-        // };
+            if (timestamp != &expected_timestamp
+                || hash != &header.signed_header.app_hash
+                || next_validators_hash != &header.signed_header.next_validators_hash) {
+                height::set_revision_height(&mut state.client_state.frozen_height, 1);
+            };
+        };
 
         // // TODO(aeryz): implement consensus state metadata tracking here
         false
@@ -566,9 +566,8 @@ module ibc::cometbls_lc {
 
         let trusted_height = height::decode_bcs(buf);
 
-        // let proof_bz = bcs_utils::peel_bytes(buf);
-        // let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
-        let zero_knowledge_proof = groth16_verifier::default();
+        let proof_bz = bcs_utils::peel_bytes(buf);
+        let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
 
         Header { signed_header, trusted_height, zero_knowledge_proof }
     }
@@ -602,23 +601,8 @@ module ibc::cometbls_lc {
         inputs_hash
     }
 
-    // #[test]
-    // fun parse_client_state() {
-    //     let client_state = ClientState {
-    //         chain_id: string::utf8(b"this-chain"),
-    //         trusting_period: 9999999,
-    //         unbonding_period: 12367,
-    //         max_clock_drift: 0,
-    //         frozen_height: height::new(11, 1273),
-    //         latest_height: height::new(127638, 1000)
-    //     };
-
-    //     let cs = decode_client_state(bcs::to_bytes(&client_state));
-    //     std::debug::print(&cs);
-    // }
-
     #[test]
-    fun parse_consensus_state_new() {
+    fun parse_consensus_state() {
         let output =
             x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000051615000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c";
         let consensus_state = ConsensusState {
@@ -635,23 +619,6 @@ module ibc::cometbls_lc {
         assert!(cs.timestamp == consensus_state.timestamp, 0);
         assert!(cs.app_hash.hash == consensus_state.app_hash.hash, 0);
         assert!(cs.next_validators_hash == consensus_state.next_validators_hash, 0);
-    }
-
-    #[test]
-    fun parse_consensus_state() {
-        let consensus_state = ConsensusState {
-            timestamp: 42,
-            app_hash: MerkleRoot {
-                hash: x"0000000000000000000000000000000000000000000000000000000000000000"
-            },
-            next_validators_hash: x"0000000000000000000000000000000000000000000000000000000000000000"
-        };
-
-        let cs_bytes = encode_consensus_state(&consensus_state);
-        std::debug::print(&cs_bytes);
-
-        let cs = decode_consensus_state(cs_bytes);
-        std::debug::print(&cs);
     }
 
     #[test]

@@ -61,17 +61,24 @@
 module ibc::state_lens_ics23_ics23_lc {
     use std::vector;
     use std::bcs;
-    use std::string::{Self, String};
+    use std::string::String;
     use std::option::{Self, Option};
     use std::object;
 
     use aptos_std::smart_table::{Self, SmartTable};
+    use aptos_std::aptos_hash::keccak256;
 
     // use ibc::ics23;
     use ibc::ethabi;
     use ibc::bcs_utils;
     use ibc::height::{Self, Height};
     use ibc::create_lens_client_event::{Self, CreateLensClientEvent};
+    use ibc::commitment;
+    use ibc::cometbls_lc;
+    use ibc::ics23;
+
+    const E_VERIFY_MEMBERSHIP_FAILURE: u64 = 0;
+    const E_INVALID_CLIENT_STATE: u64 = 0;
 
     struct TendermintConsensusState has drop {
         timestamp: u64,
@@ -119,13 +126,11 @@ module ibc::state_lens_ics23_ics23_lc {
         let client_state = decode_client_state(client_state_bytes);
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
-        // assert!(
-        //     !height::is_zero(&client_state.latest_height)
-        //         && consensus_state.timestamp != 0,
-        //     E_INVALID_CLIENT_STATE
-        // );
-
-        // assert!(string::length(&client_state.chain_id) <= 31, E_INVALID_CLIENT_STATE);
+        assert!(
+            client_state.l2_latest_height != 0
+                && consensus_state.timestamp != 0,
+            E_INVALID_CLIENT_STATE
+        );
 
         let consensus_states = smart_table::new<u64, ConsensusState>();
         smart_table::upsert(
@@ -169,23 +174,35 @@ module ibc::state_lens_ics23_ics23_lc {
 
         let header = decode_header(client_msg);
 
+        let l2_height = height::get_revision_height(&header.l2_height);
+
+        assert!(cometbls_lc::verify_membership(
+            state.client_state.l1_client_id,
+            height::get_revision_height(&header.l1_height),
+            header.l2_consensus_state_proof,
+            commitment::consensus_state_commitment_key(
+                state.client_state.l2_client_id, l2_height
+            ),
+            keccak256(header.l2_consensus_state)
+        ) == 0, E_VERIFY_MEMBERSHIP_FAILURE);
+
         let l2_consensus_state = decode_tm_consensus_state(header.l2_consensus_state);
 
-        let updated_height = height::get_revision_height(&header.l2_height);
-
-        state.client_state.l2_latest_height = updated_height;
+        if (l2_height > state.client_state.l2_latest_height) {
+            state.client_state.l2_latest_height = l2_height;
+        };
 
         let new_consensus_state = ConsensusState {
             timestamp: l2_consensus_state.timestamp,
             app_hash: l2_consensus_state.app_hash
         };
 
-        smart_table::upsert(&mut state.consensus_states, updated_height, new_consensus_state);
+        smart_table::upsert(&mut state.consensus_states, l2_height, new_consensus_state);
 
         (
             encode_client_state(&state.client_state),
             vector[encode_consensus_state(&new_consensus_state)],
-            vector[updated_height]
+            vector[l2_height]
         )
     }
 
@@ -196,26 +213,26 @@ module ibc::state_lens_ics23_ics23_lc {
     }
 
     public fun verify_membership(
-        _client_id: u32,
-        _height: u64,
-        _proof: vector<u8>,
-        _key: vector<u8>,
-        _value: vector<u8>
-    ): u64 /* acquires State */ {
-        // let state = borrow_global<State>(get_client_address(client_id));
-        // let consensus_state = smart_table::borrow(&state.consensus_states, height);
+        client_id: u32,
+        height: u64,
+        proof: vector<u8>,
+        key: vector<u8>,
+        value: vector<u8>
+    ): u64 acquires State {
+        let state = borrow_global<State>(get_client_address(client_id));
+        let consensus_state = smart_table::borrow(&state.consensus_states, height);
 
-        // let path = vector<u8>[0x03];
-        // vector::append(&mut path, state.client_state.contract_address);
-        // vector::append(&mut path, key);
+        let path = vector<u8>[0x03];
+        vector::append(&mut path, state.client_state.contract_address);
+        vector::append(&mut path, key);
 
-        // ics23::verify_membership(
-        //     ics23::decode_membership_proof(proof),
-        //     consensus_state.app_hash.hash,
-        //     b"wasm", // HARDCODED PREFIX
-        //     path,
-        //     value
-        // );
+        ics23::verify_membership(
+            ics23::decode_membership_proof(proof),
+            consensus_state.app_hash,
+            b"wasm", // HARDCODED PREFIX
+            path,
+            value
+        );
 
         0
     }
