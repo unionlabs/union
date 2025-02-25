@@ -5,3 +5,5 @@ export const Chain = Schema.Struct({
   display_name: Schema.String,
   addr_prefix: Schema.String
 })
+
+export const Chains = Schema.Array(Chain)
