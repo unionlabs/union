@@ -1,8 +1,10 @@
 <script lang="ts">
-import { Console, Context, Option, Effect, Fiber, Schema, pipe, Random, Schedule } from "effect"
-import { FetchHttpClient, HttpClient } from "@effect/platform"
 import { onMount } from "svelte"
 import { decodeUnknown } from "effect/Duration"
+import { createQuery } from "$lib/create-query"
+import { Effect, Fiber, Option, Schema } from "effect"
+import type { HttpClientError } from "@effect/platform/HttpClientError"
+import type { ParseError } from "effect/ParseResult"
 
 const Block = Schema.Struct({
   result: Schema.Struct({
@@ -12,69 +14,26 @@ const Block = Schema.Struct({
   })
 })
 
-const BlockWeird = Schema.Struct({
-  resulty: Schema.Struct({
-    block_id: Schema.Struct({
-      hash: Schema.String
-    })
-  })
-})
+let blockData: Option.Option<typeof Block.Type> = $state(Option.none())
+let blockError: Option.Option<HttpClientError | ParseError> = $state(Option.none())
 
-let responseData: Option.Option<typeof Block.Type> = $state(Option.none())
-let responseError: Option.Option<unknown> = $state(Option.none())
-
-const createQuery = <S>(
-  url: string,
-  schema: Schema.Schema<S>,
-  writeStore: (value: Option.Option<S>) => void
-) => {
-  const fetcher = Effect.gen(function* () {
-    const client = yield* HttpClient.HttpClient
-
-    yield* Effect.log("fetching data")
-    const r = yield* Random.next
-    const response = yield* client.get(r > 0.3 ? url : "https://rpc.testnet-9.union.build/genesis")
-    const json = yield* response.json
-    yield* Effect.log("fetched data")
-
-    const block = yield* Schema.decodeUnknown(schema)(json)
-    return block
-  })
-
-  const fetcherPipeline = pipe(
-    fetcher,
-    Effect.tapBoth({
-      onSuccess: data =>
-        Effect.sync(() => {
-          writeStore(Option.some(data))
-          responseError = Option.none()
-        }),
-      onFailure: error =>
-        Effect.sync(() => {
-          responseError = Option.some(error)
-        })
-    }),
-    Effect.catchAll(_ => Effect.succeed(null)),
-    Effect.scoped,
-    Effect.provide(FetchHttpClient.layer)
-  )
-
-  const program = Effect.repeat(
-    fetcherPipeline,
-    Schedule.addDelay(Schedule.repeatForever, () => "2 seconds")
-  )
-  return program
-}
-
-const program = createQuery("https://rpc.testnet-9.union.build/block", Block, data => {
-  responseData = data
+const program = createQuery({
+  url: "https://rpc.testnet-9.union.build/block",
+  schema: Block,
+  refetchInterval: "4 seconds",
+  writeData: data => {
+    blockData = data
+  },
+  writeError: error => {
+    blockError = error
+  }
 })
 
 let fiber
 
 const stop = Effect.gen(function* () {
   yield* Fiber.interrupt(fiber)
-  responseData = Option.none()
+  blockData = Option.none()
 })
 onMount(() => {
   fiber = Effect.runFork(program)
@@ -85,15 +44,22 @@ onMount(() => {
 <button class="bg-red-500" onclick={() => {Effect.runPromise(stop)}}> stop the fetcher </button>
 
 
-{#if Option.isSome(responseData)}
+{#if Option.isSome(blockData)}
   <pre class="font-mono">
-    {JSON.stringify(responseData.value, null, 2)}
+    {JSON.stringify(blockData.value, null, 2)}
   </pre>
+  {#if Option.isSome(blockError)}
+    There was an error refetching this data. the data you see is stale
+    <pre class="font-mono bg-red-500">
+      {JSON.stringify(blockError.value, null, 2)}
+    </pre>
+  {/if}
 {:else}
   Loading...
-{/if}
-{#if Option.isSome(responseError)}
-  <pre class="font-mono bg-red-500">
-    {JSON.stringify(responseError.value, null, 2)}
-  </pre>
+  {#if Option.isSome(blockError)}
+    There was an error fetching this data. We will retry automatically. Error:
+    <pre class="font-mono bg-red-500">
+      {JSON.stringify(blockError.value, null, 2)}
+    </pre>
+  {/if}
 {/if}
