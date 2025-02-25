@@ -24,6 +24,8 @@ use unionlabs::{
     ErrorReporter,
 };
 
+mod turnstile;
+
 const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
 #[tokio::main(flavor = "multi_thread")]
@@ -468,9 +470,13 @@ impl Mutation {
 
         if let Some(secret) = secret {
             if !allow_bypass {
-                recaptcha_verify::verify(&secret.0, &captcha_token, None)
+                let response = turnstile::verify(&captcha_token, &secret.0)
                     .await
-                    .map_err(|err| format!("failed to verify captcha: {:?}", err))?;
+                    .map_err(|err| format!("failed to verify turnstile: {:?}", err))?;
+
+                if !response.success {
+                    return Err(format!("failed turnstile request: {:?}", response).into());
+                }
             }
         }
 
