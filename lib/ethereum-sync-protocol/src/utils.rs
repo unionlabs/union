@@ -17,7 +17,9 @@ use crate::{
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/fork.md#modified-compute_fork_version)
 pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Version {
-    if epoch >= fork_parameters.deneb.epoch {
+    if epoch >= fork_parameters.electra.epoch {
+        fork_parameters.electra.version
+    } else if epoch >= fork_parameters.deneb.epoch {
         fork_parameters.deneb.version
     } else if epoch >= fork_parameters.capella.epoch {
         fork_parameters.capella.version
