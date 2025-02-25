@@ -2,7 +2,6 @@
 
 ## Developing
 
-
 ```bash
 nix run .#app2-dev-server -L
 ```
