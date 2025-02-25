@@ -24,7 +24,8 @@ onMount(() => {
 
 {#if Option.isSome(chains.error)}
   <div class="bg-red-500">
-    {chains.error.value}:
-    {chains.error.value.cause}
+    <h2 class="text-xl font-bold">Error updating chains</h2>
+    <div>{chains.error.value}</div>
+    <div>{chains.error.value.cause}</div>
   </div>
 {/if}

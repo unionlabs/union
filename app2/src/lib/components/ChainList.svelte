@@ -7,7 +7,7 @@ import ChainComponent from "$lib/components/data/ChainComponent.svelte"
 {#if Option.isSome(chains.data)}
   <ul>
   {#each chains.data.value as chain}
-    <li>{chain.display_name}</li>
+    <li><ChainComponent {chain}/></li>
   {/each}
   </ul>
 {:else}
