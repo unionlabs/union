@@ -297,7 +297,7 @@ module ibc::commitment {
         keccak256(next_sequence_ack_commitment_path(channel_id))
     }
 
-    public(friend) fun commit_packet(packet: &Packet): vector<u8> {
+    public fun commit_packet(packet: &Packet): vector<u8> {
         keccak256(packet::encode(packet))
     }
 
