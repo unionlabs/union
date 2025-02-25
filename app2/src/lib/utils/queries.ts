@@ -5,6 +5,7 @@ import type { HttpClientError } from "@effect/platform/HttpClientError"
 import type { ParseError } from "effect/ParseResult"
 import type { TadaDocumentNode } from "gql.tada"
 import { request } from "graphql-request"
+import { URLS } from "$lib/constants"
 
 export type FetchDecodeError = HttpClientError | ParseError
 
@@ -16,8 +17,12 @@ export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
     return yield* Schema.decodeUnknown(schema)(json)
   })
 
-export const fetchDecodeGraphql = (document: TadaDocumentNode) =>
-  Effect.tryPromise(() => request("https://graphql.union.build/v1/graphql", document))
+export const fetchDecodeGraphql = <S>(schema: Schema.Schema<S>, document: TadaDocumentNode) =>
+  Effect.gen(function* () {
+    const data = yield* Effect.tryPromise(() => request(URLS().GRAPHQL, document))
+    return yield* Schema.decodeUnknown(schema)(data)
+  })
+
 // export const fetchDecodeGraphql = <S>(schema: Schema.Schema<S>, document: TadaDocumentNode) => Effect.tryPromise(() =>
 //   request("https://graphql.union.build/", document)
 
