@@ -1,4 +1,4 @@
-import { Option, Effect, Schema, pipe, Random, Schedule } from "effect"
+import { Option, Effect, Schema, pipe, Schedule } from "effect"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
 import type { DurationInput } from "effect/Duration"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
