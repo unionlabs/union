@@ -20,23 +20,25 @@ import ExternalFaucets from "./(components)/external-faucets.svelte"
 import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
-// Add Turnstile import
 import { Turnstile } from "svelte-turnstile"
 
 type FaucetState = DiscriminatedUnion<
   "kind",
   {
     IDLE: {}
-    REQUESTING_TOKEN: {}
+    VERIFYING: {}
+    VERIFIED: {}
     SUBMITTING: { captchaToken: string }
     RESULT_OK: { message: string }
     RESULT_ERR: { error: string }
+    VERIFICATION_FAILED: { error: string }
   }
 >
 
 let address = ""
 let turnstileToken = ""
-let reset: () => void
+let resetTurnstile: () => void
+let showTurnstile = false
 
 onMount(() => {
   address = $cosmosStore.address ?? ""
@@ -58,18 +60,16 @@ const resetInput = () => {
 
 let unoFaucetState: Writable<FaucetState> = writable({ kind: "IDLE" })
 
-const requestUnoFromFaucet = async () => {
-  if ($unoFaucetState.kind === "IDLE" || $unoFaucetState.kind === "REQUESTING_TOKEN") {
-    unoFaucetState.set({ kind: "REQUESTING_TOKEN" })
+const verifyWithTurnstile = () => {
+  if ($unoFaucetState.kind === "IDLE") {
+    showTurnstile = true
+    unoFaucetState.set({ kind: "VERIFYING" })
+    resetTurnstile?.() // Trigger verification
+  }
+}
 
-    if (!turnstileToken) {
-      console.error("Turnstile token not available")
-      unoFaucetState.set({
-        kind: "RESULT_ERR",
-        error: "Please complete the Turnstile verification"
-      })
-      return
-    }
+const requestUnoFromFaucet = async () => {
+  if ($unoFaucetState.kind === "VERIFIED") {
     unoFaucetState.set({ kind: "SUBMITTING", captchaToken: turnstileToken })
   }
 
@@ -87,7 +87,7 @@ const requestUnoFromFaucet = async () => {
           error: "Empty faucet response"
         })
         turnstileToken = ""
-        reset()
+        showTurnstile = false
         return
       }
 
@@ -95,7 +95,7 @@ const requestUnoFromFaucet = async () => {
         console.error(result.send)
         unoFaucetState.set({ kind: "RESULT_ERR", error: `Error from faucet` })
         turnstileToken = ""
-        reset()
+        showTurnstile = false
         return
       }
 
@@ -104,16 +104,24 @@ const requestUnoFromFaucet = async () => {
         message: result.send
       })
       turnstileToken = ""
-      reset()
+      showTurnstile = false
     } catch (error) {
       unoFaucetState.set({
         kind: "RESULT_ERR",
         error: `Faucet error: ${error}`
       })
       turnstileToken = ""
-      reset()
+      showTurnstile = false
       return
     }
+  }
+}
+
+const resetVerification = () => {
+  if ($unoFaucetState.kind === "VERIFICATION_FAILED") {
+    turnstileToken = ""
+    showTurnstile = false
+    unoFaucetState.set({ kind: "IDLE" })
   }
 }
 
@@ -121,6 +129,18 @@ const handleTurnstileCallback = (
   e: CustomEvent<{ token: string; preClearanceObtained: boolean }>
 ) => {
   turnstileToken = e.detail.token
+  if ($unoFaucetState.kind === "VERIFYING") {
+    unoFaucetState.set({ kind: "VERIFIED" })
+  }
+}
+
+const handleTurnstileError = (e: CustomEvent<{ code: string }>) => {
+  if ($unoFaucetState.kind === "VERIFYING") {
+    unoFaucetState.set({
+      kind: "VERIFICATION_FAILED",
+      error: `Verification error: ${e.detail.code}`
+    })
+  }
 }
 </script>
 
@@ -164,7 +184,7 @@ const handleTurnstileCallback = (
                 method="POST"
                 class="flex flex-col w-full gap-4"
                 name="faucet-form"
-                on:submit|preventDefault|once={requestUnoFromFaucet}
+                on:submit|preventDefault
         >
           <div>
             <Label for="address">Address</Label>
@@ -177,8 +197,7 @@ const handleTurnstileCallback = (
                           autocorrect="off"
                           bind:value={address}
                           id="address"
-                          pattern={createCosmosSdkAddressRegex({ prefix: "union" })
-                      .source}
+                          pattern={createCosmosSdkAddressRegex({ prefix: "union" }).source}
                           placeholder="union14ea6..."
                           required={true}
                           minlength={44}
@@ -205,7 +224,6 @@ const handleTurnstileCallback = (
                             />
                         </p>
                         !-->
-
                         <p slot="disconnected">
                           Connect cosmos wallet
                         </p>
@@ -225,34 +243,68 @@ const handleTurnstileCallback = (
               </div>
             </div>
           </div>
-          <Turnstile
-                  siteKey="0x4AAAAAAA-eVs5k0b8Q1dl5"
-                  on:callback={handleTurnstileCallback}
-                  theme="auto"
-                  size="normal"
-                  bind:reset
-          />
+          {#if showTurnstile}
+            <Turnstile
+                    siteKey="0x4AAAAAAA-eVs5k0b8Q1dl5"
+                    on:callback={handleTurnstileCallback}
+                    on:error={handleTurnstileError}
+                    theme="auto"
+                    size="normal"
+                    bind:reset={resetTurnstile}
+            />
+          {/if}
           <div class="flex flex-row items-center gap-4">
-            <Button
-                    type="submit"
-                    on:click={(event) => {
-                event.preventDefault()
-                requestUnoFromFaucet()
-              }}
-                    disabled={$unoFaucetState.kind !== "IDLE" ||
-                    !turnstileToken ||
-                isValidCosmosAddress(address, ["union"]) === false}
-                    class={cn(
-                "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50"
-              )}
-            >
-              Submit
-              {#if $unoFaucetState.kind !== "IDLE"}
-                <span class="ml-2">
-                  <SpinnerSVG className="w-4 h-4" />
-                </span>
-              {/if}
-            </Button>
+            {#if $unoFaucetState.kind === "IDLE" || $unoFaucetState.kind === "VERIFYING"}
+              <Button
+                      type="button"
+                      on:click={(event) => {
+                  event.preventDefault()
+                  verifyWithTurnstile()
+                }}
+                      disabled={!isValidCosmosAddress(address, ["union"]) ||
+                  $unoFaucetState.kind === "VERIFYING"}
+                      class={cn("min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50")}
+              >
+                Verify
+                {#if $unoFaucetState.kind === "VERIFYING"}
+                  <span class="ml-2">
+                    <SpinnerSVG className="w-4 h-4" />
+                  </span>
+                {/if}
+              </Button>
+            {:else if $unoFaucetState.kind === "VERIFIED" || $unoFaucetState.kind === "SUBMITTING"}
+              <Button
+                      type="button"
+                      on:click={(event) => {
+                  event.preventDefault()
+                  requestUnoFromFaucet()
+                }}
+                      disabled={$unoFaucetState.kind === "SUBMITTING"}
+                      class={cn("min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50")}
+              >
+                Submit
+                {#if $unoFaucetState.kind === "SUBMITTING"}
+                  <span class="ml-2">
+                    <SpinnerSVG className="w-4 h-4" />
+                  </span>
+                {/if}
+              </Button>
+            {:else if $unoFaucetState.kind === "VERIFICATION_FAILED"}
+              <Button
+                      type="button"
+                      on:click={(event) => {
+                  event.preventDefault()
+                  resetVerification()
+                }}
+                      class={cn("min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50")}
+              >
+                Reset
+              </Button>
+              <p class="text-xs text-red-500">{$unoFaucetState.error}</p>
+            {/if}
+            <div class="text-[10px]">
+              This faucet is protected by Cloudflare Turnstile.
+            </div>
           </div>
         </form>
       {/if}
