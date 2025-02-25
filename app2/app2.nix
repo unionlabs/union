@@ -19,7 +19,7 @@ _: {
     {
       packages = {
         app2 = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-HKYK+ZypGdU8inOSHh7DK7x+apfuj9olCXqRo+m/Swk=";
+          npmDepsHash = "sha256-fvbdcVbDXpYDxTHvDK3sZZztz3EmDdpjEWyJyF+BhWY=";
           src = ./.;
           sourceRoot = "app2";
           npmFlags = [ "--legacy-peer-deps" ];
@@ -51,34 +51,20 @@ _: {
             '';
           };
         };
-        # app-fetch-schema = {
-        #   type = "app";
-        #   program = pkgs.writeShellApplication {
-        #     name = "app-dev-server";
-        #     runtimeInputs = deps;
-        #     text = ''
-        #       ${ensureAtRepositoryRoot}
-        #       cd app/
-        #       npx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://staging.graphql.union.build/v1/graphql"
+        app2-fetch-schema = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "app2-fetch-schema";
+            runtimeInputs = deps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd app2/
+              npx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://staging.graphql.union.build/v1/graphql"
 
-        #       npx gql.tada generate-output --disable-preprocessing --tsconfig ./tsconfig.json --output ./src/generated/graphql-env.d.ts
-        #     '';
-        #   };
-        # };
-        # deploy-app-ipfs = {
-        #   type = "app";
-        #   program = pkgs.writeShellApplication {
-        #     name = "deploy-app-ipfs";
-        #     runtimeInputs = deps;
-        #     text = ''
-        #       ${ensureAtRepositoryRoot}
-        #       cd app/
-
-        #       nix build .#app
-        #       npm_config_yes=true npx @fleek-platform/cli sites deploy
-        #     '';
-        #   };
-        # };
+              npx gql.tada generate-output --disable-preprocessing --tsconfig ./tsconfig.json --output ./src/generated/graphql-env.d.ts
+            '';
+          };
+        };
       };
     };
 }

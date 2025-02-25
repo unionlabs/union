@@ -1,27 +1,15 @@
 <script lang="ts">
 import "../app.css"
 import { onMount } from "svelte"
-import { createQuery } from "$lib/utils/queries"
 import { Effect, Fiber, Option } from "effect"
-import { Block } from "$lib/schemas/block"
 import { block } from "$lib/stores/block.svelte"
+import { chainsQuery } from "$lib/queries/chains.svelte"
+import { chains } from "$lib/stores/chains.svelte"
 
 let { children } = $props()
 
-const blockQuery = createQuery({
-  url: "https://rpc.testnet-9.union.build/block",
-  schema: Block,
-  refetchInterval: "4 seconds",
-  writeData: data => {
-    block.data = data
-  },
-  writeError: error => {
-    block.error = error
-  }
-})
-
 onMount(() => {
-  const fiber = Effect.runFork(blockQuery)
+  const fiber = Effect.runFork(chainsQuery)
   return () =>
     Effect.runPromise(
       Effect.gen(function* () {
@@ -33,3 +21,11 @@ onMount(() => {
 </script>
 
 {@render children()}
+
+{#if Option.isSome(chains.error)}
+  <div class="bg-red-500">
+    <h2 class="text-xl font-bold">Error updating chains</h2>
+    <div>{chains.error.value}</div>
+    <div>{chains.error.value.cause}</div>
+  </div>
+{/if}

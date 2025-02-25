@@ -1,7 +1,5 @@
-<script lang="ts">
-import CurrentBlockHash from "$lib/components/current-block-hash.svelte"
+<script>
+import ChainList from "$lib/components/ChainList.svelte"
 </script>
 
-<CurrentBlockHash/>
-<CurrentBlockHash/>
-
+<ChainList/>
