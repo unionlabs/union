@@ -20,6 +20,8 @@ import ExternalFaucets from "./(components)/external-faucets.svelte"
 import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
+// Add Turnstile import
+import { Turnstile } from "svelte-turnstile"
 
 type FaucetState = DiscriminatedUnion<
   "kind",
@@ -33,6 +35,8 @@ type FaucetState = DiscriminatedUnion<
 >
 
 let address = ""
+let turnstileToken = ""
+let reset: () => void
 
 onMount(() => {
   address = $cosmosStore.address ?? ""
@@ -58,33 +62,15 @@ const requestUnoFromFaucet = async () => {
   if ($unoFaucetState.kind === "IDLE" || $unoFaucetState.kind === "REQUESTING_TOKEN") {
     unoFaucetState.set({ kind: "REQUESTING_TOKEN" })
 
-    if (!window?.__google_recaptcha_client) {
-      console.error("Recaptcha client not loaded")
+    if (!turnstileToken) {
+      console.error("Turnstile token not available")
       unoFaucetState.set({
         kind: "RESULT_ERR",
-        error: "Recaptcha client not loaded"
+        error: "Please complete the Turnstile verification"
       })
       return
     }
-
-    if (
-      typeof window.grecaptcha === "undefined" ||
-      typeof window.grecaptcha.execute !== "function"
-    ) {
-      console.error("Recaptcha execute function not available")
-      unoFaucetState.set({
-        kind: "RESULT_ERR",
-        error: "Recaptcha execute function not available"
-      })
-      return
-    }
-
-    const captchaToken = await window.grecaptcha.execute(
-      "6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow",
-      { action: "submit" }
-    )
-
-    unoFaucetState.set({ kind: "SUBMITTING", captchaToken })
+    unoFaucetState.set({ kind: "SUBMITTING", captchaToken: turnstileToken })
   }
 
   if ($unoFaucetState.kind === "SUBMITTING") {
@@ -100,12 +86,16 @@ const requestUnoFromFaucet = async () => {
           kind: "RESULT_ERR",
           error: "Empty faucet response"
         })
+        turnstileToken = ""
+        reset()
         return
       }
 
       if (result.send.startsWith("ERROR")) {
         console.error(result.send)
         unoFaucetState.set({ kind: "RESULT_ERR", error: `Error from faucet` })
+        turnstileToken = ""
+        reset()
         return
       }
 
@@ -113,24 +103,29 @@ const requestUnoFromFaucet = async () => {
         kind: "RESULT_OK",
         message: result.send
       })
+      turnstileToken = ""
+      reset()
     } catch (error) {
       unoFaucetState.set({
         kind: "RESULT_ERR",
         error: `Faucet error: ${error}`
       })
+      turnstileToken = ""
+      reset()
       return
     }
   }
+}
+
+const handleTurnstileCallback = (
+  e: CustomEvent<{ token: string; preClearanceObtained: boolean }>
+) => {
+  turnstileToken = e.detail.token
 }
 </script>
 
 <svelte:head>
   <title>Union | Faucet</title>
-  <script
-    src="https://www.google.com/recaptcha/api.js?render=6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
-    async
-    defer
-  ></script>
 </svelte:head>
 
 <main class="flex flex-col gap-6 items-center overflow-y-scroll max-h-full py-6 px-3 sm:px-6 w-full dark:bg-muted">
@@ -145,14 +140,14 @@ const requestUnoFromFaucet = async () => {
       {#if $unoFaucetState.kind === "RESULT_OK"}
         <p>
           Tokens sent: <a
-            href={`https://explorer.testnet-9.union.build/union/tx/${$unoFaucetState.message}`}
-          >
-            <Truncate
-              class="underline"
-              value={$unoFaucetState.message}
-              type="hash"
-            />
-          </a>
+                href={`https://explorer.testnet-9.union.build/union/tx/${$unoFaucetState.message}`}
+        >
+          <Truncate
+                  class="underline"
+                  value={$unoFaucetState.message}
+                  type="hash"
+          />
+        </a>
         </p>
       {:else if $unoFaucetState.kind === "RESULT_ERR"}
         <p class="mb-4">
@@ -165,11 +160,11 @@ const requestUnoFromFaucet = async () => {
         <p class="mt-4 break-words text-xs">{$unoFaucetState.error}</p>
       {:else}
         <form
-          action="?"
-          method="POST"
-          class="flex flex-col w-full gap-4"
-          name="faucet-form"
-          on:submit|preventDefault|once={requestUnoFromFaucet}
+                action="?"
+                method="POST"
+                class="flex flex-col w-full gap-4"
+                name="faucet-form"
+                on:submit|preventDefault|once={requestUnoFromFaucet}
         >
           <div>
             <Label for="address">Address</Label>
@@ -177,23 +172,23 @@ const requestUnoFromFaucet = async () => {
               <div class="w-full">
                 <div class="relative w-full mb-2">
                   <Input
-                    autocapitalize="none"
-                    autocomplete="off"
-                    autocorrect="off"
-                    bind:value={address}
-                    id="address"
-                    pattern={createCosmosSdkAddressRegex({ prefix: "union" })
+                          autocapitalize="none"
+                          autocomplete="off"
+                          autocorrect="off"
+                          bind:value={address}
+                          id="address"
+                          pattern={createCosmosSdkAddressRegex({ prefix: "union" })
                       .source}
-                    placeholder="union14ea6..."
-                    required={true}
-                    minlength={44}
-                    maxlength={44}
-                    spellcheck="false"
-                    name="wallet-address"
-                    type="text"
-                    data-1p-ignore={true}
-                    data-lpignore={true}
-                    class="disabled:opacity-100 disabled:bg-black/20"
+                          placeholder="union14ea6..."
+                          required={true}
+                          minlength={44}
+                          maxlength={44}
+                          spellcheck="false"
+                          name="wallet-address"
+                          type="text"
+                          data-1p-ignore={true}
+                          data-lpignore={true}
+                          class="disabled:opacity-100 disabled:bg-black/20"
                   />
                 </div>
                 <div class="flex justify-between px-1">
@@ -212,16 +207,16 @@ const requestUnoFromFaucet = async () => {
                         !-->
 
                         <p slot="disconnected">
-                            Connect cosmos wallet
+                          Connect cosmos wallet
                         </p>
                       </WalletGateCosmos>
                     </ChainsGate>
                   </div>
                   {#if address !== $cosmosStore.address}
                     <button
-                      type="button"
-                      on:click={resetInput}
-                      class="text-xs text-muted-foreground hover:text-primary transition"
+                            type="button"
+                            on:click={resetInput}
+                            class="text-xs text-muted-foreground hover:text-primary transition"
                     >
                       Reset
                     </button>
@@ -230,16 +225,24 @@ const requestUnoFromFaucet = async () => {
               </div>
             </div>
           </div>
+          <Turnstile
+                  siteKey="0x4AAAAAAA-eVs5k0b8Q1dl5"
+                  on:callback={handleTurnstileCallback}
+                  theme="auto"
+                  size="normal"
+                  bind:reset
+          />
           <div class="flex flex-row items-center gap-4">
             <Button
-              type="submit"
-              on:click={(event) => {
+                    type="submit"
+                    on:click={(event) => {
                 event.preventDefault()
                 requestUnoFromFaucet()
               }}
-              disabled={$unoFaucetState.kind !== "IDLE" ||
+                    disabled={$unoFaucetState.kind !== "IDLE" ||
+                    !turnstileToken ||
                 isValidCosmosAddress(address, ["union"]) === false}
-              class={cn(
+                    class={cn(
                 "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50"
               )}
             >
@@ -250,25 +253,7 @@ const requestUnoFromFaucet = async () => {
                 </span>
               {/if}
             </Button>
-            <div class="text-[10px]">
-              This faucet is protected by reCAPTCHA and the Google <a
-                class="underline"
-                href="https://policies.google.com/privacy"
-              >
-                Privacy Policy
-              </a>
-              and
-              <a class="underline" href="https://policies.google.com/terms">
-                Terms of Service
-              </a> apply.
-            </div>
           </div>
-          <div
-            class="g-recaptcha sr-only"
-            data-sitekey="6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow"
-            data-callback="onSubmit"
-            data-size="invisible"
-          ></div>
         </form>
       {/if}
     </Card.Content>
