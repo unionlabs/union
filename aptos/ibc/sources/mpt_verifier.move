@@ -64,6 +64,8 @@ module ibc::mpt_verifier {
     use std::bcs;
     use aptos_std::aptos_hash::keccak256;
 
+    friend ibc::state_lens_ics23_mpt_lc;
+
     const BIG_25: u256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
     const BIG_32: u256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
     const ODD_LENGTH: u8 = 1;
@@ -76,7 +78,15 @@ module ibc::mpt_verifier {
         hash: vector<u8> // keccak256(data)
     }
 
-    public fun parse_list(data: &vector<u8>): (u256, u256) {
+    public(friend) fun verify_trie_value(
+        proof: &vector<u8>, key: &vector<u8>, root_hash: vector<u8>
+    ): (bool, vector<u8>) {
+        let nodes = parse_nodes(proof);
+        let key_u256 = load_u256_big_endian(key);
+        verify_trie_value_with_nodes(&nodes, key_u256, 32, root_hash)
+    }
+
+    fun parse_list(data: &vector<u8>): (u256, u256) {
         let n = vector::length(data);
         assert!(n > 0, 201);
         let kind = *vector::borrow(data, 0);
@@ -111,7 +121,7 @@ module ibc::mpt_verifier {
 
     }
 
-    public fun next_size(data: &vector<u8>): u64 {
+    fun next_size(data: &vector<u8>): u64 {
         let n = vector::length(data);
         assert!(n > 0, 201);
 
@@ -167,7 +177,7 @@ module ibc::mpt_verifier {
         (length as u64) + (1 + (length_size as u64))
     }
 
-    public fun skip(data: &vector<u8>): vector<u8> {
+    fun skip(data: &vector<u8>): vector<u8> {
         let start_idx = 0;
         let size_to_skip = next_size(data);
         let length_data = vector::length(data);
@@ -185,7 +195,7 @@ module ibc::mpt_verifier {
         remainder
     }
 
-    public fun parse_uint(data: &vector<u8>): (u256, u64) {
+    fun parse_uint(data: &vector<u8>): (u256, u64) {
         let n = vector::length(data);
         assert!(n > 0, 201);
 
@@ -232,7 +242,7 @@ module ibc::mpt_verifier {
         }
     }
 
-    public fun split_bytes(data: &vector<u8>): (vector<u8>, vector<u8>) {
+    fun split_bytes(data: &vector<u8>): (vector<u8>, vector<u8>) {
         let n = vector::length(data);
         assert!(n > 0, 201);
 
@@ -281,7 +291,7 @@ module ibc::mpt_verifier {
         (result, rest)
     }
 
-    public fun encode_uint(value: u256): vector<u8> {
+    fun encode_uint(value: u256): vector<u8> {
         if (value == 0) {
             return x"80"
         };
@@ -352,7 +362,7 @@ module ibc::mpt_verifier {
         len
     }
 
-    public fun parse_hash(data: &vector<u8>): (vector<u8>, u64) {
+    fun parse_hash(data: &vector<u8>): (vector<u8>, u64) {
         let (val, consumed) = parse_uint(data);
         let hash_bytes = bcs::to_bytes<u256>(&val);
         vector::reverse(&mut hash_bytes);
@@ -360,7 +370,7 @@ module ibc::mpt_verifier {
         (hash_bytes, consumed)
     }
 
-    public fun parse_nodes(input: &vector<u8>): vector<Node> {
+    fun parse_nodes(input: &vector<u8>): vector<Node> {
         let nodes = vector::empty<Node>();
 
         let remaining = vector::empty<u8>();
@@ -410,7 +420,7 @@ module ibc::mpt_verifier {
         test_value == subkey
     }
 
-    public fun load_u256_big_endian(data: &vector<u8>): u256 {
+    fun load_u256_big_endian(data: &vector<u8>): u256 {
         let result = 0u256;
         let len = vector::length(data);
 
@@ -429,13 +439,13 @@ module ibc::mpt_verifier {
         result
     }
 
-    public fun suffix_bytes(data: &vector<u8>, start: u64): vector<u8> {
+    fun suffix_bytes(data: &vector<u8>, start: u64): vector<u8> {
         let len_data = vector::length(data);
         assert!(start <= len_data, 1007);
         vector::slice(data, start, len_data)
     }
 
-    public fun verify_trie_value_with_nodes(
+    fun verify_trie_value_with_nodes(
         nodes: &vector<Node>,
         key_u256: u256,
         key_len_bytes: u64,
@@ -554,14 +564,6 @@ module ibc::mpt_verifier {
             };
         };
         (is_exists, value)
-    }
-
-    public fun verify_trie_value(
-        proof: &vector<u8>, key: &vector<u8>, root_hash: vector<u8>
-    ): (bool, vector<u8>) {
-        let nodes = parse_nodes(proof);
-        let key_u256 = load_u256_big_endian(key);
-        verify_trie_value_with_nodes(&nodes, key_u256, 32, root_hash)
     }
 
     #[test]

@@ -64,6 +64,9 @@ module ibc::ics23 {
     use std::hash;
     use ibc::bcs_utils::{Self, BcsBuf};
 
+    friend ibc::cometbls_lc;
+    friend ibc::state_lens_ics23_ics23_lc;
+
     const E_EMPTY_LEAF_PREFIX: u64 = 35200;
     const E_EMPTY_LEAF_KEY: u64 = 35201;
     const E_EMPTY_INNER_KEY: u64 = 35202;
@@ -112,7 +115,7 @@ module ibc::ics23 {
         ProofSpec { child_size: 32, min_prefix_length: 1, max_prefix_length: 1 }
     }
 
-    public fun verify_membership(
+    public(friend) fun verify_membership(
         proof: MembershipProof,
         root: vector<u8>,
         prefix: vector<u8>,
@@ -234,7 +237,7 @@ module ibc::ics23 {
         hash::sha2_256(pre_image)
     }
 
-    public fun decode_membership_proof(buf: vector<u8>): MembershipProof {
+    public(friend) fun decode_membership_proof(buf: vector<u8>): MembershipProof {
         let buf = bcs_utils::new(buf);
 
         MembershipProof {
@@ -243,7 +246,7 @@ module ibc::ics23 {
         }
     }
 
-    public fun decode_existence_proof(buf: &mut BcsBuf): ExistenceProof {
+    public(friend) fun decode_existence_proof(buf: &mut BcsBuf): ExistenceProof {
         let key = bcs_utils::peel_bytes(buf);
         let value = bcs_utils::peel_bytes(buf);
         let leaf_prefix = bcs_utils::peel_bytes(buf);
@@ -262,7 +265,7 @@ module ibc::ics23 {
         }
     }
 
-    public fun encode_varint(value: u64): vector<u8> {
+    fun encode_varint(value: u64): vector<u8> {
         let buf: vector<u8> = vector::empty();
         let i = 0;
         while (i < 10) {

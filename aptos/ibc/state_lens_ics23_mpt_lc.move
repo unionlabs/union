@@ -58,7 +58,7 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module ibc::move_in_cosmos_client {
+module ibc::state_lens_ics23_mpt_lc {
     use std::signer;
     use aptos_std::vector;
     use aptos_std::aptos_hash::keccak256;
@@ -73,6 +73,8 @@ module ibc::move_in_cosmos_client {
     use ibc::cometbls_lc;
     use ibc::commitment;
     const EVM_IBC_COMMITMENT_SLOT: u8 = 0;
+
+    friend ibc::light_client;
 
     // Errors
     const ERR_NOT_IBC: u64 = 1001;
@@ -142,17 +144,16 @@ module ibc::move_in_cosmos_client {
         self_address: address
     }
 
-    #[view]
-    public fun get_vault_addr(): address {
+    public(friend) fun get_vault_addr(): address {
         object::create_object_address(&@ibc, VAULT_SEED)
     }
 
-    public fun get_signer(): signer acquires SignerRef {
+    public(friend) fun get_signer(): signer acquires SignerRef {
         let vault = borrow_global<SignerRef>(get_vault_addr());
         object::generate_signer_for_extending(&vault.self_ref)
     }
 
-    public fun get_self_address(): address acquires SignerRef {
+    public(friend) fun get_self_address(): address acquires SignerRef {
         let vault = borrow_global<SignerRef>(get_vault_addr());
         vault.self_address
     }
@@ -180,7 +181,7 @@ module ibc::move_in_cosmos_client {
     }
 
     /// Create a new client
-    public fun create_client(
+    public(friend) fun create_client(
         account: &signer,
         client_id: u32,
         client_state_bcs: copyable_any::Any, //vector<u8>,
@@ -226,18 +227,18 @@ module ibc::move_in_cosmos_client {
         }
     }
 
-    public fun misbehaviour(
+    public(friend) fun misbehaviour(
         _client_id: u32, _client_msg_bytes: vector<u8>
     ) {
         abort ERR_UNSUPPORTED
     }
 
-    public fun is_frozen(client_id: u32): bool {
+    public(friend) fun is_frozen(client_id: u32): bool {
         cometbls_lc::is_frozen(client_id)
     }
 
     /// Verify membership in the trie
-    public fun verify_membership(
+    public(friend) fun verify_membership(
         client_id: u32,
         height: u64,
         proof: &vector<u8>,
@@ -273,7 +274,7 @@ module ibc::move_in_cosmos_client {
     }
 
     /// Verify non-membership in the trie
-    public fun verify_non_membership(
+    public(friend) fun verify_non_membership(
         client_id: u32,
         height: u64,
         proof: &vector<u8>,
@@ -304,7 +305,7 @@ module ibc::move_in_cosmos_client {
     }
 
     /// Update the client with a new header
-    public fun update_client(
+    public(friend) fun update_client(
         _account: &signer, // TODO: not sure if this is needed
         client_id: u32,
         header_bcs: copyable_any::Any

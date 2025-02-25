@@ -70,6 +70,12 @@ module ibc::dispatcher {
     use aptos_framework::fungible_asset::{Self, Metadata};
     use aptos_framework::object::{Self, ExtendRef, Object};
 
+    friend ibc::acknowledge_packet;
+    friend ibc::channel_handshake;
+    friend ibc::engine;
+    friend ibc::recv_packet;
+    friend ibc::timeout_packet;
+    
     const DISPATCHER_APP_SEED: vector<u8> = b"ibc-union-dispatcher-v1";
 
     struct Dispatcher has key {
@@ -118,7 +124,7 @@ module ibc::dispatcher {
 
     /// Insert into this module as the callback needs to retrieve and avoid a cyclical dependency:
     /// engine -> storage and then engine -> callback -> storage
-    public fun insert<P: store>(
+    public(friend) fun insert<P: store>(
         data: copyable_any::Any, return_value: vector<u8>
     ): Object<Metadata> acquires Dispatcher {
         move_to(
@@ -133,16 +139,8 @@ module ibc::dispatcher {
         type_info
     }
 
-    public fun delete_storage<P: store>() acquires Dispatcher, Storage {
+    public(friend) fun delete_storage<P: store>() acquires Dispatcher, Storage {
         move_from<Storage<P>>(storage_address());
-    }
-
-    public fun retrieve<P: drop>(
-        _proof: P
-    ): (copyable_any::Any, vector<u8>) acquires Dispatcher, Storage {
-        // let type_info = type_info::type_of<P>();
-        let my_storage = move_from<Storage<P>>(storage_address()); //.data
-        (my_storage.data, my_storage.return_value)
     }
 
     // Getter for `data`
@@ -151,7 +149,7 @@ module ibc::dispatcher {
     }
 
     // Getter for `return_value`
-    public fun get_return_value<P: drop>(): vector<u8> acquires Dispatcher, Storage {
+    public(friend) fun get_return_value<P: drop>(): vector<u8> acquires Dispatcher, Storage {
         borrow_global<Storage<P>>(storage_address()).return_value
     }
 
@@ -183,16 +181,16 @@ module ibc::dispatcher {
         )
     }
 
-    #[view]
-    public fun get_vault_addr(): address {
+    fun get_vault_addr(): address {
         object::create_object_address(&@ibc, DISPATCHER_APP_SEED)
     }
 
-    public fun storage_signer(): signer acquires Dispatcher {
+    fun storage_signer(): signer acquires Dispatcher {
         let vault = borrow_global<Dispatcher>(get_vault_addr());
         object::generate_signer_for_extending(&vault.obj_ref)
     }
 
+    #[test_only]
     public fun init_module_for_testing(publisher: &signer) {
         init_module(publisher);
     }

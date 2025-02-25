@@ -111,7 +111,7 @@ module ibc::recv_packet {
         process_receive<T>(packets, relayer, relayer_msgs, proof_height, proof, false);
     }
 
-    public fun process_receive<T: key + store + drop>(
+    fun process_receive<T: key + store + drop>(
         packets: vector<Packet>,
         maker: address,
         maker_msgs: vector<vector<u8>>,

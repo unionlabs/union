@@ -75,6 +75,10 @@ module ibc::cometbls_lc {
     use ibc::groth16_verifier::{Self, ZKP};
     use ibc::height::{Self, Height};
 
+    friend ibc::light_client;
+    friend ibc::state_lens_ics23_ics23_lc;
+    friend ibc::state_lens_ics23_mpt_lc;
+
     const E_INVALID_CLIENT_STATE: u64 = 35100;
     const E_CONSENSUS_STATE_TIMESTAMP_ZERO: u64 = 35101;
     const E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT: u64 = 35102;
@@ -136,7 +140,7 @@ module ibc::cometbls_lc {
     }
 
     // Function to mock the creation of a client
-    public fun create_client(
+    public(friend) fun create_client(
         ibc_signer: &signer,
         client_id: u32,
         client_state_bytes: vector<u8>,
@@ -171,12 +175,12 @@ module ibc::cometbls_lc {
         (client_state_bytes, consensus_state_bytes, client_state.chain_id, option::none())
     }
 
-    public fun latest_height(client_id: u32): u64 acquires State {
+    public(friend) fun latest_height(client_id: u32): u64 acquires State {
         let state = borrow_global<State>(get_client_address(client_id));
         height::get_revision_height(&state.client_state.latest_height)
     }
 
-    public fun verify_header(
+    public(friend) fun verify_header(
         header: &Header, state: &State, consensus_state: &ConsensusState
     ) {
         assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
@@ -228,7 +232,7 @@ module ibc::cometbls_lc {
         );
     }
 
-    public fun update_client(
+    public(friend) fun update_client(
         client_id: u32, client_msg: vector<u8>
     ): (vector<u8>, vector<vector<u8>>, vector<u64>) acquires State {
         let header = decode_header(client_msg);
@@ -273,7 +277,7 @@ module ibc::cometbls_lc {
     }
 
     // Checks whether `misbehaviour` is valid and freezes the client
-    public fun report_misbehaviour(
+    public(friend) fun report_misbehaviour(
         client_id: u32, misbehaviour: vector<u8>
     ) acquires State {
         let Misbehaviour { header_a, header_b } = decode_misbehaviour(misbehaviour);
@@ -316,7 +320,7 @@ module ibc::cometbls_lc {
         height::set_revision_height(&mut state.client_state.frozen_height, 1);
     }
 
-    public fun verify_membership(
+    public(friend) fun verify_membership(
         client_id: u32,
         height: u64,
         proof: vector<u8>,
@@ -341,7 +345,7 @@ module ibc::cometbls_lc {
         0
     }
 
-    public fun verify_non_membership(
+    public(friend) fun verify_non_membership(
         _client_id: u32,
         _height: u64,
         _proof: vector<u8>,
@@ -350,12 +354,12 @@ module ibc::cometbls_lc {
         0
     }
 
-    public fun is_frozen(_client_id: u32): bool {
+    public(friend) fun is_frozen(_client_id: u32): bool {
         // TODO: Implement this
         false
     }
 
-    public fun status(_client_id: u32): u64 {
+    public(friend) fun status(_client_id: u32): u64 {
         // TODO(aeryz): fetch these status from proper exported consts
         0
     }
@@ -366,7 +370,7 @@ module ibc::cometbls_lc {
         object::create_object_address(&vault_addr, bcs::to_bytes<u32>(&client_id))
     }
 
-    public fun new_client_state(
+    public(friend) fun new_client_state(
         chain_id: string::String,
         trusting_period: u64,
         max_clock_drift: u64,
@@ -384,7 +388,7 @@ module ibc::cometbls_lc {
         }
     }
 
-    public fun new_consensus_state(
+    public(friend) fun new_consensus_state(
         timestamp: u64, app_hash: MerkleRoot, next_validators_hash: vector<u8>
     ): ConsensusState {
         ConsensusState {
@@ -394,28 +398,28 @@ module ibc::cometbls_lc {
         }
     }
 
-    public fun new_merkle_root(hash: vector<u8>): MerkleRoot {
+    public(friend) fun new_merkle_root(hash: vector<u8>): MerkleRoot {
         MerkleRoot { hash: hash }
     }
 
-    public fun get_timestamp_at_height(client_id: u32, height: u64): u64 acquires State {
+    public(friend) fun get_timestamp_at_height(client_id: u32, height: u64): u64 acquires State {
         let state = borrow_global<State>(get_client_address(client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
         consensus_state.timestamp
     }
 
-    public fun get_client_state(client_id: u32): vector<u8> acquires State {
+    public(friend) fun get_client_state(client_id: u32): vector<u8> acquires State {
         let state = borrow_global<State>(get_client_address(client_id));
         encode_client_state(&state.client_state)
     }
 
-    public fun get_consensus_state(client_id: u32, height: u64): vector<u8> acquires State {
+    public(friend) fun get_consensus_state(client_id: u32, height: u64): vector<u8> acquires State {
         let state = borrow_global<State>(get_client_address(client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
         encode_consensus_state(consensus_state)
     }
 
-    public fun mock_create_client(): (vector<u8>, vector<u8>) {
+    public(friend) fun mock_create_client(): (vector<u8>, vector<u8>) {
         let client_state = ClientState {
             chain_id: string::utf8(b"this-chain"),
             trusting_period: 0,
@@ -438,7 +442,7 @@ module ibc::cometbls_lc {
         return (data1, data2)
     }
 
-    public fun check_for_misbehaviour(
+    public(friend) fun check_for_misbehaviour(
         client_id: u32, header: vector<u8>
     ): bool acquires State {
         let state = borrow_global_mut<State>(get_client_address(client_id));
@@ -581,7 +585,7 @@ module ibc::cometbls_lc {
         }
     }
 
-    public fun light_header_as_input_hash(header: &LightHeader): vector<u8> {
+    public(friend) fun light_header_as_input_hash(header: &LightHeader): vector<u8> {
         let inputs_hash = vector::empty();
 
         let height = bcs::to_bytes<u256>(&(header.height as u256));

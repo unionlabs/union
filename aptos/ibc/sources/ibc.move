@@ -1452,7 +1452,7 @@ module ibc::ibc {
         )
     }
 
-    public fun verify_commitment(
+    public(friend) fun verify_commitment(
         client_id: u32,
         height: u64,
         proof: vector<u8>,
@@ -1470,7 +1470,7 @@ module ibc::ibc {
         )
     }
 
-    public fun generate_connection_identifier(): u32 acquires IBCStore {
+    fun generate_connection_identifier(): u32 acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let next_sequence_bytes =
             table::borrow_with_default(
@@ -1620,40 +1620,6 @@ module ibc::ibc {
     ) {
         event::emit(PacketAck { packet, acknowledgement, maker });
     }
-
-    // #[test(ibc_signer = @ibc)]
-    // fun test_get_ibc_signer(ibc_signer: &signer) acquires SignerRef {
-    //     init_module(ibc_signer);
-
-    //     std::debug::print(&get_ibc_signer())
-    // }
-
-    // #[test]
-    // public fun test_address_to_string() {
-    //     let addr = @0x0000000e8cb0f6fe55f8b91c16e970a1863552af09b60e6fe1d99808254b0be9;
-    //     let str =
-    //         utf8(b"0x0000000e8cb0f6fe55f8b91c16e970a1863552af09b60e6fe1d99808254b0be9");
-
-    //     assert!(address_to_string(addr) == str, 1);
-    // }
-
-    // #[test]
-    // public fun test_to_string() {
-    //     let order_unordered: u8 = 1;
-    //     let order_ordered: u8 = 2;
-    //     let order_invalid: u8 = 3;
-    //     // Test case for ORDER_UNORDERED
-    //     let order_unordered = ordering_to_string(order_unordered);
-    //     assert!(order_unordered == string::utf8(b"ORDER_UNORDERED"), 2001);
-
-    //     // Test case for ORDER_ORDERED
-    //     let order_ordered = ordering_to_string(order_ordered);
-    //     assert!(order_ordered == string::utf8(b"ORDER_ORDERED"), 2002);
-
-    //     // Test case for invalid order
-    //     let order_invalid = ordering_to_string(order_invalid);
-    //     assert!(order_invalid == string::utf8(b"ORDER_INVALID"), 2003);
-    // }
 
     #[test(alice = @ibc)]
     fun test_create_client(alice: &signer) acquires IBCStore, SignerRef {

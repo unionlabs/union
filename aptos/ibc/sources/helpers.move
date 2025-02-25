@@ -63,6 +63,11 @@ module ibc::helpers {
     use std::string::{Self, String};
     use std::copyable_any;
 
+    friend ibc::acknowledge_packet;
+    friend ibc::channel_handshake;
+    friend ibc::recv_packet;
+    friend ibc::timeout_packet;
+
     struct RecvPacketParams has copy, drop, store {
         packet: Packet,
         relayer: address,
@@ -217,7 +222,7 @@ module ibc::helpers {
         0
     }
 
-    public fun pack_channel_open_init_params(
+    public(friend) fun pack_channel_open_init_params(
         connection_id: u32, channel_id: u32, version: String
     ): copyable_any::Any {
         copyable_any::pack<ChannelOpenInitParams>(
@@ -225,7 +230,7 @@ module ibc::helpers {
         )
     }
 
-    public fun pack_channel_open_try_params(
+    public(friend) fun pack_channel_open_try_params(
         connection_id: u32,
         channel_id: u32,
         counterparty_channel_id: u32,
@@ -243,7 +248,7 @@ module ibc::helpers {
         )
     }
 
-    public fun pack_channel_open_ack_params(
+    public(friend) fun pack_channel_open_ack_params(
         channel_id: u32, counterparty_channel_id: u32, counterparty_version: String
     ): copyable_any::Any {
         copyable_any::pack<ChannelOpenAckParams>(
@@ -255,23 +260,23 @@ module ibc::helpers {
         )
     }
 
-    public fun pack_channel_open_confirm_params(channel_id: u32): copyable_any::Any {
+    public(friend) fun pack_channel_open_confirm_params(channel_id: u32): copyable_any::Any {
         copyable_any::pack<ChannelOpenConfirmParams>(
             ChannelOpenConfirmParams { channel_id }
         )
     }
 
-    public fun pack_channel_close_init_params(channel_id: u32): copyable_any::Any {
+    public(friend) fun pack_channel_close_init_params(channel_id: u32): copyable_any::Any {
         copyable_any::pack<ChannelCloseInitParams>(ChannelCloseInitParams { channel_id })
     }
 
-    public fun pack_channel_close_confirm_params(channel_id: u32): copyable_any::Any {
+    public(friend) fun pack_channel_close_confirm_params(channel_id: u32): copyable_any::Any {
         copyable_any::pack<ChannelCloseConfirmParams>(
             ChannelCloseConfirmParams { channel_id }
         )
     }
 
-    public fun pack_acknowledge_packet_params(
+    public(friend) fun pack_acknowledge_packet_params(
         packet: Packet, acknowledgement: vector<u8>, relayer: address
     ): copyable_any::Any {
         copyable_any::pack<AcknowledgePacketParams>(
@@ -279,15 +284,15 @@ module ibc::helpers {
         )
     }
 
-    public fun pack_timeout_packet_params(packet: Packet, relayer: address): copyable_any::Any {
+    public(friend) fun pack_timeout_packet_params(packet: Packet, relayer: address): copyable_any::Any {
         copyable_any::pack<TimeoutPacketParams>(TimeoutPacketParams { packet, relayer })
     }
 
-    public fun pack_recv_packet_params(packet: Packet, relayer: address, relayer_msg: vector<u8>): copyable_any::Any {
+    public(friend) fun pack_recv_packet_params(packet: Packet, relayer: address, relayer_msg: vector<u8>): copyable_any::Any {
         copyable_any::pack<RecvPacketParams>(RecvPacketParams { packet, relayer, relayer_msg })
     }
 
-    public fun pack_recv_intent_packet_params(packet: Packet, relayer: address, relayer_msg: vector<u8>): copyable_any::Any {
+    public(friend) fun pack_recv_intent_packet_params(packet: Packet, relayer: address, relayer_msg: vector<u8>): copyable_any::Any {
         copyable_any::pack<RecvIntentPacketParams>(RecvIntentPacketParams { packet, relayer, relayer_msg  })
     }
 

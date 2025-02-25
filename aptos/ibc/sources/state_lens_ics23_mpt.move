@@ -61,7 +61,7 @@
 module ibc::state_lens_ics23_mpt_lc {
     use std::option::{Self, Option};
     use std::vector;
-    use std::string::{String, Self};
+    use std::string::String;
 
     use aptos_std::smart_table::{Self, SmartTable};
     use aptos_std::aptos_hash::keccak256;

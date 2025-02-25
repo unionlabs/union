@@ -88,6 +88,8 @@ module ibc::groth16_verifier {
     use std::bcs;
     use std::string::{Self, String};
 
+    friend ibc::cometbls_lc;
+
     const ALPHA_G1: vector<u8> = x"99a818c167016f7f6d02d84005a5ed1f7c6c19c4ddf15733b67acc0129076709ff810d9d3374808069c1ea1e5d263a90cf8181b98b415805797176357acec708";
     const BETA_G2: vector<u8> = x"742884ea18a00ef31874d5fc5511b18fa9391dc69b971b898a2dbfc644033f15656dc92f1f94dc170026cd80212e5160d2539e7e8b40885d1d60b770d25f3599";
     const GAMMA_G2: vector<u8> = x"19b6719e42c42ed1df46fa08c870c5241a52913b65d9b43679e089c2e0bb1622cf3a489ca7927f4f81400a2ebd739a935bceb3224264eff8e248311ae96be7a0";
@@ -117,19 +119,7 @@ module ibc::groth16_verifier {
         proof_commitment_pok: Element<G1>
     }
 
-    public fun default(): ZKP {
-        ZKP {
-            proof: Proof {
-                a: zero(),
-                b: zero(),
-                c: zero()
-            },
-            proof_commitment: zero(),
-            proof_commitment_pok: zero()
-        }
-    }
-
-    public fun verify_zkp(
+    public(friend) fun verify_zkp(
         chain_id: &String,
         trusted_validators_hash: &vector<u8>,
         light_header_hash: vector<u8>,
@@ -220,7 +210,7 @@ module ibc::groth16_verifier {
         eq<Gt>(&res, &zero<Gt>())
     }
 
-    public fun parse_zkp(buf: vector<u8>): ZKP {
+    public(friend) fun parse_zkp(buf: vector<u8>): ZKP {
         let cursor = 0;
 
         let a =
@@ -289,6 +279,20 @@ module ibc::groth16_verifier {
 
         (hmac % prime_r_minus_one) + 1
     }
+
+    #[test_only]
+    public fun default(): ZKP {
+        ZKP {
+            proof: Proof {
+                a: zero(),
+                b: zero(),
+                c: zero()
+            },
+            proof_commitment: zero(),
+            proof_commitment_pok: zero()
+        }
+    }
+
 
     #[test]
     fun test_verify_zkp_ok() {
