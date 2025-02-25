@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	corestoretypes "cosmossdk.io/core/store"
+	sdkmath "cosmossdk.io/math"
 	circuitante "cosmossdk.io/x/circuit/ante"
 	circuitkeeper "cosmossdk.io/x/circuit/keeper"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
@@ -30,6 +31,11 @@ type HandlerOptions struct {
 
 // NewAnteHandler constructor
 func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
+	// poa commission limits
+	doGenTxRateValidation := false
+	rateFloor := sdkmath.LegacyMustNewDecFromStr("0.01")
+	rateCeil := sdkmath.LegacyMustNewDecFromStr("0.01")
+
 	if options.AccountKeeper == nil {
 		return nil, errors.New("account keeper is required for ante builder")
 	}
@@ -69,6 +75,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
 		poaante.NewPOADisableStakingDecorator(),
 		poaante.NewPOADisableWithdrawDelegatorRewards(),
+		poaante.NewCommissionLimitDecorator(doGenTxRateValidation, rateFloor, rateCeil),
 	}
 
 	return sdk.ChainAnteDecorators(anteDecorators...), nil
