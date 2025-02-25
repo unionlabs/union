@@ -29,6 +29,8 @@
     "eslint-plugin-svelte": "^2.46.1",
     "globals": "^15.15.0",
     "gql.tada": "^1.8.10",
+    "graphql": "^16.10.0",
+    "graphql-request": "^7.1.2",
     "jsdom": "^26.0.0",
     "svelte": "^5.20.1",
     "svelte-check": "^4.1.4",

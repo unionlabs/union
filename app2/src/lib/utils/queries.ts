@@ -3,6 +3,8 @@ import { FetchHttpClient, HttpClient } from "@effect/platform"
 import type { DurationInput } from "effect/Duration"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
 import type { ParseError } from "effect/ParseResult"
+import type { TadaDocumentNode } from "gql.tada"
+import { request } from "graphql-request"
 
 export type FetchDecodeError = HttpClientError | ParseError
 
@@ -13,6 +15,13 @@ export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
     const json = yield* response.json
     return yield* Schema.decodeUnknown(schema)(json)
   })
+
+export const fetchDecodeGraphql = (document: TadaDocumentNode) =>
+  Effect.tryPromise(() => request("https://graphql.union.build/v1/graphql", document))
+// export const fetchDecodeGraphql = <S>(schema: Schema.Schema<S>, document: TadaDocumentNode) => Effect.tryPromise(() =>
+//   request("https://graphql.union.build/", document)
+
+// )
 
 export const createQuery = <S>({
   url,
