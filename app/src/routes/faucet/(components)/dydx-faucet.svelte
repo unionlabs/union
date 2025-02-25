@@ -16,15 +16,18 @@ import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 import { bech32ToBech32Address, isValidBech32Address } from "@unionlabs/client"
 import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
 import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts"
+import { Turnstile } from "svelte-turnstile"
 
 type DydxFaucetState = DiscriminatedUnion<
   "kind",
   {
     IDLE: {}
-    REQUESTING_TOKEN: {}
+    VERIFYING: {}
+    VERIFIED: {}
     SUBMITTING: { captchaToken: string }
     RESULT_OK: { message: string }
     RESULT_ERR: { error: string }
+    VERIFICATION_FAILED: { error: string }
   }
 >
 
@@ -38,38 +41,21 @@ let dydxAddress = derived(cosmosStore, $cosmosStore =>
 )
 
 let dydxFaucetState: Writable<DydxFaucetState> = writable({ kind: "IDLE" })
+let turnstileToken = ""
+let resetTurnstile: () => void
+let showTurnstile = false
+
+const verifyWithTurnstile = () => {
+  if ($dydxFaucetState.kind === "IDLE") {
+    showTurnstile = true
+    dydxFaucetState.set({ kind: "VERIFYING" })
+    resetTurnstile?.()
+  }
+}
 
 const requestDydxFromFaucet = async () => {
-  if ($dydxFaucetState.kind === "IDLE" || $dydxFaucetState.kind === "REQUESTING_TOKEN") {
-    dydxFaucetState.set({ kind: "REQUESTING_TOKEN" })
-
-    if (!window?.__google_recaptcha_client) {
-      console.error("Recaptcha client not loaded")
-      dydxFaucetState.set({
-        kind: "RESULT_ERR",
-        error: "Recaptcha client not loaded"
-      })
-      return
-    }
-
-    if (
-      typeof window.grecaptcha === "undefined" ||
-      typeof window.grecaptcha.execute !== "function"
-    ) {
-      console.error("Recaptcha execute function not available")
-      dydxFaucetState.set({
-        kind: "RESULT_ERR",
-        error: "Recaptcha execute function not available"
-      })
-      return
-    }
-
-    const captchaToken = await window.grecaptcha.execute(
-      "6LdaIQIqAAAAANckEOOTQCFun1buOvgGX8J8ocow",
-      { action: "submit" }
-    )
-
-    dydxFaucetState.set({ kind: "SUBMITTING", captchaToken })
+  if ($dydxFaucetState.kind === "VERIFIED") {
+    dydxFaucetState.set({ kind: "SUBMITTING", captchaToken: turnstileToken })
   }
 
   if ($dydxFaucetState.kind === "SUBMITTING") {
@@ -86,6 +72,8 @@ const requestDydxFromFaucet = async () => {
           kind: "RESULT_ERR",
           error: "Empty faucet response"
         })
+        turnstileToken = ""
+        showTurnstile = false
         return
       }
 
@@ -97,6 +85,8 @@ const requestDydxFromFaucet = async () => {
             ? "You already got adv4tnt from the faucet today. Try again in 24 hours."
             : "Error from faucet"
         })
+        turnstileToken = ""
+        showTurnstile = false
         return
       }
 
@@ -104,13 +94,43 @@ const requestDydxFromFaucet = async () => {
         kind: "RESULT_OK",
         message: result.send
       })
+      turnstileToken = ""
+      showTurnstile = false
     } catch (error) {
       console.error(error)
       dydxFaucetState.set({
         kind: "RESULT_ERR",
         error: `Faucet error: ${error}`
       })
+      turnstileToken = ""
+      showTurnstile = false
     }
+  }
+}
+
+const resetVerification = () => {
+  if ($dydxFaucetState.kind === "VERIFICATION_FAILED") {
+    turnstileToken = ""
+    showTurnstile = false
+    dydxFaucetState.set({ kind: "IDLE" })
+  }
+}
+
+const handleTurnstileCallback = (
+  e: CustomEvent<{ token: string; preClearanceObtained: boolean }>
+) => {
+  turnstileToken = e.detail.token
+  if ($dydxFaucetState.kind === "VERIFYING") {
+    dydxFaucetState.set({ kind: "VERIFIED" })
+  }
+}
+
+const handleTurnstileError = (e: CustomEvent<{ code: string }>) => {
+  if ($dydxFaucetState.kind === "VERIFYING") {
+    dydxFaucetState.set({
+      kind: "VERIFICATION_FAILED",
+      error: `Verification error: ${e.detail.code}`
+    })
   }
 }
 
@@ -132,7 +152,7 @@ let dydxBalance = createQuery(
 
 <!-- dydx faucet -->
 <Card.Root
-  class={cn(
+        class={cn(
     "w-full max-w-lg rounded-lg font-sans",
     "bg-[url('https://dydx.exchange/dots.svg')]",
     "bg-[#181825] text-[#FFFFFF] dark:bg-[#2D2D44]/50 dark:text-[#FFFFFF]",
@@ -142,10 +162,10 @@ let dydxBalance = createQuery(
     <Card.Title class="flex justify-between select-none">
       <p class="flex gap-x-3">
         <a
-          target="_blank"
-          class="mt-[4.5px]"
-          rel="noopener noreferrer"
-          href="https://dydx.exchange"
+                target="_blank"
+                class="mt-[4.5px]"
+                rel="noopener noreferrer"
+                href="https://dydx.exchange"
         >
           <img src="https://dydx.exchange/logo.svg" alt="" class="w-14" />
         </a>
@@ -160,12 +180,12 @@ let dydxBalance = createQuery(
     {#if $dydxFaucetState.kind === "RESULT_OK"}
       <p>
         Tokens sent: <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href={`https://www.mintscan.io/dydx-testnet/tx/${$dydxFaucetState.message}`}
-        >
-          <Truncate class="underline" value={$dydxFaucetState.message} type="hash" />
-        </a>
+              target="_blank"
+              rel="noopener noreferrer"
+              href={`https://www.mintscan.io/dydx-testnet/tx/${$dydxFaucetState.message}`}
+      >
+        <Truncate class="underline" value={$dydxFaucetState.message} type="hash" />
+      </a>
       </p>
     {:else if $dydxFaucetState.kind === "RESULT_ERR"}
       <p class="mb-4">
@@ -174,11 +194,11 @@ let dydxBalance = createQuery(
       <Button on:click={() => dydxFaucetState.set({ kind: "IDLE" })}>Retry</Button>
     {:else}
       <form
-        action="?"
-        method="POST"
-        name="faucet-form"
-        class="flex flex-col w-full gap-4"
-        on:submit|preventDefault|once={requestDydxFromFaucet}
+              action="?"
+              method="POST"
+              name="faucet-form"
+              class="flex flex-col w-full gap-4"
+              on:submit|preventDefault
       >
         <div>
           <Label for="address">Address</Label>
@@ -186,26 +206,26 @@ let dydxBalance = createQuery(
             <div class="w-full">
               <div class="relative w-full mb-2">
                 <Input
-                  type="text"
-                  minlength={44}
-                  maxlength={44}
-                  readonly={true}
-                  required={true}
-                  autocorrect="off"
-                  id="dydx-address"
-                  autocomplete="off"
-                  spellcheck="false"
-                  autocapitalize="none"
-                  value={$dydxAddress}
-                  data-lpignore={true}
-                  data-1p-ignore={true}
-                  placeholder="dydx14ea6…"
-                  name="dydx-wallet-address"
-                  class={cn(
+                        type="text"
+                        minlength={44}
+                        maxlength={44}
+                        readonly={true}
+                        required={true}
+                        autocorrect="off"
+                        id="dydx-address"
+                        autocomplete="off"
+                        spellcheck="false"
+                        autocapitalize="none"
+                        value={$dydxAddress}
+                        data-lpignore={true}
+                        data-1p-ignore={true}
+                        placeholder="dydx14ea6…"
+                        name="dydx-wallet-address"
+                        class={cn(
                     "bg-[#2D2D44] text-[#ffffff] dark:bg-[#181825] dark:text-[#ffffff]",
                     "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0",
                   )}
-                  pattern={createCosmosSdkAddressRegex({ prefix: "dydx" }).source}
+                        pattern={createCosmosSdkAddressRegex({ prefix: "dydx" }).source}
                 />
               </div>
               <div class="flex justify-between px-1 text-white">
@@ -226,36 +246,84 @@ let dydxBalance = createQuery(
             </div>
           </div>
         </div>
+        {#if showTurnstile}
+          <Turnstile
+                  siteKey="0x4AAAAAAA-eVs5k0b8Q1dl5"
+                  on:callback={handleTurnstileCallback}
+                  on:error={handleTurnstileError}
+                  theme="auto"
+                  size="normal"
+                  bind:reset={resetTurnstile}
+          />
+        {/if}
         <div class="flex flex-row items-center gap-4">
-          <Button
-            type="submit"
-            on:click={event => {
-              event.preventDefault()
-              requestDydxFromFaucet()
-            }}
-            disabled={$dydxFaucetState.kind !== "IDLE" ||
-              isValidBech32Address($dydxAddress) === false}
-            class={cn(
-              "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
-              "bg-[#6866FF] text-[#ffffff] dark:bg-[#6866FF] dark:text-[#ffffff]",
-            )}
-          >
-            Submit
-            {#if $dydxFaucetState.kind !== "IDLE"}
-              <span class="ml-2">
-                <SpinnerSVG className="w-4 h-4" />
-              </span>
-            {/if}
-          </Button>
+          {#if $dydxFaucetState.kind === "IDLE" || $dydxFaucetState.kind === "VERIFYING"}
+            <Button
+                    type="button"
+                    on:click={event => {
+                event.preventDefault()
+                verifyWithTurnstile()
+              }}
+                    disabled={!isValidBech32Address($dydxAddress) ||
+                $dydxFaucetState.kind === "VERIFYING"}
+                    class={cn(
+                "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
+                "bg-[#6866FF] text-[#ffffff] dark:bg-[#6866FF] dark:text-[#ffffff]"
+              )}
+            >
+              Verify
+              {#if $dydxFaucetState.kind === "VERIFYING"}
+                <span class="ml-2">
+                  <SpinnerSVG className="w-4 h-4" />
+                </span>
+              {/if}
+            </Button>
+          {:else if $dydxFaucetState.kind === "VERIFIED" || $dydxFaucetState.kind === "SUBMITTING"}
+            <Button
+                    type="button"
+                    on:click={event => {
+                event.preventDefault()
+                requestDydxFromFaucet()
+              }}
+                    disabled={$dydxFaucetState.kind === "SUBMITTING"}
+                    class={cn(
+                "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
+                "bg-[#6866FF] text-[#ffffff] dark:bg-[#6866FF] dark:text-[#ffffff]"
+              )}
+            >
+              Submit
+              {#if $dydxFaucetState.kind === "SUBMITTING"}
+                <span class="ml-2">
+                  <SpinnerSVG className="w-4 h-4" />
+                </span>
+              {/if}
+            </Button>
+          {:else if $dydxFaucetState.kind === "VERIFICATION_FAILED"}
+            <Button
+                    type="button"
+                    on:click={event => {
+                event.preventDefault()
+                resetVerification()
+              }}
+                    class={cn(
+                "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
+                "bg-[#6866FF] text-[#ffffff] dark:bg-[#6866FF] dark:text-[#ffffff]"
+              )}
+            >
+              Reset
+            </Button>
+            <p class="text-xs text-red-500">{$dydxFaucetState.error}</p>
+          {/if}
           <p class="text-xs">
             dYdX faucet is provided by <a
-              class="text-[#9e9dff]"
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://dydx.exchange/"
-            >
-              dydx.exchange
-            </a>
+                  class="text-[#9e9dff]"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href="https://dydx.exchange/"
+          >
+            dydx.exchange
+          </a>
+            <span> and protected by Cloudflare Turnstile.</span>
           </p>
         </div>
       </form>
