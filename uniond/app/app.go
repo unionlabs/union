@@ -1,11 +1,13 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -90,6 +92,7 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/mempool"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	sigtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -303,6 +306,33 @@ func NewUnionApp(
 		txConfig.TxDecoder(),
 		baseAppOptions...,
 	)
+
+	parentTxPriority := mempool.NewDefaultTxPriority()
+	priorityAddresses := strings.Split(os.Getenv("MEMPOOL_PRIORITY"), ",")
+	bApp.SetMempool(mempool.NewPriorityMempool(mempool.PriorityNonceMempoolConfig[int64]{
+		TxPriority: mempool.TxPriority[int64]{
+			GetTxPriority: func(goCtx context.Context, tx sdk.Tx) int64 {
+				senders, err := tx.GetSenders()
+				if err == nil {
+					for _, sender := range senders {
+						unionSender, err := signingCtx.AddressCodec().BytesToString(sender)
+						if err != nil {
+							panic("impossible")
+						}
+						for _, prioritySender := range priorityAddresses {
+							if unionSender == prioritySender {
+								return 100
+							}
+						}
+					}
+				}
+				return parentTxPriority.GetTxPriority(goCtx, tx)
+			},
+			Compare:  parentTxPriority.Compare,
+			MinValue: parentTxPriority.MinValue,
+		},
+		SignerExtractor: mempool.NewDefaultSignerExtractionAdapter(),
+	}))
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
