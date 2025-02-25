@@ -8,3 +8,5 @@ export class TransferListItem extends Schema.Class<TransferListItem>("TransferLi
   sender_normalized: AddressNormalized,
   receiver_normalized: AddressNormalized
 }) {}
+
+export const TransferList = Schema.Array(TransferListItem)

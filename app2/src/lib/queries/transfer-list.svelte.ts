@@ -1,33 +1,37 @@
-import { Chains } from "$lib/schema/chain"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { ParseResult, Schema } from "effect"
 import { graphql } from "gql.tada"
-import { chains } from "$lib/stores/chains.svelte"
+import { transferList } from "$lib/stores/transfers.svelte"
+import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
+import { TransferList } from "$lib/schema/transfer-list"
 
-const ChainsResponseSchema = Schema.Struct({ v1_ibc_union_chains: Chains })
+const ResponseSchema = Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList })
 
-const ChainsFromResponse = Schema.transformOrFail(ChainsResponseSchema, Chains, {
+const TransferListFromResponse = Schema.transformOrFail(ResponseSchema, TransferList, {
   strict: true,
-  decode: input => ParseResult.succeed(input.v1_ibc_union_chains),
+  decode: input => ParseResult.succeed(input.v1_ibc_union_fungible_asset_orders),
   encode: (x, _, ast) => ParseResult.fail(new ParseResult.Forbidden(ast, x, "I will never encode"))
 })
 
-export let chainsQuery = createQueryGraphql({
-  schema: ChainsFromResponse,
-  document: graphql(`
-    query Chains {
-      v1_ibc_union_chains(where: {enabled: {_eq: true}}) {
-        chain_id,
-        display_name,
-        addr_prefix
+export let transferListQuery = createQueryGraphql({
+  schema: TransferListFromResponse,
+  document: graphql(
+    `
+    query TransferList {
+      v1_ibc_union_fungible_asset_orders(
+        limit: 20,
+        order_by: { packet_send_timestamp: desc_nulls_last}) {
+      ...TransferListItem
       }
     }
-  `),
+  `,
+    [transferListItemFragment]
+  ),
   refetchInterval: "5 seconds",
   writeData: data => {
-    chains.data = data
+    transferList.data = data
   },
   writeError: error => {
-    chains.error = error
+    transferList.error = error
   }
 })
