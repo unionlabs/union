@@ -316,6 +316,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }
                         _ => None,
                     })
+                    .filter(|(typ, _, _)| typ.name.0.as_str() != "CreateLensClient")
                     .map(|(typ, data, hash)| {
                         let event = match dbg!(typ).name.0.as_str() {
                             "CreateClient" => from_raw_event::<ibc::CreateClient>(data),
