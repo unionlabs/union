@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -182,7 +182,9 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public(friend) fun get_client_state(client_type: String, client_id: u32): vector<u8> {
+    public(friend) fun get_client_state(
+        client_type: String, client_id: u32
+    ): vector<u8> {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::get_client_state(client_id)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
@@ -217,9 +219,13 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::verify_membership(client_id, height, proof, key, value)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return state_lens_ics23_mpt_lc::verify_membership(client_id, height, proof, key, value)
+            return state_lens_ics23_mpt_lc::verify_membership(
+                client_id, height, proof, key, value
+            )
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            return state_lens_ics23_ics23_lc::verify_membership(client_id, height, proof, key, value)
+            return state_lens_ics23_ics23_lc::verify_membership(
+                client_id, height, proof, key, value
+            )
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
@@ -234,9 +240,13 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::verify_non_membership(client_id, height, proof, path)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return state_lens_ics23_mpt_lc::verify_non_membership(client_id, height, proof, path)
+            return state_lens_ics23_mpt_lc::verify_non_membership(
+                client_id, height, proof, path
+            )
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            return state_lens_ics23_ics23_lc::verify_non_membership(client_id, height, proof, path)
+            return state_lens_ics23_ics23_lc::verify_non_membership(
+                client_id, height, proof, path
+            )
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }

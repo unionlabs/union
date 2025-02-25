@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -183,9 +183,7 @@ module zkgm::ibc_app {
     }
 
     #[view]
-    public fun get_balance(
-        acc: address, token: address
-    ): u64 {
+    public fun get_balance(acc: address, token: address): u64 {
         primary_fungible_store::balance(acc, get_metadata(token))
     }
 
@@ -281,7 +279,12 @@ module zkgm::ibc_app {
         (wrapped_address, salt)
     }
 
-    public fun deploy_token(salt: vector<u8>, name: string::String, symbol: string::String, decimals: u8): address acquires SignerRef {
+    public fun deploy_token(
+        salt: vector<u8>,
+        name: string::String,
+        symbol: string::String,
+        decimals: u8
+    ): address acquires SignerRef {
         zkgm::fa_coin::initialize(
             &get_signer(),
             name,
@@ -434,7 +437,10 @@ module zkgm::ibc_app {
 
             let balance_key = ChannelBalancePair { channel: channel_id, token: base_token };
 
-            let curr_balance = *smart_table::borrow_mut_with_default(&mut store.channel_balance, balance_key, 0);
+            let curr_balance =
+                *smart_table::borrow_mut_with_default(
+                    &mut store.channel_balance, balance_key, 0
+                );
 
             smart_table::upsert(
                 &mut store.channel_balance,
@@ -599,7 +605,7 @@ module zkgm::ibc_app {
                 path,
                 *vector::borrow(&instructions, i)
             );
-            i = i+1;
+            i = i + 1;
         }
     }
 
@@ -912,7 +918,12 @@ module zkgm::ibc_app {
             if (!is_deployed(wrapped_address)) {
                 let token_name = *fungible_asset_order::base_token_name(&order);
                 let token_symbol = *fungible_asset_order::base_token_symbol(&order);
-                deploy_token(salt, token_name, token_symbol, fungible_asset_order::base_token_decimals(&order));
+                deploy_token(
+                    salt,
+                    token_name,
+                    token_symbol,
+                    fungible_asset_order::base_token_decimals(&order)
+                );
                 let value =
                     update_channel_path(
                         path, ibc::packet::destination_channel_id(&ibc_packet)
@@ -962,8 +973,7 @@ module zkgm::ibc_app {
                         &get_signer(), asset, relayer, (fee as u64)
                     );
                 }
-            }
-            else {
+            } else {
                 abort E_ONLY_MAKER_OTHER
             };
         };
@@ -1385,10 +1395,12 @@ module zkgm::ibc_app {
         abort E_INFINITE_GAME
     }
 
-    public fun on_recv_intent_packet(_packet: Packet, _relayer: address, _relayer_msg: vector<u8>) {
+    public fun on_recv_intent_packet(
+        _packet: Packet, _relayer: address, _relayer_msg: vector<u8>
+    ) {
         abort E_INFINITE_GAME
     }
-    
+
     public fun on_packet<T: key>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
         ibc::helpers::on_packet(
             new_ucs_relay_proof(),
@@ -1449,7 +1461,8 @@ module zkgm::ibc_app {
         let token = b"test_token";
         let (wrapped_address, salt) =
             predict_wrapped_token(path, destination_channel_id, token);
-        let deployed_token_addr = deploy_token(salt, string::utf8(b""), string::utf8(b""), 18);
+        let deployed_token_addr =
+            deploy_token(salt, string::utf8(b""), string::utf8(b""), 18);
 
         std::debug::print(&string::utf8(b"wrapped address is: "));
         std::debug::print(&wrapped_address);
@@ -1630,11 +1643,14 @@ module zkgm::ibc_app {
 
     #[test]
     fun see_packet() {
-        let packet = x"82c1e7c9642e7ecbb7bbe659eff187e8ee6691fd7c840b09a89ec6b126c8ca3b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000c800000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000c80000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000204d8a66ece11f6352224942bd1dabc456b4bb5316124f02b9a7b6292ad61f77770000000000000000000000000000000000000000000000000000000000000040756e696f6e31677968347464377639366d7563723465616b7364326d7367306a76306d636e396135796a38357678356c376874793374753970737178736a79320000000000000000000000000000000000000000000000000000000000000004414e414d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000963616e696d616e616d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020feec3232793d275bfc623cc14f7306904b080746752fefce94e87dfe0bcf4962";
+        let packet =
+            x"82c1e7c9642e7ecbb7bbe659eff187e8ee6691fd7c840b09a89ec6b126c8ca3b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000c800000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000c80000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000204d8a66ece11f6352224942bd1dabc456b4bb5316124f02b9a7b6292ad61f77770000000000000000000000000000000000000000000000000000000000000040756e696f6e31677968347464377639366d7563723465616b7364326d7367306a76306d636e396135796a38357678356c376874793374753970737178736a79320000000000000000000000000000000000000000000000000000000000000004414e414d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000963616e696d616e616d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020feec3232793d275bfc623cc14f7306904b080746752fefce94e87dfe0bcf4962";
         let raw_packet = zkgm_packet::decode(&packet);
         std::debug::print(&raw_packet);
-        let packet = fungible_asset_order::decode(instruction::operand(&zkgm_packet::instruction(&raw_packet)));
+        let packet =
+            fungible_asset_order::decode(
+                instruction::operand(&zkgm_packet::instruction(&raw_packet))
+            );
         std::debug::print(&packet);
     }
 }
-

@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -115,7 +115,7 @@ module ibc::state_lens_ics23_ics23_lc {
 
     struct ConsensusState has copy, drop, store {
         timestamp: u64,
-        app_hash: vector<u8>,
+        app_hash: vector<u8>
     }
 
     // Function to mock the creation of a client
@@ -129,8 +129,7 @@ module ibc::state_lens_ics23_ics23_lc {
         let consensus_state = decode_consensus_state(consensus_state_bytes);
 
         assert!(
-            client_state.l2_latest_height != 0
-                && consensus_state.timestamp != 0,
+            client_state.l2_latest_height != 0 && consensus_state.timestamp != 0,
             E_INVALID_CLIENT_STATE
         );
 
@@ -149,14 +148,20 @@ module ibc::state_lens_ics23_ics23_lc {
 
         move_to(&client_signer, state);
 
-        let lens_client_event = create_lens_client_event::new(
-            client_id,
-            client_state.l2_chain_id,
-            client_state.l1_client_id,
-            client_state.l2_client_id,
-        );
+        let lens_client_event =
+            create_lens_client_event::new(
+                client_id,
+                client_state.l2_chain_id,
+                client_state.l1_client_id,
+                client_state.l2_client_id
+            );
 
-        (client_state_bytes, consensus_state_bytes, client_state.l2_chain_id, option::some(lens_client_event))
+        (
+            client_state_bytes,
+            consensus_state_bytes,
+            client_state.l2_chain_id,
+            option::some(lens_client_event)
+        )
     }
 
     public(friend) fun latest_height(client_id: u32): u64 acquires State {
@@ -173,15 +178,18 @@ module ibc::state_lens_ics23_ics23_lc {
 
         let l2_height = height::get_revision_height(&header.l2_height);
 
-        assert!(cometbls_lc::verify_membership(
-            state.client_state.l1_client_id,
-            height::get_revision_height(&header.l1_height),
-            header.l2_consensus_state_proof,
-            commitment::consensus_state_commitment_key(
-                state.client_state.l2_client_id, l2_height
-            ),
-            keccak256(header.l2_consensus_state)
-        ) == 0, E_VERIFY_MEMBERSHIP_FAILURE);
+        assert!(
+            cometbls_lc::verify_membership(
+                state.client_state.l1_client_id,
+                height::get_revision_height(&header.l1_height),
+                header.l2_consensus_state_proof,
+                commitment::consensus_state_commitment_key(
+                    state.client_state.l2_client_id, l2_height
+                ),
+                keccak256(header.l2_consensus_state)
+            ) == 0,
+            E_VERIFY_MEMBERSHIP_FAILURE
+        );
 
         let l2_consensus_state = decode_tm_consensus_state(header.l2_consensus_state);
 
@@ -206,8 +214,7 @@ module ibc::state_lens_ics23_ics23_lc {
     // Checks whether `misbehaviour` is valid and freezes the client
     public(friend) fun report_misbehaviour(
         _client_id: u32, _misbehaviour: vector<u8>
-    ) {
-    }
+    ) {}
 
     public(friend) fun verify_membership(
         client_id: u32,
@@ -259,7 +266,9 @@ module ibc::state_lens_ics23_ics23_lc {
         object::create_object_address(&vault_addr, bcs::to_bytes<u32>(&client_id))
     }
 
-    public(friend) fun get_timestamp_at_height(client_id: u32, height: u64): u64 acquires State {
+    public(friend) fun get_timestamp_at_height(
+        client_id: u32, height: u64
+    ): u64 acquires State {
         let state = borrow_global<State>(get_client_address(client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
         consensus_state.timestamp
@@ -299,10 +308,7 @@ module ibc::state_lens_ics23_ics23_lc {
         let timestamp = ethabi::decode_uint(&buf, &mut index);
         let app_hash = vector::slice(&buf, 32, 64);
 
-        ConsensusState {
-            timestamp: (timestamp as u64),
-            app_hash
-        }
+        ConsensusState { timestamp: (timestamp as u64), app_hash }
     }
 
     fun decode_tm_consensus_state(buf: vector<u8>): TendermintConsensusState {
@@ -332,7 +338,7 @@ module ibc::state_lens_ics23_ics23_lc {
         l2_chain_id: String,
         l1_client_id: u32,
         l2_client_id: u32,
-        l2_latest_height: u64,
+        l2_latest_height: u64
     }
 
     fun encode_client_state(cs: &ClientState): vector<u8> {
@@ -342,7 +348,7 @@ module ibc::state_lens_ics23_ics23_lc {
             l2_chain_id: cs.l2_chain_id,
             l1_client_id: cs.l1_client_id,
             l2_client_id: cs.l2_client_id,
-            l2_latest_height: cs.l2_latest_height,
+            l2_latest_height: cs.l2_latest_height
         };
 
         vector::append(&mut buf, bcs::to_bytes(&partial));
@@ -364,7 +370,8 @@ module ibc::state_lens_ics23_ics23_lc {
 
     #[test]
     fun see_client_state() {
-        let cs = x"0a62626e2d746573742d3506000000150000003fca020000000000470680b0f0eb26976b5fc59c29d456f24312d7e1ceb5e6df9eebaa7e55ff96a5";
+        let cs =
+            x"0a62626e2d746573742d3506000000150000003fca020000000000470680b0f0eb26976b5fc59c29d456f24312d7e1ceb5e6df9eebaa7e55ff96a5";
         std::debug::print(&decode_client_state(cs));
     }
 }

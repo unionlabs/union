@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -268,7 +268,7 @@ module ibc::ibc {
     struct PacketAck has drop, store {
         packet: Packet,
         acknowledgement: vector<u8>,
-        maker: address,
+        maker: address
     }
 
     #[event]
@@ -355,12 +355,14 @@ module ibc::ibc {
 
         if (option::is_some(&lens_client_event)) {
             let event = option::extract(&mut lens_client_event);
-            event::emit(CreateLensClient {        
-                client_id: create_lens_client_event::client_id(&event),
-                l2_chain_id: create_lens_client_event::l2_chain_id(&event),
-                l1_client_id: create_lens_client_event::l1_client_id(&event),
-                l2_client_id: create_lens_client_event::l2_client_id(&event)
-            });
+            event::emit(
+                CreateLensClient {
+                    client_id: create_lens_client_event::client_id(&event),
+                    l2_chain_id: create_lens_client_event::l2_chain_id(&event),
+                    l1_client_id: create_lens_client_event::l1_client_id(&event),
+                    l2_client_id: create_lens_client_event::l2_client_id(&event)
+                }
+            );
         };
 
         smart_table::upsert(&mut store.client_id_to_type, client_id, client_type);
@@ -384,7 +386,11 @@ module ibc::ibc {
         );
 
         event::emit(
-            CreateClient { client_id, client_type, counterparty_chain_id: counterparty_chain_id }
+            CreateClient {
+                client_id,
+                client_type,
+                counterparty_chain_id: counterparty_chain_id
+            }
         );
     }
 
@@ -684,7 +690,9 @@ module ibc::ibc {
                 hash::sha2_256(*vector::borrow(&consensus_states, i))
             );
 
-            event::emit(UpdateClient { client_id, client_type, counterparty_height: height });
+            event::emit(
+                UpdateClient { client_id, client_type, counterparty_height: height }
+            );
 
             i = i + 1;
         };
@@ -1607,11 +1615,15 @@ module ibc::ibc {
         string_utils::to_string(&bcs::to_bytes(&addr))
     }
 
-    public(friend) fun emit_recv_packet(packet: Packet, maker: address, maker_msg: vector<u8>) {
+    public(friend) fun emit_recv_packet(
+        packet: Packet, maker: address, maker_msg: vector<u8>
+    ) {
         event::emit(PacketRecv { packet, maker, maker_msg })
     }
 
-    public(friend) fun emit_recv_intent_packet(packet: Packet, maker: address, maker_msg: vector<u8>) {
+    public(friend) fun emit_recv_intent_packet(
+        packet: Packet, maker: address, maker_msg: vector<u8>
+    ) {
         event::emit(RecvIntentPacket { packet, maker, maker_msg })
     }
 

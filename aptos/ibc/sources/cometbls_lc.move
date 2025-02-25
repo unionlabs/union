@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -402,7 +402,9 @@ module ibc::cometbls_lc {
         MerkleRoot { hash: hash }
     }
 
-    public(friend) fun get_timestamp_at_height(client_id: u32, height: u64): u64 acquires State {
+    public(friend) fun get_timestamp_at_height(
+        client_id: u32, height: u64
+    ): u64 acquires State {
         let state = borrow_global<State>(get_client_address(client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
         consensus_state.timestamp
@@ -458,7 +460,9 @@ module ibc::cometbls_lc {
                 timestamp,
                 app_hash: MerkleRoot { hash },
                 next_validators_hash
-            } = smart_table::borrow(&state.consensus_states, header.signed_header.height);
+            } = smart_table::borrow(
+                &state.consensus_states, header.signed_header.height
+            );
 
             if (timestamp != &expected_timestamp
                 || hash != &header.signed_header.app_hash

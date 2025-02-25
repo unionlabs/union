@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -78,12 +78,7 @@ module ibc::create_lens_client_event {
         l1_client_id: u32,
         l2_client_id: u32
     ): CreateLensClientEvent {
-        CreateLensClientEvent {        
-            client_id,
-            l2_chain_id,
-            l1_client_id,
-            l2_client_id
-        }
+        CreateLensClientEvent { client_id, l2_chain_id, l1_client_id, l2_client_id }
     }
 
     public(friend) fun client_id(self: &CreateLensClientEvent): u32 {

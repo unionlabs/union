@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -108,7 +108,14 @@ module ibc::recv_packet {
             i = i + 1;
         };
 
-        process_receive<T>(packets, relayer, relayer_msgs, proof_height, proof, false);
+        process_receive<T>(
+            packets,
+            relayer,
+            relayer_msgs,
+            proof_height,
+            proof,
+            false
+        );
     }
 
     fun process_receive<T: key + store + drop>(
@@ -190,7 +197,8 @@ module ibc::recv_packet {
                 let maker_msg = *vector::borrow(&maker_msgs, i);
                 let acknowledgement =
                     if (intent) {
-                        let param = helpers::pack_recv_intent_packet_params(packet, @ibc, b"");
+                        let param =
+                            helpers::pack_recv_intent_packet_params(packet, @ibc, b"");
                         engine::dispatch<T>(param);
 
                         let ack = dispatcher::get_return_value<T>();

@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -171,14 +171,20 @@ module ibc::state_lens_ics23_mpt_lc {
 
         move_to(&client_signer, state);
 
-        let lens_client_event = create_lens_client_event::new(
-            client_id,
-            client_state.l2_chain_id,
-            client_state.l1_client_id,
-            client_state.l2_client_id,
-        );
+        let lens_client_event =
+            create_lens_client_event::new(
+                client_id,
+                client_state.l2_chain_id,
+                client_state.l1_client_id,
+                client_state.l2_client_id
+            );
 
-        (client_state_bytes, consensus_state_bytes, client_state.l2_chain_id, option::some(lens_client_event))
+        (
+            client_state_bytes,
+            consensus_state_bytes,
+            client_state.l2_chain_id,
+            option::some(lens_client_event)
+        )
     }
 
     public fun latest_height(client_id: u32): u64 acquires State {

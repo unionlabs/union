@@ -5,11 +5,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -336,9 +336,7 @@ module zkgm::fa_coin {
                 i = i - 1;
             };
             token_name
-        } else {
-            name
-        }
+        } else { name }
     }
 
     public fun sanitize_token_name(name: String): String {
@@ -358,15 +356,42 @@ module zkgm::fa_coin {
     #[test]
     fun test_sanitize_token_works() {
         use std::string::utf8;
-        assert!(sanitize_token_name(utf8(b"alesdnleansdf")) == utf8(b"alesdnleansdf"), 1);
-        assert!(sanitize_token_name(utf8(b"verylongverylongverylongverylongverylongverylongverylongverylong")) == utf8(b"verylongverylongverylongverylong"), 2);
-        assert!(sanitize_token_name(utf8(b"factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown")) == utf8(b"clown"), 3);
-        assert!(sanitize_token_name(utf8(b"factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown/")) == utf8(b"clown/"), 4);
+        assert!(
+            sanitize_token_name(utf8(b"alesdnleansdf")) == utf8(b"alesdnleansdf"),
+            1
+        );
+        assert!(
+            sanitize_token_name(
+                utf8(b"verylongverylongverylongverylongverylongverylongverylongverylong")
+            ) == utf8(b"verylongverylongverylongverylong"),
+            2
+        );
+        assert!(
+            sanitize_token_name(
+                utf8(b"factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown")
+            ) == utf8(b"clown"),
+            3
+        );
+        assert!(
+            sanitize_token_name(
+                utf8(b"factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown/")
+            ) == utf8(b"clown/"),
+            4
+        );
 
-        assert!(sanitize_token_symbol(utf8(b"verylongverylongverylongverylongverylongverylongverylongverylong")) == utf8(b"ngverylong"), 5);
-        assert!(sanitize_token_symbol(utf8(b"factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown")) == utf8(b"clown"), 6);
+        assert!(
+            sanitize_token_symbol(
+                utf8(b"verylongverylongverylongverylongverylongverylongverylongverylong")
+            ) == utf8(b"ngverylong"),
+            5
+        );
+        assert!(
+            sanitize_token_symbol(
+                utf8(b"factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown")
+            ) == utf8(b"clown"),
+            6
+        );
     }
-
 
     #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
     public fun test_burn_with_metadata(creator: &signer) acquires ManagedFungibleAsset {

@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -100,7 +100,9 @@ module ibc::commitment {
     }
 
     // Updated function: consensus_state_path
-    public(friend) fun consensus_state_path(client_id: u32, revision_height: u64): vector<u8> {
+    public(friend) fun consensus_state_path(
+        client_id: u32, revision_height: u64
+    ): vector<u8> {
         let state_path = vector::empty<u8>();
 
         let consensus_state_bytes = bcs::to_bytes<u256>(&CONSENSUS_STATE);
@@ -147,7 +149,9 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public(friend) fun packet_commitment_path(channel_id: u32, sequence: u64): vector<u8> {
+    public(friend) fun packet_commitment_path(
+        channel_id: u32, sequence: u64
+    ): vector<u8> {
         let path_vec = vector::empty<u8>();
 
         let channels_bytes = bcs::to_bytes<u256>(&PACKETS);
@@ -263,7 +267,9 @@ module ibc::commitment {
         keccak256(channel_path(channel_id))
     }
 
-    public(friend) fun packet_commitment_key(channel_id: u32, sequence: u64): vector<u8> {
+    public(friend) fun packet_commitment_key(
+        channel_id: u32, sequence: u64
+    ): vector<u8> {
         keccak256(packet_commitment_path(channel_id, sequence))
     }
 
@@ -332,16 +338,20 @@ module ibc::commitment {
     }
 
     #[test]
-    fun test_commit_ack(){
-        let buf = x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
+    fun test_commit_ack() {
+        let buf =
+            x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
         let val = commit_ack(buf);
-        assert!(val == x"01773c7d3e6e60a7ccaa29208f2ef3aa86fe273271dec70f60866a6c8c908762", 13);
+        assert!(
+            val == x"01773c7d3e6e60a7ccaa29208f2ef3aa86fe273271dec70f60866a6c8c908762",
+            13
+        );
     }
 
-
     #[test]
-    fun test_commit_acks(){
-        let buf = x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
+    fun test_commit_acks() {
+        let buf =
+            x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
         let vect = vector::empty();
         vector::push_back(&mut vect, buf);
         let val = commit_acks(vect);
