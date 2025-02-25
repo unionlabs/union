@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Chain } from "$lib/schemas/chain"
+import { Chain } from "$lib/schema/chain"
 interface Props {
   chain: Chain
 }

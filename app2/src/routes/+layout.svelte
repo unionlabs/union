@@ -1,10 +1,8 @@
 <script lang="ts">
 import "../app.css"
 import { onMount } from "svelte"
-import { Effect, Fiber, Option } from "effect"
-import { block } from "$lib/stores/block.svelte"
+import { Effect, Fiber } from "effect"
 import { chainsQuery } from "$lib/queries/chains.svelte"
-import { chains } from "$lib/stores/chains.svelte"
 import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
 import AppErrors from "$lib/components/layout/AppErrors/index.svelte"
 
@@ -12,13 +10,7 @@ let { children } = $props()
 
 onMount(() => {
   const fiber = Effect.runFork(chainsQuery)
-  return () =>
-    Effect.runPromise(
-      Effect.gen(function* () {
-        yield* Fiber.interrupt(fiber)
-        block.data = Option.none()
-      })
-    )
+  return () => Effect.runPromise(Fiber.interrupt(fiber))
 })
 </script>
 

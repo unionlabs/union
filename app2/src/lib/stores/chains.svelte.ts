@@ -1,6 +1,6 @@
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { Option } from "effect"
-import type { Chains } from "$lib/schemas/chain"
+import type { Chains } from "$lib/schema/chain"
 
 class ChainsStore {
   data: Option.Option<typeof Chains.Type> = $state(Option.none())

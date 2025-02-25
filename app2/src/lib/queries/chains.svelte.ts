@@ -1,4 +1,4 @@
-import { Chains } from "$lib/schemas/chain"
+import { Chains } from "$lib/schema/chain"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { ParseResult, Schema } from "effect"
 import { graphql } from "gql.tada"
