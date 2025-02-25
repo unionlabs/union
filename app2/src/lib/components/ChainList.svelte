@@ -1,7 +1,7 @@
 <script lang="ts">
 import { chains } from "$lib/stores/chains.svelte"
 import { Option } from "effect"
-import ChainComponent from "$lib/components/data/ChainComponent.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 </script>
 
 {#if Option.isSome(chains.data)}
