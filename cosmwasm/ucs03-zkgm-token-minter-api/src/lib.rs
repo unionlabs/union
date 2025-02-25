@@ -2,10 +2,6 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Uint128};
 use enumorph::Enumorph;
 
-pub const CW20_TOKEN_CREATION_EVENT: &str = "cw20_token_creation";
-pub const CW20_TOKEN_ADDRESS: &str = "cw20_token_address";
-pub const CW20_QUOTE_TOKEN: &str = "quote_token";
-
 pub const DISPATCH_EVENT: &str = "dispatch";
 pub const DISPATCH_EVENT_ATTR: &str = "msg";
 

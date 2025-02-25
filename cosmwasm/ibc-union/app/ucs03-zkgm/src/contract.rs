@@ -4,8 +4,8 @@ use alloy::{primitives::U256, sol_types::SolValue};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Attribute, Binary,
-    CodeInfoResponse, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, QueryRequest, Reply,
+    instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Binary,
+    CodeInfoResponse, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QueryRequest, Reply,
     Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use ibc_union_msg::{
@@ -14,8 +14,7 @@ use ibc_union_msg::{
 };
 use ibc_union_spec::types::Packet;
 use ucs03_zkgm_token_minter_api::{
-    LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg, CW20_QUOTE_TOKEN,
-    CW20_TOKEN_ADDRESS, CW20_TOKEN_CREATION_EVENT, DISPATCH_EVENT, DISPATCH_EVENT_ATTR,
+    LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg, DISPATCH_EVENT, DISPATCH_EVENT_ATTR,
 };
 use unionlabs::{
     ethereum::keccak256,
@@ -42,7 +41,6 @@ pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
 
 pub const EXECUTE_REPLY_ID: u64 = 0x1337;
 pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
-pub const CREATE_DENOM_REPLY_ID: u64 = 0xdead;
 pub const ESCROW_REPLY_ID: u64 = 0xcafe;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
@@ -813,24 +811,21 @@ fn execute_fungible_asset_order(
                 wrapped_denom.clone(),
                 &Vec::from(order.base_token.clone()).into(),
             )?;
-            messages.push(SubMsg::reply_on_success(
-                make_wasm_msg(
-                    WrappedTokenMsg::CreateDenom {
-                        subdenom: wrapped_denom.clone(),
-                        metadata: Metadata {
-                            name: order.base_token_name,
-                            symbol: order.base_token_symbol,
-                            decimals: order.base_token_decimals,
-                        },
-                        path: path.to_be_bytes_vec().into(),
-                        channel: packet.destination_channel_id,
-                        token: Vec::from(order.base_token.clone()).into(),
+            messages.push(SubMsg::new(make_wasm_msg(
+                WrappedTokenMsg::CreateDenom {
+                    subdenom: wrapped_denom.clone(),
+                    metadata: Metadata {
+                        name: order.base_token_name,
+                        symbol: order.base_token_symbol,
+                        decimals: order.base_token_decimals,
                     },
-                    &minter,
-                    vec![],
-                )?,
-                CREATE_DENOM_REPLY_ID,
-            ));
+                    path: path.to_be_bytes_vec().into(),
+                    channel: packet.destination_channel_id,
+                    token: Vec::from(order.base_token.clone()).into(),
+                },
+                &minter,
+                vec![],
+            )?));
             TOKEN_ORIGIN.save(
                 deps.storage,
                 wrapped_denom.clone(),
@@ -930,30 +925,6 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
             match serde_json_wasm::from_str::<Vec<WasmMsg>>(&attr.value) {
                 Ok(msgs) => Ok(Response::new().add_messages(msgs)),
                 Err(_) => Ok(Response::new()),
-            }
-        }
-        CREATE_DENOM_REPLY_ID => {
-            // We are just emitting the token creation event so that the event is emitted from this
-            // contract.
-            let event = format!("wasm-{CW20_TOKEN_CREATION_EVENT}");
-            match reply
-                .result
-                .into_result()
-                .expect("replies only if success")
-                .events
-                .into_iter()
-                .find(|e| e.ty == event)
-            {
-                Some(event) => {
-                    let attrs: Vec<Attribute> = event
-                        .attributes
-                        .into_iter()
-                        .filter(|a| a.key == CW20_TOKEN_ADDRESS || a.key == CW20_QUOTE_TOKEN)
-                        .collect();
-                    Ok(Response::new()
-                        .add_event(Event::new(CW20_TOKEN_CREATION_EVENT).add_attributes(attrs)))
-                }
-                None => Ok(Response::new()),
             }
         }
         EXECUTE_REPLY_ID => {
