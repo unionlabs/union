@@ -4,6 +4,7 @@ import { onMount } from "svelte"
 import { Effect, Fiber, Option } from "effect"
 import { block } from "$lib/stores/block.svelte"
 import { chainsQuery } from "$lib/queries/chains.svelte"
+import { chains } from "$lib/stores/chains.svelte"
 
 let { children } = $props()
 
@@ -20,3 +21,10 @@ onMount(() => {
 </script>
 
 {@render children()}
+
+{#if Option.isSome(chains.error)}
+  <div class="bg-red-500">
+    {chains.error.value}:
+    {chains.error.value.cause}
+  </div>
+{/if}
