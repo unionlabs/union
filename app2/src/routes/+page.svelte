@@ -1,32 +1,6 @@
 <script lang="ts">
-import { onMount } from "svelte"
-import { createQuery, type FetchDecodeError } from "$lib/utils/queries"
-import { Effect, Fiber, Option } from "effect"
-import { Block } from "$lib/schemas/block"
+import { Option } from "effect"
 import { block } from "$lib/stores/block.svelte"
-
-const program = createQuery({
-  url: "https://rpc.testnet-9.union.build/block",
-  schema: Block,
-  refetchInterval: "4 seconds",
-  writeData: data => {
-    block.data = data
-  },
-  writeError: error => {
-    block.error = error
-  }
-})
-
-onMount(() => {
-  const fiber = Effect.runFork(program)
-  return () =>
-    Effect.runPromise(
-      Effect.gen(function* () {
-        yield* Fiber.interrupt(fiber)
-        block.data = Option.none()
-      })
-    )
-})
 </script>
 
 {#if Option.isSome(block.data)}
