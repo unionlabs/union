@@ -41,7 +41,7 @@ export type ConfiguredChainId = (typeof chains)[number]["id"]
 export type Wallet = GetAccountReturnType
 export type ConnectorType = "injected" | "walletConnect"
 
-const WALLETCONNECT_PROJECT_ID = "0f654efcdf59dbddfeebb1ace9863ee8"
+const WALLETCONNECT_PROJECT_ID = "49fe74ca5ded7142adefc69a7788d14a"
 
 export const configSvelte = createConfig({
   chains,
