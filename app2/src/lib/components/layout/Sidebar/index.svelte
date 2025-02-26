@@ -1,5 +1,6 @@
 <script>
 import ChainList from "$lib/components/ChainList.svelte"
+import { wallets } from "$lib/stores/wallets.svelte"
 </script>
 
 <div class="p-4 flex flex-col gap-4">
@@ -30,4 +31,5 @@ import ChainList from "$lib/components/ChainList.svelte"
       <li>Channels</li>
     </ul>
   </section>
+  {wallets.evmAddress}
 </div>
