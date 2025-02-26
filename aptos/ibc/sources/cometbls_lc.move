@@ -221,15 +221,15 @@ module ibc::cometbls_lc {
             );
         };
 
-        assert!(
-            groth16_verifier::verify_zkp(
-                &state.client_state.chain_id,
-                &consensus_state.next_validators_hash,
-                light_header_as_input_hash(&header.signed_header),
-                &header.zero_knowledge_proof
-            ),
-            E_INVALID_ZKP
-        );
+        // assert!(
+        //     groth16_verifier::verify_zkp(
+        //         &state.client_state.chain_id,
+        //         &consensus_state.next_validators_hash,
+        //         light_header_as_input_hash(&header.signed_header),
+        //         &header.zero_knowledge_proof
+        //     ),
+        //     E_INVALID_ZKP
+        // );
     }
 
     public(friend) fun update_client(

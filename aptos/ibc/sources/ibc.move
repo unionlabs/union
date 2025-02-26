@@ -507,6 +507,11 @@ module ibc::ibc {
         proof_try: vector<u8>,
         proof_height: u64
     ) acquires IBCStore {
+        assert!(
+            smart_table::contains(&borrow_global<IBCStore>(get_vault_addr()).connections, connection_id),
+            E_CONNECTION_DOES_NOT_EXIST
+        );
+
         let client_type =
             client_id_to_type(
                 connection_end::client_id(
@@ -517,11 +522,6 @@ module ibc::ibc {
                 )
             );
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-
-        assert!(
-            smart_table::contains(&store.connections, connection_id),
-            E_CONNECTION_DOES_NOT_EXIST
-        );
 
         let connection = smart_table::borrow_mut(&mut store.connections, connection_id);
         assert!(
@@ -1541,6 +1541,10 @@ module ibc::ibc {
 
     public(friend) fun ensure_connection_state(connection_id: u32): u32 acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
+        assert!(
+            smart_table::contains(&store.connections, connection_id),
+            E_CONNECTION_DOES_NOT_EXIST
+        );
         let connection = smart_table::borrow(&store.connections, connection_id);
         assert!(
             connection_end::state(connection) == CONN_STATE_OPEN,
