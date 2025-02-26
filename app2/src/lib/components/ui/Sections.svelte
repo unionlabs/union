@@ -11,6 +11,6 @@ type Props = {
 const { children, class: className = "" }: Props = $props()
 </script>
 
-<div class="rounded border dark:border-zinc-700 dark:bg-zinc-900 shadow-sm p-4 {className}">
-  {@render children()}
+<div class="flex felx-col gap-4 p-4 {className}">
+    {@render children()}
 </div>

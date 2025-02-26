@@ -21,7 +21,7 @@ onMount(() => {
   </aside>
   
   <!-- Main content area: Has margin to clear fixed sidebar -->
-  <main class="col-start-2 ml-64 max-w-[calc(100vw - calc(var(--spacing)*64))] overflow-hidden">
+  <main class="col-start-2 ml-64 max-w-[calc(100vw-calc(var(--spacing)*64))]">
     <AppErrors/>
     {@render children()}
   </main>
