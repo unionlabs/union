@@ -19,6 +19,7 @@ export let transferListLatestQuery = createQueryGraphql({
   `,
     [transferListItemFragment]
   ),
+  variables: {},
   refetchInterval: "1 second",
   writeData: data => {
     transferList.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders))

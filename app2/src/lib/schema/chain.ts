@@ -2,11 +2,22 @@ import { Schema } from "effect"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
 export const ChainDisplayName = Schema.String.pipe(Schema.brand("ChainDisplayName"))
+export class ChainFeatures extends Schema.Class<ChainFeatures>("ChainFeatures")({
+  environment: Schema.String,
+  channel_list: Schema.Boolean,
+  connection_list: Schema.Boolean,
+  index_status: Schema.Boolean,
+  packet_list: Schema.Boolean,
+  transfer_submission: Schema.Boolean,
+  transfer_list: Schema.Boolean
+}) {}
 
 export class Chain extends Schema.Class<Chain>("Chain")({
   chain_id: ChainId,
   display_name: ChainDisplayName,
-  addr_prefix: Schema.String
+  addr_prefix: Schema.String,
+  testnet: Schema.Boolean,
+  features: Schema.Array(ChainFeatures)
 }) {}
 
 export const Chains = Schema.Array(Chain)

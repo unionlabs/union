@@ -1,4 +1,4 @@
-import { Option, Effect, Schema, pipe, Schedule, Console } from "effect"
+import { Option, Effect, Schema, pipe, Schedule } from "effect"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
 import type { DurationInput } from "effect/Duration"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
@@ -20,9 +20,13 @@ export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
 
 export type FetchDecodeGraphqlError = UnknownException | ParseError | TimeoutException
 
-export const fetchDecodeGraphql = <S, E>(schema: Schema.Schema<S, E>, document: TadaDocumentNode) =>
+export const fetchDecodeGraphql = <S, E, D, V extends object | undefined>(
+  schema: Schema.Schema<S, E>,
+  document: TadaDocumentNode<D, V>,
+  variables: V
+) =>
   Effect.gen(function* () {
-    const data = yield* Effect.tryPromise(() => request(URLS().GRAPHQL, document))
+    const data = yield* Effect.tryPromise(() => request(URLS().GRAPHQL, document, variables))
     return yield* Schema.decodeUnknown(schema)(data)
   })
 
@@ -64,21 +68,23 @@ export const createQuery = <S>({
   return program
 }
 
-export const createQueryGraphql = <S, E>({
+export const createQueryGraphql = <S, E, D, V extends object | undefined>({
   schema,
   document,
+  variables,
   refetchInterval,
   writeData,
   writeError
 }: {
   schema: Schema.Schema<S, E>
-  document: TadaDocumentNode
+  document: TadaDocumentNode<D, V>
+  variables: V
   refetchInterval: DurationInput
   writeData: (data: Option.Option<S>) => void
   writeError: (error: Option.Option<FetchDecodeGraphqlError>) => void
 }) => {
   const fetcherPipeline = pipe(
-    fetchDecodeGraphql(schema, document).pipe(
+    fetchDecodeGraphql(schema, document, variables).pipe(
       Effect.retry({ times: 4 }),
       Effect.timeout("10 seconds")
     ),
