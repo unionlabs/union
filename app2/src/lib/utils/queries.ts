@@ -1,4 +1,4 @@
-import { Option, Effect, Schema, pipe, Schedule } from "effect"
+import { Option, Effect, Schema, pipe, Schedule, Console } from "effect"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
 import type { DurationInput } from "effect/Duration"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
@@ -6,9 +6,9 @@ import type { ParseError } from "effect/ParseResult"
 import type { TadaDocumentNode } from "gql.tada"
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"
-import type { UnknownException } from "effect/Cause"
+import type { TimeoutException, UnknownException } from "effect/Cause"
 
-export type FetchDecodeError = HttpClientError | ParseError
+export type FetchDecodeError = HttpClientError | ParseError | TimeoutException
 
 export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
   Effect.gen(function* () {
@@ -18,7 +18,7 @@ export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
     return yield* Schema.decodeUnknown(schema)(json)
   })
 
-export type FetchDecodeGraphqlError = UnknownException | ParseError
+export type FetchDecodeGraphqlError = UnknownException | ParseError | TimeoutException
 
 export const fetchDecodeGraphql = <S, E>(schema: Schema.Schema<S, E>, document: TadaDocumentNode) =>
   Effect.gen(function* () {
@@ -40,7 +40,7 @@ export const createQuery = <S>({
   writeError: (error: Option.Option<FetchDecodeError>) => void
 }) => {
   const fetcherPipeline = pipe(
-    fetchDecode(schema, url),
+    fetchDecode(schema, url).pipe(Effect.retry({ times: 4 }), Effect.timeout("10 seconds")),
     Effect.tapBoth({
       onSuccess: data =>
         Effect.sync(() => {
@@ -78,7 +78,10 @@ export const createQueryGraphql = <S, E>({
   writeError: (error: Option.Option<FetchDecodeGraphqlError>) => void
 }) => {
   const fetcherPipeline = pipe(
-    fetchDecodeGraphql(schema, document),
+    fetchDecodeGraphql(schema, document).pipe(
+      Effect.retry({ times: 4 }),
+      Effect.timeout("10 seconds")
+    ),
     Effect.tapBoth({
       onSuccess: data =>
         Effect.sync(() => {
