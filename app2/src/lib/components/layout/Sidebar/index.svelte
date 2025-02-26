@@ -1,7 +1,7 @@
 <script>
-import ChainList from "$lib/components/ChainList.svelte"
-import Sections from "$lib/components/ui/Sections.svelte"
-import { wallets } from "$lib/stores/wallets.svelte"
+
+import Wallet from "$lib/components/ui/Wallet/index.svelte";
+
 </script>
 
 <Sections>
@@ -24,6 +24,12 @@ import { wallets } from "$lib/stores/wallets.svelte"
   </section>
 
   <section>
-  {wallets.evmAddress}
+    <h2 class="font-bold text-xl m2-4">Explorer</h2>
+    <ul>
+      <li>Transfers</li>
+      <li>Connections</li>
+      <li>Channels</li>
+    </ul>
   </section>
-</Sections>
+  <Wallet/>
+</div>
