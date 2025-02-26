@@ -2,6 +2,7 @@ import { Schema } from "effect"
 import { ChainId } from "$lib/schema/chain"
 import { Hex } from "$lib/schema/hex"
 import { SortOrder } from "$lib/schema/sort-order"
+import { PacketHash } from "$lib/schema/packet"
 
 export class TransferListItem extends Schema.Class<TransferListItem>("TransferListItem")({
   source_chain_id: ChainId,
@@ -10,6 +11,7 @@ export class TransferListItem extends Schema.Class<TransferListItem>("TransferLi
   receiver_normalized: Hex,
   packet_send_timestamp: Schema.DateTimeUtc,
   packet_recv_timestamp: Schema.OptionFromNullOr(Schema.DateTimeUtc),
+  // packet_hash: PacketHash,
   sort_order: SortOrder
 }) {}
 
