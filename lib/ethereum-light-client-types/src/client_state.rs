@@ -56,6 +56,10 @@ mod tests {
                     version: Version(FixedBytes::new([5, 6, 7, 8])),
                     epoch: 5,
                 },
+                electra: Fork {
+                    version: Version(FixedBytes::new([6, 7, 8, 9])),
+                    epoch: 5,
+                },
             },
             latest_height: 987,
             frozen_height: Height::new(1),

@@ -93,7 +93,7 @@ pub use crate::{
 };
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Copy)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -104,7 +104,7 @@ pub use crate::{
 pub struct Version(pub FixedBytes<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Copy)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -115,7 +115,7 @@ pub struct Version(pub FixedBytes<4>);
 pub struct DomainType(pub FixedBytes<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Copy)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -126,7 +126,7 @@ pub struct DomainType(pub FixedBytes<4>);
 pub struct ForkDigest(pub FixedBytes<4>);
 
 /// <https://github.com/ethereum/consensus-specs/blob/087e7378b44f327cdad4549304fc308613b780c3/specs/phase0/beacon-chain.md#custom-types>
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Copy)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -370,6 +370,11 @@ mk_chain_spec!(Mainnet is preset::MAINNET);
 
 /// Values that are constant across all configurations.
 pub mod consts {
+    use hex_literal::hex;
+    use unionlabs::primitives::FixedBytes;
+
+    use crate::{Fork, Version};
+
     /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#get_subtree_index>
     #[must_use]
     pub const fn get_subtree_index(idx: u64) -> u64 {
@@ -396,6 +401,17 @@ pub mod consts {
     pub const NEXT_SYNC_COMMITTEE_INDEX: u64 = 55;
     /// `get_generalized_index(BeaconBlockBody, "execution_payload")`
     pub const EXECUTION_PAYLOAD_INDEX: u64 = 25;
+
+    pub const fn default_epoch() -> u64 {
+        u64::MAX
+    }
+
+    pub const fn default_fork() -> Fork {
+        Fork {
+            version: Version(FixedBytes::new(hex!("00000000"))),
+            epoch: default_epoch(),
+        }
+    }
 }
 
 pub mod preset {
@@ -523,9 +539,12 @@ pub const MAINNET: Config = Config {
             version: Version(FixedBytes::new([3, 0, 0, 0])),
             epoch: 194_048,
         },
-        // TODO: enabled march 13th 2024
         deneb: Fork {
             version: Version(FixedBytes::new([4, 0, 0, 0])),
+            epoch: u64::MAX,
+        },
+        electra: Fork {
+            version: Version(FixedBytes::new([5, 0, 0, 0])),
             epoch: u64::MAX,
         },
     },
@@ -557,6 +576,10 @@ pub const MINIMAL: Config = Config {
         deneb: Fork {
             version: Version(FixedBytes::new([4, 0, 0, 1])),
             epoch: 0,
+        },
+        electra: Fork {
+            version: Version(FixedBytes::new([5, 0, 0, 1])),
+            epoch: u64::MAX,
         },
     },
     min_genesis_time: 1_578_009_600,
