@@ -4762,6 +4762,7 @@ type v1_ibc_union_fungible_asset_orders {
   sender: String
   sender_display: String
   sender_normalized: String
+  sort_order: String
 
   """An object relationship"""
   source_chain: v1_ibc_union_chains
@@ -4871,6 +4872,7 @@ input v1_ibc_union_fungible_asset_orders_bool_exp {
   sender: String_comparison_exp
   sender_display: String_comparison_exp
   sender_normalized: String_comparison_exp
+  sort_order: String_comparison_exp
   source_chain: v1_ibc_union_chains_bool_exp
   source_chain_id: String_comparison_exp
   source_channel_id: Int_comparison_exp
@@ -4956,6 +4958,7 @@ input v1_ibc_union_fungible_asset_orders_order_by {
   sender: order_by
   sender_display: order_by
   sender_normalized: order_by
+  sort_order: order_by
   source_chain: v1_ibc_union_chains_order_by
   source_chain_id: order_by
   source_channel_id: order_by
@@ -5148,6 +5151,9 @@ enum v1_ibc_union_fungible_asset_orders_select_column {
   sender_normalized
 
   """column name"""
+  sort_order
+
+  """column name"""
   source_chain_id
 
   """column name"""
@@ -5262,6 +5268,7 @@ input v1_ibc_union_fungible_asset_orders_stream_cursor_value_input {
   sender: String
   sender_display: String
   sender_normalized: String
+  sort_order: String
   source_chain_id: String
   source_channel_id: Int
   source_client_id: Int
@@ -5517,6 +5524,7 @@ type v1_ibc_union_packets {
   packet_ack_transaction_event_index: bigint
   packet_ack_transaction_hash: String
   packet_ack_transaction_index: bigint
+  packet_hash: bytea
   packet_recv_block_hash: String
   packet_recv_event_index: bigint
   packet_recv_height: bigint
@@ -5600,6 +5608,7 @@ input v1_ibc_union_packets_bool_exp {
   packet_ack_transaction_event_index: bigint_comparison_exp
   packet_ack_transaction_hash: String_comparison_exp
   packet_ack_transaction_index: bigint_comparison_exp
+  packet_hash: bytea_comparison_exp
   packet_recv_block_hash: String_comparison_exp
   packet_recv_event_index: bigint_comparison_exp
   packet_recv_height: bigint_comparison_exp
@@ -5657,6 +5666,7 @@ input v1_ibc_union_packets_order_by {
   packet_ack_transaction_event_index: order_by
   packet_ack_transaction_hash: order_by
   packet_ack_transaction_index: order_by
+  packet_hash: order_by
   packet_recv_block_hash: order_by
   packet_recv_event_index: order_by
   packet_recv_height: order_by
@@ -5749,6 +5759,9 @@ enum v1_ibc_union_packets_select_column {
 
   """column name"""
   packet_ack_transaction_index
+
+  """column name"""
+  packet_hash
 
   """column name"""
   packet_recv_block_hash
@@ -5875,6 +5888,7 @@ input v1_ibc_union_packets_stream_cursor_value_input {
   packet_ack_transaction_event_index: bigint
   packet_ack_transaction_hash: String
   packet_ack_transaction_index: bigint
+  packet_hash: bytea
   packet_recv_block_hash: String
   packet_recv_event_index: bigint
   packet_recv_height: bigint

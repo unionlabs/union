@@ -19,7 +19,10 @@ onMount(() => {
 {:else}
   Loading...
   {#if Option.isSome(transferList.error)}
-    <pre>{JSON.stringify(transferList.error.value, null,2)}</pre>
+    <pre>{JSON.stringify(transferList.error, null,2)}</pre>
+    {#if transferList.error.value}
+      <pre>{transferList.error.value.message}</pre>
+    {/if}
   {/if}
 {/if}
 

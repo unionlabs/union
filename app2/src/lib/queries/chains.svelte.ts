@@ -1,19 +1,11 @@
 import { Chains } from "$lib/schema/chain"
 import { createQueryGraphql } from "$lib/utils/queries"
-import { ParseResult, Schema } from "effect"
+import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 import { chains } from "$lib/stores/chains.svelte"
 
-const ChainsResponseSchema = Schema.Struct({ v1_ibc_union_chains: Chains })
-
-const ChainsFromResponse = Schema.transformOrFail(ChainsResponseSchema, Chains, {
-  strict: true,
-  decode: input => ParseResult.succeed(input.v1_ibc_union_chains),
-  encode: (x, _, ast) => ParseResult.fail(new ParseResult.Forbidden(ast, x, "I will never encode"))
-})
-
 export let chainsQuery = createQueryGraphql({
-  schema: ChainsFromResponse,
+  schema: Schema.Struct({ v1_ibc_union_chains: Chains }),
   document: graphql(`
     query Chains {
       v1_ibc_union_chains(where: {enabled: {_eq: true}}) {
@@ -25,7 +17,7 @@ export let chainsQuery = createQueryGraphql({
   `),
   refetchInterval: "5 seconds",
   writeData: data => {
-    chains.data = data
+    chains.data = data.pipe(Option.map(d => d.v1_ibc_union_chains))
   },
   writeError: error => {
     chains.error = error
