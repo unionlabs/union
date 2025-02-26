@@ -13,5 +13,6 @@ export const transferListItemFragment = graphql(`
         base_amount
         quote_token
         quote_amount
+        sort_order
     }
 `)
