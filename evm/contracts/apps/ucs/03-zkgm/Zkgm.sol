@@ -78,6 +78,11 @@ struct FungibleAssetOrder {
     uint256 quoteAmount;
 }
 
+struct Tag {
+    bytes sender;
+    bytes data;
+}
+
 struct Ack {
     uint256 tag;
     bytes innerAck;
@@ -107,6 +112,7 @@ library ZkgmLib {
     uint8 public constant OP_MULTIPLEX = 0x01;
     uint8 public constant OP_BATCH = 0x02;
     uint8 public constant OP_FUNGIBLE_ASSET_ORDER = 0x03;
+    uint8 public constant OP_TAG = 0x04;
 
     uint8 public constant INSTR_VERSION_0 = 0x00;
     uint8 public constant INSTR_VERSION_1 = 0x01;
@@ -130,6 +136,7 @@ library ZkgmLib {
     error ErrInvalidAssetName();
     error ErrInvalidBatchInstruction();
     error ErrInvalidMultiplexSender();
+    error ErrInvalidTagSender();
 
     function encodeFungibleAssetOrderAck(
         FungibleAssetOrderAck memory ack
@@ -279,6 +286,16 @@ library ZkgmLib {
         return operand;
     }
 
+    function decodeTag(
+        bytes calldata stream
+    ) internal pure returns (Tag calldata) {
+        Tag calldata operand;
+        assembly {
+            operand := stream.offset
+        }
+        return operand;
+    }
+
     function isDeployed(
         address addr
     ) internal returns (bool) {
@@ -316,7 +333,8 @@ library ZkgmLib {
     function isAllowedBatchInstruction(
         uint8 opcode
     ) internal returns (bool) {
-        return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER;
+        return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
+            || opcode == OP_TAG;
     }
 }
 
@@ -681,9 +699,12 @@ contract UCS03Zkgm is
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            verifyMultiplex(
-                channelId, path, ZkgmLib.decodeMultiplex(instruction.operand)
-            );
+            verifyMultiplex(ZkgmLib.decodeMultiplex(instruction.operand));
+        } else if (instruction.opcode == ZkgmLib.OP_TAG) {
+            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
+                revert ZkgmLib.ErrUnsupportedVersion();
+            }
+            verifyTag(ZkgmLib.decodeTag(instruction.operand));
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
         }
@@ -764,12 +785,18 @@ contract UCS03Zkgm is
     }
 
     function verifyMultiplex(
-        uint32 channelId,
-        uint256 path,
         Multiplex calldata multiplex
     ) internal {
         if (!multiplex.sender.eq(abi.encodePacked(msg.sender))) {
             revert ZkgmLib.ErrInvalidMultiplexSender();
+        }
+    }
+
+    function verifyTag(
+        Tag calldata tag
+    ) internal {
+        if (!tag.sender.eq(abi.encodePacked(msg.sender))) {
+            revert ZkgmLib.ErrInvalidTagSender();
         }
     }
 
@@ -909,6 +936,10 @@ contract UCS03Zkgm is
                 salt,
                 ZkgmLib.decodeMultiplex(instruction.operand)
             );
+        } else if (instruction.opcode == ZkgmLib.OP_TAG) {
+            // The tag instruction is solely present for indexing purpose.
+            // The protocol consider it as a noop.
+            return abi.encode(ZkgmLib.ACK_SUCCESS);
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
         }
@@ -1215,6 +1246,9 @@ contract UCS03Zkgm is
                 successful,
                 ack
             );
+        } else if (instruction.opcode == ZkgmLib.OP_TAG) {
+            // The tag instruction is solely present for indexing purpose.
+            // The protocol consider it as a noop.
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
         }
@@ -1401,6 +1435,9 @@ contract UCS03Zkgm is
             timeoutMultiplex(
                 ibcPacket, relayer, ZkgmLib.decodeMultiplex(instruction.operand)
             );
+        } else if (instruction.opcode == ZkgmLib.OP_TAG) {
+            // The tag instruction is solely present for indexing purpose.
+            // The protocol consider it as a noop.
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
         }

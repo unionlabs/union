@@ -7,6 +7,7 @@ pub const OP_FORWARD: u8 = 0x00;
 pub const OP_MULTIPLEX: u8 = 0x01;
 pub const OP_BATCH: u8 = 0x02;
 pub const OP_FUNGIBLE_ASSET_ORDER: u8 = 0x03;
+pub const OP_TAG: u8 = 0x04;
 
 pub const ACK_ERR_ONLY_MAKER: &[u8] = &[0xDE, 0xAD, 0xC0, 0xDE];
 
@@ -74,6 +75,12 @@ alloy::sol! {
       uint256 base_token_path;
       bytes quote_token;
       uint256 quote_amount;
+  }
+
+  #[derive(Debug, PartialEq)]
+  struct Tag {
+      bytes sender;
+      bytes data;
   }
 
   #[derive(Debug)]
