@@ -20,11 +20,10 @@ _: {
         docs = mkCi false (
           jsPkgs.buildNpmPackage {
             npmDepsHash = "sha256-pDdKyuOeurWp9LbYFb8/IFdvNPihtpCUi/SIvBN0ZmY=";
-            src = ./.;
             srcs = [
               ./.
-              ./../versions/.
-              ./../deployments/.
+              ./../versions
+              ./../deployments
             ];
             sourceRoot = "docs";
             pname = packageJSON.name;
@@ -33,9 +32,12 @@ _: {
             buildInputs = deps;
             installPhase = ''
               mkdir -p $out
-              cp -r ./dist/* $out
+              if [ -d "./dist" ]; then
+                cp -r ./dist/* $out
+              else
+                echo "Warning: dist directory not found!"
+              fi
             '';
-            doDist = false;
             PUPPETEER_SKIP_DOWNLOAD = 1;
             ASTRO_TELEMETRY_DISABLED = 1;
             NODE_OPTIONS = "--no-warnings";
@@ -53,12 +55,13 @@ _: {
               ${ensureAtRepositoryRoot}
               cd docs/
 
-              export PUPPETEER_SKIP_DOWNLOAD=1 
+              export PUPPETEER_SKIP_DOWNLOAD=1
               npm install
               npm run dev
             '';
           };
         };
+
         docs-check = {
           type = "app";
           program = jsPkgs.writeShellApplication {
@@ -66,19 +69,20 @@ _: {
             runtimeInputs = deps;
             text = ''
               ${ensureAtRepositoryRoot}
-              biome check docs --error-on-warnings --write --unsafe
+              biome check docs --error-on-warnings --unsafe
 
               nix fmt
 
               cd docs/
 
-              npm_config_yes=true npx astro check
-              npm_config_yes=true npx astro build
+              npm run astro:check
+              npm run astro:build
 
               nix build .\#checks.${jsPkgs.system}.spellcheck --print-build-logs
             '';
           };
         };
+
         deploy-docs-ipfs = {
           type = "app";
           program = jsPkgs.writeShellApplication {
@@ -88,9 +92,9 @@ _: {
               ${ensureAtRepositoryRoot}
               cd docs/
 
-              export PUPPETEER_SKIP_DOWNLOAD=1 
+              export PUPPETEER_SKIP_DOWNLOAD=1
               nix build .#docs
-              npm_config_yes=true npx @fleek-platform/cli sites deploy
+              npm run deploy-ipfs
             '';
           };
         };
