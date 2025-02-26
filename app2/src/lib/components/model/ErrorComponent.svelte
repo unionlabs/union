@@ -35,10 +35,10 @@ let { error }: Props = $props()
     <h3 class="text-xl font-bold">Additional Details</h3>
     {#if error._tag === "RequestError"}
       {error.description}
-      Mehtod and URL: {error.methodAndUrl}
+      Method and URL: {error.methodAndUrl}
     {:else if error._tag === "ResponseError"}
       {error.description}
-      Mehtod and URL: {error.methodAndUrl}
+      Method and URL: {error.methodAndUrl}
     {:else if error._tag === "ParseError"}
       Actual data that was parsed:
       <pre>{JSON.stringify(error.issue.actual, null, 2)}</pre>
