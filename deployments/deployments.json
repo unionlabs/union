@@ -90,7 +90,7 @@
         }
       }
     },
-    "channels": [1, 3, 4, 5, 8, 23, 24]
+    "channels": [1, 3, 4, 5, 8, 23, 24, 27]
   },
   {
     "chain_id": "elgafar-1",
@@ -327,17 +327,17 @@
     "ibc_interface": "ibc-move/aptos",
     "deployments": {
       "core": {
-        "address": "0xabb42eb73b0f9a0fba78ff731387f4093ea49098bdcf31ed3ee8d0413358070f",
-        "height": 1084359
+        "address": "0x477b3da5350abcabc36a980528e879f4db89b0abb4a76324407a1478e6bf30cc",
+        "height": 1106107
       },
       "app": {
         "ucs03": {
-          "address": "0x2a39b63d0b2cf431c2f68f6240288ec94a99e0a6afdd370cb1464b704e48eee7",
-          "height": 1084369
+          "address": "0x80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
+          "height": 1106112
         }
       }
     },
-    "channels": [2, 3]
+    "channels": [2]
   },
   {
     "chain_id": "stride-internal-1",
