@@ -62,7 +62,7 @@ class CosmosStore {
     this.loadFromStorage()
   }
 
-  loadFromStorage() {
+  loadFromStorage = () => {
     try {
       const storedData = sessionStorage.getItem("cosmos-store")
       if (storedData) {
@@ -80,7 +80,7 @@ class CosmosStore {
     }
   }
 
-  saveToStorage() {
+  saveToStorage = () => {
     try {
       const storeData = {
         chain: this.chain,
@@ -95,7 +95,7 @@ class CosmosStore {
     }
   }
 
-  async connect(walletId: string) {
+  connect = async (walletId: string) => {
     if (!walletId || (walletId !== "keplr" && walletId !== "leap")) return
 
     const cosmosWalletId = walletId as CosmosWalletId
@@ -148,7 +148,7 @@ class CosmosStore {
     await Effect.sleep(2_000)
   }
 
-  async disconnect() {
+  disconnect = async () => {
     const cosmosWalletId = this.connectedWallet as CosmosWalletId
     console.log("[cosmos] cosmosDisconnectClick", this)
 

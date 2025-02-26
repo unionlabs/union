@@ -95,7 +95,7 @@ class AptosStore {
     this.loadFromStorage()
   }
 
-  loadFromStorage() {
+  loadFromStorage = () => {
     try {
       const storedData = sessionStorage.getItem("aptos-store")
       if (storedData) {
@@ -111,7 +111,7 @@ class AptosStore {
     }
   }
 
-  saveToStorage() {
+  saveToStorage = () => {
     try {
       const storeData = {
         chain: this.chain,
@@ -126,7 +126,7 @@ class AptosStore {
     }
   }
 
-  async connect(walletId: string) {
+  connect = async (walletId: string) => {
     if (walletId !== "okxwallet" && walletId !== "petra" && walletId !== "martian") return
 
     this.connectionStatus = "connecting"
@@ -154,7 +154,7 @@ class AptosStore {
     this.saveToStorage()
   }
 
-  async disconnect() {
+  disconnect = async () => {
     const walletId = this.connectedWallet
     const wallet = getAptosWallet(walletId)
     console.info(`[aptos] aptosDisconnectClick`, this)
@@ -173,13 +173,13 @@ class AptosStore {
     }
   }
 
-  updateAccount(account: {
+  updateAccount = (account: {
     chain?: string
     address?: Hex
     connectionStatus?: "disconnected" | "connecting" | "connected"
     connectedWallet?: AptosWalletId
     hoverState?: string
-  }) {
+  }) => {
     if (account.chain) this.chain = account.chain
     if (account.address !== undefined) this.address = account.address
     if (account.connectionStatus) this.connectionStatus = account.connectionStatus
@@ -189,30 +189,5 @@ class AptosStore {
   }
 }
 
-// Create and export the aptosStore instance
-const store = new AptosStore()
-
-// Export a wrapped version with bound methods to preserve 'this' context
-export const aptosStore = {
-  // Properties that should be accessible
-  get chain() {
-    return store.chain
-  },
-  get address() {
-    return store.address
-  },
-  get connectedWallet() {
-    return store.connectedWallet
-  },
-  get connectionStatus() {
-    return store.connectionStatus
-  },
-  get hoverState() {
-    return store.hoverState
-  },
-
-  // Methods with preserved 'this' context
-  connect: (walletId: string) => store.connect(walletId),
-  disconnect: () => store.disconnect(),
-  updateAccount: (account: any) => store.updateAccount(account)
-}
+// Create and export the aptosStore instance directly
+export const aptosStore = new AptosStore()

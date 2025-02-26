@@ -173,11 +173,12 @@ class SepoliaStore {
     }
   })
 
-  async connect(walletId: string) {
+  connect = async (walletId: string) => {
     await evmConnect(walletId, sepolia.id)
   }
 
-  async disconnect() {
+  // Convert to arrow function
+  disconnect = async () => {
     await Promise.all([
       await evmDisconnect().catch(error => {
         console.error(error)
@@ -192,7 +193,7 @@ class SepoliaStore {
   }
 
   //@ts-ignore
-  updateAccount(account) {
+  updateAccount = account => {
     this.chain = account.chain
     this.address = account.address
     this.connectionStatus = account.connectionStatus
