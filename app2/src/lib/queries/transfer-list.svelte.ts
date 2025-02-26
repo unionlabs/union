@@ -21,9 +21,7 @@ export let transferListQuery = createQueryGraphql({
   ),
   refetchInterval: "1 second",
   writeData: data => {
-    if (Option.isSome(data)) {
-      transferList.data = Option.some(data.value.v1_ibc_union_fungible_asset_orders)
-    }
+    transferList.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders))
   },
   writeError: error => {
     transferList.error = error
