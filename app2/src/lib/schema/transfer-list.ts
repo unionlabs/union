@@ -11,7 +11,7 @@ export class TransferListItem extends Schema.Class<TransferListItem>("TransferLi
   receiver_normalized: Hex,
   packet_send_timestamp: Schema.DateTimeUtc,
   packet_recv_timestamp: Schema.OptionFromNullOr(Schema.DateTimeUtc),
-  // packet_hash: PacketHash,
+  packet_hash: PacketHash,
   sort_order: SortOrder
 }) {}
 
