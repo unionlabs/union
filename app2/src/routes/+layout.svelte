@@ -16,7 +16,7 @@ onMount(() => {
 </script>
 
 <div class="grid grid-cols-[auto_1fr] min-h-[100svh] w-screen">
-  <aside class="fixed top-0 left-0 bottom-0 w-64 dark:bg-zinc-800 shadow overflow-auto">
+  <aside class="fixed top-0 left-0 bottom-0 w-64 dark:bg-zinc-900 shadow overflow-auto">
     <Sidebar/>
   </aside>
   
