@@ -25,9 +25,9 @@ import {
 } from "@wagmi/core/chains"
 import { AddressEvmCanonical } from "$lib/schema/address.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
-import {Effect, Option} from "effect"
-import {TESTNET_APP_INFO} from "$lib/config/app.ts";
-import type {Hex} from "viem";
+import { Effect, Option } from "effect"
+import { TESTNET_APP_INFO } from "$lib/config/app.ts"
+import type { Hex } from "viem"
 
 export const chains = [
   sepolia,
@@ -155,52 +155,52 @@ configSvelte.subscribe(
 )
 
 class SepoliaStore {
-  chain = $state("sepolia");
-  address = $state(getAccount(configSvelte).address);
-  connectionStatus = $state(getAccount(configSvelte).status);
-  connectedWallet = $state(getAccount(configSvelte).connector?.id || "injected");
+  chain = $state("sepolia")
+  address = $state(getAccount(configSvelte).address)
+  connectionStatus = $state(getAccount(configSvelte).status)
+  connectedWallet = $state(getAccount(configSvelte).connector?.id || "injected")
 
   addressMapping = $derived(() => {
     if (this.address) {
-      console.log("runns");
+      console.log("runns")
       const evmAddressFromHex = (hexAddress: Hex) => {
-        const normalized = hexAddress.slice(2).toLowerCase();
-        return AddressEvmCanonical.make(`0x${normalized}`);
-      };
-      wallets.evmAddress = Option.some(evmAddressFromHex(this.address));
+        const normalized = hexAddress.slice(2).toLowerCase()
+        return AddressEvmCanonical.make(`0x${normalized}`)
+      }
+      wallets.evmAddress = Option.some(evmAddressFromHex(this.address))
     } else {
-      wallets.evmAddress = Option.none();
+      wallets.evmAddress = Option.none()
     }
-  });
+  })
 
   async connect(walletId: string) {
-    await evmConnect(walletId, sepolia.id);
+    await evmConnect(walletId, sepolia.id)
   }
 
   async disconnect() {
     await Promise.all([
       await evmDisconnect().catch(error => {
-        console.error(error);
+        console.error(error)
       }),
       ...configSvelte.connectors.map(connector =>
         connector.disconnect().catch(error => {
-          console.error(error);
+          console.error(error)
         })
       )
-    ]);
-    Effect.sleep(2_000);
+    ])
+    Effect.sleep(2_000)
   }
 
   //@ts-ignore
   updateAccount(account) {
-    this.chain = account.chain;
-    this.address = account.address;
-    this.connectionStatus = account.connectionStatus;
-    this.connectedWallet = account.connectedWallet;
+    this.chain = account.chain
+    this.address = account.address
+    this.connectionStatus = account.connectionStatus
+    this.connectedWallet = account.connectedWallet
   }
 }
 
-export const sepoliaStore = new SepoliaStore();
+export const sepoliaStore = new SepoliaStore()
 
 /**
  * Any wallet that supports EIP-6963 will automatically show up.
@@ -257,4 +257,5 @@ export function evmDisconnect() {
   return _disconnect(configSvelte, { connector: getAccount(configSvelte).connector })
 }
 
-export const evmSwitchChain = (chainId: ConfiguredChainId) => _switchChain(configSvelte, { chainId })
+export const evmSwitchChain = (chainId: ConfiguredChainId) =>
+  _switchChain(configSvelte, { chainId })

@@ -1,7 +1,5 @@
 <script>
-
-import Wallet from "$lib/components/ui/Wallet/index.svelte";
-
+import Wallet from "$lib/components/ui/Wallet/index.svelte"
 </script>
 
 <Sections>

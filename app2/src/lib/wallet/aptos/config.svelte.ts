@@ -1,6 +1,4 @@
-import { get } from "svelte/store"
 import type { Hex } from "viem"
-import type { ChainWalletStore } from "../types.ts"
 import { Option } from "effect"
 
 import type { AptosBrowserWallet } from "@unionlabs/client"
@@ -72,44 +70,44 @@ export function getAptosWallet(walletId: AptosWalletId = "petra") {
 }
 
 class AptosStore {
-  chain = $state("aptos");
-  address = $state<Hex | undefined>(undefined);
-  connectedWallet = $state<AptosWalletId | undefined>(undefined);
-  connectionStatus = $state<"disconnected" | "connecting" | "connected">("disconnected");
-  hoverState = $state<string>("none");
+  chain = $state("aptos")
+  address = $state<Hex | undefined>(undefined)
+  connectedWallet = $state<AptosWalletId | undefined>(undefined)
+  connectionStatus = $state<"disconnected" | "connecting" | "connected">("disconnected")
+  hoverState = $state<string>("none")
 
   // Set up the derived calculation as a class field
   addressMapping = $derived(() => {
     if (this.address) {
       const aptosAddressFromHex = (hexAddress: string): typeof AddressAptosCanonical.Type => {
-        const normalized = hexAddress.startsWith("0x") ? hexAddress : `0x${hexAddress}`;
-        return AddressAptosCanonical.make(normalized);
-      };
+        const normalized = hexAddress.startsWith("0x") ? hexAddress : `0x${hexAddress}`
+        return AddressAptosCanonical.make(normalized)
+      }
 
-      wallets.aptosAddress = Option.some(aptosAddressFromHex(this.address));
+      wallets.aptosAddress = Option.some(aptosAddressFromHex(this.address))
     } else {
-      wallets.aptosAddress = Option.none();
+      wallets.aptosAddress = Option.none()
     }
-  });
+  })
 
   constructor() {
     // Initialize from session storage if available
-    this.loadFromStorage();
+    this.loadFromStorage()
   }
 
   loadFromStorage() {
     try {
-      const storedData = sessionStorage.getItem("aptos-store");
+      const storedData = sessionStorage.getItem("aptos-store")
       if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        this.chain = parsedData.chain || "aptos";
-        this.address = parsedData.address;
-        this.connectedWallet = parsedData.connectedWallet;
-        this.connectionStatus = parsedData.connectionStatus || "disconnected";
-        this.hoverState = parsedData.hoverState || "none";
+        const parsedData = JSON.parse(storedData)
+        this.chain = parsedData.chain || "aptos"
+        this.address = parsedData.address
+        this.connectedWallet = parsedData.connectedWallet
+        this.connectionStatus = parsedData.connectionStatus || "disconnected"
+        this.hoverState = parsedData.hoverState || "none"
       }
     } catch (e) {
-      console.error("Failed to load aptos store from session storage", e);
+      console.error("Failed to load aptos store from session storage", e)
     }
   }
 
@@ -121,90 +119,100 @@ class AptosStore {
         connectedWallet: this.connectedWallet,
         connectionStatus: this.connectionStatus,
         hoverState: this.hoverState
-      };
-      sessionStorage.setItem("aptos-store", JSON.stringify(storeData));
+      }
+      sessionStorage.setItem("aptos-store", JSON.stringify(storeData))
     } catch (e) {
-      console.error("Failed to save aptos store to session storage", e);
+      console.error("Failed to save aptos store to session storage", e)
     }
   }
 
   async connect(walletId: string) {
-    if (walletId !== "okxwallet" && walletId !== "petra" && walletId !== "martian") return;
+    if (walletId !== "okxwallet" && walletId !== "petra" && walletId !== "martian") return
 
-    this.connectionStatus = "connecting";
-    this.connectedWallet = walletId as AptosWalletId;
-    this.saveToStorage();
+    this.connectionStatus = "connecting"
+    this.connectedWallet = walletId as AptosWalletId
+    this.saveToStorage()
 
-    const wallet = getAptosWallet(walletId as AptosWalletId);
+    const wallet = getAptosWallet(walletId as AptosWalletId)
 
     if (!wallet) {
-      const walletInfo = aptosWalletsInformation.find(wallet => wallet.id === walletId);
+      const walletInfo = aptosWalletsInformation.find(wallet => wallet.id === walletId)
       if (walletInfo) {
-        const { deepLink, download } = walletInfo;
-        window.open(deepLink || download, "_blank", "noopener noreferrer");
+        const { deepLink, download } = walletInfo
+        window.open(deepLink || download, "_blank", "noopener noreferrer")
       } else {
-        window.open("https://petra.app/", "_blank", "noopener noreferrer");
+        window.open("https://petra.app/", "_blank", "noopener noreferrer")
       }
-      return;
+      return
     }
 
-    const account = await wallet.connect();
+    const account = await wallet.connect()
 
-    this.address = account?.address as Hex;
-    this.connectedWallet = walletId as AptosWalletId;
-    this.connectionStatus = account?.address ? "connected" : "disconnected";
-    this.saveToStorage();
+    this.address = account?.address as Hex
+    this.connectedWallet = walletId as AptosWalletId
+    this.connectionStatus = account?.address ? "connected" : "disconnected"
+    this.saveToStorage()
   }
 
   async disconnect() {
-    const walletId = this.connectedWallet;
-    const wallet = getAptosWallet(walletId);
-    console.info(`[aptos] aptosDisconnectClick`, this);
+    const walletId = this.connectedWallet
+    const wallet = getAptosWallet(walletId)
+    console.info(`[aptos] aptosDisconnectClick`, this)
 
-    const isConnected = await wallet?.isConnected();
+    const isConnected = await wallet?.isConnected()
     if (isConnected || this.connectionStatus !== "disconnected") {
-      await wallet?.disconnect();
+      await wallet?.disconnect()
 
-      this.chain = "aptos";
-      this.hoverState = "none";
-      this.address = undefined;
-      this.connectedWallet = undefined;
-      this.connectionStatus = "disconnected";
+      this.chain = "aptos"
+      this.hoverState = "none"
+      this.address = undefined
+      this.connectedWallet = undefined
+      this.connectionStatus = "disconnected"
 
-      sessionStorage.removeItem("aptos-store");
+      sessionStorage.removeItem("aptos-store")
     }
   }
 
   updateAccount(account: {
-    chain?: string;
-    address?: Hex;
-    connectionStatus?: "disconnected" | "connecting" | "connected";
-    connectedWallet?: AptosWalletId;
-    hoverState?: string;
+    chain?: string
+    address?: Hex
+    connectionStatus?: "disconnected" | "connecting" | "connected"
+    connectedWallet?: AptosWalletId
+    hoverState?: string
   }) {
-    if (account.chain) this.chain = account.chain;
-    if (account.address !== undefined) this.address = account.address;
-    if (account.connectionStatus) this.connectionStatus = account.connectionStatus;
-    if (account.connectedWallet !== undefined) this.connectedWallet = account.connectedWallet;
-    if (account.hoverState) this.hoverState = account.hoverState;
-    this.saveToStorage();
+    if (account.chain) this.chain = account.chain
+    if (account.address !== undefined) this.address = account.address
+    if (account.connectionStatus) this.connectionStatus = account.connectionStatus
+    if (account.connectedWallet !== undefined) this.connectedWallet = account.connectedWallet
+    if (account.hoverState) this.hoverState = account.hoverState
+    this.saveToStorage()
   }
 }
 
 // Create and export the aptosStore instance
-const store = new AptosStore();
+const store = new AptosStore()
 
 // Export a wrapped version with bound methods to preserve 'this' context
 export const aptosStore = {
   // Properties that should be accessible
-  get chain() { return store.chain; },
-  get address() { return store.address; },
-  get connectedWallet() { return store.connectedWallet; },
-  get connectionStatus() { return store.connectionStatus; },
-  get hoverState() { return store.hoverState; },
+  get chain() {
+    return store.chain
+  },
+  get address() {
+    return store.address
+  },
+  get connectedWallet() {
+    return store.connectedWallet
+  },
+  get connectionStatus() {
+    return store.connectionStatus
+  },
+  get hoverState() {
+    return store.hoverState
+  },
 
   // Methods with preserved 'this' context
   connect: (walletId: string) => store.connect(walletId),
   disconnect: () => store.disconnect(),
   updateAccount: (account: any) => store.updateAccount(account)
-};
+}
