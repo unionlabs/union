@@ -3,4 +3,4 @@ export {
   type CosmosWalletId,
   getCosmosOfflineSigner,
   cosmosWalletsInformation
-} from "./config.ts"
+} from "./config.svelte.ts"

@@ -1,7 +1,10 @@
+// @ts-nocheck
+//Leaps types doesnt match in their docs in regards to gasPriceStep
 import type { ChainInfo as KeplrChainInfo } from "@keplr-wallet/types"
+
 import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
 
-//This exist according to docs
+//This exists according to docs
 interface LeapExtendedInfo extends LeapChainInfo {
   theme: {
     primaryColor: string
