@@ -1,5 +1,5 @@
 import { Schema } from "effect"
-import { Hex, HexChecksumed } from "$lib/schema/hex"
+import { Hex, HexChecksum } from "$lib/schema/hex"
 import { Bech32 } from "$lib/schema/bech32"
 
 // For Reference, see: https://docs.union.build/concepts/address-types/
@@ -13,7 +13,7 @@ export const AddressCosmosZkgm = Hex.pipe(Schema.brand("AddressCosmosZkgm")) // 
 
 // EVM Address Types
 export const AddressEvmCanonical = CanonicalBytes.pipe(Schema.brand("AddressEvmCanonical"))
-export const AddressEvmDisplay = HexChecksumed.pipe(Schema.brand("AddressEvmDisplay"))
+export const AddressEvmDisplay = HexChecksum.pipe(Schema.brand("AddressEvmDisplay"))
 export const AddressEvmZkgm = AddressEvmCanonical
 
 // Aptos Address Types
