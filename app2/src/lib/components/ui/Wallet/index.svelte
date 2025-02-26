@@ -1,8 +1,8 @@
 <script>
-import { evmWalletsInformation, sepoliaStore } from "$lib/wallet/evm/index.js"
+import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.js"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.js"
-import Connection from "$lib/components/ui/Wallet/connect/connection.svelte"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.js"
+import Connection from "$lib/components/ui/Wallet/connect/connection.svelte"
 
 let isOpen = $state(false)
 let currentWalletType = $state("all")
@@ -73,59 +73,59 @@ function closeModal() {
 
           {#if currentWalletType === "evm"}
             <Connection
-                    address={$sepoliaStore.address}
                     chain="evm"
+                    address={sepoliaStore.address}
                     chainWalletsInformation={evmWalletsInformation}
-                    connectStatus={$sepoliaStore.connectionStatus}
-                    connectedWalletId={$sepoliaStore.connectedWallet}
+                    connectStatus={sepoliaStore.connectionStatus}
+                    connectedWalletId={sepoliaStore.connectedWallet}
                     onConnectClick={sepoliaStore.connect}
                     onDisconnectClick={sepoliaStore.disconnect}
             />
           {:else if currentWalletType === "cosmos"}
             <Connection
-                    address={$cosmosStore.address}
                     chain="cosmos"
+                    address={cosmosStore.address}
                     chainWalletsInformation={cosmosWalletsInformation}
-                    connectStatus={$cosmosStore.connectionStatus}
-                    connectedWalletId={$cosmosStore.connectedWallet}
+                    connectStatus={cosmosStore.connectionStatus}
+                    connectedWalletId={cosmosStore.connectedWallet}
                     onConnectClick={cosmosStore.connect}
                     onDisconnectClick={cosmosStore.disconnect}
             />
           {:else if currentWalletType === "aptos"}
             <Connection
-                    address={$aptosStore.address}
                     chain="aptos"
+                    address={aptosStore.address}
                     chainWalletsInformation={aptosWalletsInformation}
-                    connectStatus={$aptosStore.connectionStatus}
-                    connectedWalletId={$aptosStore.connectedWallet}
+                    connectStatus={aptosStore.connectionStatus}
+                    connectedWalletId={aptosStore.connectedWallet}
                     onConnectClick={aptosStore.connect}
                     onDisconnectClick={aptosStore.disconnect}
             />
           {:else if currentWalletType === "all"}
             <Connection
-                    address={$sepoliaStore.address}
                     chain="evm"
+                    address={sepoliaStore.address}
                     chainWalletsInformation={evmWalletsInformation}
-                    connectStatus={$sepoliaStore.connectionStatus}
-                    connectedWalletId={$sepoliaStore.connectedWallet}
+                    connectStatus={sepoliaStore.connectionStatus}
+                    connectedWalletId={sepoliaStore.connectedWallet}
                     onConnectClick={sepoliaStore.connect}
                     onDisconnectClick={sepoliaStore.disconnect}
             />
             <Connection
-                    address={$cosmosStore.address}
                     chain="cosmos"
+                    address={cosmosStore.address}
                     chainWalletsInformation={cosmosWalletsInformation}
-                    connectStatus={$cosmosStore.connectionStatus}
-                    connectedWalletId={$cosmosStore.connectedWallet}
+                    connectStatus={cosmosStore.connectionStatus}
+                    connectedWalletId={cosmosStore.connectedWallet}
                     onConnectClick={cosmosStore.connect}
                     onDisconnectClick={cosmosStore.disconnect}
             />
             <Connection
-                    address={$aptosStore.address}
                     chain="aptos"
+                    address={aptosStore.address}
                     chainWalletsInformation={aptosWalletsInformation}
-                    connectStatus={$aptosStore.connectionStatus}
-                    connectedWalletId={$aptosStore.connectedWallet}
+                    connectStatus={aptosStore.connectionStatus}
+                    connectedWalletId={aptosStore.connectedWallet}
                     onConnectClick={aptosStore.connect}
                     onDisconnectClick={aptosStore.disconnect}
             />

@@ -1,7 +1,7 @@
 import type { State } from "@wagmi/core"
-import type { EvmWalletId } from "../../../../wallet/evm.ts"
-import type { AptosWalletId } from "../../../../wallet/aptos.ts"
-import type { CosmosWalletId } from "../../../../wallet/cosmos.ts"
+import {CosmosWalletId} from "../../../../wallet/cosmos";
+import {AptosWalletId} from "../../../../wallet/aptos";
+import {EvmWalletId} from "../../../../wallet/evm";
 
 type Chain = "evm" | "cosmos" | "aptos"
 type ChainConnectStatus = State["status"]

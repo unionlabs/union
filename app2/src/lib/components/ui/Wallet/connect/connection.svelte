@@ -1,91 +1,78 @@
 <script lang="ts">
-import { cn } from "$lib/utils"
-import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
-import type { State } from "@wagmi/core"
-import { cosmosStore, type CosmosWalletId } from "$lib/wallet/cosmos"
-import { aptosStore, type AptosWalletId } from "$lib/wallet/aptos"
-import { type EvmWalletId, sepoliaStore } from "$lib/wallet/evm"
-import { derived } from "svelte/store"
-// import { MetamaskMobileAlert } from '$lib/components/ui/Wallet/connect/metamask-mobile-alert.svelte'
+  import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
+  import type { State } from "@wagmi/core"
+  import { type CosmosWalletId } from "$lib/wallet/cosmos"
+  import { type AptosWalletId } from "$lib/wallet/aptos"
+  import { type EvmWalletId } from "$lib/wallet/evm"
+  // import { MetamaskMobileAlert } from '$lib/components/ui/Wallet/connect/metamask-mobile-alert.svelte'
 
-const OFFENDING_WALLET_ID = "io.metamask.mobile"
+  const OFFENDING_WALLET_ID = "io.metamask.mobile"
 
-type Chain = "evm" | "cosmos" | "aptos"
-type ChainConnectStatus = State["status"]
-type ChainWalletsInformation = ReadonlyArray<{
-  id: string
-  name: string
-  icon: string
-  download: string
-}>
+  type Chain = "evm" | "cosmos" | "aptos"
+  type ChainConnectStatus = State["status"]
+  type ChainWalletsInformation = ReadonlyArray<{
+    id: string
+    name: string
+    icon: string
+    download: string
+  }>
 
-let {
-  chain,
-  address,
-  connectStatus,
-  chainWalletsInformation,
-  connectedWalletId,
-  onConnectClick,
-  onDisconnectClick
-} = $props<{
-  chain: Chain
-  address: string | undefined
-  connectStatus: ChainConnectStatus
-  chainWalletsInformation: ChainWalletsInformation
-  connectedWalletId:
-    | (Chain extends "cosmos"
-        ? CosmosWalletId
-        : Chain extends "aptos"
-          ? AptosWalletId
-          : EvmWalletId)
-    | null
-    | undefined
-  onConnectClick: (walletIdentifier: string) => void | Promise<void>
-  onDisconnectClick: () => void
-}>()
+  let {
+    chain,
+    address,
+    connectStatus,
+    chainWalletsInformation,
+    connectedWalletId,
+    onConnectClick,
+    onDisconnectClick
+  } = $props<{
+    chain: Chain
+    address: string | undefined
+    connectStatus: ChainConnectStatus
+    chainWalletsInformation: ChainWalletsInformation
+    connectedWalletId:
+      | (Chain extends "cosmos"
+      ? CosmosWalletId
+      : Chain extends "aptos"
+        ? AptosWalletId
+        : EvmWalletId)
+      | null
+      | undefined
+    onConnectClick: (walletIdentifier: string) => void | Promise<void>
+    onDisconnectClick: () => void
+  }>()
 
-let connectedWallets = derived(
-  [sepoliaStore, cosmosStore, aptosStore],
-  ([$sepoliaStore, $cosmosStore, $aptosStore]) => {
-    return [
-      $sepoliaStore.connectionStatus,
-      $cosmosStore.connectionStatus,
-      $aptosStore.connectionStatus
-    ].filter(status => status === "connected").length
-  }
-)
+  let connectText = $derived(
+    connectStatus === "connected" && address && address?.length > 0
+      ? chain === "evm"
+        ? truncateEvmAddress(address, -1)
+        : chain === "aptos"
+          ? address
+          : truncateUnionAddress(address, -1)
+      : ""
+  )
 
-let connectText = $derived(
-  connectStatus === "connected" && address && address?.length > 0
-    ? chain === "evm"
-      ? truncateEvmAddress(address, -1)
-      : chain === "aptos"
-        ? address
-        : truncateUnionAddress(address, -1)
-    : ""
-)
+  let copyClicked = $state(false)
+  const toggleCopy = () => (copyClicked = !copyClicked)
+  const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
 
-let copyClicked = $state(false)
-const toggleCopy = () => (copyClicked = !copyClicked)
-const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
+  // filter items with duplicate names
+  let sanitizeWalletInformation =
+    chainWalletsInformation.filter(
+      (predicate, index, array) =>
+        array.findIndex(t => t.name.toLowerCase().startsWith(predicate.name.toLowerCase())) === index
+    ) ?? chainWalletsInformation
 
-// filter items with duplicate names
-let sanitizeWalletInformation =
-  chainWalletsInformation.filter(
-    (predicate, index, array) =>
-      array.findIndex(t => t.name.toLowerCase().startsWith(predicate.name.toLowerCase())) === index
-  ) ?? chainWalletsInformation
+  let walletListToRender = $derived(
+    connectStatus === "connected" ? chainWalletsInformation : sanitizeWalletInformation
+  )
 
-let walletListToRender = $derived(
-  connectStatus === "connected" ? chainWalletsInformation : sanitizeWalletInformation
-)
+  let metamaskAlertDialogOpen = $state(false)
 
-let metamaskAlertDialogOpen = $state(false)
-
-// Find the currently connected wallet to get its icon
-let connectedWallet = $derived(
-  chainWalletsInformation.find(wallet => wallet.id === connectedWalletId)
-)
+  // Find the currently connected wallet to get its icon
+  let connectedWallet = $derived(
+    chainWalletsInformation.find(wallet => wallet.id === connectedWalletId)
+  )
 </script>
 
 <!--<MetamaskMobileAlert {metamaskAlertDialogOpen} />-->
@@ -139,11 +126,9 @@ let connectedWallet = $derived(
                 role="row"
                 tabindex={0}
                 data-index={index}
-                class={cn(
-            "w-full bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-3",
-            "flex items-center justify-between cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700",
-            "transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-neutral-300"
-          )}
+                class="w-full bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-3
+                      flex items-center justify-between cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700
+                      transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-neutral-300"
                 onclick={async () => {
             if (walletIdentifier === OFFENDING_WALLET_ID) {
               metamaskAlertDialogOpen = true
