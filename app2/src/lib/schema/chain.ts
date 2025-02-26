@@ -3,7 +3,6 @@ import { Schema } from "effect"
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
 export const ChainDisplayName = Schema.String.pipe(Schema.brand("ChainDisplayName"))
 export class ChainFeatures extends Schema.Class<ChainFeatures>("ChainFeatures")({
-  environment: Schema.String,
   channel_list: Schema.Boolean,
   connection_list: Schema.Boolean,
   index_status: Schema.Boolean,
