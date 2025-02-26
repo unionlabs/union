@@ -5793,8 +5793,11 @@ name = "gnark-key-parser"
 version = "0.0.0"
 dependencies = [
  "arith",
+ "ark-bn254",
  "ark-ff 0.4.2",
+ "ark-serialize 0.4.2",
  "hex",
+ "num-bigint 0.4.6",
  "substrate-bn",
  "thiserror 1.0.69",
 ]

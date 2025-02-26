@@ -271,6 +271,8 @@ pub fn parse_affine_g2(buf: &[u8]) -> Result<(usize, AffineG2), Error> {
 #[cfg(test)]
 mod tests {
     use ark_ff::BigInt;
+    use ark_serialize::CanonicalSerialize;
+    use num_bigint::BigUint;
 
     use super::*;
 
@@ -447,7 +449,77 @@ mod tests {
     }
 
     #[test]
-    fn dump() {
+    fn dump_aptos() {
+        let file = hex::decode("e45229d9b076b3c0e8a4d70bde8c1cccffa08a9fae7557b165b3b0dbd653e2c7a3eba1776012a292e6780582e7a197913f375a4043e411358d4791b66f53c1d987090a82e8fabbd39299be24705b92cf208ee8b3487f6f2b39ff27978a29a1db2424bcc1f60a5472685fd50705b2809626e170120acaf441e133a2bd5e61d244998e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c21800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6edc3b40f6624e48a7a1d438b5f8f04347ddcaf3deacded6e5c1093e843d6c89a9887b8dbefa90bde075a26318e5066db729155514e3c06b888d4e03c56d82c97e602aca5d2a73f8d34e4b26eee3932365e6526c8d5e2f3347d679c2cb1867104dc00000003af5d8a3817f21d3e453573c90c3cc47b7ff235fad7bdfbd59bbd6ae5d153273eea81b98e1c997bd01a20893a08a46c6804493e838c1a0ff6c8c069ef5ab66b9a979496ce140df89ce35c5ee7fb496efdffda5e5d3b95ff9116e2e5df96b36ab70000000100000000998e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c21800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6edc7b8dbefa90bde075a26318e5066db729155514e3c06b888d4e03c56d82c97e602aca5d2a73f8d34e4b26eee3932365e6526c8d5e2f3347d679c2cb1867104dc").unwrap();
+        let (_, parsed_key) = VerifyingKey::parse(&file[..]).unwrap();
+
+        let parse_g1 = |g1: &G1| -> String {
+            let mut g1x = [0u8; 32];
+            let mut g1y = [0u8; 32];
+            g1.x().to_big_endian(&mut g1x).unwrap();
+            g1.y().to_big_endian(&mut g1y).unwrap();
+
+            let mut out = Vec::new();
+            ark_bn254::G1Affine::new(
+                ark_bn254::Fq::from(BigUint::from_bytes_be(&g1x)),
+                ark_bn254::Fq::from(BigUint::from_bytes_be(&g1y)),
+            )
+            .serialize_uncompressed(&mut out)
+            .unwrap();
+
+            hex::encode(out)
+        };
+
+        let print_g1 = |key: &str, g1: &G1| {
+            println!("const {key}: vector<u8> = x\"{}\";", parse_g1(g1));
+        };
+
+        let print_g2 = |key: &str, g2: &G2| {
+            let mut g2x1 = [0u8; 32];
+            let mut g2x2 = [0u8; 32];
+            let mut g2y1 = [0u8; 32];
+            let mut g2y2 = [0u8; 32];
+            let mut out = Vec::new();
+
+            g2.x().real().to_big_endian(&mut g2x1).unwrap();
+            g2.x().imaginary().to_big_endian(&mut g2x2).unwrap();
+            g2.y().real().to_big_endian(&mut g2y1).unwrap();
+            g2.y().imaginary().to_big_endian(&mut g2y2).unwrap();
+
+            ark_bn254::G2Affine::new(
+                ark_bn254::Fq2::new(
+                    ark_bn254::Fq::from(BigUint::from_bytes_be(&g2x1)),
+                    ark_bn254::Fq::from(BigUint::from_bytes_be(&g2x2)),
+                ),
+                ark_bn254::Fq2::new(
+                    ark_bn254::Fq::from(BigUint::from_bytes_be(&g2y1)),
+                    ark_bn254::Fq::from(BigUint::from_bytes_be(&g2y2)),
+                ),
+            )
+            .serialize_compressed(&mut out)
+            .unwrap();
+            println!("const {key}: vector<u8> = x\"{}\";", hex::encode(out));
+        };
+
+        print_g1("ALPHA_G1", &parsed_key.alpha_g1);
+        print_g2("BETA_G2", &parsed_key.beta_neg_g2);
+        print_g2("GAMMA_G2", &parsed_key.gamma_neg_g2);
+        print_g2("DELTA_G2", &parsed_key.delta_neg_g2);
+        print_g2("PEDERSEN_G", &parsed_key.commitment_key.g);
+        print_g2(
+            "PEDERSEN_G_ROOT_SIGMA_NEG",
+            &parsed_key.commitment_key.g_root_sigma_neg,
+        );
+
+        println!("const GAMMA_ABC_G1: vector<vector<u8>> = vector[");
+        parsed_key.gamma_abc_g1.into_iter().for_each(|g1| {
+            println!("\tx\"{}\",", parse_g1(&g1));
+        });
+        println!("];");
+    }
+
+    #[test]
+    fn dump_evm() {
         let file = hex::decode("e45229d9b076b3c0e8a4d70bde8c1cccffa08a9fae7557b165b3b0dbd653e2c7a3eba1776012a292e6780582e7a197913f375a4043e411358d4791b66f53c1d987090a82e8fabbd39299be24705b92cf208ee8b3487f6f2b39ff27978a29a1db2424bcc1f60a5472685fd50705b2809626e170120acaf441e133a2bd5e61d244998e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c21800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6edc3b40f6624e48a7a1d438b5f8f04347ddcaf3deacded6e5c1093e843d6c89a9887b8dbefa90bde075a26318e5066db729155514e3c06b888d4e03c56d82c97e602aca5d2a73f8d34e4b26eee3932365e6526c8d5e2f3347d679c2cb1867104dc00000003af5d8a3817f21d3e453573c90c3cc47b7ff235fad7bdfbd59bbd6ae5d153273eea81b98e1c997bd01a20893a08a46c6804493e838c1a0ff6c8c069ef5ab66b9a979496ce140df89ce35c5ee7fb496efdffda5e5d3b95ff9116e2e5df96b36ab70000000100000000998e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c21800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6edc7b8dbefa90bde075a26318e5066db729155514e3c06b888d4e03c56d82c97e602aca5d2a73f8d34e4b26eee3932365e6526c8d5e2f3347d679c2cb1867104dc").unwrap();
 
         let (_, parsed_key) = VerifyingKey::parse(&file[..]).unwrap();

@@ -71,7 +71,7 @@ const RECEIVER = bech32AddressToHex({ address: "bbn14vcpe0yt8xdzaapm8yy6tm26sf45
 const channels = await getRecommendedChannels()
 
 let channel_info = getChannelInfo(SOURCE_CHAIN_ID, DESTINATION_CHAIN_ID, channels)
-if (channel_info === null || true) {
+if (channel_info === null) {
   // Creating movement channel since its not found in hubble.
   // consola.info("no channel found")
   // process.exit(1)

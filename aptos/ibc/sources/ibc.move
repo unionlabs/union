@@ -508,7 +508,10 @@ module ibc::ibc {
         proof_height: u64
     ) acquires IBCStore {
         assert!(
-            smart_table::contains(&borrow_global<IBCStore>(get_vault_addr()).connections, connection_id),
+            smart_table::contains(
+                &borrow_global<IBCStore>(get_vault_addr()).connections,
+                connection_id
+            ),
             E_CONNECTION_DOES_NOT_EXIST
         );
 

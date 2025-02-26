@@ -57,7 +57,7 @@ const DESTINATION_CHAIN_ID = "250"
 const channels = await getRecommendedChannels()
 
 let channel_info = getChannelInfo(SOURCE_CHAIN_ID, DESTINATION_CHAIN_ID, channels)
-if (channel_info === null || true) {
+if (channel_info === null) {
   // Creating movement channel since its not found in hubble.
   channel_info = {
     source_chain_id: SOURCE_CHAIN_ID,
