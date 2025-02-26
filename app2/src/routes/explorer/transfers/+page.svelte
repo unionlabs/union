@@ -58,4 +58,15 @@ onMount(() => {
       {/if}
     {/if}
   </Card>
+  <div class="flex rounded overflow-clip">
+    <button class="border-l border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tl rounded-bl">
+      ←
+    </button>
+    <div class="bg-zinc-900 border-t border-b border-zinc-800 flex items-center px-4">
+      Current
+    </div>
+    <button class="border-r border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tr rounded-br">
+      →
+    </button>
+  </div>
 </Sections>
