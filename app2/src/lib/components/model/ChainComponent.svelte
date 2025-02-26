@@ -7,7 +7,7 @@ interface Props {
 let { chain }: Props = $props()
 </script>
 
-<div class="p-4">
+<div>
 	<h2 class="text-lg font-bold">{chain.display_name}</h2>
 	<div>{chain.chain_id}</div>
 	<div>{chain.testnet}</div>
