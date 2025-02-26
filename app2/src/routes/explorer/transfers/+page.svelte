@@ -1,6 +1,6 @@
 <script lang="ts">
 import { transferListLatestQuery } from "$lib/queries/transfer-list.svelte"
-import { Effect, Fiber, Option } from "effect"
+import { DateTime, Effect, Fiber, Option } from "effect"
 import { onMount } from "svelte"
 import { transferList } from "$lib/stores/transfers.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
@@ -9,6 +9,7 @@ import Sections from "$lib/components/ui/Sections.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import { getChain } from "$lib/schema/chain"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import Label from "$lib/components/ui/Label.svelte"
 
 onMount(() => {
   const fiber = Effect.runFork(transferListLatestQuery)
@@ -27,19 +28,20 @@ onMount(() => {
         {@const destinationChain = getChain(chainss, transfer.destination_chain_id)}
         <div class="flex gap-8 px-4 py-2 flex-cols-3">
           <div class="flex-1">
-            <p class="uppercase text-zinc-500 text-xs font-semibold">from</p>
+            <Label>from</Label>
             {#if Option.isSome(sourceChain)}
               <ChainComponent chain={sourceChain.value}/>
             {/if}
           </div>
           <div class="flex-1">
-            <p class="uppercase text-zinc-500 text-xs font-semibold">to</p>
+            <Label>to</Label>
             {#if Option.isSome(destinationChain)}
               <ChainComponent chain={destinationChain.value}/>
             {/if}
           </div>
           <div class="flex-1">
-            yeah
+            <Label>Time</Label>
+            {DateTime.formatIso(transfer.packet_send_timestamp)}
           </div>
         </div>
       {/each}
