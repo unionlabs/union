@@ -14,6 +14,7 @@ export let chainsQuery = (environment: Environment) =>
         chain_id,
         display_name,
         addr_prefix,
+        rpc_type,
         testnet,
         features(where: {environment: {_eq: $environment}}) {
           channel_list
