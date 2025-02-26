@@ -15,6 +15,7 @@ workspace = true
 bip32                      = { workspace = true }
 chain-utils                = { workspace = true }
 cometbft-rpc               = { workspace = true }
+cosmos-client.workspace = true
 enumorph                   = { workspace = true }
 ibc-classic-spec.workspace = true
 ibc-union                  = { workspace = true, features = ["library"] }

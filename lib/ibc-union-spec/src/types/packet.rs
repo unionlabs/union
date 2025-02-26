@@ -19,6 +19,17 @@ pub struct Packet {
     pub timeout_timestamp: u64,
 }
 
+impl Packet {
+    /// Calculate the hash of this packet. This is the same as the commitment key for a single packet.
+    #[cfg(feature = "ethabi")]
+    pub fn hash(&self) -> unionlabs::primitives::H256 {
+        use alloy_sol_types::SolValue;
+        use unionlabs::ethereum::keccak256;
+
+        keccak256(self.abi_encode())
+    }
+}
+
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
     use std::borrow::Cow;
@@ -229,7 +240,7 @@ mod tests {
 
     #[test]
     fn abi_encode() {
-        let ibc_solidity_connection = ibc_solidity::Packet {
+        let ibc_solidity_packet = ibc_solidity::Packet {
             source_channel_id: 1,
             destination_channel_id: 1,
             data: b"data".into(),
@@ -237,7 +248,7 @@ mod tests {
             timeout_timestamp: 0,
         };
 
-        let connection = Packet {
+        let packet = Packet {
             source_channel_id: 1,
             destination_channel_id: 1,
             data: b"data".into(),
@@ -245,18 +256,18 @@ mod tests {
             timeout_timestamp: 0,
         };
 
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
-        let bz = connection.abi_encode_params();
+        let ibc_solidity_bz = ibc_solidity_packet.abi_encode_params();
+        let bz = packet.abi_encode_params();
         assert_eq!(ibc_solidity_bz, bz);
 
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
-        let bz = connection.abi_encode();
+        let ibc_solidity_bz = ibc_solidity_packet.abi_encode();
+        let bz = packet.abi_encode();
         assert_eq!(ibc_solidity_bz, bz);
     }
 
     #[test]
     fn abi_decode() {
-        let ibc_solidity_connection = ibc_solidity::Packet {
+        let ibc_solidity_packet = ibc_solidity::Packet {
             source_channel_id: 1,
             destination_channel_id: 1,
             data: b"data".into(),
@@ -264,7 +275,7 @@ mod tests {
             timeout_timestamp: 0,
         };
 
-        let connection = Packet {
+        let packet = Packet {
             source_channel_id: 1,
             destination_channel_id: 1,
             data: b"data".into(),
@@ -272,13 +283,13 @@ mod tests {
             timeout_timestamp: 0,
         };
 
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
-        let decoded_connection = Packet::abi_decode(&ibc_solidity_bz, true).unwrap();
-        assert_eq!(connection, decoded_connection);
+        let ibc_solidity_bz = ibc_solidity_packet.abi_encode();
+        let decoded_packet = Packet::abi_decode(&ibc_solidity_bz, true).unwrap();
+        assert_eq!(packet, decoded_packet);
 
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
-        let decoded_connection = Packet::abi_decode_params(&ibc_solidity_bz, true).unwrap();
-        assert_eq!(connection, decoded_connection);
+        let ibc_solidity_bz = ibc_solidity_packet.abi_encode_params();
+        let decoded_packet = Packet::abi_decode_params(&ibc_solidity_bz, true).unwrap();
+        assert_eq!(packet, decoded_packet);
     }
 
     // NOTE: No validation is currently required for the current packet struct definition

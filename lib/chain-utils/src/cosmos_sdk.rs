@@ -151,16 +151,16 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
             check_tx_log = %response.log
         );
 
-        if response.code != 0 {
-            let error = cosmos_sdk_error::CosmosSdkError::from_code_and_codespace(
-                &response.codespace,
-                response.code,
-            );
+        // if response.code != 0 {
+        //     let error = cosmos_sdk_error::CosmosSdkError::from_code_and_codespace(
+        //         &response.codespace,
+        //         response.code,
+        //     );
 
-            error!(%error, "cosmos tx failed");
+        //     error!(%error, "cosmos tx failed");
 
-            return Err(BroadcastTxCommitError::Tx(error));
-        };
+        //     return Err(BroadcastTxCommitError::Tx(error));
+        // };
 
         let mut target_height = self
             .tm_client()
@@ -261,7 +261,7 @@ pub trait CosmosSdkChainExt: CosmosSdkChainRpcs {
         let auth_info = AuthInfo {
             signer_infos: [SignerInfo {
                 public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
-                    key: signer.public_key().into(),
+                    key: signer.public_key().into_encoding(),
                 })),
                 mode_info: ModeInfo::Single {
                     mode: SignMode::Direct,

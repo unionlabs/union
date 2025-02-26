@@ -3443,7 +3443,6 @@ dependencies = [
 name = "cosmos-client"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "bip32",
  "cometbft-rpc",
  "num-rational 0.4.2",
@@ -3451,6 +3450,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.8",
+ "thiserror 1.0.69",
  "tokio",
  "tracing",
  "unionlabs",
@@ -14488,6 +14488,7 @@ dependencies = [
  "bip32",
  "chain-utils",
  "cometbft-rpc",
+ "cosmos-client",
  "enumorph",
  "ibc-classic-spec",
  "ibc-union",

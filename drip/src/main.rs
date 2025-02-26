@@ -1,4 +1,6 @@
-use std::{collections::HashMap, ffi::OsString, fmt, fs::read_to_string, rc::Rc, time::Duration};
+use std::{
+    collections::HashMap, ffi::OsString, fmt, fs::read_to_string, rc::Rc, sync::Arc, time::Duration,
+};
 
 use async_graphql::{http::GraphiQLSource, *};
 use async_graphql_axum::GraphQL;
@@ -13,7 +15,12 @@ use axum::{
 };
 use chrono::{NaiveDateTime, Utc};
 use clap::Parser;
-use cosmos_client::GasConfig;
+use cosmos_client::{
+    gas::GasConfig,
+    rpc::{Rpc, RpcT},
+    wallet::{LocalSigner, WalletT},
+    TxClient,
+};
 use prost::{Message, Name};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
@@ -310,23 +317,38 @@ pub struct MaxRequestPolls(pub u32);
 // pub struct Bech32Prefix(pub String);
 pub struct CaptchaBypassSecret(pub String);
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct ChainClient {
     pub chain: Chain,
-    pub cosmos_ctx: cosmos_client::Ctx,
+    pub cosmos_ctx: Arc<TxClient<LocalSigner, Rpc, GasConfig>>,
 }
 
 impl ChainClient {
     pub async fn new(chain: &Chain) -> Self {
-        let cosmos_ctx = cosmos_client::Ctx::new(
-            chain.rpc_url.clone(),
-            chain.signer,
-            chain.gas_config.clone(),
-        )
-        .await
-        .unwrap();
+        let rpc = Rpc::new(chain.rpc_url.clone()).await.unwrap();
 
-        let chain_id = cosmos_ctx.chain_id();
+        let bech32_prefix = rpc
+            .client()
+            .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::Bech32PrefixResponse>(
+                "/cosmos.auth.v1beta1.Query/Bech32Prefix",
+                &protos::cosmos::auth::v1beta1::Bech32PrefixRequest {},
+                None,
+                false,
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap()
+            .unwrap()
+            .bech32_prefix;
+
+        let ctx = TxClient::new(
+            LocalSigner::new(chain.signer, bech32_prefix),
+            rpc,
+            chain.gas_config.clone(),
+        );
+
+        let chain_id = ctx.rpc().chain_id();
 
         // Check if we are connected to a chain with the correct chain_id
         assert_eq!(
@@ -337,7 +359,7 @@ impl ChainClient {
 
         Self {
             chain: chain.clone(),
-            cosmos_ctx,
+            cosmos_ctx: Arc::new(ctx),
         }
     }
 }
@@ -390,7 +412,7 @@ impl ChainClient {
         let msg = protos::cosmos::bank::v1beta1::MsgMultiSend {
             // this is required to be one element
             inputs: vec![protos::cosmos::bank::v1beta1::Input {
-                address: self.cosmos_ctx.signer().to_string(),
+                address: self.cosmos_ctx.wallet().address().to_string(),
                 coins: agg_reqs
                     .iter()
                     .map(|agg_req| protos::cosmos::base::v1beta1::Coin {

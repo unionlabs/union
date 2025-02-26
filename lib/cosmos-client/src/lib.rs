@@ -1,138 +1,67 @@
-use anyhow::{anyhow, bail, Context, Result};
-use cometbft_rpc::rpc_types::{GrpcAbciQueryError, TxResponse};
+#![warn(clippy::unwrap_used)]
+#![allow(async_fn_in_trait)]
+
+use cometbft_rpc::{
+    rpc_types::{BroadcastTxSyncResponse, GrpcAbciQueryError, TxResponse},
+    JsonRpcError,
+};
 use protos::cosmos::base::abci;
-use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tracing::{debug, info};
 use unionlabs::{
+    bech32::Bech32,
     cosmos::{
         auth::base_account::BaseAccount,
-        base::{abci::gas_info::GasInfo, coin::Coin},
+        base::abci::gas_info::GasInfo,
         crypto::{secp256k1, AnyPubKey},
         tx::{
-            auth_info::AuthInfo, fee::Fee, mode_info::ModeInfo, sign_doc::SignDoc,
-            signer_info::SignerInfo, signing::sign_info::SignMode, tx::Tx, tx_body::TxBody,
-            tx_raw::TxRaw,
+            auth_info::AuthInfo, mode_info::ModeInfo, sign_doc::SignDoc, signer_info::SignerInfo,
+            signing::sign_info::SignMode, tx::Tx, tx_body::TxBody, tx_raw::TxRaw,
         },
     },
     encoding::{EncodeAs, Proto},
-    google::protobuf::any::Any,
-    primitives::H256,
-    prost::{Message, Name},
-    signer::CosmosSigner,
+    google::protobuf::any::{Any, TryFromAnyError},
+    primitives::{Bytes, H256},
+    prost::{self, Message, Name},
+    ErrorReporter,
 };
 
-// TODO: Add read and write versions of this
-#[derive(Debug, Clone)]
-pub struct Ctx {
-    signer: CosmosSigner,
-    client: cometbft_rpc::Client,
-    gas_config: GasConfig,
-    chain_id: String,
+use crate::{gas::GasFillerT, rpc::RpcT, wallet::WalletT};
+
+pub mod gas;
+pub mod rpc;
+pub mod wallet;
+
+pub struct TxClient<W, Q, G> {
+    wallet: W,
+    rpc: Q,
+    gas: G,
 }
 
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct GasConfig {
-    pub gas_price: f64,
-    pub gas_denom: String,
-    pub gas_multiplier: f64,
-    pub max_gas: u64,
-    pub min_gas: u64,
-}
+impl<W, Q, G> TxClient<W, Q, G> {
+    pub fn new(wallet: W, rpc: Q, gas: G) -> Self {
+        Self { wallet, rpc, gas }
+    }
 
-impl GasConfig {
-    pub fn mk_fee(&self, gas: u64) -> Fee {
-        // gas limit = provided gas * multiplier, clamped between min_gas and max_gas
-        let gas_limit = u128_saturating_mul_f64(gas.into(), self.gas_multiplier)
-            .clamp(self.min_gas.into(), self.max_gas.into());
+    pub fn wallet(&self) -> &W {
+        &self.wallet
+    }
 
-        let amount = u128_saturating_mul_f64(gas.into(), self.gas_price);
+    pub fn rpc(&self) -> &Q {
+        &self.rpc
+    }
 
-        Fee {
-            amount: vec![Coin {
-                amount,
-                denom: self.gas_denom.clone(),
-            }],
-            gas_limit: gas_limit.try_into().unwrap_or(u64::MAX),
-            payer: String::new(),
-            granter: String::new(),
-        }
+    pub fn gas(&self) -> &G {
+        &self.gas
     }
 }
 
-fn u128_saturating_mul_f64(u: u128, f: f64) -> u128 {
-    (num_rational::BigRational::from_integer(u.into())
-        * num_rational::BigRational::from_float(f).expect("finite"))
-    .to_integer()
-    .try_into()
-    .unwrap_or(u128::MAX)
-    // .expect("overflow")
-}
-
-impl Ctx {
-    pub async fn new(rpc_url: String, private_key: H256, gas_config: GasConfig) -> Result<Ctx> {
-        let client = cometbft_rpc::Client::new(rpc_url)
-            .await
-            .context("creating cometbft rpc client")?;
-
-        let prefix = client
-            .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::Bech32PrefixResponse>(
-                "/cosmos.auth.v1beta1.Query/Bech32Prefix",
-                &protos::cosmos::auth::v1beta1::Bech32PrefixRequest {},
-                None,
-                false,
-            )
-            .await
-            .context("querying bech32 prefix")?
-            .into_result()?
-            .unwrap()
-            .bech32_prefix;
-
-        let chain_id = client
-            .status()
-            .await
-            .context("querying node status")?
-            .node_info
-            .network;
-
-        let ctx = Ctx {
-            signer: CosmosSigner::new(
-                bip32::secp256k1::ecdsa::SigningKey::from_bytes(&private_key.into())
-                    .expect("invalid private key"),
-                prefix,
-            ),
-            client,
-            gas_config,
-            chain_id,
-        };
-
-        Ok(ctx)
-    }
-
-    pub fn signer(&self) -> &CosmosSigner {
-        &self.signer
-    }
-    pub fn client(&self) -> &cometbft_rpc::Client {
-        &self.client
-    }
-
-    pub fn gas_config(&self) -> &GasConfig {
-        &self.gas_config
-    }
-
-    pub fn chain_id(&self) -> &str {
-        &self.chain_id
-    }
-
+impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
     pub async fn tx<M: Message + Name, R: Message + Default + Name>(
         &self,
         msg: M,
         memo: impl AsRef<str>,
-    ) -> Result<(H256, R)> {
-        // dbg!(&msg);
-
-        // panic!();
-
+    ) -> Result<(H256, R), TxError> {
         let (tx_hash, result) = self
             .broadcast_tx_commit(
                 [protos::google::protobuf::Any {
@@ -141,122 +70,24 @@ impl Ctx {
                 }],
                 memo,
             )
-            .await
-            .context("broadcast_tx_commit")?;
+            .await?;
+
+        let response = <abci::v1beta1::TxMsgData as Message>::decode(
+            &*result.tx_result.data.unwrap_or_default(),
+        )
+        .map_err(TxError::TxMsgDataDecode)?;
+
+        if *response.msg_responses[0].type_url != R::type_url() {
+            return Err(TxError::IncorrectResponseTypeUrl {
+                expected: R::type_url(),
+                found: response.msg_responses[0].clone().type_url,
+            });
+        }
 
         let response =
-            <abci::v1beta1::TxMsgData as Message>::decode(&*result.tx_result.data.unwrap())
-                .unwrap();
-
-        assert_eq!(&*response.msg_responses[0].type_url, R::type_url());
-
-        let response =
-            R::decode(&*response.msg_responses[0].value).context("parsing returned address")?;
+            R::decode(&*response.msg_responses[0].value).map_err(TxError::TxMsgDataDecode)?;
 
         Ok((tx_hash, response))
-    }
-
-    pub async fn contract_info(
-        &self,
-        address: String,
-    ) -> Result<Option<protos::cosmwasm::wasm::v1::ContractInfo>> {
-        let result = self
-            .client
-            .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryContractInfoResponse>(
-                "/cosmwasm.wasm.v1.Query/ContractInfo",
-                &(protos::cosmwasm::wasm::v1::QueryContractInfoRequest { address }),
-                None,
-                false,
-            )
-            .await?
-            .into_result();
-
-        match result {
-            Ok(ok) => Ok(Some(ok.unwrap().contract_info.unwrap())),
-            Err(err) => {
-                if err.error_code.get() == 6 && err.codespace == "sdk" {
-                    Ok(None)
-                } else {
-                    Err(err.into())
-                }
-            }
-        }
-    }
-
-    pub async fn code_info(&self, code_id: u64) -> Result<Option<H256>> {
-        let result = self
-            .client
-            .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryCodeInfoResponse>(
-                "/cosmwasm.wasm.v1.Query/CodeInfo",
-                &protos::cosmwasm::wasm::v1::QueryCodeInfoRequest { code_id },
-                None,
-                false,
-            )
-            .await?
-            .into_result();
-
-        match result {
-            Ok(ok) => Ok(Some(ok.unwrap().checksum.try_into().unwrap())),
-            Err(err) => {
-                // if err.error_code.get() == 6 && err.codespace == "sdk" {
-                //     Ok(None)
-                // } else {
-                Err(err.into())
-                // }
-            }
-        }
-    }
-
-    pub async fn instantiate_code_id_of_contract(&self, address: String) -> Result<Option<u64>> {
-        let result = self.contract_history(address).await?;
-
-        match result {
-            Ok(ok) => {
-                let contract_code_history_entry = &ok.unwrap().entries[0];
-
-                if contract_code_history_entry.operation
-                    != protos::cosmwasm::wasm::v1::ContractCodeHistoryOperationType::Init as i32
-                {
-                    bail!(
-                        "invalid state {} for first history entry",
-                        contract_code_history_entry.operation
-                    )
-                }
-
-                Ok(Some(contract_code_history_entry.code_id))
-            }
-            Err(err) => {
-                // if err.error_code.get() == 6 && err.codespace == "sdk" {
-                //     Ok(None)
-                // } else {
-                Err(err.into())
-                // }
-            }
-        }
-    }
-
-    pub async fn contract_history(
-        &self,
-        address: String,
-    ) -> Result<
-        Result<
-            Option<protos::cosmwasm::wasm::v1::QueryContractHistoryResponse>,
-            GrpcAbciQueryError,
-        >,
-    > {
-        Ok(self
-            .client
-            .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryContractHistoryResponse>(
-                "/cosmwasm.wasm.v1.Query/ContractHistory",
-                &protos::cosmwasm::wasm::v1::QueryContractHistoryRequest {
-                    address,
-                    ..Default::default()
-                },
-                None,
-                false,
-            )
-            .await?
-            .into_result())
     }
 
     /// - simulate tx
@@ -267,16 +98,11 @@ impl Ctx {
         &self,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
         memo: impl AsRef<str>,
-    ) -> Result<(H256, TxResponse)> {
-        let account = self
-            .account_info(&self.signer.to_string())
-            .await
-            .context("fetching account info")?;
+    ) -> Result<(H256, TxResponse), BroadcastTxCommitError> {
+        let account = self.account_info(self.wallet.address()).await?;
 
-        let (tx_body, mut auth_info, simulation_gas_info) = self
-            .simulate_tx(messages, memo)
-            .await
-            .context("simulate_tx")?;
+        let (tx_body, mut auth_info, simulation_gas_info) =
+            self.simulate_tx(messages, memo).await?;
 
         info!(
             gas_used = %simulation_gas_info.gas_used,
@@ -284,34 +110,28 @@ impl Ctx {
             "tx simulation successful"
         );
 
-        auth_info.fee = self.gas_config.mk_fee(simulation_gas_info.gas_used);
+        auth_info.fee = self.gas.mk_fee(simulation_gas_info.gas_used).await;
 
         info!(
             fee = %auth_info.fee.amount[0].amount,
-            gas_multiplier = %self.gas_config.gas_multiplier,
             "submitting transaction with gas"
         );
 
         // re-sign the new auth info with the simulated gas
-        let signature = self
-            .signer
-            .try_sign(
-                &SignDoc {
-                    body_bytes: tx_body.clone().encode_as::<Proto>(),
-                    auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-                    chain_id: self.chain_id.to_string(),
-                    account_number: account.account_number,
-                }
-                .encode_as::<Proto>(),
-            )
-            .expect("signing failed")
-            .to_bytes()
-            .to_vec();
+        let signature = self.wallet.sign(
+            &SignDoc {
+                body_bytes: tx_body.clone().encode_as::<Proto>(),
+                auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
+                chain_id: self.rpc.chain_id().to_string(),
+                account_number: account.account_number,
+            }
+            .encode_as::<Proto>(),
+        );
 
         let tx_raw_bytes = TxRaw {
             body_bytes: tx_body.clone().encode_as::<Proto>(),
             auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-            signatures: [signature].to_vec(),
+            signatures: [signature.into()].to_vec(),
         }
         .encode_as::<Proto>();
 
@@ -320,56 +140,32 @@ impl Ctx {
             .finalize()
             .into();
 
-        if let Ok(tx) = self.client.tx(tx_hash, false).await {
+        if let Ok(tx) = self.rpc.client().tx(tx_hash, false).await {
             debug!(%tx_hash, "tx already included");
             return Ok((tx_hash, tx));
         }
 
-        let response = self
-            .client
-            .broadcast_tx_sync(&tx_raw_bytes)
-            .await
-            .context("broadcast_tx_sync")?;
+        let response = self.rpc.client().broadcast_tx_sync(&tx_raw_bytes).await?;
 
         assert_eq!(tx_hash, response.hash, "tx hash calculated incorrectly");
 
-        info!(%tx_hash);
-
         info!(
+            %tx_hash,
             check_tx_code = %response.code,
+            check_tx_log = %response.log,
             codespace = %response.codespace,
-            check_tx_log = %response.log
         );
 
-        if response.code > 0 {
-            bail!(
-                "cosmos tx failed: {}, {}: {}",
-                response.code,
-                response.codespace,
-                response.log
-            );
+        if response.code.is_err() {
+            return Err(BroadcastTxCommitError::TxFailed(response));
         };
 
-        let mut target_height = self
-            .client
-            .block(None)
-            .await
-            .context("querying latest block")?
-            .block
-            .header
-            .height;
+        let mut target_height = self.rpc.client().block(None).await?.block.header.height;
 
         let mut i = 0;
         loop {
             let reached_height = 'l: loop {
-                let current_height = self
-                    .client
-                    .block(None)
-                    .await
-                    .context("querying latest block for tx inclusion")?
-                    .block
-                    .header
-                    .height;
+                let current_height = self.rpc.client().block(None).await?.block.header.height;
 
                 if current_height >= target_height {
                     break 'l current_height;
@@ -377,31 +173,25 @@ impl Ctx {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             };
 
-            let tx_inclusion = self.client.tx(tx_hash, false).await;
-
-            // debug!(?tx_inclusion);
+            let tx_inclusion = self.rpc.client().tx(tx_hash, false).await;
 
             match tx_inclusion {
                 Ok(tx) => {
                     if tx.tx_result.code == 0 {
                         break Ok((tx_hash, tx));
                     } else {
-                        bail!(
-                            "cosmos tx failed: {}, {}: {}",
-                            response.code,
-                            response.codespace,
-                            response.log
-                        );
+                        return Err(BroadcastTxCommitError::TxFailed(response));
                     }
                 }
-                Err(err) if i > 5 => {
-                    return Err(anyhow!(
-                        "tx inclusion couldn't be retrieved after {i} attempt(s) (tx hash: {tx_hash})"
-                    )
-                    .context(err));
+                Err(source) if i > 5 => {
+                    return Err(BroadcastTxCommitError::Inclusion {
+                        attempts: i,
+                        tx_hash,
+                        error: source,
+                    });
                 }
-                Err(_) => {
-                    debug!("unable to retrieve tx inclusion, trying again");
+                Err(err) => {
+                    debug!(err = %ErrorReporter(err), "unable to retrieve tx inclusion, trying again");
                     target_height = reached_height.add(&1);
                     i += 1;
                     continue;
@@ -414,13 +204,10 @@ impl Ctx {
         &self,
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
         memo: impl AsRef<str>,
-    ) -> Result<(TxBody, AuthInfo, GasInfo)> {
+    ) -> Result<(TxBody, AuthInfo, GasInfo), SimulateTxError> {
         use protos::cosmos::tx;
 
-        let account = self
-            .account_info(&self.signer.to_string())
-            .await
-            .context("querying account info")?;
+        let account = self.account_info(self.wallet.address()).await?;
 
         let tx_body = TxBody {
             // TODO: Use RawAny here
@@ -436,7 +223,7 @@ impl Ctx {
         let auth_info = AuthInfo {
             signer_infos: [SignerInfo {
                 public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
-                    key: self.signer.public_key().into(),
+                    key: self.wallet.public_key().into_encoding(),
                 })),
                 mode_info: ModeInfo::Single {
                     mode: SignMode::Direct,
@@ -444,33 +231,29 @@ impl Ctx {
                 sequence: account.sequence,
             }]
             .to_vec(),
-            fee: self.gas_config.mk_fee(self.gas_config.max_gas).clone(),
+            fee: self.gas.mk_fee(self.gas.max_gas().await).await,
         };
 
-        let simulation_signature = self
-            .signer
-            .try_sign(
-                &SignDoc {
-                    body_bytes: tx_body.clone().encode_as::<Proto>(),
-                    auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-                    chain_id: self.chain_id.to_string(),
-                    account_number: account.account_number,
-                }
-                .encode_as::<Proto>(),
-            )
-            .expect("signing failed")
-            .to_bytes()
-            .to_vec();
+        let simulation_signature = self.wallet.sign(
+            &SignDoc {
+                body_bytes: tx_body.clone().encode_as::<Proto>(),
+                auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
+                chain_id: self.rpc.chain_id().to_string(),
+                account_number: account.account_number,
+            }
+            .encode_as::<Proto>(),
+        );
 
         let simulate_response = self
-            .client
+            .rpc
+            .client()
             .grpc_abci_query::<_, tx::v1beta1::SimulateResponse>(
                 "/cosmos.tx.v1beta1.Service/Simulate",
                 &tx::v1beta1::SimulateRequest {
                     tx_bytes: Tx {
                         body: tx_body.clone(),
                         auth_info: auth_info.clone(),
-                        signatures: [simulation_signature.clone()].to_vec(),
+                        signatures: [simulation_signature.into()].to_vec(),
                     }
                     .encode_as::<Proto>(),
                     ..Default::default()
@@ -478,27 +261,26 @@ impl Ctx {
                 None,
                 false,
             )
-            .await
-            .context("submitting SimulateRequest")?
-            .into_result()?;
-
-        let result = simulate_response.unwrap();
+            .await?
+            .into_result()?
+            .ok_or(SimulateTxError::NoResponse)?;
 
         Ok((
             tx_body,
             auth_info,
-            result
-                .gas_info
-                .expect("gas info is present on successful simulation result")
-                .into(),
+            simulate_response.gas_info.unwrap_or_default().into(),
         ))
     }
 
-    pub async fn account_info(&self, account: &str) -> Result<BaseAccount> {
+    pub async fn account_info<T: Clone + AsRef<[u8]>>(
+        &self,
+        account: Bech32<T>,
+    ) -> Result<BaseAccount, FetchAccountInfoError> {
         debug!(%account, "fetching account");
 
         Ok(self
-            .client
+            .rpc
+            .client()
             .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::QueryAccountResponse>(
                 "/cosmos.auth.v1beta1.Query/Account",
                 &protos::cosmos::auth::v1beta1::QueryAccountRequest {
@@ -507,13 +289,96 @@ impl Ctx {
                 None,
                 false,
             )
-            .await
-            .context("querying account info")?
+            .await?
             .into_result()?
-            .unwrap()
+            .ok_or_else(|| {
+                FetchAccountInfoError::AccountNotFound(
+                    account.clone().map_data(|bz| bz.as_ref().into()),
+                )
+            })?
             .account
             .map(<Any<BaseAccount>>::try_from)
-            .context("decoding account info")??
+            .ok_or_else(|| {
+                FetchAccountInfoError::AccountNotFound(account.map_data(|bz| bz.as_ref().into()))
+            })??
             .0)
     }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum BroadcastTxCommitError {
+    #[error("error fetching account info")]
+    FetchAccountInfo(#[from] FetchAccountInfoError),
+    #[error("error simulating tx")]
+    SimulateTx(#[from] SimulateTxError),
+    #[error("jsonrpc error")]
+    JsonRpc(#[from] JsonRpcError),
+    #[error(
+        "tx failed: code={}, codespace={}, data={}, log={}",
+        .0.code, .0.codespace, .0.data, .0.log
+    )]
+    TxFailed(BroadcastTxSyncResponse),
+    #[error("tx inclusion couldn't be retrieved after {attempts} attempt(s) (tx hash: {tx_hash})")]
+    Inclusion {
+        attempts: usize,
+        tx_hash: H256,
+        #[source]
+        error: JsonRpcError,
+    },
+}
+
+impl BroadcastTxCommitError {
+    pub fn as_json_rpc_error(&self) -> Option<&JsonRpcError> {
+        match self {
+            BroadcastTxCommitError::FetchAccountInfo(FetchAccountInfoError::JsonRpc(error))
+            | BroadcastTxCommitError::SimulateTx(SimulateTxError::JsonRpc(error))
+            | BroadcastTxCommitError::JsonRpc(error)
+            | BroadcastTxCommitError::Inclusion { error, .. } => Some(error),
+            _ => None,
+        }
+    }
+
+    pub fn as_grpc_abci_query_error(&self) -> Option<&GrpcAbciQueryError> {
+        match self {
+            BroadcastTxCommitError::FetchAccountInfo(FetchAccountInfoError::Query(error))
+            | BroadcastTxCommitError::SimulateTx(SimulateTxError::Query(error)) => Some(error),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum SimulateTxError {
+    #[error("error fetching account info")]
+    FetchAccountInfo(#[from] FetchAccountInfoError),
+    #[error("grpc abci query error")]
+    Query(#[from] GrpcAbciQueryError),
+    #[error("jsonrpc error")]
+    JsonRpc(#[from] JsonRpcError),
+    #[error("tx simulation returned an empty response")]
+    NoResponse,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum FetchAccountInfoError {
+    #[error("account {0} not found")]
+    AccountNotFound(Bech32<Bytes>),
+    #[error("grpc abci query error")]
+    Query(#[from] GrpcAbciQueryError),
+    #[error("error decoding account")]
+    Decode(#[from] TryFromAnyError<BaseAccount>),
+    #[error("jsonrpc error")]
+    JsonRpc(#[from] JsonRpcError),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum TxError {
+    #[error("error broadcasting transaction")]
+    BroadcastTxCommit(#[from] BroadcastTxCommitError),
+    #[error("incorrect type url for msg response, expected {expected} but found {found}")]
+    IncorrectResponseTypeUrl { expected: String, found: String },
+    #[error("unable to decode msg response")]
+    ResponseDecode(#[source] prost::DecodeError),
+    #[error("unable to tx response")]
+    TxMsgDataDecode(#[source] prost::DecodeError),
 }
