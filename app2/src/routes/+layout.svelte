@@ -5,11 +5,12 @@ import { Effect, Fiber } from "effect"
 import { chainsQuery } from "$lib/queries/chains.svelte"
 import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
 import AppErrors from "$lib/components/layout/AppErrors/index.svelte"
+import { ENV } from "$lib/constants"
 
 let { children } = $props()
 
 onMount(() => {
-  const fiber = Effect.runFork(chainsQuery)
+  const fiber = Effect.runFork(chainsQuery(ENV()))
   return () => Effect.runPromise(Fiber.interrupt(fiber))
 })
 </script>

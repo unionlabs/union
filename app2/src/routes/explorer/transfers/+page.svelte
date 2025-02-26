@@ -1,11 +1,12 @@
 <script lang="ts">
-import { transferListQuery } from "$lib/queries/transfer-list.svelte"
+import { transferListLatestQuery } from "$lib/queries/transfer-list.svelte"
 import { Effect, Fiber, Option } from "effect"
 import { onMount } from "svelte"
 import { transferList } from "$lib/stores/transfers.svelte"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 
 onMount(() => {
-  const fiber = Effect.runFork(transferListQuery)
+  const fiber = Effect.runFork(transferListLatestQuery)
   return () => Effect.runPromise(Fiber.interrupt(fiber))
 })
 </script>
@@ -14,15 +15,12 @@ onMount(() => {
 {#if Option.isSome(transferList.data)}
   <pre>{JSON.stringify(transferList.data.value, null,2)}</pre>
   {#if Option.isSome(transferList.error)}
-    <pre>{JSON.stringify(transferList.error.value, null,2)}</pre>
+    <ErrorComponent error={transferList.error.value}/>
   {/if}
 {:else}
   Loading...
   {#if Option.isSome(transferList.error)}
-    <pre>{JSON.stringify(transferList.error, null,2)}</pre>
-    {#if transferList.error.value}
-      <pre>{transferList.error.value.message}</pre>
-    {/if}
+    <ErrorComponent error={transferList.error.value}/>
   {/if}
 {/if}
 

@@ -9,6 +9,7 @@ export const transferListItemFragment = graphql(`
         packet_send_timestamp
         packet_send_transaction_hash
         packet_recv_timestamp
+        packet_hash
         base_token
         base_amount
         quote_token
