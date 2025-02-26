@@ -14,7 +14,7 @@
     "test:unit": "vitest",
     "test": "npm run test:unit -- --run"
   },
-  "dependencies": {
+  "devDependencies": {
     "@cosmos-kit/core": "^2.15.5",
     "@cosmos-kit/walletconnect": "^2.12.5",
     "@unionlabs/client": "^0.1.3",
@@ -24,9 +24,7 @@
     "gql.tada": "^1.8.10",
     "graphql-request": "^7.1.2",
     "svelte-persisted-store": "^0.12.0",
-    "viem": "^2.23.5"
-  },
-  "devDependencies": {
+    "viem": "^2.23.5",
     "@effect/platform": "^0.77.2",
     "@eslint/compat": "^1.2.6",
     "@eslint/js": "^9.20.0",
