@@ -41,7 +41,6 @@ class CosmosStore {
   connectedWallet = $state<CosmosWalletId | undefined>(undefined)
   connectionStatus = $state<"disconnected" | "connecting" | "connected">("disconnected")
 
-  // Set up the derived calculation as a class field
   addressMapping = $derived(() => {
     if (this.rawAddress && this.address) {
       const cosmosAddressFromBech32 = (
@@ -58,7 +57,6 @@ class CosmosStore {
   })
 
   constructor() {
-    // Initialize from session storage if available
     this.loadFromStorage()
   }
 
@@ -145,7 +143,7 @@ class CosmosStore {
     this.connectedWallet = cosmosWalletId
     this.saveToStorage()
 
-    await Effect.sleep(2_000)
+    Effect.sleep(2_000)
   }
 
   disconnect = async () => {

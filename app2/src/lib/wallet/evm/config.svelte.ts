@@ -177,7 +177,6 @@ class SepoliaStore {
     await evmConnect(walletId, sepolia.id)
   }
 
-  // Convert to arrow function
   disconnect = async () => {
     await Promise.all([
       await evmDisconnect().catch(error => {
