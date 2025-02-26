@@ -412,6 +412,11 @@ pub mod consts {
             epoch: default_epoch(),
         }
     }
+
+    // https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/light-client/sync-protocol.md#new-constants
+    pub const FINALIZED_ROOT_GINDEX_ELECTRA: u64 = 169;
+    pub const CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA: u64 = 86;
+    pub const NEXT_SYNC_COMMITTEE_GINDEX_ELECTRA: u64 = 87;
 }
 
 pub mod preset {
