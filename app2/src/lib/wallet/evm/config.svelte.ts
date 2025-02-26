@@ -15,11 +15,6 @@ import {
   switchChain as _switchChain,
   createStorage as createWagmiStorage
 } from "@wagmi/core"
-import { sleep } from "$lib/utils"
-import { KEY } from "$lib/constants/keys.ts"
-import { APP_INFO } from "$lib/constants/app.ts"
-import type { ChainWalletStore } from "$lib/wallet/types"
-import { writable } from "svelte/store"
 import { injected, metaMask, coinbaseWallet, walletConnect } from "@wagmi/connectors"
 import {
   sepolia,
@@ -30,7 +25,9 @@ import {
 } from "@wagmi/core/chains"
 import { AddressEvmCanonical } from "$lib/schema/address.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { Option } from "effect"
+import {Effect, Option} from "effect"
+import {TESTNET_APP_INFO} from "$lib/config/app.ts";
+import type {Hex} from "viem";
 
 export const chains = [
   sepolia,
@@ -42,13 +39,11 @@ export const chains = [
 export type ConfiguredChainId = (typeof chains)[number]["id"]
 
 export type Wallet = GetAccountReturnType
-export type ConnectedWallet = Wallet & { status: "connected" }
-
 export type ConnectorType = "injected" | "walletConnect"
 
 const WALLETCONNECT_PROJECT_ID = "49fe74ca5ded7142adefc69a7788d14a"
 
-export const config = createConfig({
+export const configSvelte = createConfig({
   chains,
   cacheTime: 4_000,
   pollingInterval: 4_000,
@@ -121,8 +116,8 @@ export const config = createConfig({
     }),
     coinbaseWallet({
       darkMode: true,
-      appName: APP_INFO.name,
-      appLogoUrl: APP_INFO.iconUrl,
+      appName: TESTNET_APP_INFO.name,
+      appLogoUrl: TESTNET_APP_INFO.iconUrl,
       enableMobileWalletLink: true
     }),
     metaMask({
@@ -130,11 +125,10 @@ export const config = createConfig({
       shouldShimWeb3: false,
       injectProvider: true,
       enableAnalytics: false,
-      infuraAPIKey: KEY.RPC.INFURA,
       dappMetadata: {
-        name: APP_INFO.name,
-        url: APP_INFO.baseUrl,
-        iconUrl: APP_INFO.iconUrl
+        name: TESTNET_APP_INFO.name,
+        url: TESTNET_APP_INFO.baseUrl,
+        iconUrl: TESTNET_APP_INFO.iconUrl
       },
       useDeeplink: true,
       checkInstallationOnAllCalls: false,
@@ -144,68 +138,69 @@ export const config = createConfig({
       projectId: WALLETCONNECT_PROJECT_ID,
       showQrModal: true,
       metadata: {
-        name: APP_INFO.name,
+        name: TESTNET_APP_INFO.name,
         description: "Connect via WalletConnect",
-        url: APP_INFO.baseUrl,
-        icons: [APP_INFO.iconUrl]
+        url: TESTNET_APP_INFO.baseUrl,
+        icons: [TESTNET_APP_INFO.iconUrl]
       }
     })
   ]
 })
 
-config.subscribe(
+configSvelte.subscribe(
   state => state.chainId,
   _chainId => {
     console.log("config state changed", _chainId)
   }
 )
 
-export function createSepoliaStore(
-  previousState: Omit<ChainWalletStore<"evm">, "rawAddress"> = {
-    chain: "sepolia",
-    address: getAccount(config).address,
-    connectionStatus: getAccount(config).status,
-    connectedWallet: getAccount(config).connector?.id || "injected"
-  }
-) {
-  const { subscribe, set, update } = writable(previousState)
-  return {
-    set,
-    update,
-    subscribe,
-    connect: async (walletId: EvmWalletId) => {
-      await evmConnect(walletId, sepolia.id)
-    },
-    disconnect: async () => {
-      await Promise.all([
-        await evmDisconnect().catch(error => {
-          console.error(error)
-        }),
-        ...config.connectors.map(connector =>
-          connector.disconnect().catch(error => {
-            console.error(error)
-          })
-        )
-      ])
-      await sleep(2_000)
+class SepoliaStore {
+  chain = $state("sepolia");
+  address = $state(getAccount(configSvelte).address);
+  connectionStatus = $state(getAccount(configSvelte).status);
+  connectedWallet = $state(getAccount(configSvelte).connector?.id || "injected");
+
+  addressMapping = $derived(() => {
+    if (this.address) {
+      console.log("runns");
+      const evmAddressFromHex = (hexAddress: Hex) => {
+        const normalized = hexAddress.slice(2).toLowerCase();
+        return AddressEvmCanonical.make(`0x${normalized}`);
+      };
+      wallets.evmAddress = Option.some(evmAddressFromHex(this.address));
+    } else {
+      wallets.evmAddress = Option.none();
     }
+  });
+
+  async connect(walletId: string) {
+    await evmConnect(walletId, sepolia.id);
+  }
+
+  async disconnect() {
+    await Promise.all([
+      await evmDisconnect().catch(error => {
+        console.error(error);
+      }),
+      ...configSvelte.connectors.map(connector =>
+        connector.disconnect().catch(error => {
+          console.error(error);
+        })
+      )
+    ]);
+    Effect.sleep(2_000);
+  }
+
+  //@ts-ignore
+  updateAccount(account) {
+    this.chain = account.chain;
+    this.address = account.address;
+    this.connectionStatus = account.connectionStatus;
+    this.connectedWallet = account.connectedWallet;
   }
 }
 
-export const sepoliaStore = createSepoliaStore()
-
-sepoliaStore.subscribe($sepoliaStore => {
-  if ($sepoliaStore?.address) {
-    console.log("runns")
-    const evmAddressFromHex = (hexAddress: string): typeof AddressEvmCanonical.Type => {
-      const normalized = hexAddress.slice(2).toLowerCase()
-      return AddressEvmCanonical.make(`0x${normalized}`)
-    }
-    wallets.evmAddress = Option.some(evmAddressFromHex($sepoliaStore.address))
-  } else {
-    wallets.evmAddress = Option.none()
-  }
-})
+export const sepoliaStore = new SepoliaStore();
 
 /**
  * Any wallet that supports EIP-6963 will automatically show up.
@@ -214,7 +209,7 @@ sepoliaStore.subscribe($sepoliaStore => {
 
 const excludeWalletList = ["io.leapwallet.LeapWallet", "app.keplr"]
 
-export const evmWalletsInformation = config.connectors
+export const evmWalletsInformation = configSvelte.connectors
   .map(connector => {
     const id = connector.id.toLowerCase()
     const name = connector.name.toLowerCase()
@@ -238,9 +233,9 @@ export const evmWalletsInformation = config.connectors
 
 export type EvmWalletId = (typeof evmWalletsInformation)[number]["id"]
 
-watchAccount(config, {
+watchAccount(configSvelte, {
   onChange: account =>
-    sepoliaStore.set({
+    sepoliaStore.updateAccount({
       chain: account.chain?.name ?? "sepolia",
       address: account.address,
       connectionStatus: account.status,
@@ -248,18 +243,18 @@ watchAccount(config, {
     })
 })
 
-reconnect(config)
+reconnect(configSvelte)
 
 export async function evmConnect(
   evmWalletId: EvmWalletId,
   chainId: ConfiguredChainId = sepolia.id
 ) {
-  const connector = config.connectors.find(connector => connector.id === evmWalletId)
-  if (connector) return _connect(config, { connector, chainId })
+  const connector = configSvelte.connectors.find(connector => connector.id === evmWalletId)
+  if (connector) return _connect(configSvelte, { connector, chainId })
 }
 
 export function evmDisconnect() {
-  return _disconnect(config, { connector: getAccount(config).connector })
+  return _disconnect(configSvelte, { connector: getAccount(configSvelte).connector })
 }
 
-export const evmSwitchChain = (chainId: ConfiguredChainId) => _switchChain(config, { chainId })
+export const evmSwitchChain = (chainId: ConfiguredChainId) => _switchChain(configSvelte, { chainId })

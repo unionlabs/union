@@ -4,4 +4,4 @@ export {
   sepoliaStore,
   type EvmWalletId,
   evmWalletsInformation
-} from "./config.ts"
+} from "./config.svelte.ts"
