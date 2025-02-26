@@ -50,8 +50,7 @@ onMount(() => {
       {/if}
     {:else}
       {#each [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]}
-        <div class="h-[57px] p-4">
-        </div>
+        <div class="h-[57px] last:h-[56px]"></div>
       {/each}
       {#if Option.isSome(transferList.error)}
         <ErrorComponent error={transferList.error.value}/>
