@@ -1,0 +1,82 @@
+---
+title: Address Types
+---
+
+There are various ways to encode and represent addresses. This is how we Union defines them throughout the APIs and implementations:
+
+## Any Ecosystem
+
+```
+CanonicalBytes<N> = Uint8Array of length N
+```
+
+## Cosmos
+
+
+```
+Cosmos<Hrp> = {
+  Canonical = CanonicalBytes<20 | 32 | N>
+  Display = Bech32<Hrp, Cosmos.Canonical>
+  Zkgm = Bech32<Hrp, Cosmos.Canonical>
+}
+```
+
+:::note
+So far we've only encountered `CanonicalBytes<20>` and `CanonicalBytes<32>`. Cosmos is highly customizable however, so we recommend against making this assumption
+:::
+
+## EVM
+
+```
+Evm = {
+  Canonical = CanonicalBytes<20>
+  Display = Checksum<Hex<Evm.Canonical>>
+  Zkgm = Evm.Canonical
+}
+```
+
+## Aptos
+
+```
+Aptos = {
+  Canonical = CanonicalBytes<32>
+  Display = Hex<Aptos.Canonical>
+  Zkgm = Aptos.Canonical
+}
+```
+
+
+## GraphQL encoding
+
+Responses from our [GraphQL API](/integrations/api/graphql) are encoded as follows:
+
+```
+transfers {
+  sender_canonical: Hex<Chain.Canonical>
+  sender_display: Chain.Display
+  sender_zkgm: Hex<Chain.Zkgm>
+  receiver_canonical: Hex<Chain.Canonical>
+  receiver_display: Chain.Display
+  receiver_zkgm: Hex<Chain.Zkgm>
+}
+```
+
+
+## TypeScript-SDK encoding
+
+### CosmWasm
+
+```
+receiver: Hex<DestinationChain.Zkgm>
+```
+
+### EVM
+```
+receiver: Hex<DestinationChain.Zkgm>
+```
+
+### Aptos
+```
+receiver: Hex<DestinationChain.Zkgm>
+```
+
