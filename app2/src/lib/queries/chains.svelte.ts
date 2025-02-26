@@ -28,7 +28,7 @@ export let chainsQuery = (environment: Environment) =>
     }
   `),
     variables: { environment },
-    refetchInterval: "5 seconds",
+    refetchInterval: "60 seconds",
     writeData: data => {
       chains.data = data.pipe(Option.map(d => d.v1_ibc_union_chains))
     },
