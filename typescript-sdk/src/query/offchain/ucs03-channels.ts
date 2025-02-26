@@ -1,4 +1,11 @@
-import { cosmosChainId, evmChainFromChainId, type EvmChainId, evmChainId, GRAQPHQL_URL } from "#mod"
+import {
+  aptosChainId,
+  cosmosChainId,
+  evmChainFromChainId,
+  type EvmChainId,
+  evmChainId,
+  GRAQPHQL_URL
+} from "#mod"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
 import { createPublicClient, fromHex, http, isHex, type Hex } from "viem"
@@ -6,6 +13,7 @@ import { err, ok, ResultAsync, type Result } from "neverthrow"
 import { ucs03ZkgmAbi } from "#abi/ucs-03"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { cosmosRpcs, type CosmosChainId } from "#cosmos/client"
+import { Aptos, AptosConfig, Network, Deserializer, MoveVector } from "@aptos-labs/ts-sdk"
 
 const channelsQuery = graphql(/*  GraphQL */ `
   query Ucs03Channels {
@@ -170,6 +178,57 @@ export const getQuoteToken = async (
     }
 
     return ok({ type: "NEW_WRAPPED", quote_token: predictedQuoteToken.value[0] })
+  }
+
+  // aptos token prediction
+  if (aptosChainId.includes(channel.destination_chain_id)) {
+    let network: Network
+    let rpcUrl = ""
+    if (channel.destination_chain_id === "126") {
+      network = Network.MAINNET
+    } else if (channel.destination_chain_id === "250") {
+      network = Network.TESTNET
+      rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1"
+    } else {
+      return err(new Error(`Unsupported Aptos network: ${channel.destination_chain_id}`))
+    }
+
+    const config = new AptosConfig({ network: network, fullnode: rpcUrl })
+    const aptos = new Aptos(config)
+
+    // Define the Move function call.
+    // Replace <MODULE_ADDRESS> and <MODULE_NAME> with your contract's module address and name.
+    // const functionCall =
+    // Build the transaction payload.
+
+    const receiverVec = MoveVector.U8("0x6d756e6f")
+    const output = await aptos.experimental.viewBinary({
+      payload: {
+        function: `${channel.destination_port_id}::ibc_app::predict_wrapped_token`,
+        typeArguments: [],
+        // Adjust functionArguments as needed.
+        functionArguments: [
+          0, // path
+          channel.destination_channel_id, // channel
+          receiverVec
+        ]
+      }
+    })
+
+    console.info("base_token:", base_token)
+    console.info("transaction:", output)
+    console.info("channel.destination_channel_id:", channel.destination_channel_id)
+    console.info("channel.destination_port_id:", channel.destination_port_id)
+    const deserializer = new Deserializer(output.slice(1))
+    const addressBytes = deserializer.deserializeFixedBytes(32)
+    const wrappedAddressHex = "0x" + Buffer.from(addressBytes).toString("hex")
+
+    // // 2) The second return value is the salt (vector<u8>)
+    // const saltBytes = deserializer.deserializeBytes()
+    // const saltHex = "0x" + Buffer.from(saltBytes).toString("hex")
+
+    console.log("Wrapped address:", wrappedAddressHex)
+    return ok({ type: "NEW_WRAPPED", quote_token: wrappedAddressHex })
   }
 
   return err(new Error("unknown chain in token prediction"))

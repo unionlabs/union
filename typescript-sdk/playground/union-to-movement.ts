@@ -57,7 +57,7 @@ const DESTINATION_CHAIN_ID = "250"
 const channels = await getRecommendedChannels()
 
 let channel_info = getChannelInfo(SOURCE_CHAIN_ID, DESTINATION_CHAIN_ID, channels)
-if (channel_info === null) {
+if (channel_info === null || true) {
   // Creating movement channel since its not found in hubble.
   channel_info = {
     source_chain_id: SOURCE_CHAIN_ID,
@@ -80,7 +80,8 @@ let quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, MUNO_DENOM, channel_info)
 //   consola.error(quoteToken.error)
 //   process.exit(1)
 // }
-
+console.info("quote token", quoteToken)
+process.exit(1)
 // manual quote token:
 quoteToken = {
   type: "UNWRAPPED",
