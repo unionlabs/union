@@ -7,8 +7,9 @@ pub mod utils;
 
 use beacon_api_types::{
     consts::{
-        floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
-        NEXT_SYNC_COMMITTEE_INDEX,
+        CURRENT_SYNC_COMMITTEE_GINDEX, CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA,
+        EXECUTION_PAYLOAD_GINDEX, FINALIZED_ROOT_GINDEX, FINALIZED_ROOT_GINDEX_ELECTRA,
+        NEXT_SYNC_COMMITTEE_GINDEX, NEXT_SYNC_COMMITTEE_GINDEX_ELECTRA,
     },
     light_client_update::LightClientUpdate,
     ChainSpec, DomainType, ExecutionPayloadHeaderSsz, ForkParameters, LightClientHeader, Slot,
@@ -40,6 +41,42 @@ pub trait BlsVerify {
         msg: Vec<u8>,
         signature: H768,
     ) -> Result<(), Error>;
+}
+
+// https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#finalized_root_gindex_at_slot
+pub fn finalized_root_gindex_at_slot<C: ChainSpec>(
+    fork_parameters: &ForkParameters,
+    slot: Slot,
+) -> u64 {
+    let epoch = compute_epoch_at_slot::<C>(slot);
+    if epoch >= fork_parameters.electra.epoch {
+        return FINALIZED_ROOT_GINDEX_ELECTRA;
+    }
+    FINALIZED_ROOT_GINDEX
+}
+
+// https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#current_sync_committee_gindex_at_slot
+pub fn current_sync_committee_gindex_at_slot<C: ChainSpec>(
+    fork_parameters: &ForkParameters,
+    slot: Slot,
+) -> u64 {
+    let epoch = compute_epoch_at_slot::<C>(slot);
+    if epoch >= fork_parameters.electra.epoch {
+        return CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA;
+    }
+    CURRENT_SYNC_COMMITTEE_GINDEX
+}
+
+// https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#next_sync_committee_gindex_at_slot
+pub fn next_sync_committee_gindex_at_slot<C: ChainSpec>(
+    fork_parameters: &ForkParameters,
+    slot: Slot,
+) -> u64 {
+    let epoch = compute_epoch_at_slot::<C>(slot);
+    if epoch >= fork_parameters.electra.epoch {
+        return NEXT_SYNC_COMMITTEE_GINDEX_ELECTRA;
+    }
+    NEXT_SYNC_COMMITTEE_GINDEX
 }
 
 /// Verifies if the light client `update` is valid.
@@ -169,8 +206,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
     validate_merkle_branch(
         &update.finalized_header.beacon.tree_hash_root(),
         &update.finality_branch,
-        floorlog2(FINALIZED_ROOT_INDEX),
-        get_subtree_index(FINALIZED_ROOT_INDEX),
+        finalized_root_gindex_at_slot::<C>(fork_parameters, update_attested_slot),
         &update.attested_header.beacon.state_root,
     )?;
 
@@ -188,14 +224,17 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
                 },
             )?;
         }
+
         // This validates the given next sync committee against the attested header's state root.
         validate_merkle_branch(
             &TryInto::<SyncCommitteeSsz<C>>::try_into(next_sync_committee.clone())
                 .unwrap()
                 .tree_hash_root(),
-            &update.next_sync_committee_branch.unwrap_or_default(),
-            floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
-            get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
+            &update
+                .next_sync_committee_branch
+                .clone()
+                .unwrap_or_default()[..],
+            next_sync_committee_gindex_at_slot::<C>(fork_parameters, update_attested_slot),
             &update.attested_header.beacon.state_root,
         )?;
     }
@@ -245,19 +284,17 @@ pub fn get_lc_execution_root<C: ChainSpec>(
     header: &LightClientHeader,
 ) -> H256 {
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
+    // Now new field in electra
+    if epoch >= fork_parameters.electra.epoch {
+        return TryInto::<ExecutionPayloadHeaderSsz<C>>::try_into(header.execution.clone())
+            .unwrap()
+            .tree_hash_root();
+    }
     if epoch >= fork_parameters.deneb.epoch {
         return TryInto::<ExecutionPayloadHeaderSsz<C>>::try_into(header.execution.clone())
             .unwrap()
             .tree_hash_root();
     }
-
-    // TODO: Figure out what to do here
-    // if epoch >= fork_parameters.capella.epoch {
-    //     return CapellaExecutionPayloadHeader::from(header.execution.clone())
-    //         .tree_hash_root()
-    //         .into();
-    // }
-
     H256::default()
 }
 
@@ -285,8 +322,7 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
     validate_merkle_branch(
         &get_lc_execution_root::<C>(fork_parameters, header),
         &header.execution_branch,
-        floorlog2(EXECUTION_PAYLOAD_INDEX),
-        get_subtree_index(EXECUTION_PAYLOAD_INDEX),
+        EXECUTION_PAYLOAD_GINDEX,
         &header.beacon.body_root,
     )
 }

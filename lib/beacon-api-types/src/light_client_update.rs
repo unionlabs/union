@@ -1,12 +1,6 @@
-use unionlabs::primitives::H256;
-
 use crate::{
-    consts::{floorlog2, FINALIZED_ROOT_INDEX, NEXT_SYNC_COMMITTEE_INDEX},
-    LightClientHeader, Slot, SyncAggregate, SyncCommittee,
+    FinalityBranch, LightClientHeader, NextSyncCommitteeBranch, Slot, SyncAggregate, SyncCommittee,
 };
-
-pub type NextSyncCommitteeBranch = [H256; floorlog2(NEXT_SYNC_COMMITTEE_INDEX)];
-pub type FinalityBranch = [H256; floorlog2(FINALIZED_ROOT_INDEX)];
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

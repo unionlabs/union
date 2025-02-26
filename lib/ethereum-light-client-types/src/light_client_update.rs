@@ -1,4 +1,4 @@
-use beacon_api_types::{light_client_update::NextSyncCommitteeBranch, SyncCommittee};
+use beacon_api_types::{NextSyncCommitteeBranch, SyncCommittee};
 
 use crate::LightClientUpdateData;
 

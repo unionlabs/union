@@ -63,7 +63,7 @@ use std::{
 
 use hex_literal::hex;
 use typenum::{NonZero, Unsigned};
-use unionlabs::primitives::FixedBytes;
+use unionlabs::primitives::{FixedBytes, H256};
 
 pub use crate::{
     attestation::Attestation, attestation_data::AttestationData,
@@ -368,6 +368,10 @@ consts_traits![
 mk_chain_spec!(Minimal is preset::MINIMAL);
 mk_chain_spec!(Mainnet is preset::MAINNET);
 
+pub type CurrentSyncCommitteeBranch = Vec<H256>;
+pub type NextSyncCommitteeBranch = Vec<H256>;
+pub type FinalityBranch = Vec<H256>;
+
 /// Values that are constant across all configurations.
 pub mod consts {
     use hex_literal::hex;
@@ -394,13 +398,13 @@ pub mod consts {
 
     // https://github.com/ethereum/consensus-specs/blob/dev/ssz/merkle-proofs.md
     /// `get_generalized_index(BeaconState, "finalized_checkpoint", "root")`
-    pub const FINALIZED_ROOT_INDEX: u64 = 105;
+    pub const FINALIZED_ROOT_GINDEX: u64 = 105;
     /// `get_generalized_index(BeaconState, "current_sync_committee")`
-    pub const CURRENT_SYNC_COMMITTEE_INDEX: u64 = 54;
+    pub const CURRENT_SYNC_COMMITTEE_GINDEX: u64 = 54;
     /// `get_generalized_index(BeaconState, "next_sync_committee")`
-    pub const NEXT_SYNC_COMMITTEE_INDEX: u64 = 55;
+    pub const NEXT_SYNC_COMMITTEE_GINDEX: u64 = 55;
     /// `get_generalized_index(BeaconBlockBody, "execution_payload")`
-    pub const EXECUTION_PAYLOAD_INDEX: u64 = 25;
+    pub const EXECUTION_PAYLOAD_GINDEX: u64 = 25;
 
     pub const fn default_epoch() -> u64 {
         u64::MAX

@@ -1,6 +1,5 @@
 use beacon_api_types::{
-    light_client_update::{FinalityBranch, NextSyncCommitteeBranch},
-    LightClientHeader, Slot, SyncAggregate, SyncCommittee,
+    FinalityBranch, LightClientHeader, NextSyncCommitteeBranch, Slot, SyncAggregate, SyncCommittee
 };
 
 /// Common data required for all light client updates.
