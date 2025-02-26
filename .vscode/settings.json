@@ -1,7 +1,9 @@
 {
-  // https://github.com/nix-community/nixd/blob/main/nixd/docs/configuration.md#where-to-place-the-configuration
+  // Enable automatic restarts and change watching for direnv
   "direnv.watchForChanges": true,
   "direnv.restart.automatic": true,
+
+  // Enable Nix language server and set its path
   "nix.enableLanguageServer": true,
   "nix.serverPath": "nixd",
   "nix.serverSettings": {
@@ -12,52 +14,41 @@
     }
   },
 
-  // https://book.getfoundry.sh/config/vscode?highlight=vscode#3-formatter
+  // Auto-formatting settings
   "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  // Solidity formatting
   "solidity.formatter": "forge",
   "[solidity]": {
     "editor.defaultFormatter": "JuanBlanco.solidity"
   },
 
-  // Use go tools from devshell
+  // Use Go tools from the development shell
   "go.toolsGopath": ".",
 
-  // https://code.visualstudio.com/docs/typescript/typescript-compiling#_using-the-workspace-version-of-typescript
+  // TypeScript workspace configuration
   "typescript.tsdk": "./docs/node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // Enable Biome formatting for multiple languages
   "biome.enabled": true,
-  "[json]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[jsonc]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[javascript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[css]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[graphql]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[svelte]": {
-    "editor.defaultFormatter": "svelte.svelte-vscode"
-  },
-  "[astro]": {
-    "editor.defaultFormatter": "astro-build.astro-vscode"
-  },
-  // https://github.com/tailwindlabs/tailwindcss-intellisense#recommended-vs-code-settings
-  "editor.quickSuggestions": {
-    "strings": "on"
-  },
+  "[json]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[jsonc]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[typescript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[javascript]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[css]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[graphql]": { "editor.defaultFormatter": "biomejs.biome" },
+  "[svelte]": { "editor.defaultFormatter": "svelte.svelte-vscode" },
+  "[astro]": { "editor.defaultFormatter": "astro-build.astro-vscode" },
+
+  // Tailwind CSS settings
+  "editor.quickSuggestions": { "strings": "on" },
   "tailwindCSS.emmetCompletions": true,
-  "tailwindCSS.includeLanguages": {
-    "plaintext": "html"
-  },
+  "tailwindCSS.includeLanguages": { "plaintext": "html" },
+
+  // File type associations
   "files.associations": {
     ".envrc": "dotenv",
     "bun.lock": "jsonc",
@@ -65,20 +56,30 @@
     "*.css": "tailwindcss",
     ".vscode/*.json": "jsonc"
   },
+
+  // Excluded files and directories
   "files.exclude": {
     "result": true,
-    ".direnv": true
+    ".direnv": true,
+    ".git": true,
+    "node_modules": true,
+    ".cache": true,
+    "dist": true,
+    "build": true
   },
-  /* theme and icon settings */
+
+  // Theme and icon settings
   "workbench.iconTheme": "material-icon-theme",
-  /* excluding files and directoriwes from global search */
+  "workbench.colorTheme": "GitHub Dark Default",
+  
+  // Exclude specific files and directories from search
   "search.exclude": {
     "._*": true,
     "*.lock": true,
     "**/dist": true,
+    "**/build": true,
     "**/_/**": true,
     "**/*.svg": true,
-    "**/build": true,
     "**/target": true,
     "**/.astro": true,
     "**/result": true,
@@ -90,19 +91,29 @@
     "**/node_modules": true,
     "**/package-lock.json": true
   },
-  /**
-   * various opinionated UI and UX settings
-   * feel free to change if you have any strong preferences
-   */
+
+  // UI/UX settings for better experience
   "window.commandCenter": false,
-  "files.autoGuessEncoding": true,
-  "yaml.schemaStore.enable": true,
   "editor.minimap.enabled": false,
-  "svelte.enable-ts-plugin": true,
   "editor.overviewRulerBorder": false,
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.scrollBeyondLastLine": false,
+  "editor.smoothScrolling": true,
+  "editor.mouseWheelZoom": true,
+  "editor.inlineSuggest.enabled": true,
+  "editor.quickSuggestionsDelay": 10,
+  "editor.suggest.showIcons": true,
   "workbench.activityBar.location": "top",
+  "workbench.startupEditor": "none",
+  "workbench.statusBar.visible": true,
+  
+  // GitHub Actions settings
+  "github-actions.workflows.pinned.refresh.enabled": true,
+
+  // Experimental settings for better performance
   "extensions.experimental.affinity": {
     "better-ts-errors.better-ts-errors": 1
   },
-  "github-actions.workflows.pinned.refresh.enabled": true
+  "editor.experimental.stickyScroll.enabled": true,
+  "files.autoSave": "onFocusChange"
 }
