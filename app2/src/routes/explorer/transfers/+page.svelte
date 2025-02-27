@@ -16,6 +16,7 @@ import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import { flip } from "svelte/animate"
 import { fly } from "svelte/transition"
+import Button from "$lib/components/ui/Button.svelte"
 
 let fiber: Fiber.Fiber<any, any>
 const LIMIT = 12
@@ -91,9 +92,9 @@ const onNextPage = async () => {
     {/if}
   </Card>
   <div class="flex gap-6">
-    <button onclick={onLive} class="cursor-pointer border-rounded dark:bg-sky-600 border-sky-500 border h-10 w-20 rounded font-bold">
+    <Button class="bg-red-500" onclick={onLive}>
       LIVE
-    </button>
+    </Button>
     <div class="rounded shadow flex">
       <button onclick={onPrevPage} class="cursor-pointer border-l border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tl rounded-bl">
         ←
