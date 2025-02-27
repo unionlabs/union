@@ -3,6 +3,7 @@ import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.js"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.js"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.js"
 import Connection from "$lib/components/ui/Wallet/connect/connection.svelte"
+import Card from "$lib/components/ui/Card.svelte"
 
 let isOpen = $state(false)
 let currentWalletType = $state("all")
@@ -18,7 +19,7 @@ function closeModal() {
 
 <!-- Button to open modal when it's closed -->
 {#if !isOpen}
-  <button class="bg-neutral-600 hover:bg-neutral-700 text-white font-bold py-3 px-6 rounded-lg" onclick={openModal}>
+  <button class="bg-zinc-600 hover:bg-zinc-700 text-white font-bold py-3 px-6 rounded-lg" onclick={openModal}>
     Connect Wallet
   </button>
 {/if}
@@ -27,50 +28,46 @@ function closeModal() {
 
   <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
 
-    <div class="max-h-[600px] min-h-[375px] h-full bg-neutral-900 border border-neutral-700  text-white sm:rounded-lg w-full max-w-md relative flex flex-col">
+    <Card class="max-h-[600px] min-h-[375px] h-full w-full max-w-md relative flex flex-col" divided>
+      <button
+              class="cursor-pointer border-0 absolute top-3 right-4 text-white text-lg"
+              onclick={closeModal}
+      >
+        ✕
+      </button>
 
-      <!-- Left side: Wallet list -->
-      <div class="w-full h-full">
-        <button
-                class="cursor-pointer absolute top-4 right-4 text-white text-lg"
-                onclick={closeModal}
-        >
-          ✕
-        </button>
+      <section class="p-6 pb-4">
 
-        <div class="border-b border-neutral-700 p-6 pb-4">
           <h2 class="text-xl font-bold">Connect wallet</h2>
           <p class="text-sm mb-4">Choose how you want to connect.</p>
-          <nav class="flex space-x-2" aria-label="Tabs">
+          <nav class="flex gap-2" aria-label="Tabs">
             <button onclick={() => currentWalletType = "all"}
-                    class:bg-neutral-200={currentWalletType === "all"}
-                    class:bg-neutral-800={currentWalletType !== "all"}
-                    class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium text-gray-500 hover:text-gray-700">
+                    class:bg-zinc-200={currentWalletType === "all"}
+                    class:bg-zinc-800={currentWalletType !== "all"}
+                    class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium text-zinc-500 hover:text-zinc-700">
               All
             </button>
             <button onclick={() => currentWalletType = "evm"}
-                    class:bg-neutral-200={currentWalletType === "evm"}
-                    class:bg-neutral-800={currentWalletType !== "evm"}
-                    class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium text-gray-500 hover:text-gray-700">
+                    class:bg-zinc-200={currentWalletType === "evm"}
+                    class:bg-zinc-800={currentWalletType !== "evm"}
+                    class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium text-zinc-500 hover:text-zinc-700">
               Evm
             </button>
             <button onclick={() => currentWalletType = "cosmos"}
-                    class:bg-neutral-200={currentWalletType === "cosmos"}
-                    class:bg-neutral-800={currentWalletType !== "cosmos"}
-                    class="cursor-pointer rounded-md bg-neutral-800 px-3 py-1 text-sm font-medium text-gray-500 hover:text-gray-700">
+                    class:bg-zinc-200={currentWalletType === "cosmos"}
+                    class:bg-zinc-800={currentWalletType !== "cosmos"}
+                    class="cursor-pointer rounded-md bg-zinc-800 px-3 py-1 text-sm font-medium text-zinc-500 hover:text-zinc-700">
               Cosmos
             </button>
             <button onclick={() => currentWalletType = "aptos"}
-                    class:bg-neutral-200={currentWalletType === "aptos"}
-                    class:bg-neutral-800={currentWalletType !== "aptos"}
-                    class="cursor-pointer rounded-md bg-neutral-800 px-3 py-1 text-sm font-medium text-gray-500"
+                    class:bg-zinc-200={currentWalletType === "aptos"}
+                    class:bg-zinc-800={currentWalletType !== "aptos"}
+                    class="cursor-pointer rounded-md bg-zinc-800 px-3 py-1 text-sm font-medium text-zinc-500"
                     aria-current="page">Aptos
             </button>
-          </nav>
-        </div>
+        </section>
 
-        <div class="calch overflow-y-scroll p-6 space-y-4">
-
+        <section class="calch overflow-y-scroll p-6 space-y-4">
           {#if currentWalletType === "evm"}
             <Connection
                     chain="evm"
@@ -130,9 +127,8 @@ function closeModal() {
                     onDisconnectClick={aptosStore.disconnect}
             />
           {/if}
-        </div>
-      </div>
-    </div>
+        </section>
+    </Card>
   </div>
 {/if}
 

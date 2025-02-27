@@ -75,14 +75,14 @@ let connectedWallet = $derived(
 
 {#if connectStatus === "connected" && address?.length > 0}
   <!-- Wallet Card -->
-  <div class="w-full bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-4 mb-4">
+  <div class="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 mb-4">
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center">
-        <div class="bg-neutral-700 rounded-lg p-2 mr-3">
+        <div class="bg-zinc-700 rounded-lg p-2 mr-3">
           {#if connectedWallet?.icon}
             <img src={connectedWallet.icon} alt={connectedWallet.name} class="size-7" />
           {:else}
-            <div class="size-7 bg-neutral-600 rounded-full"></div>
+            <div class="size-7 bg-zinc-600 rounded-full"></div>
           {/if}
         </div>
         <div>
@@ -90,16 +90,16 @@ let connectedWallet = $derived(
         </div>
       </div>
       <button
-              class="text-neutral-400 hover:text-white focus:outline-none"
+              class="text-zinc-400 hover:text-white focus:outline-none"
               onclick={() => onDisconnectClick()}
       >
         <span>❌</span>
       </button>
     </div>
-    <div class="bg-neutral-700 rounded p-3 flex justify-between items-center">
+    <div class="bg-zinc-700 rounded p-3 flex justify-between items-center">
       <span class="font-mono text-sm truncate">{connectText}</span>
       <button
-              class="p-1 hover:bg-neutral-600 rounded focus:outline-none"
+              class="p-1 hover:bg-zinc-600 rounded focus:outline-none"
               onclick={() => onCopyClick()}
       >
         {#if copyClicked}
@@ -120,9 +120,9 @@ let connectedWallet = $derived(
                 role="row"
                 tabindex={0}
                 data-index={index}
-                class="w-full bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-3
-                      flex items-center justify-between cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700
-                      transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-neutral-300"
+                class="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3
+                      flex items-center justify-between cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700
+                      transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-zinc-300"
                 onclick={async () => {
             if (connectStatus === "disconnected") {
               console.info("disconnected, calling onConnectClick")
