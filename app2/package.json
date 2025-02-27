@@ -30,6 +30,7 @@
     "@wagmi/connectors": "^5.7.8",
     "@wagmi/core": "^2.16.5",
     "@web3modal/wagmi": "4.0.0",
+    "clsx": "^2.1.1",
     "effect": "^3.13.2",
     "eslint": "^9.20.1",
     "eslint-plugin-svelte": "^2.46.1",
@@ -46,11 +47,6 @@
     "typescript-eslint": "^8.24.1",
     "viem": "^2.23.5",
     "vite": "^6.1.0",
-    "vite-plugin-node-polyfills": "^0.23.0",
     "vitest": "^3.0.5"
-  },
-  "dependencies": {
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^3.0.2"
   }
 }

@@ -62,7 +62,7 @@ const onNextPage = async () => {
 <Sections>
   <section>
   <h1 class="font-bold text-4xl">Your Transfers</h1>
-  <p>These are the transfers from your connected wallets</p>
+  <p>{wallets.evmAddress}These are the transfers from your connected wallets</p>
   </section>
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferListAddress.data) && Option.isSome(chains.data)}
