@@ -4,6 +4,7 @@ import Sections from "$lib/components/ui/Sections.svelte"
 import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Button from "$lib/components/ui/Button.svelte"
+import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
 </script>
 
 <Sections>
@@ -25,6 +26,7 @@ import Button from "$lib/components/ui/Button.svelte"
   <div class="flex flex-col gap-2">
     <ConnectWalletButton/>
     <Button variant="secondary" onclick={() => uiStore.openSettingsModal()}>
+      <SharpSettingsIcon class="size-5"/>
       Settings
     </Button>
   </div>
