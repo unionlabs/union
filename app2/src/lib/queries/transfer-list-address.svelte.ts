@@ -52,7 +52,7 @@ export const transferListPageLtAddressQuery = (
     schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
     document: graphql(
       `
-    query TransferListPageAddress($page: String!, $address: String!, $limit: Int!) @cached(ttl: 30) {
+    query TransferListPageLtAddress($page: String!, $address: String!, $limit: Int!) @cached(ttl: 30) {
       v1_ibc_union_fungible_asset_orders(
         limit: $limit,
         where: {
@@ -93,7 +93,7 @@ export const transferListPageGtAddressQuery = (
     schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
     document: graphql(
       `
-    query TransferListPageAddress($page: String!, $address: String!, $limit: Int!) @cached(ttl: 30) {
+    query TransferListPageGtAddress($page: String!, $address: String!, $limit: Int!) @cached(ttl: 30) {
       v1_ibc_union_fungible_asset_orders(
         limit: $limit,
         where: {
