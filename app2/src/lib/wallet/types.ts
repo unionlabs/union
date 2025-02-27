@@ -1,7 +1,7 @@
 import type { State } from "@wagmi/core"
 import type { Hex, Address as HexAddress } from "viem"
-import {Schema} from "effect";
-import type {RpcType} from "$lib/schema/chain.ts";
+import type { Schema } from "effect"
+import type { RpcType } from "$lib/schema/chain.ts"
 
 export type RpcTypeT = Schema.Schema.Type<typeof RpcType>
 

@@ -4,8 +4,8 @@ import type { State } from "@wagmi/core"
 import { type CosmosWalletId } from "$lib/wallet/cosmos"
 import { type AptosWalletId } from "$lib/wallet/aptos"
 import { type EvmWalletId } from "$lib/wallet/evm"
-import {Schema} from "effect";
-import {RpcType} from "$lib/schema/chain.ts";
+import { Schema } from "effect"
+import { RpcType } from "$lib/schema/chain.ts"
 // import { MetamaskMobileAlert } from '$lib/components/ui/Wallet/connect/metamask-mobile-alert.svelte'
 
 const OFFENDING_WALLET_ID = "io.metamask.mobile"

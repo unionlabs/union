@@ -1,9 +1,9 @@
 import type { State } from "@wagmi/core"
-import {Schema} from "effect";
-import {RpcType} from "../../../../schema/chain";
-import {CosmosWalletId} from "../../../../wallet/cosmos";
-import {EvmWalletId} from "../../../../wallet/evm";
-import {AptosWalletId} from "../../../../wallet/aptos";
+import type { Schema } from "effect"
+import type { RpcType } from "../../../../schema/chain.ts"
+import type { CosmosWalletId } from "../../../../wallet/cosmos.ts"
+import type { EvmWalletId } from "../../../../wallet/evm.ts"
+import type { AptosWalletId } from "../../../../wallet/aptos.ts"
 
 type Chain = Schema.Schema.Type<typeof RpcType>
 type ChainConnectStatus = State["status"]
