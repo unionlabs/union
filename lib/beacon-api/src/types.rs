@@ -194,10 +194,10 @@ impl Spec {
                 version: self.deneb_fork_version,
                 epoch: self.deneb_fork_epoch,
             },
-            electra: Fork {
-                version: self.electra_fork_version,
-                epoch: self.electra_fork_epoch,
-            },
+            // electra: Fork {
+            //     version: self.electra_fork_version,
+            //     epoch: self.electra_fork_epoch,
+            // },
         }
     }
 
