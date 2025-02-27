@@ -1653,4 +1653,18 @@ module zkgm::ibc_app {
             );
         std::debug::print(&packet);
     }
+
+    #[test(deployer = @0x4d8a66ece11f6352224942bd1dabc456b4bb5316124f02b9a7b6292ad61f7777)]
+    fun test_wrapped_token(deployer: address){
+        let path = 0;
+        let destination_channel_id = 2;
+        let token = x"6D756E6F";
+        
+        let salt = hash::sha3_256(serialize_salt(path, destination_channel_id, token));
+
+        let wrapped_address = object::create_object_address(&deployer, salt);
+        std::debug::print(&string::utf8(b"wrapped address is: "));
+        std::debug::print(&wrapped_address);
+        assert!(@0x70109da1dae3731c48fcdba5156fd7066927dd9b7c4bdfc01b0cf5b4e5309414 == wrapped_address, 101);
+    }
 }
