@@ -1,24 +1,21 @@
 <script lang="ts">
-  import { cn } from "$lib/utils"
-  import type { HTMLAttributes } from "svelte/elements"
+import { cn } from "$lib/utils"
+import type { HTMLAttributes } from "svelte/elements"
 
-  type Props = HTMLAttributes<HTMLDivElement> & {
-    class?: string
-    title?: string
-    description?: string
-  }
+type Props = HTMLAttributes<HTMLDivElement> & {
+  class?: string
+  title?: string
+  description?: string
+}
 
-  const {
-    class: className = "",
-    title = "No Wallet Connected",
-    description = "Connect a wallet to view your transfers.",
-    ...rest
-  }: Props = $props()
+const {
+  class: className = "",
+  title = "No Wallet Connected",
+  description = "Connect a wallet to view your transfers.",
+  ...rest
+}: Props = $props()
 
-  const containerClasses = cn(
-    "h-[600px] flex justify-center items-center",
-    className
-  )
+const containerClasses = cn("h-[600px] flex justify-center items-center", className)
 </script>
 
 <div class={containerClasses} {...rest}>
