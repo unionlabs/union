@@ -1,5 +1,6 @@
 <script>
 import Wallet from "$lib/components/ui/Wallet/index.svelte"
+import Sections from "$lib/components/ui/Sections.svelte"
 </script>
 
 <Sections>
@@ -30,4 +31,4 @@ import Wallet from "$lib/components/ui/Wallet/index.svelte"
     </ul>
   </section>
   <Wallet/>
-</div>
+</Sections>
