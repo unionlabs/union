@@ -42,8 +42,6 @@ export type Wallet = GetAccountReturnType
 export type ConnectorType = "injected" | "walletConnect"
 
 const WALLETCONNECT_PROJECT_ID = "49fe74ca5ded7142adefc69a7788d14a"
-
-// Persistent storage for last connected wallet
 const LAST_CONNECTED_WALLET_KEY = "last-connected-wallet"
 
 export const configSvelte = createConfig({
@@ -171,13 +169,32 @@ function clearLastConnectedWalletId() {
   }
 }
 
-let unwatchAccount: (() => void) | undefined
+class SepoliaStore {
+  chain: string = $state("11155111")
+  address: string | undefined = $state(undefined)
+  connectionStatus: "connected" | "connecting" | "disconnected" | "reconnecting" =
+    $state("disconnected")
+  connectedWallet = $state(getLastConnectedWalletId())
 
-function startWatchingAccount() {
-  if (!unwatchAccount) {
-    unwatchAccount = watchAccount(configSvelte, {
+  private unwatchAccount: (() => void) | undefined
+
+  constructor() {
+    this.reconnectLast()
+  }
+
+  startWatchingAccount = () => {
+    if (this.unwatchAccount) {
+      this.unwatchAccount()
+      this.unwatchAccount = undefined
+    }
+
+    this.unwatchAccount = watchAccount(configSvelte, {
       onChange: account => {
-        sepoliaStore.updateAccount({
+        if (this.connectionStatus === "connected" && !account.address && this.address) {
+          return
+        }
+
+        this.updateAccount({
           chain: account.chain?.name ?? "sepolia",
           address: account.address,
           connectionStatus: account.status,
@@ -186,46 +203,13 @@ function startWatchingAccount() {
       }
     })
   }
-}
-
-class SepoliaStore {
-  // Use the last connected wallet if available
-  chain: string = $state("11155111")
-  address: string | undefined = $state(undefined)
-  connectionStatus: "connected" | "connecting" | "disconnected" | "reconnecting" =
-    $state("disconnected")
-  connectedWallet = $state(getLastConnectedWalletId())
-
-  constructor() {
-    // Auto-reconnect to the last connected wallet on initialization
-    const lastWalletId = getLastConnectedWalletId()
-    if (lastWalletId && typeof window !== "undefined") {
-      const lastConnector = configSvelte.connectors.find(c => c.id === lastWalletId)
-      if (lastConnector) {
-        reconnect(configSvelte, { connectors: [lastConnector] })
-          .then(() => {
-            const account = getAccount(configSvelte)
-            this.updateAccount({
-              chain: account.chain?.name ?? "sepolia",
-              address: account.address,
-              connectionStatus: account.status,
-              connectedWallet: account.connector?.id
-            })
-            startWatchingAccount() // Start watching after successful reconnect
-          })
-          .catch(error => {
-            console.error("Auto-reconnection failed:", error)
-            this.connectionStatus = "disconnected"
-          })
-      }
-    }
-  }
 
   connect = async (walletId: string) => {
     try {
-      if (unwatchAccount) {
-        unwatchAccount()
-        unwatchAccount = undefined
+      this.connectionStatus = "connecting"
+
+      if (this.unwatchAccount) {
+        this.unwatchAccount()
       }
 
       const result = await evmConnect(walletId, sepolia.id)
@@ -239,7 +223,7 @@ class SepoliaStore {
         connectedWallet: account.connector?.id
       })
 
-      startWatchingAccount()
+      this.startWatchingAccount()
 
       return result
     } catch (error) {
@@ -250,6 +234,11 @@ class SepoliaStore {
 
   disconnect = async () => {
     try {
+      if (this.unwatchAccount) {
+        this.unwatchAccount()
+        this.unwatchAccount = undefined
+      }
+
       await evmDisconnect()
       if (typeof window !== "undefined") {
         Object.keys(window.localStorage)
@@ -270,33 +259,30 @@ class SepoliaStore {
   }
 
   reconnectLast = async () => {
+    const lastWalletId = getLastConnectedWalletId()
+    if (!lastWalletId || typeof window === "undefined") return
+
     try {
-      if (unwatchAccount) {
-        unwatchAccount()
-        unwatchAccount = undefined
+      this.connectionStatus = "connecting"
+
+      const lastConnector = configSvelte.connectors.find(c => c.id === lastWalletId)
+      if (!lastConnector) {
+        console.warn("Last connected connector not found:", lastWalletId)
+        this.connectionStatus = "disconnected"
+        return
       }
 
-      const lastWalletId = getLastConnectedWalletId()
-      if (lastWalletId) {
-        const lastConnector = configSvelte.connectors.find(c => c.id === lastWalletId)
-        if (lastConnector) {
-          await reconnect(configSvelte, { connectors: [lastConnector] })
-          const account = getAccount(configSvelte)
-          this.updateAccount({
-            chain: account.chain?.name ?? "sepolia",
-            address: account.address,
-            connectionStatus: account.status,
-            connectedWallet: account.connector?.id
-          })
-          startWatchingAccount()
-        } else {
-          console.warn("Last connected connector not found:", lastWalletId)
-          this.connectionStatus = "disconnected"
-        }
-      } else {
-        console.log("No last connected wallet found")
-        this.connectionStatus = "disconnected"
-      }
+      await reconnect(configSvelte, { connectors: [lastConnector] })
+
+      const account = getAccount(configSvelte)
+      this.updateAccount({
+        chain: account.chain?.name ?? "sepolia",
+        address: account.address,
+        connectionStatus: account.status,
+        connectedWallet: account.connector?.id
+      })
+
+      this.startWatchingAccount()
     } catch (error) {
       console.error("Reconnection failed:", error)
       this.connectionStatus = "disconnected"
@@ -328,10 +314,6 @@ class SepoliaStore {
 
 export const sepoliaStore = new SepoliaStore()
 
-/**
- * Any wallet that supports EIP-6963 will automatically show up.
- * We explicitly filter out problematic wallets: hijacking window.ethereum, etc.
- */
 const excludeWalletList = ["io.leapwallet.LeapWallet", "app.keplr"]
 
 export const evmWalletsInformation = configSvelte.connectors
@@ -358,8 +340,6 @@ export const evmWalletsInformation = configSvelte.connectors
 
 export type EvmWalletId = (typeof evmWalletsInformation)[number]["id"]
 
-startWatchingAccount()
-
 export async function evmConnect(
   evmWalletId: EvmWalletId,
   chainId: ConfiguredChainId = sepolia.id
@@ -378,11 +358,6 @@ export async function evmDisconnect() {
       await _disconnect(configSvelte, { connector })
     } else {
       await _disconnect(configSvelte)
-    }
-
-    if (unwatchAccount) {
-      unwatchAccount()
-      unwatchAccount = undefined
     }
   } catch (error) {
     console.error("Error during disconnect:", error)
