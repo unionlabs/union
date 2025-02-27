@@ -6,12 +6,19 @@ import { chainsQuery } from "$lib/queries/chains.svelte"
 import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
 import AppErrors from "$lib/components/layout/AppErrors/index.svelte"
 import { ENV } from "$lib/constants"
+import { wallets } from "$lib/stores/wallets.svelte"
 
 let { children } = $props()
 
 onMount(() => {
   const fiber = Effect.runFork(chainsQuery(ENV()))
   return () => Effect.runPromise(Fiber.interrupt(fiber))
+})
+
+$effect(() => {
+  console.log(wallets.evmAddress)
+  console.log(wallets.cosmosAddress)
+  console.log(wallets.aptosAddress)
 })
 </script>
 

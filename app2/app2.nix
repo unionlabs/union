@@ -10,6 +10,7 @@ _: {
     let
       deps = with jsPkgs; [
         python3
+        stdenv.cc
         pkg-config
         nodePackages_latest.nodejs
         nodePackages_latest."patch-package"
@@ -19,7 +20,7 @@ _: {
     {
       packages = {
         app2 = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-DmPAUQMgWvH0IzK98DQ4kY3hL5ctEC6d5iM42h3jTWw=";
+          npmDepsHash = "sha256-4iHm9HkGsQzVmonjtTLbRIHHQRC9ser23gfMzYL6z2A=";
           src = ./.;
           sourceRoot = "app2";
           npmFlags = [ "--legacy-peer-deps" ];
