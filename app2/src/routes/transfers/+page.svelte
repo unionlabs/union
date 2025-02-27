@@ -19,9 +19,11 @@ import { wallets } from "$lib/stores/wallets.svelte"
 
 let fiber: Fiber.Fiber<any, any>
 
-$: if (Option.isSome(wallets.evmAddress)) {
-  fiber = Effect.runFork(transferListLatestAddressQuery(wallets.evmAddress.value, LIMIT))
-}
+$effect(() => {
+  if (Option.isSome(wallets.evmAddress)) {
+    fiber = Effect.runFork(transferListLatestAddressQuery(wallets.evmAddress.value, LIMIT))
+  }
+})
 
 onMount(() => {
   return () => Effect.runPromise(Fiber.interrupt(fiber))
