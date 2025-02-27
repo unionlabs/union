@@ -31,3 +31,10 @@ Imagine you have a resource `Block` that you fetch from the api, want to store g
 ## UI Components Naming Conventions
 
 A `Button` would go in `src/lib/components/ui/button/index.svelte`
+
+## How to add an icon
+
+1. Go to https://icones.js.org/collection/ic?s=sharp
+2. Click on the item you want
+3. Click the Components > Svelte button
+4. Add it to `src/lib/components/icons`, `ic:sharp-bannana` becomes `SharpBannanaIcon.svelte`

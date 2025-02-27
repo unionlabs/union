@@ -2,8 +2,10 @@
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.js"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.js"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.js"
+import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import Connection from "$lib/components/ui/Wallet/connect/connection.svelte"
 import Card from "$lib/components/ui/Card.svelte"
+import Button from "../Button.svelte"
 
 let isOpen = $state(false)
 let currentWalletType = $state("all")
@@ -19,9 +21,10 @@ function closeModal() {
 
 <!-- Button to open modal when it's closed -->
 {#if !isOpen}
-  <button class="bg-zinc-600 hover:bg-zinc-700 text-white font-bold py-3 px-6 rounded-lg" onclick={openModal}>
+  <Button variant="secondary" onclick={openModal}>
+    <SharpWalletIcon class="size-5"/>
     Connect Wallet
-  </button>
+  </Button>
 {/if}
 
 {#if isOpen}
@@ -29,12 +32,12 @@ function closeModal() {
   <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
 
     <Card class="max-h-[600px] min-h-[375px] h-full w-full max-w-md relative flex flex-col" divided>
-      <button
+      <Button
               class="cursor-pointer border-0 absolute top-3 right-4 text-white text-lg"
               onclick={closeModal}
       >
         ✕
-      </button>
+      </Button>
 
       <section class="p-6 pb-4">
 
