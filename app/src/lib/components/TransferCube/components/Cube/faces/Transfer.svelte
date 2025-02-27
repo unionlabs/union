@@ -257,8 +257,12 @@ const transfer = async () => {
         })
         let realArgs = {
           ...transferArgs,
-          receiver: toHex(transferArgs.receiver),
+          receiver: transferArgs.receiver,
           baseToken: fromHex(transferArgs.baseToken, "string")
+        }
+        
+        if (destChain.rpc_type !== "aptos") {
+          realArgs.receiver = toHex(transferArgs.receiver)
         }
 
         console.log("args", realArgs)
