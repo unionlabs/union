@@ -9,12 +9,7 @@ type Props = HTMLAttributes<HTMLDivElement> & {
   divided?: boolean
 }
 
-const { 
-  children, 
-  class: className = "", 
-  divided = false,
-  ...rest 
-}: Props = $props()
+const { children, class: className = "", divided = false, ...rest }: Props = $props()
 
 const classes = cn(
   // Base styles
