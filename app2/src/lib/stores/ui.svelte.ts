@@ -1,5 +1,6 @@
 class UiStore {
   walletModalOpen: boolean = $state(false)
+  settingsModalOpen: boolean = $state(false)
 
   openWalletModal() {
     this.walletModalOpen = true
@@ -7,6 +8,14 @@ class UiStore {
 
   closeWalletModal() {
     this.walletModalOpen = false
+  }
+
+  openSettingsModal() {
+    this.settingsModalOpen = true
+  }
+
+  closeSettingsModal() {
+    this.settingsModalOpen = false
   }
 }
 

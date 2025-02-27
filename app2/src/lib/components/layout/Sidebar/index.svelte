@@ -2,6 +2,9 @@
 import Wallet from "$lib/components/ui/Wallet/index.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
+import SettingsModal from "$lib/components/SettingsModal.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import Button from "$lib/components/ui/Button.svelte"
 </script>
 
 <Sections>
@@ -20,5 +23,15 @@ import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
     </ul>
   </section>
 
-  <ConnectWalletButton/>
+  <div class="flex flex-col gap-2">
+    <ConnectWalletButton/>
+    <Button variant="secondary" onclick={() => uiStore.openSettingsModal()}>
+      Settings
+    </Button>
+  </div>
+
+  <SettingsModal 
+    isOpen={uiStore.settingsModalOpen} 
+    onClose={() => uiStore.closeSettingsModal()}
+  />
 </Sections>
