@@ -14,7 +14,7 @@ let currentWalletType = $state("all")
 
   <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
 
-    <Card class="max-h-[600px] min-h-[375px] h-full w-full max-w-md relative flex flex-col" divided>
+    <Card class="max-h-[600px] min-h-[375px] h-full w-full max-w-md relative flex flex-col z-20" divided>
       <Button
               class="cursor-pointer border-0 absolute top-3 right-4 text-white text-lg"
               onclick={() => uiStore.closeWalletModal()}

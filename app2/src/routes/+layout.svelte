@@ -7,6 +7,7 @@ import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
 import AppErrors from "$lib/components/layout/AppErrors/index.svelte"
 import { ENV } from "$lib/constants"
 import { wallets } from "$lib/stores/wallets.svelte"
+import Wallet from "$lib/components/ui/Wallet/index.svelte"
 
 let { children } = $props()
 
@@ -33,3 +34,4 @@ $effect(() => {
     {@render children()}
   </main>
 </div>
+<Wallet/>
