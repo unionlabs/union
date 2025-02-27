@@ -54,7 +54,7 @@ const onNextPage = async () => {
 
 <Sections>
   <h1 class="font-bold text-4xl">Transfers</h1>
-  <Card class="overflow-auto p-0 divide-y divide-zinc-800">
+  <Card class="overflow-auto" divided>
     {#if Option.isSome(transferList.data) && Option.isSome(chains.data)}
       {@const chainss = chains.data.value}
       {#each transferList.data.value as transfer(transfer.sort_order)}

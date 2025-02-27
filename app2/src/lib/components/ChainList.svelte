@@ -6,13 +6,11 @@ import Card from "./ui/Card.svelte"
 </script>
 
 <section class="p-4">
-  <Card>
+  <Card divided>
     {#if Option.isSome(chains.data)}
-      <ul class="flex flex-col gap-4">
       {#each chains.data.value as chain}
-        <li><ChainComponent {chain}/></li>
+        <div class="p-4"><ChainComponent {chain}/></div>
       {/each}
-      </ul>
     {:else}
       Loading...
     {/if}
