@@ -15,6 +15,7 @@ import { chains } from "$lib/stores/chains.svelte"
 import { getChain } from "$lib/schema/chain"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import Label from "$lib/components/ui/Label.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
 
 let fiber: Fiber.Fiber<any, any>
@@ -31,6 +32,7 @@ onMount(() => {
 
 const onLive = async () => {
   if (Option.isSome(transferListAddress.data) && Option.isSome(wallets.evmAddress)) {
+    transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
     fiber = Effect.runFork(transferListLatestAddressQuery(wallets.evmAddress.value, LIMIT))
   }
@@ -40,6 +42,7 @@ const onPrevPage = async () => {
   if (Option.isSome(transferListAddress.data) && Option.isSome(wallets.evmAddress)) {
     let firstSortOrder = transferListAddress.data.value.at(0)?.sort_order
     if (!firstSortOrder) return
+    transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
     fiber = Effect.runFork(
       transferListPageGtAddressQuery(firstSortOrder, wallets.evmAddress.value, LIMIT)
@@ -51,6 +54,7 @@ const onNextPage = async () => {
   if (Option.isSome(transferListAddress.data) && Option.isSome(wallets.evmAddress)) {
     let lastSortOrder = transferListAddress.data.value.at(-1)?.sort_order
     if (!lastSortOrder) return
+    transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
     fiber = Effect.runFork(
       transferListPageLtAddressQuery(lastSortOrder, wallets.evmAddress.value, LIMIT)
@@ -94,7 +98,20 @@ const onNextPage = async () => {
       {/if}
     {:else}
       {#each Array(LIMIT).fill(0)}
-        <div class="h-[57px] last:h-[56px]"></div>
+        <div class="flex gap-8 px-4 py-2">
+          <div class="flex-1">
+            <Label>from</Label>
+              <Skeleton class="h-[24px]" randomWidth />
+          </div>
+          <div class="flex-1">
+            <Label>to</Label>
+              <Skeleton class="h-[24px]" randomWidth />
+          </div>
+          <div class="flex-1">
+            <Label>Time</Label>
+            <Skeleton class="h-[24px] w-32 mt-1" />
+          </div>
+        </div>
       {/each}
       {#if Option.isSome(transferListAddress.error)}
         <ErrorComponent error={transferListAddress.error.value}/>
