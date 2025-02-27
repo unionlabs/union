@@ -9,19 +9,28 @@ type Props = HTMLAttributes<HTMLDivElement> & {
 
 const { class: className = "", randomWidth: useRandomWidth = false, ...rest }: Props = $props()
 
-function randomWidth() {
-  const widths = ["w-16", "w-20", "w-24", "w-28", "w-32"]
-  return widths[Math.floor(Math.random() * widths.length)]
-}
+const widths = ["4rem", "5rem", "6rem", "7rem", "8rem"]
+let currentWidth = $state(widths[Math.floor(Math.random() * widths.length)])
 
-const classes = cn(
-  "animate-pulse rounded-md bg-zinc-800",
-  useRandomWidth && randomWidth(),
-  className
-)
+$effect(() => {
+  if (!useRandomWidth) return
+  const interval = setInterval(() => {
+    let newWidth: string
+    do {
+      newWidth = widths[Math.floor(Math.random() * widths.length)]
+    } while (newWidth === currentWidth)
+    currentWidth = newWidth
+  }, 1000)
+  return () => clearInterval(interval)
+})
+
+const classes = cn("animate-pulse rounded-md bg-zinc-800 transition-all duration-300", className)
+
+const style = $derived(useRandomWidth ? `width: ${currentWidth}` : undefined)
 </script>
 
 <div
   class={classes}
+  style={style}
   {...rest}
 ></div>

@@ -71,10 +71,13 @@ const onNextPage = async () => {
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferListAddress.data) && Option.isSome(chains.data)}
       {@const chainss = chains.data.value}
+      {#if Option.isSome(transferListAddress.error)}
+        <ErrorComponent error={transferListAddress.error.value}/>
+      {/if}
       {#each transferListAddress.data.value as transfer(transfer.sort_order)}
         {@const sourceChain = getChain(chainss, transfer.source_chain_id)}
         {@const destinationChain = getChain(chainss, transfer.destination_chain_id)}
-        <div class="flex gap-8 px-4 py-2">
+        <div class="flex gap-8 px-4 py-2 h-[60px]">
           <div class="flex-1">
             <Label>from</Label>
             {#if Option.isSome(sourceChain)}
@@ -93,23 +96,20 @@ const onNextPage = async () => {
           </div>
         </div>
       {/each}
-      {#if Option.isSome(transferListAddress.error)}
-        <ErrorComponent error={transferListAddress.error.value}/>
-      {/if}
     {:else}
       {#each Array(LIMIT).fill(0)}
-        <div class="flex gap-8 px-4 py-2">
+        <div class="flex gap-8 px-4 py-2 h-[60px]">
           <div class="flex-1">
             <Label>from</Label>
-              <Skeleton class="h-[24px]" randomWidth />
+              <Skeleton class="h-4" randomWidth />
           </div>
           <div class="flex-1">
             <Label>to</Label>
-              <Skeleton class="h-[24px]" randomWidth />
+            <Skeleton class="h-4" randomWidth />
           </div>
           <div class="flex-1">
             <Label>Time</Label>
-            <Skeleton class="h-[24px] w-32 mt-1" />
+            <Skeleton class="h-4 w-32" />
           </div>
         </div>
       {/each}
