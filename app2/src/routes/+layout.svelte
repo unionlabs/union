@@ -8,6 +8,8 @@ import AppErrors from "$lib/components/layout/AppErrors/index.svelte"
 import { ENV } from "$lib/constants"
 import { wallets } from "$lib/stores/wallets.svelte"
 import Wallet from "$lib/components/ui/Wallet/index.svelte"
+import SettingsModal from "$lib/components/SettingsModal.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
 
 let { children } = $props()
 
@@ -35,3 +37,7 @@ $effect(() => {
   </main>
 </div>
 <Wallet/>
+<SettingsModal 
+  isOpen={uiStore.settingsModalOpen} 
+  onClose={() => uiStore.closeSettingsModal()}
+/>

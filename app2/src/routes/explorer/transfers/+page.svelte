@@ -19,11 +19,12 @@ import { fly } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 
+import { settingsStore } from "$lib/stores/settings.svelte"
+
 let fiber: Fiber.Fiber<any, any>
-const LIMIT = 12
 
 onMount(() => {
-  fiber = Effect.runFork(transferListLatestQuery(LIMIT))
+  fiber = Effect.runFork(transferListLatestQuery(settingsStore.pageLimit))
   return () => Effect.runPromise(Fiber.interrupt(fiber))
 })
 
@@ -31,7 +32,7 @@ const onLive = async () => {
   if (Option.isSome(transferList.data)) {
     transferList.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListLatestQuery(LIMIT))
+    fiber = Effect.runFork(transferListLatestQuery(settingsStore.pageLimit))
   }
 }
 
@@ -41,7 +42,7 @@ const onPrevPage = async () => {
     if (!firstSortOrder) return
     transferList.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListPageGtQuery(firstSortOrder, LIMIT))
+    fiber = Effect.runFork(transferListPageGtQuery(firstSortOrder, settingsStore.pageLimit))
   }
 }
 
@@ -51,7 +52,7 @@ const onNextPage = async () => {
     if (!lastSortOrder) return
     transferList.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListPageLtQuery(lastSortOrder, LIMIT))
+    fiber = Effect.runFork(transferListPageLtQuery(lastSortOrder, settingsStore.pageLimit))
   }
 }
 </script>
@@ -90,7 +91,7 @@ const onNextPage = async () => {
       {#if Option.isSome(transferList.error)}
         <ErrorComponent error={transferList.error.value}/>
       {/if}
-      {#each Array(LIMIT).fill(0)}
+      {#each Array(settingsStore.pageLimit).fill(0)}
         <div class="flex gap-8 px-4 py-2">
           <div class="flex-1">
             <Label>from</Label>
