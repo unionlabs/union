@@ -42,12 +42,12 @@ onMount(() => {
   >
 
     <Card class="max-h-[600px] min-h-[375px] h-full w-full max-w-md relative flex flex-col z-20" divided>
-      <Button
-              class="cursor-pointer border-0 absolute top-3 right-4 text-white text-lg"
+      <button
+              class="cursor-pointer border-0 absolute top-2 right-4 text-white text-lg"
               onclick={() => uiStore.closeWalletModal()}
       >
         ✕
-      </Button>
+      </button>
 
       <section class="p-6 pb-4">
 
@@ -80,7 +80,7 @@ onMount(() => {
             </button>
         </section>
 
-        <section class="calch overflow-y-scroll p-6 space-y-4">
+        <section class="calch h-[calc(100%-133px)] overflow-y-scroll p-6 space-y-4">
           {#if currentWalletType === "evm"}
             <Connection
                     chain="evm"
@@ -145,8 +145,3 @@ onMount(() => {
   </div>
 {/if}
 
-<style>
-  .calch {
-    height: calc(100% - 133px);
-  }
-</style>
