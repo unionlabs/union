@@ -19,9 +19,9 @@ import { wallets } from "$lib/stores/wallets.svelte"
     <ul>
       <li><a href="/" class="underline">Home</a></li>
       <li><a href="/explorer/transfers" class="underline">Transfers</a></li>
-      <li><a href="/explorer/packets" class="underline">Packets</a></li>
-      <li><a href="/explorer/connections" class="underline">Connections</a></li>
-      <li><a href="/explorer/channels" class="underline">Channels</a></li>
+      <!--<li><a href="/explorer/packets" class="underline">Packets</a></li>!-->
+      <!--<li><a href="/explorer/connections" class="underline">Connections</a></li>!-->
+      <!--<li><a href="/explorer/channels" class="underline">Channels</a></li>!-->
     </ul>
   </section>
 
