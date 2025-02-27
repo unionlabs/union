@@ -8,3 +8,4 @@ class TransferListStore {
 }
 
 export const transferList = new TransferListStore()
+export const transferListAddress = new TransferListStore()
