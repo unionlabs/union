@@ -7,8 +7,6 @@ import { type EvmWalletId } from "$lib/wallet/evm"
 import { Schema } from "effect"
 import { RpcType } from "$lib/schema/chain.ts"
 
-const OFFENDING_WALLET_ID = "io.metamask.mobile"
-
 type Chain = Schema.Schema.Type<typeof RpcType>
 type ChainConnectStatus = State["status"]
 type ChainWalletsInformation = ReadonlyArray<{
@@ -127,10 +125,6 @@ let connectedWallet = $derived(
                       flex items-center justify-between cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700
                       transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-neutral-300"
                 onclick={async () => {
-            if (walletIdentifier === OFFENDING_WALLET_ID) {
-              metamaskAlertDialogOpen = true
-            }
-
             if (connectStatus === "disconnected") {
               console.info("disconnected, calling onConnectClick")
               return onConnectClick(walletIdentifier)
