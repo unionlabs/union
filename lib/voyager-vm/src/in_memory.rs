@@ -9,7 +9,7 @@ use std::{
 
 use either::Either;
 use frame_support_procedural::{CloneNoBound, DebugNoBound};
-use tracing::{debug, error, info, info_span, warn, Instrument};
+use tracing::{debug, error, info, info_span, trace, Instrument};
 use unionlabs::ErrorReporter;
 
 use crate::{
@@ -190,7 +190,7 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
             let tagged_optimizer_queue = {
                 let mut optimizer_queue = self.optimizer_queue.lock().expect("poisoned");
                 let Some(tagged_optimizer_queue) = optimizer_queue.remove(tag) else {
-                    warn!(%tag, "no items with tag");
+                    trace!(%tag, "no items with tag");
                     return Ok(());
                 };
 
