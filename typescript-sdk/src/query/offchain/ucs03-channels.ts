@@ -201,7 +201,7 @@ export const getQuoteToken = async (
     // const functionCall =
     // Build the transaction payload.
 
-    const receiverVec = MoveVector.U8("0x6d756e6f")
+    const receiverVec = MoveVector.U8(base_token)
     const output = await aptos.experimental.viewBinary({
       payload: {
         function: `${channel.destination_port_id}::ibc_app::predict_wrapped_token`,
@@ -222,10 +222,6 @@ export const getQuoteToken = async (
     const deserializer = new Deserializer(output.slice(1))
     const addressBytes = deserializer.deserializeFixedBytes(32)
     const wrappedAddressHex = "0x" + Buffer.from(addressBytes).toString("hex")
-
-    // // 2) The second return value is the salt (vector<u8>)
-    // const saltBytes = deserializer.deserializeBytes()
-    // const saltHex = "0x" + Buffer.from(saltBytes).toString("hex")
 
     console.log("Wrapped address:", wrappedAddressHex)
     return ok({ type: "NEW_WRAPPED", quote_token: wrappedAddressHex })
