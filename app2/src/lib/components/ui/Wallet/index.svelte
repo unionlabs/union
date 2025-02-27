@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.js"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.js"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.js"
@@ -6,13 +6,40 @@ import Connection from "$lib/components/ui/Wallet/connect/connection.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Button from "../Button.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
+import { onMount } from "svelte"
 
 let currentWalletType = $state("all")
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    uiStore.closeWalletModal()
+  }
+}
+
+function handleBackdropClick(event: MouseEvent) {
+  if (event.target === event.currentTarget) {
+    uiStore.closeWalletModal()
+  }
+}
+
+onMount(() => {
+  document.addEventListener("keydown", handleKeydown)
+  return () => {
+    document.removeEventListener("keydown", handleKeydown)
+  }
+})
 </script>
 
 {#if uiStore.walletModalOpen}
 
-  <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <div 
+    class="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
+    onclick={handleBackdropClick}
+    role="dialog"
+    aria-modal="true"
+  >
 
     <Card class="max-h-[600px] min-h-[375px] h-full w-full max-w-md relative flex flex-col z-20" divided>
       <Button
