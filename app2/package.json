@@ -39,5 +39,9 @@
     "typescript-eslint": "^8.24.1",
     "vite": "^6.1.0",
     "vitest": "^3.0.5"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.0.2"
   }
 }

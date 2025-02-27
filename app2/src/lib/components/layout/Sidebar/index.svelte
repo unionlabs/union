@@ -9,9 +9,7 @@ import { wallets } from "$lib/stores/wallets.svelte"
   <section>
     <h2 class="font-bold text-xl">Transfer</h2>
     <ul>
-      <li>Transfer</li>
-      <li>Swap</li>
-      <li>Stake</li>
+      <li><a href="/transfers" class="underline">Your Transfers</a></li>
     </ul>
   </section>
   <section>
