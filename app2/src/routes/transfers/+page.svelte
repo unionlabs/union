@@ -17,6 +17,7 @@ import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
+import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
 
 let fiber: Fiber.Fiber<any, any>
 let fiberLock = false
@@ -84,12 +85,7 @@ const onNextPage = async () => {
   </section>
   <Card class="overflow-auto" divided>
     {#if Option.isNone(wallets.evmAddress)}
-      <div class="h-[600px] flex justify-center items-center">
-        <div class="flex flex-col items-center">
-          <h2 class="text-xl font-bold">No Wallet Connected</h2>
-          <p>Connect a wallet to view your transfers.</p>
-        </div>
-      </div>
+      <NoWalletConnected/>
     {:else if Option.isSome(transferListAddress.data) && Option.isSome(chains.data)}
       {@const chainss = chains.data.value}
       {#if Option.isSome(transferListAddress.error)}
