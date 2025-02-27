@@ -20,6 +20,7 @@ export const transferListLatestAddressQuery = (
     query TransferListLatestAddress($address: String!, $limit: Int!) @cached(ttl: 1) {
       v1_ibc_union_fungible_asset_orders(
         limit: $limit,
+        distinct_on: sort_order,
         where: {
           _or: [
             {sender_normalized: {_eq: $address}},
@@ -55,6 +56,7 @@ export const transferListPageLtAddressQuery = (
     query TransferListPageLtAddress($page: String!, $address: String!, $limit: Int!) @cached(ttl: 30) {
       v1_ibc_union_fungible_asset_orders(
         limit: $limit,
+        distinct_on: sort_order,
         where: {
           _and: [
             {sort_order: {_lt: $page}},
@@ -96,6 +98,7 @@ export const transferListPageGtAddressQuery = (
     query TransferListPageGtAddress($page: String!, $address: String!, $limit: Int!) @cached(ttl: 30) {
       v1_ibc_union_fungible_asset_orders(
         limit: $limit,
+        distinct_on: sort_order,
         where: {
           _and: [
             {sort_order: {_gt: $page}},

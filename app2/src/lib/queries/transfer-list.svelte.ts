@@ -16,6 +16,7 @@ export let transferListLatestQuery = (limit = LIMIT) =>
     query TransferListLatest($limit: Int!) @cached(ttl: 1) {
       v1_ibc_union_fungible_asset_orders(
         limit: $limit,
+        distinct_on: sort_order,
         order_by: { sort_order: desc_nulls_last}) {
       ...TransferListItem
       }
@@ -41,6 +42,7 @@ export let transferListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT
     query TransferListPage($page: String!, $limit: Int!) @cached(ttl: 30) {
       v1_ibc_union_fungible_asset_orders(
         limit: $limit,
+        distinct_on: sort_order,
         where: {sort_order: {_lt: $page}},
         order_by: {sort_order: desc_nulls_last}
       ) {
@@ -68,6 +70,7 @@ export let transferListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT
     query TransferListPage($page: String!, $limit: Int!) @cached(ttl: 30) {
       v1_ibc_union_fungible_asset_orders(
         limit: $limit,
+        distinct_on: sort_order,
         where: {sort_order: {_gt: $page}},
         order_by: {sort_order: asc_nulls_last}
       ) {
