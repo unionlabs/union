@@ -6,7 +6,6 @@ import { type AptosWalletId } from "$lib/wallet/aptos"
 import { type EvmWalletId } from "$lib/wallet/evm"
 import { Schema } from "effect"
 import { RpcType } from "$lib/schema/chain.ts"
-// import { MetamaskMobileAlert } from '$lib/components/ui/Wallet/connect/metamask-mobile-alert.svelte'
 
 const OFFENDING_WALLET_ID = "io.metamask.mobile"
 
@@ -69,15 +68,11 @@ let walletListToRender = $derived(
   connectStatus === "connected" ? chainWalletsInformation : sanitizeWalletInformation
 )
 
-let metamaskAlertDialogOpen = $state(false)
-
 // Find the currently connected wallet to get its icon
 let connectedWallet = $derived(
   chainWalletsInformation.find(wallet => wallet.id === connectedWalletId)
 )
 </script>
-
-<!--<MetamaskMobileAlert {metamaskAlertDialogOpen} />-->
 
 <h3 class="capitalize font-supermolot font-bold text-xl mb-4">{chain}</h3>
 

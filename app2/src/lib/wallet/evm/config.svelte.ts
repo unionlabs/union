@@ -192,7 +192,8 @@ class SepoliaStore {
   // Use the last connected wallet if available
   chain: string = $state("11155111")
   address: string | undefined = $state(undefined)
-  connectionStatus = $state("disconnected")
+  connectionStatus: "connected" | "connecting" | "disconnected" | "reconnecting" =
+    $state("disconnected")
   connectedWallet = $state(getLastConnectedWalletId())
 
   constructor() {
