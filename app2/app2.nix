@@ -20,7 +20,7 @@ _: {
     {
       packages = {
         app2 = jsPkgs.buildNpmPackage {
-          npmDepsHash = "sha256-ByFGAIJ77fe+zbZHmNe/PvVU/N1QTbjqB4W8p2TJqCg=";
+          npmDepsHash = "sha256-4iHm9HkGsQzVmonjtTLbRIHHQRC9ser23gfMzYL6z2A=";
           src = ./.;
           sourceRoot = "app2";
           npmFlags = [ "--legacy-peer-deps" ];
