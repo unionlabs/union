@@ -221,18 +221,6 @@ class SepoliaStore {
     }
   }
 
-  addressMapping = $derived(() => {
-    if (this.address) {
-      const evmAddressFromHex = (hexAddress: Hex) => {
-        const normalized = hexAddress.slice(2).toLowerCase()
-        return AddressEvmCanonical.make(`0x${normalized}`)
-      }
-      wallets.evmAddress = Option.some(evmAddressFromHex(this.address as `0x${string}`))
-    } else {
-      wallets.evmAddress = Option.none()
-    }
-  })
-
   connect = async (walletId: string) => {
     try {
       const result = await evmConnect(walletId, sepolia.id)
@@ -310,6 +298,16 @@ class SepoliaStore {
   }) => {
     if (account.chain) this.chain = account.chain
     this.address = account.address
+    if (account.address) {
+      const evmAddressFromHex = (hexAddress: Hex) => {
+        const normalized = hexAddress.slice(2).toLowerCase()
+        return AddressEvmCanonical.make(`0x${normalized}`)
+      }
+      wallets.evmAddress = Option.some(evmAddressFromHex(account.address as `0x${string}`))
+    } else {
+      wallets.evmAddress = Option.none()
+    }
+
     if (account.connectionStatus) this.connectionStatus = account.connectionStatus
     this.connectedWallet = account.connectedWallet
   }

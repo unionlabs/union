@@ -71,28 +71,28 @@ export function getAptosWallet(walletId: AptosWalletId = "petra") {
 
 class AptosStore {
   chain = $state("aptos")
-  address: Option.Option<Hex> = $state(Option.none())
+  address = $state<Hex | undefined>(undefined)
   connectedWallet = $state<AptosWalletId | undefined>(undefined)
   connectionStatus = $state<"disconnected" | "connecting" | "connected">("disconnected")
   hoverState = $state<string>("none")
 
   // Set up the derived calculation as a class field
-  addressMapping = $derived(() => {
-    if (this.address) {
-      const aptosAddressFromHex = (hexAddress: string): typeof AddressAptosCanonical.Type => {
-        const normalized = hexAddress.startsWith("0x") ? hexAddress : `0x${hexAddress}`
+  constructor() {
+    this.loadFromStorage()
+  }
+
+  updateAptosAddress = (hexAddress: Hex | undefined) => {
+    if (hexAddress) {
+      const aptosAddressFromHex = (address: string): typeof AddressAptosCanonical.Type => {
+        const normalized = address.startsWith("0x") ? address : `0x${address}`
         return AddressAptosCanonical.make(normalized)
       }
-
-      wallets.aptosAddress = Option.some(aptosAddressFromHex(this.address))
+      wallets.aptosAddress = Option.some(aptosAddressFromHex(hexAddress))
+      console.log("Set wallets.aptosAddress to:", hexAddress)
     } else {
       wallets.aptosAddress = Option.none()
+      console.log("Cleared wallets.aptosAddress")
     }
-  })
-
-  constructor() {
-    // Initialize from session storage if available
-    this.loadFromStorage()
   }
 
   loadFromStorage = () => {
@@ -105,6 +105,8 @@ class AptosStore {
         this.connectedWallet = parsedData.connectedWallet
         this.connectionStatus = parsedData.connectionStatus || "disconnected"
         this.hoverState = parsedData.hoverState || "none"
+
+        this.updateAptosAddress(this.address)
       }
     } catch (e) {
       console.error("Failed to load aptos store from session storage", e)
@@ -151,6 +153,9 @@ class AptosStore {
     this.address = account?.address as Hex
     this.connectedWallet = walletId as AptosWalletId
     this.connectionStatus = account?.address ? "connected" : "disconnected"
+
+    this.updateAptosAddress(account?.address as Hex)
+
     this.saveToStorage()
   }
 
@@ -169,6 +174,8 @@ class AptosStore {
       this.connectedWallet = undefined
       this.connectionStatus = "disconnected"
 
+      this.updateAptosAddress(undefined)
+
       sessionStorage.removeItem("aptos-store")
     }
   }
@@ -181,7 +188,12 @@ class AptosStore {
     hoverState?: string
   }) => {
     if (account.chain) this.chain = account.chain
-    if (account.address !== undefined) this.address = account.address
+
+    if (account.address !== this.address) {
+      this.address = account.address
+      this.updateAptosAddress(account.address)
+    }
+
     if (account.connectionStatus) this.connectionStatus = account.connectionStatus
     if (account.connectedWallet !== undefined) this.connectedWallet = account.connectedWallet
     if (account.hoverState) this.hoverState = account.hoverState
@@ -189,5 +201,4 @@ class AptosStore {
   }
 }
 
-// Create and export the aptosStore instance directly
 export const aptosStore = new AptosStore()

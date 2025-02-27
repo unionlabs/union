@@ -1,8 +1,8 @@
 import { type OfflineSigner, bech32AddressToHex } from "@unionlabs/client"
-import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info"
+import { wallets } from "$lib/stores/wallets.svelte"
 import { Effect, Option } from "effect"
-import { AddressCosmosCanonical } from "$lib/schema/address.ts"
+import { AddressCosmosCanonical } from "$lib/schema/address"
 
 export const cosmosWalletsInformation = [
   {
@@ -41,37 +41,55 @@ class CosmosStore {
   connectedWallet = $state<CosmosWalletId | undefined>(undefined)
   connectionStatus = $state<"disconnected" | "connecting" | "connected">("disconnected")
 
-  addressMapping = $derived(() => {
-    if (this.rawAddress && this.address) {
-      const cosmosAddressFromBech32 = (
-        bech32Address: string
-      ): typeof AddressCosmosCanonical.Type => {
-        const hexAddress = bech32AddressToHex({ address: bech32Address })
+  constructor() {
+    this.loadFromStorage()
+
+    if (this.connectedWallet && this.connectionStatus === "connected") {
+      console.log("Attempting to auto-reconnect to Cosmos wallet:", this.connectedWallet)
+      setTimeout(() => {
+        this.reconnect(this.connectedWallet as CosmosWalletId)
+      }, 1000)
+    }
+  }
+
+  // Centralized method to update cosmos address
+  updateCosmosAddress = (bech32Address: string | undefined) => {
+    if (bech32Address) {
+      const cosmosAddressFromBech32 = (address: string) => {
+        const hexAddress = bech32AddressToHex({ address })
         return AddressCosmosCanonical.make(hexAddress)
       }
-
-      wallets.cosmosAddress = Option.some(cosmosAddressFromBech32(this.address))
+      wallets.cosmosAddress = Option.some(cosmosAddressFromBech32(bech32Address))
     } else {
       wallets.cosmosAddress = Option.none()
     }
-  })
-
-  constructor() {
-    this.loadFromStorage()
   }
 
   loadFromStorage = () => {
     try {
       const storedData = sessionStorage.getItem("cosmos-store")
+
       if (storedData) {
         const parsedData = JSON.parse(storedData)
+
         this.chain = parsedData.chain || "cosmos"
         this.address = parsedData.address
-        this.rawAddress = parsedData.rawAddress
-          ? new Uint8Array(Object.values(parsedData.rawAddress))
-          : undefined
+        this.rawAddress = parsedData.rawAddress ? new Uint8Array(parsedData.rawAddress) : undefined
         this.connectedWallet = parsedData.connectedWallet
         this.connectionStatus = parsedData.connectionStatus || "disconnected"
+
+        // Don't update wallets.cosmosAddress here if we're going to reconnect
+        if (!(this.connectedWallet && this.connectionStatus === "connected")) {
+          this.updateCosmosAddress(this.address)
+        }
+
+        console.log("Cosmos store loaded:", {
+          chain: this.chain,
+          address: this.address,
+          hasRawAddress: !!this.rawAddress,
+          connectedWallet: this.connectedWallet,
+          connectionStatus: this.connectionStatus
+        })
       }
     } catch (e) {
       console.error("Failed to load cosmos store from session storage", e)
@@ -83,7 +101,7 @@ class CosmosStore {
       const storeData = {
         chain: this.chain,
         address: this.address,
-        rawAddress: this.rawAddress,
+        rawAddress: this.rawAddress ? Array.from(this.rawAddress) : undefined,
         connectedWallet: this.connectedWallet,
         connectionStatus: this.connectionStatus
       }
@@ -141,14 +159,69 @@ class CosmosStore {
     this.address = account?.bech32Address
     this.rawAddress = account?.address
     this.connectedWallet = cosmosWalletId
+
+    // Update wallets.cosmosAddress using the centralized method
+    this.updateCosmosAddress(account?.bech32Address)
+
     this.saveToStorage()
 
     Effect.sleep(2_000)
   }
 
+  reconnect = async (walletId: CosmosWalletId) => {
+    if (!walletId) return
+
+    const walletApi = window[walletId]
+    if (!walletApi) {
+      console.log("Wallet API not found for auto-reconnection")
+      this.connectionStatus = "disconnected"
+      this.saveToStorage()
+      return
+    }
+
+    const chainInfoMap = {
+      keplr: unionKeplrChainInfo,
+      leap: unionLeapChainInfo
+    }
+
+    const chainInfo = chainInfoMap[walletId]
+    if (!chainInfo) {
+      console.error("Chain information is missing for the selected wallet.")
+      this.connectionStatus = "disconnected"
+      this.saveToStorage()
+      return
+    }
+
+    try {
+      // Try to enable the chain
+      await walletApi.enable(["union-testnet-9"])
+
+      // Get account information
+      const account = await walletApi.getKey("union-testnet-9")
+
+      if (account?.bech32Address) {
+        this.connectionStatus = "connected"
+        this.address = account.bech32Address
+        this.rawAddress = account.address
+
+        // Update wallets.cosmosAddress using the centralized method
+        this.updateCosmosAddress(account.bech32Address)
+      } else {
+        this.connectionStatus = "disconnected"
+        this.updateCosmosAddress(undefined)
+      }
+
+      this.saveToStorage()
+    } catch (e) {
+      console.error("Failed to auto-reconnect to Cosmos wallet:", e)
+      this.connectionStatus = "disconnected"
+      this.updateCosmosAddress(undefined)
+      this.saveToStorage()
+    }
+  }
+
   disconnect = async () => {
     const cosmosWalletId = this.connectedWallet as CosmosWalletId
-    console.log("[cosmos] cosmosDisconnectClick", this)
 
     if (cosmosWalletId && window[cosmosWalletId]) {
       if (cosmosWalletId === "keplr") {
@@ -161,6 +234,9 @@ class CosmosStore {
       this.connectionStatus = "disconnected"
       this.address = undefined
       this.rawAddress = undefined
+
+      // Update wallets.cosmosAddress using the centralized method
+      this.updateCosmosAddress(undefined)
 
       sessionStorage.removeItem("cosmos-store")
     }
