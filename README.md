@@ -1,29 +1,16 @@
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./.github/images/union-logo-white.svg">
-    <source media="(prefers-color-scheme: light)" srcset="./.github/images/union-logo-black.svg">
-    <img alt="Union"
-         src="./.github/images/union-logo-black.svg"
-         width="100%">
-  </picture>
-</div>
-
-<br/>
-
-<div align="center">
+By now main referal for fundamentals and also getting started from this repo/branch [gnx.gitbook.io]: https://gnx.gitbook.io/docs
 
 [![built with garnix](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fgarnix.io%2Fapi%2Fbadges%2Funionlabs%2Funion%3Fbranch%3Dmain)](https://garnix.io)
 [![Docs](https://img.shields.io/badge/docs-main-blue)][docs]
 [![Discord badge]](https://discord.union.build)
 [![Twitter handle]][twitter badge]
 
-</div>
 
 Union is the hyper-efficient zero-knowledge infrastructure layer for general message passing, asset transfers, NFTs, and DeFi. It’s based on [Consensus Verification] and has no dependencies on trusted third parties, oracles, multi-signatures, or MPC. It implements [IBC] for compatibility with [Cosmos] chains and connects to EVM chains like [Ethereum], [Berachain (beacon-kit)](https://github.com/berachain/beacon-kit), [Arbitrum], and more.
 
 The upgradability of contracts on other chains, connections, token configurations, and evolution of the protocol will all be controlled by decentralized governance, aligning the priorities of Union with its users, validators, and operators.
 
-## Components
+## Quickstart
 
 | Component                                             | Description                                          | Language(s)           |
 | ----------------------------------------------------- | ---------------------------------------------------- | --------------------- |
@@ -39,8 +26,6 @@ The upgradability of contracts on other chains, connections, token configuration
 | [`app`](./app)                                        | [app.union.build]                                    | [TypeScript] [Svelte] |
 | [`site`](./site)                                      | [union.build]                                        | [TypeScript] [Astro]  |
 | [`TypeScript SDK`](./typescript-sdk)                  | TypeScript SDK for interacting with Union            | [TypeScript]          |
-
-## Quickstart
 
 Install [Nix] to _[reproducibly build](https://en.wikipedia.org/wiki/Reproducible_builds) any component_, and to enter a dev shell with _all dependencies_:
 
@@ -81,7 +66,7 @@ Check the `#developers` channel on [Union's discord](https://discord.union.build
 ## Docs
 
 The official docs are hosted [here][docs]. Each individual component also has accompanying developer documentation for contributors, which you can find in each `README.md`.
-
+[gnx.gitbook.io]: https://gnx.gitbook.io/docs
 [app.union.build]: https://app.union.build
 [app.union.build/faucet]: https://app.union.build/faucet
 [arbitrum]: https://github.com/OffchainLabs/arbitrum
