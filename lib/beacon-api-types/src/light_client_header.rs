@@ -2,7 +2,7 @@ use unionlabs::primitives::H256;
 
 use crate::{
     beacon_block_header::BeaconBlockHeader,
-    consts::{floorlog2, EXECUTION_PAYLOAD_INDEX},
+    consts::{floorlog2, EXECUTION_PAYLOAD_GINDEX},
     execution_payload_header::ExecutionPayloadHeader,
 };
 
@@ -12,7 +12,7 @@ use crate::{
 pub struct LightClientHeader {
     pub beacon: BeaconBlockHeader,
     pub execution: ExecutionPayloadHeader,
-    pub execution_branch: [H256; floorlog2(EXECUTION_PAYLOAD_INDEX)],
+    pub execution_branch: [H256; floorlog2(EXECUTION_PAYLOAD_GINDEX)],
 }
 
 #[cfg(feature = "ssz")]
@@ -25,5 +25,5 @@ pub struct LightClientHeader {
 pub struct LightClientHeaderSsz<C: crate::BYTES_PER_LOGS_BLOOM + crate::MAX_EXTRA_DATA_BYTES> {
     pub beacon: BeaconBlockHeader,
     pub execution: crate::ExecutionPayloadHeaderSsz<C>,
-    pub execution_branch: [H256; floorlog2(EXECUTION_PAYLOAD_INDEX)],
+    pub execution_branch: [H256; floorlog2(EXECUTION_PAYLOAD_GINDEX)],
 }
