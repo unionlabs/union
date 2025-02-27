@@ -19,12 +19,26 @@ import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
 
 let fiber: Fiber.Fiber<any, any>
+let fiberLock = false
 
 $effect(() => {
   if (Option.isSome(wallets.evmAddress)) {
-    fiber = Effect.runFork(transferListLatestAddressQuery(wallets.evmAddress.value, LIMIT))
+    console.log("will fetch")
+    fetchLive()
   }
 })
+
+const fetchLive = async () => {
+  if (fiberLock) return
+  fiberLock = true
+  if (fiber) {
+    await Effect.runPromise(Fiber.interrupt(fiber))
+  }
+  if (Option.isSome(wallets.evmAddress)) {
+    fiber = Effect.runFork(transferListLatestAddressQuery(wallets.evmAddress.value, LIMIT))
+  }
+  fiberLock = false
+}
 
 onMount(() => {
   return () => Effect.runPromise(Fiber.interrupt(fiber))
