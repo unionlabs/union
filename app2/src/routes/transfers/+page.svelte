@@ -80,10 +80,17 @@ const onNextPage = async () => {
 <Sections>
   <section>
   <h1 class="font-bold text-4xl">Your Transfers</h1>
-  <p>{wallets.evmAddress}These are the transfers from your connected wallets</p>
+  <p>These are the transfers from your connected wallets</p>
   </section>
   <Card class="overflow-auto" divided>
-    {#if Option.isSome(transferListAddress.data) && Option.isSome(chains.data)}
+    {#if Option.isNone(wallets.evmAddress)}
+      <div class="h-[600px] flex justify-center items-center">
+        <div class="flex flex-col items-center">
+          <h2 class="text-xl font-bold">No Wallet Connected</h2>
+          <p>Connect a wallet to view your transfers.</p>
+        </div>
+      </div>
+    {:else if Option.isSome(transferListAddress.data) && Option.isSome(chains.data)}
       {@const chainss = chains.data.value}
       {#if Option.isSome(transferListAddress.error)}
         <ErrorComponent error={transferListAddress.error.value}/>
