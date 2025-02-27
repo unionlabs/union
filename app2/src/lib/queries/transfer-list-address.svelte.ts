@@ -1,7 +1,7 @@
 import { createQueryGraphql } from "$lib/utils/queries"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
-import { transferList } from "$lib/stores/transfers.svelte"
+import { transferListAddress } from "$lib/stores/transfers.svelte"
 import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
 import { TransferList } from "$lib/schema/transfer-list"
 import type { SortOrder } from "$lib/schema/sort-order"
@@ -32,10 +32,10 @@ export const transferListLatestAddressQuery = (address: string, limit = LIMIT) =
     variables: { address, limit },
     refetchInterval: "1 second",
     writeData: data => {
-      transferList.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders))
+      transferListAddress.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders))
     },
     writeError: error => {
-      transferList.error = error
+      transferListAddress.error = error
     }
   })
 
@@ -73,10 +73,10 @@ export const transferListPageLtAddressQuery = (
     variables: { page, address, limit },
     refetchInterval: "30 seconds",
     writeData: data => {
-      transferList.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders))
+      transferListAddress.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders))
     },
     writeError: error => {
-      transferList.error = error
+      transferListAddress.error = error
     }
   })
 
@@ -114,11 +114,11 @@ export const transferListPageGtAddressQuery = (
     variables: { page, address, limit },
     refetchInterval: "30 seconds",
     writeData: data => {
-      transferList.data = data.pipe(
+      transferListAddress.data = data.pipe(
         Option.map(d => d.v1_ibc_union_fungible_asset_orders.toReversed())
       )
     },
     writeError: error => {
-      transferList.error = error
+      transferListAddress.error = error
     }
   })
