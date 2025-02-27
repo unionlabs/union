@@ -18,16 +18,17 @@ import { flip } from "svelte/animate"
 import { fly } from "svelte/transition"
 
 let fiber: Fiber.Fiber<any, any>
+const LIMIT = 12
 
 onMount(() => {
-  fiber = Effect.runFork(transferListLatestQuery)
+  fiber = Effect.runFork(transferListLatestQuery(LIMIT))
   return () => Effect.runPromise(Fiber.interrupt(fiber))
 })
 
 const onLive = async () => {
   if (Option.isSome(transferList.data)) {
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListLatestQuery)
+    fiber = Effect.runFork(transferListLatestQuery(LIMIT))
   }
 }
 
@@ -36,7 +37,7 @@ const onPrevPage = async () => {
     let firstSortOrder = transferList.data.value.at(0)?.sort_order
     if (!firstSortOrder) return
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListPageGtQuery(firstSortOrder))
+    fiber = Effect.runFork(transferListPageGtQuery(firstSortOrder, LIMIT))
   }
 }
 
@@ -45,7 +46,7 @@ const onNextPage = async () => {
     let lastSortOrder = transferList.data.value.at(-1)?.sort_order
     if (!lastSortOrder) return
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListPageLtQuery(lastSortOrder))
+    fiber = Effect.runFork(transferListPageLtQuery(lastSortOrder, LIMIT))
   }
 }
 </script>
@@ -81,7 +82,7 @@ const onNextPage = async () => {
         <ErrorComponent error={transferList.error.value}/>
       {/if}
     {:else}
-      {#each [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]}
+      {#each Array(LIMIT).fill(0)}
         <div class="h-[57px] last:h-[56px]"></div>
       {/each}
       {#if Option.isSome(transferList.error)}
