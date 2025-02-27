@@ -2,7 +2,7 @@
 import {
   transferListLatestQuery,
   transferListPageGtQuery,
-  transferListPageQuery
+  transferListPageLtQuery
 } from "$lib/queries/transfer-list.svelte"
 import { DateTime, Effect, Fiber, Option } from "effect"
 import { onMount } from "svelte"
@@ -17,18 +17,24 @@ import Label from "$lib/components/ui/Label.svelte"
 import { flip } from "svelte/animate"
 import { fly } from "svelte/transition"
 
-let fiber: Fiber.Fiber
+let fiber: Fiber.Fiber<any, any>
 
 onMount(() => {
   fiber = Effect.runFork(transferListLatestQuery)
   return () => Effect.runPromise(Fiber.interrupt(fiber))
 })
 
+const onLive = async () => {
+  if (Option.isSome(transferList.data)) {
+    await Effect.runPromise(Fiber.interrupt(fiber))
+    fiber = Effect.runFork(transferListLatestQuery)
+  }
+}
+
 const onPrevPage = async () => {
   if (Option.isSome(transferList.data)) {
     let firstSortOrder = transferList.data.value.at(0)?.sort_order
     if (!firstSortOrder) return
-    console.log(firstSortOrder)
     await Effect.runPromise(Fiber.interrupt(fiber))
     fiber = Effect.runFork(transferListPageGtQuery(firstSortOrder))
   }
@@ -39,7 +45,7 @@ const onNextPage = async () => {
     let lastSortOrder = transferList.data.value.at(-1)?.sort_order
     if (!lastSortOrder) return
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListPageQuery(lastSortOrder))
+    fiber = Effect.runFork(transferListPageLtQuery(lastSortOrder))
   }
 }
 </script>
@@ -69,19 +75,13 @@ const onNextPage = async () => {
             <Label>Time</Label>
             {DateTime.formatIso(transfer.packet_send_timestamp)}
           </div>
-          <!--
-          <div class="flex-1 overflow-none">
-            <Label>Sort order</Label>
-            <div class="overflow-none">{transfer.sort_order}</div>
-          </div>
-          !-->
         </div>
       {/each}
       {#if Option.isSome(transferList.error)}
         <ErrorComponent error={transferList.error.value}/>
       {/if}
     {:else}
-      {#each [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]}
+      {#each [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]}
         <div class="h-[57px] last:h-[56px]"></div>
       {/each}
       {#if Option.isSome(transferList.error)}
@@ -89,13 +89,18 @@ const onNextPage = async () => {
       {/if}
     {/if}
   </Card>
-  <div class="flex">
+  <div class="flex gap-6">
+    <button onclick={onLive} class="cursor-pointer border-rounded dark:bg-sky-600 border-sky-500 border h-10 w-20 rounded font-bold">
+      LIVE
+    </button>
     <div class="rounded shadow flex">
       <button onclick={onPrevPage} class="cursor-pointer border-l border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tl rounded-bl">
         ←
       </button>
-      <div class="bg-zinc-900 border-t border-b border-zinc-800 flex items-center px-4">
-        Current
+      <div class="bg-zinc-900 border-t border-b border-zinc-800 flex items-center justify-center px-4 min-w-[250px]">
+        {#if Option.isSome(transferList.data) && transferList.data.value.length > 0}
+          {DateTime.formatIso(transferList.data.value[0].packet_send_timestamp)}
+        {/if}
       </div>
       <button onclick={onNextPage} class="cursor-pointer border-r border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tr rounded-br">
         →

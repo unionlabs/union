@@ -10,7 +10,7 @@ export let transferListLatestQuery = createQueryGraphql({
   schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
   document: graphql(
     `
-    query TransferListLatest @cached(ttl: 1) {
+    query TransferListLatest {
       v1_ibc_union_fungible_asset_orders(
         limit: 20,
         distinct_on: sort_order
@@ -22,7 +22,7 @@ export let transferListLatestQuery = createQueryGraphql({
     [transferListItemFragment]
   ),
   variables: {},
-  refetchInterval: "1 second",
+  refetchInterval: "200 millis",
   writeData: data => {
     transferList.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders))
   },
@@ -31,7 +31,7 @@ export let transferListLatestQuery = createQueryGraphql({
   }
 })
 
-export let transferListPageQuery = (page: typeof SortOrder.Type) =>
+export let transferListPageLtQuery = (page: typeof SortOrder.Type) =>
   createQueryGraphql({
     schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
     document: graphql(
