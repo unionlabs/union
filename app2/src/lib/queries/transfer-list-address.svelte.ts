@@ -5,10 +5,14 @@ import { transferListAddress } from "$lib/stores/transfers.svelte"
 import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
 import { TransferList } from "$lib/schema/transfer-list"
 import type { SortOrder } from "$lib/schema/sort-order"
+import type { AddressCanonicalBytes } from "$lib/schema/address"
 
 export const LIMIT = 10
 
-export const transferListLatestAddressQuery = (address: string, limit = LIMIT) =>
+export const transferListLatestAddressQuery = (
+  address: typeof AddressCanonicalBytes.Type,
+  limit = LIMIT
+) =>
   createQueryGraphql({
     schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
     document: graphql(
@@ -41,7 +45,7 @@ export const transferListLatestAddressQuery = (address: string, limit = LIMIT) =
 
 export const transferListPageLtAddressQuery = (
   page: typeof SortOrder.Type,
-  address: string,
+  address: typeof AddressCanonicalBytes.Type,
   limit = LIMIT
 ) =>
   createQueryGraphql({
@@ -82,7 +86,7 @@ export const transferListPageLtAddressQuery = (
 
 export const transferListPageGtAddressQuery = (
   page: typeof SortOrder.Type,
-  address: string,
+  address: typeof AddressCanonicalBytes.Type,
   limit = LIMIT
 ) =>
   createQueryGraphql({
