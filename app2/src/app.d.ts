@@ -16,9 +16,10 @@ interface AptosWindow {
 
 declare global {
   namespace App {
-    interface PageData {
-      features: Features
-    }
+    //If we use +page/layout.ts for data
+    // interface PageData {
+    //
+    // }
   }
 
   interface Window extends AptosWindow, KeplrWindow, LeapWindow, Browser, GoogleRecaptcha {
@@ -37,14 +38,4 @@ interface Browser {
   opera: { app: unknown }
   chrome: { app: unknown }
   safari: { pushNotification: unknown }
-}
-
-interface GoogleRecaptcha {
-  __google_recaptcha_client: boolean
-  grecaptcha: {
-    execute: (siteKey: string, options: { action: string }) => Promise<string>
-    enterprise: {
-      execute: (siteKey: string, options: { action: string }) => Promise<string>
-    }
-  }
 }

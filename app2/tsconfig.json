@@ -1,30 +1,16 @@
 {
-  "extends": ["./.svelte-kit/tsconfig.json"],
+  "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
-    "strict": true,
-    "noEmit": true,
     "allowJs": true,
     "checkJs": true,
-    "sourceMap": true,
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "alwaysStrict": true,
-    "isolatedModules": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "moduleResolution": "Bundler",
-    "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ESNext", "DOM", "DOM.Iterable", "WebWorker"],
-    "types": [
-      "typed-query-selector/strict",
-      "unplugin-icons/types/svelte",
-      "@sveltejs/kit",
-      "vite/client"
-    ],
-    "paths": {
-      "$*": ["./src/*"]
-    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "moduleResolution": "bundler",
     "plugins": [
       {
         "name": "gql.tada/ts-plugin",
@@ -32,15 +18,10 @@
         "tadaOutputLocation": "./src/generated/graphql-env.d.ts"
       }
     ]
-  },
-  "include": ["src", "scripts", ".svelte-kit/ambient.d.ts"],
-  "exclude": ["./src/lib/components/ui"],
-  "files": [
-    "reset.d.ts",
-    "vite.config.ts",
-    "svelte.config.js",
-    "environment.d.ts",
-    "postcss.config.cjs",
-    "tailwind.config.ts"
-  ]
+  }
+  // Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
+  // except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
+  //
+  // If you want to overwrite includes/excludes, make sure to copy over the relevant includes/excludes
+  // from the referenced tsconfig.json - TypeScript does not merge them in
 }

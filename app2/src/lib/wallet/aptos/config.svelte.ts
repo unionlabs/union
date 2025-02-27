@@ -71,7 +71,7 @@ export function getAptosWallet(walletId: AptosWalletId = "petra") {
 
 class AptosStore {
   chain = $state("aptos")
-  address = $state<Hex | undefined>(undefined)
+  address: Option.Option<Hex> = $state(Option.none())
   connectedWallet = $state<AptosWalletId | undefined>(undefined)
   connectionStatus = $state<"disconnected" | "connecting" | "connected">("disconnected")
   hoverState = $state<string>("none")

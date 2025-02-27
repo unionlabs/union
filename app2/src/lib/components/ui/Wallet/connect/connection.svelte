@@ -1,5 +1,4 @@
 <script lang="ts">
-import { truncateEvmAddress, truncateUnionAddress } from "$lib/wallet/utilities/format.ts"
 import type { State } from "@wagmi/core"
 import { type CosmosWalletId } from "$lib/wallet/cosmos"
 import { type AptosWalletId } from "$lib/wallet/aptos"
@@ -44,10 +43,10 @@ let {
 let connectText = $derived(
   connectStatus === "connected" && address && address?.length > 0
     ? chain === "evm"
-      ? truncateEvmAddress(address, -1)
+      ? address
       : chain === "aptos"
         ? address
-        : truncateUnionAddress(address, -1)
+        : address
     : ""
 )
 
