@@ -148,12 +148,22 @@ impl Module {
                 })),
             ))
         } else {
-            let value = response.value.map(|value| {
-                trace!("raw response: {}", String::from_utf8_lossy(&value.data));
-                serde_json::from_slice(&value.data).expect("serialization is infallible; qed;")
-            });
-
-            Ok(value)
+            response
+                .value
+                .map(|value| {
+                    trace!("raw response: {}", String::from_utf8_lossy(&value.data));
+                    serde_json::from_slice(&value.data).map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            ErrorReporter(e).with_message(&format!(
+                                "unable to deserialize response ({})",
+                                std::any::type_name::<R>()
+                            )),
+                            None::<()>,
+                        )
+                    })
+                })
+                .transpose()
         }
     }
 
