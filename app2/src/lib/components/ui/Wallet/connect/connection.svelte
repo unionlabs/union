@@ -83,7 +83,7 @@ let connectedWallet = $derived(
 
 {#if connectStatus === "connected" && address?.length > 0}
   <!-- Wallet Card -->
-  <div class="bg-neutral-800 rounded-lg p-4 mb-4">
+  <div class="w-full bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-4 mb-4">
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center">
         <div class="bg-neutral-700 rounded-lg p-2 mr-3">
