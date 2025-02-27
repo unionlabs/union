@@ -10,7 +10,7 @@ interface Props {
 let { error }: Props = $props()
 </script>
 
-<div class="p-4 rounded m-4 bg-red-500 overflow-auto flex flex-col gap-4">
+<div class="p-4 rounded bg-red-500 overflow-auto flex flex-col gap-4">
   <section>
     <h3 class="text-xl font-bold">{error._tag}</h3>
     <pre>{error.message}</pre>

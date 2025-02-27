@@ -16,12 +16,12 @@ onMount(() => {
 </script>
 
 <div class="grid grid-cols-[auto_1fr] min-h-[100svh] w-screen">
-  <aside class="fixed top-0 left-0 bottom-0 w-64 dark:bg-zinc-800 shadow overflow-auto">
+  <aside class="fixed top-0 left-0 bottom-0 w-64 dark:bg-zinc-900 shadow overflow-auto">
     <Sidebar/>
   </aside>
   
   <!-- Main content area: Has margin to clear fixed sidebar -->
-  <main class="col-start-2 ml-64 max-w-[calc(100vw - calc(var(--spacing)*64))] overflow-hidden">
+  <main class="col-start-2 ml-64 max-w-[calc(100vw-calc(var(--spacing)*64))]">
     <AppErrors/>
     {@render children()}
   </main>

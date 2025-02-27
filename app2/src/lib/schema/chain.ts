@@ -1,4 +1,4 @@
-import { Schema } from "effect"
+import { Option, Schema } from "effect"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
 export const ChainDisplayName = Schema.String.pipe(Schema.brand("ChainDisplayName"))
@@ -28,3 +28,8 @@ export class Chain extends Schema.Class<Chain>("Chain")({
 }) {}
 
 export const Chains = Schema.Array(Chain)
+
+export const getChain = (
+  chains: typeof Chains.Type,
+  chainId: typeof ChainId.Type
+): Option.Option<Chain> => Option.fromNullable(chains.find(chain => chain.chain_id === chainId))
