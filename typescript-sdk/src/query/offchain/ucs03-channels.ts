@@ -184,9 +184,7 @@ export const getQuoteToken = async (
   if (aptosChainId.includes(channel.destination_chain_id)) {
     let network: Network
     let rpcUrl = ""
-    if (channel.destination_chain_id === "126") {
-      network = Network.MAINNET
-    } else if (channel.destination_chain_id === "250") {
+    if (channel.destination_chain_id === "250") {
       network = Network.TESTNET
       rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1"
     } else {
@@ -196,13 +194,7 @@ export const getQuoteToken = async (
     const config = new AptosConfig({ network: network, fullnode: rpcUrl })
     const aptos = new Aptos(config)
 
-    // Define the Move function call.
-    // Replace <MODULE_ADDRESS> and <MODULE_NAME> with your contract's module address and name.
-    // const functionCall =
-    // Build the transaction payload.
-
-    const receiverVec = MoveVector.U8("0x6d756e6f")
-    const output = await aptos.experimental.viewBinary({
+    const output = await aptos.view({
       payload: {
         function: `${channel.destination_port_id}::ibc_app::predict_wrapped_token`,
         typeArguments: [],
@@ -210,24 +202,16 @@ export const getQuoteToken = async (
         functionArguments: [
           0, // path
           channel.destination_channel_id, // channel
-          receiverVec
+          MoveVector.U8(base_token)
         ]
       }
     })
 
-    console.info("base_token:", base_token)
-    console.info("transaction:", output)
-    console.info("channel.destination_channel_id:", channel.destination_channel_id)
-    console.info("channel.destination_port_id:", channel.destination_port_id)
-    const deserializer = new Deserializer(output.slice(1))
-    const addressBytes = deserializer.deserializeFixedBytes(32)
-    const wrappedAddressHex = "0x" + Buffer.from(addressBytes).toString("hex")
-
-    // // 2) The second return value is the salt (vector<u8>)
-    // const saltBytes = deserializer.deserializeBytes()
-    // const saltHex = "0x" + Buffer.from(saltBytes).toString("hex")
-
+    const wrappedAddressHex = output[0]?.toString()
     console.log("Wrapped address:", wrappedAddressHex)
+    if (!wrappedAddressHex) {
+      return err(new Error("failed to get wrapped address from aptos"))
+    }
     return ok({ type: "NEW_WRAPPED", quote_token: wrappedAddressHex })
   }
 

@@ -48,7 +48,7 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const MUNO_DENOM = "muno"
+const MUNO_DENOM = "0x6d756e6f"
 const AMOUNT = 15n
 const RECEIVER = "0x4d8a66ece11f6352224942bd1dabc456b4bb5316124f02b9a7b6292ad61f7777"
 const SOURCE_CHAIN_ID = "union-testnet-9"
