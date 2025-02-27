@@ -1,6 +1,7 @@
 <script>
 import Wallet from "$lib/components/ui/Wallet/index.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
+import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
 </script>
 
 <Sections>
@@ -22,5 +23,6 @@ import Sections from "$lib/components/ui/Sections.svelte"
     </ul>
   </section>
 
+  <ConnectWalletButton/>
   <Wallet/>
 </Sections>

@@ -2,7 +2,6 @@
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.js"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.js"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.js"
-import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import Connection from "$lib/components/ui/Wallet/connect/connection.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Button from "../Button.svelte"
@@ -10,14 +9,6 @@ import { uiStore } from "$lib/stores/ui.svelte"
 
 let currentWalletType = $state("all")
 </script>
-
-<!-- Button to open modal when it's closed -->
-{#if !uiStore.walletModalOpen}
-  <Button variant="secondary" onclick={() => uiStore.openWalletModal()}>
-    <SharpWalletIcon class="size-5"/>
-    Connect Wallet
-  </Button>
-{/if}
 
 {#if uiStore.walletModalOpen}
 

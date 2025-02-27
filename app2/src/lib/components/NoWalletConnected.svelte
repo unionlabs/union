@@ -1,6 +1,7 @@
 <script lang="ts">
 import { cn } from "$lib/utils"
 import type { HTMLAttributes } from "svelte/elements"
+import ConnectWalletButton from "./ui/ConnectWalletButton.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   class?: string
@@ -21,6 +22,7 @@ const containerClasses = cn("h-[600px] flex justify-center items-center", classN
 <div class={containerClasses} {...rest}>
   <div class="flex flex-col items-center">
     <h2 class="text-xl font-bold">{title}</h2>
-    <p>{description}</p>
+    <p class="pb-4">{description}</p>
+    <ConnectWalletButton variant="primary" />
   </div>
 </div>
