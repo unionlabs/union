@@ -1,32 +1,32 @@
 import {
-  http,
+  connect as _connect,
+  type Connector,
+  createConfig,
+  createStorage as createWagmiStorage,
+  deserialize,
+  disconnect as _disconnect,
   fallback,
+  getAccount,
+  type GetAccountReturnType,
+  http,
   reconnect,
   serialize,
-  getAccount,
-  deserialize,
-  createConfig,
-  watchAccount,
-  type Connector,
-  unstable_connector,
-  connect as _connect,
-  disconnect as _disconnect,
-  type GetAccountReturnType,
   switchChain as _switchChain,
-  createStorage as createWagmiStorage
+  unstable_connector,
+  watchAccount
 } from "@wagmi/core"
-import { injected, metaMask, coinbaseWallet, walletConnect } from "@wagmi/connectors"
+import { coinbaseWallet, injected, metaMask, walletConnect } from "@wagmi/connectors"
 import {
-  sepolia,
-  holesky,
-  berachainTestnetbArtio,
   arbitrumSepolia,
-  scrollSepolia
+  berachainTestnetbArtio,
+  holesky,
+  scrollSepolia,
+  sepolia
 } from "@wagmi/core/chains"
-import { AddressEvmCanonical } from "$lib/schema/address.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { AddressEvmCanonical } from "$lib/schema/address"
+import { wallets } from "$lib/stores/wallets.svelte"
 import { Effect, Option } from "effect"
-import { TESTNET_APP_INFO } from "$lib/config/app.ts"
+import { TESTNET_APP_INFO } from "$lib/config/app"
 import type { Hex } from "viem"
 
 export const chains = [
@@ -223,15 +223,24 @@ class SepoliaStore {
 
   connect = async (walletId: string) => {
     try {
+      if (unwatchAccount) {
+        unwatchAccount()
+        unwatchAccount = undefined
+      }
+
       const result = await evmConnect(walletId, sepolia.id)
       const account = getAccount(configSvelte)
       setLastConnectedWalletId(account.connector?.id)
+
       this.updateAccount({
         chain: account.chain?.name ?? "sepolia",
         address: account.address,
         connectionStatus: account.status,
         connectedWallet: account.connector?.id
       })
+
+      startWatchingAccount()
+
       return result
     } catch (error) {
       console.error("Connection failed:", error)
@@ -242,7 +251,6 @@ class SepoliaStore {
   disconnect = async () => {
     try {
       await evmDisconnect()
-      // Clear wagmi-related local storage items
       if (typeof window !== "undefined") {
         Object.keys(window.localStorage)
           .filter(key => key.startsWith("union-wagmi"))
@@ -263,6 +271,11 @@ class SepoliaStore {
 
   reconnectLast = async () => {
     try {
+      if (unwatchAccount) {
+        unwatchAccount()
+        unwatchAccount = undefined
+      }
+
       const lastWalletId = getLastConnectedWalletId()
       if (lastWalletId) {
         const lastConnector = configSvelte.connectors.find(c => c.id === lastWalletId)
@@ -291,10 +304,10 @@ class SepoliaStore {
   }
 
   updateAccount = (account: {
-    chain?: string
-    address?: string
-    connectionStatus?: string
-    connectedWallet?: string
+    chain: string
+    address: `0x${string}` | undefined
+    connectionStatus: "connected" | "connecting" | "disconnected" | "reconnecting"
+    connectedWallet: string | undefined
   }) => {
     if (account.chain) this.chain = account.chain
     this.address = account.address
@@ -353,9 +366,7 @@ export async function evmConnect(
 ) {
   const connector = configSvelte.connectors.find(connector => connector.id === evmWalletId)
   if (connector) {
-    const result = await _connect(configSvelte, { connector, chainId })
-    startWatchingAccount()
-    return result
+    return await _connect(configSvelte, { connector, chainId })
   }
   throw new Error(`Connector ${evmWalletId} not found`)
 }
