@@ -1,33 +1,27 @@
 import {
-  http,
+  connect as _connect,
+  type Connector,
+  createConfig,
+  createStorage as createWagmiStorage,
+  deserialize,
+  disconnect as _disconnect,
   fallback,
+  getAccount,
+  type GetAccountReturnType,
+  http,
   reconnect,
   serialize,
-  getAccount,
-  deserialize,
-  createConfig,
-  watchAccount,
-  type Connector,
-  unstable_connector,
-  connect as _connect,
-  disconnect as _disconnect,
-  type GetAccountReturnType,
   switchChain as _switchChain,
-  createStorage as createWagmiStorage
+  unstable_connector,
+  watchAccount
 } from "@wagmi/core"
-import { injected, metaMask, coinbaseWallet, walletConnect } from "@wagmi/connectors"
-import {
-  sepolia,
-  holesky,
-  berachainTestnetbArtio,
-  arbitrumSepolia,
-  scrollSepolia
-} from "@wagmi/core/chains"
-import { AddressEvmCanonical } from "$lib/schema/address.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { Effect, Option } from "effect"
-import { TESTNET_APP_INFO } from "$lib/config/app.ts"
-import type { Hex } from "viem"
+import {coinbaseWallet, injected, metaMask, walletConnect} from "@wagmi/connectors"
+import {arbitrumSepolia, berachainTestnetbArtio, holesky, scrollSepolia, sepolia} from "@wagmi/core/chains"
+import {AddressEvmCanonical} from "$lib/schema/address"
+import {wallets} from "$lib/stores/wallets.svelte"
+import {Effect, Option} from "effect"
+import {TESTNET_APP_INFO} from "$lib/config/app"
+import type {Hex} from "viem"
 
 export const chains = [
   sepolia,
@@ -51,7 +45,7 @@ export const configSvelte = createConfig({
   cacheTime: 4_000,
   pollingInterval: 4_000,
   syncConnectedChain: true,
-  batch: { multicall: true },
+  batch: {multicall: true},
   multiInjectedProviderDiscovery: true,
   transports: {
     [sepolia.id]: fallback([
@@ -64,7 +58,7 @@ export const configSvelte = createConfig({
       http(`https://rpc.11155111.sepolia.chain.kitchen`, {
         name: "Chain Kitchen - Sepolia"
       }),
-      http(sepolia.rpcUrls.default.http.at(0), { name: "default Sepolia RPC" })
+      http(sepolia.rpcUrls.default.http.at(0), {name: "default Sepolia RPC"})
     ]),
     [holesky.id]: fallback([
       unstable_connector(injected, {
@@ -76,7 +70,7 @@ export const configSvelte = createConfig({
       http(`https://rpc.17000.holesky.chain.kitchen`, {
         name: "Chain Kitchen - Holesky"
       }),
-      http(holesky.rpcUrls.default.http.at(0), { name: "default Holesky RPC" })
+      http(holesky.rpcUrls.default.http.at(0), {name: "default Holesky RPC"})
     ]),
     [berachainTestnetbArtio.id]: fallback([
       unstable_connector(injected, {
@@ -85,7 +79,7 @@ export const configSvelte = createConfig({
         key: "unstable_connector-injected-berachain",
         name: "unstable_connector-injected-berachain"
       }),
-      http(berachainTestnetbArtio.rpcUrls.default.http.at(0), { name: "default Berachain RPC" })
+      http(berachainTestnetbArtio.rpcUrls.default.http.at(0), {name: "default Berachain RPC"})
     ]),
     [arbitrumSepolia.id]: fallback([
       unstable_connector(injected, {
@@ -94,7 +88,7 @@ export const configSvelte = createConfig({
         key: "unstable_connector-injected-arbitrum-sepolia",
         name: "unstable_connector-injected-arbitrum-sepolia"
       }),
-      http(arbitrumSepolia.rpcUrls.default.http.at(0), { name: "default Arbitrum Sepolia RPC" })
+      http(arbitrumSepolia.rpcUrls.default.http.at(0), {name: "default Arbitrum Sepolia RPC"})
     ]),
     [scrollSepolia.id]: fallback([
       unstable_connector(injected, {
@@ -103,7 +97,7 @@ export const configSvelte = createConfig({
         key: "unstable_connector-injected-scroll-sepolia",
         name: "unstable_connector-injected-scroll-sepolia"
       }),
-      http(scrollSepolia.rpcUrls.default.http.at(0), { name: "default Scroll Sepolia RPC" })
+      http(scrollSepolia.rpcUrls.default.http.at(0), {name: "default Scroll Sepolia RPC"})
     ])
   },
   storage: createWagmiStorage({
@@ -202,7 +196,7 @@ class SepoliaStore {
     if (lastWalletId && typeof window !== "undefined") {
       const lastConnector = configSvelte.connectors.find(c => c.id === lastWalletId)
       if (lastConnector) {
-        reconnect(configSvelte, { connectors: [lastConnector] })
+        reconnect(configSvelte, {connectors: [lastConnector]})
           .then(() => {
             const account = getAccount(configSvelte)
             this.updateAccount({
@@ -223,15 +217,24 @@ class SepoliaStore {
 
   connect = async (walletId: string) => {
     try {
+      if (unwatchAccount) {
+        unwatchAccount()
+        unwatchAccount = undefined
+      }
+
       const result = await evmConnect(walletId, sepolia.id)
       const account = getAccount(configSvelte)
       setLastConnectedWalletId(account.connector?.id)
+
       this.updateAccount({
         chain: account.chain?.name ?? "sepolia",
         address: account.address,
         connectionStatus: account.status,
         connectedWallet: account.connector?.id
       })
+
+      startWatchingAccount()
+
       return result
     } catch (error) {
       console.error("Connection failed:", error)
@@ -242,7 +245,6 @@ class SepoliaStore {
   disconnect = async () => {
     try {
       await evmDisconnect()
-      // Clear wagmi-related local storage items
       if (typeof window !== "undefined") {
         Object.keys(window.localStorage)
           .filter(key => key.startsWith("union-wagmi"))
@@ -263,11 +265,16 @@ class SepoliaStore {
 
   reconnectLast = async () => {
     try {
+      if (unwatchAccount) {
+        unwatchAccount()
+        unwatchAccount = undefined
+      }
+
       const lastWalletId = getLastConnectedWalletId()
       if (lastWalletId) {
         const lastConnector = configSvelte.connectors.find(c => c.id === lastWalletId)
         if (lastConnector) {
-          await reconnect(configSvelte, { connectors: [lastConnector] })
+          await reconnect(configSvelte, {connectors: [lastConnector]})
           const account = getAccount(configSvelte)
           this.updateAccount({
             chain: account.chain?.name ?? "sepolia",
@@ -291,10 +298,10 @@ class SepoliaStore {
   }
 
   updateAccount = (account: {
-    chain?: string
-    address?: string
-    connectionStatus?: string
-    connectedWallet?: string
+    chain: string;
+    address: `0x${string}` | undefined;
+    connectionStatus: "connected" | "connecting" | "disconnected" | "reconnecting";
+    connectedWallet: string | undefined;
   }) => {
     if (account.chain) this.chain = account.chain
     this.address = account.address
@@ -353,9 +360,7 @@ export async function evmConnect(
 ) {
   const connector = configSvelte.connectors.find(connector => connector.id === evmWalletId)
   if (connector) {
-    const result = await _connect(configSvelte, { connector, chainId })
-    startWatchingAccount()
-    return result
+    return await _connect(configSvelte, {connector, chainId})
   }
   throw new Error(`Connector ${evmWalletId} not found`)
 }
@@ -364,7 +369,7 @@ export async function evmDisconnect() {
   try {
     const connector = getAccount(configSvelte).connector
     if (connector) {
-      await _disconnect(configSvelte, { connector })
+      await _disconnect(configSvelte, {connector})
     } else {
       await _disconnect(configSvelte)
     }
@@ -380,4 +385,4 @@ export async function evmDisconnect() {
 }
 
 export const evmSwitchChain = (chainId: ConfiguredChainId) =>
-  _switchChain(configSvelte, { chainId })
+  _switchChain(configSvelte, {chainId})
