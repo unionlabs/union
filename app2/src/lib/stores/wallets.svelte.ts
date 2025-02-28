@@ -12,9 +12,11 @@ class WalletsStore {
   aptosAddress: Option.Option<typeof AddressAptosCanonical.Type> = $state(Option.none())
 
   hasAnyWallet() {
-    return Option.isSome(this.evmAddress) ||
-           Option.isSome(this.cosmosAddress) ||
-           Option.isSome(this.aptosAddress)
+    return (
+      Option.isSome(this.evmAddress) ||
+      Option.isSome(this.cosmosAddress) ||
+      Option.isSome(this.aptosAddress)
+    )
   }
 
   getCanonicalByteAddressList() {
