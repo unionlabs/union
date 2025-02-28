@@ -17,12 +17,7 @@ function resetAll() {
 
 <div class="max-w-3xl mx-auto p-6 bg-zinc-900 text-zinc-200 min-h-screen">
   <h1 class="text-2xl font-bold mb-6 text-sky-400">RawIntents Test Page (Svelte 5)</h1>
-
-  <div class="mb-6 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
-    <h3 class="text-lg font-semibold mb-2 text-sky-300">Current URL:</h3>
-    <pre class="text-sm text-zinc-300 whitespace-pre-wrap break-all">{window.location.href}</pre>
-  </div>
-
+  
   <div class="mb-6 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
     <h3 class="text-lg font-semibold mb-2 text-sky-300">Current State:</h3>
     <pre class="text-sm text-zinc-300 whitespace-pre-wrap break-all">{JSON.stringify({
