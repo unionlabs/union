@@ -2,6 +2,7 @@
 import type { Chain } from "$lib/schema/chain"
 import type { TokenRawDenom, TokenRawAmount } from "$lib/schema/token"
 import { Option } from "effect"
+import Truncate from "$lib/components/ui/Truncate.svelte"
 
 interface Props {
   chain: Chain
@@ -19,7 +20,7 @@ const displayAmount = $derived(Option.fromNullable(amount).pipe(Option.map(amt =
 </script>
 
 <div class="flex items-center gap-1">
-  <span class="font-mono">{displayDenom}</span>
+  <Truncate value={displayDenom} maxLength={10} />
   {#if Option.isSome(displayAmount)}
     <span class="font-mono">({displayAmount.value})</span>
   {/if}
