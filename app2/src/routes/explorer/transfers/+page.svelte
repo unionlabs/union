@@ -70,6 +70,8 @@ const onNextPage = async () => {
       {/if}
       {#each transferList.data.value as transfer(transfer.sort_order)}
         <TransferListItemComponent {transfer} />
+      {:else}
+        <div class="p-4 text-center text-gray-500">No transfers found</div>
       {/each}
     {:else}
       {#if Option.isSome(transferList.error)}

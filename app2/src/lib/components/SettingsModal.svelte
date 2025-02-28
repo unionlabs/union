@@ -11,9 +11,11 @@ type Props = {
 const { isOpen, onClose }: Props = $props()
 
 let tempPageLimit = $state(settingsStore.pageLimit)
+let tempShowQuoteTokens = $state(settingsStore.showQuoteTokens)
 
 function handleSave() {
   settingsStore.pageLimit = tempPageLimit
+  settingsStore.showQuoteTokens = tempShowQuoteTokens
   onClose()
 }
 </script>
@@ -34,6 +36,17 @@ function handleSave() {
         bind:value={tempPageLimit}
         class="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md"
       />
+    </div>
+
+    <div class="space-y-2">
+      <label class="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          bind:checked={tempShowQuoteTokens}
+          class="form-checkbox"
+        />
+        <span class="text-sm font-medium">Show quote tokens</span>
+      </label>
     </div>
 
     <div class="flex justify-start gap-2 pt-4">
