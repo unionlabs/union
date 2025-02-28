@@ -18,6 +18,7 @@ import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
 import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
+import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
 
 let fiber: Fiber.Fiber<any, any>
 let fiberLock = false
@@ -92,26 +93,7 @@ const onNextPage = async () => {
         <ErrorComponent error={transferListAddress.error.value}/>
       {/if}
       {#each transferListAddress.data.value as transfer(transfer.sort_order)}
-        {@const sourceChain = getChain(chainss, transfer.source_chain_id)}
-        {@const destinationChain = getChain(chainss, transfer.destination_chain_id)}
-        <div class="flex gap-8 px-4 py-2 h-[60px]">
-          <div class="flex-1">
-            <Label>from</Label>
-            {#if Option.isSome(sourceChain)}
-              <ChainComponent chain={sourceChain.value}/>
-            {/if}
-          </div>
-          <div class="flex-1">
-            <Label>to</Label>
-            {#if Option.isSome(destinationChain)}
-              <ChainComponent chain={destinationChain.value}/>
-            {/if}
-          </div>
-          <div class="flex-1">
-            <Label>Time</Label>
-            {DateTime.formatIso(transfer.packet_send_timestamp)}
-          </div>
-        </div>
+        <TransferListItemComponent {transfer} />
       {/each}
     {:else}
       {#each Array(settingsStore.pageLimit).fill(0)}

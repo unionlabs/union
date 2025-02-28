@@ -20,6 +20,7 @@ import Button from "$lib/components/ui/Button.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 
 import { settingsStore } from "$lib/stores/settings.svelte"
+import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
 
 let fiber: Fiber.Fiber<any, any>
 
@@ -66,26 +67,7 @@ const onNextPage = async () => {
         <ErrorComponent error={transferList.error.value}/>
       {/if}
       {#each transferList.data.value as transfer(transfer.sort_order)}
-        {@const sourceChain = getChain(chainss, transfer.source_chain_id)}
-        {@const destinationChain = getChain(chainss, transfer.destination_chain_id)}
-        <div class="flex gap-8 px-4 py-2">
-          <div class="flex-1">
-            <Label>from</Label>
-            {#if Option.isSome(sourceChain)}
-              <ChainComponent chain={sourceChain.value}/>
-            {/if}
-          </div>
-          <div class="flex-1">
-            <Label>to</Label>
-            {#if Option.isSome(destinationChain)}
-              <ChainComponent chain={destinationChain.value}/>
-            {/if}
-          </div>
-          <div class="flex-1">
-            <Label>Time</Label>
-            {DateTime.formatIso(transfer.packet_send_timestamp)}
-          </div>
-        </div>
+        <TransferListItemComponent {transfer} />
       {/each}
     {:else}
       {#if Option.isSome(transferList.error)}
