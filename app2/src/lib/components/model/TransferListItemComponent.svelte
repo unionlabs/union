@@ -27,24 +27,24 @@ const handleClick = () => {
     class="flex gap-8 px-4 py-2 h-[60px] cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
     onclick={handleClick}
   >
-    <div class="flex-1">
+    <div class="w-[180px]">
       <Label>from</Label>
       {#if Option.isSome(sourceChain)}
         <ChainComponent chain={sourceChain.value}/>
       {/if}
     </div>
-    <div class="flex-1">
+    <div class="w-[180px]">
       <Label>to</Label>
       {#if Option.isSome(destinationChain)}
         <ChainComponent chain={destinationChain.value}/>
       {/if}
     </div>
-    <div class="flex-1">
+    <div class="w-[240px]">
       <Label>Time</Label>
       {DateTime.formatIso(transfer.packet_send_timestamp)}
     </div>
     <div class="flex-1">
-      <Label>Base Token</Label>
+      <Label>Token</Label>
       {#if Option.isSome(sourceChain)}
         <TokenComponent 
           chain={sourceChain.value} 
