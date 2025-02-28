@@ -1,20 +1,22 @@
 import {
   type AptosAccount,
-  // (These below helpers remain as before)
   waitForTransactionReceipt,
   type AptosPublicAccountInfo
 } from "./transfer.ts"
-import { err, type Result } from "neverthrow"
+import { ok, err, type Result } from "neverthrow"
 import { Aptos, Network, AptosConfig, AccountAddress, MoveVector } from "@aptos-labs/ts-sdk"
 import { createClient, fallback, type HttpTransport } from "viem"
 import type { AptosBrowserWallet, AuthAccess } from "./wallet.ts"
 
+// Define a unified signer type that always includes an accountAddress.
+export type AptosSigner = AptosAccount | (AptosBrowserWallet & { accountAddress: string })
+
 export type { AptosAccount, AptosBrowserWallet }
 
 export const aptosChainId = [
-  "2", // aptos testnet
+  "2",   // aptos testnet
   "177", // movement porto
-  "250" // movement bardock
+  "250"  // movement bardock
 ] as const
 export type AptosChainId = `${(typeof aptosChainId)[number]}`
 
@@ -31,23 +33,25 @@ export type AptosClientParameters = {
   | { account: AptosAccount; transport: HttpTransport }
   | { account?: AptosPublicAccountInfo; transport: AptosWindowTransport }
 )
+export type WalletSigner = AptosBrowserWallet & { accountAddress: string };
 
 /**
  * Overloads for retrieving an Aptos client.
  */
 async function getAptosClient(
   parameters: AptosClientParameters & { authAccess: "key" }
-): Promise<{ authAccess: "key"; aptos: Aptos; signer: AptosAccount }>
+): Promise<{ authAccess: "key"; aptos: Aptos; signer: AptosSigner; transport: HttpTransport }>;
 
-// async function getAptosClient(
-//   parameters: AptosClientParameters & { authAccess: "wallet" }
-// ): Promise<{ authAccess: "wallet"; aptos: Aptos; signer: AptosBrowserWallet }>
+async function getAptosClient(
+  parameters: AptosClientParameters & { authAccess: "wallet" }
+): Promise<{ authAccess: "wallet"; aptos: Aptos; signer: AptosSigner; transport: AptosWindowTransport }>;
+
 
 async function getAptosClient(
   parameters: AptosClientParameters & { authAccess: AuthAccess }
 ): Promise<
-  | { authAccess: "key"; aptos: Aptos; signer: AptosAccount }
-  | { authAccess: "wallet"; aptos: Aptos; signer: AptosBrowserWallet }
+  | { authAccess: "key"; aptos: Aptos; signer: AptosSigner; transport: HttpTransport }
+  | { authAccess: "wallet"; aptos: Aptos; signer: AptosSigner; transport: AptosWindowTransport }
 > {
   if (parameters.authAccess === "key") {
     if (typeof parameters.transport !== "function") {
@@ -62,7 +66,8 @@ async function getAptosClient(
     return {
       authAccess: "key",
       aptos: new Aptos(config),
-      signer: parameters.account as AptosAccount
+      signer: parameters.account as AptosAccount, // AptosAccount is assumed to have accountAddress
+      transport: parameters.transport
     }
   }
 
@@ -71,20 +76,36 @@ async function getAptosClient(
       throw new Error("Invalid Aptos transport")
     }
     const networkInfo = await parameters.transport.getNetwork()
-    const network = networkInfo.name.toLowerCase() === "mainnet" ? Network.MAINNET : Network.TESTNET
+    const network =
+      networkInfo.name.toLowerCase() === "mainnet" ? Network.MAINNET : Network.TESTNET
     const config = new AptosConfig({ fullnode: networkInfo.url, network })
+  
+    // Get the connected account
+    const account = await parameters.transport.getAccount?.() ||
+      { address: "" }
+    if (!account.address) {
+      throw new Error("No account address found from the wallet")
+    }
+  
+    // Create a signer by merging the wallet’s methods with the account address.
+    const signer = Object.assign({}, parameters.transport, {
+      accountAddress: account.address
+    }) as unknown as AptosAccount  // <== Force-cast to AptosAccount
+  
     return {
       authAccess: "wallet",
       aptos: new Aptos(config),
-      signer: parameters.transport as AptosBrowserWallet
+      signer: signer,
+      transport: parameters.transport
     }
   }
+  
+
   throw new Error("Invalid Aptos transport")
 }
 
 /**
- * New unified transfer parameters for Aptos,
- * matching the Cosmos & EVM clients.
+ * New unified transfer parameters for Aptos, matching the Cosmos & EVM clients.
  */
 export interface TransferAssetParameters<AptosChainId> {
   baseAmount: bigint
@@ -102,17 +123,22 @@ export interface TransferAssetParameters<AptosChainId> {
  */
 export const createAptosClient = (clientParameters: AptosClientParameters) => {
   return createClient({ transport: fallback([]) })
-    .extend(_ => ({
-      // A helper to get the underlying Aptos client.
-      // We default to "key" if an account was provided.
-      getAptosClient: async () => await getAptosClient({ ...clientParameters, authAccess: "key" })
-      // clientParameters.account
-      //   ? await getAptosClient({ ...clientParameters, authAccess: "key" })
-      //   : await getAptosClient({ ...clientParameters, authAccess: "wallet" })
+    .extend(() => ({
+      getAptosClient: async () => {
+        console.info("create aptos client params:", clientParameters)
+        // Use the transport type to determine which client to create.
+        if (typeof clientParameters.transport === "function") {
+          console.info("returning key-based client")
+          return await getAptosClient({ ...clientParameters, authAccess: "key" })
+        } else {
+          console.info("returning wallet-based client")
+          return await getAptosClient({ ...clientParameters, authAccess: "wallet" })
+        }
+      }
     }))
     .extend(client => ({
       waitForTransactionReceipt: async ({ hash }: { hash: string }) => {
-        const { aptos, signer } = await client.getAptosClient()
+        const { aptos } = await client.getAptosClient()
         return await waitForTransactionReceipt({ aptos, hash })
       },
 
@@ -129,47 +155,93 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
         sourceChannelId,
         ucs03address
       }: TransferAssetParameters<AptosChainId>): Promise<Result<string, Error>> => {
-        const { aptos, signer } = await client.getAptosClient()
-
-        const baseTokenHex = baseToken.startsWith("0x") ? baseToken.slice(2) : baseToken // Remove "0x" if it exists
-        // let my_addr = AccountAddress.fromHex(baseToken)
+        const { aptos, signer, authAccess, transport } = await client.getAptosClient();
 
         const quoteTokenVec = MoveVector.U8(quoteToken)
         const receiverVec = MoveVector.U8(receiver)
 
-        const rawSalt = new Uint8Array(32)
+        const rawSalt = new Uint8Array(14) 
         crypto.getRandomValues(rawSalt)
         const salt = MoveVector.U8(rawSalt)
 
-        const payload = await aptos.transaction.build.simple({
-          sender: signer.accountAddress,
-          data: {
-            function: `${ucs03address}::ibc_app::transfer`,
-            typeArguments: [],
-            functionArguments: [
-              sourceChannelId,
-              receiverVec,
-              AccountAddress.fromString(baseToken),
-              baseAmount,
-              quoteTokenVec,
-              quoteAmount,
-              18446744073709551615n,
-              18446744073709551615n,
-              salt
-            ]
-          }
-        })
-
         try {
-          const txn = await aptos.signAndSubmitTransaction({
-            signer: signer,
-            transaction: payload
-          })
-          const receipt = await waitForTransactionReceipt({ aptos, hash: txn.hash })
-          return receipt
+          let txn;
+          if (authAccess === "key") {
+            console.info("key-based flow")
+            // Key-based flow using the full AptosAccount
+            const payload = await aptos.transaction.build.simple({
+              sender: signer.accountAddress,
+              data: {
+                function: `${ucs03address}::ibc_app::transfer`,
+                typeArguments: [],
+                functionArguments: [
+                  sourceChannelId,
+                  receiverVec,
+                  AccountAddress.fromString(baseToken),
+                  baseAmount,
+                  quoteTokenVec,
+                  quoteAmount,
+                  18446744073709551615n,
+                  18446744073709551615n,
+                  salt
+                ]
+              }
+            })
+
+            txn = await aptos.signAndSubmitTransaction({
+              signer: signer as AptosAccount,
+              transaction: payload
+            });
+            const receipt = await waitForTransactionReceipt({ aptos, hash: txn.hash });
+            return receipt;
+          } else {
+              
+            const saltHex = toHex(new Uint8Array(14) ); 
+            // 14 bytes + 0x 2 bytes and that walletPayload encodes it in it
+            // so it becomes 32 byte.
+            const walletPayload = {
+              function: `${ucs03address}::ibc_app::transfer`,
+              type_arguments: [],
+              arguments: [
+                sourceChannelId.toString(),
+                hexToAscii(receiver), // It is hexing again in it.
+                baseToken,
+                baseAmount.toString(),
+                hexToAscii(quoteToken), // It is hexing again in it.
+                quoteAmount.toString(),
+                18446744073709551615n.toString(),
+                18446744073709551615n.toString(),
+                saltHex
+              ]
+            };
+            try {
+              const signedTxn = await transport.signAndSubmitTransaction({ payload: walletPayload });
+              return ok(signedTxn.hash); // Wrap the string in a successful Result
+            } catch (error) {
+              return err(new Error("Transaction signing failed"));
+            }
+          }
         } catch (error) {
+          console.info("error is:", error)
           return err(new Error("failed to execute aptos call", { cause: error as Error }))
         }
       }
     }))
+}
+function toHex(uint8array: Uint8Array): string {
+  return "0x" + Array.from(uint8array)
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function hexToAscii(hexString: string): string {
+  // Remove the "0x" prefix if present.
+  if (hexString.startsWith("0x") || hexString.startsWith("0X")) {
+    hexString = hexString.slice(2);
+  }
+  let ascii = "";
+  for (let i = 0; i < hexString.length; i += 2) {
+    ascii += String.fromCharCode(parseInt(hexString.substr(i, 2), 16));
+  }
+  return ascii;
 }
