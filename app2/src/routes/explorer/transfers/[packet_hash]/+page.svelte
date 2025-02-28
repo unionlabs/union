@@ -162,7 +162,7 @@ onMount(() => {
                       <div class="text-sm text-gray-500">Chain</div>
                       <div class="font-mono text-sm">{trace.chain.chain_id}</div>
                     </div>
-                    {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.timestamp)}
+                    {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(trace.block_hash)}
                     <div>
                       <div class="text-sm text-gray-500">Height</div>
                       <div class="font-mono text-sm">{trace.height.value}</div>
@@ -173,11 +173,11 @@ onMount(() => {
                     </div>
                     <div class="col-span-2">
                       <div class="text-sm text-gray-500">Transaction Hash</div>
-                      <div class="font-mono text-sm break-all">{trace.transaction_hash}</div>
+                      <div class="font-mono text-sm break-all">{trace.transaction_hash.value}</div>
                     </div>
                     <div class="col-span-2">
                       <div class="text-sm text-gray-500">Block Hash</div>
-                      <div class="font-mono text-sm break-all">{trace.block_hash}</div>
+                      <div class="font-mono text-sm break-all">{trace.block_hash.value}</div>
                     </div>
                     {/if}
                   </div>
