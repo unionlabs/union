@@ -12,9 +12,9 @@ let currentWalletType = $state("all")
 <Modal 
   isOpen={uiStore.walletModalOpen} 
   onClose={() => uiStore.closeWalletModal()}
+  class="w-md"
   divided
 >
-
       <section class="p-6 pb-4">
 
           <h2 class="text-xl font-bold">Connect wallet</h2>

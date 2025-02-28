@@ -4,6 +4,7 @@ import Card from "./Card.svelte"
 import type { HTMLAttributes } from "svelte/elements"
 import { cn } from "$lib/utils"
 import type { Snippet } from "svelte"
+import { fade, scale } from "svelte/transition"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   children: Snippet
@@ -48,13 +49,18 @@ onMount(() => {
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div 
-    class="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
+    class="fixed inset-0 flex items-center justify-center z-50  w-screen h-screen bg-black/90"
     onclick={handleBackdropClick}
     role="dialog"
     aria-modal="true"
+    transition:fade={{ duration: 100 }}
   >
+    <div
+      class="relative flex"
+      transition:scale={{ duration: 100, start: 0.55 }}
+    >
     <Card 
-      class={cn("max-h-[600px] min-h-[375px] h-full w-full max-w-md relative flex flex-col z-20", className)}
+      class={cn("flex-1 h-full max-h-[600px] min-h-[375px] max-w-md relative flex flex-col z-20", className)}
       {divided}
       {...rest}
     >
@@ -68,5 +74,6 @@ onMount(() => {
       {/if}
       {@render children()}
     </Card>
+    </div>
   </div>
 {/if}
