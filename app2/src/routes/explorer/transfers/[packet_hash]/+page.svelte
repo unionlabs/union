@@ -8,6 +8,7 @@ import Sections from "$lib/components/ui/Sections.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import { getChain } from "$lib/schema/chain"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
@@ -105,22 +106,24 @@ onMount(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label>Base Token</Label>
-            <div class="font-mono text-sm">{transfer.base_token}</div>
+            {#if Option.isSome(sourceChain)}
+              <TokenComponent 
+                chain={sourceChain.value}
+                denom={transfer.base_token}
+                amount={transfer.base_amount}
+              />
+            {/if}
           </div>
 
           <div>
             <Label>Quote Token</Label>
-            <div class="font-mono text-sm">{transfer.quote_token}</div>
-          </div>
-
-          <div>
-            <Label>Base Amount</Label>
-            <div class="font-mono text-sm">{transfer.base_amount}</div>
-          </div>
-
-          <div>
-            <Label>Quote Amount</Label>
-            <div class="font-mono text-sm">{transfer.quote_amount}</div>
+            {#if Option.isSome(destChain)}
+              <TokenComponent 
+                chain={destChain.value}
+                denom={transfer.quote_token}
+                amount={transfer.quote_amount}
+              />
+            {/if}
           </div>
         </div>
 
