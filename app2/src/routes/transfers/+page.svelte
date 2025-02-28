@@ -16,6 +16,7 @@ import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
+import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
 
 let fiber: Fiber.Fiber<any, any>
 let fiberLock = false
@@ -84,8 +85,8 @@ const onNextPage = async () => {
 
 <Sections>
   <section>
-  <h1 class="font-bold text-4xl">Your Transfers</h1>
-  <p>These are the transfers from your connected wallets</p>
+    <h1 class="font-bold text-4xl">Your Transfers</h1>
+    <p>These are the transfers from your connected wallets</p>
   </section>
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferListAddress.error)}
@@ -103,22 +104,10 @@ const onNextPage = async () => {
       {/each}
     {/if}
   </Card>
-  <div class="flex gap-6">
-    <button onclick={onLive} class="cursor-pointer border-rounded dark:bg-sky-600 border-sky-500 border h-10 w-20 rounded font-bold">
-      LIVE
-    </button>
-    <div class="rounded shadow flex">
-      <button onclick={onPrevPage} class="cursor-pointer border-l border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tl rounded-bl">
-        ←
-      </button>
-      <div class="bg-zinc-900 border-t border-b border-zinc-800 flex items-center justify-center px-4 min-w-[250px]">
-        {#if Option.isSome(transferListAddress.data) && transferListAddress.data.value.length > 0}
-          {DateTime.formatIso(transferListAddress.data.value[0].packet_send_timestamp)}
-        {/if}
-      </div>
-      <button onclick={onNextPage} class="cursor-pointer border-r border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tr rounded-br">
-        →
-      </button>
-    </div>
-  </div>
+  <TransferListPagination 
+    data={transferListAddress.data}
+    {onLive}
+    {onPrevPage}
+    {onNextPage}
+  />
 </Sections>
