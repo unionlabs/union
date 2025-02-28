@@ -1,11 +1,11 @@
 <script lang="ts">
 import { RawIntentsStoreSvelte } from "./raw-intents-store.svelte"
 
-export const RawIntents = new RawIntentsStoreSvelte()
+export const rawIntents = new RawIntentsStoreSvelte()
 
 function resetAll() {
-  RawIntents.clearUrlParameters()
-  RawIntents.set({
+  rawIntents.clearUrlParameters()
+  rawIntents.set({
     source: "",
     destination: "",
     asset: "",
@@ -16,16 +16,16 @@ function resetAll() {
 </script>
 
 <div class="max-w-3xl mx-auto p-6 bg-zinc-900 text-zinc-200 min-h-screen">
-  <h1 class="text-2xl font-bold mb-6 text-sky-400">RawIntents Test Page (Svelte 5)</h1>
+  <h1 class="text-2xl font-bold mb-6 text-sky-400">rawIntents Test Page (Svelte 5)</h1>
   
   <div class="mb-6 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
     <h3 class="text-lg font-semibold mb-2 text-sky-300">Current State:</h3>
     <pre class="text-sm text-zinc-300 whitespace-pre-wrap break-all">{JSON.stringify({
-      source: RawIntents.source,
-      destination: RawIntents.destination,
-      asset: RawIntents.asset,
-      receiver: RawIntents.receiver,
-      amount: RawIntents.amount
+      source: rawIntents.source,
+      destination: rawIntents.destination,
+      asset: rawIntents.asset,
+      receiver: rawIntents.receiver,
+      amount: rawIntents.amount
     }, null, 2)}</pre>
   </div>
 
@@ -37,8 +37,8 @@ function resetAll() {
       <input
               id="source"
               type="text"
-              value={RawIntents.source}
-              oninput={(e) => RawIntents.updateField('source', e)}
+              value={rawIntents.source}
+              oninput={(e) => rawIntents.updateField('source', e)}
               class="w-full p-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
       />
     </div>
@@ -48,8 +48,8 @@ function resetAll() {
       <input
               id="destination"
               type="text"
-              value={RawIntents.destination}
-              oninput={(e) => RawIntents.updateField('destination', e)}
+              value={rawIntents.destination}
+              oninput={(e) => rawIntents.updateField('destination', e)}
               class="w-full p-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
       />
     </div>
@@ -59,8 +59,8 @@ function resetAll() {
       <input
               id="asset"
               type="text"
-              value={RawIntents.asset}
-              oninput={(e) => RawIntents.updateField('asset', e)}
+              value={rawIntents.asset}
+              oninput={(e) => rawIntents.updateField('asset', e)}
               class="w-full p-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
       />
     </div>
@@ -70,8 +70,8 @@ function resetAll() {
       <input
               id="receiver"
               type="text"
-              value={RawIntents.receiver}
-              oninput={(e) => RawIntents.updateField('receiver', e)}
+              value={rawIntents.receiver}
+              oninput={(e) => rawIntents.updateField('receiver', e)}
               class="w-full p-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
       />
     </div>
@@ -81,8 +81,8 @@ function resetAll() {
       <input
               id="amount"
               type="text"
-              value={RawIntents.amount}
-              oninput={(e) => RawIntents.updateField('amount', e)}
+              value={rawIntents.amount}
+              oninput={(e) => rawIntents.updateField('amount', e)}
               class="w-full p-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
       />
     </div>
