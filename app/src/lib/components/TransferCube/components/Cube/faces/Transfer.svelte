@@ -114,10 +114,11 @@ const transfer = async () => {
 
     if (stepBefore($transferState, "TRANSFERRING")) {
       try {
+        let account = await wallet?.getAccount();
         const client = createUnionClient({
           chainId: sourceChain.chain_id as AptosChainId,
-          account: await wallet?.getAccount(),
-          transport: http(`${rpcUrl}`),
+          account: account,
+          transport: wallet
         })
 
         let realArgs = {
@@ -141,10 +142,7 @@ const transfer = async () => {
       }
     }
   }
-
-  //    /** --- APTOS END --- */
-  //    /** --- COSMOS START --- */
-  if (sourceChain.rpc_type === "cosmos" && transferArgs !== "NO_QUOTE_AVAILABLE") {
+  else if (sourceChain.rpc_type === "cosmos" && transferArgs !== "NO_QUOTE_AVAILABLE") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
     if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
 

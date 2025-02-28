@@ -125,7 +125,6 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
   return createClient({ transport: fallback([]) })
     .extend(() => ({
       getAptosClient: async () => {
-        console.info("create aptos client params:", clientParameters)
         // Use the transport type to determine which client to create.
         if (typeof clientParameters.transport === "function") {
           console.info("returning key-based client")
