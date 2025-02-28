@@ -15,7 +15,7 @@ function resetAll() {
 }
 </script>
 
-<div class="max-w-3xl mx-auto p-6 bg-zinc-900 text-zinc-200 min-h-screen">
+<div class="max-w-3xl mx-auto p-6 bg-zinc-950 text-zinc-200 min-h-screen">
   <h1 class="text-2xl font-bold mb-6 text-sky-400">rawIntents Test Page (Svelte 5)</h1>
   
   <div class="mb-6 p-4 bg-zinc-800 rounded-lg border border-zinc-700">
