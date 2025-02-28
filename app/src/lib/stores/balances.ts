@@ -55,14 +55,14 @@ export async function queryBalances(chain: Chain, address: string) {
       await updateBalancesCosmos(chain, address)
       break
     case "aptos":
-      await updateBalancesAptos(chain, address)
+      await updateBalancesAptos(chain, address as Address)
       // console.error("aptos balance fetching currently unsupported")
       break
     default:
       console.error("invalid rpc type in balance fetching")
   }
 }
-export async function updateBalancesAptos(chain: Chain, address: string) {
+export async function updateBalancesAptos(chain: Chain, address: Address) {
   // Optionally mark expected tokens as "loading" (if chain.tokens exists)
   if (chain.tokens && chain.tokens.length) {
     chain.tokens.forEach(token =>
@@ -91,53 +91,59 @@ export async function updateBalancesAptos(chain: Chain, address: string) {
   `;
   const variables = {
     owner_address: address,
-    limit: 100,
-    offset: 0,
+    limit: 200,
+    offset: 0
   };
 
   // Set up the fetch options with appropriate headers.
   const fetchOptions: RequestInit = {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Indexer-Client": "movement-explorer",
-      "X-Aptos-Client": "aptos-typescript-sdk/1.35.0",
-      "X-Aptos-Typescript-Sdk-Origin-Method": "queryIndexer",
-    },
     body: JSON.stringify({ query, variables }),
   };
 
   try {
     // Send the request to the Aptos indexer.
-    const response = await fetchJson("https://indexer.testnet.movementnetwork.xyz/v1/graphql", fetchOptions);
+    const response = await fetchJson(
+      "https://indexer.testnet.movementnetwork.xyz/v1/graphql",
+      fetchOptions
+    )
     if (response.isErr()) {
-      throw new Error(response.error.message);
+      throw new Error(response.error.message)
     }
-
     const data = response.value.data;
     if (!data || !data.current_fungible_asset_balances) {
       throw new Error("Invalid response data");
     }
 
-    // Process each token balance from the response.
-    data.current_fungible_asset_balances.forEach((token: any) => {
-      // Here, asset_type can be used as the key for storing the balance.
-      const tokenKey = token.asset_type;
-      const amount = token.amount;
-      updateBalance(chain.chain_id, tokenKey, { kind: "balance", amount, timestamp: Date.now() });
-    });
+    const aptosBalances = data.current_fungible_asset_balances
+      .filter((token: any) => token.metadata.token_standard === "v2")
+      .map((token: any) => ({
+        denom: token.asset_type,
+        amount: token.amount
+      }))
+
+    console.info("aptosBalances: ", aptosBalances)
+    aptosBalances.forEach(token => {
+      updateBalance(chain.chain_id, token.denom, {
+        kind: "balance",
+        amount: token.amount,
+        timestamp: Date.now()
+      })
+    })
   } catch (error: any) {
-    console.error("Error fetching Aptos balances", error);
+    console.error("Error fetching Aptos balances", error)
     // On error, update the balances for all tokens with an error state.
     if (chain.tokens && chain.tokens.length) {
       chain.tokens.forEach(token =>
-        updateBalance(chain.chain_id, token.denom, { kind: "error", error: error.message, timestamp: Date.now() })
-      );
+        updateBalance(chain.chain_id, token.denom, {
+          kind: "error",
+          error: error.message,
+          timestamp: Date.now()
+        })
+      )
     }
   }
 }
-
-
 
 export async function updateBalancesEvm(chain: Chain, address: Address) {
   const denoms = chain.tokens.filter(tokens => isAddress(tokens.denom)).map(token => token.denom)
