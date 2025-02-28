@@ -1,5 +1,15 @@
 # Project Conventions
 
+## Type Safety
+- Use Effect's type-safe alternatives where possible:
+  ```typescript
+  // Instead of:
+  let value: string | null | undefined
+  
+  // Use:
+  let value: Option<string>
+  ```
+
 ## Styling
 - Use Tailwind's zinc color palette instead of gray for neutral colors
   ```css
