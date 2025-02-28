@@ -9,6 +9,8 @@ import Label from "$lib/components/ui/Label.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
+import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import { getChain } from "$lib/schema/chain"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
@@ -90,14 +92,14 @@ onMount(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label>Sender</Label>
-            <div class="font-mono text-sm break-all bg-zinc-100 dark:bg-zinc-800 p-2 rounded">
+            <div>
               {transfer.sender_normalized}
             </div>
           </div>
 
           <div>
             <Label>Receiver</Label>
-            <div class="font-mono text-sm break-all bg-zinc-100 dark:bg-zinc-800 p-2 rounded">
+            <div>
               {transfer.receiver_normalized}
             </div>
           </div>
@@ -130,9 +132,7 @@ onMount(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label>Send Transaction Hash</Label>
-            <div class="font-mono text-sm break-all bg-zinc-100 dark:bg-zinc-800 p-2 rounded">
-              {transfer.packet_send_transaction_hash}
-            </div>
+            <TransactionHashComponent hash={transfer.packet_send_transaction_hash} />
           </div>
 
           <div>
@@ -155,36 +155,37 @@ onMount(() => {
             <Label>Traces</Label>
             <div class="space-y-2">
               {#each transfer.traces as trace}
+                {@const chain = getChain(chainsList, trace.chain.chain_id)} 
                 <div class="bg-zinc-100 dark:bg-zinc-800 p-4 rounded">
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <div class="text-sm text-zinc-500">Type</div>
+                      <Label>Type</Label>
                       <div class="font-mono text-sm">{trace.type}</div>
                     </div>
                     <div>
-                      <div class="text-sm text-zinc-500">Chain</div>
-                      {#if Option.isSome(getChain(chainsList, trace.chain.chain_id))}
-                        <ChainComponent chain={getChain(chainsList, trace.chain.chain_id).value} />
+                      <Label>Chain</Label>
+                      {#if Option.isSome(chain)}
+                        <ChainComponent chain={chain.value} />
                       {:else}
                         <div class="font-mono text-sm">{trace.chain.chain_id}</div>
                       {/if}
                     </div>
                     {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(trace.block_hash)}
                     <div>
-                      <div class="text-sm text-zinc-500">Height</div>
+                      <Label>Height</Label>
                       <div class="font-mono text-sm">{trace.height.value}</div>
                     </div>
                     <div>
-                      <div class="text-sm text-zinc-500">Timestamp</div>
+                      <Label>Timestamp</Label>
                       <div class="font-mono text-sm">{DateTime.formatIso(trace.timestamp.value)}</div>
                     </div>
                     <div class="col-span-2">
-                      <div class="text-sm text-zinc-500">Transaction Hash</div>
-                      <div class="font-mono text-sm break-all">{trace.transaction_hash.value}</div>
+                      <Label>Transaction Hash</Label>
+                      <TransactionHashComponent hash={trace.transaction_hash.value} />
                     </div>
                     <div class="col-span-2">
-                      <div class="text-sm text-zinc-500">Block Hash</div>
-                      <div class="font-mono text-sm break-all">{trace.block_hash.value}</div>
+                      <Label>Block Hash</Label>
+                      <BlockHashComponent hash={trace.block_hash.value} />
                     </div>
                     {/if}
                   </div>
