@@ -10,8 +10,8 @@ import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
 <Sections>
   <h1 class="font-extrabold text-3xl uppercase">Union</h1>
   <section>
-    <h2 class="font-bold text-xl">Transfer</h2>
     <ul>
+      <li><a href="/transfer" class="underline">Transfer</a></li>
       <li><a href="/transfers" class="underline">Your Transfers</a></li>
     </ul>
   </section>
