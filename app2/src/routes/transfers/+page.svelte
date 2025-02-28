@@ -11,39 +11,21 @@ import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import { chains } from "$lib/stores/chains.svelte"
-import { getChain } from "$lib/schema/chain"
-import ChainComponent from "$lib/components/model/ChainComponent.svelte"
-import Label from "$lib/components/ui/Label.svelte"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
 import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
-import type { AddressCanonicalBytes } from "$lib/schema/address"
 
 let fiber: Fiber.Fiber<any, any>
 let fiberLock = false
 
 $effect(() => {
-  const hasAnyWallet =
-    Option.isSome(wallets.evmAddress) ||
-    Option.isSome(wallets.cosmosAddress) ||
-    Option.isSome(wallets.aptosAddress)
-
-  if (hasAnyWallet) {
+  if (wallets.hasAnyWallet()) {
     console.log("will fetch")
     fetchLive()
   }
 })
-
-const getConnectedAddresses = () => {
-  const addresses: Array<typeof AddressCanonicalBytes.Type> = []
-  if (Option.isSome(wallets.evmAddress)) addresses.push(wallets.evmAddress.value)
-  if (Option.isSome(wallets.cosmosAddress)) addresses.push(wallets.cosmosAddress.value)
-  if (Option.isSome(wallets.aptosAddress)) addresses.push(wallets.aptosAddress.value)
-  return addresses
-}
 
 const fetchLive = async () => {
   if (fiberLock) return
@@ -51,7 +33,7 @@ const fetchLive = async () => {
   if (fiber) {
     await Effect.runPromise(Fiber.interrupt(fiber))
   }
-  const addresses = getConnectedAddresses()
+  const addresses = wallets.getCanonicalByteAddressList()
   if (addresses.length > 0) {
     fiber = Effect.runFork(transferListLatestAddressQuery(addresses, settingsStore.pageLimit))
   }
@@ -66,7 +48,7 @@ const onLive = async () => {
   if (Option.isSome(transferListAddress.data) && Option.isSome(wallets.evmAddress)) {
     transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
-    const addresses = getConnectedAddresses()
+    const addresses = wallets.getCanonicalByteAddressList()
     fiber = Effect.runFork(transferListLatestAddressQuery(addresses, settingsStore.pageLimit))
   }
 }
@@ -75,7 +57,7 @@ const onPrevPage = async () => {
   if (Option.isSome(transferListAddress.data)) {
     let firstSortOrder = transferListAddress.data.value.at(0)?.sort_order
     if (!firstSortOrder) return
-    const addresses = getConnectedAddresses()
+    const addresses = wallets.getCanonicalByteAddressList()
     if (addresses.length === 0) return
     transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
@@ -89,7 +71,7 @@ const onNextPage = async () => {
   if (Option.isSome(transferListAddress.data)) {
     let lastSortOrder = transferListAddress.data.value.at(-1)?.sort_order
     if (!lastSortOrder) return
-    const addresses = getConnectedAddresses()
+    const addresses = wallets.getCanonicalByteAddressList()
     if (addresses.length === 0) return
     transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
@@ -106,13 +88,12 @@ const onNextPage = async () => {
   <p>These are the transfers from your connected wallets</p>
   </section>
   <Card class="overflow-auto" divided>
-    {#if getConnectedAddresses().length === 0}
+    {#if Option.isSome(transferListAddress.error)}
+      <ErrorComponent error={transferListAddress.error.value}/>
+    {/if}
+    {#if wallets.getCanonicalByteAddressList().length === 0}
       <NoWalletConnected/>
     {:else if Option.isSome(transferListAddress.data) && Option.isSome(chains.data)}
-      {@const chainss = chains.data.value}
-      {#if Option.isSome(transferListAddress.error)}
-        <ErrorComponent error={transferListAddress.error.value}/>
-      {/if}
       {#each transferListAddress.data.value as transfer(transfer.sort_order)}
         <TransferListItemComponent {transfer} />
       {/each}
@@ -120,9 +101,6 @@ const onNextPage = async () => {
       {#each Array(settingsStore.pageLimit).fill(0)}
         <TransferListItemComponentSkeleton />
       {/each}
-      {#if Option.isSome(transferListAddress.error)}
-        <ErrorComponent error={transferListAddress.error.value}/>
-      {/if}
     {/if}
   </Card>
   <div class="flex gap-6">
