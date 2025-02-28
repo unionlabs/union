@@ -27,6 +27,8 @@ $effect(() => {
   if (wallets.hasAnyWallet()) {
     console.log("will fetch")
     fetchLive()
+  } else {
+    transferCount.data = Option.none()
   }
 })
 
@@ -35,6 +37,9 @@ const fetchLive = async () => {
   fiberLock = true
   if (transferFiber) {
     await Effect.runPromise(Fiber.interrupt(transferFiber))
+  }
+  if (countFiber) {
+    await Effect.runPromise(Fiber.interrupt(countFiber))
   }
   const addresses = wallets.getCanonicalByteAddressList()
   if (addresses.length > 0) {
@@ -100,6 +105,8 @@ const onNextPage = async () => {
     <p class="flex gap-1">
       {#if Option.isSome(transferCount.data)}
         You made <span class="text-sky-400 font-bold">{transferCount.data.value.aggregate.count}</span> transfers so far.
+      {:else if  wallets.getCanonicalByteAddressList().length === 0}
+        Connect your wallet to see your transfers
       {:else}
         These are the transfers from your connected wallets
       {/if}

@@ -112,7 +112,9 @@ export const transferCountForAddressesQuery = (
     variables: { addresses },
     refetchInterval: "30 seconds",
     writeData: data => {
-      transferCount.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders_aggregate))
+      transferCount.data = data.pipe(
+        Option.map(d => d.v1_ibc_union_fungible_asset_orders_aggregate)
+      )
     },
     writeError: error => {
       transferCount.error = error
