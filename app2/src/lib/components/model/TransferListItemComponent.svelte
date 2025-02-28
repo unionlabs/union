@@ -39,5 +39,13 @@ const handleClick = () => {
       <Label>Time</Label>
       {DateTime.formatIso(transfer.packet_send_timestamp)}
     </div>
+    <div class="flex-1">
+      <Label>Base Token</Label>
+      {transfer.base_token} ({transfer.base_amount})
+    </div>
+    <div class="flex-1">
+      <Label>Quote Token</Label>
+      {transfer.quote_token} ({transfer.quote_amount})
+    </div>
   </div>
 {/if}
