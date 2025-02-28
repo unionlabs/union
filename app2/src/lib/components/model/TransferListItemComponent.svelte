@@ -4,6 +4,7 @@ import { Option } from "effect"
 import { DateTime } from "effect"
 import { getChain } from "$lib/schema/chain"
 import ChainComponent from "./ChainComponent.svelte"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import Label from "../ui/Label.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
@@ -44,12 +45,24 @@ const handleClick = () => {
     </div>
     <div class="flex-1">
       <Label>Base Token</Label>
-      {transfer.base_token} ({transfer.base_amount})
+      {#if Option.isSome(sourceChain)}
+        <TokenComponent 
+          chain={sourceChain.value} 
+          denom={transfer.base_token} 
+          amount={transfer.base_amount}
+        />
+      {/if}
     </div>
     {#if settingsStore.showQuoteTokens}
       <div class="flex-1">
         <Label>Quote Token</Label>
-        {transfer.quote_token} ({transfer.quote_amount})
+        {#if Option.isSome(destinationChain)}
+          <TokenComponent 
+            chain={destinationChain.value} 
+            denom={transfer.quote_token} 
+            amount={transfer.quote_amount}
+          />
+        {/if}
       </div>
     {/if}
   </div>
