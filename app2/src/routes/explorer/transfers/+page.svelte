@@ -18,6 +18,7 @@ import { flip } from "svelte/animate"
 import { fly } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
 
 import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
@@ -79,22 +80,10 @@ const onNextPage = async () => {
       {/each}
     {/if}
   </Card>
-  <div class="flex gap-6">
-    <Button class="bg-red-500" onclick={onLive}>
-      LIVE
-    </Button>
-    <div class="rounded shadow flex">
-      <button onclick={onPrevPage} class="cursor-pointer border-l border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tl rounded-bl">
-        ←
-      </button>
-      <div class="bg-zinc-900 border-t border-b border-zinc-800 flex items-center justify-center px-4 min-w-[250px]">
-        {#if Option.isSome(transferList.data) && transferList.data.value.length > 0}
-          {DateTime.formatIso(transferList.data.value[0].packet_send_timestamp)}
-        {/if}
-      </div>
-      <button onclick={onNextPage} class="cursor-pointer border-r border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tr rounded-br">
-        →
-      </button>
-    </div>
-  </div>
+  <TransferListPagination 
+    data={transferList.data}
+    {onLive}
+    {onPrevPage}
+    {onNextPage}
+  />
 </Sections>
