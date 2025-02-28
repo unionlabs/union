@@ -89,14 +89,14 @@ onMount(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label>Sender</Label>
-            <div class="font-mono text-sm break-all bg-gray-100 dark:bg-gray-800 p-2 rounded">
+            <div class="font-mono text-sm break-all bg-zinc-100 dark:bg-zinc-800 p-2 rounded">
               {transfer.sender_normalized}
             </div>
           </div>
 
           <div>
             <Label>Receiver</Label>
-            <div class="font-mono text-sm break-all bg-gray-100 dark:bg-gray-800 p-2 rounded">
+            <div class="font-mono text-sm break-all bg-zinc-100 dark:bg-zinc-800 p-2 rounded">
               {transfer.receiver_normalized}
             </div>
           </div>
@@ -127,7 +127,7 @@ onMount(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label>Send Transaction Hash</Label>
-            <div class="font-mono text-sm break-all bg-gray-100 dark:bg-gray-800 p-2 rounded">
+            <div class="font-mono text-sm break-all bg-zinc-100 dark:bg-zinc-800 p-2 rounded">
               {transfer.packet_send_transaction_hash}
             </div>
           </div>
@@ -152,14 +152,14 @@ onMount(() => {
             <Label>Traces</Label>
             <div class="space-y-2">
               {#each transfer.traces as trace}
-                <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded">
+                <div class="bg-zinc-100 dark:bg-zinc-800 p-4 rounded">
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <div class="text-sm text-gray-500">Type</div>
+                      <div class="text-sm text-zinc-500">Type</div>
                       <div class="font-mono text-sm">{trace.type}</div>
                     </div>
                     <div>
-                      <div class="text-sm text-gray-500">Chain</div>
+                      <div class="text-sm text-zinc-500">Chain</div>
                       {#if Option.isSome(getChain(chainsList, trace.chain.chain_id))}
                         <ChainComponent chain={getChain(chainsList, trace.chain.chain_id).value} />
                       {:else}
@@ -168,19 +168,19 @@ onMount(() => {
                     </div>
                     {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(trace.block_hash)}
                     <div>
-                      <div class="text-sm text-gray-500">Height</div>
+                      <div class="text-sm text-zinc-500">Height</div>
                       <div class="font-mono text-sm">{trace.height.value}</div>
                     </div>
                     <div>
-                      <div class="text-sm text-gray-500">Timestamp</div>
+                      <div class="text-sm text-zinc-500">Timestamp</div>
                       <div class="font-mono text-sm">{DateTime.formatIso(trace.timestamp.value)}</div>
                     </div>
                     <div class="col-span-2">
-                      <div class="text-sm text-gray-500">Transaction Hash</div>
+                      <div class="text-sm text-zinc-500">Transaction Hash</div>
                       <div class="font-mono text-sm break-all">{trace.transaction_hash.value}</div>
                     </div>
                     <div class="col-span-2">
-                      <div class="text-sm text-gray-500">Block Hash</div>
+                      <div class="text-sm text-zinc-500">Block Hash</div>
                       <div class="font-mono text-sm break-all">{trace.block_hash.value}</div>
                     </div>
                     {/if}
