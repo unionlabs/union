@@ -14,7 +14,6 @@ workspace = true
 [dependencies]
 aptos-move-ibc              = { workspace = true }
 aptos-rest-client           = { workspace = true }
-chain-utils                 = { workspace = true }
 enumorph                    = { workspace = true }
 ethereum-light-client-types = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }

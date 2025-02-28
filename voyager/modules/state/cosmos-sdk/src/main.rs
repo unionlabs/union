@@ -613,54 +613,6 @@ impl StateModuleServer<IbcClassic> for Module {
             }
         }
     }
-
-    // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    // async fn query_ibc_proof(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
-    //     // TODO: This is also in the fn above, move this to somewhere more appropriate (chain-utils perhaps?)
-
-    //     const IBC_STORE_PATH: &str = "store/ibc/key";
-
-    //     let path_string = path.to_string();
-
-    //     let query_result = self
-    //         .tm_client
-    //         .abci_query(
-    //             IBC_STORE_PATH,
-    //             &path_string,
-    //             // a proof at height H is provable at height H + 1
-    //             // we assume that the height passed in to this function is the intended height to prove against, thus we have to query the height - 1
-    //             Some(
-    //                 (i64::try_from(at.height()).expect("should be fine") - 1)
-    //                     .try_into()
-    //                     .expect("invalid height"),
-    //             ),
-    //             true,
-    //         )
-    //         .await
-    //         .map_err(rpc_error(
-    //             format_args!("error fetching abci query"),
-    //             Some(json!({ "height": at, "path": path })),
-    //         ))?;
-
-    //     Ok(into_value(
-    //         MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
-    //             proofs: query_result
-    //                 .response
-    //                 .proof_ops
-    //                 .unwrap()
-    //                 .ops
-    //                 .into_iter()
-    //                 .map(|op| {
-    //                     <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(
-    //                         op.data.as_slice(),
-    //                     )
-    //                     .unwrap()
-    //                 })
-    //                 .collect::<Vec<_>>(),
-    //         })
-    //         .unwrap(),
-    //     ))
-    // }
 }
 
 // NOTE: For both of the below functions, `message` as a field will override any actual message put in (i.e. `error!("foo", message = "bar")` will print as "bar", not "foo" with an extra field `message = "bar"`.

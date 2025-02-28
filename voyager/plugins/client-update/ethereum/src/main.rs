@@ -131,7 +131,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
+    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))

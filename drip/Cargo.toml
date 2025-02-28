@@ -12,7 +12,6 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-chain-utils        = { workspace = true }
 chrono             = { workspace = true, features = ["clock"] }
 clap               = { workspace = true, features = ["derive"] }
 cometbft-rpc       = { workspace = true }

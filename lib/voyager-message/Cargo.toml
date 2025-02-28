@@ -13,7 +13,6 @@ workspace = true
 
 [dependencies]
 anyhow = "1.0.93"
-# chain-utils                    = { workspace = true }
 clap                           = { workspace = true, features = ["derive"] }
 enumorph                       = { workspace = true }
 futures                        = { workspace = true }

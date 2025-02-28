@@ -273,7 +273,7 @@ impl Module {
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let commitment = self
-            .query_smart::<_, H256>(
+            .query_smart::<_, Option<H256>>(
                 &ibc_union_msg::query::QueryMsg::GetBatchPackets {
                     channel_id,
                     batch_hash,
@@ -282,7 +282,7 @@ impl Module {
             )
             .await?;
 
-        Ok(commitment)
+        Ok(commitment.flatten())
     }
 
     #[instrument(
@@ -301,7 +301,7 @@ impl Module {
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let commitment = self
-            .query_smart::<_, H256>(
+            .query_smart::<_, Option<H256>>(
                 &ibc_union_msg::query::QueryMsg::GetBatchReceipts {
                     channel_id,
                     batch_hash,
@@ -310,7 +310,7 @@ impl Module {
             )
             .await?;
 
-        Ok(commitment)
+        Ok(commitment.flatten())
     }
 }
 

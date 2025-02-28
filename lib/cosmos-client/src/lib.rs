@@ -1,8 +1,11 @@
 #![warn(clippy::unwrap_used)]
 #![allow(async_fn_in_trait)]
 
+use std::num::NonZeroU32;
+
 use cometbft_rpc::{
-    rpc_types::{BroadcastTxSyncResponse, GrpcAbciQueryError, TxResponse},
+    rpc_types::{GrpcAbciQueryError, TxResponse},
+    types::code::Code,
     JsonRpcError,
 };
 use protos::cosmos::base::abci;
@@ -156,8 +159,12 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
             codespace = %response.codespace,
         );
 
-        if response.code.is_err() {
-            return Err(BroadcastTxCommitError::TxFailed(response));
+        if let Code::Err(error_code) = response.code {
+            return Err(BroadcastTxCommitError::TxFailed {
+                codespace: response.codespace,
+                error_code,
+                log: response.log,
+            });
         };
 
         let mut target_height = self.rpc.client().block(None).await?.block.header.height;
@@ -176,13 +183,16 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
             let tx_inclusion = self.rpc.client().tx(tx_hash, false).await;
 
             match tx_inclusion {
-                Ok(tx) => {
-                    if tx.tx_result.code == 0 {
-                        break Ok((tx_hash, tx));
-                    } else {
-                        return Err(BroadcastTxCommitError::TxFailed(response));
+                Ok(tx) => match tx.tx_result.code {
+                    Code::Ok => break Ok((tx_hash, tx)),
+                    Code::Err(error_code) => {
+                        return Err(BroadcastTxCommitError::TxFailed {
+                            codespace: response.codespace,
+                            error_code,
+                            log: response.log,
+                        })
                     }
-                }
+                },
                 Err(source) if i > 5 => {
                     return Err(BroadcastTxCommitError::Inclusion {
                         attempts: i,
@@ -313,11 +323,12 @@ pub enum BroadcastTxCommitError {
     SimulateTx(#[from] SimulateTxError),
     #[error("jsonrpc error")]
     JsonRpc(#[from] JsonRpcError),
-    #[error(
-        "tx failed: code={}, codespace={}, data={}, log={}",
-        .0.code, .0.codespace, .0.data, .0.log
-    )]
-    TxFailed(BroadcastTxSyncResponse),
+    #[error("tx failed: code={error_code}, codespace={codespace}, log={log}")]
+    TxFailed {
+        codespace: String,
+        error_code: NonZeroU32,
+        log: String,
+    },
     #[error("tx inclusion couldn't be retrieved after {attempts} attempt(s) (tx hash: {tx_hash})")]
     Inclusion {
         attempts: usize,

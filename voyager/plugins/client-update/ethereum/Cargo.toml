@@ -16,7 +16,6 @@ alloy                       = { workspace = true, features = ["rpc", "rpc-types"
 beacon-api                  = { workspace = true }
 beacon-api-types            = { workspace = true, features = ["serde"] }
 bitvec                      = { workspace = true }
-chain-utils                 = { workspace = true }
 enumorph                    = { workspace = true }
 ethereum-light-client-types = { workspace = true, features = ["serde"] }
 futures                     = { workspace = true }

@@ -20,6 +20,7 @@ use voyager_message::{
     core::{ChainId, ClientType},
     ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    vm::BoxDynError,
     ClientBootstrapModule,
 };
 
@@ -60,7 +61,7 @@ impl ClientBootstrapModule for Module {
     async fn new(
         config: Self::Config,
         info: ClientBootstrapModuleInfo,
-    ) -> Result<Self, chain_utils::BoxDynError> {
+    ) -> Result<Self, BoxDynError> {
         let aptos_client = aptos_rest_client::Client::new(config.aptos_rest_api.parse().unwrap());
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;

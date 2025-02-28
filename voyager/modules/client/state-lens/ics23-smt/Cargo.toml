@@ -13,7 +13,6 @@ workspace = true
 
 [dependencies]
 alloy                                   = { workspace = true, features = ["sol-types"] }
-chain-utils                             = { workspace = true }
 enumorph                                = { workspace = true }
 ethereum-light-client-types             = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 futures                                 = { workspace = true }

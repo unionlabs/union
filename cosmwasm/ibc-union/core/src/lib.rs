@@ -124,9 +124,7 @@ pub enum ContractError {
 }
 
 impl ContractErrorKind {
-    pub fn parse_from_error_message(s: &str) -> Option<Self> {
-        let (err, _) = s.split_once(' ')?;
-
-        err.strip_prefix("IBC_UNION_ERR_")?.parse().ok()
+    pub fn parse(s: &str) -> Option<Self> {
+        s.strip_prefix("IBC_UNION_ERR_")?.parse().ok()
     }
 }

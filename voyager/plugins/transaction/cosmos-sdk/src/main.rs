@@ -5,22 +5,18 @@ use std::{
     collections::{HashMap, HashSet, VecDeque},
     num::NonZeroU32,
     panic::AssertUnwindSafe,
+    sync::LazyLock,
 };
 
-use chain_utils::{
-    cosmos_sdk::{
-        cosmos_sdk_error::{ChannelError, ClientError, CosmosSdkError, IbcWasmError, SdkError},
-        CosmosKeyring,
-    },
-    keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry},
-    BoxDynError,
-};
+use cometbft_rpc::rpc_types::GrpcAbciQueryError;
+use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use cosmos_client::{
     gas::GasConfig,
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
-    BroadcastTxCommitError, TxClient,
+    BroadcastTxCommitError, FetchAccountInfoError, SimulateTxError, TxClient,
 };
+use ibc_union::ContractErrorKind;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -28,26 +24,13 @@ use jsonrpsee::{
 };
 use prost::Message;
 use serde::{Deserialize, Serialize};
-use sha2::Digest;
 use tracing::{debug, error, info, instrument, trace, warn};
 use unionlabs::{
     self,
     bech32::Bech32,
-    bounded::BoundedI64,
-    cosmos::{
-        auth::base_account::BaseAccount,
-        base::abci::gas_info::GasInfo,
-        crypto::{secp256k1, AnyPubKey},
-        tx::{
-            auth_info::AuthInfo, mode_info::ModeInfo, sign_doc::SignDoc, signer_info::SignerInfo,
-            signing::sign_info::SignMode, tx::Tx, tx_body::TxBody, tx_raw::TxRaw,
-        },
-    },
-    encoding::{EncodeAs, Proto},
-    google::protobuf::any::{mk_any, Any},
+    google::protobuf::any::mk_any,
     option_unwrap,
     primitives::{Bytes, H160, H256},
-    signer::CosmosSigner,
     ErrorReporter,
 };
 use voyager_message::{
@@ -55,9 +38,9 @@ use voyager_message::{
     data::Data,
     hook::SubmitTxHook,
     module::{PluginInfo, PluginServer},
+    vm::{call, noop, pass::PassResult, seq, BoxDynError, Op, Visit},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, conc, defer, noop, now, pass::PassResult, seq, Op, Visit};
 
 use crate::{
     call::{IbcMessage, ModuleCall},
@@ -81,7 +64,7 @@ pub struct Module {
     pub rpc: Rpc,
     pub gas_config: GasConfig,
     pub bech32_prefix: String,
-    pub fatal_errors: HashSet<(String, NonZeroU32)>,
+    pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,7 +77,7 @@ pub struct Config {
     pub gas_config: GasConfig,
     /// A list of (codespace, code) tuples that are to be considered non-recoverable.
     #[serde(default)]
-    pub fatal_errors: HashSet<(String, NonZeroU32)>,
+    pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
 }
 
 const FATAL_ERRORS: &[(&str, NonZeroU32)] = &[
@@ -103,6 +86,15 @@ const FATAL_ERRORS: &[(&str, NonZeroU32)] = &[
     // https://github.com/cosmos/ibc-go/blob/7f89b7dd8796eca1bfe07f8a7833f3ce2d7a8e04/modules/core/02-client/types/errors.go
     ("client", option_unwrap!(NonZeroU32::new(4))),
 ];
+
+static ACCOUNT_SEQUENCE_ERRORS: LazyLock<HashSet<(&str, NonZeroU32)>> = LazyLock::new(|| {
+    [
+        // ("sdk", option_unwrap!(NonZeroU32::new(6))),
+        ("sdk", option_unwrap!(NonZeroU32::new(32))),
+    ]
+    .into_iter()
+    .collect()
+});
 
 impl Plugin for Module {
     type Call = ModuleCall;
@@ -124,10 +116,8 @@ impl Plugin for Module {
                 None,
                 false,
             )
-            .await
-            .unwrap()
-            .into_result()
-            .unwrap()
+            .await?
+            .into_result()?
             .unwrap()
             .bech32_prefix;
 
@@ -156,7 +146,7 @@ impl Plugin for Module {
                 .chain(
                     FATAL_ERRORS
                         .iter()
-                        .map(|(codespace, code)| ((*codespace).to_owned(), *code)),
+                        .map(|(codespace, code)| (((*codespace).to_owned(), *code), None)),
                 )
                 .collect(),
         })
@@ -338,104 +328,151 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[allow(clippy::collapsible_match)]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
-            ModuleCall::SubmitTransaction(msgs) => {
-                let mut out = vec![];
-
-                let batch_submission_result = self.do_send_transaction(msgs.to_vec()).await;
+            ModuleCall::SubmitTransaction(mut msgs) => {
+                let batch_submission_result = self.do_send_transaction(msgs.clone()).await;
 
                 match batch_submission_result {
                     None => return Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
                     Some(Ok(())) => return Ok(noop()),
-                    Some(Err(err)) => match err {
-                        _ if let Some(err) = err.as_json_rpc_error() => {
-                            return Err(ErrorObject::owned(
-                                -1,
-                                ErrorReporter(err).with_message("jsonrpc error"),
-                                None::<()>,
-                            ))
-                        }
-                        _ if let Some(err) = err.as_grpc_abci_query_error() => {
-                            if err.log.contains("account sequence mismatch") {
+                    Some(Err(err)) => {
+                        dbg!(&err);
+
+                        let mut split_msgs = false;
+
+                        match err {
+                            _ if let Some(err) = err.as_json_rpc_error() => {
                                 return Err(ErrorObject::owned(
                                     -1,
-                                    "account sequence mismatch",
+                                    ErrorReporter(err).with_message("jsonrpc error"),
+                                    None::<()>,
+                                ))
+                            }
+
+                            BroadcastTxCommitError::FetchAccountInfo(
+                                FetchAccountInfoError::Query(GrpcAbciQueryError {
+                                    error_code,
+                                    codespace,
+                                    log,
+                                }),
+                            )
+                            | BroadcastTxCommitError::SimulateTx(SimulateTxError::Query(
+                                GrpcAbciQueryError {
+                                    error_code,
+                                    codespace,
+                                    log,
+                                },
+                            ))
+                            | BroadcastTxCommitError::TxFailed {
+                                codespace,
+                                error_code,
+                                log,
+                            } if ACCOUNT_SEQUENCE_ERRORS.contains(&(&codespace, error_code))
+                                || log.contains("account sequence mismatch") =>
+                            {
+                                return Err(ErrorObject::owned(
+                                    -1,
+                                    format!("account sequence mismatch ({codespace}, {error_code}): {log}"),
                                     None::<()>,
                                 ));
                             }
-                        }
-                        BroadcastTxCommitError::TxFailed(tx_res) => {
-                            if self.fatal_errors.contains(&(
-                                tx_res.codespace,
-                                *tx_res
-                                    .code
-                                    .as_err()
-                                    .expect("failed tx has failure error code"),
-                            )) {
-                                // deal with fatal error
-                            } else {
-                                // ???
-                            }
-                        }
-                        _ => {
-                            return Err(ErrorObject::owned(
-                                -1,
-                                ErrorReporter(err).with_message("jsonrpc error"),
-                                None::<()>,
+
+                            BroadcastTxCommitError::FetchAccountInfo(
+                                FetchAccountInfoError::Query(GrpcAbciQueryError {
+                                    error_code,
+                                    codespace,
+                                    log,
+                                }),
+                            )
+                            | BroadcastTxCommitError::SimulateTx(SimulateTxError::Query(
+                                GrpcAbciQueryError {
+                                    error_code,
+                                    codespace,
+                                    log,
+                                },
                             ))
+                            | BroadcastTxCommitError::TxFailed {
+                                codespace,
+                                error_code,
+                                log,
+                            } => {
+                                if let Some((msg_idx, log)) = parse_msg_idx_from_log(&log) {
+                                    info!(msg_idx, %log, "tx failed");
+
+                                    match self.fatal_errors.get(&(codespace.clone(), error_code)) {
+                                        // no msg
+                                        Some(None) => {
+                                            error!(codespace, error_code, %log, "fatal error");
+                                        }
+                                        // provided msg
+                                        Some(Some(msg)) => {
+                                            error!(codespace, error_code, %log, "fatal error: {msg}");
+                                        }
+                                        // unknown error, retry
+                                        None => match parse_wasm_failure(log) {
+                                            Some(err) => match err {
+                                                ContractErrorKind::ReceivedTimedOutPacketHeight => {
+                                                    info!("packet timed out (height)");
+                                                }
+                                                ContractErrorKind::ReceivedTimedOutPacketTimestamp => {
+                                                    info!("packet timed out (timestamp)");
+                                                }
+                                                // ContractErrorKind::PacketNotReceived => {}
+                                                ContractErrorKind::AlreadyAcknowledged => {
+                                                    info!("packet already acknowledged");
+                                                }
+                                                ContractErrorKind::PacketCommitmentNotFound => {
+                                                    info!("packet commitment not found");
+                                                }
+                                                _ => {
+                                                    warn!("ibc-union error ({err}): {log}");
+                                                    split_msgs = true;
+                                                }
+                                            },
+                                            None => {
+                                                warn!("error submitting transaction ({codespace}, {error_code}): {log}");
+                                                split_msgs = true;
+                                            }
+                                        },
+                                    }
+
+                                    if !split_msgs {
+                                        msgs.remove(msg_idx);
+
+                                        if msgs.is_empty() {
+                                            Ok(noop())
+                                        } else {
+                                            Ok(call(PluginMessage::new(
+                                                self.plugin_name(),
+                                                ModuleCall::SubmitTransaction(msgs),
+                                            )))
+                                        }
+                                    } else {
+                                        Ok(seq(msgs.into_iter().map(|msg| {
+                                            call(PluginMessage::new(
+                                                self.plugin_name(),
+                                                ModuleCall::SubmitTransaction(vec![msg]),
+                                            ))
+                                        })))
+                                    }
+                                } else {
+                                    warn!("unable to parse message index from tx failure ({codespace}, {error_code}): {log}");
+
+                                    Ok(seq(msgs.into_iter().map(|msg| {
+                                        call(PluginMessage::new(
+                                            self.plugin_name(),
+                                            ModuleCall::SubmitTransaction(vec![msg]),
+                                        ))
+                                    })))
+                                }
+                            }
+                            _ => Err(ErrorObject::owned(
+                                -1,
+                                ErrorReporter(err).with_message("error submitting tx"),
+                                None::<()>,
+                            )),
                         }
-                    },
+                    }
                 }
-
-                // for msgs in msgs.chunks(1) {
-                //     let res = self
-                //         .do_send_transaction(msgs.to_vec())
-                //         .await
-                //         .map_err(|err| match &err {
-                //             BroadcastTxCommitError::Tx(tx_err) => match tx_err {
-                //                 CosmosSdkError::CapabilityError(capability_error) => {
-                //                     ErrorObject::owned(
-                //                         FATAL_JSONRPC_ERROR_CODE,
-                //                         ErrorReporter(capability_error).to_string(),
-                //                         None::<()>,
-                //                     )
-                //                 }
-                //                 CosmosSdkError::IbcWasmError(IbcWasmError::ErrInvalidChecksum) => {
-                //                     ErrorObject::owned(
-                //                         FATAL_JSONRPC_ERROR_CODE,
-                //                         ErrorReporter(err).to_string(),
-                //                         None::<()>,
-                //                     )
-                //                 }
-                //                 CosmosSdkError::ClientError(ClientError::ErrClientNotFound) => {
-                //                     ErrorObject::owned(
-                //                         FATAL_JSONRPC_ERROR_CODE,
-                //                         ErrorReporter(err).to_string(),
-                //                         None::<()>,
-                //                     )
-                //                 }
-                //                 _ => ErrorObject::owned(
-                //                     -1,
-                //                     ErrorReporter(err).to_string(),
-                //                     None::<()>,
-                //                 ),
-                //             },
-                //             BroadcastTxCommitError::SimulateTx(err) => ErrorObject::owned(
-                //                 FATAL_JSONRPC_ERROR_CODE,
-                //                 format!("tx simulation failed: {}", ErrorReporter(err)),
-                //                 None::<()>,
-                //             ),
-                //             BroadcastTxCommitError::IbcUnionError(_) => ErrorObject::owned(
-                //                 FATAL_JSONRPC_ERROR_CODE,
-                //                 ErrorReporter(err).to_string(),
-                //                 None::<()>,
-                //             ),
-                //             _ => ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>),
-                //         })?;
-
-                //     out.push(res);
-                // }
-
-                Ok(conc(out))
             }
         }
     }
@@ -871,4 +908,22 @@ fn parse_port_id(bz: Vec<u8>) -> RpcResult<String> {
             None::<()>,
         )
     })
+}
+
+// rpc error: code = Unknown desc = failed to execute message; message index: 0: IBC_UNION_ERR_PACKET_COMMITMENT_NOT_FOUND packet commitment not found: execute wasm contract failed [CosmWasm/wasmd@v0.53.2/x/wasm/keeper/keeper.go:436] with gas used: '287090'
+fn parse_wasm_failure(log: &str) -> Option<ContractErrorKind> {
+    log.split(' ').find_map(ContractErrorKind::parse)
+}
+
+fn parse_msg_idx_from_log(log: &str) -> Option<(usize, &str)> {
+    let (_, log) = log.split_once("message index: ")?;
+    let (idx, log) = log.split_once(':')?;
+    Some((idx.parse().ok()?, log))
+}
+
+#[test]
+fn test_parse_wasm_failure() {
+    let (idx, log) = parse_msg_idx_from_log("rpc error: code = Unknown desc = failed to execute message; message index: 0: IBC_UNION_ERR_PACKET_COMMITMENT_NOT_FOUND packet commitment not found: execute wasm contract failed [CosmWasm/wasmd@v0.53.2/x/wasm/keeper/keeper.go:436] with gas used: '287090'").unwrap();
+
+    dbg!(idx, parse_wasm_failure(log));
 }
