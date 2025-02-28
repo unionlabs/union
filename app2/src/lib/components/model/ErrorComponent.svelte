@@ -50,7 +50,7 @@ function getUserFriendlyMessage(error: Props["error"]): string {
       <section class="mt-4">
         <h3 class="text-lg font-bold">Error Type</h3>
         <pre>{error._tag}</pre>
-        <p class="mt-2">{error.message}</p>
+        <pre class="mt-2">{error.message}</pre>
       </section>
 
       {#if error.cause}

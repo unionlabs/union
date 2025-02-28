@@ -2,11 +2,12 @@
 import {
   transferListLatestAddressQuery,
   transferListPageGtAddressQuery,
-  transferListPageLtAddressQuery
+  transferListPageLtAddressQuery,
+  transferCountForAddressesQuery
 } from "$lib/queries/transfer-list-address.svelte"
 import { DateTime, Effect, Fiber, Option } from "effect"
 import { onMount } from "svelte"
-import { transferListAddress } from "$lib/stores/transfers.svelte"
+import { transferListAddress, transferCount } from "$lib/stores/transfers.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
@@ -18,7 +19,8 @@ import TransferListItemComponent from "$lib/components/model/TransferListItemCom
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
 
-let fiber: Fiber.Fiber<any, any>
+let transferFiber: Fiber.Fiber<any, any>
+let countFiber: Fiber.Fiber<any, any>
 let fiberLock = false
 
 $effect(() => {
@@ -31,26 +33,35 @@ $effect(() => {
 const fetchLive = async () => {
   if (fiberLock) return
   fiberLock = true
-  if (fiber) {
-    await Effect.runPromise(Fiber.interrupt(fiber))
+  if (transferFiber) {
+    await Effect.runPromise(Fiber.interrupt(transferFiber))
   }
   const addresses = wallets.getCanonicalByteAddressList()
   if (addresses.length > 0) {
-    fiber = Effect.runFork(transferListLatestAddressQuery(addresses, settingsStore.pageLimit))
+    transferFiber = Effect.runFork(
+      transferListLatestAddressQuery(addresses, settingsStore.pageLimit)
+    )
+    countFiber = Effect.runFork(transferCountForAddressesQuery(addresses))
   }
   fiberLock = false
 }
 
 onMount(() => {
-  return () => Effect.runPromise(Fiber.interrupt(fiber))
+  return async () => {
+    if (transferFiber) await Effect.runPromise(Fiber.interrupt(transferFiber))
+    if (countFiber) await Effect.runPromise(Fiber.interrupt(countFiber))
+  }
 })
 
 const onLive = async () => {
   if (Option.isSome(transferListAddress.data) && Option.isSome(wallets.evmAddress)) {
     transferListAddress.data = Option.none()
-    await Effect.runPromise(Fiber.interrupt(fiber))
+    await Effect.runPromise(Fiber.interrupt(transferFiber))
     const addresses = wallets.getCanonicalByteAddressList()
-    fiber = Effect.runFork(transferListLatestAddressQuery(addresses, settingsStore.pageLimit))
+    transferFiber = Effect.runFork(
+      transferListLatestAddressQuery(addresses, settingsStore.pageLimit)
+    )
+    countFiber = Effect.runFork(transferCountForAddressesQuery(addresses))
   }
 }
 
@@ -61,8 +72,8 @@ const onPrevPage = async () => {
     const addresses = wallets.getCanonicalByteAddressList()
     if (addresses.length === 0) return
     transferListAddress.data = Option.none()
-    await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(
+    await Effect.runPromise(Fiber.interrupt(transferFiber))
+    transferFiber = Effect.runFork(
       transferListPageGtAddressQuery(firstSortOrder, addresses, settingsStore.pageLimit)
     )
   }
@@ -75,8 +86,8 @@ const onNextPage = async () => {
     const addresses = wallets.getCanonicalByteAddressList()
     if (addresses.length === 0) return
     transferListAddress.data = Option.none()
-    await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(
+    await Effect.runPromise(Fiber.interrupt(transferFiber))
+    transferFiber = Effect.runFork(
       transferListPageLtAddressQuery(lastSortOrder, addresses, settingsStore.pageLimit)
     )
   }
@@ -86,11 +97,20 @@ const onNextPage = async () => {
 <Sections>
   <section>
     <h1 class="font-bold text-4xl">Your Transfers</h1>
-    <p>These are the transfers from your connected wallets</p>
+    <p class="flex gap-1">
+      {#if Option.isSome(transferCount.data)}
+        You made <span class="text-sky-400 font-bold">{transferCount.data.value.aggregate.count}</span> transfers so far.
+      {:else}
+        These are the transfers from your connected wallets
+      {/if}
+    </p>
   </section>
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferListAddress.error)}
       <ErrorComponent error={transferListAddress.error.value}/>
+    {/if}
+    {#if Option.isSome(transferCount.error)}
+      <ErrorComponent error={transferCount.error.value}/>
     {/if}
     {#if wallets.getCanonicalByteAddressList().length === 0}
       <NoWalletConnected/>

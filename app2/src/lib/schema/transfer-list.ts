@@ -17,6 +17,9 @@ export class TransferListItem extends Schema.Class<TransferListItem>("TransferLi
 
 export const TransferList = Schema.Array(TransferListItem)
 
-export const TransferCount = Schema.Struct({
+export const AggregateCount = Schema.Struct({
   count: Schema.Number
+})
+export const TransferCount = Schema.Struct({
+  aggregate: AggregateCount
 })
