@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Label from "../ui/Label.svelte"
-  import Skeleton from "../ui/Skeleton.svelte"
+import Label from "../ui/Label.svelte"
+import Skeleton from "../ui/Skeleton.svelte"
 </script>
 
 <div class="flex gap-8 px-4 py-2 h-[60px]">

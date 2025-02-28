@@ -38,7 +38,9 @@ const fetchLive = async () => {
     await Effect.runPromise(Fiber.interrupt(fiber))
   }
   if (Option.isSome(wallets.evmAddress)) {
-    fiber = Effect.runFork(transferListLatestAddressQuery(wallets.evmAddress.value, settingsStore.pageLimit))
+    fiber = Effect.runFork(
+      transferListLatestAddressQuery(wallets.evmAddress.value, settingsStore.pageLimit)
+    )
   }
   fiberLock = false
 }
@@ -51,7 +53,9 @@ const onLive = async () => {
   if (Option.isSome(transferListAddress.data) && Option.isSome(wallets.evmAddress)) {
     transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListLatestAddressQuery(wallets.evmAddress.value, settingsStore.pageLimit))
+    fiber = Effect.runFork(
+      transferListLatestAddressQuery(wallets.evmAddress.value, settingsStore.pageLimit)
+    )
   }
 }
 
@@ -62,7 +66,11 @@ const onPrevPage = async () => {
     transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
     fiber = Effect.runFork(
-      transferListPageGtAddressQuery(firstSortOrder, wallets.evmAddress.value, settingsStore.pageLimit)
+      transferListPageGtAddressQuery(
+        firstSortOrder,
+        wallets.evmAddress.value,
+        settingsStore.pageLimit
+      )
     )
   }
 }
@@ -74,7 +82,11 @@ const onNextPage = async () => {
     transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
     fiber = Effect.runFork(
-      transferListPageLtAddressQuery(lastSortOrder, wallets.evmAddress.value, settingsStore.pageLimit)
+      transferListPageLtAddressQuery(
+        lastSortOrder,
+        wallets.evmAddress.value,
+        settingsStore.pageLimit
+      )
     )
   }
 }

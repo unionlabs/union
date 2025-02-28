@@ -1,13 +1,13 @@
 <script lang="ts">
-  import type { TransferListItem } from "$lib/schema/transfer-list"
-  import { Option } from "effect"
-  import { DateTime } from "effect"
-  import { getChain } from "$lib/schema/chain"
-  import ChainComponent from "./ChainComponent.svelte"
-  import Label from "../ui/Label.svelte"
-  import { chains } from "$lib/stores/chains.svelte"
+import type { TransferListItem } from "$lib/schema/transfer-list"
+import { Option } from "effect"
+import { DateTime } from "effect"
+import { getChain } from "$lib/schema/chain"
+import ChainComponent from "./ChainComponent.svelte"
+import Label from "../ui/Label.svelte"
+import { chains } from "$lib/stores/chains.svelte"
 
-  const { transfer }: { transfer: TransferListItem } = $props()
+const { transfer }: { transfer: TransferListItem } = $props()
 </script>
 
 {#if Option.isSome(chains.data)}

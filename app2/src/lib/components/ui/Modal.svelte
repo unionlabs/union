@@ -1,47 +1,47 @@
 <script lang="ts">
-  import { onMount } from "svelte"
-  import Card from "./Card.svelte"
-  import type { HTMLAttributes } from "svelte/elements"
-  import { cn } from "$lib/utils"
-  import type { Snippet } from "svelte"
+import { onMount } from "svelte"
+import Card from "./Card.svelte"
+import type { HTMLAttributes } from "svelte/elements"
+import { cn } from "$lib/utils"
+import type { Snippet } from "svelte"
 
-  type Props = HTMLAttributes<HTMLDivElement> & {
-    children: Snippet
-    isOpen: boolean
-    onClose: () => void
-    class?: string
-    showCloseButton?: boolean
-    divided?: boolean
+type Props = HTMLAttributes<HTMLDivElement> & {
+  children: Snippet
+  isOpen: boolean
+  onClose: () => void
+  class?: string
+  showCloseButton?: boolean
+  divided?: boolean
+}
+
+const {
+  children,
+  isOpen,
+  onClose,
+  class: className = "",
+  showCloseButton = true,
+  divided = false,
+  ...rest
+}: Props = $props()
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    onClose()
   }
+}
 
-  const { 
-    children,
-    isOpen,
-    onClose,
-    class: className = "",
-    showCloseButton = true,
-    divided = false,
-    ...rest
-  }: Props = $props()
-
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape") {
-      onClose()
-    }
+function handleBackdropClick(event: MouseEvent) {
+  if (event.target === event.currentTarget) {
+    onClose()
   }
+}
 
-  function handleBackdropClick(event: MouseEvent) {
-    if (event.target === event.currentTarget) {
-      onClose()
-    }
+onMount(() => {
+  document.addEventListener("keydown", handleKeydown)
+  return () => {
+    document.removeEventListener("keydown", handleKeydown)
   }
-
-  onMount(() => {
-    document.addEventListener("keydown", handleKeydown)
-    return () => {
-      document.removeEventListener("keydown", handleKeydown)
-    }
-  })
+})
 </script>
 
 {#if isOpen}
