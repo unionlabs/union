@@ -48,8 +48,9 @@ const cliArgs = parseArgs({
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const MUNO_DENOM = "0x6d756e6f"
-const AMOUNT = 15n
+const MUNO_DENOM = "muno"
+const MUNO_HEX = "0x6d756e6f"
+const AMOUNT = 1n
 const RECEIVER = "0x4d8a66ece11f6352224942bd1dabc456b4bb5316124f02b9a7b6292ad61f7777"
 const SOURCE_CHAIN_ID = "union-testnet-9"
 const DESTINATION_CHAIN_ID = "250"
@@ -57,43 +58,27 @@ const DESTINATION_CHAIN_ID = "250"
 const channels = await getRecommendedChannels()
 
 let channel_info = getChannelInfo(SOURCE_CHAIN_ID, DESTINATION_CHAIN_ID, channels)
-if (channel_info === null || true) {
-  // Creating movement channel since its not found in hubble.
-  channel_info = {
-    source_chain_id: SOURCE_CHAIN_ID,
-    source_port_id:
-      "756e696f6e3178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c32343763717a3636396565",
-    source_channel_id: 27,
-    source_connection_id: 36,
-    destination_chain_id: DESTINATION_CHAIN_ID,
-    destination_port_id: "0x80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
-    destination_channel_id: 2,
-    destination_connection_id: 1
-  }
-}
 
+if (channel_info === null) {
+  consola.info("no channel found")
+  process.exit(1)
+}
 consola.info("channel", channel_info)
 
-let quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, MUNO_DENOM, channel_info)
-// if (quoteToken.isErr()) {
-//   consola.info("could not get quote token")
-//   consola.error(quoteToken.error)
-//   process.exit(1)
-// }
-console.info("quote token", quoteToken)
-process.exit(1)
-// manual quote token:
-quoteToken = {
-  type: "UNWRAPPED",
-  value: {
-    quote_token: `0x188b41399546602e35658962477fdf72bd52443474a899d9d48636e8bc299c2c`
-  }
-}
+let quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, MUNO_HEX, channel_info
 
-// if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
-//   consola.error("No quote token available")
-//   process.exit(1)
-// }
+)
+if (quoteToken.isErr()) {
+  consola.info("could not get quote token")
+  consola.error(quoteToken.error)
+  process.exit(1)
+}
+console.info("quote token", quoteToken)
+
+if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
+  consola.error("No quote token available")
+  process.exit(1)
+}
 consola.info("quote token", quoteToken.value)
 
 if (!PRIVATE_KEY) {
@@ -101,10 +86,6 @@ if (!PRIVATE_KEY) {
   process.exit(1)
 }
 
-if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
-  consola.error("No quote token available")
-  process.exit(1)
-}
 
 const unionClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
