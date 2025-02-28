@@ -20,7 +20,11 @@ const packetHash = $page.params.packet_hash
 
 onMount(() => {
   fiber = Effect.runFork(transferByPacketHashQuery(packetHash))
-  return () => Effect.runPromise(Fiber.interrupt(fiber))
+  return async () => {
+    await Effect.runPromise(Fiber.interrupt(fiber))
+    transferDetails.data = Option.none()
+    transferDetails.error = Option.none()
+  }
 })
 </script>
 
