@@ -1,9 +1,9 @@
 import { createQueryGraphql } from "$lib/utils/queries"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
-import { transferListAddress } from "$lib/stores/transfers.svelte"
+import { transferListAddress, transferCount } from "$lib/stores/transfers.svelte"
 import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
-import { TransferList } from "$lib/schema/transfer-list"
+import { TransferCount, TransferList } from "$lib/schema/transfer-list"
 import type { SortOrder } from "$lib/schema/sort-order"
 import type { AddressCanonicalBytes } from "$lib/schema/address"
 
@@ -83,6 +83,39 @@ export const transferListPageLtAddressQuery = (
     },
     writeError: error => {
       transferListAddress.error = error
+    }
+  })
+
+export const transferCountForAddressesQuery = (
+  addresses: Array<typeof AddressCanonicalBytes.Type>
+) =>
+  createQueryGraphql({
+    schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders_aggregate: TransferCount }),
+    document: graphql(
+      `
+    query TransferCountForAddresses($addresses: [String!]!) @cached(ttl: 30) {
+      v1_ibc_union_fungible_asset_orders_aggregate(
+        where: {
+          _or: [
+            { sender_normalized: { _in: $addresses } },
+            { receiver_normalized: { _in: $addresses } }
+          ]
+        }
+      ) {
+        aggregate {
+          count
+        }
+      }
+    }
+  `
+    ),
+    variables: { addresses },
+    refetchInterval: "30 seconds",
+    writeData: data => {
+      transferCount.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders_aggregate))
+    },
+    writeError: error => {
+      transferCount.error = error
     }
   })
 

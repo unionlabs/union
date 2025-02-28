@@ -977,6 +977,26 @@ type query_root {
   ): [v1_ibc_union_fungible_asset_orders!]!
 
   """
+  fetch aggregated fields from the table: "v1_ibc_union.fungible_asset_orders"
+  """
+  v1_ibc_union_fungible_asset_orders_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_fungible_asset_orders_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_fungible_asset_orders_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_fungible_asset_orders_bool_exp
+  ): v1_ibc_union_fungible_asset_orders_aggregate!
+
+  """
   fetch data from the table: "v1_ibc_union.health_check"
   """
   v1_ibc_union_health_check(
@@ -2118,6 +2138,26 @@ type subscription_root {
     """filter the rows returned"""
     where: v1_ibc_union_fungible_asset_orders_bool_exp
   ): [v1_ibc_union_fungible_asset_orders!]!
+
+  """
+  fetch aggregated fields from the table: "v1_ibc_union.fungible_asset_orders"
+  """
+  v1_ibc_union_fungible_asset_orders_aggregate(
+    """distinct select on columns"""
+    distinct_on: [v1_ibc_union_fungible_asset_orders_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v1_ibc_union_fungible_asset_orders_order_by!]
+
+    """filter the rows returned"""
+    where: v1_ibc_union_fungible_asset_orders_bool_exp
+  ): v1_ibc_union_fungible_asset_orders_aggregate!
 
   """
   fetch data from the table in a streaming manner: "v1_ibc_union.fungible_asset_orders"
@@ -4729,7 +4769,7 @@ type v1_ibc_union_fungible_asset_orders {
   packet_ack_transaction_event_index: bigint
   packet_ack_transaction_hash: String
   packet_ack_transaction_index: bigint
-  packet_hash: bytea
+  packet_hash: String
   packet_recv_block_hash: String
   packet_recv_event_index: bigint
   packet_recv_height: bigint
@@ -4804,6 +4844,60 @@ type v1_ibc_union_fungible_asset_orders {
 }
 
 """
+aggregated selection of "v1_ibc_union.fungible_asset_orders"
+"""
+type v1_ibc_union_fungible_asset_orders_aggregate {
+  aggregate: v1_ibc_union_fungible_asset_orders_aggregate_fields
+  nodes: [v1_ibc_union_fungible_asset_orders!]!
+}
+
+"""
+aggregate fields of "v1_ibc_union.fungible_asset_orders"
+"""
+type v1_ibc_union_fungible_asset_orders_aggregate_fields {
+  avg: v1_ibc_union_fungible_asset_orders_avg_fields
+  count(columns: [v1_ibc_union_fungible_asset_orders_select_column!], distinct: Boolean): Int!
+  max: v1_ibc_union_fungible_asset_orders_max_fields
+  min: v1_ibc_union_fungible_asset_orders_min_fields
+  stddev: v1_ibc_union_fungible_asset_orders_stddev_fields
+  stddev_pop: v1_ibc_union_fungible_asset_orders_stddev_pop_fields
+  stddev_samp: v1_ibc_union_fungible_asset_orders_stddev_samp_fields
+  sum: v1_ibc_union_fungible_asset_orders_sum_fields
+  var_pop: v1_ibc_union_fungible_asset_orders_var_pop_fields
+  var_samp: v1_ibc_union_fungible_asset_orders_var_samp_fields
+  variance: v1_ibc_union_fungible_asset_orders_variance_fields
+}
+
+"""aggregate avg on columns"""
+type v1_ibc_union_fungible_asset_orders_avg_fields {
+  base_token_decimals: Float
+  destination_channel_id: Float
+  destination_client_id: Float
+  destination_connection_id: Float
+  packet_ack_event_index: Float
+  packet_ack_height: Float
+  packet_ack_transaction_event_index: Float
+  packet_ack_transaction_index: Float
+  packet_recv_event_index: Float
+  packet_recv_height: Float
+  packet_recv_transaction_event_index: Float
+  packet_recv_transaction_index: Float
+  packet_send_event_index: Float
+  packet_send_height: Float
+  packet_send_transaction_event_index: Float
+  packet_send_transaction_index: Float
+  source_channel_id: Float
+  source_client_id: Float
+  source_connection_id: Float
+  timeout_height: Float
+  timeout_timestamp: Float
+  write_ack_event_index: Float
+  write_ack_height: Float
+  write_ack_transaction_event_index: Float
+  write_ack_transaction_index: Float
+}
+
+"""
 Boolean expression to filter rows from the table "v1_ibc_union.fungible_asset_orders". All fields are combined with a logical 'AND'.
 """
 input v1_ibc_union_fungible_asset_orders_bool_exp {
@@ -4843,7 +4937,7 @@ input v1_ibc_union_fungible_asset_orders_bool_exp {
   packet_ack_transaction_event_index: bigint_comparison_exp
   packet_ack_transaction_hash: String_comparison_exp
   packet_ack_transaction_index: bigint_comparison_exp
-  packet_hash: bytea_comparison_exp
+  packet_hash: String_comparison_exp
   packet_recv_block_hash: String_comparison_exp
   packet_recv_event_index: bigint_comparison_exp
   packet_recv_height: bigint_comparison_exp
@@ -4890,6 +4984,152 @@ input v1_ibc_union_fungible_asset_orders_bool_exp {
   write_ack_transaction_event_index: bigint_comparison_exp
   write_ack_transaction_hash: String_comparison_exp
   write_ack_transaction_index: bigint_comparison_exp
+}
+
+"""aggregate max on columns"""
+type v1_ibc_union_fungible_asset_orders_max_fields {
+  ack_fill_type: String
+  ack_market_maker: String
+  ack_tag: String
+  acknowledgement: String
+  base_amount: String
+  base_token: String
+  base_token_decimals: Int
+  base_token_name: String
+  base_token_path: String
+  base_token_symbol: String
+  channel_version: String
+  data: String
+  destination_chain_id: String
+  destination_channel_id: Int
+  destination_client_id: Int
+  destination_connection_id: Int
+  destination_port_id: String
+  instruction_path: String
+  packet_ack_block_hash: String
+  packet_ack_event_index: bigint
+  packet_ack_height: bigint
+  packet_ack_maker: String
+  packet_ack_timestamp: timestamptz
+  packet_ack_transaction_event_index: bigint
+  packet_ack_transaction_hash: String
+  packet_ack_transaction_index: bigint
+  packet_hash: String
+  packet_recv_block_hash: String
+  packet_recv_event_index: bigint
+  packet_recv_height: bigint
+  packet_recv_maker: String
+  packet_recv_maker_msg: String
+  packet_recv_timestamp: timestamptz
+  packet_recv_transaction_event_index: bigint
+  packet_recv_transaction_hash: String
+  packet_recv_transaction_index: bigint
+  packet_send_block_hash: String
+  packet_send_event_index: bigint
+  packet_send_height: bigint
+  packet_send_timestamp: timestamptz
+  packet_send_transaction_event_index: bigint
+  packet_send_transaction_hash: String
+  packet_send_transaction_index: bigint
+  path: String
+  quote_amount: String
+  quote_token: String
+  receiver: String
+  receiver_display: String
+  receiver_normalized: String
+  salt: String
+  sender: String
+  sender_display: String
+  sender_normalized: String
+  sort_order: String
+  source_chain_id: String
+  source_channel_id: Int
+  source_client_id: Int
+  source_connection_id: Int
+  source_port_id: String
+  status: String
+  timeout_height: numeric
+  timeout_timestamp: numeric
+  write_ack_block_hash: String
+  write_ack_event_index: bigint
+  write_ack_height: bigint
+  write_ack_timestamp: timestamptz
+  write_ack_transaction_event_index: bigint
+  write_ack_transaction_hash: String
+  write_ack_transaction_index: bigint
+}
+
+"""aggregate min on columns"""
+type v1_ibc_union_fungible_asset_orders_min_fields {
+  ack_fill_type: String
+  ack_market_maker: String
+  ack_tag: String
+  acknowledgement: String
+  base_amount: String
+  base_token: String
+  base_token_decimals: Int
+  base_token_name: String
+  base_token_path: String
+  base_token_symbol: String
+  channel_version: String
+  data: String
+  destination_chain_id: String
+  destination_channel_id: Int
+  destination_client_id: Int
+  destination_connection_id: Int
+  destination_port_id: String
+  instruction_path: String
+  packet_ack_block_hash: String
+  packet_ack_event_index: bigint
+  packet_ack_height: bigint
+  packet_ack_maker: String
+  packet_ack_timestamp: timestamptz
+  packet_ack_transaction_event_index: bigint
+  packet_ack_transaction_hash: String
+  packet_ack_transaction_index: bigint
+  packet_hash: String
+  packet_recv_block_hash: String
+  packet_recv_event_index: bigint
+  packet_recv_height: bigint
+  packet_recv_maker: String
+  packet_recv_maker_msg: String
+  packet_recv_timestamp: timestamptz
+  packet_recv_transaction_event_index: bigint
+  packet_recv_transaction_hash: String
+  packet_recv_transaction_index: bigint
+  packet_send_block_hash: String
+  packet_send_event_index: bigint
+  packet_send_height: bigint
+  packet_send_timestamp: timestamptz
+  packet_send_transaction_event_index: bigint
+  packet_send_transaction_hash: String
+  packet_send_transaction_index: bigint
+  path: String
+  quote_amount: String
+  quote_token: String
+  receiver: String
+  receiver_display: String
+  receiver_normalized: String
+  salt: String
+  sender: String
+  sender_display: String
+  sender_normalized: String
+  sort_order: String
+  source_chain_id: String
+  source_channel_id: Int
+  source_client_id: Int
+  source_connection_id: Int
+  source_port_id: String
+  status: String
+  timeout_height: numeric
+  timeout_timestamp: numeric
+  write_ack_block_hash: String
+  write_ack_event_index: bigint
+  write_ack_height: bigint
+  write_ack_timestamp: timestamptz
+  write_ack_transaction_event_index: bigint
+  write_ack_transaction_hash: String
+  write_ack_transaction_index: bigint
 }
 
 """
@@ -5199,6 +5439,93 @@ enum v1_ibc_union_fungible_asset_orders_select_column {
   write_ack_transaction_index
 }
 
+"""aggregate stddev on columns"""
+type v1_ibc_union_fungible_asset_orders_stddev_fields {
+  base_token_decimals: Float
+  destination_channel_id: Float
+  destination_client_id: Float
+  destination_connection_id: Float
+  packet_ack_event_index: Float
+  packet_ack_height: Float
+  packet_ack_transaction_event_index: Float
+  packet_ack_transaction_index: Float
+  packet_recv_event_index: Float
+  packet_recv_height: Float
+  packet_recv_transaction_event_index: Float
+  packet_recv_transaction_index: Float
+  packet_send_event_index: Float
+  packet_send_height: Float
+  packet_send_transaction_event_index: Float
+  packet_send_transaction_index: Float
+  source_channel_id: Float
+  source_client_id: Float
+  source_connection_id: Float
+  timeout_height: Float
+  timeout_timestamp: Float
+  write_ack_event_index: Float
+  write_ack_height: Float
+  write_ack_transaction_event_index: Float
+  write_ack_transaction_index: Float
+}
+
+"""aggregate stddev_pop on columns"""
+type v1_ibc_union_fungible_asset_orders_stddev_pop_fields {
+  base_token_decimals: Float
+  destination_channel_id: Float
+  destination_client_id: Float
+  destination_connection_id: Float
+  packet_ack_event_index: Float
+  packet_ack_height: Float
+  packet_ack_transaction_event_index: Float
+  packet_ack_transaction_index: Float
+  packet_recv_event_index: Float
+  packet_recv_height: Float
+  packet_recv_transaction_event_index: Float
+  packet_recv_transaction_index: Float
+  packet_send_event_index: Float
+  packet_send_height: Float
+  packet_send_transaction_event_index: Float
+  packet_send_transaction_index: Float
+  source_channel_id: Float
+  source_client_id: Float
+  source_connection_id: Float
+  timeout_height: Float
+  timeout_timestamp: Float
+  write_ack_event_index: Float
+  write_ack_height: Float
+  write_ack_transaction_event_index: Float
+  write_ack_transaction_index: Float
+}
+
+"""aggregate stddev_samp on columns"""
+type v1_ibc_union_fungible_asset_orders_stddev_samp_fields {
+  base_token_decimals: Float
+  destination_channel_id: Float
+  destination_client_id: Float
+  destination_connection_id: Float
+  packet_ack_event_index: Float
+  packet_ack_height: Float
+  packet_ack_transaction_event_index: Float
+  packet_ack_transaction_index: Float
+  packet_recv_event_index: Float
+  packet_recv_height: Float
+  packet_recv_transaction_event_index: Float
+  packet_recv_transaction_index: Float
+  packet_send_event_index: Float
+  packet_send_height: Float
+  packet_send_transaction_event_index: Float
+  packet_send_transaction_index: Float
+  source_channel_id: Float
+  source_client_id: Float
+  source_connection_id: Float
+  timeout_height: Float
+  timeout_timestamp: Float
+  write_ack_event_index: Float
+  write_ack_height: Float
+  write_ack_transaction_event_index: Float
+  write_ack_transaction_index: Float
+}
+
 """
 Streaming cursor of the table "v1_ibc_union_fungible_asset_orders"
 """
@@ -5241,7 +5568,7 @@ input v1_ibc_union_fungible_asset_orders_stream_cursor_value_input {
   packet_ack_transaction_event_index: bigint
   packet_ack_transaction_hash: String
   packet_ack_transaction_index: bigint
-  packet_hash: bytea
+  packet_hash: String
   packet_recv_block_hash: String
   packet_recv_event_index: bigint
   packet_recv_height: bigint
@@ -5284,6 +5611,122 @@ input v1_ibc_union_fungible_asset_orders_stream_cursor_value_input {
   write_ack_transaction_event_index: bigint
   write_ack_transaction_hash: String
   write_ack_transaction_index: bigint
+}
+
+"""aggregate sum on columns"""
+type v1_ibc_union_fungible_asset_orders_sum_fields {
+  base_token_decimals: Int
+  destination_channel_id: Int
+  destination_client_id: Int
+  destination_connection_id: Int
+  packet_ack_event_index: bigint
+  packet_ack_height: bigint
+  packet_ack_transaction_event_index: bigint
+  packet_ack_transaction_index: bigint
+  packet_recv_event_index: bigint
+  packet_recv_height: bigint
+  packet_recv_transaction_event_index: bigint
+  packet_recv_transaction_index: bigint
+  packet_send_event_index: bigint
+  packet_send_height: bigint
+  packet_send_transaction_event_index: bigint
+  packet_send_transaction_index: bigint
+  source_channel_id: Int
+  source_client_id: Int
+  source_connection_id: Int
+  timeout_height: numeric
+  timeout_timestamp: numeric
+  write_ack_event_index: bigint
+  write_ack_height: bigint
+  write_ack_transaction_event_index: bigint
+  write_ack_transaction_index: bigint
+}
+
+"""aggregate var_pop on columns"""
+type v1_ibc_union_fungible_asset_orders_var_pop_fields {
+  base_token_decimals: Float
+  destination_channel_id: Float
+  destination_client_id: Float
+  destination_connection_id: Float
+  packet_ack_event_index: Float
+  packet_ack_height: Float
+  packet_ack_transaction_event_index: Float
+  packet_ack_transaction_index: Float
+  packet_recv_event_index: Float
+  packet_recv_height: Float
+  packet_recv_transaction_event_index: Float
+  packet_recv_transaction_index: Float
+  packet_send_event_index: Float
+  packet_send_height: Float
+  packet_send_transaction_event_index: Float
+  packet_send_transaction_index: Float
+  source_channel_id: Float
+  source_client_id: Float
+  source_connection_id: Float
+  timeout_height: Float
+  timeout_timestamp: Float
+  write_ack_event_index: Float
+  write_ack_height: Float
+  write_ack_transaction_event_index: Float
+  write_ack_transaction_index: Float
+}
+
+"""aggregate var_samp on columns"""
+type v1_ibc_union_fungible_asset_orders_var_samp_fields {
+  base_token_decimals: Float
+  destination_channel_id: Float
+  destination_client_id: Float
+  destination_connection_id: Float
+  packet_ack_event_index: Float
+  packet_ack_height: Float
+  packet_ack_transaction_event_index: Float
+  packet_ack_transaction_index: Float
+  packet_recv_event_index: Float
+  packet_recv_height: Float
+  packet_recv_transaction_event_index: Float
+  packet_recv_transaction_index: Float
+  packet_send_event_index: Float
+  packet_send_height: Float
+  packet_send_transaction_event_index: Float
+  packet_send_transaction_index: Float
+  source_channel_id: Float
+  source_client_id: Float
+  source_connection_id: Float
+  timeout_height: Float
+  timeout_timestamp: Float
+  write_ack_event_index: Float
+  write_ack_height: Float
+  write_ack_transaction_event_index: Float
+  write_ack_transaction_index: Float
+}
+
+"""aggregate variance on columns"""
+type v1_ibc_union_fungible_asset_orders_variance_fields {
+  base_token_decimals: Float
+  destination_channel_id: Float
+  destination_client_id: Float
+  destination_connection_id: Float
+  packet_ack_event_index: Float
+  packet_ack_height: Float
+  packet_ack_transaction_event_index: Float
+  packet_ack_transaction_index: Float
+  packet_recv_event_index: Float
+  packet_recv_height: Float
+  packet_recv_transaction_event_index: Float
+  packet_recv_transaction_index: Float
+  packet_send_event_index: Float
+  packet_send_height: Float
+  packet_send_transaction_event_index: Float
+  packet_send_transaction_index: Float
+  source_channel_id: Float
+  source_client_id: Float
+  source_connection_id: Float
+  timeout_height: Float
+  timeout_timestamp: Float
+  write_ack_event_index: Float
+  write_ack_height: Float
+  write_ack_transaction_event_index: Float
+  write_ack_transaction_index: Float
 }
 
 """
@@ -5524,7 +5967,7 @@ type v1_ibc_union_packets {
   packet_ack_transaction_event_index: bigint
   packet_ack_transaction_hash: String
   packet_ack_transaction_index: bigint
-  packet_hash: bytea
+  packet_hash: String
   packet_recv_block_hash: String
   packet_recv_event_index: bigint
   packet_recv_height: bigint
@@ -5608,7 +6051,7 @@ input v1_ibc_union_packets_bool_exp {
   packet_ack_transaction_event_index: bigint_comparison_exp
   packet_ack_transaction_hash: String_comparison_exp
   packet_ack_transaction_index: bigint_comparison_exp
-  packet_hash: bytea_comparison_exp
+  packet_hash: String_comparison_exp
   packet_recv_block_hash: String_comparison_exp
   packet_recv_event_index: bigint_comparison_exp
   packet_recv_height: bigint_comparison_exp
@@ -5888,7 +6331,7 @@ input v1_ibc_union_packets_stream_cursor_value_input {
   packet_ack_transaction_event_index: bigint
   packet_ack_transaction_hash: String
   packet_ack_transaction_index: bigint
-  packet_hash: bytea
+  packet_hash: String
   packet_recv_block_hash: String
   packet_recv_event_index: bigint
   packet_recv_height: bigint
