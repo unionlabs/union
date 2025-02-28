@@ -160,7 +160,11 @@ onMount(() => {
                     </div>
                     <div>
                       <div class="text-sm text-gray-500">Chain</div>
-                      <div class="font-mono text-sm">{trace.chain.chain_id}</div>
+                      {#if Option.isSome(getChain(chainsList, trace.chain.chain_id))}
+                        <ChainComponent chain={getChain(chainsList, trace.chain.chain_id).value} />
+                      {:else}
+                        <div class="font-mono text-sm">{trace.chain.chain_id}</div>
+                      {/if}
                     </div>
                     {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(trace.block_hash)}
                     <div>
