@@ -88,8 +88,14 @@ const transfer = async () => {
     // @ts-ignore
     transferState.set({ kind: "SWITCHING_TO_CHAIN" })
 
-    const rpcUrl = sourceChain.rpcs.find(rpc => rpc.type === "rpc")?.url
-    if (!rpcUrl) return toast.error(`no rpc available for ${sourceChain.display_name}`)
+    let rpcUrl = sourceChain.rpcs.find((rpc) => rpc.type === "rpc")?.url;
+      if (!rpcUrl)
+        return toast.error(`no rpc available for ${sourceChain.display_name}`);
+
+      if (!rpcUrl.endsWith("/v1", rpcUrl.length - 3)) {
+        rpcUrl = rpcUrl + "/v1";
+      }
+      rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1"; //TODO: Remove this later its for test
 
     if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
       const chainInfo = await wallet.getNetwork()
@@ -111,13 +117,12 @@ const transfer = async () => {
         const client = createUnionClient({
           chainId: sourceChain.chain_id as AptosChainId,
           account: await wallet?.getAccount(),
-          transport: wallet as AptosBrowserWallet
+          transport: http(`${rpcUrl}`),
         })
 
         let realArgs = {
           ...transferArgs,
-          receiver: toHex(transferArgs.receiver),
-          baseToken: fromHex(transferArgs.baseToken, "string")
+          receiver: toHex(transferArgs.receiver)
         }
 
         const transfer = await client.transferAsset(realArgs)
