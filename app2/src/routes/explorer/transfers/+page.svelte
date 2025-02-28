@@ -21,6 +21,7 @@ import Skeleton from "$lib/components/ui/Skeleton.svelte"
 
 import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
+import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 
 let fiber: Fiber.Fiber<any, any>
 
@@ -74,24 +75,7 @@ const onNextPage = async () => {
         <ErrorComponent error={transferList.error.value}/>
       {/if}
       {#each Array(settingsStore.pageLimit).fill(0)}
-        <div class="flex gap-8 px-4 py-2">
-          <div class="flex-1">
-            <Label>from</Label>
-            <div class="flex items-center gap-2 mt-1">
-              <Skeleton class="h-4" randomWidth />
-            </div>
-          </div>
-          <div class="flex-1">
-            <Label>to</Label>
-            <div class="flex items-center gap-2 mt-1">
-              <Skeleton class="h-4" randomWidth />
-            </div>
-          </div>
-          <div class="flex-1">
-            <Label>Time</Label>
-            <Skeleton class="h-4 w-32 mt-1" />
-          </div>
-        </div>
+        <TransferListItemComponentSkeleton />
       {/each}
     {/if}
   </Card>

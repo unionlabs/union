@@ -19,6 +19,7 @@ import { wallets } from "$lib/stores/wallets.svelte"
 import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
+import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 
 let fiber: Fiber.Fiber<any, any>
 let fiberLock = false
@@ -97,20 +98,7 @@ const onNextPage = async () => {
       {/each}
     {:else}
       {#each Array(settingsStore.pageLimit).fill(0)}
-        <div class="flex gap-8 px-4 py-2 h-[60px]">
-          <div class="flex-1">
-            <Label>from</Label>
-              <Skeleton class="h-4" randomWidth />
-          </div>
-          <div class="flex-1">
-            <Label>to</Label>
-            <Skeleton class="h-4" randomWidth />
-          </div>
-          <div class="flex-1">
-            <Label>Time</Label>
-            <Skeleton class="h-4 w-32" />
-          </div>
-        </div>
+        <TransferListItemComponentSkeleton />
       {/each}
       {#if Option.isSome(transferListAddress.error)}
         <ErrorComponent error={transferListAddress.error.value}/>
