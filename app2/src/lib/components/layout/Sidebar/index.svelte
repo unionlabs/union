@@ -1,6 +1,10 @@
 <script>
 import Wallet from "$lib/components/ui/Wallet/index.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
+import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import Button from "$lib/components/ui/Button.svelte"
+import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
 </script>
 
 <Sections>
@@ -16,19 +20,15 @@ import Sections from "$lib/components/ui/Sections.svelte"
     <ul>
       <li><a href="/" class="underline">Home</a></li>
       <li><a href="/explorer/transfers" class="underline">Transfers</a></li>
-      <!--<li><a href="/explorer/packets" class="underline">Packets</a></li>!-->
-      <!--<li><a href="/explorer/connections" class="underline">Connections</a></li>!-->
-      <!--<li><a href="/explorer/channels" class="underline">Channels</a></li>!-->
     </ul>
   </section>
 
-  <section>
-    <h2 class="font-bold text-xl m2-4">Explorer</h2>
-    <ul>
-      <li>Transfers</li>
-      <li>Connections</li>
-      <li>Channels</li>
-    </ul>
-  </section>
-  <Wallet/>
+  <div class="flex flex-col gap-2">
+    <ConnectWalletButton/>
+    <Button variant="secondary" onclick={() => uiStore.openSettingsModal()}>
+      <SharpSettingsIcon class="size-5"/>
+      Settings
+    </Button>
+  </div>
+
 </Sections>

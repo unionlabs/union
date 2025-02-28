@@ -19,11 +19,14 @@ import { fly } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 
+import { settingsStore } from "$lib/stores/settings.svelte"
+import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
+import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
+
 let fiber: Fiber.Fiber<any, any>
-const LIMIT = 12
 
 onMount(() => {
-  fiber = Effect.runFork(transferListLatestQuery(LIMIT))
+  fiber = Effect.runFork(transferListLatestQuery(settingsStore.pageLimit))
   return () => Effect.runPromise(Fiber.interrupt(fiber))
 })
 
@@ -31,7 +34,7 @@ const onLive = async () => {
   if (Option.isSome(transferList.data)) {
     transferList.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListLatestQuery(LIMIT))
+    fiber = Effect.runFork(transferListLatestQuery(settingsStore.pageLimit))
   }
 }
 
@@ -41,7 +44,7 @@ const onPrevPage = async () => {
     if (!firstSortOrder) return
     transferList.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListPageGtQuery(firstSortOrder, LIMIT))
+    fiber = Effect.runFork(transferListPageGtQuery(firstSortOrder, settingsStore.pageLimit))
   }
 }
 
@@ -51,7 +54,7 @@ const onNextPage = async () => {
     if (!lastSortOrder) return
     transferList.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListPageLtQuery(lastSortOrder, LIMIT))
+    fiber = Effect.runFork(transferListPageLtQuery(lastSortOrder, settingsStore.pageLimit))
   }
 }
 </script>
@@ -65,50 +68,14 @@ const onNextPage = async () => {
         <ErrorComponent error={transferList.error.value}/>
       {/if}
       {#each transferList.data.value as transfer(transfer.sort_order)}
-        {@const sourceChain = getChain(chainss, transfer.source_chain_id)}
-        {@const destinationChain = getChain(chainss, transfer.destination_chain_id)}
-        <div class="flex gap-8 px-4 py-2">
-          <div class="flex-1">
-            <Label>from</Label>
-            {#if Option.isSome(sourceChain)}
-              <ChainComponent chain={sourceChain.value}/>
-            {/if}
-          </div>
-          <div class="flex-1">
-            <Label>to</Label>
-            {#if Option.isSome(destinationChain)}
-              <ChainComponent chain={destinationChain.value}/>
-            {/if}
-          </div>
-          <div class="flex-1">
-            <Label>Time</Label>
-            {DateTime.formatIso(transfer.packet_send_timestamp)}
-          </div>
-        </div>
+        <TransferListItemComponent {transfer} />
       {/each}
     {:else}
       {#if Option.isSome(transferList.error)}
         <ErrorComponent error={transferList.error.value}/>
       {/if}
-      {#each Array(LIMIT).fill(0)}
-        <div class="flex gap-8 px-4 py-2">
-          <div class="flex-1">
-            <Label>from</Label>
-            <div class="flex items-center gap-2 mt-1">
-              <Skeleton class="h-4" randomWidth />
-            </div>
-          </div>
-          <div class="flex-1">
-            <Label>to</Label>
-            <div class="flex items-center gap-2 mt-1">
-              <Skeleton class="h-4" randomWidth />
-            </div>
-          </div>
-          <div class="flex-1">
-            <Label>Time</Label>
-            <Skeleton class="h-4 w-32 mt-1" />
-          </div>
-        </div>
+      {#each Array(settingsStore.pageLimit).fill(0)}
+        <TransferListItemComponentSkeleton />
       {/each}
     {/if}
   </Card>

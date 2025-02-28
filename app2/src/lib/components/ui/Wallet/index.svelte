@@ -1,43 +1,19 @@
-<script>
+<script lang="ts">
 import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.js"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.js"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.js"
-import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import Connection from "$lib/components/ui/Wallet/connect/connection.svelte"
-import Card from "$lib/components/ui/Card.svelte"
-import Button from "../Button.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import Modal from "../Modal.svelte"
 
-let isOpen = $state(false)
 let currentWalletType = $state("all")
-
-function openModal() {
-  isOpen = true
-}
-
-function closeModal() {
-  isOpen = false
-}
 </script>
 
-<!-- Button to open modal when it's closed -->
-{#if !isOpen}
-  <Button variant="secondary" onclick={openModal}>
-    <SharpWalletIcon class="size-5"/>
-    Connect Wallet
-  </Button>
-{/if}
-
-{#if isOpen}
-
-  <div class="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-
-    <Card class="max-h-[600px] min-h-[375px] h-full w-full max-w-md relative flex flex-col" divided>
-      <Button
-              class="cursor-pointer border-0 absolute top-3 right-4 text-white text-lg"
-              onclick={closeModal}
-      >
-        ✕
-      </Button>
+<Modal 
+  isOpen={uiStore.walletModalOpen} 
+  onClose={() => uiStore.closeWalletModal()}
+  divided
+>
 
       <section class="p-6 pb-4">
 
@@ -70,7 +46,7 @@ function closeModal() {
             </button>
         </section>
 
-        <section class="calch overflow-y-scroll p-6 space-y-4">
+        <section class="calch h-[calc(100%-133px)] overflow-y-scroll p-6 space-y-4">
           {#if currentWalletType === "evm"}
             <Connection
                     chain="evm"
@@ -131,12 +107,5 @@ function closeModal() {
             />
           {/if}
         </section>
-    </Card>
-  </div>
-{/if}
+</Modal>
 
-<style>
-  .calch {
-    height: calc(100% - 133px);
-  }
-</style>

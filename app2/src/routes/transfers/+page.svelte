@@ -1,6 +1,5 @@
 <script lang="ts">
 import {
-  LIMIT,
   transferListLatestAddressQuery,
   transferListPageGtAddressQuery,
   transferListPageLtAddressQuery
@@ -17,6 +16,10 @@ import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
+import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
+import { settingsStore } from "$lib/stores/settings.svelte"
+import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
+import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 
 let fiber: Fiber.Fiber<any, any>
 let fiberLock = false
@@ -35,7 +38,9 @@ const fetchLive = async () => {
     await Effect.runPromise(Fiber.interrupt(fiber))
   }
   if (Option.isSome(wallets.evmAddress)) {
-    fiber = Effect.runFork(transferListLatestAddressQuery(wallets.evmAddress.value, LIMIT))
+    fiber = Effect.runFork(
+      transferListLatestAddressQuery(wallets.evmAddress.value, settingsStore.pageLimit)
+    )
   }
   fiberLock = false
 }
@@ -48,7 +53,9 @@ const onLive = async () => {
   if (Option.isSome(transferListAddress.data) && Option.isSome(wallets.evmAddress)) {
     transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListLatestAddressQuery(wallets.evmAddress.value, LIMIT))
+    fiber = Effect.runFork(
+      transferListLatestAddressQuery(wallets.evmAddress.value, settingsStore.pageLimit)
+    )
   }
 }
 
@@ -59,7 +66,11 @@ const onPrevPage = async () => {
     transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
     fiber = Effect.runFork(
-      transferListPageGtAddressQuery(firstSortOrder, wallets.evmAddress.value, LIMIT)
+      transferListPageGtAddressQuery(
+        firstSortOrder,
+        wallets.evmAddress.value,
+        settingsStore.pageLimit
+      )
     )
   }
 }
@@ -71,7 +82,11 @@ const onNextPage = async () => {
     transferListAddress.data = Option.none()
     await Effect.runPromise(Fiber.interrupt(fiber))
     fiber = Effect.runFork(
-      transferListPageLtAddressQuery(lastSortOrder, wallets.evmAddress.value, LIMIT)
+      transferListPageLtAddressQuery(
+        lastSortOrder,
+        wallets.evmAddress.value,
+        settingsStore.pageLimit
+      )
     )
   }
 }
@@ -80,52 +95,22 @@ const onNextPage = async () => {
 <Sections>
   <section>
   <h1 class="font-bold text-4xl">Your Transfers</h1>
-  <p>{wallets.evmAddress}These are the transfers from your connected wallets</p>
+  <p>These are the transfers from your connected wallets</p>
   </section>
   <Card class="overflow-auto" divided>
-    {#if Option.isSome(transferListAddress.data) && Option.isSome(chains.data)}
+    {#if Option.isNone(wallets.evmAddress)}
+      <NoWalletConnected/>
+    {:else if Option.isSome(transferListAddress.data) && Option.isSome(chains.data)}
       {@const chainss = chains.data.value}
       {#if Option.isSome(transferListAddress.error)}
         <ErrorComponent error={transferListAddress.error.value}/>
       {/if}
       {#each transferListAddress.data.value as transfer(transfer.sort_order)}
-        {@const sourceChain = getChain(chainss, transfer.source_chain_id)}
-        {@const destinationChain = getChain(chainss, transfer.destination_chain_id)}
-        <div class="flex gap-8 px-4 py-2 h-[60px]">
-          <div class="flex-1">
-            <Label>from</Label>
-            {#if Option.isSome(sourceChain)}
-              <ChainComponent chain={sourceChain.value}/>
-            {/if}
-          </div>
-          <div class="flex-1">
-            <Label>to</Label>
-            {#if Option.isSome(destinationChain)}
-              <ChainComponent chain={destinationChain.value}/>
-            {/if}
-          </div>
-          <div class="flex-1">
-            <Label>Time</Label>
-            {DateTime.formatIso(transfer.packet_send_timestamp)}
-          </div>
-        </div>
+        <TransferListItemComponent {transfer} />
       {/each}
     {:else}
-      {#each Array(LIMIT).fill(0)}
-        <div class="flex gap-8 px-4 py-2 h-[60px]">
-          <div class="flex-1">
-            <Label>from</Label>
-              <Skeleton class="h-4" randomWidth />
-          </div>
-          <div class="flex-1">
-            <Label>to</Label>
-            <Skeleton class="h-4" randomWidth />
-          </div>
-          <div class="flex-1">
-            <Label>Time</Label>
-            <Skeleton class="h-4 w-32" />
-          </div>
-        </div>
+      {#each Array(settingsStore.pageLimit).fill(0)}
+        <TransferListItemComponentSkeleton />
       {/each}
       {#if Option.isSome(transferListAddress.error)}
         <ErrorComponent error={transferListAddress.error.value}/>
