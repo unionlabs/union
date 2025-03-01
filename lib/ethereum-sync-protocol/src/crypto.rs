@@ -70,7 +70,7 @@ fn __eth_aggregate_public_keys(
 
     milagro_bls::AggregatePublicKey::aggregate(&public_keys)
         .map(|x| {
-            // REVEIW: Idk if this is correct
+            // REVIEW: Idk if this is correct
             milagro_bls::PublicKey { point: x.point }.as_bytes().into()
         })
         .map_err(Error::Bls)
