@@ -12,8 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-anyhow = "1.0.93"
-# chain-utils                    = { workspace = true }
+anyhow                         = "1.0.93"
 clap                           = { workspace = true, features = ["derive"] }
 enumorph                       = { workspace = true }
 futures                        = { workspace = true }

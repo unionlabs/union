@@ -2,7 +2,7 @@ use enumorph::Enumorph;
 use unionlabs::primitives::Bytes;
 use voyager_core::ClientType;
 
-use crate::types::{ChannelId, ClientId, Connection, ConnectionId};
+use crate::types::{ChannelId, ClientId, Connection, ConnectionId, Packet};
 
 /// The fully filled out event for IBC union. This will likely not be what is exactly emitted on chain, however *enough* information should be emitted such that this structure can be constructed.
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
@@ -261,6 +261,25 @@ pub struct PacketSend {
     pub packet: PacketMetadata,
 }
 
+macro_rules! packet_method {
+    () => {
+        /// Construct the [`Packet`] for this event.
+        pub fn packet(&self) -> Packet {
+            Packet {
+                source_channel_id: self.packet.source_channel.channel_id,
+                destination_channel_id: self.packet.destination_channel.channel_id,
+                data: self.packet_data.clone(),
+                timeout_height: self.packet.timeout_height,
+                timeout_timestamp: self.packet.timeout_timestamp,
+            }
+        }
+    };
+}
+
+impl PacketSend {
+    packet_method!();
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(
@@ -274,6 +293,10 @@ pub struct PacketRecv {
     pub packet: PacketMetadata,
 
     pub maker_msg: Bytes,
+}
+
+impl PacketRecv {
+    packet_method!();
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -291,6 +314,10 @@ pub struct IntentPacketRecv {
     pub market_maker_msg: Bytes,
 }
 
+impl IntentPacketRecv {
+    packet_method!();
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(
@@ -304,6 +331,10 @@ pub struct WriteAck {
     pub packet: PacketMetadata,
 
     pub acknowledgement: Bytes,
+}
+
+impl WriteAck {
+    packet_method!();
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -321,6 +352,10 @@ pub struct PacketAck {
     pub acknowledgement: Bytes,
 }
 
+impl PacketAck {
+    packet_method!();
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(
@@ -332,6 +367,10 @@ pub struct PacketTimeout {
     pub packet_data: Bytes,
 
     pub packet: PacketMetadata,
+}
+
+impl PacketTimeout {
+    packet_method!();
 }
 
 /// All metadata associated with a packet.

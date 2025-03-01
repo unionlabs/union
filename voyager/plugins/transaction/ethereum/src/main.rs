@@ -12,10 +12,7 @@ use alloy::{
     transports::TransportError,
 };
 use bip32::secp256k1::ecdsa::{self, SigningKey};
-use chain_utils::{
-    keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry},
-    BoxDynError,
-};
+use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use ibc_solidity::Ibc::{self, IbcErrors};
 use ibc_union_spec::{datagram::Datagram, IbcUnion};
 use jsonrpsee::{
@@ -34,9 +31,9 @@ use voyager_message::{
     data::Data,
     hook::SubmitTxHook,
     module::{PluginInfo, PluginServer},
+    vm::{call, defer, now, pass::PassResult, seq, BoxDynError, Op, Visit},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{call, defer, now, pass::PassResult, seq, Op, Visit};
 
 use crate::{
     call::ModuleCall,

@@ -6,10 +6,7 @@ use aptos_types::{
     account_address::AccountAddress,
     transaction::{EntryFunction, RawTransaction},
 };
-use chain_utils::{
-    keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry},
-    BoxDynError,
-};
+use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use ibc_union_spec::{datagram::Datagram, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -28,9 +25,10 @@ use voyager_message::{
     data::Data,
     hook::SubmitTxHook,
     module::{PluginInfo, PluginServer},
+    vm::{call, noop, pass::PassResult, Op, Visit},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{call, noop, pass::PassResult, Op, Visit};
+use voyager_vm::BoxDynError;
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
 

@@ -137,7 +137,6 @@ fn channel_open_init(deps: DepsMut) -> Result<Response, ContractError> {
 fn display() {
     assert_eq!(
         ContractErrorKind::ArithmeticOverflow,
-        ContractErrorKind::parse_from_error_message(&ContractError::ArithmeticOverflow.to_string())
-            .unwrap()
+        ContractErrorKind::parse(&ContractError::ArithmeticOverflow.to_string()).unwrap()
     )
 }

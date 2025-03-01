@@ -2911,41 +2911,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
-name = "chain-utils"
-version = "0.0.0"
-dependencies = [
- "beacon-api",
- "berachain-light-client-types",
- "bip32",
- "cometbft-rpc",
- "crossbeam-queue",
- "dashmap 5.5.3",
- "enumorph",
- "frame-support-procedural",
- "futures",
- "hex",
- "hex-literal",
- "ics23",
- "num-rational 0.4.2",
- "num_enum",
- "prost 0.12.6",
- "protos",
- "rand 0.8.5",
- "scroll-api",
- "scroll-rpc",
- "serde",
- "serde-utils",
- "sha2 0.10.8",
- "tendermint-light-client-types",
- "thiserror 1.0.69",
- "tokio",
- "tonic 0.10.2",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
-]
-
-[[package]]
 name = "chrono"
 version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3278,6 +3243,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "concurrent-keyring"
+version = "0.0.0"
+dependencies = [
+ "beacon-api",
+ "berachain-light-client-types",
+ "bip32",
+ "cometbft-rpc",
+ "crossbeam-queue",
+ "dashmap 5.5.3",
+ "enumorph",
+ "frame-support-procedural",
+ "futures",
+ "hex",
+ "hex-literal",
+ "ics23",
+ "num-rational 0.4.2",
+ "num_enum",
+ "prost 0.12.6",
+ "protos",
+ "rand 0.8.5",
+ "scroll-api",
+ "scroll-rpc",
+ "serde",
+ "serde-utils",
+ "sha2 0.10.8",
+ "tendermint-light-client-types",
+ "thiserror 1.0.69",
+ "tokio",
+ "tonic 0.10.2",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3443,7 +3443,6 @@ dependencies = [
 name = "cosmos-client"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "bip32",
  "cometbft-rpc",
  "num-rational 0.4.2",
@@ -3451,6 +3450,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.8",
+ "thiserror 1.0.69",
  "tokio",
  "tracing",
  "unionlabs",
@@ -4628,7 +4628,6 @@ dependencies = [
  "async-graphql-axum",
  "async-sqlite",
  "axum 0.7.5",
- "chain-utils",
  "chrono",
  "clap 4.5.4",
  "cometbft-rpc",
@@ -13585,7 +13584,6 @@ version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
- "chain-utils",
  "cosmwasm-std 2.1.4",
  "jsonrpsee",
  "movement-light-client-types",
@@ -13741,7 +13739,6 @@ dependencies = [
 name = "voyager-client-module-movement"
 version = "0.0.0"
 dependencies = [
- "chain-utils",
  "jsonrpsee",
  "movement-light-client-types",
  "serde",
@@ -13781,7 +13778,6 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
- "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
  "futures",
@@ -13807,7 +13803,6 @@ name = "voyager-client-module-state-lens-ics23-smt"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
  "futures",
@@ -13907,7 +13902,6 @@ dependencies = [
  "beacon-api",
  "beacon-api-types",
  "bitvec 1.0.1",
- "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
  "futures",
@@ -13948,7 +13942,6 @@ version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
- "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
  "jsonrpsee",
@@ -14074,7 +14067,6 @@ version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
- "chain-utils",
  "jsonrpsee",
  "serde",
  "thiserror 1.0.69",
@@ -14466,7 +14458,7 @@ dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
- "chain-utils",
+ "concurrent-keyring",
  "enumorph",
  "ibc-union-spec",
  "jsonrpsee",
@@ -14486,8 +14478,9 @@ name = "voyager-transaction-plugin-cosmos-sdk"
 version = "0.0.0"
 dependencies = [
  "bip32",
- "chain-utils",
  "cometbft-rpc",
+ "concurrent-keyring",
+ "cosmos-client",
  "enumorph",
  "ibc-classic-spec",
  "ibc-union",
@@ -14515,7 +14508,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bip32",
- "chain-utils",
+ "concurrent-keyring",
  "enumorph",
  "ibc-solidity",
  "ibc-union-spec",

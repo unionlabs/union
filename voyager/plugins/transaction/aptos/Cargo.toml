@@ -17,16 +17,16 @@ aptos-rest-client = { workspace = true }
 aptos-types       = { workspace = true }
 move-core-types   = { workspace = true }
 
-aptos-move-ibc  = { workspace = true }
-chain-utils     = { workspace = true }
-enumorph        = { workspace = true }
-ibc-union-spec  = { workspace = true }
-jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
-macros          = { workspace = true }
-serde           = { workspace = true, features = ["derive"] }
-sha3            = { workspace = true }
-tokio           = { workspace = true }
-tracing         = { workspace = true }
-unionlabs       = { workspace = true }
-voyager-message = { workspace = true }
-voyager-vm      = { workspace = true }
+aptos-move-ibc     = { workspace = true }
+concurrent-keyring = { workspace = true }
+enumorph           = { workspace = true }
+ibc-union-spec     = { workspace = true }
+jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
+macros             = { workspace = true }
+serde              = { workspace = true, features = ["derive"] }
+sha3               = { workspace = true }
+tokio              = { workspace = true }
+tracing            = { workspace = true }
+unionlabs          = { workspace = true }
+voyager-message    = { workspace = true }
+voyager-vm         = { workspace = true }

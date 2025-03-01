@@ -3,7 +3,7 @@
 use std::{
     error::Error,
     fmt::{Debug, Display},
-    num::ParseIntError,
+    num::{NonZeroU32, ParseIntError},
 };
 
 use ibc_union_spec::{
@@ -23,6 +23,7 @@ use tracing::{error, instrument, trace};
 use unionlabs::{
     bech32::Bech32,
     ibc::core::client::height::Height,
+    option_unwrap,
     primitives::{encoding::Base64, Bytes, H256},
     ErrorReporter,
 };
@@ -51,7 +52,6 @@ pub struct Module {
     pub chain_revision: u64,
 
     pub cometbft_client: cometbft_rpc::Client,
-    pub grpc_url: String,
 
     pub ibc_host_contract_address: Bech32<H256>,
 }
@@ -60,7 +60,6 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    pub grpc_url: String,
     pub ibc_host_contract_address: Bech32<H256>,
 }
 
@@ -92,7 +91,6 @@ impl StateModule<IbcUnion> for Module {
             cometbft_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            grpc_url: config.grpc_url,
             ibc_host_contract_address: config.ibc_host_contract_address,
         })
     }
@@ -137,7 +135,10 @@ impl Module {
             ))?;
 
         // https://github.com/cosmos/cosmos-sdk/blob/e2027bf62893bb5f82e8f7a8ea59d1a43eb6b78f/baseapp/abci.go#L1272-L1278
-        if response.code == 26 {
+        if response
+            .code
+            .is_err_code(option_unwrap!(NonZeroU32::new(26)))
+        {
             Err(ErrorObject::owned(
                 -1,
                 "attempted to query state at a nonexistent height, \
@@ -169,7 +170,7 @@ impl Module {
 
     #[instrument(
         skip_all,
-            fields(
+        fields(
             chain_id = %self.chain_id,
             %height,
             %client_id,
@@ -272,7 +273,7 @@ impl Module {
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let commitment = self
-            .query_smart::<_, H256>(
+            .query_smart::<_, Option<H256>>(
                 &ibc_union_msg::query::QueryMsg::GetBatchPackets {
                     channel_id,
                     batch_hash,
@@ -281,7 +282,7 @@ impl Module {
             )
             .await?;
 
-        Ok(commitment)
+        Ok(commitment.flatten())
     }
 
     #[instrument(
@@ -300,7 +301,7 @@ impl Module {
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let commitment = self
-            .query_smart::<_, H256>(
+            .query_smart::<_, Option<H256>>(
                 &ibc_union_msg::query::QueryMsg::GetBatchReceipts {
                     channel_id,
                     batch_hash,
@@ -309,7 +310,7 @@ impl Module {
             )
             .await?;
 
-        Ok(commitment)
+        Ok(commitment.flatten())
     }
 }
 

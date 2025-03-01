@@ -21,7 +21,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{error, instrument};
 use unionlabs::{
     encoding::{DecodeAs, Proto},
     ibc::core::{
@@ -29,12 +29,11 @@ use unionlabs::{
         connection::connection_end::ConnectionEnd,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
-    parse_wasm_client_type,
     primitives::{encoding::HexUnprefixed, Bytes, H256, H64},
     ErrorReporter, WasmClientType,
 };
 use voyager_message::{
-    core::{ChainId, ClientInfo, ClientType, IbcGo08WasmClientMetadata, IbcInterface},
+    core::{ChainId, ClientInfo, ClientType, IbcInterface},
     into_value,
     module::{StateModuleInfo, StateModuleServer},
     StateModule, FATAL_JSONRPC_ERROR_CODE,
@@ -60,7 +59,6 @@ pub struct Module {
     pub chain_revision: u64,
 
     pub tm_client: cometbft_rpc::Client,
-    pub grpc_url: String,
 
     pub checksum_cache: Arc<DashMap<H256<HexUnprefixed>, WasmClientType>>,
 }
@@ -69,7 +67,6 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    pub grpc_url: String,
     #[serde(default = "default_max_drift")]
     pub max_drift: u64,
 }
@@ -105,7 +102,6 @@ impl StateModule<IbcClassic> for Module {
             tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            grpc_url: config.grpc_url,
             checksum_cache: Arc::new(DashMap::default()),
         })
     }
@@ -117,124 +113,124 @@ impl Module {
         Height::new_with_revision(self.chain_revision, height)
     }
 
-    async fn client_type_of_checksum(
-        &self,
-        checksum: H256<HexUnprefixed>,
-    ) -> RpcResult<Option<WasmClientType>> {
-        if let Some(ty) = self.checksum_cache.get(&checksum) {
-            debug!(
-                %checksum,
-                ty = ?*ty,
-                "cache hit for checksum"
-            );
+    // async fn client_type_of_checksum(
+    //     &self,
+    //     checksum: H256<HexUnprefixed>,
+    // ) -> RpcResult<Option<WasmClientType>> {
+    //     if let Some(ty) = self.checksum_cache.get(&checksum) {
+    //         debug!(
+    //             %checksum,
+    //             ty = ?*ty,
+    //             "cache hit for checksum"
+    //         );
 
-            return Ok(Some(*ty));
-        };
+    //         return Ok(Some(*ty));
+    //     };
 
-        info!(
-            %checksum,
-            "cache miss for checksum"
-        );
+    //     info!(
+    //         %checksum,
+    //         "cache miss for checksum"
+    //     );
 
-        let bz = protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
-            self.grpc_url.clone(),
-        )
-        .await
-        .map_err(rpc_error(
-            "error connecting to grpc server",
-            Some(json!({
-                "grpc_url": self.grpc_url
-            })),
-        ))?
-        .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
-            checksum: checksum.into_encoding::<HexUnprefixed>().to_string(),
-        })
-        .await
-        .map_err(rpc_error(
-            "error querying wasm code",
-            Some(json!({
-                "checksum": checksum,
-                "grpc_url": self.grpc_url
-            })),
-        ))?
-        .into_inner()
-        .data;
+    //     let bz = protos::ibc::lightclients::wasm::v1::query_client::QueryClient::connect(
+    //         self.grpc_url.clone(),
+    //     )
+    //     .await
+    //     .map_err(rpc_error(
+    //         "error connecting to grpc server",
+    //         Some(json!({
+    //             "grpc_url": self.grpc_url
+    //         })),
+    //     ))?
+    //     .code(protos::ibc::lightclients::wasm::v1::QueryCodeRequest {
+    //         checksum: checksum.into_encoding::<HexUnprefixed>().to_string(),
+    //     })
+    //     .await
+    //     .map_err(rpc_error(
+    //         "error querying wasm code",
+    //         Some(json!({
+    //             "checksum": checksum,
+    //             "grpc_url": self.grpc_url
+    //         })),
+    //     ))?
+    //     .into_inner()
+    //     .data;
 
-        match parse_wasm_client_type(bz) {
-            Ok(Some(ty)) => {
-                info!(
-                    %checksum,
-                    ?ty,
-                    "parsed checksum"
-                );
+    //     match parse_wasm_client_type(bz) {
+    //         Ok(Some(ty)) => {
+    //             info!(
+    //                 %checksum,
+    //                 ?ty,
+    //                 "parsed checksum"
+    //             );
 
-                self.checksum_cache.insert(checksum, ty);
+    //             self.checksum_cache.insert(checksum, ty);
 
-                Ok(Some(ty))
-            }
-            Ok(None) => Ok(None),
-            Err(err) => {
-                error!(
-                    %checksum,
-                    %err,
-                    "unable to parse wasm client type"
-                );
+    //             Ok(Some(ty))
+    //         }
+    //         Ok(None) => Ok(None),
+    //         Err(err) => {
+    //             error!(
+    //                 %checksum,
+    //                 %err,
+    //                 "unable to parse wasm client type"
+    //             );
 
-                Ok(None)
-            }
-        }
-    }
+    //             Ok(None)
+    //         }
+    //     }
+    // }
 
-    #[instrument(skip_all, fields(%client_id))]
-    async fn checksum_of_client_id(&self, client_id: ClientId) -> RpcResult<H256<HexUnprefixed>> {
-        type WasmClientState = protos::ibc::lightclients::wasm::v1::ClientState;
+    // #[instrument(skip_all, fields(%client_id))]
+    // async fn checksum_of_client_id(&self, client_id: ClientId) -> RpcResult<H256<HexUnprefixed>> {
+    //     type WasmClientState = protos::ibc::lightclients::wasm::v1::ClientState;
 
-        let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
-            self.grpc_url.clone(),
-        )
-        .await
-        .map_err(rpc_error(
-            "error connecting to grpc server",
-            Some(json!({ "client_id": client_id })),
-        ))?
-        .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
-            client_id: client_id.to_string(),
-        })
-        .await
-        .map_err(rpc_error(
-            "error querying client state",
-            Some(json!({ "client_id": client_id })),
-        ))?
-        .into_inner()
-        .client_state
-        .ok_or_else(|| {
-            // lol
-            rpc_error(
-                "error fetching client state",
-                Some(json!({ "client_id": client_id })),
-            )(&*Box::<dyn Error>::from("client state field is empty"))
-        })?;
+    //     let client_state = protos::ibc::core::client::v1::query_client::QueryClient::connect(
+    //         self.grpc_url.clone(),
+    //     )
+    //     .await
+    //     .map_err(rpc_error(
+    //         "error connecting to grpc server",
+    //         Some(json!({ "client_id": client_id })),
+    //     ))?
+    //     .client_state(protos::ibc::core::client::v1::QueryClientStateRequest {
+    //         client_id: client_id.to_string(),
+    //     })
+    //     .await
+    //     .map_err(rpc_error(
+    //         "error querying client state",
+    //         Some(json!({ "client_id": client_id })),
+    //     ))?
+    //     .into_inner()
+    //     .client_state
+    //     .ok_or_else(|| {
+    //         // lol
+    //         rpc_error(
+    //             "error fetching client state",
+    //             Some(json!({ "client_id": client_id })),
+    //         )(&*Box::<dyn Error>::from("client state field is empty"))
+    //     })?;
 
-        assert!(
-            client_state.type_url == <WasmClientState as prost::Name>::type_url(),
-            "attempted to get the wasm blob checksum of a non-wasm \
-            light client. this is a bug, please report this at \
-            `https://github.com/unionlabs/union`."
-        );
+    //     assert!(
+    //         client_state.type_url == <WasmClientState as prost::Name>::type_url(),
+    //         "attempted to get the wasm blob checksum of a non-wasm \
+    //         light client. this is a bug, please report this at \
+    //         `https://github.com/unionlabs/union`."
+    //     );
 
-        // NOTE: We only need the checksum, so we don't need to decode the inner state contained in .data
-        <WasmClientState as prost::Message>::decode(&*client_state.value)
-            .map_err(rpc_error(
-                "error decoding client state",
-                Some(json!({ "client_id": client_id })),
-            ))?
-            .checksum
-            .try_into()
-            .map_err(rpc_error(
-                "invalid checksum",
-                Some(json!({ "client_id": client_id })),
-            ))
-    }
+    //     // NOTE: We only need the checksum, so we don't need to decode the inner state contained in .data
+    //     <WasmClientState as prost::Message>::decode(&*client_state.value)
+    //         .map_err(rpc_error(
+    //             "error decoding client state",
+    //             Some(json!({ "client_id": client_id })),
+    //         ))?
+    //         .checksum
+    //         .try_into()
+    //         .map_err(rpc_error(
+    //             "invalid checksum",
+    //             Some(json!({ "client_id": client_id })),
+    //         ))
+    // }
 
     async fn abci_query(&self, path_string: &str, height: Height) -> RpcResult<QueryResponse> {
         self.tm_client
@@ -523,31 +519,32 @@ impl StateModuleServer<IbcClassic> for Module {
                 metadata: Default::default(),
             }),
             Some(("08-wasm", _)) => {
-                let checksum = self.checksum_of_client_id(client_id.clone()).await?;
+                // let checksum = self.checksum_of_client_id(client_id.clone()).await?;
 
-                Ok(ClientInfo {
-                    client_type: match self.client_type_of_checksum(checksum).await? {
-                        Some(ty) => match ty {
-                            WasmClientType::Cometbls => {
-                                ClientType::new(ClientType::COMETBLS_GROTH16)
-                            }
-                            WasmClientType::Tendermint => ClientType::new(ClientType::TENDERMINT),
-                        },
-                        None => {
-                            warn!(%client_id, "unknown client type for 08-wasm client");
-                            // this early return is kind of dirty but it works
-                            return Err(ErrorObject::owned(
-                                FATAL_JSONRPC_ERROR_CODE,
-                                "unknown client type for 08-wasm client",
-                                Some(json!({
-                                    "client_id": client_id.to_string()
-                                })),
-                            ));
-                        }
-                    },
-                    ibc_interface: IbcInterface::new(IbcInterface::IBC_GO_V8_08_WASM),
-                    metadata: into_value(IbcGo08WasmClientMetadata { checksum }),
-                })
+                // Ok(ClientInfo {
+                //     client_type: match self.client_type_of_checksum(checksum).await? {
+                //         Some(ty) => match ty {
+                //             WasmClientType::Cometbls => {
+                //                 ClientType::new(ClientType::COMETBLS_GROTH16)
+                //             }
+                //             WasmClientType::Tendermint => ClientType::new(ClientType::TENDERMINT),
+                //         },
+                //         None => {
+                //             warn!(%client_id, "unknown client type for 08-wasm client");
+                //             // this early return is kind of dirty but it works
+                //             return Err(ErrorObject::owned(
+                //                 FATAL_JSONRPC_ERROR_CODE,
+                //                 "unknown client type for 08-wasm client",
+                //                 Some(json!({
+                //                     "client_id": client_id.to_string()
+                //                 })),
+                //             ));
+                //         }
+                //     },
+                //     ibc_interface: IbcInterface::new(IbcInterface::IBC_GO_V8_08_WASM),
+                //     metadata: into_value(IbcGo08WasmClientMetadata { checksum }),
+                // })
+                todo!()
             }
             _ => Err(ErrorObject::owned(
                 -1,
@@ -616,54 +613,6 @@ impl StateModuleServer<IbcClassic> for Module {
             }
         }
     }
-
-    // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    // async fn query_ibc_proof(&self, _: &Extensions, at: Height, path: Path) -> RpcResult<Value> {
-    //     // TODO: This is also in the fn above, move this to somewhere more appropriate (chain-utils perhaps?)
-
-    //     const IBC_STORE_PATH: &str = "store/ibc/key";
-
-    //     let path_string = path.to_string();
-
-    //     let query_result = self
-    //         .tm_client
-    //         .abci_query(
-    //             IBC_STORE_PATH,
-    //             &path_string,
-    //             // a proof at height H is provable at height H + 1
-    //             // we assume that the height passed in to this function is the intended height to prove against, thus we have to query the height - 1
-    //             Some(
-    //                 (i64::try_from(at.height()).expect("should be fine") - 1)
-    //                     .try_into()
-    //                     .expect("invalid height"),
-    //             ),
-    //             true,
-    //         )
-    //         .await
-    //         .map_err(rpc_error(
-    //             format_args!("error fetching abci query"),
-    //             Some(json!({ "height": at, "path": path })),
-    //         ))?;
-
-    //     Ok(into_value(
-    //         MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
-    //             proofs: query_result
-    //                 .response
-    //                 .proof_ops
-    //                 .unwrap()
-    //                 .ops
-    //                 .into_iter()
-    //                 .map(|op| {
-    //                     <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(
-    //                         op.data.as_slice(),
-    //                     )
-    //                     .unwrap()
-    //                 })
-    //                 .collect::<Vec<_>>(),
-    //         })
-    //         .unwrap(),
-    //     ))
-    // }
 }
 
 // NOTE: For both of the below functions, `message` as a field will override any actual message put in (i.e. `error!("foo", message = "bar")` will print as "bar", not "foo" with an extra field `message = "bar"`.

@@ -1,3 +1,7 @@
+#![feature(trait_alias)]
+
+pub mod private_key;
+
 use std::{
     collections::HashMap, fmt::Display, hash::Hash, panic::UnwindSafe, path::PathBuf, sync::Arc,
 };

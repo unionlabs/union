@@ -18,6 +18,7 @@ use unionlabs::{
 use voyager_message::{
     core::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
+    vm::BoxDynError,
     ConsensusModule,
 };
 
@@ -53,10 +54,7 @@ pub struct Module {
 impl ConsensusModule for Module {
     type Config = Config;
 
-    async fn new(
-        config: Self::Config,
-        info: ConsensusModuleInfo,
-    ) -> Result<Self, chain_utils::BoxDynError> {
+    async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
         let aptos_client = aptos_rest_client::Client::new(config.aptos_rest_api.parse().unwrap());
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;
