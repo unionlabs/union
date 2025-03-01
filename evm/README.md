@@ -29,7 +29,7 @@ These links are only valid if you run a local ethereum devnet on an x86 machine.
 
 All the deployed contracts are upgradeable proxies forwarding calls the the underlying implementation.
 
-We use a a special contract called deployer in order to generate deterministic addresses that don't include the initcode in the derivation, see deploy https://github.com/Vectorized/solady/blob/e6ad61c844d6392910bdd21d39a33b3d668fc987/src/utils/CREATE3.sol#L63.
+We use a a special contract called deployer in order to generate deterministic addresses that don't include the initcode in the derivation, see deploy [[Solady CREATE3 Smart Contract](https://github.com/Vectorized/solady/blob/e6ad61c844d6392910bdd21d39a33b3d668fc987/src/utils/CREATE3.sol#L63)
 
 This deployer contract will be pre-deployed on all EVM networks where we deploy the IBC stack.
 
