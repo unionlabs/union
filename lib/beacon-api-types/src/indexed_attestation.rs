@@ -1,6 +1,6 @@
 #[cfg(feature = "ssz")]
 use ssz::types::List;
-use unionlabs::bls::BlsSignature;
+use unionlabs::primitives::H768;
 
 use crate::AttestationData;
 
@@ -9,7 +9,7 @@ use crate::AttestationData;
 pub struct IndexedAttestation {
     pub attesting_indices: Vec<u64>,
     pub data: AttestationData,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }
 
 #[cfg(feature = "ssz")]
@@ -18,5 +18,5 @@ pub struct IndexedAttestation {
 pub struct IndexedAttestationSsz<C: crate::MAX_VALIDATORS_PER_COMMITTEE> {
     pub attesting_indices: List<u64, C::MAX_VALIDATORS_PER_COMMITTEE>,
     pub data: AttestationData,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }

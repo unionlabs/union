@@ -1,7 +1,4 @@
-use unionlabs::{
-    bls::BlsSignature,
-    primitives::{FixedBytes, H256},
-};
+use unionlabs::primitives::{FixedBytes, H256, H768};
 #[cfg(feature = "ssz")]
 use {
     crate::{
@@ -44,7 +41,7 @@ pub struct BeaconBlockBodySsz<
         + MAX_BLOB_COMMITMENTS_PER_BLOCK
         + SYNC_COMMITTEE_SIZE,
 > {
-    pub randao_reveal: BlsSignature,
+    pub randao_reveal: H768,
     pub eth1_data: Eth1Data,
     pub graffiti: H256,
     pub proposer_slashings: List<ProposerSlashing, C::MAX_PROPOSER_SLASHINGS>,
@@ -61,7 +58,7 @@ pub struct BeaconBlockBodySsz<
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BeaconBlockBody {
-    pub randao_reveal: BlsSignature,
+    pub randao_reveal: H768,
     pub eth1_data: Eth1Data,
     pub graffiti: H256,
     pub proposer_slashings: Vec<ProposerSlashing>,

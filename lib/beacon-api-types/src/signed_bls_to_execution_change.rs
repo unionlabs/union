@@ -1,4 +1,4 @@
-use unionlabs::bls::BlsSignature;
+use unionlabs::primitives::H768;
 
 use crate::BlsToExecutionChange;
 
@@ -11,5 +11,5 @@ use crate::BlsToExecutionChange;
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz))]
 pub struct SignedBlsToExecutionChange {
     message: BlsToExecutionChange,
-    signature: BlsSignature,
+    signature: H768,
 }

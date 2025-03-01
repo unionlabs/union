@@ -3,7 +3,7 @@ use beacon_api_types::{
     ForkParameters, PresetBaseKind, Slot, Version,
 };
 use serde::{Deserialize, Serialize};
-use unionlabs::{bls::BlsSignature, primitives::H256};
+use unionlabs::primitives::{H256, H768};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeaconHeaderData {
@@ -16,7 +16,7 @@ pub struct BeaconHeaderData {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeaconHeaderSignature {
     pub message: BeaconBlockHeader,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
