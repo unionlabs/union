@@ -1,10 +1,10 @@
 # Drip
 
-Faucet for Cosmos chains: [app.union.build/faucet]. Supports multiple chains and multiple denoms per chains.
+Faucet for Cosmos chains: [Faucet][app.union.build/faucet]. Supports multiple chains and multiple denoms per chains.
 
 ## Example usage
 
-Commands are ran from repo root
+Commands are run from repo root
 
 Tab 1, Union Devnet:
 
