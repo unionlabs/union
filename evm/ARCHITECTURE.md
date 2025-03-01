@@ -77,7 +77,7 @@ In ibc-solidity, each contract inherits [IBCStore](contracts/core/24-host/IBCSto
 
 In IBC, two types of stores are defined: `provableStore` and `privateStore`. The following are the requirements for each store:
 
-https://github.com/cosmos/ibc/blob/01dbba90d238169c4905c7b11969ec7987e22729/spec/core/ics-024-host-requirements/README.md?plain=1#L63.
+[Cosmos IBC Specification – Host Requirements](https://github.com/cosmos/ibc/blob/01dbba90d238169c4905c7b11969ec7987e22729/spec/core/ics-024-host-requirements/README.md?plain=1#L63)
 
 > The `provableStore`:
 >
