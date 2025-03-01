@@ -20,7 +20,7 @@ use unionlabs::{
         validator_verifier::ValidatorVerifier,
     },
     primitives::{encoding::HexPrefixed, H256, H384, H768},
-    BytesBitIterator,
+    BytesBitIteratorBE,
 };
 
 pub(crate) const MAX_ACCUMULATOR_PROOF_DEPTH: usize = 63;
@@ -41,9 +41,9 @@ pub trait BlsVerify {
 ///
 /// * `current_validator_verifier`: The validator verifier for the current(trusted) epoch.
 /// * `trusted_state`: Currently trusted `LedgerInfo`. Note that if there's any epoch change, it **MUST** start
-/// from the current epoch + 1.
+///    from the current epoch + 1.
 /// * `state_proof`: Proof of state transition. Note that the function expects epoch changes to be in an ascending
-/// order respective to the epoch number.
+///    order respective to the epoch number.
 /// * `bls_verifier`: BLS verifier
 pub fn verify_state_proof<V: BlsVerify>(
     current_validator_verifier: &ValidatorVerifier,
@@ -88,7 +88,7 @@ pub fn verify_ledger_info<V: BlsVerify>(
     bls_verifier: &V,
 ) -> Result<(), Error> {
     // Self::check_num_of_voters(self.len() as u16, multi_signature.get_signers_bitvec())?;
-    let (pub_keys, _) = BytesBitIterator::new(&ledger_info.signatures.validator_bitmask.inner)
+    let (pub_keys, _) = BytesBitIteratorBE::new(&ledger_info.signatures.validator_bitmask.inner)
         .enumerate()
         .filter(|(_, is_true)| *is_true)
         .map(|(i, _)| {
@@ -214,7 +214,7 @@ pub fn verify_existence_proof(
         .iter()
         .rev()
         .zip(
-            BytesBitIterator::new(&element_key)
+            BytesBitIteratorBE::new(&element_key)
                 .rev()
                 .skip(256 - proof.siblings.len()),
         )

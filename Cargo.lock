@@ -1123,7 +1123,7 @@ dependencies = [
  "rlp",
  "serde",
  "serde-utils",
- "thiserror",
+ "thiserror 1.0.69",
  "unionlabs",
  "unionlabs-cosmwasm-upgradable",
 ]

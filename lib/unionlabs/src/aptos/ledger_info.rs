@@ -15,11 +15,13 @@ pub enum LedgerInfoWithSignatures {
 }
 
 impl LedgerInfoWithSignatures {
+    #[must_use]
     pub fn ledger_info(&self) -> &LedgerInfo {
         let Self::V0(ledger_info) = self;
         &ledger_info.ledger_info
     }
 
+    #[must_use]
     pub fn signatures(&self) -> &AggregateSignature {
         let Self::V0(ledger_info) = self;
         &ledger_info.signatures

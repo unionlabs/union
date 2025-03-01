@@ -17,6 +17,7 @@ extern crate alloc;
 use core::{
     fmt::{self, Debug, Display},
     iter,
+    marker::PhantomData,
     ptr::addr_of,
     str::FromStr,
 };
@@ -260,17 +261,43 @@ impl<T: core::error::Error> Display for ErrorReporter<T> {
     }
 }
 
-#[must_use = "constructing an iterator has no effect"]
-pub struct BytesBitIterator<'a> {
-    bz: &'a [u8],
-    pos: core::ops::Range<usize>,
+pub trait BitIndex {
+    /// Get the 'i'th bit
+    fn index_of(i: usize) -> usize;
 }
 
-impl<'a> BytesBitIterator<'a> {
+pub struct LittleEndianBitIndex;
+
+impl BitIndex for LittleEndianBitIndex {
+    fn index_of(i: usize) -> usize {
+        i % 8
+    }
+}
+
+pub struct BigEndianBitIndex;
+
+impl BitIndex for BigEndianBitIndex {
+    fn index_of(i: usize) -> usize {
+        7 - i % 8
+    }
+}
+
+pub type BytesBitIteratorLE<'a> = BytesBitIterator<'a, LittleEndianBitIndex>;
+pub type BytesBitIteratorBE<'a> = BytesBitIterator<'a, BigEndianBitIndex>;
+
+#[must_use = "constructing an iterator has no effect"]
+pub struct BytesBitIterator<'a, E: BitIndex> {
+    bz: &'a [u8],
+    pos: core::ops::Range<usize>,
+    _marker: PhantomData<E>,
+}
+
+impl<'a, E: BitIndex> BytesBitIterator<'a, E> {
     pub fn new(bz: &'a impl AsRef<[u8]>) -> Self {
         BytesBitIterator {
             bz: bz.as_ref(),
             pos: (0..bz.as_ref().len() * 8),
+            _marker: PhantomData,
         }
     }
 
@@ -279,12 +306,12 @@ impl<'a> BytesBitIterator<'a> {
         // debug_assert_eq!(self.hash_bytes.len(), Hash::LENGTH); // invariant
         // debug_assert_lt!(index, Hash::LENGTH_IN_BITS); // assumed precondition
         let pos = index / 8;
-        let bit = index % 8;
+        let bit = E::index_of(index);
         (self.bz[pos] >> bit) & 1 != 0
     }
 }
 
-impl core::iter::Iterator for BytesBitIterator<'_> {
+impl<E: BitIndex> core::iter::Iterator for BytesBitIterator<'_, E> {
     type Item = bool;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -296,7 +323,7 @@ impl core::iter::Iterator for BytesBitIterator<'_> {
     }
 }
 
-impl core::iter::DoubleEndedIterator for BytesBitIterator<'_> {
+impl<E: BitIndex> core::iter::DoubleEndedIterator for BytesBitIterator<'_, E> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.pos.next_back().map(|x| self.get_bit(x))
     }
