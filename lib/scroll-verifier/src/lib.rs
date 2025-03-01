@@ -3,10 +3,10 @@ use core::fmt::Debug;
 use evm_storage_verifier::{verify_account_storage_root, verify_storage_proof};
 use scroll_codec::{hash_batch, HashBatchError};
 use scroll_light_client_types::{ClientState, Header};
+use scroll_types::account::Account;
 use unionlabs::{
     ethereum::slot::{MappingKey, Slot},
     primitives::{H160, H256, U256},
-    scroll::account::Account,
 };
 use zktrie::{decode_smt_proofs, Byte32, Database, Hash, MemDB, PoseidonHash, TrieData, ZkTrie};
 

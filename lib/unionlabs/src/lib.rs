@@ -51,8 +51,6 @@ pub mod ethereum;
 /// Types specific to the union protocol.
 pub mod union;
 
-/// Types specific to the scroll protocol.
-pub mod scroll;
 
 /// Types specific to the berachain protocol.
 pub mod berachain;

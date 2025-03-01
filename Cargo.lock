@@ -10750,6 +10750,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "scroll-types"
+version = "0.0.0"
+dependencies = [
+ "unionlabs",
+]
+
+[[package]]
 name = "scroll-verifier"
 version = "0.0.0"
 dependencies = [
@@ -10757,6 +10764,7 @@ dependencies = [
  "rlp",
  "scroll-codec",
  "scroll-light-client-types",
+ "scroll-types",
  "thiserror 1.0.69",
  "unionlabs",
  "zktrie",

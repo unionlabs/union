@@ -191,6 +191,7 @@ members = [
   "cosmwasm/cw20-token-minter",
   "cosmwasm/ucs03-zkgm-token-minter-api",
   "cosmwasm/cw20-base",
+  "lib/scroll-types",
 ]
 
 [workspace.package]
@@ -242,6 +243,7 @@ berachain-light-client-types = { path = "lib/berachain-light-client-types", defa
 scroll-api                   = { path = "lib/scroll-api", default-features = false }
 scroll-codec                 = { path = "lib/scroll-codec", default-features = false }
 scroll-rpc                   = { path = "lib/scroll-rpc", default-features = false }
+scroll-types                 = { path = "lib/scroll-types", default-features = false }
 
 state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23-light-client-types", default-features = false }
 state-lens-ics23-mpt-light-client-types   = { path = "lib/state-lens-ics23-mpt-light-client-types", default-features = false }
