@@ -213,14 +213,14 @@ lto       = "thin"
 opt-level = 3
 
 [workspace.dependencies]
-aptos-move-ibc   = { path = "generated/rust/aptos-move-ibc", default-features = false }
-aptos-verifier   = { path = "lib/aptos-verifier", default-features = false }
-beacon-api       = { path = "lib/beacon-api", default-features = false }
-beacon-api-types = { path = "lib/beacon-api-types", default-features = false }
-concurrent-keyring      = { path = "lib/concurrent-keyring", default-features = false }
-cometbft-rpc     = { path = "lib/cometbft-rpc", default-features = false }
-cometbft-types   = { path = "lib/cometbft-types", default-features = false }
-cosmos-client    = { path = "lib/cosmos-client", default-features = false }
+aptos-move-ibc     = { path = "generated/rust/aptos-move-ibc", default-features = false }
+aptos-verifier     = { path = "lib/aptos-verifier", default-features = false }
+beacon-api         = { path = "lib/beacon-api", default-features = false }
+beacon-api-types   = { path = "lib/beacon-api-types", default-features = false }
+cometbft-rpc       = { path = "lib/cometbft-rpc", default-features = false }
+cometbft-types     = { path = "lib/cometbft-types", default-features = false }
+concurrent-keyring = { path = "lib/concurrent-keyring", default-features = false }
+cosmos-client      = { path = "lib/cosmos-client", default-features = false }
 
 state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
 
