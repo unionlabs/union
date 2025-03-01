@@ -14,6 +14,18 @@ pub enum LedgerInfoWithSignatures {
     V0(LedgerInfoWithV0),
 }
 
+impl LedgerInfoWithSignatures {
+    pub fn ledger_info(&self) -> &LedgerInfo {
+        let Self::V0(ledger_info) = self;
+        &ledger_info.ledger_info
+    }
+
+    pub fn signatures(&self) -> &AggregateSignature {
+        let Self::V0(ledger_info) = self;
+        &ledger_info.signatures
+    }
+}
+
 /// The validator node returns this structure which includes signatures
 /// from validators that confirm the state.  The client needs to only pass back
 /// the `LedgerInfo` element since the validator node doesn't need to know the signatures

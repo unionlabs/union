@@ -1406,7 +1406,9 @@ name = "aptos-verifier"
 version = "0.0.0"
 dependencies = [
  "bcs 0.1.6",
+ "cosmwasm-crypto 2.1.4",
  "hex-literal",
+ "serde",
  "sha3 0.10.8",
  "thiserror 1.0.69",
  "unionlabs",
