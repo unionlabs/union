@@ -79,7 +79,7 @@ import (
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/unionlabs/union/uniond/docs"
 )
 
@@ -285,7 +285,7 @@ func New(
 	// This is necessary for manually registered modules that do not support app wiring.
 	// Manually set the module version map as shown below.
 	// The upgrade module will automatically handle de-duplication of the module version map.
-	app.SetInitChainer(func(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+	app.SetInitChainer(func(ctx sdk.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
 		if err := app.UpgradeKeeper.SetModuleVersionMap(ctx, app.ModuleManager.GetVersionMap()); err != nil {
 			return nil, err
 		}

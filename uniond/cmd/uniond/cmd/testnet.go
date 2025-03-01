@@ -8,10 +8,9 @@ import (
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
+	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/bytes"
-	tmos "github.com/cometbft/cometbft/libs/os"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -88,7 +87,7 @@ func initAppForTestnet(app *app.App, args valArgs) *app.App {
 	pubkey := &ed25519.PubKey{Key: args.newValPubKey.Bytes()}
 	pubkeyAny, err := codectypes.NewAnyWithValue(pubkey)
 	if err != nil {
-		tmos.Exit(err.Error())
+		panic(err)
 	}
 
 	// STAKING
@@ -117,7 +116,7 @@ func initAppForTestnet(app *app.App, args valArgs) *app.App {
 
 	validator, err := app.StakingKeeper.ValidatorAddressCodec().StringToBytes(newVal.GetOperator())
 	if err != nil {
-		tmos.Exit(err.Error())
+		panic(err)
 	}
 
 	// Remove all validators from power store
@@ -125,7 +124,7 @@ func initAppForTestnet(app *app.App, args valArgs) *app.App {
 	stakingStore := ctx.KVStore(stakingKey)
 	iterator, err := app.StakingKeeper.ValidatorsPowerStoreIterator(ctx)
 	if err != nil {
-		tmos.Exit(err.Error())
+		panic(err)
 	}
 	for ; iterator.Valid(); iterator.Next() {
 		stakingStore.Delete(iterator.Key())
@@ -135,7 +134,7 @@ func initAppForTestnet(app *app.App, args valArgs) *app.App {
 	// Remove all valdiators from last validators store
 	iterator, err = app.StakingKeeper.LastValidatorsIterator(ctx)
 	if err != nil {
-		tmos.Exit(err.Error())
+		panic(err)
 	}
 	for ; iterator.Valid(); iterator.Next() {
 		stakingStore.Delete(iterator.Key())
@@ -160,12 +159,12 @@ func initAppForTestnet(app *app.App, args valArgs) *app.App {
 	app.StakingKeeper.SetValidator(ctx, newVal)
 	err = app.StakingKeeper.SetValidatorByConsAddr(ctx, newVal)
 	if err != nil {
-		tmos.Exit(err.Error())
+		panic(err)
 	}
 	app.StakingKeeper.SetValidatorByPowerIndex(ctx, newVal)
 	app.StakingKeeper.SetLastValidatorPower(ctx, validator, 0)
 	if err := app.StakingKeeper.Hooks().AfterValidatorCreated(ctx, validator); err != nil {
-		tmos.Exit(err.Error())
+		panic(err)
 	}
 
 	// DISTRIBUTION
@@ -193,7 +192,7 @@ func initAppForTestnet(app *app.App, args valArgs) *app.App {
 	//
 	bondDenom, err := app.StakingKeeper.BondDenom(ctx)
 	if err != nil {
-		tmos.Exit(err.Error())
+		panic(err)
 	}
 
 	defaultCoins := sdk.NewCoins(sdk.NewInt64Coin(bondDenom, 1000000000))
@@ -202,11 +201,11 @@ func initAppForTestnet(app *app.App, args valArgs) *app.App {
 	for _, account := range args.accountsToFund {
 		err := app.BankKeeper.MintCoins(ctx, minttypes.ModuleName, defaultCoins)
 		if err != nil {
-			tmos.Exit(err.Error())
+			panic(err)
 		}
 		err = app.BankKeeper.SendCoinsFromModuleToAccount(ctx, minttypes.ModuleName, account, defaultCoins)
 		if err != nil {
-			tmos.Exit(err.Error())
+			panic(err)
 		}
 	}
 

@@ -17,7 +17,7 @@ import (
 	"cosmossdk.io/x/feegrant"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -307,7 +307,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, app.Name, newApp.Name())
 
-	_, err = newApp.InitChain(&abci.RequestInitChain{
+	_, err = newApp.InitChain(&abci.InitChainRequest{
 		AppStateBytes: exported.AppState,
 		ChainId:       SimAppChainID,
 	})
