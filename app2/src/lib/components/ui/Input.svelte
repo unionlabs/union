@@ -35,7 +35,7 @@ const classes = cn(
 )
 </script>
 
-<div class="mb-4">
+<div>
   <Label for={id}>{label}</Label>
   <input
     {id}
