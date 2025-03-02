@@ -1,6 +1,5 @@
 extern crate alloc;
 
-pub mod crypto;
 pub mod error;
 // REVIEW: Unused?
 pub mod utils;

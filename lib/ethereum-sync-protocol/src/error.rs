@@ -1,5 +1,4 @@
 use beacon_api_types::Slot;
-// use milagro_bls::AmclError;
 use unionlabs::primitives::{H256, H384, H768};
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
