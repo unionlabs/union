@@ -1,5 +1,6 @@
 <script lang="ts">
 import { RawIntentsStoreSvelte } from "./raw-intents-store.svelte"
+import Input from "$lib/components/ui/Input.svelte"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -32,60 +33,40 @@ function resetAll() {
   <div class="mb-6">
     <h2 class="text-xl font-semibold mb-4 text-sky-400">Test Form</h2>
 
-    <div class="mb-4">
-      <label for="source" class="block mb-1 font-medium text-zinc-300">Source:</label>
-      <input
-              id="source"
-              type="text"
-              value={rawIntents.source}
-              oninput={(e) => rawIntents.updateField('source', e)}
-              class="w-full p-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
-      />
-    </div>
+    <Input
+      id="source"
+      label="Source"
+      value={rawIntents.source}
+      oninput={(e) => rawIntents.updateField('source', e)}
+    />
 
-    <div class="mb-4">
-      <label for="destination" class="block mb-1 font-medium text-zinc-300">Destination:</label>
-      <input
-              id="destination"
-              type="text"
-              value={rawIntents.destination}
-              oninput={(e) => rawIntents.updateField('destination', e)}
-              class="w-full p-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
-      />
-    </div>
+    <Input
+      id="destination"
+      label="Destination" 
+      value={rawIntents.destination}
+      oninput={(e) => rawIntents.updateField('destination', e)}
+    />
 
-    <div class="mb-4">
-      <label for="asset" class="block mb-1 font-medium text-zinc-300">Asset:</label>
-      <input
-              id="asset"
-              type="text"
-              value={rawIntents.asset}
-              oninput={(e) => rawIntents.updateField('asset', e)}
-              class="w-full p-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
-      />
-    </div>
+    <Input
+      id="asset"
+      label="Asset"
+      value={rawIntents.asset}
+      oninput={(e) => rawIntents.updateField('asset', e)}
+    />
 
-    <div class="mb-4">
-      <label for="receiver" class="block mb-1 font-medium text-zinc-300">Receiver:</label>
-      <input
-              id="receiver"
-              type="text"
-              value={rawIntents.receiver}
-              oninput={(e) => rawIntents.updateField('receiver', e)}
-              class="w-full p-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
-      />
-    </div>
+    <Input
+      id="receiver"
+      label="Receiver"
+      value={rawIntents.receiver}
+      oninput={(e) => rawIntents.updateField('receiver', e)}
+    />
 
-    <div class="mb-4">
-      <label for="amount" class="block mb-1 font-medium text-zinc-300">Amount:</label>
-      <input
-              id="amount"
-              type="text"
-              value={rawIntents.amount}
-              oninput={(e) => rawIntents.updateField('amount', e)}
-              class="w-full p-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
-      />
-    </div>
+    <Input
+      id="amount"
+      label="Amount"
+      value={rawIntents.amount}
+      oninput={(e) => rawIntents.updateField('amount', e)}
+    />
   </div>
 
   <div class="mt-6">

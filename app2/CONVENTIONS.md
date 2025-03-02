@@ -46,6 +46,7 @@
 - Always use Svelte 5's reactive syntax
 - Never use `$:` statements or `$store` syntax
 - Use `$state()`, `$derived()`, and `$effect()` instead
+- Don't legacy syntax like `on:input` / `on:click`, use `oninput` and `onclick` instead.
 
 ### Props
 
