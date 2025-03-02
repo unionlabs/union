@@ -56,6 +56,10 @@ import (
 	_ "github.com/strangelove-ventures/poa/api/v1"
 	_ "github.com/strangelove-ventures/poa/keeper"
 	_ "github.com/strangelove-ventures/poa/module"
+
+	feemarketmodule "github.com/skip-mev/feemarket/api/feemarket/feemarket/module/v1"
+	_ "github.com/skip-mev/feemarket/x/feemarket/keeper"
+	feemarkettypes "github.com/skip-mev/feemarket/x/feemarket/types"
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
@@ -93,6 +97,7 @@ var (
 		circuittypes.ModuleName,
 		// chain modules
 		wasmtypes.ModuleName,
+		feemarkettypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/initGenesis
 	}
 
@@ -118,6 +123,7 @@ var (
 		ibcfeetypes.ModuleName,
 		// chain modules
 		wasmtypes.ModuleName,
+		feemarkettypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/beginBlockers
 	}
 
@@ -137,6 +143,7 @@ var (
 		ibcfeetypes.ModuleName,
 		// chain modules
 		wasmtypes.ModuleName,
+		feemarkettypes.ModuleName,
 		// this line is used by starport scaffolding # stargate/app/endBlockers
 	}
 
@@ -291,6 +298,10 @@ var (
 				Config: appconfig.WrapAny(&poamodule.Module{
 					Authority: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua",
 				}),
+			},
+			{
+				Name:   feemarkettypes.ModuleName,
+				Config: appconfig.WrapAny(&feemarketmodule.Module{}),
 			},
 			// this line is used by starport scaffolding # stargate/app/moduleConfig
 		},

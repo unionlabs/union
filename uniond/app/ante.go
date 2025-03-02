@@ -15,6 +15,9 @@ import (
 	"github.com/cosmos/ibc-go/v8/modules/core/keeper"
 
 	poaante "github.com/strangelove-ventures/poa/ante"
+
+	feemarketante "github.com/skip-mev/feemarket/x/feemarket/ante"
+	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -22,11 +25,14 @@ import (
 type HandlerOptions struct {
 	ante.HandlerOptions
 
-	IBCKeeper             *keeper.Keeper
-	NodeConfig            *wasmTypes.NodeConfig
-	WasmKeeper            *wasmkeeper.Keeper
-	TXCounterStoreService corestoretypes.KVStoreService
-	CircuitKeeper         *circuitkeeper.Keeper
+	IBCKeeper              *keeper.Keeper
+	NodeConfig             *wasmTypes.NodeConfig
+	WasmKeeper             *wasmkeeper.Keeper
+	TXCounterStoreService  corestoretypes.KVStoreService
+	CircuitKeeper          *circuitkeeper.Keeper
+	FeeMarketKeeper        feemarketkeeper.Keeper
+	FeeMarketBankKeeper    feemarketante.BankKeeper
+	FeeMarketAccountKeeper feemarketante.AccountKeeper
 }
 
 // NewAnteHandler constructor
@@ -76,6 +82,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		poaante.NewPOADisableStakingDecorator(),
 		poaante.NewPOADisableWithdrawDelegatorRewards(),
 		poaante.NewCommissionLimitDecorator(doGenTxRateValidation, rateFloor, rateCeil),
+		feemarketante.NewFeeMarketCheckDecorator(options.FeeMarketAccountKeeper, options.FeeMarketBankKeeper, options.FeegrantKeeper, &options.FeeMarketKeeper, ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.TxFeeChecker)),
 	}
 
 	return sdk.ChainAnteDecorators(anteDecorators...), nil

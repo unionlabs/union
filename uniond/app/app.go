@@ -76,6 +76,10 @@ import (
 	poakeeper "github.com/strangelove-ventures/poa/keeper"
 	_ "github.com/strangelove-ventures/poa/module" // import for side-effects
 
+	_ "github.com/skip-mev/feemarket/x/feemarket"
+	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
+	_ "github.com/skip-mev/feemarket/x/feemarket/types"
+
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
@@ -144,6 +148,9 @@ type App struct {
 
 	// POA
 	POAKeeper poakeeper.Keeper
+
+	// Fee Market
+	FeeMarketKeeper feemarketkeeper.Keeper
 
 	// this line is used by starport scaffolding # stargate/app/keeperDeclaration
 
@@ -248,6 +255,7 @@ func New(
 		&app.GroupKeeper,
 		&app.CircuitBreakerKeeper,
 		&app.POAKeeper,
+		&app.FeeMarketKeeper,
 		// this line is used by starport scaffolding # stargate/app/keeperDefinition
 	); err != nil {
 		panic(err)
