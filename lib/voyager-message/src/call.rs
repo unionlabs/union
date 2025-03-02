@@ -16,13 +16,12 @@ use crate::{
 #[model]
 #[derive(Enumorph)]
 pub enum Call {
+    // hooks
     FetchBlocks(FetchBlocks),
-
     FetchUpdateHeaders(FetchUpdateHeaders),
-
     SubmitTx(SubmitTx),
 
-    // MakeMsgCreateClient(MakeMsgCreateClient),
+    // generic waiting logic
     WaitForHeight(WaitForHeight),
     WaitForTimestamp(WaitForTimestamp),
     WaitForTrustedHeight(WaitForTrustedHeight),
