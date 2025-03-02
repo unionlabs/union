@@ -26,33 +26,12 @@ When running `uniond` in production, we recommend using [`unionvisor`](../unionv
 
 ## Architecture
 
-Uniond is a [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) based blockchain consisting of a set of modules.
+Uniond is a [Cosmos SDK](https://github.com/cosmos/cosmos-sdk) based blockchain. Outside of the core Cosmos SDK modules, uniond also utilizes [`Wasmd`](https://github.com/cosmwasm/wasmd) to host our virtualized IBC-Union stack. We also support the [`ibc-go`](https://github.com/cosmos/ibc-go) module for native connections.
 
-```mermaid
-graph LR
-    subgraph Uniond Modules
-        x/bank
-        x/gov
-        subgraph x/ibc
-          subgraph 08-wasm
-            ethereum-light-client["ethereum-light-client"]
-            berachain-light-client["berachain-light-client"]
-            arbitrum-light-client["arbitrum-light-client"]
-            etc1[...]
-          end
-        end
-        subgraph x/wasm
-          ucs01-relay["ucs01-relay"]
-          ucs02-nft["ucs02-nft"]
-          etc2[...]
-        end
-        etc3[...]
-    end
-```
+### Wasmd
 
-The most notable module is **x/ibc**, as it contains [08-wasm](https://ibc.cosmos.network/main/ibc/light-clients/wasm/overview/). This allows us to write
-**Light Clients** in [Rust](https://www.rust-lang.org/), compile them to [WebAssembly](https://webassembly.org/), and upload them to the `uniond` chain to support many ecosystems.
+To enable the deployment of CosmWasm contracts, including the virtualized IBC-Union stack, the Union network includes `Wasmd`. Through `Wasmd`, union has access to the `Wasmvm`. Union's mainnet is shipped with `Wasmvm` 2.1.2.
 
-You can find the light clients [here](../light-clients).
+### PoA
 
-Notably, `uniond` also contains `x/wasm`, which we use to upload [our CosmWasm contracts](../cosmwasm).
+Union will temporarily utilize [PoA](https://github.com/strangelove-ventures/poa/) during the incubation stage of mainnet. Once the Union mainnet is ready for the public, Union will [migrate to Proof of Stake from Proof of Authority](https://github.com/strangelove-ventures/poa/blob/34aee49474018a4035fecbe676b765c2717d78aa/INTEGRATION.md#migrating-to-pos-from-poa).

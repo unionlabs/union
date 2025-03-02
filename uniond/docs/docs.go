@@ -29,7 +29,7 @@ func handler(title string) http.HandlerFunc {
 	t, _ := httptemplate.ParseFS(template, indexFile)
 
 	return func(w http.ResponseWriter, req *http.Request) {
-		t.Execute(w, struct {
+		_ = t.Execute(w, struct {
 			Title string
 			URL   string
 		}{

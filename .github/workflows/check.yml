@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - main
+      - union-1-staging
   merge_group:
 
 permissions: read-all

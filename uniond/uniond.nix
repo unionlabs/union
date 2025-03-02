@@ -3,9 +3,7 @@ _: {
     {
       pkgs,
       self',
-      crane,
       system,
-      ensureAtRepositoryRoot,
       nix-filter,
       gitRev,
       uniondBundleVersions,
@@ -14,7 +12,7 @@ _: {
       ...
     }:
     let
-      libwasmvm = self'.packages.libwasmvm-2_1_3;
+      libwasmvm = self'.packages.libwasmvm-2_2_1;
       CGO_LDFLAGS = "-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib -s -w";
 
       mkUniondImage =
@@ -54,7 +52,7 @@ _: {
                     (nix-filter.matchExt "md")
                   ];
                 };
-                vendorHash = "sha256-NcTCWXTmjMYkv3cEgcIyhEy18ynELvceEdofBFQVlgM=";
+                vendorHash = "sha256-V69IzwiwgRb6tiJg5S2ca7DBYGNtndc39DEtpxJtN/g=";
                 doCheck = true;
                 meta.mainProgram = "uniond";
               }
@@ -62,11 +60,17 @@ _: {
                 if pkgs.stdenv.isLinux then
                   {
                     inherit CGO_LDFLAGS;
-                    nativeBuildInputs = [ goPkgs.musl ];
+                    nativeBuildInputs = [
+                      goPkgs.musl
+                      libwasmvm
+                    ];
+                    tags = [ "musl" ];
                     ldflags = [
                       "-linkmode external"
+                      "-extldflags \"-Wl,-z,muldefs -static\""
                       "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
                       "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
+                      "-X github.com/cosmos/cosmos-sdk/version.BuildTags=musl"
                     ];
                   }
                 else if pkgs.stdenv.isDarwin then

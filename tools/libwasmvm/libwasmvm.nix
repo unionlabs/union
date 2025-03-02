@@ -30,6 +30,10 @@ _: {
         channel = "nightly-2024-01-27";
         targets = [ CARGO_BUILD_TARGET ];
       };
+      rustToolchain-1-77 = rust.mkNightly {
+        channel = "1.77.0";
+        targets = [ CARGO_BUILD_TARGET ];
+      };
       rustToolchain-1-82 = rust.mkNightly {
         channel = "1.82.0";
         targets = [ CARGO_BUILD_TARGET ];
@@ -77,14 +81,14 @@ _: {
           }
         );
       mkLibwasmvm_v2 =
-        wasmvm:
+        wasmvm: rustToolChain:
         let
           attrs =
             {
               inherit CARGO_BUILD_TARGET;
               pname = "libwasmvm";
               version = wasmvm.rev;
-              buildInputs = [ rustToolchain-1-82 ];
+              buildInputs = [ rustToolChain ];
               src = "${wasmvm}/libwasmvm";
               installCargoArtifactsMode = "use-zstd";
             }
@@ -109,7 +113,7 @@ _: {
               else
                 throwBadSystem
             );
-          craneLib = crane.lib.overrideToolchain rustToolchain-1-82;
+          craneLib = crane.lib.overrideToolchain rustToolChain;
         in
         craneLib.buildPackage (
           attrs
@@ -135,10 +139,17 @@ _: {
         rev = "v2.1.3";
         hash = "sha256-gYrK2EHhXnearJgLX38O6NLI6TfoGtpzA9be/7S/0ZU=";
       };
+      wasmvm-2_2_1 = pkgs.fetchFromGitHub {
+        owner = "CosmWasm";
+        repo = "wasmvm";
+        rev = "v2.2.1";
+        hash = "sha256-HA/YPdE1yy2/vfiQWOTE0z75agYZL/kWTvpXKyKbfLk=";
+      };
     in
     {
       packages.libwasmvm-1_5_2 = mkLibwasmvm_v1 wasmvm-1_5_2;
-      packages.libwasmvm-2_1_2 = mkLibwasmvm_v2 wasmvm-2_1_2;
-      packages.libwasmvm-2_1_3 = mkLibwasmvm_v2 wasmvm-2_1_3;
+      packages.libwasmvm-2_1_2 = mkLibwasmvm_v2 wasmvm-2_1_2 rustToolchain-1-77;
+      packages.libwasmvm-2_1_3 = mkLibwasmvm_v2 wasmvm-2_1_3 rustToolchain-1-82;
+      packages.libwasmvm-2_2_1 = mkLibwasmvm_v2 wasmvm-2_2_1 rustToolchain-1-82;
     };
 }

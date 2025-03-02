@@ -1,22 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
-	"cosmossdk.io/log"
-
+	clienthelpers "cosmossdk.io/client/v2/helpers"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	"union/app"
-	"union/cmd/uniond/cmd"
+
+	"github.com/unionlabs/union/uniond/app"
+	"github.com/unionlabs/union/uniond/cmd/uniond/cmd"
 )
 
 func main() {
-	rootCmd, _ := cmd.NewRootCmd()
-	rootCmd.AddCommand(cmd.GenBn254())
-	rootCmd.AddCommand(cmd.ProofOfPossession())
-	rootCmd.AddCommand(cmd.GenStateProof())
-	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
-		log.NewLogger(rootCmd.OutOrStderr()).Error("failure when running app", "err", err)
+	rootCmd := cmd.NewRootCmd()
+	if err := svrcmd.Execute(rootCmd, clienthelpers.EnvPrefix, app.DefaultNodeHome); err != nil {
+		fmt.Fprintln(rootCmd.OutOrStderr(), err)
 		os.Exit(1)
 	}
 }
