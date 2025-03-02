@@ -4,9 +4,10 @@ import Input from "$lib/components/ui/Input.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { Cause, Data, Effect, Exit, Option } from "effect"
-import { createWalletClient, type Hash } from "viem"
+import { Effect, Exit, Option, Either } from "effect"
+import { type Hash } from "viem"
 import { sepolia } from "viem/chains"
+import { submitTransfer, type SubmitTransferError } from "$lib/services/transfer"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -21,63 +22,32 @@ function resetAll() {
   })
 }
 
-let error = $state<Option.Option<string>>(Option.none())
 let isSubmitting = $state(false)
-let txHash = $state<Option.Option<Hash>>(Option.none())
-
-class CreateWalletClientError extends Data.TaggedError("CreateWalletClientError")<{
-  cause: Error
-}> {}
-
-class SendTransactionError extends Data.TaggedError("SendTransactionError")<{
-  cause: Error
-}> {}
-
-const submitFlow = Effect.gen(function* () {
-  const walletClient = yield* Effect.try({
-    try: () =>
-      createWalletClient({
-        chain: sepolia,
-        transport: () => window.ethereum
-      }),
-    catch: err => new CreateWalletClientError({ cause: err as Error })
-  })
-
-  const hash = yield* Effect.tryPromise({
-    try: () =>
-      walletClient.sendTransaction({
-        account: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
-        amount: 1,
-        to: rawIntents.receiver as `0x${string}`
-      }),
-    catch: err => new SendTransactionError({ cause: err as Error })
-  })
-  return hash
-})
+let submissionResult = $state<Option.Option<Either.Either<Hash, SubmitTransferError>>>(
+  Option.none()
+)
 
 async function submit() {
   isSubmitting = true
-  txHash = Option.none()
-  error = Option.none()
-  const exit = await Effect.runPromiseExit(submitFlow)
+  submissionResult = Option.none()
+  const exit = await Effect.runPromiseExit(
+    submitTransfer({
+      chain: sepolia,
+      account: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
+      value: 1n,
+      to: rawIntents.receiver as `0x${string}`
+    })
+  )
   Exit.match(exit, {
     onFailure: cause => {
-      error = Option.some(
-        Cause.match(cause, {
-          onFail: (err: CreateWalletClientError | SendTransactionError) =>
-            err._tag === "CreateWalletClientError"
-              ? "could not connect wallet"
-              : "could not submit transfer",
-          onEmpty: "empty",
-          onDie: () => "die",
-          onInterrupt: () => "transfer interrupted",
-          onSequential: () => "blah",
-          onParallel: () => "blah"
-        })
-      )
+      if (cause._tag === "Fail") {
+        submissionResult = Option.some(Either.left(cause.error))
+      } else {
+        console.error("Unexpected causes of program exit", exit)
+      }
     },
-    onSuccess: (hash: `0x${string}`) => {
-      txHash = Option.some(hash)
+    onSuccess: (hash: Hash) => {
+      submissionResult = Option.some(Either.right(hash))
     }
   })
   isSubmitting = false
@@ -158,16 +128,17 @@ async function submit() {
         </Button>
       </div>
 
-      {#if error}
-        <div class="text-red-500 mt-2">
-          {error}
-        </div>
-      {/if}
-
-      {#if txHash}
-        <div class="text-green-500 mt-2">
-          Transaction submitted! Hash: {txHash}
-        </div>
+      {#if Option.isSome(submissionResult)}
+        {#if Either.isRight(submissionResult.value)}
+          <div class="text-green-500 mt-2">
+            Transaction submitted! Hash: {submissionResult.value.right}
+          </div>
+        {:else}
+          <pre class="text-red-500 mt-2">
+            {submissionResult.value.left}
+            {JSON.stringify(submissionResult.value.left.cause, null, 2)}
+          </pre>
+        {/if}
       {/if}
     </div>
   </section>
