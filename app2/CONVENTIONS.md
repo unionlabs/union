@@ -21,6 +21,7 @@
   /* Use: */
   bg-zinc-100 dark:bg-zinc-800
   ```
+- never use `mx-auto` to style. use flexbox instead.
 
 ## UI Components
 
