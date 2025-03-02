@@ -10,6 +10,7 @@
   // Use:
   let value: Option<string>
   ```
+- Never use `try {} catch {}` blocks. always use Effect. When dealing with unsafe functions from librarie, use `Effect.tryPromie(() => somePromiseFn())`
 
 ## Styling
 
@@ -22,6 +23,7 @@
   bg-zinc-100 dark:bg-zinc-800
   ```
 - never use `mx-auto` to style. use flexbox instead.
+- If you want to apply a gap between components, use `flex gap-*`, rather than `space-x-*`
 
 ## UI Components
 
