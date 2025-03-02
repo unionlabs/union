@@ -1,10 +1,15 @@
 package app
 
 import (
+	"context"
 	"io"
+	"os"
+	"slices"
+	"strings"
 
 	_ "cosmossdk.io/api/cosmos/tx/config/v1" // import for side-effects
 	clienthelpers "cosmossdk.io/client/v2/helpers"
+	_ "cosmossdk.io/core/store"
 	"cosmossdk.io/depinject"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
@@ -28,9 +33,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/mempool"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	_ "github.com/cosmos/cosmos-sdk/x/auth/tx/config" // import for side-effects
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -279,6 +286,29 @@ func New(
 	}
 
 	/****  Module Options ****/
+
+	parentTxPriority := mempool.NewDefaultTxPriority()
+	priorityAddresses := strings.Split(os.Getenv("MEMPOOL_PRIORITY"), ",")
+	app.SetMempool(mempool.NewPriorityMempool(mempool.PriorityNonceMempoolConfig[int64]{
+		TxPriority: mempool.TxPriority[int64]{
+			GetTxPriority: func(goCtx context.Context, tx sdk.Tx) int64 {
+				sigs, err := tx.(signing.SigVerifiableTx).GetSignaturesV2()
+
+				if err == nil {
+					for _, sig := range sigs {
+						sender := sdk.AccAddress(sig.PubKey.Address()).String()
+						if slices.Contains(priorityAddresses, sender) {
+							return 100
+						}
+					}
+				}
+				return parentTxPriority.GetTxPriority(goCtx, tx)
+			},
+			Compare:  parentTxPriority.Compare,
+			MinValue: parentTxPriority.MinValue,
+		},
+		SignerExtractor: mempool.NewDefaultSignerExtractionAdapter(),
+	}))
 
 	app.ModuleManager.RegisterInvariants(app.CrisisKeeper)
 
