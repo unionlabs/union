@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { HTMLAttributes } from "svelte/elements"
 import { cn } from "$lib/utils"
+import Label from "./Label.svelte"
 
 type Props = HTMLAttributes<HTMLInputElement> & {
   id: string
@@ -35,12 +36,7 @@ const classes = cn(
 </script>
 
 <div class="mb-4">
-  <label 
-    for={id} 
-    class="block mb-1 font-medium text-zinc-300"
-  >
-    {label}
-  </label>
+  <Label for={id}>{label}</Label>
   <input
     {id}
     {type}
