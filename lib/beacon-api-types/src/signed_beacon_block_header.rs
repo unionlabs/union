@@ -1,4 +1,4 @@
-use unionlabs::bls::BlsSignature;
+use unionlabs::primitives::H768;
 
 use crate::BeaconBlockHeader;
 
@@ -7,5 +7,5 @@ use crate::BeaconBlockHeader;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SignedBeaconBlockHeader {
     pub message: BeaconBlockHeader,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }

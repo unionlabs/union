@@ -1,4 +1,4 @@
-use unionlabs::bls::BlsSignature;
+use unionlabs::primitives::H768;
 
 use crate::VoluntaryExit;
 
@@ -7,5 +7,5 @@ use crate::VoluntaryExit;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SignedVoluntaryExit {
     pub message: VoluntaryExit,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }

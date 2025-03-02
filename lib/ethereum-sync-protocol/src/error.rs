@@ -1,9 +1,6 @@
 use beacon_api_types::Slot;
 use milagro_bls::AmclError;
-use unionlabs::{
-    bls::{BlsPublicKey, BlsSignature},
-    primitives::{H256, H384},
-};
+use unionlabs::primitives::{H256, H384, H768};
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 #[error("invalid merkle branch \
@@ -22,9 +19,9 @@ pub struct InvalidMerkleBranch {
 #[derive(Debug, PartialEq, thiserror::Error, Clone)]
 #[error("signature cannot be verified (public_keys: {public_keys:?}, msg: {msg}, signature: {signature})", msg = serde_utils::to_hex(.msg))]
 pub struct InvalidSignature {
-    pub public_keys: Vec<BlsPublicKey>,
+    pub public_keys: Vec<H384>,
     pub msg: Vec<u8>,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }
 
 #[derive(Debug, PartialEq, thiserror::Error, Clone)]
@@ -98,7 +95,7 @@ pub enum Error {
     InsufficientSyncCommitteeParticipants(usize),
     #[error("bls error ({0:?})")]
     Bls(AmclError),
-    // boxed as this variant is significantly larger than the rest of the variants (due to the BlsSignature contained within)
+    // boxed as this variant is significantly larger than the rest of the variants (due to the H768 contained within)
     #[error(transparent)]
     InvalidSignature(Box<InvalidSignature>),
     #[error("update header contains deneb specific information")]
