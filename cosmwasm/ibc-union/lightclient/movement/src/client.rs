@@ -196,19 +196,14 @@ fn update_state(
         state_proof_hash: H256::default(), // TODO(aeryz): im not sure if we need this
     };
 
-    let client_state = if header.new_height > client_state.latest_block_num {
-        client_state.latest_block_num = header.new_height;
-        Some(client_state)
-    } else {
-        None
-    };
+    let state_update = StateUpdate::new(header.new_height, consensus_state);
 
-    Ok(StateUpdate {
-        height: header.new_height,
-        client_state,
-        consensus_state,
-        storage_writes: vec![],
-    })
+    if header.new_height > client_state.latest_block_num {
+        client_state.latest_block_num = header.new_height;
+        Ok(state_update.set_client_state(client_state))
+    } else {
+        Ok(state_update)
+    }
 }
 
 // #[cfg(feature = "union-movement")]

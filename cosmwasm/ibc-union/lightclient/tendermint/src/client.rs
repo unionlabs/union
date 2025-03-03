@@ -252,25 +252,23 @@ pub fn verify_header<V: HostFns>(
         .try_into()
         .expect("impossible");
 
-    let client_state = if client_state.latest_height.height() < update_height {
-        *client_state.latest_height.height_mut() = update_height;
-        Some(client_state)
-    } else {
-        None
-    };
-
-    Ok(StateUpdate {
-        height: update_height,
-        client_state,
-        consensus_state: ConsensusState {
+    let state_update = StateUpdate::new(
+        update_height,
+        ConsensusState {
             timestamp: header.signed_header.header.time,
             root: MerkleRoot {
                 hash: (*header.signed_header.header.app_hash.get()).into(),
             },
             next_validators_hash: header.signed_header.header.next_validators_hash,
         },
-        storage_writes: vec![],
-    })
+    );
+
+    if client_state.latest_height.height() < update_height {
+        *client_state.latest_height.height_mut() = update_height;
+        Ok(state_update.set_client_state(client_state))
+    } else {
+        Ok(state_update)
+    }
 }
 
 pub fn set_total_voting_power(validator_set: &mut ValidatorSet) -> Result<(), MathOverflow> {

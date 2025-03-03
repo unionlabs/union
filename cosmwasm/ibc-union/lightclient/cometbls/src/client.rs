@@ -138,12 +138,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         // If the update is already happened, we just do noop
         let header_height = header.signed_header.height.inner() as u64;
         if let Ok(consensus_state) = ctx.read_self_consensus_state(header_height) {
-            return Ok(StateUpdate {
-                height: header_height,
-                client_state: None,
-                consensus_state,
-                storage_writes: vec![],
-            });
+            return Ok(StateUpdate::new(header_height, consensus_state));
         }
 
         verify_header::<T>(&ctx, &client_state, &consensus_state, &header)?;
@@ -283,13 +278,6 @@ fn update_state<T: ZkpVerifier>(
         header.signed_header.height.inner() as u64,
     );
 
-    let client_state = if untrusted_height > client_state.latest_height {
-        client_state.latest_height = untrusted_height;
-        Some(client_state)
-    } else {
-        None
-    };
-
     consensus_state.app_hash = MerkleRoot {
         hash: header.signed_header.app_hash.into_encoding(),
     };
@@ -298,12 +286,14 @@ fn update_state<T: ZkpVerifier>(
     // Normalized to nanoseconds to follow tendermint convention
     consensus_state.timestamp = header.signed_header.time.as_unix_nanos();
 
-    Ok(StateUpdate {
-        height: untrusted_height.height(),
-        client_state,
-        consensus_state,
-        storage_writes: vec![],
-    })
+    let state_update = StateUpdate::new(untrusted_height.height(), consensus_state);
+
+    if untrusted_height > client_state.latest_height {
+        client_state.latest_height = untrusted_height;
+        Ok(state_update.set_client_state(client_state))
+    } else {
+        Ok(state_update)
+    }
 }
 
 fn is_client_expired(

@@ -191,6 +191,27 @@ pub struct StateUpdate<T: IbcClient> {
     pub storage_writes: StorageWrites,
 }
 
+impl<T: IbcClient> StateUpdate<T> {
+    pub fn new(height: u64, consensus_state: T::ConsensusState) -> Self {
+        StateUpdate {
+            height,
+            consensus_state,
+            client_state: None,
+            storage_writes: vec![],
+        }
+    }
+
+    pub fn set_client_state(mut self, client_state: T::ClientState) -> Self {
+        self.client_state = Some(client_state);
+        self
+    }
+
+    pub fn add_storage_write<V: Encode<T::Encoding>>(mut self, key: Bytes, value: V) -> Self {
+        self.storage_writes.push((key, value.encode().into()));
+        self
+    }
+}
+
 /// Client creation output type
 pub struct ClientCreation<T: IbcClient> {
     /// The client state that is going to be stored by IBC. If set to `None`, IBC will store the
@@ -217,8 +238,8 @@ impl<T: IbcClient> ClientCreation<T> {
         self
     }
 
-    pub fn add_storage_write(mut self, kv: (Bytes, Bytes)) -> Self {
-        self.storage_writes.push(kv);
+    pub fn add_storage_write<V: Encode<T::Encoding>>(mut self, key: Bytes, value: V) -> Self {
+        self.storage_writes.push((key, value.encode().into()));
         self
     }
 

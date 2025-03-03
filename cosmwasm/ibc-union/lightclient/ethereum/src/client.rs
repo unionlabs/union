@@ -23,7 +23,7 @@ use ibc_union_light_client::{
 };
 use ibc_union_msg::lightclient::Status;
 use unionlabs::{
-    encoding::{Bincode, EncodeAs as _},
+    encoding::Bincode,
     ensure,
     ethereum::ibc_commitment_key,
     ibc::core::client::height::Height,
@@ -134,14 +134,14 @@ impl IbcClient for EthereumLightClient {
         // Also save the current and next sync committees with the corresponding epoch numbers.
         Ok(ClientCreation::empty()
             .set_client_state(ClientState::V1(client_state))
-            .add_storage_write(sync_committee_store_write(
-                current_epoch,
+            .add_storage_write(
+                sync_committee_store_key(current_epoch),
                 &initial_sync_committee.current_sync_committee,
-            ))
-            .add_storage_write(sync_committee_store_write(
-                current_epoch + 1,
+            )
+            .add_storage_write(
+                sync_committee_store_key(current_epoch + 1),
                 &initial_sync_committee.next_sync_committee,
-            )))
+            ))
     }
 
     fn verify_header(
@@ -320,17 +320,6 @@ fn update_state<C: ChainSpec>(
     let trusted_height = header.trusted_height;
     let consensus_update = header.consensus_update.update_data();
 
-    let mut storage_writes = vec![];
-
-    if let LightClientUpdate::EpochChange(update) = &header.consensus_update {
-        let current_epoch =
-            compute_epoch_at_slot::<C>(update.update_data.finalized_header.beacon.slot);
-        storage_writes.push(sync_committee_store_write(
-            current_epoch + 1,
-            &update.next_sync_committee,
-        ));
-    }
-
     // TODO(aeryz): we should ditch this functionality as it complicates the light client and we don't use it
     // Some updates can be only for updating the sync committee, therefore the slot number can be
     // smaller. We don't want to save a new state if this is the case.
@@ -356,20 +345,21 @@ fn update_state<C: ChainSpec>(
         }
     }
 
-    // Only save the client state if it's modified
-    let client_state =
-        if client_state.latest_height == consensus_update.finalized_header.execution.block_number {
-            Some(ClientState::V1(client_state))
-        } else {
-            None
-        };
+    let mut state_update = StateUpdate::new(updated_height, consensus_state);
+    if let LightClientUpdate::EpochChange(update) = &header.consensus_update {
+        let current_epoch =
+            compute_epoch_at_slot::<C>(update.update_data.finalized_header.beacon.slot);
+        state_update = state_update.add_storage_write(
+            sync_committee_store_key(current_epoch + 1),
+            &update.next_sync_committee,
+        );
+    }
 
-    Ok(StateUpdate {
-        height: updated_height,
-        client_state,
-        consensus_state,
-        storage_writes,
-    })
+    if client_state.latest_height == consensus_update.finalized_header.execution.block_number {
+        state_update = state_update.set_client_state(ClientState::V1(client_state));
+    }
+
+    Ok(state_update)
 }
 
 pub fn verify_misbehaviour<C: ChainSpec>(
@@ -466,13 +456,6 @@ pub fn verify_misbehaviour<C: ChainSpec>(
     )?;
 
     Ok(())
-}
-
-fn sync_committee_store_write(epoch: u64, sync_committee: &SyncCommittee) -> (Bytes, Bytes) {
-    (
-        epoch.to_le_bytes().into(),
-        sync_committee.encode_as::<Bincode>().into(),
-    )
 }
 
 fn sync_committee_store_key(epoch: u64) -> Bytes {

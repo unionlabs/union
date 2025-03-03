@@ -123,17 +123,15 @@ impl IbcClient for EthermintLightClient {
                     &SignatureVerifier::new(Ed25519Verifier::new(ctx.deps)),
                 )
                 .map_err(Error::from)?;
-                Ok(StateUpdate {
-                    height,
-                    client_state: tendermint_client_state.map(|tendermint_client_state| {
-                        ClientState {
-                            tendermint_client_state,
-                            ..client_state
-                        }
-                    }),
-                    consensus_state,
-                    storage_writes: vec![],
-                })
+                let state_update = StateUpdate::new(height, consensus_state);
+                if let Some(tendermint_client_state) = tendermint_client_state {
+                    Ok(state_update.set_client_state(ClientState {
+                        tendermint_client_state,
+                        ..client_state
+                    }))
+                } else {
+                    Ok(state_update)
+                }
             }
             _ => {
                 Err(Error::from(tendermint_light_client::errors::Error::InvalidValidatorSet).into())
