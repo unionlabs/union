@@ -267,6 +267,7 @@ library ZkgmLib {
         return size > 0;
     }
 
+    // Append a channel to a path, injecting the channel u32 to the next available index.
     function updateChannelPath(
         uint256 path,
         uint32 nextChannelId
@@ -281,6 +282,7 @@ library ZkgmLib {
         return (uint256(nextChannelId) << 32 * nextHopIndex) | path;
     }
 
+    // Extract the last channel from a path, popping the top non-zero u32.
     function lastChannelFromPath(
         uint256 path
     ) internal pure returns (uint32) {
@@ -289,6 +291,20 @@ library ZkgmLib {
         }
         uint256 currentHopIndex = LibBit.fls(path) / 32;
         return uint32(path >> currentHopIndex * 32);
+    }
+
+    // Reverse a channel path consisting of [a, b, c, ...] to [..., c, b, a]
+    function reverseChannelPath(
+        uint256 path
+    ) internal pure returns (uint256) {
+        return uint256(uint32(path >> 0)) << 224
+            | uint256(uint32(path >> 32)) << 192
+            | uint256(uint32(path >> 64)) << 160
+            | uint256(uint32(path >> 96)) << 128
+            | uint256(uint32(path >> 128)) << 96
+            | uint256(uint32(path >> 160)) << 64
+            | uint256(uint32(path >> 192)) << 32
+            | uint256(uint32(path >> 224)) << 0;
     }
 
     function isAllowedBatchInstruction(

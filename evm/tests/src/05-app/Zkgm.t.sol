@@ -107,7 +107,7 @@ contract ZkgmTests is Test {
         zkgm = UCS03Zkgm(address(proxy));
     }
 
-    function test_lastChannelFromPathOk_1(
+    function test_lastChannelFromPath_ok_1(
         uint32 a
     ) public {
         vm.assume(a > 0);
@@ -116,7 +116,7 @@ contract ZkgmTests is Test {
         );
     }
 
-    function test_lastChannelFromPathOk_2(uint32 a, uint32 b) public {
+    function test_lastChannelFromPath_ok_2(uint32 a, uint32 b) public {
         vm.assume(a > 0);
         vm.assume(b > 0);
         assertEq(
@@ -127,7 +127,7 @@ contract ZkgmTests is Test {
         );
     }
 
-    function test_lastChannelFromPathOk_3(
+    function test_lastChannelFromPath_ok_3(
         uint32 a,
         uint32 b,
         uint32 c
@@ -148,7 +148,7 @@ contract ZkgmTests is Test {
         );
     }
 
-    function test_channelPathOk(
+    function test_channelPath_ok(
         uint32 a,
         uint32 b,
         uint32 c,
@@ -158,6 +158,7 @@ contract ZkgmTests is Test {
         uint32 g,
         uint32 h
     ) public {
+        // channel ids are non-zero
         vm.assume(a > 0);
         vm.assume(b > 0);
         vm.assume(c > 0);
@@ -191,6 +192,62 @@ contract ZkgmTests is Test {
             uint256(a) | uint256(b) << 32 | uint256(c) << 64 | uint256(d) << 96
                 | uint256(e) << 128 | uint256(f) << 160 | uint256(g) << 192
                 | uint256(h) << 224
+        );
+    }
+
+    function test_reverseChannelPath_ok(
+        uint32 a,
+        uint32 b,
+        uint32 c,
+        uint32 d,
+        uint32 e,
+        uint32 f,
+        uint32 g,
+        uint32 h
+    ) public {
+        // channel ids are non-zero
+        vm.assume(a > 0);
+        vm.assume(b > 0);
+        vm.assume(c > 0);
+        vm.assume(d > 0);
+        vm.assume(e > 0);
+        vm.assume(f > 0);
+        vm.assume(g > 0);
+        vm.assume(h > 0);
+        uint256 channelPath = ZkgmLib.updateChannelPath(
+            ZkgmLib.updateChannelPath(
+                ZkgmLib.updateChannelPath(
+                    ZkgmLib.updateChannelPath(
+                        ZkgmLib.updateChannelPath(
+                            ZkgmLib.updateChannelPath(
+                                ZkgmLib.updateChannelPath(
+                                    ZkgmLib.updateChannelPath(0, a), b
+                                ),
+                                c
+                            ),
+                            d
+                        ),
+                        e
+                    ),
+                    f
+                ),
+                g
+            ),
+            h
+        );
+        assertEq(
+            ZkgmLib.reverseChannelPath(channelPath),
+            uint256(h) | uint256(g) << 32 | uint256(f) << 64 | uint256(e) << 96
+                | uint256(d) << 128 | uint256(c) << 160 | uint256(b) << 192
+                | uint256(a) << 224
+        );
+    }
+
+    function test_reverseChannelPath_iso(
+        uint256 path
+    ) public {
+        assertEq(
+            ZkgmLib.reverseChannelPath(ZkgmLib.reverseChannelPath(path)), path
         );
     }
 
