@@ -170,6 +170,26 @@
             "state-lens-ics23-mpt"
           ];
         }
+        {
+          name = "mantra-testnet";
+          rpc_url = "https://rpc.dukong.mantrachain.io/";
+          private_key = ''"$1"'';
+          gas_config = {
+            gas_price = "0.015";
+            gas_denom = "uom";
+            gas_multiplier = "1.4";
+            max_gas = 60000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "mantra";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
       ];
 
       # directory => {}
@@ -288,10 +308,15 @@
         pkgs.writeText "contracts.json" (
           builtins.toJSON {
             core = ibc-union;
-            lightclient = pkgs.lib.mapAttrs' (n: v: {
-              name = v.client-type;
-              value = mk-lightclient n;
-            }) (builtins.filter ({ name, ... }: builtins.elem name lightclients) all-lightclients);
+            lightclient = builtins.listToAttrs (
+              map (
+                { name, client-type, ... }:
+                {
+                  name = client-type;
+                  value = mk-lightclient name;
+                }
+              ) (builtins.filter ({ name, ... }: builtins.elem name lightclients) all-lightclients)
+            );
             app = apps;
           }
         );
