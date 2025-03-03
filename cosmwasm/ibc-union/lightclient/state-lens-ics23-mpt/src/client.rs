@@ -1,7 +1,7 @@
 use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;
-use ibc_union_light_client::{IbcClient, IbcClientError};
+use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use ibc_union_spec::path::ConsensusStatePath;
 use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState};
@@ -35,12 +35,12 @@ impl IbcClient for StateLensIcs23MptLightClient {
     type Encoding = Bincode;
 
     fn verify_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
         verify_membership(key, consensus_state.storage_root, storage_proof, value)?;
@@ -49,11 +49,11 @@ impl IbcClient for StateLensIcs23MptLightClient {
     }
 
     fn verify_non_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
         verify_non_membership(key, consensus_state.storage_root, storage_proof)?;
@@ -73,7 +73,10 @@ impl IbcClient for StateLensIcs23MptLightClient {
         client_state.l2_chain_id.clone()
     }
 
-    fn status(_client_state: &Self::ClientState) -> Status {
+    fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
+        let _ = ctx;
+        let _ = client_state;
+
         // FIXME: expose the ctx to this call to allow threading this call to L1
         // client. generally, we want to thread if a client is an L2 so always
         // provide the ctx?
@@ -112,13 +115,10 @@ impl IbcClient for StateLensIcs23MptLightClient {
     }
 
     fn verify_header(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         header: Self::Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<
-        (u64, Self::ClientState, Self::ConsensusState),
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
+    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 
         let storage_proof = MerkleProof::decode_as::<Bincode>(&header.l2_consensus_state_proof)
@@ -167,9 +167,9 @@ impl IbcClient for StateLensIcs23MptLightClient {
     }
 
     fn misbehaviour(
-        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _ctx: IbcClientCtx<Self>,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<Self::ClientState, IbcClientError<Self>> {
         unimplemented!()
     }
 }

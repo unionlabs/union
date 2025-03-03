@@ -7,6 +7,7 @@ pub mod state;
 mod tests;
 
 use cosmwasm_std::{Addr, StdError};
+use ibc_union_msg::lightclient::Status;
 use ibc_union_spec::types::{ChannelState, ConnectionState};
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
@@ -130,6 +131,11 @@ pub enum ContractError {
         query: Box<ibc_union_msg::lightclient::QueryMsg>,
         error: StdError,
     },
+    #[error(
+        "{} client {client_id} is not active (status {status:?})",
+        ContractErrorKind::from(self)
+    )]
+    ClientNotActive { client_id: u32, status: Status },
 }
 
 impl ContractErrorKind {
