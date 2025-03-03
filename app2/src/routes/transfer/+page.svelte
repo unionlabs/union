@@ -5,7 +5,7 @@ import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import { Effect, Exit, Data } from "effect"
-import { type Hash } from "viem"
+import { type Hash, type TransactionReceipt } from "viem"
 import { sepolia } from "viem/chains"
 import { submitTransfer, type SubmitTransferError } from "$lib/services/transfer"
 
@@ -70,8 +70,8 @@ async function submit() {
         transferSubmission = Interrupted()
       }
     },
-    onSuccess: (hash: Hash) => {
-      transferSubmission = Success({ hash })
+    onSuccess: (receipt: TransactionReceipt) => {
+      transferSubmission = Success({ hash: receipt.transactionHash })
     }
   })
 }
