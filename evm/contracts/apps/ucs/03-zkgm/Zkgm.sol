@@ -53,18 +53,6 @@ struct Batch {
     Instruction[] instructions;
 }
 
-struct FungibleAssetOrderV0 {
-    bytes sender;
-    bytes receiver;
-    bytes baseToken;
-    uint256 baseAmount;
-    string baseTokenSymbol;
-    string baseTokenName;
-    uint256 baseTokenPath;
-    bytes quoteToken;
-    uint256 quoteAmount;
-}
-
 struct FungibleAssetOrder {
     bytes sender;
     bytes receiver;
@@ -263,16 +251,6 @@ library ZkgmLib {
         bytes calldata stream
     ) internal pure returns (FungibleAssetOrder calldata) {
         FungibleAssetOrder calldata operand;
-        assembly {
-            operand := stream.offset
-        }
-        return operand;
-    }
-
-    function decodeFungibleAssetOrderV0(
-        bytes calldata stream
-    ) internal pure returns (FungibleAssetOrderV0 calldata) {
-        FungibleAssetOrderV0 calldata operand;
         assembly {
             operand := stream.offset
         }
@@ -809,44 +787,25 @@ contract UCS03Zkgm is
         Instruction calldata instruction
     ) internal returns (bytes memory) {
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_1) {
+            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            if (instruction.version == ZkgmLib.INSTR_VERSION_0) {
-                FungibleAssetOrderV0 calldata order =
-                    ZkgmLib.decodeFungibleAssetOrderV0(instruction.operand);
-                return executeFungibleAssetOrder(
-                    ibcPacket,
-                    relayer,
-                    path,
-                    order.receiver,
-                    order.baseToken,
-                    order.baseAmount,
-                    order.baseTokenSymbol,
-                    order.baseTokenName,
-                    0,
-                    order.baseTokenPath,
-                    order.quoteToken,
-                    order.quoteAmount
-                );
-            } else {
-                FungibleAssetOrder calldata order =
-                    ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-                return executeFungibleAssetOrder(
-                    ibcPacket,
-                    relayer,
-                    path,
-                    order.receiver,
-                    order.baseToken,
-                    order.baseAmount,
-                    order.baseTokenSymbol,
-                    order.baseTokenName,
-                    order.baseTokenDecimals,
-                    order.baseTokenPath,
-                    order.quoteToken,
-                    order.quoteAmount
-                );
-            }
+            FungibleAssetOrder calldata order =
+                ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
+            return executeFungibleAssetOrder(
+                ibcPacket,
+                relayer,
+                path,
+                order.receiver,
+                order.baseToken,
+                order.baseAmount,
+                order.baseTokenSymbol,
+                order.baseTokenName,
+                order.baseTokenDecimals,
+                order.baseTokenPath,
+                order.quoteToken,
+                order.quoteAmount
+            );
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
@@ -1120,38 +1079,22 @@ contract UCS03Zkgm is
         bytes calldata ack
     ) internal {
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_1) {
+            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            if (instruction.version == ZkgmLib.INSTR_VERSION_0) {
-                FungibleAssetOrderV0 calldata order =
-                    ZkgmLib.decodeFungibleAssetOrderV0(instruction.operand);
-                acknowledgeFungibleAssetOrder(
-                    ibcPacket,
-                    relayer,
-                    salt,
-                    order.sender,
-                    order.baseToken,
-                    order.baseTokenPath,
-                    order.baseAmount,
-                    successful,
-                    ack
-                );
-            } else {
-                FungibleAssetOrder calldata order =
-                    ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-                acknowledgeFungibleAssetOrder(
-                    ibcPacket,
-                    relayer,
-                    salt,
-                    order.sender,
-                    order.baseToken,
-                    order.baseTokenPath,
-                    order.baseAmount,
-                    successful,
-                    ack
-                );
-            }
+            FungibleAssetOrder calldata order =
+                ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
+            acknowledgeFungibleAssetOrder(
+                ibcPacket,
+                relayer,
+                salt,
+                order.sender,
+                order.baseToken,
+                order.baseTokenPath,
+                order.baseAmount,
+                successful,
+                ack
+            );
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
@@ -1329,30 +1272,18 @@ contract UCS03Zkgm is
         Instruction calldata instruction
     ) internal {
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_1) {
+            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            if (instruction.version == ZkgmLib.INSTR_VERSION_0) {
-                FungibleAssetOrderV0 calldata order =
-                    ZkgmLib.decodeFungibleAssetOrderV0(instruction.operand);
-                timeoutFungibleAssetOrder(
-                    ibcPacket,
-                    order.sender,
-                    order.baseToken,
-                    order.baseTokenPath,
-                    order.baseAmount
-                );
-            } else {
-                FungibleAssetOrder calldata order =
-                    ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-                timeoutFungibleAssetOrder(
-                    ibcPacket,
-                    order.sender,
-                    order.baseToken,
-                    order.baseTokenPath,
-                    order.baseAmount
-                );
-            }
+            FungibleAssetOrder calldata order =
+                ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
+            timeoutFungibleAssetOrder(
+                ibcPacket,
+                order.sender,
+                order.baseToken,
+                order.baseTokenPath,
+                order.baseAmount
+            );
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
