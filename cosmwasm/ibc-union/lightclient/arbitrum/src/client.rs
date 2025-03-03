@@ -63,10 +63,7 @@ impl IbcClient for ArbitrumLightClient {
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<
-        (u64, Self::ClientState, Self::ConsensusState),
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
+    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
         let l1_consensus_state = ctx
             .read_consensus_state::<EthereumLightClient>(
@@ -97,7 +94,9 @@ impl IbcClient for ArbitrumLightClient {
         Err(Error::Unimplemented.into())
     }
 
-    fn status(client_state: &Self::ClientState) -> Status {
+    fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
+        let _ = ctx;
+
         if client_state.frozen_height.height() != 0 {
             Status::Frozen
         } else {

@@ -5,7 +5,7 @@ use cometbls_light_client_types::{
     misbehaviour::Misbehaviour,
 };
 use cosmwasm_std::Empty;
-use ibc_union_light_client::IbcClientCtx;
+use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
@@ -23,7 +23,7 @@ use crate::{
 
 pub struct CometblsLightClient<T: ZkpVerifier = ()>(PhantomData<T>);
 
-impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T> {
+impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
     type Error = Error;
 
     type CustomQuery = Empty;
@@ -41,12 +41,12 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
     type Encoding = Bincode;
 
     fn verify_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;
         Ok(ics23::ibc_api::verify_membership(
@@ -68,11 +68,11 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
     }
 
     fn verify_non_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         Ok(ics23::ibc_api::verify_non_membership(
             &storage_proof,
@@ -96,49 +96,40 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
         client_state.chain_id.clone().into_string()
     }
 
-    // TODO(aeryz): pass ctx
-    fn status(client_state: &Self::ClientState) -> ibc_union_msg::lightclient::Status {
+    fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
         if client_state.frozen_height.height() != 0 {
             Status::Frozen
         } else {
+            let Ok(consensus_state) =
+                ctx.read_self_consensus_state(client_state.latest_height.height())
+            else {
+                return Status::Expired;
+            };
+
+            if is_client_expired(
+                consensus_state.timestamp,
+                client_state.trusting_period,
+                ctx.env.block.time.nanos(),
+            ) {
+                return Status::Expired;
+            }
+
             Status::Active
         }
-
-        //         let Some(consensus_state) =
-        //             read_consensus_state::<Self>(deps, &client_state.latest_height)?
-        //         else {
-        //             return Ok(Status::Expired);
-        //         };
-
-        //         if is_client_expired(
-        //             consensus_state.data.timestamp,
-        //             client_state.data.trusting_period,
-        //             env.block.time.nanos(),
-        //         ) {
-        //             return Ok(Status::Expired);
-        //         }
-
-        //         Ok(Status::Active)
     }
 
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<
-        Option<Vec<VerifyCreationResponseEvent>>,
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
+    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<Self>> {
         Ok(None)
     }
 
     fn verify_header(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         header: Self::Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<
-        (u64, Self::ClientState, Self::ConsensusState),
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
+    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
 
@@ -154,9 +145,9 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
     }
 
     fn misbehaviour(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         misbehaviour: Self::Misbehaviour,
-    ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<Self::ClientState, IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 
         verify_misbehaviour(
