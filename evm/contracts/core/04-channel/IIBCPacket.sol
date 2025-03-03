@@ -2,7 +2,7 @@ pragma solidity ^0.8.27;
 
 import "../25-handler/IBCMsgs.sol";
 
-interface IIBCPacket {
+interface IIBCPacketSend {
     /**
      * @dev sendPacket is called by a module in order to send an IBC packet on a channel.
      * The packet sequence generated for the packet to be sent is returned. An error
@@ -14,7 +14,9 @@ interface IIBCPacket {
         uint64 timeoutTimestamp,
         bytes calldata data
     ) external returns (IBCPacket memory packet);
+}
 
+interface IIBCPacketRecv {
     /**
      * @dev recvPacket is called by a module in order to receive & process an IBC packet
      * sent on the corresponding channel end on the counterparty chain.
@@ -22,7 +24,9 @@ interface IIBCPacket {
     function recvPacket(
         IBCMsgs.MsgPacketRecv calldata msg_
     ) external;
+}
 
+interface IIBCPacketIntentRecv {
     /**
      * @dev recvIntentPacket is called by a module in order to receive & process an IBC intent packet
      * for an IBC packet sent on the corresponding channel end on the counterparty chain.
@@ -31,7 +35,9 @@ interface IIBCPacket {
     function recvIntentPacket(
         IBCMsgs.MsgIntentPacketRecv calldata msg_
     ) external;
+}
 
+interface IIBCPacketWriteAck {
     /**
      * @dev writeAcknowledgement writes the packet execution acknowledgement to the state,
      * which will be verified by the counterparty chain using AcknowledgePacket.
@@ -40,7 +46,9 @@ interface IIBCPacket {
         IBCPacket calldata packet,
         bytes memory acknowledgement
     ) external;
+}
 
+interface IIBCPacketAck {
     /**
      * @dev AcknowledgePacket is called by a module to process the acknowledgement of a
      * packet previously sent by the calling module on a channel to a counterparty
@@ -52,7 +60,9 @@ interface IIBCPacket {
     function acknowledgePacket(
         IBCMsgs.MsgPacketAcknowledgement calldata msg_
     ) external;
+}
 
+interface IIBCPacketTimeout {
     /**
      * @dev timeoutPacket is called by a module in order to receive & process an IBC packet
      * sent on the corresponding channel end on the counterparty chain.
@@ -60,7 +70,9 @@ interface IIBCPacket {
     function timeoutPacket(
         IBCMsgs.MsgPacketTimeout calldata msg_
     ) external;
+}
 
+interface IIBCPacketBatchSend {
     /**
      * @dev batchSend is called by a module in order to commit multiple IBC packets that have been previously sent.
      * An error occur if any of the packets wasn't sent.
@@ -69,7 +81,9 @@ interface IIBCPacket {
     function batchSend(
         IBCMsgs.MsgBatchSend calldata msg_
     ) external;
+}
 
+interface IIBCPacketBatchAck {
     /**
      * @dev batchAcks is called by a module in order to commit multiple IBC packets acknowledgements.
      * An error occur if any of the packets wasn't received.
@@ -79,3 +93,16 @@ interface IIBCPacket {
         IBCMsgs.MsgBatchAcks calldata msg_
     ) external;
 }
+
+interface IIBCModulePacket is IIBCPacketSend, IIBCPacketWriteAck {}
+
+interface IIBCPacket is
+    IIBCPacketSend,
+    IIBCPacketRecv,
+    IIBCPacketIntentRecv,
+    IIBCPacketWriteAck,
+    IIBCPacketAck,
+    IIBCPacketTimeout,
+    IIBCPacketBatchSend,
+    IIBCPacketBatchAck
+{}
