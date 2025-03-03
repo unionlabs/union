@@ -60,9 +60,13 @@
 
 #![warn(clippy::pedantic, missing_docs)]
 
+use std::ops::Add;
+
 use cosmwasm_std::{
-    to_json_binary, Addr, Empty, Querier, QueryRequest, StdError, StdResult, Storage, WasmQuery,
+    to_json_binary, Addr, Empty, OverflowError, OverflowOperation, Querier, QueryRequest, StdError,
+    StdResult, Storage, WasmQuery,
 };
+use num_traits::{CheckedAdd, One};
 #[doc(no_inline)]
 pub use unionlabs_primitives::Bytes;
 
@@ -296,6 +300,20 @@ pub trait StorageExt {
     /// Write the value to the item store.
     fn write_item<S: Store<Key = ()>>(&mut self, v: &S::Value) {
         self.write::<S>(&(), v);
+    }
+
+    /// Write the value to the item store.
+    fn increment_item<S: Store<Key = (), Value: One + CheckedAdd>>(
+        &mut self,
+    ) -> Result<S::Value, StdError> {
+        let value = self.read::<S>(&())?;
+        let v = value
+            .checked_add(&S::Value::one())
+            .ok_or(StdError::overflow(OverflowError::new(
+                OverflowOperation::Add,
+            )))?;
+        self.write::<S>(&(), &v);
+        Ok(v)
     }
 
     /// Delete a value from the store.
