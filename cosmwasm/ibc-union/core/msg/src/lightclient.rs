@@ -40,7 +40,7 @@ pub struct VerifyCreationResponse {
     pub events: Option<Vec<VerifyCreationResponseEvent>>,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     GetTimestamp {

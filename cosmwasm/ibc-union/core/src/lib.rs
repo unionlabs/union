@@ -121,6 +121,15 @@ pub enum ContractError {
         "{} cannot migrate the client {client_id} when there's no consensus state at height {height}", ContractErrorKind::from(self)
     )]
     CannotMigrateWithNoConsensusState { client_id: u32, height: u64 },
+    #[error(
+        "{} cannot query light client {client_impl} with {query:?}: {error}",
+        ContractErrorKind::from(self)
+    )]
+    CannotQueryLightClient {
+        client_impl: Addr,
+        query: Box<ibc_union_msg::lightclient::QueryMsg>,
+        error: StdError,
+    },
 }
 
 impl ContractErrorKind {
