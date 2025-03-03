@@ -198,7 +198,7 @@ pub struct ClientCreation<T: IbcClient> {
     pub client_state: Option<T::ClientState>,
     /// Custom events that will be emitted by IBC.
     pub events: Vec<VerifyCreationResponseEvent>,
-    /// Arbitraty storage saves to the client's corresponding storage. These are accessible to the
+    /// Arbitrary storage saves to the client's corresponding storage. These are accessible to the
     /// client at any time.
     pub storage_writes: StorageWrites,
 }
