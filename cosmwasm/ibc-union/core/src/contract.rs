@@ -475,7 +475,12 @@ pub fn migrate(
             ))),
             cosmwasm_std::Order::Descending,
         ) {
-            keys.push(key.unwrap());
+            let key = key.unwrap();
+            keys.push(key);
+
+            if key.0 != migrate.client_id {
+                panic!("key does not match the migrate id");
+            }
         }
 
         // don't remove the final entry
