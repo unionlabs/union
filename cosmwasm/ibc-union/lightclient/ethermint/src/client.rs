@@ -1,8 +1,10 @@
 use cometbft_types::crypto::public_key::PublicKey;
 use cosmwasm_std::Empty;
 use ethermint_light_client_types::ClientState;
-use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
-use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
+use ibc_union_light_client::{
+    ClientCreation, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
+use ibc_union_msg::lightclient::Status;
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_light_client::verifier::Ed25519Verifier;
 use tendermint_light_client_types::{ConsensusState, Header};
@@ -103,28 +105,35 @@ impl IbcClient for EthermintLightClient {
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
+    ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
         match header.validator_set.validators.first().map(|v| &v.pub_key) {
             Some(PublicKey::Ed25519(_)) => {
-                let (height, tendermint_client_state, consensus_state) =
-                    tendermint_light_client::client::verify_header(
-                        client_state.tendermint_client_state,
-                        consensus_state,
-                        header,
-                        ctx.env.block.time,
-                        &SignatureVerifier::new(Ed25519Verifier::new(ctx.deps)),
-                    )
-                    .map_err(Error::from)?;
-                Ok((
+                let StateUpdate {
                     height,
-                    ClientState {
-                        tendermint_client_state,
-                        ..client_state
-                    },
+                    client_state: tendermint_client_state,
                     consensus_state,
-                ))
+                    ..
+                } = tendermint_light_client::client::verify_header(
+                    client_state.tendermint_client_state,
+                    consensus_state,
+                    header,
+                    ctx.env.block.time,
+                    &SignatureVerifier::new(Ed25519Verifier::new(ctx.deps)),
+                )
+                .map_err(Error::from)?;
+                Ok(StateUpdate {
+                    height,
+                    client_state: tendermint_client_state.map(|tendermint_client_state| {
+                        ClientState {
+                            tendermint_client_state,
+                            ..client_state
+                        }
+                    }),
+                    consensus_state,
+                    storage_writes: vec![],
+                })
             }
             _ => {
                 Err(Error::from(tendermint_light_client::errors::Error::InvalidValidatorSet).into())
@@ -181,7 +190,7 @@ impl IbcClient for EthermintLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<Self>> {
-        Ok(None)
+    ) -> Result<ClientCreation<Self>, IbcClientError<Self>> {
+        Ok(ClientCreation::empty())
     }
 }

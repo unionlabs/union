@@ -197,10 +197,35 @@ pub struct ClientCreation<T: IbcClient> {
     /// client state given by the creator as is
     pub client_state: Option<T::ClientState>,
     /// Custom events that will be emitted by IBC.
-    pub events: Option<Vec<VerifyCreationResponseEvent>>,
+    pub events: Vec<VerifyCreationResponseEvent>,
     /// Arbitraty storage saves to the client's corresponding storage. These are accessible to the
     /// client at any time.
     pub storage_writes: StorageWrites,
+}
+
+impl<T: IbcClient> ClientCreation<T> {
+    pub fn empty() -> Self {
+        Self {
+            client_state: None,
+            events: Vec::new(),
+            storage_writes: Vec::new(),
+        }
+    }
+
+    pub fn add_event(mut self, event: VerifyCreationResponseEvent) -> Self {
+        self.events.push(event);
+        self
+    }
+
+    pub fn add_storage_write(mut self, kv: (Bytes, Bytes)) -> Self {
+        self.storage_writes.push(kv);
+        self
+    }
+
+    pub fn set_client_state(mut self, client_state: T::ClientState) -> Self {
+        self.client_state = Some(client_state);
+        self
+    }
 }
 
 pub trait IbcClient: Sized {

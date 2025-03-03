@@ -802,15 +802,12 @@ fn create_client(
     for (key, value) in verify_creation_response.storage_writes {
         store_client_data(deps.branch(), client_id, key, value)
     }
-    let mut response = Response::new();
-    if let Some(events) = verify_creation_response.events {
-        response = response.add_events(
-            events
-                .into_iter()
-                .map(|e| make_verify_creation_event(client_id, e))
-                .collect::<Vec<_>>(),
-        );
-    }
+    let response = verify_creation_response
+        .events
+        .into_iter()
+        .fold(Response::new(), |response, e| {
+            response.add_event(make_verify_creation_event(client_id, e))
+        });
     Ok(
         response.add_event(Event::new(events::client::CREATE).add_attributes([
             (events::attribute::CLIENT_TYPE, client_type),

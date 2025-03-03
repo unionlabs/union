@@ -129,20 +129,16 @@ impl IbcClient for EthereumLightClient {
             compute_epoch_at_slot::<Mainnet>(Slot::new(client_state.latest_height))
         };
 
-        Ok(ClientCreation {
-            client_state: Some(ClientState::V1(client_state)),
-            events: None,
-            storage_writes: vec![
-                sync_committee_store_write(
-                    current_epoch,
-                    &initial_sync_committee.current_sync_committee,
-                ),
-                sync_committee_store_write(
-                    current_epoch + 1,
-                    &initial_sync_committee.next_sync_committee,
-                ),
-            ],
-        })
+        Ok(ClientCreation::empty()
+            .set_client_state(ClientState::V1(client_state))
+            .add_storage_write(sync_committee_store_write(
+                current_epoch,
+                &initial_sync_committee.current_sync_committee,
+            ))
+            .add_storage_write(sync_committee_store_write(
+                current_epoch + 1,
+                &initial_sync_committee.next_sync_committee,
+            )))
     }
 
     fn verify_header(

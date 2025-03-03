@@ -33,7 +33,7 @@ pub struct VerifyCreationResponse {
     pub counterparty_chain_id: String,
     pub client_state_bytes: Option<Bytes>,
     pub storage_writes: StorageWrites,
-    pub events: Option<Vec<VerifyCreationResponseEvent>>,
+    pub events: Vec<VerifyCreationResponseEvent>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

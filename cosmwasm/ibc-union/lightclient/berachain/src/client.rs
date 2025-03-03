@@ -2,8 +2,10 @@ use beacon_api_types::{chain_spec::Mainnet, deneb};
 use berachain_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;
-use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
-use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
+use ibc_union_light_client::{
+    ClientCreation, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
+use ibc_union_msg::lightclient::Status;
 use tendermint_light_client::client::TendermintLightClient;
 use unionlabs::{
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
@@ -90,8 +92,8 @@ impl IbcClient for BerachainLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<Self>> {
-        Ok(None)
+    ) -> Result<ClientCreation<Self>, IbcClientError<Self>> {
+        Ok(ClientCreation::empty())
     }
 
     // TODO: rearrange to avoid the clones
@@ -99,7 +101,7 @@ impl IbcClient for BerachainLightClient {
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
+    ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 
         // 1. extract L1 state
@@ -139,16 +141,24 @@ impl IbcClient for BerachainLightClient {
 
         // 4. update
         let update_height = header.execution_header.block_number;
-        if client_state.latest_height < update_height {
+        let client_state = if client_state.latest_height < update_height {
             client_state.latest_height = update_height;
-        }
-        let new_consensus_state = ConsensusState {
+            Some(client_state)
+        } else {
+            None
+        };
+        let consensus_state = ConsensusState {
             timestamp: header.execution_header.timestamp,
             state_root: header.execution_header.state_root,
             storage_root: header.account_proof.storage_root,
         };
 
-        Ok((update_height, client_state, new_consensus_state))
+        Ok(StateUpdate {
+            height: update_height,
+            client_state,
+            consensus_state,
+            storage_writes: vec![],
+        })
     }
 
     fn misbehaviour(
