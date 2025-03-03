@@ -1,4 +1,8 @@
-use beacon_api_types::chain_spec::{ChainSpec, Mainnet, Minimal, PresetBaseKind};
+use beacon_api_types::{
+    altair::SyncCommittee,
+    chain_spec::{ChainSpec, Mainnet, Minimal, PresetBaseKind},
+    slot::Slot,
+};
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::{
     ClientState, ClientStateV1, ConsensusState, Header, LightClientUpdate, Misbehaviour,
@@ -6,27 +10,27 @@ use ethereum_light_client_types::{
 };
 use ethereum_sync_protocol::{
     utils::{
-        compute_slot_at_timestamp, compute_timestamp_at_slot, validate_signature_supermajority,
+        compute_epoch_at_slot, compute_slot_at_timestamp, compute_timestamp_at_slot,
+        validate_signature_supermajority,
     },
     validate_light_client_update,
 };
 use evm_storage_verifier::{
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
-use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
-use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
+use ibc_union_light_client::{
+    ClientCreation, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
+use ibc_union_msg::lightclient::Status;
 use unionlabs::{
-    encoding::Bincode,
+    encoding::{Bincode, EncodeAs as _},
     ensure,
     ethereum::ibc_commitment_key,
     ibc::core::client::height::Height,
-    primitives::{H256, U256},
+    primitives::{Bytes, H256, U256},
 };
 
-use crate::{
-    errors::Error,
-    verification::{check_aggregate_pubkey, VerificationContext},
-};
+use crate::{errors::Error, verification::VerificationContext};
 
 pub enum EthereumLightClient {}
 
@@ -109,17 +113,43 @@ impl IbcClient for EthereumLightClient {
     }
 
     fn verify_creation(
-        _client_state: &Self::ClientState,
+        client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<EthereumLightClient>> {
-        Ok(None)
+    ) -> Result<ClientCreation<Self>, IbcClientError<Self>> {
+        let ClientState::V1(client_state) = client_state;
+        let Some(initial_sync_committee) = client_state.initial_sync_committee.as_ref() else {
+            return Err(Error::NoInitialSyncCommittee.into());
+        };
+        let mut client_state = client_state.clone();
+        client_state.initial_sync_committee = None;
+
+        let current_epoch = if client_state.chain_spec == PresetBaseKind::Minimal {
+            compute_epoch_at_slot::<Minimal>(Slot::new(client_state.latest_height))
+        } else {
+            compute_epoch_at_slot::<Mainnet>(Slot::new(client_state.latest_height))
+        };
+
+        Ok(ClientCreation {
+            client_state: Some(ClientState::V1(client_state)),
+            events: None,
+            storage_writes: vec![
+                sync_committee_store_write(
+                    current_epoch,
+                    &initial_sync_committee.current_sync_committee,
+                ),
+                sync_committee_store_write(
+                    current_epoch + 1,
+                    &initial_sync_committee.next_sync_committee,
+                ),
+            ],
+        })
     }
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
         header: Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
+    ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
         let ClientState::V1(client_state) = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
 
@@ -227,29 +257,28 @@ pub fn verify_header<C: ChainSpec>(
     client_state: ClientStateV1,
     consensus_state: ConsensusState,
     header: Header,
-) -> Result<(u64, ClientState, ConsensusState), Error> {
+) -> Result<StateUpdate<EthereumLightClient>, IbcClientError<EthereumLightClient>> {
     // NOTE(aeryz): Ethereum consensus-spec says that we should use the slot
     // at the current timestamp.
     let current_slot =
         compute_slot_at_timestamp::<C>(client_state.genesis_time, ctx.env.block.time.seconds())
             .ok_or(Error::IntegerOverflow)?;
 
-    let (current_sync_committee, next_sync_committee) =
-        header.consensus_update.currently_trusted_sync_committee();
+    let epoch = compute_epoch_at_slot::<C>(
+        header
+            .consensus_update
+            .update_data()
+            .finalized_header
+            .beacon
+            .slot,
+    );
 
-    if current_sync_committee.is_some() {
-        check_aggregate_pubkey(
-            ctx.deps,
-            &current_sync_committee.as_ref().unwrap().pubkeys,
-            consensus_state.current_sync_committee,
-        )?;
-    } else {
-        check_aggregate_pubkey(
-            ctx.deps,
-            &next_sync_committee.as_ref().unwrap().pubkeys,
-            consensus_state.next_sync_committee,
-        )?;
-    }
+    let sync_committee =
+        ctx.read_self_storage::<SyncCommittee>(&sync_committee_store_key(epoch))?;
+    let (current_sync_committee, next_sync_committee) = match header.consensus_update {
+        LightClientUpdate::EpochChange(_) => (None, Some(&sync_committee)),
+        LightClientUpdate::WithinEpoch(_) => (Some(&sync_committee), None),
+    };
 
     validate_light_client_update::<C, _>(
         client_state.chain_id,
@@ -288,14 +317,19 @@ fn update_state<C: ChainSpec>(
     mut client_state: ClientStateV1,
     mut consensus_state: ConsensusState,
     header: Header,
-) -> Result<(u64, ClientState, ConsensusState), Error> {
+) -> Result<StateUpdate<EthereumLightClient>, IbcClientError<EthereumLightClient>> {
     let trusted_height = header.trusted_height;
-
     let consensus_update = header.consensus_update.update_data();
 
+    let mut storage_writes = vec![];
+
     if let LightClientUpdate::EpochChange(update) = &header.consensus_update {
-        consensus_state.current_sync_committee = consensus_state.next_sync_committee;
-        consensus_state.next_sync_committee = update.next_sync_committee.aggregate_pubkey;
+        let current_epoch =
+            compute_epoch_at_slot::<C>(update.update_data.finalized_header.beacon.slot);
+        storage_writes.push(sync_committee_store_write(
+            current_epoch + 1,
+            &update.next_sync_committee,
+        ));
     }
 
     // TODO(aeryz): we should ditch this functionality as it complicates the light client and we don't use it
@@ -323,11 +357,20 @@ fn update_state<C: ChainSpec>(
         }
     }
 
-    Ok((
-        updated_height,
-        ClientState::V1(client_state),
+    // Only save the client state if it's modified
+    let client_state =
+        if client_state.latest_height == consensus_update.finalized_header.execution.block_number {
+            Some(ClientState::V1(client_state))
+        } else {
+            None
+        };
+
+    Ok(StateUpdate {
+        height: updated_height,
+        client_state,
         consensus_state,
-    ))
+        storage_writes,
+    })
 }
 
 pub fn verify_misbehaviour<C: ChainSpec>(
@@ -335,7 +378,7 @@ pub fn verify_misbehaviour<C: ChainSpec>(
     client_state: &ClientStateV1,
     consensus_state: ConsensusState,
     misbehaviour: Misbehaviour,
-) -> Result<(), Error> {
+) -> Result<(), IbcClientError<EthereumLightClient>> {
     // There is no point to check for misbehaviour when the headers are not for the same height
     let (slot_1, slot_2) = (
         misbehaviour
@@ -366,8 +409,14 @@ pub fn verify_misbehaviour<C: ChainSpec>(
         compute_slot_at_timestamp::<C>(client_state.genesis_time, ctx.env.block.time.seconds())
             .ok_or(Error::IntegerOverflow)?;
 
-    let (current_sync_committee, next_sync_committee) =
-        misbehaviour.update_1.currently_trusted_sync_committee();
+    let epoch = compute_epoch_at_slot::<C>(slot_1);
+
+    let sync_committee =
+        ctx.read_self_storage::<SyncCommittee>(&sync_committee_store_key(epoch))?;
+    let (current_sync_committee, next_sync_committee) = match misbehaviour.update_1 {
+        LightClientUpdate::EpochChange(_) => (None, Some(&sync_committee)),
+        LightClientUpdate::WithinEpoch(_) => (Some(&sync_committee), None),
+    };
 
     // Make sure both headers would have been accepted by the light client
     validate_light_client_update::<C, VerificationContext>(
@@ -394,9 +443,6 @@ pub fn verify_misbehaviour<C: ChainSpec>(
         Error::NotEnoughSignatures,
     )?;
 
-    let (current_sync_committee, next_sync_committee) =
-        misbehaviour.update_2.currently_trusted_sync_committee();
-
     validate_light_client_update::<C, VerificationContext>(
         client_state.chain_id,
         &misbehaviour.update_1.into_light_client_update(),
@@ -421,6 +467,17 @@ pub fn verify_misbehaviour<C: ChainSpec>(
     )?;
 
     Ok(())
+}
+
+fn sync_committee_store_write(epoch: u64, sync_committee: &SyncCommittee) -> (Bytes, Bytes) {
+    (
+        epoch.to_le_bytes().into(),
+        sync_committee.encode_as::<Bincode>().into(),
+    )
+}
+
+fn sync_committee_store_key(epoch: u64) -> Bytes {
+    epoch.to_le_bytes().into()
 }
 
 // #[cfg(test)]

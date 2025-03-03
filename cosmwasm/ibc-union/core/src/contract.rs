@@ -10,7 +10,7 @@ use cosmwasm_std::{
 use cw_storage_plus::Item;
 use ibc_union_msg::{
     lightclient::{
-        QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate, VerifyCreationResponse,
+        QueryMsg as LightClientQuery, Status, UpdateStateResponse, VerifyCreationResponse,
         VerifyCreationResponseEvent,
     },
     module::{ExecuteMsg as ModuleMsg, IbcUnionMsg},
@@ -759,7 +759,7 @@ fn register_client(
 fn create_client(
     mut deps: DepsMut,
     client_type: String,
-    client_state_bytes: Vec<u8>,
+    mut client_state_bytes: Vec<u8>,
     consensus_state_bytes: Vec<u8>,
     _relayer: Addr,
 ) -> Result<Response, ContractError> {
@@ -776,6 +776,9 @@ fn create_client(
             consensus_state: consensus_state_bytes.to_vec().into(),
         },
     )?;
+    if let Some(cs) = verify_creation_response.client_state_bytes {
+        client_state_bytes = cs.into_vec();
+    }
     CLIENT_STATES.save(deps.storage, client_id, &client_state_bytes.to_vec().into())?;
     CLIENT_CONSENSUS_STATES.save(
         deps.storage,
@@ -788,7 +791,7 @@ fn create_client(
         &commit(client_state_bytes),
     )?;
     store_commit(
-        deps,
+        deps.branch(),
         &ConsensusStatePath {
             client_id,
             height: verify_creation_response.latest_height,
@@ -796,6 +799,9 @@ fn create_client(
         .key(),
         &commit(consensus_state_bytes),
     )?;
+    for (key, value) in verify_creation_response.storage_writes {
+        store_client_data(deps.branch(), client_id, key, value)
+    }
     let mut response = Response::new();
     if let Some(events) = verify_creation_response.events {
         response = response.add_events(
@@ -815,6 +821,15 @@ fn create_client(
             ),
         ])),
     )
+}
+
+fn store_client_data(deps: DepsMut<'_>, client_id: u32, key: Bytes, value: Bytes) {
+    deps.storage.set(
+        [client_id.to_le_bytes().as_slice(), &key]
+            .concat()
+            .as_slice(),
+        &value,
+    );
 }
 
 fn update_client(
@@ -839,10 +854,10 @@ fn update_client(
             return Err(ContractError::ClientNotActive { client_id, status });
         }
 
-        let update = query_light_client::<VerifyClientMessageUpdate>(
+        let update = query_light_client::<UpdateStateResponse>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyClientMessage {
+            LightClientQuery::UpdateState {
                 client_id,
                 caller: relayer.into(),
             },
@@ -850,22 +865,19 @@ fn update_client(
         QUERY_STORE.remove(deps.storage);
         update
     };
-    CLIENT_STATES.save(
-        deps.storage,
-        client_id,
-        &update.client_state.to_vec().into(),
-    )?;
-    CLIENT_CONSENSUS_STATES.save(
-        deps.storage,
-        (client_id, update.height),
-        &update.consensus_state.to_vec().into(),
-    )?;
+    if let Some(client_state_bytes) = update.client_state_bytes {
+        store_commit(
+            deps.branch(),
+            &ClientStatePath { client_id }.key(),
+            &commit(&client_state_bytes),
+        )?;
+        CLIENT_STATES.save(
+            deps.storage,
+            client_id,
+            &client_state_bytes.into_vec().into(),
+        )?;
+    }
 
-    store_commit(
-        deps.branch(),
-        &ClientStatePath { client_id }.key(),
-        &commit(update.client_state),
-    )?;
     store_commit(
         deps.branch(),
         &ConsensusStatePath {
@@ -873,8 +885,19 @@ fn update_client(
             height: update.height,
         }
         .key(),
-        &commit(update.consensus_state),
+        &commit(&update.consensus_state_bytes),
     )?;
+
+    CLIENT_CONSENSUS_STATES.save(
+        deps.storage,
+        (client_id, update.height),
+        &update.consensus_state_bytes.into_vec().into(),
+    )?;
+
+    for (key, value) in update.storage_writes {
+        store_client_data(deps.branch(), client_id, key, value);
+    }
+
     Ok(
         Response::new().add_event(Event::new(events::client::UPDATE).add_attributes([
             (events::attribute::CLIENT_ID, client_id.to_string()),
