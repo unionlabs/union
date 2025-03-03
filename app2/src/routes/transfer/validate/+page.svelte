@@ -1,4 +1,3 @@
-<!-- src/routes/+page.svelte -->
 <script lang="ts">
 import { Effect, Schema } from "effect"
 import type { RpcType } from "$lib/schema/chain"
@@ -12,7 +11,8 @@ import { examples } from "$lib/examples/transfer-arguments"
 
 type RpcTypeValue = Schema.Schema.Type<typeof RpcType>
 
-let results: Array<{ type: string; data?: Transfer | undefined; error?: string | undefined }> = []
+let results: Array<{ type: string; data?: Transfer | undefined; error?: string | undefined }> =
+  $state([])
 
 function handleResult(type: RpcTypeValue, parsed: Transfer | undefined, error: unknown) {
   if (parsed) {
