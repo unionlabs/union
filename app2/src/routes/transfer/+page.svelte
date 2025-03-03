@@ -4,8 +4,7 @@ import Input from "$lib/components/ui/Input.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { Effect, Exit, Data } from "effect"
-import { type Hash, type TransactionReceipt } from "viem"
+import { Cause, Effect, Exit } from "effect"
 import { sepolia } from "viem/chains"
 import {
   submitTransfer,
@@ -13,6 +12,8 @@ import {
   waitForReceipt,
   type SubmitTransferError
 } from "$lib/services/transfer"
+import { SwitchChainState, TransferSubmission } from "$lib/services/transfer-state"
+import { nextState } from "$lib/services/transfer-machine"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -27,118 +28,24 @@ function resetAll() {
   })
 }
 
-type SwitchChainState = Data.TaggedEnum<{
-  InProgress: {}
-  Success: {}
-  Failure: {
-    readonly cause: unknown
-  }
-}>
+/* Hack to be able to JSON.stringify BigInt */
+interface BigInt {
+  toJSON: () => string
+}
 
-type ApprovalSubmitState = Data.TaggedEnum<{
-  InProgress: {}
-  Success: { readonly hash: Hash }
-  Failure: {
-    readonly cause: unknown
-  }
-}>
+BigInt["prototype"].toJSON = function () {
+  return this.toString()
+}
 
-type ApprovalReceiptState = Data.TaggedEnum<{
-  InProgress: { readonly hash: Hash }
-  Success: { readonly receipt: TransactionReceipt }
-  Failure: {
-    readonly cause: unknown
-  }
-}>
-
-type TransferSubmitState = Data.TaggedEnum<{
-  InProgress: {}
-  Success: { readonly hash: Hash }
-  Failure: {
-    readonly cause: unknown
-  }
-}>
-
-type TransferReceiptState = Data.TaggedEnum<{
-  InProgress: { readonly hash: Hash }
-  Success: { readonly receipt: TransactionReceipt }
-  Failure: {
-    readonly cause: unknown
-  }
-}>
-
-type TransferSubmission2 = Data.TaggedEnum<{
-  Pending: {}
-  SwitchChain: { state: SwitchChainState }
-  ApprovalSubmit: { state: ApprovalSubmitState }
-  ApprovalReceipt: { state: ApprovalReceiptState }
-  TransferSubmit: { state: TransferSubmitState }
-  TransferReceipt: { state: TransferReceiptState }
-}>
-
-type TransferSubmission = Data.TaggedEnum<{
-  Pending: {}
-  SwitchChain: { state: SwitchChainState }
-  TransferSubmit: { state: TransferSubmitState }
-  TransferReceipt: { state: TransferReceiptState }
-}>
-
-const transferSubmission = Data.taggedEnum<TransferSubmission>()
-const switchChainn = Data.taggedEnum<SwitchChainState>()
-
-let transferState = $state<TransferSubmission>(transferSubmission.Pending())
+let transferState = $state<TransferSubmission>(TransferSubmission.Pending())
 
 async function submit() {
-  transferState = transferSubmission.SwitchChain({ state: switchChainn.InProgress() })
-
-  const switchChainExit = await Effect.runPromiseExit(switchChain(sepolia.id))
-
-  const submissionExit = await Effect.runPromiseExit(
-    submitTransfer({
-      chain: sepolia,
-      account: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
-      value: 1n,
-      to: rawIntents.receiver as `0x${string}`
-    })
-  )
-
-  if (Exit.isFailure(submissionExit)) {
-    // update state machine
-    return
-  }
-
-  const receiptExit = await Effect.runPromiseExit(waitForReceipt(submissionExit.value))
-
-  if (Exit.isFailure(receiptExit)) {
-    // update state machine
-    return
-  }
-
-  // Exit.match(exit, {
-  //   onFailure: cause => {
-  //     if (cause._tag === "Fail") {
-  //       if (cause.error._tag === "SendTransactionError") {
-  //         transferSubmission = Failure({
-  //           reason: "Failed to submit your transfer",
-  //           message: "This means that the RPCs might be bad",
-  //           error: cause.error
-  //         })
-  //       } else if (cause.error._tag === "CreateWalletClientError") {
-  //         transferSubmission = Failure({
-  //           reason: "Could not connect to your wallet",
-  //           message:
-  //             "Make sure you have your wallet connected and check if your wallet has any errors in its UI",
-  //           error: cause.error
-  //         })
-  //       }
-  //     } else {
-  //       transferSubmission = Interrupted()
-  //     }
-  //   },
-  //   onSuccess: (receipt: TransactionReceipt) => {
-  //     transferSubmission = Success({ hash: receipt.transactionHash })
-  //   }
-  // })
+  transferState = await nextState(transferState)
+  transferState = await nextState(transferState)
+  transferState = await nextState(transferState)
+  transferState = await nextState(transferState)
+  transferState = await nextState(transferState)
+  transferState = await nextState(transferState)
 }
 </script>
 
@@ -198,9 +105,9 @@ async function submit() {
           class="mt-4 self-start"
           variant="primary"
           onclick={submit}
-          disabled={transferSubmission._tag === "InProgress"}
+          disabled={transferState._tag !== "Pending"}
         >
-          {#if transferSubmission._tag === "InProgress"}
+          {#if transferState._tag !== "Pending"}
             Submitting...
           {:else}
             Submit
@@ -210,28 +117,12 @@ async function submit() {
           class="mt-4 self-start"
           variant="secondary"
           onclick={resetAll}
-          disabled={transferSubmission._tag === "InProgress"}
+          disabled={transferState._tag !== "Pending"}
         >
           Reset All
         </Button>
       </div>
-
-      {#if transferSubmission._tag === "Success"}
-        <div class="text-green-500 mt-2">
-          Transaction submitted! Hash: {transferSubmission.hash}
-        </div>
-      {:else if transferSubmission._tag === "Failure"}
-        <div class="text-red-500">
-          <h2 class="text-red-500 mt-2">{transferSubmission.reason}</h2>
-          <pre class="text-red-500 mt-2">
-            {JSON.stringify(transferSubmission.error)}
-          </pre>
-        </div>
-      {:else if transferSubmission._tag === "Interrupted"}
-        <div class="text-red-500">
-          <h2 class="text-red-500 mt-2">This transfer was interrupted</h2>
-        </div>
-      {/if}
+      {JSON.stringify(transferState, null, 2)}
     </div>
   </section>
 </Sections>
