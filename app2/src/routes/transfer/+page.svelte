@@ -7,7 +7,7 @@ import Sections from "$lib/components/ui/Sections.svelte"
 import { Effect, Exit, Data } from "effect"
 import { type Hash, type TransactionReceipt } from "viem"
 import { sepolia } from "viem/chains"
-import { submitTransfer, type SubmitTransferError } from "$lib/services/transfer"
+import { submitTransfer, switchChain, type SubmitTransferError } from "$lib/services/transfer"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -40,6 +40,8 @@ let transferSubmission = $state<TransferSubmission>(Pending())
 
 async function submit() {
   transferSubmission = InProgress()
+  const switchChainExit = await Effect.runPromiseExit(switchChain(sepolia.id))
+
   const exit = await Effect.runPromiseExit(
     submitTransfer({
       chain: sepolia,
