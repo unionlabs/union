@@ -41,6 +41,7 @@
             ucs03 = ucs03-configs.cw20;
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
+          lightclients = [ ];
         }
         {
           name = "union-testnet";
@@ -310,7 +311,7 @@
           map (
             lc:
             let
-              name = "${args.name}-migrate-lightclient-${lc}";
+              name = "migrate-${args.name}-lightclient-${lc}";
             in
             {
               inherit name;
@@ -347,7 +348,7 @@
           map (
             app:
             let
-              name = "${args.name}-migrate-app-${app}";
+              name = "migrate-${args.name}-app-${app}";
             in
             {
               inherit name;
@@ -383,27 +384,37 @@
             }
           ) (builtins.attrNames apps)
         ))
-      # // (map (
-      #   _a:
-      #   pkgs.writeShellApplication {
-      #     name = "${name}-migrate-app-{a}";
-      #     runtimeInputs = [ cosmwasm-deployer.packages.cosmwasm-deployer ];
-      #     text = ''
-      #       cosmwasm-deployer \
-      #         addresses \
-      #         ${
-      #           pkgs.lib.strings.concatStrings (
-      #             map (l: " --lightclient ${all-lightclients.${l}.client-type}") (builtins.attrNames all-lightclients)
-      #           )
-      #         } \
-      #         ${
-      #           pkgs.lib.strings.concatStrings (map (a: " --${all-apps.${a}.name}") (builtins.attrNames all-apps))
-      #         } \
-      #         --deployer "$1" ''${2+--output $2}
-      #     '';
-      #   }
-      # ) apps)
-      ;
+        // (
+          let
+            name = "migrate-${args.name}-core";
+          in
+          {
+            ${name} = pkgs.writeShellApplication {
+              inherit name;
+              runtimeInputs = [
+                ibc-union-contract-addresses
+                cosmwasm-deployer.packages.cosmwasm-deployer
+              ];
+              text = ''
+                DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
+                echo "deployer address: $DEPLOYER"
+                ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
+
+                RUST_LOG=info \
+                  cosmwasm-deployer \
+                  migrate \
+                  --rpc-url ${rpc_url} \
+                  --address "$(echo "$ADDRESSES" | jq '.core' -r)" \
+                  --new-bytecode ${ibc-union} \
+                  --private-key ${private_key} \
+                  --gas-price ${toString gas_config.gas_price} \
+                  --gas-denom ${toString gas_config.gas_denom} \
+                  --gas-multiplier ${toString gas_config.gas_multiplier} \
+                  --max-gas ${toString gas_config.max_gas} \
+              '';
+            };
+          }
+        );
 
       ibc-union-contract-addresses = pkgs.writeShellApplication {
         name = "ibc-union-contract-addresses";
