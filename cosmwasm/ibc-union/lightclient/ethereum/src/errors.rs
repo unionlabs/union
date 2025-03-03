@@ -55,6 +55,9 @@ pub enum Error {
 
     #[error("the misbehaviour headers must be different")]
     IdenticalMisbehaviourHeaders,
+
+    #[error("the initial sync committee must be provided during client creation")]
+    NoInitialSyncCommittee,
 }
 
 impl From<Error> for StdError {

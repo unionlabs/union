@@ -10,14 +10,6 @@ pub enum Status {
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct VerifyClientMessageUpdate {
-    pub height: u64,
-    pub consensus_state: Bytes,
-    pub client_state: Bytes,
-}
-
-#[derive(serde::Serialize, serde::Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct MisbehaviourResponse {
     pub client_state: Bytes,
 }
@@ -32,12 +24,29 @@ pub enum VerifyCreationResponseEvent {
     },
 }
 
+pub type StorageWrites = Vec<(Bytes, Bytes)>;
+
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct VerifyCreationResponse {
     pub latest_height: u64,
     pub counterparty_chain_id: String,
+    pub client_state_bytes: Option<Bytes>,
+    pub storage_writes: StorageWrites,
     pub events: Option<Vec<VerifyCreationResponseEvent>>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct UpdateStateResponse {
+    /// The height to save the consensus state at
+    pub height: u64,
+    /// The client state to overwrite the current one with if provided
+    pub client_state_bytes: Option<Bytes>,
+    /// The consensus state to save at the `update_height`
+    pub consensus_state_bytes: Bytes,
+    /// The storage writes which will be written under the client's storage in the core module
+    pub storage_writes: StorageWrites,
 }
 
 #[derive(Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -71,7 +80,7 @@ pub enum QueryMsg {
         proof: Bytes,
         path: Bytes,
     },
-    VerifyClientMessage {
+    UpdateState {
         client_id: u32,
         caller: String,
     },

@@ -15,11 +15,6 @@ pub enum LightClientUpdate {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct EpochChangeUpdate {
-    /// The trusted sync committee for the *next* epoch that the client is being updated to.
-    ///
-    /// If the current epoch is 10, this will be the sync committee for epoch 11.
-    pub sync_committee: SyncCommittee,
-
     /// The next sync committee of the epoch that the client is being updated to, corresponding to `update_data.attested_header.state_root`.
     ///
     /// If the current epoch is 10, this will be the *next* sync committee for epoch 11 (i.e. the sync committee for epoch 12).
@@ -34,11 +29,6 @@ pub struct EpochChangeUpdate {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct WithinEpochUpdate {
-    /// The trusted sync committee for the *current* epoch.
-    ///
-    /// If the current epoch is 10, this will be the sync committee for epoch 10.
-    pub sync_committee: SyncCommittee,
-
     pub update_data: LightClientUpdateData,
 }
 
@@ -47,21 +37,6 @@ impl LightClientUpdate {
         match self {
             LightClientUpdate::EpochChange(update) => &update.update_data,
             LightClientUpdate::WithinEpoch(update) => &update.update_data,
-        }
-    }
-
-    /// `ethereum-sync-protocol` takes both `current_sync_committee` and `next_sync_committee` as a parameter.
-    /// Although theoretically it can work when both params to be `Some`, for optimization reasons, the client
-    /// will only pass one at a time based on the update type. This function returns the currently trusted sync committee
-    /// in tuple format ready to be passed in to the verifier.
-    ///
-    /// Returns `(current_sync_committee, next_sync_committee)`
-    pub fn currently_trusted_sync_committee(
-        &self,
-    ) -> (Option<&SyncCommittee>, Option<&SyncCommittee>) {
-        match self {
-            LightClientUpdate::EpochChange(update) => (None, Some(&update.sync_committee)),
-            LightClientUpdate::WithinEpoch(update) => (Some(&update.sync_committee), None),
         }
     }
 }
@@ -99,10 +74,6 @@ mod tests {
 
     fn mk_epoch_change_update() -> EpochChangeUpdate {
         EpochChangeUpdate {
-            sync_committee: SyncCommittee {
-                pubkeys: vec![H384::new([0xAA; 48])],
-                aggregate_pubkey: H384::new([0xAA; 48]),
-            },
             next_sync_committee: SyncCommittee {
                 pubkeys: vec![H384::new([0xAA; 48])],
                 aggregate_pubkey: H384::new([0xAA; 48]),
@@ -179,10 +150,6 @@ mod tests {
 
     fn mk_within_epoch_update() -> WithinEpochUpdate {
         WithinEpochUpdate {
-            sync_committee: SyncCommittee {
-                pubkeys: vec![H384::new([0xAA; 48])],
-                aggregate_pubkey: H384::new([0xAA; 48]),
-            },
             update_data: mk_light_client_update_data(),
         }
     }
