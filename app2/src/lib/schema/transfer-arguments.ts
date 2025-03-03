@@ -2,7 +2,8 @@ import { Schema } from "effect"
 import {
   AddressAptosCanonical,
   AddressCosmosCanonical,
-  AddressEvmCanonical
+  AddressEvmCanonical,
+  ReceiverAddress
 } from "$lib/schema/address"
 import { RpcType } from "$lib/schema/chain"
 import { EVMWethToken, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
@@ -33,12 +34,7 @@ export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")({
   ),
   ...CommonTransferFields,
   wethToken: EVMWethToken,
-  receiver: AddressEvmCanonical.pipe(
-    Schema.annotations({
-      message: () =>
-        "receiver must be a valid EVM canonical address (e.g., 0x followed by 40 hex chars)"
-    })
-  ),
+  receiver: ReceiverAddress,
   ucs03address: AddressEvmCanonical.pipe(
     Schema.annotations({
       message: () =>
@@ -54,12 +50,7 @@ export class CosmosTransfer extends Schema.Class<CosmosTransfer>("CosmosTransfer
   ),
   ...CommonTransferFields,
   wethToken: Schema.Null,
-  receiver: AddressCosmosCanonical.pipe(
-    Schema.annotations({
-      message: () =>
-        "receiver must be a valid Cosmos canonical address (e.g., 0x followed by 40 or 64 hex chars)"
-    })
-  ),
+  receiver: ReceiverAddress,
   ucs03address: AddressCosmosCanonical.pipe(
     // Changed to hex
     Schema.annotations({
@@ -76,12 +67,7 @@ export class AptosTransfer extends Schema.Class<AptosTransfer>("AptosTransfer")(
   ),
   ...CommonTransferFields,
   wethToken: Schema.Null,
-  receiver: AddressAptosCanonical.pipe(
-    Schema.annotations({
-      message: () =>
-        "receiver must be a valid Aptos canonical address (e.g., 0x followed by 64 hex chars)"
-    })
-  ),
+  receiver: ReceiverAddress,
   ucs03address: AddressAptosCanonical.pipe(
     Schema.annotations({
       message: () =>

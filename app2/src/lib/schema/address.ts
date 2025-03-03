@@ -24,3 +24,12 @@ export const AddressAptosCanonical = AddressCanonicalBytes.pipe(
 )
 export const AddressAptosDisplay = AddressAptosCanonical
 export const AddressAptosZkgm = AddressAptosCanonical
+
+export const ReceiverAddress = Schema.Union(
+  AddressCosmosCanonical,
+  AddressEvmCanonical,
+  AddressAptosCanonical
+).annotations({
+  identifier: "ReceiverAddress",
+  message: () => "receiver must be a valid address (e.g., cosmos1... or 0x...)"
+})
