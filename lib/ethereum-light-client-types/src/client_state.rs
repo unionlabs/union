@@ -28,6 +28,7 @@ pub struct ClientStateV1 {
     /// the ibc contract on the counterparty chain that contains the ICS23 commitments
     pub ibc_contract_address: H160,
     #[cfg_attr(feature = "serde", serde(default))]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub initial_sync_committee: Option<InitialSyncCommittee>,
 }
 

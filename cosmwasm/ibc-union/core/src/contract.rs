@@ -49,6 +49,8 @@ use crate::{
 
 type ContractResult = Result<Response, ContractError>;
 
+pub const CLIENT_STORAGE_PREFIX: &str = "client/";
+
 pub mod events {
     pub mod client {
         pub const REGISTER: &str = "register_client";
@@ -799,10 +801,10 @@ fn create_client(
         .key(),
         &commit(consensus_state_bytes),
     )?;
-    verify_creation_response
-        .storage_writes
-        .into_iter()
-        .for_each(|(key, value)| store_client_data(deps.branch(), client_id, key, value));
+
+    for (k, v) in verify_creation_response.storage_writes {
+        store_client_data(deps.branch(), client_id, k, v);
+    }
     let response = verify_creation_response
         .events
         .into_iter()
@@ -823,9 +825,13 @@ fn create_client(
 
 fn store_client_data(deps: DepsMut<'_>, client_id: u32, key: Bytes, value: Bytes) {
     deps.storage.set(
-        [client_id.to_le_bytes().as_slice(), &key]
-            .concat()
-            .as_slice(),
+        [
+            CLIENT_STORAGE_PREFIX.as_bytes(),
+            client_id.to_le_bytes().as_slice(),
+            &key,
+        ]
+        .concat()
+        .as_slice(),
         &value,
     );
 }
@@ -892,10 +898,9 @@ fn update_client(
         &update.consensus_state_bytes.into_vec().into(),
     )?;
 
-    update
-        .storage_writes
-        .into_iter()
-        .for_each(|(key, value)| store_client_data(deps.branch(), client_id, key, value));
+    for (k, v) in update.storage_writes {
+        store_client_data(deps.branch(), client_id, k, v);
+    }
 
     Ok(
         Response::new().add_event(Event::new(events::client::UPDATE).add_attributes([
