@@ -309,7 +309,7 @@ contract UCS03Zkgm is
     using LibString for *;
     using LibBytes for *;
 
-    IIBCPacket public ibcHandler;
+    IIBCModulePacket public ibcHandler;
     mapping(bytes32 => IBCPacket) public inFlightPacket;
     mapping(uint32 => mapping(address => uint256)) public channelBalance;
     mapping(address => uint256) public tokenOrigin;
@@ -320,7 +320,7 @@ contract UCS03Zkgm is
     }
 
     function initialize(
-        IIBCPacket _ibcHandler,
+        IIBCModulePacket _ibcHandler,
         address admin,
         IWETH _weth
     ) public initializer {
