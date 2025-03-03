@@ -908,7 +908,10 @@ contract UCS03Zkgm is
                 ZkgmPacket({
                     salt: keccak256(abi.encode(salt)),
                     path: ZkgmLib.updateChannelPath(
-                        path, ibcPacket.destinationChannelId
+                        ZkgmLib.updateChannelPath(
+                            path, ibcPacket.destinationChannelId
+                        ),
+                        forward.channelId
                     ),
                     instruction: forward.instruction
                 })
