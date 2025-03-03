@@ -4,10 +4,13 @@ import type {
   CreateWalletClientErrorType,
   SendTransactionErrorType,
   SendTransactionParameters,
+  SwitchChainErrorType,
   WaitForTransactionReceiptErrorType
 } from "viem"
 import { createPublicClient, createWalletClient, http } from "viem"
 import { sepolia } from "viem/chains"
+import { custom, getConnectorClient, switchChain, waitForTransactionReceipt } from "@wagmi/core"
+import { wagmiConfig, type ConfiguredChainId } from "$lib/wallet/evm/wagmi-config"
 
 export class CreateWalletClientError extends Data.TaggedError("CreateWalletClientError")<{
   cause: CreateWalletClientErrorType
@@ -27,7 +30,17 @@ export class SendTransactionError extends Data.TaggedError("SendTransactionError
   cause: SendTransactionErrorType
 }> {}
 
+export class SwitchChainError extends Data.TaggedError("SwitchChainError")<{
+  cause: SwitchChainErrorType
+}> {}
+
 export type SubmitTransferError = SendTransactionError | CreateWalletClientError
+
+export const switchToChain = (chainId: ConfiguredChainId) =>
+  Effect.tryPromise({
+    try: () => switchChain(wagmiConfig, { chainId }),
+    catch: err => new SwitchChainError({ cause: err as SwitchChainErrorType })
+  })
 
 export const submitTransfer = (transactionArgs: SendTransactionParameters) =>
   Effect.gen(function* () {
