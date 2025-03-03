@@ -156,6 +156,7 @@ fn should_include_event(
 
     // we only consider wasm events (that start with wasm-)
     const TYPE_WASM_PREFIX: &str = "wasm-";
+    const TYPE_WASM_EVENT: &str = "wasm";
 
     // property that holds the event attributes
     const ATTRIBUTES: &str = "attributes";
@@ -186,7 +187,7 @@ fn should_include_event(
     };
 
     // 2. starts with 'wasm-'
-    if !event_type.starts_with(TYPE_WASM_PREFIX) {
+    if !event_type.starts_with(TYPE_WASM_PREFIX) && event_type != TYPE_WASM_EVENT {
         trace!("{reference}: not a wasm event type: {event_type} => do not include");
         return false;
     }
@@ -354,6 +355,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn true_when_contract_address_is_active_in_a_wasm_event() {
+        let should_include = get_should_include_event_result(
+            &json!(
+                {
+                    "type": "wasm-packet_send",
+                    "attributes": [
+                    {
+                        "key": "_contract_address",
+                        "index": true,
+                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                    }
+                    ]
+                }
+            ),
+            &HashSet::from([
+                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
+                "some-other-contract".to_string(),
+            ]),
+        );
+
+        assert!(should_include);
+    }
+
+    #[tokio::test]
     async fn false_when_contract_address_is_not_active() {
         let should_include = get_should_include_event_result(
             &json!(
@@ -457,6 +482,35 @@ mod tests {
             &json!(
                 {
                     "type": "wasm-packet_send",
+                    "attributes": [
+                    {
+                        "key": "_contract_address",
+                        "index": true,
+                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                    },
+                    {
+                        "key": "_contract_address",
+                        "index": true,
+                        "value": "ignored_contract_address"
+                    }
+                    ]
+                }
+            ),
+            &HashSet::from([
+                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
+                "some-other-contract".to_string(),
+            ]),
+        );
+
+        assert!(should_include);
+    }
+
+    #[tokio::test]
+    async fn true_when_first_contract_address_is_active_others_are_ignored_in_a_wasm_event() {
+        let should_include = get_should_include_event_result(
+            &json!(
+                {
+                    "type": "wasm",
                     "attributes": [
                     {
                         "key": "_contract_address",
