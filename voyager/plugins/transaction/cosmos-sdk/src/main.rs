@@ -449,6 +449,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                         }
                                     } else if msgs.len() == 1 {
                                         warn!("cosmos msg failed");
+
                                         Ok(noop())
                                     } else {
                                         Ok(seq(msgs.into_iter().map(|msg| {
@@ -458,6 +459,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                             ))
                                         })))
                                     }
+                                } else if log.contains("insufficient funds") {
+                                    warn!("out of gas");
+
+                                    return Err(ErrorObject::owned(-1, "out of gas", None::<()>));
                                 } else {
                                     warn!("unable to parse message index from tx failure ({codespace}, {error_code}): {log}");
 
