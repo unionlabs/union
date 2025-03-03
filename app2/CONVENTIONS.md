@@ -10,7 +10,7 @@
   // Use:
   let value: Option<string>
   ```
-- Never use `try {} catch {}` blocks. always use Effect. When dealing with unsafe functions from librarie, use `Effect.tryPromie(() => somePromiseFn())`
+- Never use `try {} catch {}` blocks. always use Effect. When dealing with unsafe functions from libraries, use `Effect.tryPromie(() => somePromiseFn())`
 
 ## Styling
 
