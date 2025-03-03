@@ -6,7 +6,7 @@ use alloy::{
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
     rpc::types::BlockTransactionsKind,
 };
-use beacon_api::{client::BeaconApiClient, types::Spec};
+use beacon_api::client::BeaconApiClient;
 use beacon_api_types::{
     light_client_update::NextSyncCommitteeBranch, PresetBaseKind, Slot, SyncCommittee,
 };
@@ -444,7 +444,6 @@ impl Module {
             .try_fold((VecDeque::new(), update_from_block_number.height()), {
                 |(mut vec, mut trusted_block_number), update| {
                     let self_ = self.clone();
-                    let spec = spec.clone();
 
                     async move {
                         let old_trusted_block_number = trusted_block_number;
@@ -471,7 +470,6 @@ impl Module {
                                             .next_sync_committee_branch
                                             .expect("next_sync_committee_branch should exist"),
                                     )),
-                                    &spec,
                                 )
                                 .await?,
                         );
@@ -511,7 +509,6 @@ impl Module {
                         signature_slot: finality_update.signature_slot,
                     },
                     None,
-                    &spec,
                 )
                 .await?,
             )
@@ -595,15 +592,9 @@ impl Module {
         light_client_update_data: LightClientUpdateData,
         // if this is an epoch change update, provide the next sync committee for the target epoch
         next_sync_committee: Option<(SyncCommittee, NextSyncCommitteeBranch)>,
-        spec: &Spec,
     ) -> RpcResult<Header> {
         // When we fetch the update at this height, the `next_sync_committee` will
         // be the current sync committee of the period that we want to update to.
-        let previous_period = u64::max(
-            1,
-            light_client_update_data.finalized_header.beacon.slot.get() / spec.period(),
-        ) - 1;
-
         let ibc_account_proof = self
             .fetch_account_update(
                 light_client_update_data
@@ -613,41 +604,16 @@ impl Module {
             )
             .await?;
 
-        let previous_period_light_client_update = self
-            .beacon_api_client
-            .light_client_updates(previous_period, 1)
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e)
-                        .with_message("error fetching previous period light client update"),
-                    None::<()>,
-                )
-            })?
-            .0
-            .into_iter()
-            .map(|x| x.data)
-            .collect::<Vec<_>>()
-            .pop()
-            .expect("one update was requested, if the rpc returns a value it should be valid here");
-
         Ok(Header {
             consensus_update: match next_sync_committee {
                 Some((next_sync_committee, next_sync_committee_branch)) => {
                     LightClientUpdate::EpochChange(Box::new(EpochChangeUpdate {
-                        sync_committee: previous_period_light_client_update
-                            .next_sync_committee
-                            .expect("next_sync_committee should exist"),
                         next_sync_committee,
                         next_sync_committee_branch,
                         update_data: light_client_update_data,
                     }))
                 }
                 None => LightClientUpdate::WithinEpoch(Box::new(WithinEpochUpdate {
-                    sync_committee: previous_period_light_client_update
-                        .next_sync_committee
-                        .expect("next_sync_committee should exist"),
                     update_data: light_client_update_data,
                 })),
             },
