@@ -16,6 +16,7 @@ export async function nextState(ts: TransferSubmission): Promise<TransferSubmiss
     SwitchChain: ({ state }) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
+          // TODO: don't hardcode
           const exit = await Effect.runPromiseExit(switchChain(sepolia.id))
           return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
         },
@@ -31,6 +32,7 @@ export async function nextState(ts: TransferSubmission): Promise<TransferSubmiss
       return TransferSubmitState.$match(state, {
         InProgress: async () => {
           const exit = await Effect.runPromiseExit(
+            // TODO: don't hardcode
             submitTransfer({
               chain: sepolia,
               account: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
