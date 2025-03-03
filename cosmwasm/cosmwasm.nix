@@ -432,7 +432,10 @@
       };
 
       get-lightclient =
-        f: pkgs.lib.lists.findSingle f (throw "lightclient not found") (throw "many matching lightclients found") all-lightclients;
+        f:
+        pkgs.lib.lists.findSingle f (throw "lightclient not found")
+          (throw "many matching lightclients found")
+          all-lightclients;
 
       mk-lightclient =
         name:
