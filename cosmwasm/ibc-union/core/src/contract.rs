@@ -35,9 +35,10 @@ use ibc_union_spec::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
     ethereum::keccak256,
+    option_unwrap,
     primitives::{encoding::HexPrefixed, Bytes, H256},
 };
-use unionlabs_cosmwasm_upgradable::UpgradeMsg;
+use unionlabs_cosmwasm_upgradable::{UpgradeError, UpgradeMsg};
 
 use crate::{
     state::{
@@ -456,15 +457,57 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct IbcUnionMigrateMsg {}
 
+pub mod version {
+    use std::num::NonZeroU32;
+
+    use unionlabs::option_unwrap;
+
+    pub const INIT: NonZeroU32 = option_unwrap!(NonZeroU32::new(1));
+    pub const DEPOLAMA: NonZeroU32 = option_unwrap!(NonZeroU32::new(2));
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
     deps: DepsMut,
     _env: Env,
     msg: UpgradeMsg<InitMsg, IbcUnionMigrateMsg>,
 ) -> Result<Response, ContractError> {
-    msg.run(deps, init, |_deps, _migrate, _version| {
-        Ok((Response::default(), None))
+    msg.run(deps, init, |_deps, _migrate, version| {
+        match version {
+            version::INIT => {}
+            version::DEPOLAMA => {}
+            _ => return Err(UpgradeError::UnknownStateVersion(version).into()),
+        }
+
+        Ok((Response::default(), Some(version::DEPOLAMA)))
     })
+}
+
+pub mod migrate_to_depolama {
+    use std::collections::BTreeSet;
+
+    use cosmwasm_std::{Addr, Binary, DepsMut, StdResult};
+    use cw_storage_plus::{Item, Map};
+    use ibc_union_spec::types::{Channel, Connection};
+
+    pub fn run(deps: DepsMut<'_>) -> StdResult<()> {
+        pub const QUERY_STORE: Item<Binary> = Item::new("query_store");
+        pub const CHANNEL_OWNER: Map<u32, Addr> = Map::new("channel_owner");
+        pub const CHANNELS: Map<u32, Channel> = Map::new("channels");
+        pub const CONTRACT_CHANNELS: Map<Addr, BTreeSet<u32>> = Map::new("contract_channels");
+        pub const CONNECTIONS: Map<u32, Connection> = Map::new("connections");
+        pub const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
+        pub const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> =
+            Map::new("client_consensus_states"); // From client type to contract implementation
+        pub const CLIENT_REGISTRY: Map<&str, Addr> = Map::new("client_registry"); // From client id to client type
+        pub const CLIENT_TYPES: Map<u32, String> = Map::new("client_types"); // From client id to contract implementation
+        pub const CLIENT_IMPLS: Map<u32, Addr> = Map::new("client_impls");
+        pub const NEXT_CLIENT_ID: Item<u32> = Item::new("next_client_id");
+        pub const NEXT_CONNECTION_ID: Item<u32> = Item::new("next_connection_id");
+        pub const NEXT_CHANNEL_ID: Item<u32> = Item::new("next_channel_id");
+
+        Ok(())
+    }
 }
 
 pub(crate) fn init(
