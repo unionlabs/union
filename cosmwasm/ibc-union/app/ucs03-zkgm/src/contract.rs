@@ -27,7 +27,7 @@ use crate::{
         decode_fungible_asset, Ack, Batch, BatchAck, FungibleAssetOrder, FungibleAssetOrderAck,
         Instruction, Multiplex, ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER,
         FILL_TYPE_PROTOCOL, INSTR_VERSION_0, INSTR_VERSION_1, OP_BATCH, OP_FUNGIBLE_ASSET_ORDER,
-        OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
+        OP_MULTIPLEX, OP_TAG, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
     },
     msg::{EurekaMsg, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg},
     state::{
@@ -309,6 +309,11 @@ fn timeout_internal(
                 Ok(Response::new())
             }
         }
+        OP_TAG => {
+            // The tag instruction is solely present for indexing purpose.
+            // The protocol consider it as a noop.
+            Ok(Response::new())
+        }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
         }),
@@ -420,6 +425,11 @@ fn acknowledge_internal(
             } else {
                 Ok(Response::new())
             }
+        }
+        OP_TAG => {
+            // The tag instruction is solely present for indexing purpose.
+            // The protocol consider it as a noop.
+            Ok(Response::new())
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
@@ -629,6 +639,11 @@ fn execute_internal(
                 path,
                 multiplex,
             )
+        }
+        OP_TAG => {
+            // The tag instruction is solely present for indexing purpose.
+            // The protocol consider it as a noop.
+            Ok((TAG_ACK_SUCCESS.abi_encode().into(), Response::new()))
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
