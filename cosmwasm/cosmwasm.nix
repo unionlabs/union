@@ -298,7 +298,6 @@
 
       chain-migration-scripts =
         args@{
-          name,
           lightclients,
           apps,
           private_key,
@@ -311,7 +310,7 @@
           map (
             lc:
             let
-              name = "migrate-${args.name}-lightclient-${lc}";
+              name = "migrate-lightclient-${lc}-${args.name}";
             in
             {
               inherit name;
@@ -331,7 +330,7 @@
                     migrate \
                     --rpc-url ${rpc_url} \
                     --address "$(echo "$ADDRESSES" | jq '.lightclient."${
-                      (get-lightclient (lc: lc.name == name)).client-type
+                      (get-lightclient (l: l.name == lc)).client-type
                     }"' -r)" \
                     --new-bytecode ${mk-lightclient lc} \
                     --private-key ${private_key} \
@@ -348,7 +347,7 @@
           map (
             app:
             let
-              name = "migrate-${args.name}-app-${app}";
+              name = "migrate-app-${app}-${args.name}";
             in
             {
               inherit name;
@@ -433,7 +432,7 @@
       };
 
       get-lightclient =
-        f: pkgs.lib.lists.findSingle f (throw "not found") (throw "many found") all-lightclients;
+        f: pkgs.lib.lists.findSingle f (throw "lightclient not found") (throw "many matching lightclients found") all-lightclients;
 
       mk-lightclient =
         name:
@@ -582,8 +581,6 @@
               ))
             )
             // (builtins.foldl' (a: b: a // b) { } (map chain-migration-scripts networks))
-            # // (dbg (chain-migration-scripts (builtins.elemAt networks 0)))
-            # // (dbg (chain-migration-scripts (builtins.elemAt networks 1)))
             // derivation { name = "cosmwasm-scripts"; };
         }
         // cosmwasm-deployer.packages

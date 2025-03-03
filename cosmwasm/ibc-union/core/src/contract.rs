@@ -825,6 +825,17 @@ fn update_client(
         // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
         // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
         QUERY_STORE.save(deps.storage, &client_message.into())?;
+
+        let status = query_light_client::<Status>(
+            deps.as_ref(),
+            client_impl.clone(),
+            LightClientQuery::GetStatus { client_id },
+        )?;
+
+        if !matches!(status, Status::Active) {
+            return Err(ContractError::ClientNotActive { client_id, status });
+        }
+
         let update = query_light_client::<VerifyClientMessageUpdate>(
             deps.as_ref(),
             client_impl,
