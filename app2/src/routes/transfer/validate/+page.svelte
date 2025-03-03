@@ -1,49 +1,49 @@
 <!-- src/routes/+page.svelte -->
 <script lang="ts">
-  import {Effect, Schema} from "effect";
-  import type { RpcType } from "$lib/schema/chain";
-  import {
-    AptosTransfer,
-    CosmosTransfer,
-    EVMTransfer,
-    type Transfer
-  } from "$lib/schema/transfer-arguments";
-  import {examples} from "$lib/examples/transfer-arguments";
+import { Effect, Schema } from "effect"
+import type { RpcType } from "$lib/schema/chain"
+import {
+  AptosTransfer,
+  CosmosTransfer,
+  EVMTransfer,
+  type Transfer
+} from "$lib/schema/transfer-arguments"
+import { examples } from "$lib/examples/transfer-arguments"
 
-  type RpcTypeValue = Schema.Schema.Type<typeof RpcType>;
+type RpcTypeValue = Schema.Schema.Type<typeof RpcType>
 
-  let results: { type: string; data?: Transfer | undefined; error?: string | undefined }[] = [];
+let results: Array<{ type: string; data?: Transfer | undefined; error?: string | undefined }> = []
 
-  function handleResult(type: RpcTypeValue, parsed: Transfer | undefined, error: unknown) {
-    if (parsed) {
-      console.log(`${type} example:`, parsed);
-      results = [...results, { type, data: parsed, error: undefined }];
-    } else {
-      console.error(`${type} example failed:`, error);
-      results = [...results, { type, error: String(error), data: undefined }];
-    }
+function handleResult(type: RpcTypeValue, parsed: Transfer | undefined, error: unknown) {
+  if (parsed) {
+    console.log(`${type} example:`, parsed)
+    results = [...results, { type, data: parsed, error: undefined }]
+  } else {
+    console.error(`${type} example failed:`, error)
+    results = [...results, { type, error: String(error), data: undefined }]
   }
+}
 
-  function validateEvm() {
-    const effect = Schema.decode(EVMTransfer)(examples.evm);
-    Effect.runPromise(effect)
-      .then((parsed) => handleResult("evm", parsed, undefined))
-      .catch((error) => handleResult("evm", undefined, error));
-  }
+function validateEvm() {
+  const effect = Schema.decode(EVMTransfer)(examples.evm)
+  Effect.runPromise(effect)
+    .then(parsed => handleResult("evm", parsed, undefined))
+    .catch(error => handleResult("evm", undefined, error))
+}
 
-  function validateCosmos() {
-    const effect = Schema.decode(CosmosTransfer)(examples.cosmos);
-    Effect.runPromise(effect)
-      .then((parsed) => handleResult("cosmos", parsed, undefined))
-      .catch((error) => handleResult("cosmos", undefined, error));
-  }
+function validateCosmos() {
+  const effect = Schema.decode(CosmosTransfer)(examples.cosmos)
+  Effect.runPromise(effect)
+    .then(parsed => handleResult("cosmos", parsed, undefined))
+    .catch(error => handleResult("cosmos", undefined, error))
+}
 
-  function validateAptos() {
-    const effect = Schema.decode(AptosTransfer)(examples.aptos);
-    Effect.runPromise(effect)
-      .then((parsed) => handleResult("aptos", parsed, undefined))
-      .catch((error) => handleResult("aptos", undefined, error));
-  }
+function validateAptos() {
+  const effect = Schema.decode(AptosTransfer)(examples.aptos)
+  Effect.runPromise(effect)
+    .then(parsed => handleResult("aptos", parsed, undefined))
+    .catch(error => handleResult("aptos", undefined, error))
+}
 </script>
 
 <main class="p-8 max-w-5xl mx-auto bg-zinc-950 min-h-screen">

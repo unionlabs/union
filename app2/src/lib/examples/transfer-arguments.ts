@@ -1,43 +1,43 @@
 type EVMTransferInput = {
-  type: "evm";
-  baseToken: string;
-  baseAmount: string;
-  quoteToken: string;
-  quoteAmount: string;
-  sourceChannelId: number;
-  wethToken: string;
-  receiver: string;
-  ucs03address: string;
-};
+  type: "evm"
+  baseToken: string
+  baseAmount: string
+  quoteToken: string
+  quoteAmount: string
+  sourceChannelId: number
+  wethToken: string
+  receiver: string
+  ucs03address: string
+}
 
 type CosmosTransferInput = {
-  type: "cosmos";
-  baseToken: string;
-  baseAmount: string;
-  quoteToken: string;
-  quoteAmount: string;
-  sourceChannelId: number;
-  wethToken: null;
-  receiver: string;
-  ucs03address: string;
-};
+  type: "cosmos"
+  baseToken: string
+  baseAmount: string
+  quoteToken: string
+  quoteAmount: string
+  sourceChannelId: number
+  wethToken: null
+  receiver: string
+  ucs03address: string
+}
 
 type AptosTransferInput = {
-  type: "aptos";
-  baseToken: string;
-  baseAmount: string;
-  quoteToken: string;
-  quoteAmount: string;
-  sourceChannelId: number;
-  wethToken: null;
-  receiver: string;
-  ucs03address: string;
-};
+  type: "aptos"
+  baseToken: string
+  baseAmount: string
+  quoteToken: string
+  quoteAmount: string
+  sourceChannelId: number
+  wethToken: null
+  receiver: string
+  ucs03address: string
+}
 
 export const examples: {
-  evm: EVMTransferInput;
-  cosmos: CosmosTransferInput;
-  aptos: AptosTransferInput;
+  evm: EVMTransferInput
+  cosmos: CosmosTransferInput
+  aptos: AptosTransferInput
 } = {
   evm: {
     type: "evm",
@@ -72,4 +72,4 @@ export const examples: {
     ucs03address: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
     wethToken: null
   }
-};
+}

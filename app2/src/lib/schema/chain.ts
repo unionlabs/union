@@ -7,7 +7,7 @@ export const RpcType = Schema.Union(
   Schema.Literal("evm"),
   Schema.Literal("cosmos"),
   Schema.Literal("aptos")
-).annotations({ message: () => "type must be 'evm', 'cosmos', or 'aptos'" });
+).annotations({ message: () => "type must be 'evm', 'cosmos', or 'aptos'" })
 
 export class ChainFeatures extends Schema.Class<ChainFeatures>("ChainFeatures")({
   channel_list: Schema.Boolean,
