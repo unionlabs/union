@@ -24,7 +24,6 @@ hex                      = { workspace = true }
 hex-literal              = { workspace = true }
 k256                     = { version = "0.13.1", default-features = false, features = ["schnorr", "alloc"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
 macros                   = { workspace = true }
-milagro_bls              = { workspace = true }
 paste                    = { version = "1.0" }
 primitive-types          = { workspace = true, features = ["serde_no_std", "impl-rlp"] }
 prost                    = { workspace = true, features = ["std"] }

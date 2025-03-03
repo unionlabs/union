@@ -2,7 +2,7 @@ use enumorph::Enumorph;
 use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use tracing::{debug, error, info, instrument, trace};
+use tracing::{debug, info, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, traits::Member};
 use voyager_core::{ClientType, IbcSpecId, QueryHeight, Timestamp};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
@@ -16,13 +16,12 @@ use crate::{
 #[model]
 #[derive(Enumorph)]
 pub enum Call {
+    // hooks
     FetchBlocks(FetchBlocks),
-
     FetchUpdateHeaders(FetchUpdateHeaders),
-
     SubmitTx(SubmitTx),
 
-    // MakeMsgCreateClient(MakeMsgCreateClient),
+    // generic waiting logic
     WaitForHeight(WaitForHeight),
     WaitForTimestamp(WaitForTimestamp),
     WaitForTrustedHeight(WaitForTrustedHeight),
@@ -170,9 +169,7 @@ impl CallT<VoyagerMessage> for Call {
                     {start_height} but it was not picked up by a plugin"
                 );
 
-                error!(%message);
-
-                Err(QueueError::Fatal(message.into()))
+                Err(QueueError::Unprocessable(message.into()))
             }
 
             Call::FetchUpdateHeaders(FetchUpdateHeaders {
@@ -189,9 +186,7 @@ impl CallT<VoyagerMessage> for Call {
                     height {update_from} to {update_to} but it was not picked up by a plugin"
                 );
 
-                error!(%message);
-
-                Err(QueueError::Fatal(message.into()))
+                Err(QueueError::Unprocessable(message.into()))
             }
 
             Call::SubmitTx(SubmitTx { chain_id, .. }) => {
@@ -200,9 +195,7 @@ impl CallT<VoyagerMessage> for Call {
                     it was not picked up by a plugin"
                 );
 
-                error!(%message);
-
-                Err(QueueError::Fatal(message.into()))
+                Err(QueueError::Unprocessable(message.into()))
             }
 
             // TODO: Replace this with an aggregation

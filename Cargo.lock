@@ -736,11 +736,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "amcl"
-version = "0.3.0"
-source = "git+https://github.com/Snowfork/milagro_bls?rev=bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095#bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095"
-
-[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5010,7 +5005,6 @@ version = "0.0.0"
 dependencies = [
  "beacon-api-types",
  "hex-literal",
- "milagro_bls",
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
@@ -7535,16 +7529,6 @@ dependencies = [
  "byteorder",
  "keccak",
  "rand_core 0.6.4",
- "zeroize",
-]
-
-[[package]]
-name = "milagro_bls"
-version = "1.5.0"
-source = "git+https://github.com/Snowfork/milagro_bls?rev=bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095#bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095"
-dependencies = [
- "amcl",
- "rand 0.8.5",
  "zeroize",
 ]
 
@@ -13277,7 +13261,6 @@ dependencies = [
  "hex-literal",
  "k256",
  "macros",
- "milagro_bls",
  "near-primitives-core",
  "near-sdk",
  "paste",
