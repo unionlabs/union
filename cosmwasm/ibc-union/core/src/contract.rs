@@ -4,8 +4,8 @@ use alloy::sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdResult,
+    to_json_binary, to_json_string, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event,
+    MessageInfo, Response, StdResult,
 };
 use cw_storage_plus::Item;
 use ibc_union_msg::{
@@ -33,6 +33,7 @@ use ibc_union_spec::{
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
+    encoding::{Bincode, DecodeAs, EncodeAs},
     ethereum::keccak256,
     primitives::{encoding::HexPrefixed, Bytes, H256},
 };
@@ -453,7 +454,9 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct IbcUnionMigrateMsg {}
+pub struct IbcUnionMigrateMsg {
+    client_id: u32,
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
@@ -461,8 +464,94 @@ pub fn migrate(
     _env: Env,
     msg: UpgradeMsg<InitMsg, IbcUnionMigrateMsg>,
 ) -> Result<Response, ContractError> {
-    msg.run(deps, init, |_deps, _migrate, _version| {
-        Ok((Response::default(), None))
+    msg.run(deps, init, |mut deps, migrate, _version| {
+        let mut keys = vec![];
+        for key in CLIENT_CONSENSUS_STATES.keys(
+            deps.storage,
+            Some(cw_storage_plus::Bound::inclusive((migrate.client_id, 0))),
+            Some(cw_storage_plus::Bound::inclusive((
+                migrate.client_id,
+                u64::MAX,
+            ))),
+            cosmwasm_std::Order::Descending,
+        ) {
+            keys.push(key.unwrap());
+        }
+
+        // don't remove the final entry
+        let latest_key = keys.pop().unwrap();
+
+        for key in keys.clone() {
+            CLIENT_CONSENSUS_STATES.remove(deps.storage, key);
+            deps.storage.remove(
+                ConsensusStatePath {
+                    client_id: migrate.client_id,
+                    height: key.1,
+                }
+                .key()
+                .as_ref(),
+            );
+        }
+
+        let consensus_state =
+            <ethereum_light_client_types::consensus_state::OldConsensusState as unionlabs::encoding::DecodeAs>::decode_as::<
+                unionlabs::encoding::EthAbi,
+            >(
+                CLIENT_CONSENSUS_STATES
+                    .load(deps.storage, latest_key)?
+                    .as_slice(),
+            )
+            .unwrap();
+
+        let consensus_state = ethereum_light_client_types::consensus_state::ConsensusState {
+            slot: consensus_state.slot,
+            state_root: consensus_state.state_root,
+            storage_root: consensus_state.storage_root,
+            timestamp: consensus_state.timestamp,
+        }
+        .encode_as::<unionlabs::encoding::EthAbi>();
+
+        let client_state = ethereum_light_client_types::client_state::OldClientState::decode_as::<Bincode>(
+            CLIENT_STATES.load(deps.storage, latest_key.0)?.as_slice()
+        ).unwrap();
+
+        let client_state = ethereum_light_client_types::client_state::ClientState {
+            chain_id: client_state.chain_id,
+            chain_spec: client_state.chain_spec,
+            genesis_validators_root: client_state.genesis_validators_root,
+            genesis_time: client_state.genesis_time,
+            fork_parameters: client_state.fork_parameters,
+            latest_height: client_state.latest_height,
+            frozen_height: client_state.frozen_height,
+            ibc_contract_address: client_state.ibc_contract_address,
+            initial_sync_committee: None,
+        }.encode_as::<Bincode>();
+
+        CLIENT_CONSENSUS_STATES.save(deps.storage, latest_key, &consensus_state.to_vec().into())?;
+        CLIENT_STATES.save(
+            deps.storage,
+            latest_key.0,
+            &client_state.to_vec().into(),
+        )?;
+        store_commit(
+            deps.branch(),
+            &ClientStatePath {
+                client_id: migrate.client_id,
+            }
+            .key(),
+            &commit(client_state),
+        )?;
+        store_commit(
+            deps.branch(),
+            &ConsensusStatePath {
+                client_id: migrate.client_id,
+                height: latest_key.1,
+            }
+            .key(),
+            &commit(consensus_state),
+        )?;
+
+        Ok((Response::default().add_event(Event::new("keys").add_attribute("keys", to_json_string(&keys).unwrap())), None))
     })
 }
 
