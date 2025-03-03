@@ -336,7 +336,6 @@ files.extend-exclude = [
 "alloc"                   = "alloc"
 "alltables"               = "alltables"
 "alltransfers"            = "alltransfers"
-"amcl"                    = "amcl"
 "amet"                    = "amet"
 "ankr"                    = "ankr"
 "antialised"              = "antialised"

@@ -92,8 +92,6 @@ pub enum Error {
     NextSyncCommitteeMismatch { expected: H384, found: H384 },
     #[error("insufficient number of sync committee participants ({0})")]
     InsufficientSyncCommitteeParticipants(usize),
-    // #[error("bls error ({0:?})")]
-    // Bls(AmclError),
     // boxed as this variant is significantly larger than the rest of the variants (due to the H768 contained within)
     #[error(transparent)]
     InvalidSignature(Box<InvalidSignature>),
@@ -104,10 +102,3 @@ pub enum Error {
     #[error("client errored during signature verification ({0})")]
     ClientSignatureVerification(String),
 }
-
-// // NOTE: Implemented here instead of via #[from] since AmclError doesn't implement core::error::Error
-// impl From<AmclError> for Error {
-//     fn from(e: AmclError) -> Self {
-//         Error::Bls(e)
-//     }
-// }
