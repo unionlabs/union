@@ -5,8 +5,10 @@ use cometbls_light_client_types::{
     misbehaviour::Misbehaviour,
 };
 use cosmwasm_std::Empty;
-use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
-use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
+use ibc_union_light_client::{
+    ClientCreation, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
+use ibc_union_msg::lightclient::Status;
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
     encoding::Bincode,
@@ -121,22 +123,27 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<Self>> {
-        Ok(None)
+    ) -> Result<ClientCreation<Self>, ibc_union_light_client::IbcClientError<Self>> {
+        Ok(ClientCreation::empty())
     }
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
+    ) -> Result<StateUpdate<Self>, ibc_union_light_client::IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
 
         // If the update is already happened, we just do noop
         let header_height = header.signed_header.height.inner() as u64;
-        if let Ok(cons) = ctx.read_self_consensus_state(header_height) {
-            return Ok((header_height, client_state, cons));
+        if let Ok(consensus_state) = ctx.read_self_consensus_state(header_height) {
+            return Ok(StateUpdate {
+                height: header_height,
+                client_state: None,
+                consensus_state,
+                storage_writes: vec![],
+            });
         }
 
         verify_header::<T>(&ctx, &client_state, &consensus_state, &header)?;
@@ -266,19 +273,22 @@ fn verify_misbehaviour<T: ZkpVerifier>(
     Err(Error::MisbehaviourNotFound)
 }
 
-fn update_state(
+fn update_state<T: ZkpVerifier>(
     mut client_state: ClientState,
     mut consensus_state: ConsensusState,
     header: Header,
-) -> Result<(u64, ClientState, ConsensusState), Error> {
+) -> Result<StateUpdate<CometblsLightClient<T>>, Error> {
     let untrusted_height = Height::new_with_revision(
         header.trusted_height.revision(),
         header.signed_header.height.inner() as u64,
     );
 
-    if untrusted_height > client_state.latest_height {
+    let client_state = if untrusted_height > client_state.latest_height {
         client_state.latest_height = untrusted_height;
-    }
+        Some(client_state)
+    } else {
+        None
+    };
 
     consensus_state.app_hash = MerkleRoot {
         hash: header.signed_header.app_hash.into_encoding(),
@@ -288,7 +298,12 @@ fn update_state(
     // Normalized to nanoseconds to follow tendermint convention
     consensus_state.timestamp = header.signed_header.time.as_unix_nanos();
 
-    Ok((untrusted_height.height(), client_state, consensus_state))
+    Ok(StateUpdate {
+        height: untrusted_height.height(),
+        client_state,
+        consensus_state,
+        storage_writes: vec![],
+    })
 }
 
 fn is_client_expired(

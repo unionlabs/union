@@ -3,8 +3,10 @@ use cometbft_types::{
     types::{commit::Commit, signed_header::SignedHeader, validator_set::ValidatorSet},
 };
 use cosmwasm_std::Empty;
-use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
-use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
+use ibc_union_light_client::{
+    ClientCreation, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
+use ibc_union_msg::lightclient::Status;
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tendermint_verifier::types::{HostFns, SignatureVerifier};
@@ -91,7 +93,7 @@ impl IbcClient for TendermintLightClient {
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
+    ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
         match header.validator_set.validators.first().map(|v| &v.pub_key) {
@@ -157,8 +159,8 @@ impl IbcClient for TendermintLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<Self>> {
-        Ok(None)
+    ) -> Result<ClientCreation<Self>, IbcClientError<Self>> {
+        Ok(ClientCreation::empty())
     }
 }
 
@@ -168,7 +170,7 @@ pub fn verify_header<V: HostFns>(
     mut header: Header,
     block_timestamp: cosmwasm_std::Timestamp,
     signature_verifier: &SignatureVerifier<V>,
-) -> Result<(u64, ClientState, ConsensusState), Error> {
+) -> Result<StateUpdate<TendermintLightClient>, Error> {
     set_total_voting_power(&mut header.validator_set).map_err(Error::from)?;
     set_total_voting_power(&mut header.trusted_validators).map_err(Error::from)?;
 
@@ -250,21 +252,25 @@ pub fn verify_header<V: HostFns>(
         .try_into()
         .expect("impossible");
 
-    if client_state.latest_height.height() < update_height {
+    let client_state = if client_state.latest_height.height() < update_height {
         *client_state.latest_height.height_mut() = update_height;
-    }
+        Some(client_state)
+    } else {
+        None
+    };
 
-    Ok((
-        update_height,
+    Ok(StateUpdate {
+        height: update_height,
         client_state,
-        ConsensusState {
+        consensus_state: ConsensusState {
             timestamp: header.signed_header.header.time,
             root: MerkleRoot {
                 hash: (*header.signed_header.header.app_hash.get()).into(),
             },
             next_validators_hash: header.signed_header.header.next_validators_hash,
         },
-    ))
+        storage_writes: vec![],
+    })
 }
 
 pub fn set_total_voting_power(validator_set: &mut ValidatorSet) -> Result<(), MathOverflow> {
