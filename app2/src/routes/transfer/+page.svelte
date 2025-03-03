@@ -4,10 +4,14 @@ import Input from "$lib/components/ui/Input.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { Effect, Exit, Option, Either } from "effect"
+import { Effect, Exit, Option, Either, Data } from "effect"
 import { type Hash } from "viem"
 import { sepolia } from "viem/chains"
-import { submitTransfer, type SubmitTransferError } from "$lib/services/transfer"
+import {
+  SendTransactionError,
+  submitTransfer,
+  type SubmitTransferError
+} from "$lib/services/transfer"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -22,14 +26,24 @@ function resetAll() {
   })
 }
 
-let isSubmitting = $state(false)
-let submissionResult = $state<Option.Option<Either.Either<Hash, SubmitTransferError>>>(
-  Option.none()
-)
+type TransferSubmission = Data.TaggedEnum<{
+  Pending: {}
+  InProgress: {}
+  Success: { readonly hash: Hash }
+  Failure: {
+    readonly reason: string
+    readonly message: string
+    readonly error: SubmitTransferError
+  }
+  Interrupted: {}
+}>
+
+const { Pending, InProgress, Success, Failure, Interrupted } = Data.taggedEnum<TransferSubmission>()
+
+let transferSubmission = $state<TransferSubmission>(Pending())
 
 async function submit() {
-  isSubmitting = true
-  submissionResult = Option.none()
+  transferSubmission = InProgress()
   const exit = await Effect.runPromiseExit(
     submitTransfer({
       chain: sepolia,
@@ -38,19 +52,32 @@ async function submit() {
       to: rawIntents.receiver as `0x${string}`
     })
   )
+
   Exit.match(exit, {
     onFailure: cause => {
       if (cause._tag === "Fail") {
-        submissionResult = Option.some(Either.left(cause.error))
+        if (cause.error._tag === "SendTransactionError") {
+          transferSubmission = Failure({
+            reason: "Failed to submit your transfer",
+            message: "This means that the RPCs might be bad",
+            error: cause.error
+          })
+        } else if (cause.error._tag === "CreateWalletClientError") {
+          transferSubmission = Failure({
+            reason: "Could not connect to your wallet",
+            message:
+              "Make sure you have your wallet connected and check if your wallet has any errors in its UI",
+            error: cause.error
+          })
+        }
       } else {
-        console.error("Unexpected causes of program exit", exit)
+        transferSubmission = Interrupted()
       }
     },
     onSuccess: (hash: Hash) => {
-      submissionResult = Option.some(Either.right(hash))
+      transferSubmission = Success({ hash })
     }
   })
-  isSubmitting = false
 }
 </script>
 
@@ -110,9 +137,9 @@ async function submit() {
           class="mt-4 self-start"
           variant="primary"
           onclick={submit}
-          disabled={isSubmitting}
+          disabled={transferSubmission._tag === "InProgress"}
         >
-          {#if isSubmitting}
+          {#if transferSubmission._tag === "InProgress"}
             Submitting...
           {:else}
             Submit
@@ -122,23 +149,23 @@ async function submit() {
           class="mt-4 self-start"
           variant="secondary"
           onclick={resetAll}
-          disabled={isSubmitting}
+          disabled={transferSubmission._tag === "InProgress"}
         >
           Reset All
         </Button>
       </div>
 
-      {#if Option.isSome(submissionResult)}
-        {#if Either.isRight(submissionResult.value)}
-          <div class="text-green-500 mt-2">
-            Transaction submitted! Hash: {submissionResult.value.right}
-          </div>
-        {:else}
-          <pre class="text-red-500 mt-2">
-            {submissionResult.value.left}
-            {JSON.stringify(submissionResult.value.left.cause, null, 2)}
-          </pre>
-        {/if}
+      {#if transferSubmission._tag === "Success"}
+        <div class="text-green-500 mt-2">
+          Transaction submitted! Hash: {transferSubmission.hash}
+        </div>
+      {:else if transferSubmission._tag === "Failure"}
+      <div class="text-red-500">
+        <h2 class="text-red-500 mt-2">{transferSubmission.reason}</h2>
+        <pre class="text-red-500 mt-2">
+          {JSON.stringify(transferSubmission.error)}
+        </pre>
+      </div>
       {/if}
     </div>
   </section>
