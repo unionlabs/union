@@ -22,6 +22,8 @@ use unionlabs_cosmwasm_upgradable::UpgradeError;
 pub mod msg;
 pub mod state;
 
+pub const CLIENT_STORAGE_PREFIX: &str = "client/";
+
 // These are only used for `key` calculation. We don't want this crate to depend on `ibc-union`.
 pub const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
 pub const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> = Map::new("client_consensus_states");
@@ -519,7 +521,15 @@ fn read_storage<V: Decode<T::Encoding>, T: IbcClient>(
 ) -> Result<V, IbcClientError<T>> {
     let value = from_json::<Bytes<Base64>>(
         querier
-            .query_wasm_raw(ibc_host, [&client_id.to_le_bytes(), key].concat())?
+            .query_wasm_raw(
+                ibc_host,
+                [
+                    CLIENT_STORAGE_PREFIX.as_bytes(),
+                    &client_id.to_le_bytes(),
+                    key,
+                ]
+                .concat(),
+            )?
             .ok_or_else(|| {
                 IbcClientError::Std(StdError::generic_err(format!(
                     "unable to read the storage of client {client_id} with key {key:?}"
