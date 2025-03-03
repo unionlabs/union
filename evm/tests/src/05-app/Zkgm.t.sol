@@ -109,4 +109,24 @@ contract ZkgmTests is Test {
                 | uint256(h) << 224
         );
     }
+
+    function test_proxyInitialization_ok(address handler, address owner, address wethAddress) public {
+        vm.assume(handler != address(0));
+        vm.assume(owner != address(0));
+        vm.assume(wethAddress != address(0));
+        UCS03Zkgm implementation = new UCS03Zkgm();
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(implementation),
+            abi.encodeWithSelector(
+                UCS03Zkgm.initialize.selector,
+                handler,
+                owner,
+                wethAddress
+            )
+        );
+        UCS03Zkgm zkgm = UCS03Zkgm(address(proxy));
+        assertEq(address(zkgm.ibcHandler()), handler);
+        assertEq(zkgm.owner(), owner);
+        assertEq(address(zkgm.weth()), wethAddress);
+    }
 }
