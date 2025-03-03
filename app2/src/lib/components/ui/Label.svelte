@@ -8,6 +8,9 @@ type Props = {
 }
 
 // Define props with default
-const { children, class: className = "" }: Props = $props()
+const { children, class: className = "", ...rest }: Props = $props()
 </script>
-<label class="uppercase text-zinc-500 text-xs font-semibold block {className}">{@render children()}</label>
+<label class="uppercase text-zinc-500 text-xs font-semibold block {className}"
+
+    {...rest}
+>{@render children()}</label>

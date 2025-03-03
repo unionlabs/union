@@ -10,6 +10,7 @@
   // Use:
   let value: Option<string>
   ```
+- Never use `try {} catch {}` blocks. always use Effect. When dealing with unsafe functions from libraries, use `Effect.tryPromie(() => somePromiseFn())`
 
 ## Styling
 
@@ -21,6 +22,8 @@
   /* Use: */
   bg-zinc-100 dark:bg-zinc-800
   ```
+- never use `mx-auto` to style. use flexbox instead.
+- If you want to apply a gap between components, use `flex gap-*`, rather than `space-x-*`
 
 ## UI Components
 
@@ -46,6 +49,7 @@
 - Always use Svelte 5's reactive syntax
 - Never use `$:` statements or `$store` syntax
 - Use `$state()`, `$derived()`, and `$effect()` instead
+- Don't legacy syntax like `on:input` / `on:click`, use `oninput` and `onclick` instead.
 
 ### Props
 
