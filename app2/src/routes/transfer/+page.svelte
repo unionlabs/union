@@ -4,14 +4,10 @@ import Input from "$lib/components/ui/Input.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { Effect, Exit, Option, Either, Data } from "effect"
+import { Effect, Exit, Data } from "effect"
 import { type Hash } from "viem"
 import { sepolia } from "viem/chains"
-import {
-  SendTransactionError,
-  submitTransfer,
-  type SubmitTransferError
-} from "$lib/services/transfer"
+import { submitTransfer, type SubmitTransferError } from "$lib/services/transfer"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -160,12 +156,16 @@ async function submit() {
           Transaction submitted! Hash: {transferSubmission.hash}
         </div>
       {:else if transferSubmission._tag === "Failure"}
-      <div class="text-red-500">
-        <h2 class="text-red-500 mt-2">{transferSubmission.reason}</h2>
-        <pre class="text-red-500 mt-2">
-          {JSON.stringify(transferSubmission.error)}
-        </pre>
-      </div>
+        <div class="text-red-500">
+          <h2 class="text-red-500 mt-2">{transferSubmission.reason}</h2>
+          <pre class="text-red-500 mt-2">
+            {JSON.stringify(transferSubmission.error)}
+          </pre>
+        </div>
+      {:else if transferSubmission._tag === "Interrupted"}
+        <div class="text-red-500">
+          <h2 class="text-red-500 mt-2">This transfer was interrupted</h2>
+        </div>
       {/if}
     </div>
   </section>
