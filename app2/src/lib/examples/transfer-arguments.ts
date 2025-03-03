@@ -1,5 +1,8 @@
+import type { RpcType } from "$lib/schema/chain"
+
 type EVMTransferInput = {
-  type: "evm"
+  sourceRpcType: "evm"
+  destinationRpcType: typeof RpcType.Type
   baseToken: string
   baseAmount: string
   quoteToken: string
@@ -11,7 +14,8 @@ type EVMTransferInput = {
 }
 
 type CosmosTransferInput = {
-  type: "cosmos"
+  sourceRpcType: "cosmos"
+  destinationRpcType: typeof RpcType.Type
   baseToken: string
   baseAmount: string
   quoteToken: string
@@ -23,7 +27,8 @@ type CosmosTransferInput = {
 }
 
 type AptosTransferInput = {
-  type: "aptos"
+  sourceRpcType: "aptos"
+  destinationRpcType: typeof RpcType.Type
   baseToken: string
   baseAmount: string
   quoteToken: string
@@ -40,7 +45,8 @@ export const examples: {
   aptos: AptosTransferInput
 } = {
   evm: {
-    type: "evm",
+    sourceRpcType: "evm",
+    destinationRpcType: "cosmos",
     baseToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     baseAmount: "1000000000000000000",
     quoteToken: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
@@ -51,7 +57,8 @@ export const examples: {
     wethToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
   },
   cosmos: {
-    type: "cosmos",
+    sourceRpcType: "cosmos",
+    destinationRpcType: "evm",
     baseToken: "0x1234567890abcdef1234567890abcdef12345678",
     baseAmount: "10000000",
     quoteToken: "0xabcdef1234567890abcdef1234567890abcdef12",
@@ -62,7 +69,8 @@ export const examples: {
     wethToken: null
   },
   aptos: {
-    type: "aptos",
+    sourceRpcType: "aptos",
+    destinationRpcType: "evm",
     baseToken: "0x1abcdef1234567890abcdef1234567890abcdef12",
     baseAmount: "1000000000000000000",
     quoteToken: "0x2abcdef1234567890abcdef1234567890abcdef12",

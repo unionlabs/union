@@ -9,7 +9,7 @@ import { RpcType } from "$lib/schema/chain"
 import { EVMWethToken, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
 import { ChannelId } from "$lib/schema/channel"
 
-const CommonTransferFields = {
+const BaseTransferFields = {
   baseToken: TokenRawDenom.annotations({
     message: () => "baseToken must be a non-empty string (e.g., token address or symbol)"
   }),
@@ -24,15 +24,18 @@ const CommonTransferFields = {
   }),
   sourceChannelId: ChannelId.annotations({
     message: () => "sourceChannelId must be a non-negative integer"
+  }),
+  destinationRpcType: RpcType.annotations({
+    message: () => "destinationType must be a valid RPC type ('evm', 'cosmos', or 'aptos')"
   })
 }
 
 export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")({
-  type: RpcType.pipe(
+  ...BaseTransferFields,
+  sourceRpcType: RpcType.pipe(
     Schema.filter(v => v === "evm"),
     Schema.annotations({ message: () => "type must be 'evm'" })
   ),
-  ...CommonTransferFields,
   wethToken: EVMWethToken,
   receiver: ReceiverAddress,
   ucs03address: AddressEvmCanonical.pipe(
@@ -44,11 +47,11 @@ export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")({
 }) {}
 
 export class CosmosTransfer extends Schema.Class<CosmosTransfer>("CosmosTransfer")({
-  type: RpcType.pipe(
+  ...BaseTransferFields,
+  sourceRpcType: RpcType.pipe(
     Schema.filter(v => v === "cosmos"),
     Schema.annotations({ message: () => "type must be 'cosmos'" })
   ),
-  ...CommonTransferFields,
   wethToken: Schema.Null,
   receiver: ReceiverAddress,
   ucs03address: AddressCosmosCanonical.pipe(
@@ -61,11 +64,11 @@ export class CosmosTransfer extends Schema.Class<CosmosTransfer>("CosmosTransfer
 }) {}
 
 export class AptosTransfer extends Schema.Class<AptosTransfer>("AptosTransfer")({
-  type: RpcType.pipe(
+  ...BaseTransferFields,
+  sourceRpcType: RpcType.pipe(
     Schema.filter(v => v === "aptos"),
     Schema.annotations({ message: () => "type must be 'aptos'" })
   ),
-  ...CommonTransferFields,
   wethToken: Schema.Null,
   receiver: ReceiverAddress,
   ucs03address: AddressAptosCanonical.pipe(
