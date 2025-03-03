@@ -11,10 +11,9 @@ import {
 import { AddressEvmCanonical } from "$lib/schema/address"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { Effect, Option } from "effect"
-import { TESTNET_APP_INFO } from "$lib/config/app"
 import type { Hex } from "viem"
 
-import { wagmiConfig, type ConfiguredChainId } from "./wagmi-config"
+import { wagmiConfig, type ConfiguredChainId } from "./wagmi-config.ts"
 import { sepolia } from "@wagmi/core/chains"
 
 export type Wallet = GetAccountReturnType

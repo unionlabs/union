@@ -9,12 +9,7 @@ import type {
 } from "viem"
 import { createPublicClient, createWalletClient, http } from "viem"
 import { sepolia } from "viem/chains"
-import {
-  custom,
-  getConnectorClient,
-  switchChain as wagmiSwitchChain,
-  waitForTransactionReceipt
-} from "@wagmi/core"
+import { custom, getConnectorClient, switchChain as wagmiSwitchChain } from "@wagmi/core"
 import { wagmiConfig, type ConfiguredChainId } from "$lib/wallet/evm/wagmi-config"
 
 export class CreateWalletClientError extends Data.TaggedError("CreateWalletClientError")<{
@@ -52,11 +47,6 @@ export const switchChain = (chainId: ConfiguredChainId) =>
 
 export const submitTransfer = (transactionArgs: SendTransactionParameters) =>
   Effect.gen(function* () {
-    const connectorClient = yield* Effect.tryPromise({
-      try: () => getConnectorClient(wagmiConfig),
-      catch: err => new ConnectorClientError({ cause: err as Error })
-    })
-
     const publicClient = yield* Effect.try({
       try: () =>
         createPublicClient({
@@ -64,6 +54,11 @@ export const submitTransfer = (transactionArgs: SendTransactionParameters) =>
           transport: http()
         }),
       catch: err => new CreatePublicClientError({ cause: err as CreatePublicClientErrorType })
+    })
+
+    const connectorClient = yield* Effect.tryPromise({
+      try: () => getConnectorClient(wagmiConfig),
+      catch: err => new ConnectorClientError({ cause: err as Error })
     })
 
     const walletClient = yield* Effect.try({
