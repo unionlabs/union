@@ -76,25 +76,20 @@ impl IbcClient for ArbitrumLightClient {
         arbitrum_verifier::verify_header(&client_state, &header, l1_consensus_state.state_root)
             .map_err(Error::HeaderVerify)?;
 
-        let client_state = if client_state.l1_latest_slot < header.l1_height.height() {
-            client_state.l1_latest_slot = header.l1_height.height();
-            Some(client_state)
-        } else {
-            None
-        };
-
         let consensus_state = ConsensusState {
             ibc_storage_root: header.l2_ibc_account_proof.storage_root,
             // must be nanos
             timestamp: 1_000_000_000 * header.l2_header.timestamp,
         };
 
-        Ok(StateUpdate {
-            height: header.l1_height.height(),
-            client_state,
-            consensus_state,
-            storage_writes: vec![],
-        })
+        let state_update = StateUpdate::new(header.l1_height.height(), consensus_state);
+
+        if client_state.l1_latest_slot < header.l1_height.height() {
+            client_state.l1_latest_slot = header.l1_height.height();
+            Ok(state_update.set_client_state(client_state))
+        } else {
+            Ok(state_update)
+        }
     }
 
     fn misbehaviour(

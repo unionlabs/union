@@ -141,24 +141,21 @@ impl IbcClient for BerachainLightClient {
 
         // 4. update
         let update_height = header.execution_header.block_number;
-        let client_state = if client_state.latest_height < update_height {
-            client_state.latest_height = update_height;
-            Some(client_state)
-        } else {
-            None
-        };
+
         let consensus_state = ConsensusState {
             timestamp: header.execution_header.timestamp,
             state_root: header.execution_header.state_root,
             storage_root: header.account_proof.storage_root,
         };
 
-        Ok(StateUpdate {
-            height: update_height,
-            client_state,
-            consensus_state,
-            storage_writes: vec![],
-        })
+        let state_update = StateUpdate::new(update_height, consensus_state);
+
+        if client_state.latest_height < update_height {
+            client_state.latest_height = update_height;
+            Ok(state_update.set_client_state(client_state))
+        } else {
+            Ok(state_update)
+        }
     }
 
     fn misbehaviour(
