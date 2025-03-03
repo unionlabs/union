@@ -799,9 +799,10 @@ fn create_client(
         .key(),
         &commit(consensus_state_bytes),
     )?;
-    for (key, value) in verify_creation_response.storage_writes {
-        store_client_data(deps.branch(), client_id, key, value)
-    }
+    verify_creation_response
+        .storage_writes
+        .into_iter()
+        .for_each(|(key, value)| store_client_data(deps.branch(), client_id, key, value));
     let response = verify_creation_response
         .events
         .into_iter()
@@ -891,9 +892,10 @@ fn update_client(
         &update.consensus_state_bytes.into_vec().into(),
     )?;
 
-    for (key, value) in update.storage_writes {
-        store_client_data(deps.branch(), client_id, key, value);
-    }
+    update
+        .storage_writes
+        .into_iter()
+        .for_each(|(key, value)| store_client_data(deps.branch(), client_id, key, value));
 
     Ok(
         Response::new().add_event(Event::new(events::client::UPDATE).add_attributes([

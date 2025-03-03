@@ -121,6 +121,7 @@ impl IbcClient for EthereumLightClient {
             return Err(Error::NoInitialSyncCommittee.into());
         };
         let mut client_state = client_state.clone();
+        // We only require this at the creation phase. The client then manages the committees in a separate storage.
         client_state.initial_sync_committee = None;
 
         let current_epoch = if client_state.chain_spec == PresetBaseKind::Minimal {
@@ -129,6 +130,8 @@ impl IbcClient for EthereumLightClient {
             compute_epoch_at_slot::<Mainnet>(Slot::new(client_state.latest_height))
         };
 
+        // Set the client state so that it overwrites the one that is passed.
+        // Also save the current and next sync committees with the corresponding epoch numbers.
         Ok(ClientCreation::empty()
             .set_client_state(ClientState::V1(client_state))
             .add_storage_write(sync_committee_store_write(
