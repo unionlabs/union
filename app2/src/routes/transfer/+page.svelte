@@ -7,7 +7,12 @@ import Sections from "$lib/components/ui/Sections.svelte"
 import { Effect, Exit, Data } from "effect"
 import { type Hash, type TransactionReceipt } from "viem"
 import { sepolia } from "viem/chains"
-import { submitTransfer, switchChain, type SubmitTransferError } from "$lib/services/transfer"
+import {
+  submitTransfer,
+  switchChain,
+  waitForReceipt,
+  type SubmitTransferError
+} from "$lib/services/transfer"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -22,27 +27,73 @@ function resetAll() {
   })
 }
 
-type TransferSubmission = Data.TaggedEnum<{
-  Pending: {}
+type SwitchChainState = Data.TaggedEnum<{
+  InProgress: {}
+  Success: {}
+  Failure: {
+    readonly cause: unknown
+  }
+}>
+
+type ApprovalSubmitState = Data.TaggedEnum<{
   InProgress: {}
   Success: { readonly hash: Hash }
   Failure: {
-    readonly reason: string
-    readonly message: string
-    readonly error: SubmitTransferError
+    readonly cause: unknown
   }
-  Interrupted: {}
 }>
 
-const { Pending, InProgress, Success, Failure, Interrupted } = Data.taggedEnum<TransferSubmission>()
+type ApprovalReceiptState = Data.TaggedEnum<{
+  InProgress: { readonly hash: Hash }
+  Success: { readonly receipt: TransactionReceipt }
+  Failure: {
+    readonly cause: unknown
+  }
+}>
 
-let transferSubmission = $state<TransferSubmission>(Pending())
+type TransferSubmitState = Data.TaggedEnum<{
+  InProgress: {}
+  Success: { readonly hash: Hash }
+  Failure: {
+    readonly cause: unknown
+  }
+}>
+
+type TransferReceiptState = Data.TaggedEnum<{
+  InProgress: { readonly hash: Hash }
+  Success: { readonly receipt: TransactionReceipt }
+  Failure: {
+    readonly cause: unknown
+  }
+}>
+
+type TransferSubmission2 = Data.TaggedEnum<{
+  Pending: {}
+  SwitchChain: { state: SwitchChainState }
+  ApprovalSubmit: { state: ApprovalSubmitState }
+  ApprovalReceipt: { state: ApprovalReceiptState }
+  TransferSubmit: { state: TransferSubmitState }
+  TransferReceipt: { state: TransferReceiptState }
+}>
+
+type TransferSubmission = Data.TaggedEnum<{
+  Pending: {}
+  SwitchChain: { state: SwitchChainState }
+  TransferSubmit: { state: TransferSubmitState }
+  TransferReceipt: { state: TransferReceiptState }
+}>
+
+const transferSubmission = Data.taggedEnum<TransferSubmission>()
+const switchChainn = Data.taggedEnum<SwitchChainState>()
+
+let transferState = $state<TransferSubmission>(transferSubmission.Pending())
 
 async function submit() {
-  transferSubmission = InProgress()
+  transferState = transferSubmission.SwitchChain({ state: switchChainn.InProgress() })
+
   const switchChainExit = await Effect.runPromiseExit(switchChain(sepolia.id))
 
-  const exit = await Effect.runPromiseExit(
+  const submissionExit = await Effect.runPromiseExit(
     submitTransfer({
       chain: sepolia,
       account: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
@@ -51,31 +102,43 @@ async function submit() {
     })
   )
 
-  Exit.match(exit, {
-    onFailure: cause => {
-      if (cause._tag === "Fail") {
-        if (cause.error._tag === "SendTransactionError") {
-          transferSubmission = Failure({
-            reason: "Failed to submit your transfer",
-            message: "This means that the RPCs might be bad",
-            error: cause.error
-          })
-        } else if (cause.error._tag === "CreateWalletClientError") {
-          transferSubmission = Failure({
-            reason: "Could not connect to your wallet",
-            message:
-              "Make sure you have your wallet connected and check if your wallet has any errors in its UI",
-            error: cause.error
-          })
-        }
-      } else {
-        transferSubmission = Interrupted()
-      }
-    },
-    onSuccess: (receipt: TransactionReceipt) => {
-      transferSubmission = Success({ hash: receipt.transactionHash })
-    }
-  })
+  if (Exit.isFailure(submissionExit)) {
+    // update state machine
+    return
+  }
+
+  const receiptExit = await Effect.runPromiseExit(waitForReceipt(submissionExit.value))
+
+  if (Exit.isFailure(receiptExit)) {
+    // update state machine
+    return
+  }
+
+  // Exit.match(exit, {
+  //   onFailure: cause => {
+  //     if (cause._tag === "Fail") {
+  //       if (cause.error._tag === "SendTransactionError") {
+  //         transferSubmission = Failure({
+  //           reason: "Failed to submit your transfer",
+  //           message: "This means that the RPCs might be bad",
+  //           error: cause.error
+  //         })
+  //       } else if (cause.error._tag === "CreateWalletClientError") {
+  //         transferSubmission = Failure({
+  //           reason: "Could not connect to your wallet",
+  //           message:
+  //             "Make sure you have your wallet connected and check if your wallet has any errors in its UI",
+  //           error: cause.error
+  //         })
+  //       }
+  //     } else {
+  //       transferSubmission = Interrupted()
+  //     }
+  //   },
+  //   onSuccess: (receipt: TransactionReceipt) => {
+  //     transferSubmission = Success({ hash: receipt.transactionHash })
+  //   }
+  // })
 }
 </script>
 

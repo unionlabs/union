@@ -2,6 +2,7 @@ import { Data, Effect } from "effect"
 import type {
   CreatePublicClientErrorType,
   CreateWalletClientErrorType,
+  Hash,
   SendTransactionErrorType,
   SendTransactionParameters,
   SwitchChainErrorType,
@@ -47,15 +48,6 @@ export const switchChain = (chainId: ConfiguredChainId) =>
 
 export const submitTransfer = (transactionArgs: SendTransactionParameters) =>
   Effect.gen(function* () {
-    const publicClient = yield* Effect.try({
-      try: () =>
-        createPublicClient({
-          chain: sepolia,
-          transport: http()
-        }),
-      catch: err => new CreatePublicClientError({ cause: err as CreatePublicClientErrorType })
-    })
-
     const connectorClient = yield* Effect.tryPromise({
       try: () => getConnectorClient(wagmiConfig),
       catch: err => new ConnectorClientError({ cause: err as Error })
@@ -73,6 +65,20 @@ export const submitTransfer = (transactionArgs: SendTransactionParameters) =>
     const hash = yield* Effect.tryPromise({
       try: () => walletClient.sendTransaction(transactionArgs),
       catch: err => new SendTransactionError({ cause: err as SendTransactionErrorType })
+    })
+
+    return hash
+  })
+
+export const waitForReceipt = (hash: Hash) =>
+  Effect.gen(function* () {
+    const publicClient = yield* Effect.try({
+      try: () =>
+        createPublicClient({
+          chain: sepolia,
+          transport: http()
+        }),
+      catch: err => new CreatePublicClientError({ cause: err as CreatePublicClientErrorType })
     })
 
     const receipt = yield* Effect.tryPromise({
