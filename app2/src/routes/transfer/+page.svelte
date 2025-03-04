@@ -40,13 +40,32 @@ const transactionParams: TransactionParams = {
   to: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA" as const // TODO: Get from form
 }
 
+function hasFailedExit(state: TransferSubmission) {
+  switch (state._tag) {
+    case "SwitchChain":
+      return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
+    case "TransferSubmit":
+      return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
+    case "TransferReceipt":
+      return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
+    default:
+      return false
+  }
+}
+
 async function submit() {
   transferState = await nextState(transferState, transactionParams)
-  transferState = await nextState(transferState, transactionParams)
-  transferState = await nextState(transferState, transactionParams)
-  transferState = await nextState(transferState, transactionParams)
-  transferState = await nextState(transferState, transactionParams)
-  transferState = await nextState(transferState, transactionParams)
+  while (!hasFailedExit(transferState)) {
+    transferState = await nextState(transferState, transactionParams)
+    // If we're in the final state (TransferReceipt.Complete), stop
+    if (
+      transferState._tag === "TransferReceipt" &&
+      transferState.state._tag === "Complete" &&
+      transferState.state.exit._tag === "Success"
+    ) {
+      break
+    }
+  }
 }
 </script>
 
@@ -106,10 +125,12 @@ async function submit() {
           class="mt-4 self-start"
           variant="primary"
           onclick={submit}
-          disabled={transferState._tag !== "Pending"}
+          disabled={transferState._tag !== "Pending" && !hasFailedExit(transferState)}
         >
-          {#if transferState._tag !== "Pending"}
+          {#if transferState._tag !== "Pending" && !hasFailedExit(transferState)}
             Submitting...
+          {:else if hasFailedExit(transferState)}
+            Retry
           {:else}
             Submit
           {/if}
@@ -118,7 +139,7 @@ async function submit() {
           class="mt-4 self-start"
           variant="secondary"
           onclick={resetAll}
-          disabled={transferState._tag !== "Pending"}
+          disabled={transferState._tag !== "Pending" && !hasFailedExit(transferState)}
         >
           Reset All
         </Button>
