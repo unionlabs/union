@@ -7,18 +7,26 @@ import { graphql } from "gql.tada"
 export const transferByPacketHashQuery = (packetHash: string) =>
   createQueryGraphql({
     schema: Schema.Struct({
-      v1_ibc_union_fungible_asset_orders: Schema.Array(TransferDetails)
+      v2_transfer_details: Schema.Array(TransferDetails)
     }),
     document: graphql(`
       query TransferByPacketHash($packet_hash: String!) {
-        v1_ibc_union_fungible_asset_orders(where: {packet_hash: {_eq: $packet_hash}}) {
-          sender_normalized
-          source_chain_id
+        v2_transfer_details(args: {
+          p_packet_hash: $packet_hash
+        }) {
+          sender_canonical
+          source_chain {
+            universal_chain_id
+            chain_id
+          }
           source_connection_id
           source_channel_id
           packet_send_transaction_hash
-          receiver_normalized
-          destination_chain_id
+          receiver_canonical
+          destination_chain {
+            universal_chain_id
+            chain_id
+          }
           destination_connection_id
           destination_channel_id
           packet_send_timestamp
@@ -34,6 +42,7 @@ export const transferByPacketHashQuery = (packetHash: string) =>
             timestamp
             transaction_hash
             chain {
+              universal_chain_id
               chain_id
             }
           }
@@ -44,13 +53,12 @@ export const transferByPacketHashQuery = (packetHash: string) =>
     refetchInterval: "1 second",
     writeData: data => {
       if (
-        data
-          .pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders.length))
-          .pipe(Option.getOrElse(() => 0)) === 0
+        data.pipe(Option.map(d => d.v2_transfer_details.length)).pipe(Option.getOrElse(() => 0)) ===
+        0
       ) {
         transferDetails.error = Option.some({ _tag: "NotFound", message: "Transfer not found" })
       }
-      transferDetails.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders[0]))
+      transferDetails.data = data.pipe(Option.map(d => d.v2_transfer_details[0]))
     },
     writeError: error => {
       transferDetails.error = error
