@@ -1,5 +1,6 @@
 import { Option, Schema } from "effect"
 
+export const ChainUniversalChainId = Schema.String.pipe(Schema.brand("ChainUniversalChainId"))
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
 export const ChainDisplayName = Schema.String.pipe(Schema.brand("ChainDisplayName"))
 
@@ -18,7 +19,13 @@ export class ChainFeatures extends Schema.Class<ChainFeatures>("ChainFeatures")(
   transfer_list: Schema.Boolean
 }) {}
 
+export class ChainReference extends Schema.Class<ChainReference>("ChainReference")({
+  universal_chain_id: ChainUniversalChainId,
+  chain_id: ChainId
+}) {}
+
 export class Chain extends Schema.Class<Chain>("Chain")({
+  universal_chain_id: ChainUniversalChainId,
   chain_id: ChainId,
   display_name: ChainDisplayName,
   rpc_type: RpcType,

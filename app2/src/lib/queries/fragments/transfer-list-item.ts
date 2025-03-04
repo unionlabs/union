@@ -1,11 +1,17 @@
 import { graphql } from "gql.tada"
 
 export const transferListItemFragment = graphql(`
-    fragment TransferListItem on v1_ibc_union_fungible_asset_orders {
-        source_chain_id
-        destination_chain_id
-        sender_normalized
-        receiver_normalized
+    fragment TransferListItem on v2_transfer_list_item_type {
+        source_chain {
+            universal_chain_id
+            chain_id
+        }
+        destination_chain {
+            universal_chain_id
+            chain_id
+        }
+        sender_canonical
+        receiver_canonical
         packet_send_timestamp
         packet_send_transaction_hash
         packet_recv_timestamp
