@@ -36,13 +36,13 @@ const handleClick = () => {
           amount={transfer.base_amount}
         />
       {/if}
-      <div class="flex items-center gap-2 text-zinc-300">
+      <div class="flex items-center gap-1 text-zinc-300 text-sm">
         {#if Option.isSome(sourceChain)}
-          <ChainComponent chain={sourceChain.value}/>
+          <ChainComponent class="font-normal" chain={sourceChain.value}/>
         {/if}
-        <SharpRightArrowIcon class="size-6"/>
+        <SharpRightArrowIcon class="size-5"/>
         {#if Option.isSome(destinationChain)}
-          <ChainComponent chain={destinationChain.value}/>
+          <ChainComponent class="font-normal" chain={destinationChain.value}/>
         {/if}
       </div>
     </div>
