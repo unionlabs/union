@@ -6,16 +6,17 @@ import { DateTime, Effect } from "effect"
 type Props = HTMLAttributes<HTMLTimeElement> & {
   value: DateTime.DateTime
   class?: string
+  showSeconds?: boolean
 }
 
-const { value, class: className = "", ...rest }: Props = $props()
+const { value, class: className = "", showSeconds = true, ...rest }: Props = $props()
 
-const classes = cn("text-zinc-600 dark:text-zinc-400", className)
+const classes = cn("text-zinc-400", className)
 
 const timeFormat = new Intl.DateTimeFormat("en-US", {
   hour: "2-digit",
   minute: "2-digit",
-  second: "2-digit",
+  second: showSeconds ? "2-digit" : undefined,
   hour12: false // Set to false for 24-hour format
 })
 

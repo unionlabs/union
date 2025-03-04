@@ -102,7 +102,7 @@ const onNextPage = async () => {
 <Sections>
   <section>
     <SectionTitle>Your Transfers</SectionTitle>
-    <p class="flex gap-1">
+    <p class="flex gap-1 text-zinc-200">
       {#if Option.isSome(transferCount.data)}
         You made <span class="text-sky-400 font-bold">{transferCount.data.value.aggregate.count}</span> transfers so far.
       {:else if  wallets.getCanonicalByteAddressList().length === 0}
@@ -123,7 +123,7 @@ const onNextPage = async () => {
       <NoWalletConnected/>
     {:else if Option.isSome(transferListAddress.data) && Option.isSome(chains.data)}
       {#each transferListAddress.data.value as transfer(transfer.sort_order)}
-        <TransferListItemComponent {transfer} />
+        <TransferListItemComponent {transfer} showSeconds={false}/>
       {/each}
     {:else}
       {#each Array(settingsStore.pageLimit).fill(0)}
