@@ -1,19 +1,17 @@
 <script lang="ts">
-import Label from "../ui/Label.svelte"
 import Skeleton from "../ui/Skeleton.svelte"
 </script>
 
-<div class="flex gap-8 px-4 py-2 h-[60px]">
+<div class="flex gap-8 px-4 py-2 h-[60px] items-center">
   <div class="flex-1">
-    <Label>from</Label>
-    <Skeleton class="h-4" randomWidth />
+    <Skeleton class="h-4 w-32 mb-2" randomWidth />
+    <div class="flex items-center gap-2">
+      <Skeleton class="h-4 w-24" />
+      <Skeleton class="size-4" />
+      <Skeleton class="h-4 w-24" />
+    </div>
   </div>
-  <div class="flex-1">
-    <Label>to</Label>
-    <Skeleton class="h-4" randomWidth />
-  </div>
-  <div class="flex-1">
-    <Label>Time</Label>
-    <Skeleton class="h-4 w-32" />
+  <div>
+    <Skeleton class="h-4 w-30" />
   </div>
 </div>
