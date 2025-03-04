@@ -21,7 +21,7 @@ const displayAmount = $derived(Option.fromNullable(amount).pipe(Option.map(amt =
 
 <div class="flex items-center gap-1">
   {#if Option.isSome(displayAmount)}
-    <span class="font-mono">{displayAmount.value}</span>
+    <span>{displayAmount.value}</span>
   {/if}
   <Truncate value={displayDenom} maxLength={10} />
 </div>

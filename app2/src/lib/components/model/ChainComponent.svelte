@@ -8,7 +8,7 @@ let { chain }: Props = $props()
 </script>
 
 <div>
-	<p class="text-md font-bold">{chain.display_name}</p>
+	<p class="text-md font-semibold">{chain.display_name}</p>
 	<!--
 	<div>{chain.chain_id}</div>
 	<div>{chain.testnet}</div>
