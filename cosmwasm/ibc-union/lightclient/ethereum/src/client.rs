@@ -1,3 +1,5 @@
+use ark_bls12_381::G1Affine;
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use beacon_api_types::{
     altair::SyncCommittee,
     chain_spec::{ChainSpec, Mainnet, Minimal, PresetBaseKind},
@@ -315,7 +317,7 @@ pub fn verify_header<C: ChainSpec>(
 fn update_state<C: ChainSpec>(
     mut client_state: ClientStateV1,
     mut consensus_state: ConsensusState,
-    header: Header,
+    mut header: Header,
 ) -> Result<StateUpdate<EthereumLightClient>, IbcClientError<EthereumLightClient>> {
     let trusted_height = header.trusted_height;
     let consensus_update = header.consensus_update.update_data();
@@ -346,20 +348,39 @@ fn update_state<C: ChainSpec>(
     }
 
     let mut state_update = StateUpdate::new(updated_height, consensus_state);
-    if let LightClientUpdate::EpochChange(update) = &header.consensus_update {
+    if client_state.latest_height == consensus_update.finalized_header.execution.block_number {
+        state_update = state_update.set_client_state(ClientState::V1(client_state));
+    }
+
+    if let LightClientUpdate::EpochChange(update) = &mut header.consensus_update {
         let current_epoch =
             compute_epoch_at_slot::<C>(update.update_data.finalized_header.beacon.slot);
+        inverse_sync_committee_pubkeys(&mut update.next_sync_committee);
         state_update = state_update.add_storage_write(
             sync_committee_store_key(current_epoch + 1),
             &update.next_sync_committee,
         );
     }
 
-    if client_state.latest_height == consensus_update.finalized_header.execution.block_number {
-        state_update = state_update.set_client_state(ClientState::V1(client_state));
-    }
-
     Ok(state_update)
+}
+
+/// Additive inverse the public keys to do inverse aggregation
+fn inverse_sync_committee_pubkeys(sync_committee: &mut SyncCommittee) {
+    sync_committee.pubkeys = sync_committee
+        .pubkeys
+        .iter()
+        .map(|x| {
+            -G1Affine::deserialize_compressed(x.as_ref())
+                .expect("pubkey that is validated by the sync protocol is valid")
+        })
+        .map(|x| {
+            let mut buf = vec![];
+            x.serialize_compressed(&mut buf)
+                .expect("serializing into a buffer will always work");
+            buf.try_into().expect("compressed data first H384")
+        })
+        .collect();
 }
 
 pub fn verify_misbehaviour<C: ChainSpec>(

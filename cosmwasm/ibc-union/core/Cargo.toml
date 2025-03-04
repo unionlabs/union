@@ -19,10 +19,12 @@ library = []
 
 [dependencies]
 alloy                         = { workspace = true, features = ["sol-types"] }
+bincode                       = { workspace = true, features = ["alloc", "derive"], optional = true }
 cosmwasm-schema               = { workspace = true }
 cosmwasm-std                  = { workspace = true, features = ["abort"] }
 cw-storage-plus               = { workspace = true }
 ethabi                        = { workspace = true }
+ethereum-light-client-types   = { workspace = true, features = ["serde", "bincode"] }
 hex                           = { workspace = true }
 ibc-union-msg                 = { workspace = true }
 ibc-union-spec                = { workspace = true, features = ["ethabi", "serde"] }
