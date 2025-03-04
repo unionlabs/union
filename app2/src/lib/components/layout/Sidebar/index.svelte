@@ -53,7 +53,10 @@ onMount(() => {
         <a 
           href="/transfer" 
           data-path="/transfer"
-          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          class={cn(
+            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+            isCurrentPath("/transfer") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          )}
         >
           <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
           Submit Transfer
@@ -63,7 +66,10 @@ onMount(() => {
         <a 
           href="/transfers" 
           data-path="/transfers"
-          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          class={cn(
+            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+            isCurrentPath("/transfers") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          )}
         >
           <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
           Your Transfers
@@ -78,7 +84,10 @@ onMount(() => {
         <a 
           href="/explorer/transfers" 
           data-path="/explorer/transfers"
-          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          class={cn(
+            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+            isCurrentPath("/explorer/transfers") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          )}
         >
           <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
           Transfers
@@ -88,7 +97,10 @@ onMount(() => {
         <a 
           href="/" 
           data-path="/packets"
-          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          class={cn(
+            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+            isCurrentPath("/packets") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          )}
         >
           <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
           Packets
@@ -98,7 +110,10 @@ onMount(() => {
         <a 
           href="/" 
           data-path="/connections"
-          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          class={cn(
+            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+            isCurrentPath("/connections") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          )}
         >
           <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
           Connections
@@ -108,7 +123,10 @@ onMount(() => {
         <a 
           href="/" 
           data-path="/channels"
-          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          class={cn(
+            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+            isCurrentPath("/channels") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          )}
         >
           <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
           Channels
@@ -118,7 +136,10 @@ onMount(() => {
         <a 
           href="/" 
           data-path="/clients"
-          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          class={cn(
+            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+            isCurrentPath("/clients") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          )}
         >
           <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
           Clients
