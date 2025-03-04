@@ -32,6 +32,7 @@ let transferState = $state<TransferSubmission>(TransferSubmission.Pending())
 
 import { sepolia } from "viem/chains"
 import type { TransactionParams } from "$lib/services/transfer/machine"
+import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
 
 const transactionParams: TransactionParams = {
   chain: sepolia,
@@ -53,10 +54,8 @@ async function submit() {
 </script>
 
 <Sections>
-  <h1 class="text-2xl font-bold mb-6 text-sky-400">RawIntents Test Page</h1>
-  
+  <SectionTitle>Transfer</SectionTitle>
   <Card>
-    <h3 class="text-lg font-semibold mb-2 text-sky-300">Current State:</h3>
     <pre class="text-sm text-zinc-300 whitespace-pre-wrap break-all">{JSON.stringify({
       source: rawIntents.source,
       destination: rawIntents.destination,

@@ -19,6 +19,7 @@ import { fly } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
+import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
 
 import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
@@ -61,7 +62,7 @@ const onNextPage = async () => {
 </script>
 
 <Sections>
-  <h1 class="font-bold text-4xl">Transfers</h1>
+  <SectionTitle>Transfers</SectionTitle>
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferList.data) && Option.isSome(chains.data)}
       {@const chainss = chains.data.value}
