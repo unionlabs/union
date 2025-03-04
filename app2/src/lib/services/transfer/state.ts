@@ -1,6 +1,7 @@
-import { Data, Exit, type Effect } from "effect"
-import type { Hash, TransactionReceipt } from "viem"
-import type { submitTransfer, switchChain, waitForReceipt } from "./transactions"
+import { Data, type Exit, type Effect } from "effect"
+import type { Hash } from "viem"
+import type { submitTransfer, waitForReceipt } from "./transactions"
+import type { switchChain } from "./chain"
 
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 
@@ -54,3 +55,15 @@ export type TransferSubmission = Data.TaggedEnum<{
 }>
 
 export const TransferSubmission = Data.taggedEnum<TransferSubmission>()
+
+type StateWithExit = 
+  | { _tag: "SwitchChain"; state: SwitchChainState }
+  | { _tag: "TransferSubmit"; state: TransferSubmitState }
+  | { _tag: "TransferReceipt"; state: TransferReceiptState }
+  | { _tag: "ApprovalSubmit"; state: ApprovalSubmitState }
+  | { _tag: "ApprovalReceipt"; state: ApprovalReceiptState }
+
+export function hasFailedExit(state: StateWithExit | { _tag: "Pending" }): boolean {
+  if (state._tag === "Pending") return false
+  return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
+}

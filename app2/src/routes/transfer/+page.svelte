@@ -4,7 +4,7 @@ import Input from "$lib/components/ui/Input.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { TransferSubmission, nextState } from "$lib/services/transfer"
+import { TransferSubmission, nextState, hasFailedExit } from "$lib/services/transfer"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -40,18 +40,6 @@ const transactionParams: TransactionParams = {
   to: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA" as const // TODO: Get from form
 }
 
-function hasFailedExit(state: TransferSubmission) {
-  switch (state._tag) {
-    case "SwitchChain":
-      return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
-    case "TransferSubmit":
-      return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
-    case "TransferReceipt":
-      return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
-    default:
-      return false
-  }
-}
 
 async function submit() {
   transferState = await nextState(transferState, transactionParams)
