@@ -47,7 +47,7 @@ pub enum Error {
     CounterpartyStorageNotNil,
 
     #[error("could not decode the proof: {0}")]
-    ProofDecode(Bytes),
+    ProofDecode(bincode::error::DecodeError),
 
     #[error("membership proof without a value")]
     MembershipProofWithoutValue,

@@ -122,7 +122,7 @@ impl IbcClient for StateLensIcs23SmtLightClient {
         let mut client_state = ctx.read_self_client_state()?;
 
         let storage_proof = MerkleProof::decode_as::<Bincode>(&header.l2_consensus_state_proof)
-            .map_err(|_| Error::ProofDecode(header.l2_consensus_state_proof))?;
+            .map_err(Error::ProofDecode)?;
 
         ctx.verify_membership::<CometblsLightClient>(
             client_state.l1_client_id,
