@@ -26,3 +26,6 @@ unionlabs        = { workspace = true }
 [dev-dependencies]
 hex-literal = { workspace = true }
 serde_json  = { workspace = true }
+
+[features]
+test-utils = []
