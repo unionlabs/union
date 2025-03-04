@@ -234,7 +234,10 @@ impl Module {
 
                             Ok(())
                         }
-                        Err(err) => Err(err),
+                        Err(err) => {
+                            info!(error = %ErrorReporter(&err), "cosmos tx failed");
+                            Err(err)
+                        }
                     }
                 })
             })
