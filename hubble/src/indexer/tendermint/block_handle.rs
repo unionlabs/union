@@ -359,7 +359,7 @@ mod tests {
         let should_include = get_should_include_event_result(
             &json!(
                 {
-                    "type": "wasm-packet_send",
+                    "type": "wasm",
                     "attributes": [
                     {
                         "key": "_contract_address",
@@ -506,7 +506,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn true_when_first_contract_address_is_active_others_are_ignored_in_a_wasm_event() {
+    async fn true_when_first_contract_address_is_active_in_a_wasm_event_others_are_ignored() {
         let should_include = get_should_include_event_result(
             &json!(
                 {
