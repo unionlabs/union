@@ -32,7 +32,7 @@ async function copyToClipboard() {
 </script>
 
 <div class={cn("flex items-center gap-1", className)} {...rest}>
-  <span class="font-mono" title={shouldTruncate ? value : undefined}>
+  <span title={shouldTruncate ? value : undefined}>
     {displayValue}
   </span>
   <button
