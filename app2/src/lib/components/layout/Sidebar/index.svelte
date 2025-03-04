@@ -1,25 +1,129 @@
-<script>
+<script lang="ts">
 import Wallet from "$lib/components/ui/Wallet/index.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
+import SharpRightArrowIcon from "$lib/components/icons/SharpRightArrowIcon.svelte"
+import { page } from "$app/stores"
+import { cn } from "$lib/utils"
+import { onMount } from "svelte"
+
+const isCurrentPath = (path: string) => $page.url.pathname === path
+
+let activeElement: HTMLElement | null = null
+let highlightElement: HTMLElement
+
+$: if ($page.url.pathname && highlightElement) {
+  const newActive = document.querySelector(`[data-path="${$page.url.pathname}"]`) as HTMLElement
+  if (newActive) {
+    const rect = newActive.getBoundingClientRect()
+    highlightElement.style.top = `${rect.top}px`
+    highlightElement.style.left = `${rect.left}px`
+    highlightElement.style.width = `${rect.width}px`
+    highlightElement.style.height = `${rect.height}px`
+    highlightElement.style.opacity = "1"
+    activeElement = newActive
+  } else {
+    highlightElement.style.opacity = "0"
+    activeElement = null
+  }
+}
+
+onMount(() => {
+  // Trigger initial position
+  const event = new Event("resize")
+  window.dispatchEvent(event)
+})
 </script>
+
+<div class="relative">
+  <div
+    bind:this={highlightElement}
+    class="absolute -z-10 bg-zinc-200 dark:bg-zinc-700 rounded-lg transition-all duration-300"
+  />
+
 
 <Sections>
   <img class="self-start h-12" src="/images/union-logo.svg" alt="Union" />
   <section>
-    <ul>
-      <li><a href="/transfer" class="underline">Transfer</a></li>
-      <li><a href="/transfers" class="underline">Your Transfers</a></li>
+    <ul class="flex flex-col gap-1">
+      <li>
+        <a 
+          href="/transfer" 
+          data-path="/transfer"
+          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
+          Submit Transfer
+        </a>
+      </li>
+      <li>
+        <a 
+          href="/transfers" 
+          data-path="/transfers"
+          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
+          Your Transfers
+        </a>
+      </li>
     </ul>
   </section>
   <section>
-    <h2 class="font-bold text-xl">Explorer</h2>
-    <ul>
-      <li><a href="/" class="underline">Home</a></li>
-      <li><a href="/explorer/transfers" class="underline">Transfers</a></li>
+    <h2 class="font-bold text-xl mb-2">Explorer</h2>
+    <ul class="flex flex-col gap-1">
+      <li>
+        <a 
+          href="/explorer/transfers" 
+          data-path="/explorer/transfers"
+          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
+          Transfers
+        </a>
+      </li>
+      <li>
+        <a 
+          href="/" 
+          data-path="/packets"
+          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
+          Packets
+        </a>
+      </li>
+      <li>
+        <a 
+          href="/" 
+          data-path="/connections"
+          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
+          Connections
+        </a>
+      </li>
+      <li>
+        <a 
+          href="/" 
+          data-path="/channels"
+          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
+          Channels
+        </a>
+      </li>
+      <li>
+        <a 
+          href="/" 
+          data-path="/clients"
+          class="relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
+          Clients
+        </a>
+      </li>
     </ul>
   </section>
 
@@ -32,3 +136,4 @@ import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
   </div>
 
 </Sections>
+</div>
