@@ -98,7 +98,7 @@ _: {
                   cargoExtraArgs = "--locked --offline --example=wasmvmstatic";
                   installPhaseCommand = ''
                     mkdir -p $out/lib
-                    mv target/${CARGO_BUILD_TARGET}/release/examples/libwasmvmstatic.a $out/lib/libwasmvm.${builtins.head (pkgs.lib.strings.splitString "-" system)}.a
+                    mv target/${CARGO_BUILD_TARGET}/release/examples/libwasmvmstatic.a $out/lib/libwasmvm_muslc.${builtins.head (pkgs.lib.strings.splitString "-" system)}.a
                   '';
                 }
               else if pkgs.stdenv.isDarwin then
