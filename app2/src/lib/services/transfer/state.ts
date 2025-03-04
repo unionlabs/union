@@ -67,3 +67,11 @@ export function hasFailedExit(state: StateWithExit | { _tag: "Pending" }): boole
   if (state._tag === "Pending") return false
   return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
 }
+
+export function isComplete(state: StateWithExit | { _tag: "Pending" }): boolean {
+  return (
+    state._tag === "TransferReceipt" &&
+    state.state._tag === "Complete" &&
+    state.state.exit._tag === "Success"
+  )
+}

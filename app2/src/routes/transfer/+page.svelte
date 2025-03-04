@@ -4,7 +4,7 @@ import Input from "$lib/components/ui/Input.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { TransferSubmission, nextState, hasFailedExit } from "$lib/services/transfer"
+import { TransferSubmission, nextState, hasFailedExit, isComplete } from "$lib/services/transfer"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -46,11 +46,7 @@ async function submit() {
   while (!hasFailedExit(transferState)) {
     transferState = await nextState(transferState, transactionParams)
     // If we're in the final state (TransferReceipt.Complete), stop
-    if (
-      transferState._tag === "TransferReceipt" &&
-      transferState.state._tag === "Complete" &&
-      transferState.state.exit._tag === "Success"
-    ) {
+    if (isComplete(transferState)) {
       break
     }
   }
@@ -113,9 +109,9 @@ async function submit() {
           class="mt-4 self-start"
           variant="primary"
           onclick={submit}
-          disabled={transferState._tag !== "Pending" && !hasFailedExit(transferState)}
+          disabled={transferState._tag !== "Pending" && !hasFailedExit(transferState) && !isComplete(transferState)}
         >
-          {#if transferState._tag !== "Pending" && !hasFailedExit(transferState)}
+          {#if transferState._tag !== "Pending" && !hasFailedExit(transferState) && !isComplete(transferState)}
             Submitting...
           {:else if hasFailedExit(transferState)}
             Retry
