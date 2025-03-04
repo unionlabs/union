@@ -1,0 +1,25 @@
+[package]
+name    = "depolama"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+cosmwasm-std         = { workspace = true, features = ["std"] }
+num-traits           = "0.2.19"
+unionlabs-primitives = { workspace = true }
+
+[features]
+default = ["iterator"]
+
+iterator = ["cosmwasm-std/iterator"]
+
+[dev-dependencies]
+unionlabs = { workspace = true }

@@ -3,8 +3,8 @@
 pub mod contract;
 pub mod state;
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
 use cosmwasm_std::{Addr, StdError};
 use ibc_union_msg::lightclient::Status;

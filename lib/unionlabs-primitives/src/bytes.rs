@@ -1,5 +1,7 @@
 use alloc::borrow::Cow;
-use core::{cmp::Ordering, fmt, marker::PhantomData, ops::Deref, str::FromStr};
+use core::{
+    array::TryFromSliceError, cmp::Ordering, fmt, marker::PhantomData, ops::Deref, str::FromStr,
+};
 
 use crate::{
     encoding::{Encoding, HexPrefixed},
@@ -66,6 +68,12 @@ impl<E: Encoding> Bytes<E> {
     #[inline]
     pub fn into_encoding<E2: Encoding>(self) -> Bytes<E2> {
         Bytes::new(self.bytes)
+    }
+
+    #[must_use = "converting bytes to bytes with a different encoding has no effect"]
+    #[inline]
+    pub fn as_encoding<E2: Encoding>(&self) -> &Bytes<E2> {
+        unsafe { &*core::ptr::from_ref::<Bytes<E>>(self).cast::<Bytes<E2>>() }
     }
 
     #[must_use = "converting to a vec has no effect"]
@@ -247,6 +255,22 @@ impl<EBytes: Encoding, EHash: Encoding, const BYTES: usize> TryFrom<Bytes<EBytes
     }
 }
 
+impl<E: Encoding, const BYTES: usize> TryFrom<Bytes<E>> for [u8; BYTES] {
+    type Error = Bytes<E>;
+
+    fn try_from(value: Bytes<E>) -> Result<Self, Self::Error> {
+        Self::try_from(value.into_vec()).map_err(Bytes::new)
+    }
+}
+
+impl<E: Encoding, const BYTES: usize> TryFrom<&Bytes<E>> for [u8; BYTES] {
+    type Error = TryFromSliceError;
+
+    fn try_from(value: &Bytes<E>) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_ref())
+    }
+}
+
 impl<E: Encoding> From<Vec<u8>> for Bytes<E> {
     fn from(value: Vec<u8>) -> Self {
         Self::new(value)
@@ -398,5 +422,12 @@ mod tests {
         assert_eq!(BASE64_STR, decoded.to_string());
 
         assert_eq!(&*decoded, RAW_VALUE);
+    }
+
+    #[test]
+    fn as_encoding() {
+        let bz = <Bytes>::new(b"bytes");
+        let bz_base64 = bz.as_encoding::<Base64>();
+        assert_eq!(bz_base64, &bz);
     }
 }

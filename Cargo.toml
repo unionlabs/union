@@ -192,6 +192,7 @@ members = [
   "cosmwasm/ucs03-zkgm-token-minter-api",
   "cosmwasm/cw20-base",
   "lib/scroll-types",
+  "lib/depolama",
 ]
 
 [workspace.package]
@@ -222,6 +223,8 @@ cometbft-rpc       = { path = "lib/cometbft-rpc", default-features = false }
 cometbft-types     = { path = "lib/cometbft-types", default-features = false }
 concurrent-keyring = { path = "lib/concurrent-keyring", default-features = false }
 cosmos-client      = { path = "lib/cosmos-client", default-features = false }
+
+depolama = { path = "lib/depolama", default-features = false }
 
 state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
 
