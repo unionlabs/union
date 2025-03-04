@@ -1,6 +1,5 @@
 use std::collections::VecDeque;
 
-use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -67,63 +66,61 @@ impl Plugin for Module {
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConnectionEventFilter {
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub chain_id: Regex,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub client_id: Regex,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub counterparty_client_id: Regex,
+    #[serde(default)]
+    pub chain_id: FieldFilter,
+    #[serde(default)]
+    pub counterparty_chain_id: FieldFilter,
+    #[serde(default)]
+    pub client_id: FieldFilter,
+    #[serde(default)]
+    pub counterparty_client_id: FieldFilter,
 }
 
 impl ConnectionEventFilter {
     fn to_jaq(&self) -> String {
         let Self {
             chain_id,
+            counterparty_chain_id,
             client_id,
             counterparty_client_id,
         } = self;
 
         format!(
             r#"(
-                ($chain_id | tostring | test("{chain_id}"))
-                and ($event.client_id | tostring | test("{client_id}"))
-                and ($event.counterparty_client_id | tostring | test("{counterparty_client_id}"))
-            )"#
+                ($chain_id | tostring | {chain_id})
+                and ($counterparty_chain_id | tostring | {counterparty_chain_id})
+                and ($event.client_id | tostring | {client_id})
+                and ($event.counterparty_client_id | tostring | {counterparty_client_id})
+            )"#,
+            chain_id = chain_id.to_jaq(),
+            counterparty_chain_id = counterparty_chain_id.to_jaq(),
+            client_id = client_id.to_jaq(),
+            counterparty_client_id = counterparty_client_id.to_jaq(),
         )
     }
-}
-
-fn match_any() -> Regex {
-    Regex::new(".*").unwrap()
 }
 
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChannelEventFilter {
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub chain_id: Regex,
-    // #[serde_as(as = "DisplayFromStr")]
-    // #[serde(default = "match_any")]
-    // pub connection_id: Regex,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub port_id: Regex,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub counterparty_port_id: Regex,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub channel_version: Regex,
+    #[serde(default)]
+    pub chain_id: FieldFilter,
+    #[serde(default)]
+    pub counterparty_chain_id: FieldFilter,
+    // pub connection_id: FieldFilter,
+    #[serde(default)]
+    pub port_id: FieldFilter,
+    #[serde(default)]
+    pub counterparty_port_id: FieldFilter,
+    #[serde(default)]
+    pub channel_version: FieldFilter,
 }
 
 impl ChannelEventFilter {
     fn to_jaq(&self) -> String {
         let Self {
             chain_id,
+            counterparty_chain_id,
             // connection_id,
             port_id,
             counterparty_port_id,
@@ -135,11 +132,18 @@ impl ChannelEventFilter {
 
         format!(
             r#"(
-                ($chain_id | tostring | test("{chain_id}"))
-                and ($event.port_id | tostring | test("{port_id}"))
-                and ($event.counterparty_port_id | tostring | test("{counterparty_port_id }"))
-                and ($event.version | tostring | test("{channel_version}"))
-            )"#
+                ($chain_id | tostring | {chain_id})
+                and ($counterparty_chain_id | tostring | {counterparty_chain_id})
+                and ($event.port_id | tostring | {port_id})
+                and ($event.counterparty_port_id | tostring | {counterparty_port_id })
+                and ($event.version | tostring | {channel_version})
+            )"#,
+            chain_id = chain_id.to_jaq(),
+            counterparty_chain_id = counterparty_chain_id.to_jaq(),
+            // connection_id = connection_id.to_jaq(),
+            port_id = port_id.to_jaq(),
+            counterparty_port_id = counterparty_port_id.to_jaq(),
+            channel_version = channel_version.to_jaq(),
         )
     }
 }
@@ -147,41 +151,35 @@ impl ChannelEventFilter {
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PacketEventFilter {
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub chain_id: Regex,
+    #[serde(default)]
+    pub chain_id: FieldFilter,
+    #[serde(default)]
+    pub counterparty_chain_id: FieldFilter,
 
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub source_connection_id: Regex,
-    // #[serde_as(as = "DisplayFromStr")]
-    // #[serde(default = "match_any")]
-    // pub source_port_id: Regex,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub source_channel_id: Regex,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub source_channel_version: Regex,
+    #[serde(default)]
+    pub source_connection_id: FieldFilter,
+    // #[serde(default)]
+    // pub source_port_id: FieldFilter,
+    #[serde(default)]
+    pub source_channel_id: FieldFilter,
+    #[serde(default)]
+    pub source_channel_version: FieldFilter,
 
-    // #[serde_as(as = "DisplayFromStr")]
-    // #[serde(default = "match_any")]
-    // pub destination_port_id: Regex,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub destination_channel_id: Regex,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub destination_connection_id: Regex,
-    #[serde_as(as = "DisplayFromStr")]
-    #[serde(default = "match_any")]
-    pub destination_channel_version: Regex,
+    // #[serde(default)]
+    // pub destination_port_id: FieldFilter,
+    #[serde(default)]
+    pub destination_channel_id: FieldFilter,
+    #[serde(default)]
+    pub destination_connection_id: FieldFilter,
+    #[serde(default)]
+    pub destination_channel_version: FieldFilter,
 }
 
 impl PacketEventFilter {
     fn to_jaq(&self) -> String {
         let Self {
             chain_id,
+            counterparty_chain_id,
             source_connection_id,
             // source_port_id,
             source_channel_id,
@@ -197,16 +195,67 @@ impl PacketEventFilter {
         // and ($event.packet.destination_channel.port_id | tostring | test("{destination_port_id}"))
         format!(
             r#"(
-                ($chain_id | tostring | test("{chain_id}"))
-                and ($event.packet.source_channel.channel_id | tostring | test("{source_channel_id}"))
-                and ($event.packet.source_channel.version | tostring | test("{source_channel_version}"))
-                and ($event.packet.source_channel.connection.connection_id | tostring | test("{source_connection_id}"))
+                ($chain_id | tostring | {chain_id})
+                and ($counterparty_chain_id | tostring | {counterparty_chain_id})
+                and ($event.packet.source_channel.channel_id | tostring | {source_channel_id})
+                and ($event.packet.source_channel.version | tostring | {source_channel_version})
+                and ($event.packet.source_channel.connection.connection_id | tostring | {source_connection_id})
 
-                and ($event.packet.destination_channel.channel_id | tostring | test("{destination_channel_id}"))
-                and ($event.packet.destination_channel.version | tostring | test("{destination_channel_version}"))
-                and ($event.packet.destination_channel.connection.connection_id | tostring | test("{destination_connection_id}"))
-            )"#
+                and ($event.packet.destination_channel.channel_id | tostring | {destination_channel_id})
+                and ($event.packet.destination_channel.version | tostring | {destination_channel_version})
+                and ($event.packet.destination_channel.connection.connection_id | tostring | {destination_connection_id})
+            )"#,
+            chain_id = chain_id.to_jaq(),
+            counterparty_chain_id = counterparty_chain_id.to_jaq(),
+            source_connection_id = source_connection_id.to_jaq(),
+            // source_port_id = source_port_id.to_jaq(),
+            source_channel_id = source_channel_id.to_jaq(),
+            source_channel_version = source_channel_version.to_jaq(),
+            // destination_port_id = destination_port_id.to_jaq(),
+            destination_channel_id = destination_channel_id.to_jaq(),
+            destination_connection_id = destination_connection_id.to_jaq(),
+            destination_channel_version = destination_channel_version.to_jaq(),
         )
+    }
+}
+
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum FieldFilter {
+    #[serde(rename = "not")]
+    Not(
+        #[serde_as(as = "DisplayFromStr")]
+        // #[serde(default = "match_any")]
+        Regex,
+    ),
+    #[serde(untagged)]
+    Match(
+        #[serde_as(as = "DisplayFromStr")]
+        #[serde(default = "match_any")]
+        Regex,
+    ),
+}
+
+impl Default for FieldFilter {
+    fn default() -> Self {
+        Self::Match(match_any())
+    }
+}
+
+fn match_any() -> Regex {
+    Regex::new(".*").unwrap()
+}
+
+impl FieldFilter {
+    fn to_jaq(&self) -> String {
+        match self {
+            FieldFilter::Not(regex) => {
+                format!(r#"test("{regex}") | not"#)
+            }
+            FieldFilter::Match(regex) => {
+                format!(r#"test("{regex}")"#)
+            }
+        }
     }
 }
 
@@ -257,6 +306,7 @@ if ."@type" == "data" then
 
     if $data."@type" == "ibc_event" and $data."@value".ibc_spec_id == "{ibc_spec_id}" then
         $data."@value".chain_id as $chain_id |
+        $data."@value".counterparty_chain_id as $counterparty_chain_id |
         $data."@value".event."@type" as $event_type |
         $data."@value".event."@value" as $event |
 
