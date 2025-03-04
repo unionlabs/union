@@ -1,7 +1,9 @@
 use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;
-use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
+use ibc_union_light_client::{
+    ClientCreation, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use ibc_union_spec::path::ConsensusStatePath;
 use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState};
@@ -103,22 +105,21 @@ impl IbcClient for StateLensIcs23MptLightClient {
     fn verify_creation(
         client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<
-        Option<Vec<VerifyCreationResponseEvent>>,
-        IbcClientError<StateLensIcs23MptLightClient>,
-    > {
-        Ok(Some(vec![VerifyCreationResponseEvent::CreateLensClient {
-            l1_client_id: client_state.l1_client_id,
-            l2_client_id: client_state.l2_client_id,
-            l2_chain_id: client_state.l2_chain_id.clone(),
-        }]))
+    ) -> Result<ClientCreation<Self>, IbcClientError<StateLensIcs23MptLightClient>> {
+        Ok(
+            ClientCreation::empty().add_event(VerifyCreationResponseEvent::CreateLensClient {
+                l1_client_id: client_state.l1_client_id,
+                l2_client_id: client_state.l2_client_id,
+                l2_chain_id: client_state.l2_chain_id.clone(),
+            }),
+        )
     }
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
+    ) -> Result<StateUpdate<Self>, ibc_union_light_client::IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 
         let storage_proof = MerkleProof::decode_as::<Bincode>(&header.l2_consensus_state_proof)
@@ -153,9 +154,12 @@ impl IbcClient for StateLensIcs23MptLightClient {
             client_state.extra.storage_root_offset as usize,
         );
 
-        if client_state.l2_latest_height < header.l2_height.height() {
+        let client_state = if client_state.l2_latest_height < header.l2_height.height() {
             client_state.l2_latest_height = header.l2_height.height();
-        }
+            Some(client_state)
+        } else {
+            None
+        };
 
         let consensus_state = ConsensusState {
             timestamp: l2_timestamp,
@@ -163,7 +167,12 @@ impl IbcClient for StateLensIcs23MptLightClient {
             storage_root: l2_storage_root,
         };
 
-        Ok((header.l2_height.height(), client_state, consensus_state))
+        Ok(StateUpdate {
+            height: header.l2_height.height(),
+            client_state,
+            consensus_state,
+            storage_writes: vec![],
+        })
     }
 
     fn misbehaviour(

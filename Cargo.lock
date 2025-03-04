@@ -6443,10 +6443,12 @@ name = "ibc-union"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "bincode 2.0.0-rc.3",
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
  "ethabi",
+ "ethereum-light-client-types",
  "hex",
  "ibc-union-msg",
  "ibc-union-spec",

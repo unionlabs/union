@@ -1,5 +1,5 @@
 use beacon_api_types::Slot;
-use unionlabs::primitives::{H256, H384};
+use unionlabs::primitives::H256;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -10,10 +10,19 @@ pub struct ConsensusState {
     pub storage_root: H256,
     /// Timestamp of the block, *normalized to nanoseconds* in order to be compatible with ibc-go.
     pub timestamp: u64,
-    /// aggregate public key of current sync committee
-    pub current_sync_committee: H384,
-    /// aggregate public key of next sync committee
-    pub next_sync_committee: H384,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct OldConsensusState {
+    pub slot: Slot,
+    /// The state root for this chain, used for L2s to verify against this contract.
+    pub state_root: H256,
+    pub storage_root: H256,
+    /// Timestamp of the block, *normalized to nanoseconds* in order to be compatible with ibc-go.
+    pub timestamp: u64,
+    pub current_sync_committee: unionlabs::primitives::H384,
+    pub next_sync_committee: unionlabs::primitives::H384,
 }
 
 #[cfg(feature = "ethabi")]
@@ -25,8 +34,19 @@ pub mod ethabi {
 
     impl_ethabi_via_try_from_into!(ConsensusState => SolConsensusState);
 
+    impl_ethabi_via_try_from_into!(OldConsensusState => OldSolConsensusState);
+
     alloy::sol! {
         struct SolConsensusState {
+            uint64 slot;
+            bytes32 state_root;
+            bytes32 storage_root;
+            uint64 timestamp;
+        }
+    }
+
+    alloy::sol! {
+        struct OldSolConsensusState {
             uint64 slot;
             bytes32 state_root;
             bytes32 storage_root;
@@ -38,6 +58,40 @@ pub mod ethabi {
 
     impl From<ConsensusState> for SolConsensusState {
         fn from(value: ConsensusState) -> Self {
+            Self {
+                slot: value.slot.get(),
+                state_root: value.state_root.get().into(),
+                storage_root: value.storage_root.get().into(),
+                timestamp: value.timestamp,
+            }
+        }
+    }
+
+    impl TryFrom<OldSolConsensusState> for OldConsensusState {
+        type Error = TryFromEthAbiError;
+
+        fn try_from(value: OldSolConsensusState) -> Result<Self, Self::Error> {
+            Ok(Self {
+                slot: Slot::new(value.slot),
+                state_root: H256::new(value.state_root.0),
+                storage_root: H256::new(value.storage_root.0),
+                timestamp: value.timestamp,
+                current_sync_committee: value
+                    .current_sync_committee
+                    .to_vec()
+                    .try_into()
+                    .map_err(TryFromEthAbiError::CurrentSyncCommittee)?,
+                next_sync_committee: value
+                    .next_sync_committee
+                    .to_vec()
+                    .try_into()
+                    .map_err(TryFromEthAbiError::NextSyncCommittee)?,
+            })
+        }
+    }
+
+    impl From<OldConsensusState> for OldSolConsensusState {
+        fn from(value: OldConsensusState) -> Self {
             Self {
                 slot: value.slot.get(),
                 state_root: value.state_root.get().into(),
@@ -66,16 +120,6 @@ pub mod ethabi {
                 state_root: H256::new(value.state_root.0),
                 storage_root: H256::new(value.storage_root.0),
                 timestamp: value.timestamp,
-                current_sync_committee: value
-                    .current_sync_committee
-                    .to_vec()
-                    .try_into()
-                    .map_err(TryFromEthAbiError::CurrentSyncCommittee)?,
-                next_sync_committee: value
-                    .next_sync_committee
-                    .to_vec()
-                    .try_into()
-                    .map_err(TryFromEthAbiError::NextSyncCommittee)?,
             })
         }
     }
@@ -97,8 +141,6 @@ mod tests {
             state_root: H256::new([0xAA; 32]),
             storage_root: H256::new([0xAA; 32]),
             timestamp: 123_456_789,
-            current_sync_committee: H384::new([0xAA; 48]),
-            next_sync_committee: H384::new([0xAA; 48]),
         }
     }
 

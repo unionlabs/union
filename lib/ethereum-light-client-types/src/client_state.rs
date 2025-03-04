@@ -1,4 +1,4 @@
-use beacon_api_types::{ForkParameters, PresetBaseKind};
+use beacon_api_types::{ForkParameters, PresetBaseKind, SyncCommittee};
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{H160, H256, U256},
@@ -18,6 +18,33 @@ pub struct ClientState {
     pub frozen_height: Height,
     /// the ibc contract on the counterparty chain that contains the ICS23 commitments
     pub ibc_contract_address: H160,
+    #[cfg_attr(feature = "serde", serde(default))]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub initial_sync_committee: Option<InitialSyncCommittee>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct OldClientState {
+    pub chain_id: U256,
+    pub chain_spec: PresetBaseKind,
+    pub genesis_validators_root: H256,
+    pub genesis_time: u64,
+    pub fork_parameters: ForkParameters,
+    pub latest_height: u64,
+    // even though it would be better to have option, ethabicodec don't handle it as zero struct...
+    pub frozen_height: Height,
+    /// the ibc contract on the counterparty chain that contains the ICS23 commitments
+    pub ibc_contract_address: H160,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct InitialSyncCommittee {
+    pub current_sync_committee: SyncCommittee,
+    pub next_sync_committee: SyncCommittee,
 }
 
 #[cfg(test)]
@@ -64,6 +91,7 @@ mod tests {
             latest_height: 987,
             frozen_height: Height::new(1),
             ibc_contract_address: H160::new([0xAA; 20]),
+            initial_sync_committee: None,
         }
     }
 

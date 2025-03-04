@@ -6,7 +6,9 @@ use alloy::{
 };
 use beacon_api::client::BeaconApiClient;
 use beacon_api_types::{PresetBaseKind, Slot};
-use ethereum_light_client_types::{ClientState, ConsensusState};
+use ethereum_light_client_types::{
+    client_state::InitialSyncCommittee, ClientState, ConsensusState,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -165,35 +167,6 @@ impl ClientBootstrapModuleServer for Module {
 
         let genesis = self.beacon_api_client.genesis().await.unwrap().data;
 
-        let spec = self.beacon_api_client.spec().await.unwrap().data;
-
-        Ok(serde_json::to_value(ClientState {
-            chain_id: self
-                .chain_id
-                .as_str()
-                .parse()
-                .expect("self.chain_id is a valid u256"),
-            chain_spec: spec.preset_base,
-            genesis_validators_root: genesis.genesis_validators_root,
-            genesis_time: genesis.genesis_time,
-            fork_parameters: spec.to_fork_parameters(),
-            latest_height: height.height(),
-            frozen_height: Height::new(0),
-            ibc_contract_address: self.ibc_handler_address,
-        })
-        .expect("infallible"))
-    }
-
-    /// The consensus state on this chain at the specified `Height`.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
-    async fn self_consensus_state(
-        &self,
-        _: &Extensions,
-        height: Height,
-        config: Value,
-    ) -> RpcResult<Value> {
-        ensure_null(config)?;
-
         let beacon_slot = self
             .beacon_slot_of_execution_block_number(height.height())
             .await?;
@@ -259,6 +232,70 @@ impl ClientBootstrapModuleServer for Module {
             light_client_update.data.clone()
         };
 
+        Ok(serde_json::to_value(ClientState {
+            chain_id: self
+                .chain_id
+                .as_str()
+                .parse()
+                .expect("self.chain_id is a valid u256"),
+            chain_spec: spec.preset_base,
+            genesis_validators_root: genesis.genesis_validators_root,
+            genesis_time: genesis.genesis_time,
+            fork_parameters: spec.to_fork_parameters(),
+            latest_height: height.height(),
+            frozen_height: Height::new(0),
+            ibc_contract_address: self.ibc_handler_address,
+            initial_sync_committee: Some(InitialSyncCommittee {
+                current_sync_committee: bootstrap.current_sync_committee,
+                // TODO(aeryz): can this be None?
+                next_sync_committee: light_client_update.next_sync_committee.unwrap(),
+            }),
+        })
+        .expect("infallible"))
+    }
+
+    /// The consensus state on this chain at the specified `Height`.
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
+    async fn self_consensus_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        config: Value,
+    ) -> RpcResult<Value> {
+        ensure_null(config)?;
+
+        let beacon_slot = self
+            .beacon_slot_of_execution_block_number(height.height())
+            .await?;
+
+        let trusted_header = self
+            .beacon_api_client
+            .header(beacon_api::client::BlockId::Slot(beacon_slot))
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching beacon header: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            .data;
+
+        let bootstrap = self
+            .beacon_api_client
+            .bootstrap(trusted_header.root)
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching beacon bootstrap: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            .data;
+
+        assert_eq!(bootstrap.header.execution.block_number, height.height());
+
         // Normalize to nanos in order to be compliant with cosmos
         let timestamp = bootstrap.header.execution.timestamp * 1_000_000_000;
 
@@ -275,12 +312,6 @@ impl ClientBootstrapModuleServer for Module {
                 .0
                 .into(),
             timestamp,
-            current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
-            // TODO(aeryz): can this be None?
-            next_sync_committee: light_client_update
-                .next_sync_committee
-                .unwrap()
-                .aggregate_pubkey,
         }))
     }
 }

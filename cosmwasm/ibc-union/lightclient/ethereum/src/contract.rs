@@ -6,6 +6,7 @@ use ibc_union_light_client::{
     IbcClientError,
 };
 use serde::{Deserialize, Serialize};
+use unionlabs::primitives::Bytes;
 use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::client::EthereumLightClient;
