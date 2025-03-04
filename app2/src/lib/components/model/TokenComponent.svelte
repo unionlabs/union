@@ -45,7 +45,12 @@ const displayAmount = $derived(
       const decimal = BigInt(10) ** BigInt(info.decimals)
       const whole = amt / decimal
       const fraction = amt % decimal
-      return Option.some(`${whole}${fraction > 0 ? `.${fraction}` : ""}`)
+      
+      // Convert fraction to string and remove trailing zeros
+      const fractionStr = fraction === 0n ? "" : 
+        `.${fraction.toString().padStart(info.decimals, "0").replace(/0+$/, "")}`
+      
+      return Option.some(`${whole}${fractionStr}`)
     }
   })
 )

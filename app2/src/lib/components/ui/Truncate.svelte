@@ -31,13 +31,13 @@ async function copyToClipboard() {
 }
 </script>
 
-<div class={cn("flex items-center gap-1", className)} {...rest}>
+<div class={cn("group flex items-center gap-1", className)} {...rest}>
   <span title={shouldTruncate ? value : undefined}>
     {displayValue}
   </span>
   <button
     type="button"
-    class="p-1 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer"
+    class="p-1 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
     onclick={(e) => {
       e.stopPropagation()
       copyToClipboard()
