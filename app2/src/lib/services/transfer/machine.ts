@@ -1,12 +1,14 @@
-import { submitTransfer, switchChain, waitForReceipt } from "./index.ts"
+// import { submitTransfer, switchChain, waitForReceipt } from "./index.ts"
 import {
   SwitchChainState,
   TransferReceiptState,
   TransferSubmission,
   TransferSubmitState
-} from "./state.ts"
+} from "./state.js"
 import { Effect } from "effect"
 import type { Chain, Address } from "viem"
+import { switchChain } from "./chain.js"
+import { submitTransfer, waitForReceipt } from "./transactions.js"
 
 export type TransactionParams = {
   chain: Chain
@@ -40,10 +42,7 @@ export async function nextState(
     TransferSubmit: ({ state }) => {
       return TransferSubmitState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(
-            // TODO: don't hardcode
-            submitTransfer(params)
-          )
+          const exit = await Effect.runPromiseExit(submitTransfer(params))
           return TransferSubmission.TransferSubmit({
             state: TransferSubmitState.Complete({ exit })
           })
