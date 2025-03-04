@@ -5,10 +5,10 @@ import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
-import SharpRightArrowIcon from "$lib/components/icons/SharpRightArrowIcon.svelte"
 import { page } from "$app/stores"
 import { cn } from "$lib/utils"
 import { onMount } from "svelte"
+import { navigation } from "./navigation"
 
 const isCurrentPath = (path: string) => $page.url.pathname === path
 
@@ -47,106 +47,33 @@ onMount(() => {
 
 <Sections>
   <img class="self-start h-12" src="/images/union-logo.svg" alt="Union" />
-  <section>
-    <ul class="flex flex-col gap-1">
-      <li>
-        <a 
-          href="/transfer" 
-          data-path="/transfer"
-          class={cn(
-            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-            isCurrentPath("/transfer") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          )}
-        >
-          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
-          Submit Transfer
-        </a>
-      </li>
-      <li>
-        <a 
-          href="/transfers" 
-          data-path="/transfers"
-          class={cn(
-            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-            isCurrentPath("/transfers") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          )}
-        >
-          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
-          Your Transfers
-        </a>
-      </li>
-    </ul>
-  </section>
-  <section>
-    <h2 class="font-bold text-xl mb-2">Explorer</h2>
-    <ul class="flex flex-col gap-1">
-      <li>
-        <a 
-          href="/explorer/transfers" 
-          data-path="/explorer/transfers"
-          class={cn(
-            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-            isCurrentPath("/explorer/transfers") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          )}
-        >
-          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
-          Transfers
-        </a>
-      </li>
-      <li>
-        <a 
-          href="/" 
-          data-path="/packets"
-          class={cn(
-            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-            isCurrentPath("/packets") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          )}
-        >
-          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
-          Packets
-        </a>
-      </li>
-      <li>
-        <a 
-          href="/" 
-          data-path="/connections"
-          class={cn(
-            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-            isCurrentPath("/connections") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          )}
-        >
-          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
-          Connections
-        </a>
-      </li>
-      <li>
-        <a 
-          href="/" 
-          data-path="/channels"
-          class={cn(
-            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-            isCurrentPath("/channels") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          )}
-        >
-          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
-          Channels
-        </a>
-      </li>
-      <li>
-        <a 
-          href="/" 
-          data-path="/clients"
-          class={cn(
-            "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-            isCurrentPath("/clients") ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          )}
-        >
-          <SharpRightArrowIcon class="size-5 text-zinc-600 dark:text-zinc-400" />
-          Clients
-        </a>
-      </li>
-    </ul>
-  </section>
+  {#each navigation as section}
+    <section>
+      {#if section.title}
+        <h2 class="font-bold text-xl mb-2">{section.title}</h2>
+      {/if}
+      <ul class="flex flex-col gap-1">
+        {#each section.items as item}
+          <li>
+            <a 
+              href={item.path} 
+              data-path={item.path}
+              class={cn(
+                "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+                isCurrentPath(item.path) ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              )}
+            >
+              <svelte:component 
+                this={item.icon} 
+                class="size-5 text-zinc-600 dark:text-zinc-400" 
+              />
+              {item.title}
+            </a>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/each}
 
   <div class="flex flex-col gap-2">
     <ConnectWalletButton/>
