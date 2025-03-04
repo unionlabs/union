@@ -1,7 +1,6 @@
 <script lang="ts">
 import type { TransferListItem } from "$lib/schema/transfer-list"
 import { Option } from "effect"
-import { DateTime } from "effect"
 import { getChain } from "$lib/schema/chain"
 import ChainComponent from "./ChainComponent.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
@@ -10,6 +9,7 @@ import { chains } from "$lib/stores/chains.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import { goto } from "$app/navigation"
 import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
+import DateTimeComponent from "../ui/DateTimeComponent.svelte"
 
 const { transfer }: { transfer: TransferListItem } = $props()
 
@@ -49,7 +49,7 @@ const handleClick = () => {
 
     
     <div>
-      {DateTime.formatIso(transfer.packet_send_timestamp)}
+      <DateTimeComponent value={transfer.packet_send_timestamp} />
     </div>
   </div>
 {/if}
