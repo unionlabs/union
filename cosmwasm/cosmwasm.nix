@@ -38,7 +38,7 @@
           ucs03_type = "cw20";
           bech32_prefix = "union";
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            # ucs03 = ucs03-configs.cw20;
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [ ];

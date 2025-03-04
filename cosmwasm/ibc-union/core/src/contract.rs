@@ -484,29 +484,205 @@ pub fn migrate(
 }
 
 pub mod migrate_to_depolama {
-    use std::collections::BTreeSet;
+    use std::{collections::BTreeSet, convert::identity};
 
-    use cosmwasm_std::{Addr, Binary, DepsMut, StdResult};
-    use cw_storage_plus::{Item, Map};
-    use ibc_union_spec::types::{Channel, Connection};
+    use cosmwasm_std::{Addr, Binary, DepsMut, Order, StdResult};
+    use cw_storage_plus::{KeyDeserialize, Map, PrimaryKey};
+    use depolama::{StorageExt, Store};
+    use ibc_union_spec::{
+        path::COMMITMENT_MAGIC,
+        types::{Channel, Connection},
+    };
+    use serde::{de::DeserializeOwned, Serialize};
 
-    pub fn run(deps: DepsMut<'_>) -> StdResult<()> {
-        pub const QUERY_STORE: Item<Binary> = Item::new("query_store");
-        pub const CHANNEL_OWNER: Map<u32, Addr> = Map::new("channel_owner");
-        pub const CHANNELS: Map<u32, Channel> = Map::new("channels");
-        pub const CONTRACT_CHANNELS: Map<Addr, BTreeSet<u32>> = Map::new("contract_channels");
-        pub const CONNECTIONS: Map<u32, Connection> = Map::new("connections");
-        pub const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
-        pub const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> =
-            Map::new("client_consensus_states"); // From client type to contract implementation
-        pub const CLIENT_REGISTRY: Map<&str, Addr> = Map::new("client_registry"); // From client id to client type
-        pub const CLIENT_TYPES: Map<u32, String> = Map::new("client_types"); // From client id to contract implementation
-        pub const CLIENT_IMPLS: Map<u32, Addr> = Map::new("client_impls");
-        pub const NEXT_CLIENT_ID: Item<u32> = Item::new("next_client_id");
-        pub const NEXT_CONNECTION_ID: Item<u32> = Item::new("next_connection_id");
-        pub const NEXT_CHANNEL_ID: Item<u32> = Item::new("next_channel_id");
+    use crate::state::{
+        ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
+        ClientTypes, Connections, ContractChannels, NextChannelId, NextClientId, NextConnectionId,
+    };
+
+    pub fn run(mut deps: DepsMut<'_>) -> StdResult<()> {
+        // {
+        //     pub const QUERY_STORE: Item<Binary> = Item::new("query_store");
+        // }
+
+        {
+            pub const CHANNEL_OWNER: Map<u32, Addr> = Map::new("channel_owner");
+            migrate_map::<_, _, ChannelOwner>(&mut deps, CHANNEL_OWNER, identity, identity)?;
+        }
+
+        {
+            pub const CHANNELS: Map<u32, Channel> = Map::new("channels");
+            migrate_map::<_, _, Channels>(&mut deps, CHANNELS, identity, identity)?;
+        }
+
+        {
+            pub const CONTRACT_CHANNELS: Map<Addr, BTreeSet<u32>> = Map::new("contract_channels");
+            migrate_map::<_, _, ContractChannels>(
+                &mut deps,
+                CONTRACT_CHANNELS,
+                identity,
+                identity,
+            )?;
+        }
+
+        {
+            pub const CONNECTIONS: Map<u32, Connection> = Map::new("connections");
+            migrate_map::<_, _, Connections>(&mut deps, CONNECTIONS, identity, identity)?;
+        }
+
+        {
+            pub const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
+            migrate_map::<_, _, ClientStates>(&mut deps, CLIENT_STATES, identity, |v| {
+                v.to_vec().into()
+            })?;
+        }
+
+        {
+            pub const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> =
+                Map::new("client_consensus_states");
+            migrate_map::<_, _, ClientConsensusStates>(
+                &mut deps,
+                CLIENT_CONSENSUS_STATES,
+                identity,
+                |v| v.to_vec().into(),
+            )?;
+        }
+
+        {
+            pub const CLIENT_REGISTRY: Map<&str, Addr> = Map::new("client_registry");
+            migrate_map::<_, _, ClientRegistry>(
+                &mut deps,
+                CLIENT_REGISTRY,
+                |k| k.to_owned(),
+                identity,
+            )?;
+        }
+
+        {
+            pub const CLIENT_TYPES: Map<u32, String> = Map::new("client_types");
+            migrate_map::<_, _, ClientTypes>(&mut deps, CLIENT_TYPES, identity, identity)?;
+        }
+
+        {
+            pub const CLIENT_IMPLS: Map<u32, Addr> = Map::new("client_impls");
+            migrate_map::<_, _, ClientImpls>(&mut deps, CLIENT_IMPLS, identity, identity)?;
+        }
+
+        {
+            pub const NEXT_CLIENT_ID: Map<(), u32> = Map::new("next_client_id");
+            migrate_map::<_, _, NextClientId>(&mut deps, NEXT_CLIENT_ID, identity, identity)?;
+        }
+
+        {
+            pub const NEXT_CONNECTION_ID: Map<(), u32> = Map::new("next_connection_id");
+            migrate_map::<_, _, NextConnectionId>(
+                &mut deps,
+                NEXT_CONNECTION_ID,
+                identity,
+                identity,
+            )?;
+        }
+
+        {
+            pub const NEXT_CHANNEL_ID: Map<(), u32> = Map::new("next_channel_id");
+            migrate_map::<_, _, NextChannelId>(&mut deps, NEXT_CHANNEL_ID, identity, identity)?;
+        }
+
+        {
+            let deps: &mut DepsMut<'_> = &mut deps;
+            let vec = deps
+                .storage
+                .range(None, None, Order::Ascending)
+                .filter(|(k, v)| k.len() == 32 && v.len() == 32)
+                .collect::<Vec<_>>();
+
+            for (k, v) in vec {
+                deps.storage.remove(&k);
+                deps.storage.set(
+                    &[0x00].into_iter().chain(k.into_iter()).collect::<Vec<_>>(),
+                    if v == COMMITMENT_MAGIC.as_ref() {
+                        &[0x01]
+                    } else {
+                        &v
+                    },
+                );
+            }
+        }
 
         Ok(())
+    }
+
+    fn migrate_map<
+        'a,
+        K: KeyDeserialize + PrimaryKey<'a> + 'static,
+        V: Serialize + DeserializeOwned,
+        S: Store,
+    >(
+        deps: &mut DepsMut<'_>,
+        store: Map<K, V>,
+        map_k: fn(K::Output) -> S::Key,
+        map_v: fn(V) -> S::Value,
+    ) -> StdResult<()> {
+        let vec = store
+            .range(deps.storage, None, None, Order::Ascending)
+            .collect::<Result<Vec<_>, _>>()?;
+
+        for (k, v) in vec {
+            deps.storage.write::<S>(&map_k(k), &map_v(v));
+        }
+
+        store.clear(deps.storage);
+
+        Ok(())
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use std::collections::BTreeMap;
+
+        use cosmwasm_std::{testing::mock_dependencies, Storage};
+        use depolama::Bytes;
+        use ibc_union_spec::path::COMMITMENT_MAGIC;
+
+        use super::*;
+
+        #[test]
+        fn migration() {
+            let mut deps = mock_dependencies();
+
+            let json = serde_json::from_str::<BTreeMap<Bytes, Bytes>>(
+                &std::fs::read_to_string("/home/ben/projects/union/union/core.json").unwrap(),
+            )
+            .unwrap();
+
+            let old_size = json.values().map(|v| v.len()).sum::<usize>();
+
+            for (k, v) in json {
+                deps.storage.set(&k, &v);
+            }
+
+            println!("running migration");
+
+            run(deps.as_mut()).unwrap();
+
+            let mut new_json = BTreeMap::<Bytes, Bytes>::new();
+
+            for (k, v) in deps.storage.range(None, None, Order::Ascending) {
+                new_json.insert(k.into(), v.into());
+            }
+
+            let new_size = new_json.values().map(|v| v.len()).sum::<usize>();
+
+            let total_magic_commitments = new_json
+                .values()
+                .map(|v| (v.as_ref() == COMMITMENT_MAGIC.as_ref()) as usize)
+                .sum::<usize>();
+
+            println!(
+                "old_size: {old_size}, new_size: {new_size}, savings: {}, total_magic_commitments: {total_magic_commitments}",
+                old_size - new_size
+            )
+        }
     }
 }
 

@@ -20,8 +20,8 @@ library = []
 [dependencies]
 alloy                         = { workspace = true, features = ["sol-types"] }
 cosmwasm-schema               = { workspace = true }
-cosmwasm-std                  = { workspace = true, features = ["abort"] }
-cw-storage-plus               = { workspace = true }
+cosmwasm-std                  = { workspace = true, features = ["abort", "iterator"] }
+cw-storage-plus               = { workspace = true, features = ["iterator"] }
 depolama                      = { workspace = true }
 ethabi                        = { workspace = true }
 hex                           = { workspace = true }

@@ -11,12 +11,16 @@ use cosmos_client::{
 };
 use cosmwasm_std::Addr;
 use hex_literal::hex;
-use protos::cosmwasm::wasm::v1::{
-    AccessConfig, AccessType, MsgExecuteContract, MsgExecuteContractResponse,
-    MsgInstantiateContract2, MsgInstantiateContract2Response, MsgMigrateContract,
-    MsgMigrateContractResponse, MsgStoreCode, MsgStoreCodeResponse, MsgUpdateInstantiateConfig,
-    MsgUpdateInstantiateConfigResponse, QuerySmartContractStateRequest,
-    QuerySmartContractStateResponse,
+use protos::{
+    cosmos::base::query::v1beta1::PageRequest,
+    cosmwasm::wasm::v1::{
+        AccessConfig, AccessType, MsgExecuteContract, MsgExecuteContractResponse,
+        MsgInstantiateContract2, MsgInstantiateContract2Response, MsgMigrateContract,
+        MsgMigrateContractResponse, MsgStoreCode, MsgStoreCodeResponse, MsgUpdateInstantiateConfig,
+        MsgUpdateInstantiateConfigResponse, QueryAllContractStateRequest,
+        QueryAllContractStateResponse, QuerySmartContractStateRequest,
+        QuerySmartContractStateResponse,
+    },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -85,6 +89,8 @@ enum App {
         #[arg(long)]
         bech32_prefix: String,
     },
+    #[command(subcommand)]
+    Query(QueryCmd),
 }
 
 #[derive(Debug, Clone, PartialEq, Default, clap::Args)]
@@ -102,6 +108,18 @@ enum QueryCmd {
         rpc_url: String,
         #[arg(long)]
         code_id: u64,
+    },
+    ContractState {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long)]
+        output: Option<PathBuf>,
+        #[arg(long)]
+        address: Bech32<H256>,
+        #[arg(long)]
+        all: bool,
+        #[arg(long, default_value_t = 100)]
+        per_page: u64,
     },
 }
 
@@ -272,10 +290,7 @@ async fn do_main() -> Result<()> {
                             MsgStoreCode {
                                 sender: ctx.wallet().address().to_string(),
                                 wasm_byte_code: BYTECODE_BASE_BYTECODE.to_vec(),
-                                instantiate_permission: Some(AccessConfig {
-                                    permission: AccessType::Everybody.into(),
-                                    addresses: vec![],
-                                }), // ..Default::default()
+                                instantiate_permission: None,
                             },
                             "",
                         )
@@ -320,7 +335,6 @@ async fn do_main() -> Result<()> {
                     ucs03: None,
                 },
             };
-
             for (client_type, path) in contracts.lightclient {
                 let address = ctx
                     .deploy_and_initiate(
@@ -667,6 +681,74 @@ async fn do_main() -> Result<()> {
             "{}",
             CosmosSigner::from_raw(*private_key.get(), bech32_prefix).unwrap(),
         ),
+        App::Query(query_cmd) => match query_cmd {
+            QueryCmd::CodeInfo { rpc_url, code_id } => todo!(),
+            QueryCmd::ContractState {
+                rpc_url,
+                output,
+                address,
+                all,
+                per_page,
+            } => {
+                let client = cometbft_rpc::Client::new(rpc_url).await?;
+
+                if all {
+                    let mut states = BTreeMap::<Bytes, Bytes>::new();
+
+                    let mut pagination = PageRequest {
+                        key: vec![],
+                        offset: 0,
+                        limit: per_page,
+                        count_total: false,
+                        reverse: false,
+                    };
+
+                    loop {
+                        let state = client
+                            .grpc_abci_query::<_, QueryAllContractStateResponse>(
+                                "/cosmwasm.wasm.v1.Query/AllContractState",
+                                &QueryAllContractStateRequest {
+                                    address: address.to_string(),
+                                    pagination: Some(pagination.clone()),
+                                },
+                                None,
+                                false,
+                            )
+                            .await?
+                            .into_result()?
+                            .context("contract state response missing")?;
+
+                        let p = state.pagination.unwrap();
+
+                        info!(
+                            "fetched page {} ({} items)",
+                            <Bytes>::from(pagination.key),
+                            state.models.len()
+                        );
+
+                        pagination = if p.next_key.is_empty() {
+                            break;
+                        } else {
+                            PageRequest {
+                                key: p.next_key,
+                                ..pagination
+                            }
+                        };
+
+                        states.extend(
+                            state
+                                .models
+                                .into_iter()
+                                .map(|model| (model.key.into(), model.value.into())),
+                        );
+                    }
+
+                    write_output(output, states)?;
+                } else {
+                    todo!()
+                }
+            }
+        },
     }
 
     Ok(())
