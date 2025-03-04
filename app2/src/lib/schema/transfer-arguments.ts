@@ -2,7 +2,7 @@ import { Schema } from "effect"
 import { RpcType } from "$lib/schema/chain"
 import { EVMWethToken, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
 import { ChannelId } from "$lib/schema/channel"
-import { AddressAptosDisplay, AddressCosmosDisplay, AddressEvmDisplay } from "$lib/schema/address"
+import { isValidCanonicalForChain } from "$lib/utils/convert-display";
 
 const BaseTransferFields = {
   baseToken: TokenRawDenom.annotations({
@@ -25,32 +25,6 @@ const BaseTransferFields = {
   })
 }
 
-const isValidReceiverDisplayForChain = (receiver: string, destinationRpcType: string): boolean => {
-  if (receiver.length === 0) {
-    return false
-  }
-
-  const isValidDisplay = (schema: Schema.Schema<any, any>) => {
-    try {
-      Schema.decodeSync(schema)(receiver, { errors: "all" })
-      return true
-    } catch (e) {
-      return false
-    }
-  }
-
-  switch (destinationRpcType) {
-    case "evm":
-      return isValidDisplay(AddressEvmDisplay)
-    case "cosmos":
-      return isValidDisplay(AddressCosmosDisplay)
-    case "aptos":
-      return isValidDisplay(AddressAptosDisplay)
-    default:
-      return false
-  }
-}
-
 const EVMTransferSchema = Schema.Struct({
   ...BaseTransferFields,
   sourceRpcType: RpcType.pipe(
@@ -62,7 +36,7 @@ const EVMTransferSchema = Schema.Struct({
   )
 }).pipe(
   Schema.filter(data =>
-    isValidReceiverDisplayForChain(data.receiver, data.destinationRpcType)
+    isValidCanonicalForChain(data.receiver, data.destinationRpcType)
       ? true
       : `receiver must be a valid display address for ${data.destinationRpcType}`
   )
@@ -81,7 +55,7 @@ const CosmosTransferSchema = Schema.Struct({
   )
 }).pipe(
   Schema.filter(data =>
-    isValidReceiverDisplayForChain(data.receiver, data.destinationRpcType)
+    isValidCanonicalForChain(data.receiver, data.destinationRpcType)
       ? true
       : `receiver must be a valid display address for ${data.destinationRpcType}`
   )
@@ -102,7 +76,7 @@ const AptosTransferSchema = Schema.Struct({
   )
 }).pipe(
   Schema.filter(data =>
-    isValidReceiverDisplayForChain(data.receiver, data.destinationRpcType)
+    isValidCanonicalForChain(data.receiver, data.destinationRpcType)
       ? true
       : `receiver must be a valid display address for ${data.destinationRpcType}`
   )
