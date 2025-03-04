@@ -15,38 +15,49 @@ const isCurrentPath = (path: string) => $page.url.pathname === path
 let activeElement: HTMLElement | null = null
 let highlightElement: HTMLElement
 
-$: if ($page.url.pathname && highlightElement) {
-  const newActive = document.querySelector(`[data-path="${$page.url.pathname}"]`) as HTMLElement
-  if (newActive) {
-    const rect = newActive.getBoundingClientRect()
-    highlightElement.style.top = `${rect.top}px`
-    highlightElement.style.left = `${rect.left}px`
-    highlightElement.style.width = `${rect.width}px`
-    highlightElement.style.height = `${rect.height}px`
-    highlightElement.style.opacity = "1"
-    activeElement = newActive
-  } else {
-    highlightElement.style.opacity = "0"
-    activeElement = null
+$: if ($page.url.pathname) {
+  updateHighlightPosition()
+}
+
+const updateHighlightPosition = () => {
+  if ($page.url.pathname && highlightElement) {
+    const newActive = document.querySelector(`[data-path="${$page.url.pathname}"]`) as HTMLElement
+    if (newActive) {
+      const rect = newActive.getBoundingClientRect()
+      highlightElement.style.top = `${rect.top}px`
+      highlightElement.style.left = `${rect.left}px`
+      highlightElement.style.width = `${rect.width}px`
+      highlightElement.style.height = `${rect.height}px`
+      highlightElement.style.opacity = "1"
+      activeElement = newActive
+    } else {
+      highlightElement.style.opacity = "0"
+      activeElement = null
+    }
   }
 }
 
 onMount(() => {
+  window.addEventListener('resize', updateHighlightPosition)
   // Trigger initial position
-  const event = new Event("resize")
-  window.dispatchEvent(event)
+  updateHighlightPosition()
+
+  return () => {
+    window.removeEventListener('resize', updateHighlightPosition)
+  }
 })
 </script>
 
-<div class="relative">
+<div class="relative h-full">
   <div
     bind:this={highlightElement}
     class="absolute -z-10 bg-zinc-200 dark:bg-zinc-700 rounded-lg transition-all duration-300"
-  />
+  ></div>
 
 
-<Sections>
-  <img class="self-start h-12" src="/images/union-logo.svg" alt="Union" />
+<div class="p-6 min-h-full flex flex-col overflow-y-auto">
+  <img class="self-start h-12 mb-6" src="/images/union-logo.svg" alt="Union" />
+  <div class="flex flex-col justify-between flex-1">
   {#each navigation as section}
     <section>
       {#if section.title}
@@ -74,6 +85,7 @@ onMount(() => {
       </ul>
     </section>
   {/each}
+  </div>
 
   <div class="flex flex-col gap-2">
     <ConnectWalletButton/>
@@ -83,5 +95,5 @@ onMount(() => {
     </Button>
   </div>
 
-</Sections>
+</div>
 </div>
