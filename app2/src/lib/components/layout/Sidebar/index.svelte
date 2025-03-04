@@ -1,6 +1,4 @@
 <script lang="ts">
-import Wallet from "$lib/components/ui/Wallet/index.svelte"
-import Sections from "$lib/components/ui/Sections.svelte"
 import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Button from "$lib/components/ui/Button.svelte"
@@ -8,16 +6,11 @@ import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
 import { page } from "$app/stores"
 import { cn } from "$lib/utils"
 import { onMount } from "svelte"
-import { navigation } from "./navigation"
+import { navigation } from "./navigation.js"
 
 const isCurrentPath = (path: string) => $page.url.pathname === path
 
-let activeElement: HTMLElement | null = null
 let highlightElement: HTMLElement
-
-$: if ($page.url.pathname) {
-  updateHighlightPosition()
-}
 
 const updateHighlightPosition = () => {
   if ($page.url.pathname && highlightElement) {
@@ -29,13 +22,17 @@ const updateHighlightPosition = () => {
       highlightElement.style.width = `${rect.width}px`
       highlightElement.style.height = `${rect.height}px`
       highlightElement.style.opacity = "1"
-      activeElement = newActive
     } else {
       highlightElement.style.opacity = "0"
-      activeElement = null
     }
   }
 }
+
+$effect(() => {
+  if ($page.url.pathname) {
+    updateHighlightPosition()
+  }
+})
 
 onMount(() => {
   window.addEventListener("resize", updateHighlightPosition)
