@@ -1,13 +1,8 @@
 import { Schema } from "effect"
-import {
-  AddressAptosCanonical,
-  AddressCosmosCanonical,
-  AddressEvmCanonical,
-  ReceiverAddress
-} from "$lib/schema/address"
 import { RpcType } from "$lib/schema/chain"
 import { EVMWethToken, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
 import { ChannelId } from "$lib/schema/channel"
+import { AddressAptosDisplay, AddressCosmosDisplay, AddressEvmDisplay } from "$lib/schema/address"
 
 const BaseTransferFields = {
   baseToken: TokenRawDenom.annotations({
@@ -30,54 +25,92 @@ const BaseTransferFields = {
   })
 }
 
-export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")({
+const isValidReceiverDisplayForChain = (receiver: string, destinationRpcType: string): boolean => {
+  if (receiver.length === 0) {
+    return false
+  }
+
+  const isValidDisplay = (schema: Schema.Schema<any, any>) => {
+    try {
+      Schema.decodeSync(schema)(receiver, { errors: "all" })
+      return true
+    } catch (e) {
+      return false
+    }
+  }
+
+  switch (destinationRpcType) {
+    case "evm":
+      return isValidDisplay(AddressEvmDisplay)
+    case "cosmos":
+      return isValidDisplay(AddressCosmosDisplay)
+    case "aptos":
+      return isValidDisplay(AddressAptosDisplay)
+    default:
+      return false
+  }
+}
+
+const EVMTransferSchema = Schema.Struct({
   ...BaseTransferFields,
   sourceRpcType: RpcType.pipe(
-    Schema.filter(v => v === "evm"),
-    Schema.annotations({ message: () => "type must be 'evm'" })
+    Schema.filter(v => v === "evm", { message: () => "type must be 'evm'" })
   ),
   wethToken: EVMWethToken,
-  receiver: ReceiverAddress,
-  ucs03address: AddressEvmCanonical.pipe(
-    Schema.annotations({
-      message: () =>
-        "ucs03address must be a valid EVM Zkgm address (e.g., 0x followed by 40 hex chars)"
-    })
+  receiver: Schema.String.pipe(
+    Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )
-}) {}
+}).pipe(
+  Schema.filter(data =>
+    isValidReceiverDisplayForChain(data.receiver, data.destinationRpcType)
+      ? true
+      : `receiver must be a valid display address for ${data.destinationRpcType}`
+  )
+)
 
-export class CosmosTransfer extends Schema.Class<CosmosTransfer>("CosmosTransfer")({
+export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")(EVMTransferSchema) {}
+
+const CosmosTransferSchema = Schema.Struct({
   ...BaseTransferFields,
   sourceRpcType: RpcType.pipe(
-    Schema.filter(v => v === "cosmos"),
-    Schema.annotations({ message: () => "type must be 'cosmos'" })
+    Schema.filter(v => v === "cosmos", { message: () => "type must be 'cosmos'" })
   ),
   wethToken: Schema.Null,
-  receiver: ReceiverAddress,
-  ucs03address: AddressCosmosCanonical.pipe(
-    // Changed to hex
-    Schema.annotations({
-      message: () =>
-        "ucs03address must be a valid Cosmos Zkgm address in hex (e.g., 0x followed by 40 or 64 hex chars)"
-    })
+  receiver: Schema.String.pipe(
+    Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )
-}) {}
+}).pipe(
+  Schema.filter(data =>
+    isValidReceiverDisplayForChain(data.receiver, data.destinationRpcType)
+      ? true
+      : `receiver must be a valid display address for ${data.destinationRpcType}`
+  )
+)
 
-export class AptosTransfer extends Schema.Class<AptosTransfer>("AptosTransfer")({
+export class CosmosTransfer extends Schema.Class<CosmosTransfer>("CosmosTransfer")(
+  CosmosTransferSchema
+) {}
+
+const AptosTransferSchema = Schema.Struct({
   ...BaseTransferFields,
   sourceRpcType: RpcType.pipe(
-    Schema.filter(v => v === "aptos"),
-    Schema.annotations({ message: () => "type must be 'aptos'" })
+    Schema.filter(v => v === "aptos", { message: () => "type must be 'aptos'" })
   ),
   wethToken: Schema.Null,
-  receiver: ReceiverAddress,
-  ucs03address: AddressAptosCanonical.pipe(
-    Schema.annotations({
-      message: () =>
-        "ucs03address must be a valid Aptos Zkgm address (e.g., 0x followed by 64 hex chars)"
-    })
+  receiver: Schema.String.pipe(
+    Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )
-}) {}
+}).pipe(
+  Schema.filter(data =>
+    isValidReceiverDisplayForChain(data.receiver, data.destinationRpcType)
+      ? true
+      : `receiver must be a valid display address for ${data.destinationRpcType}`
+  )
+)
+
+export class AptosTransfer extends Schema.Class<AptosTransfer>("AptosTransfer")(
+  AptosTransferSchema
+) {}
 
 export const TransferSchema = Schema.Union(EVMTransfer, CosmosTransfer, AptosTransfer).annotations({
   identifier: "Transfer",
@@ -86,7 +119,6 @@ export const TransferSchema = Schema.Union(EVMTransfer, CosmosTransfer, AptosTra
 })
 
 export type Transfer = Schema.Schema.Type<typeof TransferSchema>
-
 export type EVMTransferType = Schema.Schema.Type<typeof EVMTransfer>
 export type CosmosTransferType = Schema.Schema.Type<typeof CosmosTransfer>
 export type AptosTransferType = Schema.Schema.Type<typeof AptosTransfer>
