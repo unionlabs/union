@@ -2,7 +2,7 @@ import { Schema } from "effect"
 import { RpcType } from "$lib/schema/chain"
 import { EVMWethToken, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
 import { ChannelId } from "$lib/schema/channel"
-import { isValidCanonicalForChain } from "$lib/utils/convert-display";
+import { isValidCanonicalForChain } from "$lib/utils/convert-display"
 
 const BaseTransferFields = {
   baseToken: TokenRawDenom.annotations({
@@ -49,7 +49,6 @@ const CosmosTransferSchema = Schema.Struct({
   sourceRpcType: RpcType.pipe(
     Schema.filter(v => v === "cosmos", { message: () => "type must be 'cosmos'" })
   ),
-  wethToken: Schema.Null,
   receiver: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )
@@ -70,7 +69,6 @@ const AptosTransferSchema = Schema.Struct({
   sourceRpcType: RpcType.pipe(
     Schema.filter(v => v === "aptos", { message: () => "type must be 'aptos'" })
   ),
-  wethToken: Schema.Null,
   receiver: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )

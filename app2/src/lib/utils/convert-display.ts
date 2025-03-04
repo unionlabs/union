@@ -1,6 +1,6 @@
 import { bech32 } from "@scure/base"
-import {Schema} from "effect";
-import {AddressAptosDisplay, AddressCosmosDisplay, AddressEvmDisplay} from "$lib/schema/address";
+import { Schema } from "effect"
+import { AddressAptosDisplay, AddressCosmosDisplay, AddressEvmDisplay } from "$lib/schema/address"
 
 /**
  * Convert a bech32 display address to canonical bytes
@@ -66,66 +66,72 @@ export function bytesToHex(bytes: Uint8Array): string {
   return `0x${hexString}`
 }
 
-export const isValidCanonicalForChain = (displayAddress: string, destinationRpcType: string): boolean => {
+export const isValidCanonicalForChain = (
+  displayAddress: string,
+  destinationRpcType: string
+): boolean => {
   if (!displayAddress || displayAddress.length === 0) {
-    return false;
+    return false
   }
 
   // Function to validate display format using schema
   const isValidDisplay = (schema: Schema.Schema<any, any>): boolean => {
     try {
-      Schema.decodeSync(schema)(displayAddress, { errors: "all" });
-      return true;
+      Schema.decodeSync(schema)(displayAddress, { errors: "all" })
+      return true
     } catch (e) {
-      return false;
+      return false
     }
-  };
+  }
 
   // First validate the display format using appropriate schema
-  let isValidDisplayFormat = false;
+  let isValidDisplayFormat = false
   switch (destinationRpcType) {
     case "evm":
-      isValidDisplayFormat = isValidDisplay(AddressEvmDisplay);
-      break;
+      isValidDisplayFormat = isValidDisplay(AddressEvmDisplay)
+      break
     case "cosmos":
-      isValidDisplayFormat = isValidDisplay(AddressCosmosDisplay);
-      break;
+      isValidDisplayFormat = isValidDisplay(AddressCosmosDisplay)
+      break
     case "aptos":
-      isValidDisplayFormat = isValidDisplay(AddressAptosDisplay);
-      break;
+      isValidDisplayFormat = isValidDisplay(AddressAptosDisplay)
+      break
     default:
-      return false;
+      return false
   }
 
   // If display format is invalid, canonical format cannot be valid
   if (!isValidDisplayFormat) {
-    return false;
+    return false
   }
 
   // Then convert from display to canonical and validate
   try {
-    let canonicalBytes: Uint8Array;
+    let canonicalBytes: Uint8Array
 
     switch (destinationRpcType) {
-      case "evm":
+      case "evm": {
         // Convert EVM display address (checksum hex) to canonical bytes (20 bytes)
-        canonicalBytes = evmDisplayToCanonical(displayAddress);
-        return canonicalBytes.length === 20;
+        canonicalBytes = evmDisplayToCanonical(displayAddress)
+        return canonicalBytes.length === 20
+      }
 
-      case "cosmos":
+      case "cosmos": {
         // Convert Cosmos display address (bech32) to canonical bytes
-        canonicalBytes = cosmosDisplayToCanonical(displayAddress);
-        return canonicalBytes.length === 20 || canonicalBytes.length === 32;
+        canonicalBytes = cosmosDisplayToCanonical(displayAddress)
+        return canonicalBytes.length === 20 || canonicalBytes.length === 32
+      }
 
-      case "aptos":
+      case "aptos": {
         // Convert Aptos display address (hex) to canonical bytes
-        canonicalBytes = aptosDisplayToCanonical(displayAddress);
-        return canonicalBytes.length === 32;
+        canonicalBytes = aptosDisplayToCanonical(displayAddress)
+        return canonicalBytes.length === 32
+      }
 
       default:
-        return false;
+        return false
     }
   } catch (error) {
-    return false;
+    return false
   }
-};
+}
