@@ -51,8 +51,6 @@ const handleClick = () => {
         {/if}
       </div>
     </div>
-
-    
     <div>
       <DateTimeComponent value={transfer.packet_send_timestamp} showSeconds={showSeconds} />
     </div>
