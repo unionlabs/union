@@ -9,20 +9,30 @@ export interface NavItem {
 
 export interface NavSection {
   title?: string
-  items: NavItem[]
+  items: Array<NavItem>
 }
 
-export const navigation: NavSection[] = [
+export const navigation: Array<NavSection> = [
   {
     items: [
       {
         path: "/transfer",
-        title: "Submit Transfer",
+        title: "Transfer",
         icon: SharpRightArrowIcon
       },
       {
         path: "/transfers",
         title: "Your Transfers",
+        icon: SharpRightArrowIcon
+      },
+      {
+        path: "/dashboard",
+        title: "Dashboard",
+        icon: SharpRightArrowIcon
+      },
+      {
+        path: "/stake",
+        title: "Stake with Escher",
         icon: SharpRightArrowIcon
       }
     ]
