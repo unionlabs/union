@@ -45,11 +45,13 @@ const displayAmount = $derived(
       const decimal = BigInt(10) ** BigInt(info.decimals)
       const whole = amt / decimal
       const fraction = amt % decimal
-      
+
       // Convert fraction to string and remove trailing zeros
-      const fractionStr = fraction === 0n ? "" : 
-        `.${fraction.toString().padStart(info.decimals, "0").replace(/0+$/, "")}`
-      
+      const fractionStr =
+        fraction === 0n
+          ? ""
+          : `.${fraction.toString().padStart(info.decimals, "0").replace(/0+$/, "")}`
+
       return Option.some(`${whole}${fractionStr}`)
     }
   })
@@ -64,7 +66,7 @@ const displayDenom = $derived(
 )
 </script>
 
-<div class="flex items-center gap-1">
+<div class="flex items-center gap-1 font-semibold">
   {#if Option.isSome(displayAmount)}
     <span>{displayAmount.value}</span>
   {/if}
