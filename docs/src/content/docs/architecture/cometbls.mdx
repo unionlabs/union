@@ -19,7 +19,7 @@ These improvements will decrease proving times even further, leading to faster b
 
 Boneh–Lynn–Shacham (BLS) signatures form the foundation of CometBLS.
 They are cheaper to verify for both regular IBC and zero-knowledge proof (zkp) based IBC.
-With BLS signatures, we can aggregate the public keys and the signatures, and verify the aggregated signature with the aggregated private key.
+With BLS signatures, we can aggregate the public keys and the signatures, and verify the aggregated signature with the aggregated public key.
 This has a few advantages:
 
 - Transaction size decreases compared to ECDSA verification. We do not need to transfer all signatures, just the aggregate.
