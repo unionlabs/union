@@ -14,6 +14,7 @@ use unionlabs::{
     encoding::{Bcs, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
+    tuple::AsTuple,
     union::ics23,
     ErrorReporter,
 };
@@ -111,14 +112,17 @@ impl Module {
                     )
                 })
             }
-            SupportedIbcInterface::IbcMoveAptos => ClientState::decode_as::<Bcs>(client_state)
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode client state: {}", ErrorReporter(err)),
-                        None::<()>,
-                    )
-                }),
+            SupportedIbcInterface::IbcMoveAptos => {
+                <ClientState as AsTuple>::Tuple::decode_as::<Bcs>(client_state)
+                    .map(ClientState::from_tuple)
+                    .map_err(|err| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("unable to decode client state: {}", ErrorReporter(err)),
+                            None::<()>,
+                        )
+                    })
+            }
         }
     }
 
@@ -199,7 +203,7 @@ impl ClientModuleServer for Module {
                 )
             })
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcMoveAptos => cs.encode_as::<Bcs>(),
+                SupportedIbcInterface::IbcMoveAptos => cs.as_tuple().encode_as::<Bcs>(),
                 SupportedIbcInterface::IbcSolidity => cs.abi_encode_params(),
             })
             .map(Into::into)

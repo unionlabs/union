@@ -15,6 +15,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 aptos-verifier                          = { workspace = true }
 bcs                                     = { workspace = true }
+bincode                                 = { workspace = true }
 cometbls-light-client                   = { workspace = true, features = ["library"] }
 cosmwasm-std                            = { workspace = true, features = ["abort"] }
 ibc-union-light-client                  = { workspace = true }
