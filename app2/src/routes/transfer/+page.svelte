@@ -4,10 +4,7 @@ import Input from "$lib/components/ui/Input.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { Effect, Exit, Data } from "effect"
-import { type Hash, type TransactionReceipt } from "viem"
-import { sepolia } from "viem/chains"
-import { submitTransfer, switchChain, type SubmitTransferError } from "$lib/services/transfer"
+import { TransferSubmission, nextState, hasFailedExit, isComplete } from "$lib/services/transfer"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -22,60 +19,36 @@ function resetAll() {
   })
 }
 
-type TransferSubmission = Data.TaggedEnum<{
-  Pending: {}
-  InProgress: {}
-  Success: { readonly hash: Hash }
-  Failure: {
-    readonly reason: string
-    readonly message: string
-    readonly error: SubmitTransferError
-  }
-  Interrupted: {}
-}>
+/* Hack to be able to JSON.stringify BigInt */
+interface BigInt {
+  toJSON: () => string
+}
 
-const { Pending, InProgress, Success, Failure, Interrupted } = Data.taggedEnum<TransferSubmission>()
+BigInt["prototype"].toJSON = function () {
+  return this.toString()
+}
 
-let transferSubmission = $state<TransferSubmission>(Pending())
+let transferState = $state<TransferSubmission>(TransferSubmission.Pending())
+
+import { sepolia } from "viem/chains"
+import type { TransactionParams } from "$lib/services/transfer/machine"
+
+const transactionParams: TransactionParams = {
+  chain: sepolia,
+  account: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA" as const, // TODO: Get from wallet
+  value: 1n,
+  to: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA" as const // TODO: Get from form
+}
 
 async function submit() {
-  transferSubmission = InProgress()
-  const switchChainExit = await Effect.runPromiseExit(switchChain(sepolia.id))
-
-  const exit = await Effect.runPromiseExit(
-    submitTransfer({
-      chain: sepolia,
-      account: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
-      value: 1n,
-      to: rawIntents.receiver as `0x${string}`
-    })
-  )
-
-  Exit.match(exit, {
-    onFailure: cause => {
-      if (cause._tag === "Fail") {
-        if (cause.error._tag === "SendTransactionError") {
-          transferSubmission = Failure({
-            reason: "Failed to submit your transfer",
-            message: "This means that the RPCs might be bad",
-            error: cause.error
-          })
-        } else if (cause.error._tag === "CreateWalletClientError") {
-          transferSubmission = Failure({
-            reason: "Could not connect to your wallet",
-            message:
-              "Make sure you have your wallet connected and check if your wallet has any errors in its UI",
-            error: cause.error
-          })
-        }
-      } else {
-        transferSubmission = Interrupted()
-      }
-    },
-    onSuccess: (receipt: TransactionReceipt) => {
-      transferSubmission = Success({ hash: receipt.transactionHash })
+  transferState = await nextState(transferState, transactionParams)
+  while (!hasFailedExit(transferState)) {
+    transferState = await nextState(transferState, transactionParams)
+    // If we're in the final state (TransferReceipt.Complete), stop
+    if (isComplete(transferState)) {
+      break
     }
-  })
+  }
 }
 </script>
 
@@ -135,10 +108,12 @@ async function submit() {
           class="mt-4 self-start"
           variant="primary"
           onclick={submit}
-          disabled={transferSubmission._tag === "InProgress"}
+          disabled={transferState._tag !== "Pending" && !hasFailedExit(transferState) && !isComplete(transferState)}
         >
-          {#if transferSubmission._tag === "InProgress"}
+          {#if transferState._tag !== "Pending" && !hasFailedExit(transferState) && !isComplete(transferState)}
             Submitting...
+          {:else if hasFailedExit(transferState)}
+            Retry
           {:else}
             Submit
           {/if}
@@ -147,28 +122,12 @@ async function submit() {
           class="mt-4 self-start"
           variant="secondary"
           onclick={resetAll}
-          disabled={transferSubmission._tag === "InProgress"}
+          disabled={transferState._tag !== "Pending" && !hasFailedExit(transferState)}
         >
           Reset All
         </Button>
       </div>
-
-      {#if transferSubmission._tag === "Success"}
-        <div class="text-green-500 mt-2">
-          Transaction submitted! Hash: {transferSubmission.hash}
-        </div>
-      {:else if transferSubmission._tag === "Failure"}
-        <div class="text-red-500">
-          <h2 class="text-red-500 mt-2">{transferSubmission.reason}</h2>
-          <pre class="text-red-500 mt-2">
-            {JSON.stringify(transferSubmission.error)}
-          </pre>
-        </div>
-      {:else if transferSubmission._tag === "Interrupted"}
-        <div class="text-red-500">
-          <h2 class="text-red-500 mt-2">This transfer was interrupted</h2>
-        </div>
-      {/if}
+      {JSON.stringify(transferState, null, 2)}
     </div>
   </section>
 </Sections>
