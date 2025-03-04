@@ -10,14 +10,13 @@ import type { SortOrder } from "$lib/schema/sort-order"
 
 export let transferListLatestQuery = (limit = LIMIT) =>
   createQueryGraphql({
-    schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
+    schema: Schema.Struct({ v2_transfers: TransferList }),
     document: graphql(
       `
     query TransferListLatest($limit: Int!) @cached(ttl: 1) {
-      v1_ibc_union_fungible_asset_orders(
-        limit: $limit,
-        distinct_on: sort_order,
-        order_by: { sort_order: desc_nulls_last}) {
+      v2_transfers(args: {
+        p_limit: $limit
+      }) {
       ...TransferListItem
       }
     }
@@ -27,7 +26,7 @@ export let transferListLatestQuery = (limit = LIMIT) =>
     variables: { limit },
     refetchInterval: "1 second",
     writeData: data => {
-      transferList.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders))
+      transferList.data = data.pipe(Option.map(d => d.v2_transfers))
     },
     writeError: error => {
       transferList.error = error
@@ -36,16 +35,14 @@ export let transferListLatestQuery = (limit = LIMIT) =>
 
 export let transferListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT) =>
   createQueryGraphql({
-    schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
+    schema: Schema.Struct({ v2_transfers: TransferList }),
     document: graphql(
       `
     query TransferListPage($page: String!, $limit: Int!) @cached(ttl: 30) {
-      v1_ibc_union_fungible_asset_orders(
-        limit: $limit,
-        distinct_on: sort_order,
-        where: {sort_order: {_lt: $page}},
-        order_by: {sort_order: desc_nulls_last}
-      ) {
+      v2_transfers(args: {
+        p_limit: $limit
+        p_sort_order: $page
+      }) {
       ...TransferListItem
       }
     }
@@ -55,7 +52,7 @@ export let transferListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT
     variables: { page, limit },
     refetchInterval: "30 seconds",
     writeData: data => {
-      transferList.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders))
+      transferList.data = data.pipe(Option.map(d => d.v2_transfers))
     },
     writeError: error => {
       transferList.error = error
@@ -64,16 +61,15 @@ export let transferListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT
 
 export let transferListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT) =>
   createQueryGraphql({
-    schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
+    schema: Schema.Struct({ v2_transfers: TransferList }),
     document: graphql(
       `
     query TransferListPage($page: String!, $limit: Int!) @cached(ttl: 30) {
-      v1_ibc_union_fungible_asset_orders(
-        limit: $limit,
-        distinct_on: sort_order,
-        where: {sort_order: {_gt: $page}},
-        order_by: {sort_order: asc_nulls_last}
-      ) {
+      v2_transfers(args: {
+        p_limit: $limit
+        p_sort_order: $page
+        p_comparison: "gt"
+      }) {
       ...TransferListItem
       }
     }
@@ -83,9 +79,7 @@ export let transferListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT
     variables: { page, limit },
     refetchInterval: "30 seconds",
     writeData: data => {
-      transferList.data = data.pipe(
-        Option.map(d => d.v1_ibc_union_fungible_asset_orders.toReversed())
-      )
+      transferList.data = data.pipe(Option.map(d => d.v2_transfers.toReversed()))
     },
     writeError: error => {
       transferList.error = error

@@ -11,6 +11,7 @@ export let chainsQuery = (environment: Environment) =>
     document: graphql(`
     query Chains($environment: String!) @cached(ttl: 60) {
       v1_ibc_union_chains(where: {enabled: {_eq: true}}) {
+        universal_chain_id
         chain_id,
         display_name,
         addr_prefix,
