@@ -40,7 +40,6 @@ const transactionParams: TransactionParams = {
   to: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA" as const // TODO: Get from form
 }
 
-
 async function submit() {
   transferState = await nextState(transferState, transactionParams)
   while (!hasFailedExit(transferState)) {

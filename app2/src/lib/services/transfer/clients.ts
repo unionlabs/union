@@ -10,7 +10,7 @@ import {
 import { sepolia } from "viem/chains"
 import { getConnectorClient, type GetConnectorClientErrorType } from "@wagmi/core"
 import { wagmiConfig } from "$lib/wallet/evm/wagmi-config"
-import { CreatePublicClientError, CreateWalletClientError, ConnectorClientError } from "./errors"
+import { CreatePublicClientError, CreateWalletClientError, ConnectorClientError } from "./errors.ts"
 
 export const getPublicClient = Effect.try({
   try: () =>

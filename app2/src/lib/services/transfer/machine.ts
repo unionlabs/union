@@ -1,10 +1,10 @@
-import { submitTransfer, switchChain, waitForReceipt } from "."
+import { submitTransfer, switchChain, waitForReceipt } from "./index.ts"
 import {
   SwitchChainState,
   TransferReceiptState,
   TransferSubmission,
   TransferSubmitState
-} from "./state"
+} from "./state.ts"
 import { Effect } from "effect"
 import type { Chain, Address } from "viem"
 

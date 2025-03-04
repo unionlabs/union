@@ -5,8 +5,8 @@ import type {
   SendTransactionParameters,
   WaitForTransactionReceiptErrorType
 } from "viem"
-import { SendTransactionError, WaitForTransactionReceiptError } from "./errors"
-import { getPublicClient, getWalletClient } from "./clients"
+import { SendTransactionError, WaitForTransactionReceiptError } from "./errors.ts"
+import { getPublicClient, getWalletClient } from "./clients.ts"
 
 export const submitTransfer = (transactionArgs: SendTransactionParameters) =>
   Effect.gen(function* () {
