@@ -38,12 +38,12 @@ const updateHighlightPosition = () => {
 }
 
 onMount(() => {
-  window.addEventListener('resize', updateHighlightPosition)
+  window.addEventListener("resize", updateHighlightPosition)
   // Trigger initial position
   updateHighlightPosition()
 
   return () => {
-    window.removeEventListener('resize', updateHighlightPosition)
+    window.removeEventListener("resize", updateHighlightPosition)
   }
 })
 </script>
@@ -56,8 +56,8 @@ onMount(() => {
 
 
 <div class="p-6 min-h-full flex flex-col overflow-y-auto">
-  <img class="self-start h-12 mb-6" src="/images/union-logo.svg" alt="Union" />
-  <div class="flex flex-col justify-between flex-1">
+  <img class="self-start h-12" src="/images/union-logo.svg" alt="Union" />
+  <div class="flex flex-col justify-between flex-1 py-6">
   {#each navigation as section}
     <section>
       {#if section.title}

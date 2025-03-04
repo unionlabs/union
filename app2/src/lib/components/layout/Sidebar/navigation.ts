@@ -1,4 +1,11 @@
-import SharpRightArrowIcon from "$lib/components/icons/SharpRightArrowIcon.svelte"
+import SharpTransferIcon from "$lib/components/icons/SharpTransferIcon.svelte"
+import SharpListIcon from "$lib/components/icons/SharpListIcon.svelte"
+import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
+import SharpStakeIcon from "$lib/components/icons/SharpStakeIcon.svelte"
+import SharpPacketsIcon from "$lib/components/icons/SharpPacketsIcon.svelte"
+import SharpConnectionsIcon from "$lib/components/icons/SharpConnectionsIcon.svelte"
+import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
+import SharpClientsIcon from "$lib/components/icons/SharpClientsIcon.svelte"
 import type { Component } from "svelte"
 
 export interface NavItem {
@@ -18,22 +25,22 @@ export const navigation: Array<NavSection> = [
       {
         path: "/transfer",
         title: "Transfer",
-        icon: SharpRightArrowIcon
+        icon: SharpTransferIcon
       },
       {
         path: "/transfers",
         title: "Your Transfers",
-        icon: SharpRightArrowIcon
+        icon: SharpListIcon
       },
       {
         path: "/dashboard",
         title: "Dashboard",
-        icon: SharpRightArrowIcon
+        icon: SharpDashboardIcon
       },
       {
         path: "/stake",
         title: "Stake with Escher",
-        icon: SharpRightArrowIcon
+        icon: SharpStakeIcon
       }
     ]
   },
@@ -43,27 +50,27 @@ export const navigation: Array<NavSection> = [
       {
         path: "/explorer/transfers",
         title: "Transfers",
-        icon: SharpRightArrowIcon
+        icon: SharpListIcon
       },
       {
         path: "/explorer/packets",
         title: "Packets",
-        icon: SharpRightArrowIcon
+        icon: SharpPacketsIcon
       },
       {
         path: "/explorer/connections",
         title: "Connections",
-        icon: SharpRightArrowIcon
+        icon: SharpConnectionsIcon
       },
       {
         path: "/explorer/channels",
         title: "Channels",
-        icon: SharpRightArrowIcon
+        icon: SharpChannelsIcon
       },
       {
         path: "/explorer/clients",
         title: "Clients",
-        icon: SharpRightArrowIcon
+        icon: SharpClientsIcon
       }
     ]
   }
