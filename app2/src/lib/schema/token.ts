@@ -1,7 +1,7 @@
 import { Schema } from "effect"
 import { Hex } from "$lib/schema/hex"
-import { ChainId } from "./chain"
-import { ChannelId } from "./channel"
+import { ChainId } from "./chain.ts"
+import { ChannelId } from "./channel.ts"
 
 export const TokenRawDenom = Hex.pipe(Schema.brand("TokenRawDenom"))
 export const TokenRawAmount = Schema.BigInt.pipe(Schema.brand("TokenRawAmount"))
