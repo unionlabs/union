@@ -1,14 +1,24 @@
-import { submitTransfer, switchChain, waitForReceipt } from "$lib/services/transfer"
+import { submitTransfer, switchChain, waitForReceipt } from "."
 import {
   SwitchChainState,
   TransferReceiptState,
   TransferSubmission,
   TransferSubmitState
-} from "$lib/services/transfer-state"
+} from "./state"
 import { Effect } from "effect"
-import { sepolia } from "viem/chains"
+import type { Chain, Address } from "viem"
 
-export async function nextState(ts: TransferSubmission): Promise<TransferSubmission> {
+export type TransactionParams = {
+  chain: Chain
+  account: Address
+  value: bigint
+  to: Address
+}
+
+export async function nextState(
+  ts: TransferSubmission,
+  params: TransactionParams
+): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
     Pending: () => {
       return TransferSubmission.SwitchChain({ state: SwitchChainState.InProgress() })
@@ -16,8 +26,7 @@ export async function nextState(ts: TransferSubmission): Promise<TransferSubmiss
     SwitchChain: ({ state }) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
-          // TODO: don't hardcode
-          const exit = await Effect.runPromiseExit(switchChain(sepolia.id))
+          const exit = await Effect.runPromiseExit(switchChain(params.chain.id))
           return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
         },
         Complete: ({ exit }) => {
@@ -33,12 +42,7 @@ export async function nextState(ts: TransferSubmission): Promise<TransferSubmiss
         InProgress: async () => {
           const exit = await Effect.runPromiseExit(
             // TODO: don't hardcode
-            submitTransfer({
-              chain: sepolia,
-              account: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
-              value: 1n,
-              to: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA"
-            })
+            submitTransfer(params)
           )
           return TransferSubmission.TransferSubmit({
             state: TransferSubmitState.Complete({ exit })

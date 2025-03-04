@@ -1,7 +1,6 @@
 import { Data, Exit, type Effect } from "effect"
 import type { Hash, TransactionReceipt } from "viem"
-import type { submitTransfer, switchChain, waitForReceipt } from "./transfer"
-import type { appendAll } from "effect/Iterable"
+import type { submitTransfer, switchChain, waitForReceipt } from "./transactions"
 
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 

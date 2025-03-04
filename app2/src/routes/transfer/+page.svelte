@@ -4,16 +4,7 @@ import Input from "$lib/components/ui/Input.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { Cause, Effect, Exit } from "effect"
-import { sepolia } from "viem/chains"
-import {
-  submitTransfer,
-  switchChain,
-  waitForReceipt,
-  type SubmitTransferError
-} from "$lib/services/transfer"
-import { SwitchChainState, TransferSubmission } from "$lib/services/transfer-state"
-import { nextState } from "$lib/services/transfer-machine"
+import { TransferSubmission, nextState } from "$lib/services/transfer"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -39,13 +30,23 @@ BigInt["prototype"].toJSON = function () {
 
 let transferState = $state<TransferSubmission>(TransferSubmission.Pending())
 
+import { sepolia } from "viem/chains"
+import type { TransactionParams } from "$lib/services/transfer/machine"
+
+const transactionParams: TransactionParams = {
+  chain: sepolia,
+  account: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA" as const, // TODO: Get from wallet
+  value: 1n,
+  to: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA" as const // TODO: Get from form
+}
+
 async function submit() {
-  transferState = await nextState(transferState)
-  transferState = await nextState(transferState)
-  transferState = await nextState(transferState)
-  transferState = await nextState(transferState)
-  transferState = await nextState(transferState)
-  transferState = await nextState(transferState)
+  transferState = await nextState(transferState, transactionParams)
+  transferState = await nextState(transferState, transactionParams)
+  transferState = await nextState(transferState, transactionParams)
+  transferState = await nextState(transferState, transactionParams)
+  transferState = await nextState(transferState, transactionParams)
+  transferState = await nextState(transferState, transactionParams)
 }
 </script>
 
