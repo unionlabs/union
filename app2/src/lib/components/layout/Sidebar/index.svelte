@@ -8,7 +8,7 @@ import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
 </script>
 
 <Sections>
-  <h1 class="font-extrabold text-3xl uppercase">Union</h1>
+  <img class="self-start h-12" src="/images/union-logo.svg" alt="Union" />
   <section>
     <ul>
       <li><a href="/transfer" class="underline">Transfer</a></li>
