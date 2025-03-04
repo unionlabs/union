@@ -20,6 +20,7 @@
     "@eslint/js": "^9.20.0",
     "@keplr-wallet/types": "^0.12.190",
     "@leapwallet/types": "^0.0.5",
+    "@scure/base": "^1.2.4",
     "@sveltejs/adapter-static": "^3.0.8",
     "@sveltejs/kit": "^2.17.2",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
