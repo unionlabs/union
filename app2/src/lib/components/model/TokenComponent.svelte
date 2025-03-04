@@ -59,9 +59,6 @@ const displayDenom = $derived(
 )
 </script>
 
-{token}
-<button onclick={() => console.log(tokensStore)}>latest</button>
-
 <div class="flex items-center gap-1">
   {#if Option.isSome(displayAmount)}
     <span>{displayAmount.value}</span>

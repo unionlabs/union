@@ -12,7 +12,7 @@ export class TokenCw20 extends Schema.Class<TokenCw20>("TokenCw20")({
 
 export class TokenSource extends Schema.Class<TokenSource>("TokenSource")({
   name: Schema.String,
-  logo_uri: Schema.String,
+  logo_uri: Schema.OptionFromNullOr(Schema.String),
   source_uri: Schema.String
 }) {}
 
@@ -21,13 +21,13 @@ export class TokenSourceWrapping extends Schema.Class<TokenSourceWrapping>("Toke
   unwrapped_chain: Schema.Struct({
     chain_id: ChainId
   }),
-  unwrapped_denom: Schema.String
+  unwrapped_denom: TokenRawDenom
 }) {}
 
 export class TokenSourceInfo extends Schema.Class<TokenSourceInfo>("TokenSourceInfo")({
   update_timestamp: Schema.DateTimeUtc,
   source: TokenSource,
-  wrapping: Schema.Option(TokenSourceWrapping)
+  wrapping: Schema.Array(TokenSourceWrapping)
 }) {}
 
 export class TokenRepresentation extends Schema.Class<TokenRepresentation>("TokenRepresentation")({
@@ -50,12 +50,12 @@ export class TokenWrapping extends Schema.Class<TokenWrapping>("TokenWrapping")(
 
 export class Token extends Schema.Class<Token>("Token")({
   denom: TokenRawDenom,
-  cw20: Schema.Option(TokenCw20),
+  cw20: Schema.OptionFromNullOr(TokenCw20),
   chain: Schema.Struct({
     chain_id: ChainId
   }),
   representations: Schema.Array(TokenRepresentation),
-  wrapping: Schema.Option(TokenWrapping)
+  wrapping: Schema.Array(TokenWrapping)
 }) {}
 
 export const Tokens = Schema.Array(Token)
