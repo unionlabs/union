@@ -2,6 +2,7 @@
 import { cn } from "$lib/utils"
 import type { HTMLAttributes } from "svelte/elements"
 import type { Snippet } from "svelte"
+import { scale } from "svelte/transition"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   trigger: Snippet
@@ -16,12 +17,33 @@ let triggerElement: HTMLDivElement
 let isVisible = $state(false)
 let isHoveringTooltip = $state(false)
 
+let lastMouseEvent: MouseEvent | undefined
+let tooltipReady = $state(false)
+let showTimeout: number | undefined
+
 function showTooltip(e: MouseEvent) {
-  updatePosition(e)
-  isVisible = true
+  lastMouseEvent = e
+  showTimeout = window.setTimeout(() => {
+    isVisible = true
+  }, 1000)
 }
 
+$effect(() => {
+  if (isVisible && tooltipElement && lastMouseEvent) {
+    tooltipReady = true
+    updatePosition(lastMouseEvent)
+  } else {
+    tooltipReady = false
+  }
+})
+
 function hideTooltip() {
+  // Clear any pending show timeout
+  if (showTimeout) {
+    clearTimeout(showTimeout)
+    showTimeout = undefined
+  }
+
   // Only hide if we're not hovering the tooltip
   if (!isHoveringTooltip) {
     isVisible = false
@@ -38,12 +60,12 @@ function onTooltipLeave() {
 }
 
 function updatePosition(e?: MouseEvent) {
-  if (!(tooltipElement && e)) return
+  if (!(tooltipElement && e && tooltipReady)) return
 
   const tooltipRect = tooltipElement.getBoundingClientRect()
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
-  const VERTICAL_OFFSET = 2
+  const VERTICAL_OFFSET = 15
 
   // Start with cursor position relative to viewport
   let x = e.clientX - tooltipRect.width / 2 // Center horizontally on cursor
@@ -83,7 +105,6 @@ const tooltipClasses = $derived(
   bind:this={triggerElement}
   onmouseenter={showTooltip}
   onmouseleave={hideTooltip}
-  onmousemove={updatePosition}
 >
   {@render trigger()}
 </div>
@@ -94,6 +115,11 @@ const tooltipClasses = $derived(
   class={tooltipClasses}
   onmouseenter={onTooltipEnter}
   onmouseleave={onTooltipLeave}
+  transition:scale|local={{
+    duration: 150,
+    start: 0.95,
+    opacity: 0
+  }}
   {...rest}
 >
   {@render content()}
