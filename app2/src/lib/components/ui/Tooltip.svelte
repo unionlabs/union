@@ -14,6 +14,7 @@ let { trigger, content, class: className = "", ...rest }: Props = $props()
 let tooltipElement: HTMLDivElement
 let triggerElement: HTMLDivElement
 let isVisible = $state(false)
+let isHoveringTooltip = $state(false)
 
 function showTooltip(e: MouseEvent) {
   updatePosition(e)
@@ -21,6 +22,18 @@ function showTooltip(e: MouseEvent) {
 }
 
 function hideTooltip() {
+  // Only hide if we're not hovering the tooltip
+  if (!isHoveringTooltip) {
+    isVisible = false
+  }
+}
+
+function onTooltipEnter() {
+  isHoveringTooltip = true
+}
+
+function onTooltipLeave() {
+  isHoveringTooltip = false
   isVisible = false
 }
 
@@ -30,7 +43,7 @@ function updatePosition(e?: MouseEvent) {
   const tooltipRect = tooltipElement.getBoundingClientRect()
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
-  const VERTICAL_OFFSET = 15
+  const VERTICAL_OFFSET = 2
 
   // Start with cursor position relative to viewport
   let x = e.clientX - tooltipRect.width / 2 // Center horizontally on cursor
@@ -79,6 +92,8 @@ const tooltipClasses = $derived(
 <div 
   bind:this={tooltipElement}
   class={tooltipClasses}
+  onmouseenter={onTooltipEnter}
+  onmouseleave={onTooltipLeave}
   {...rest}
 >
   {@render content()}
