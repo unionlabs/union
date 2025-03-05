@@ -6,6 +6,7 @@ import SharpPacketsIcon from "$lib/components/icons/SharpPacketsIcon.svelte"
 import SharpConnectionsIcon from "$lib/components/icons/SharpConnectionsIcon.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
 import SharpClientsIcon from "$lib/components/icons/SharpClientsIcon.svelte"
+import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
 import type { Component } from "svelte"
 
 export interface NavItem {
@@ -75,7 +76,7 @@ export const navigation: Array<NavSection> = [
       {
         path: "/explorer/tokens",
         title: "Tokens",
-        icon: SharpListIcon
+        icon: OutlineControlPointDuplicate
       }
     ]
   }
