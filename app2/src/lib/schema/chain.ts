@@ -1,7 +1,8 @@
 import { Option, Schema } from "effect"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
-export const UniversalChainId = Schema.String.pipe(Schema.brand("UniversalChainId"))
+// e.g. union.union-testnet-9
+export const UniversalChainId = Schema.String.pipe(Schema.brand("UniversalChainId")).pipe(Schema.pattern(/^.*\..*$/)) 
 export const ChainDisplayName = Schema.String.pipe(Schema.brand("ChainDisplayName"))
 
 export const RpcType = Schema.Union(
@@ -26,6 +27,7 @@ export class ChainReference extends Schema.Class<Chain>("ChainReference")({
 
 export class Chain extends Schema.Class<Chain>("Chain")({
   chain_id: ChainId,
+  universal_chain_id: UniversalChainId,
   display_name: ChainDisplayName,
   rpc_type: RpcType,
   addr_prefix: Schema.String,

@@ -12,6 +12,7 @@ export let chainsQuery = (environment: Environment) =>
     query Chains($environment: String!) @cached(ttl: 60) {
       v1_ibc_union_chains(where: {enabled: {_eq: true}}) {
         chain_id,
+        universal_chain_id,
         display_name,
         addr_prefix,
         rpc_type,
