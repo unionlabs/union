@@ -82,14 +82,13 @@ const displayDenom = $derived(
   
   {#snippet content()}
     {#if Option.isSome(token)}
-      
-        <div class="text-xs flex flex-col gap-4 text-neutral-400">
+        <div class="text-sm flex flex-col gap-4 text-neutral-400">
           <section class="flex justify-between items-center">
             {#if token.value.representations.length > 0}
-              <h2 class="text-white font-bold text-sm">{token.value.representations[0].symbol}</h2>
+              <h2 class="text-white font-bold text-lg">{token.value.representations[0].symbol}</h2>
             {/if}
-            <div class="bg-union-accent-500 text-black font-bold rounded px-1">
-              {Option.isSome(token.value.cw20) ? "CW20" : "BANK"}
+            <div class="bg-sky-400 text-black font-bold rounded px-1">
+              {Option.isSome(token.value.cw20) ? "?" : "??"}
             </div>
           </section>
 

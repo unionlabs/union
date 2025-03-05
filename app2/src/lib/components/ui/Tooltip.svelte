@@ -66,7 +66,7 @@ $effect(() => {
 
 const tooltipClasses = $derived(
   cn(
-    "z-40 overflow-hidden border bg-black px-3 py-1.5 text-sm text-popover-foreground shadow-md",
+    "z-40 overflow-hidden border border-1 border-zinc-800 bg-black p-2 rounded shadow-md",
     "invisible group-hover:visible absolute left-1/2",
     position.placement === "top" ? "bottom-full" : "top-full",
     className
