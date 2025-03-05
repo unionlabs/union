@@ -5,7 +5,7 @@ use unionlabs_primitives::H512;
 use crate::encoding::{Bincode, Encode};
 
 #[model]
-#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+#[derive(bincode::Encode, bincode::Decode)]
 pub struct SignedData<T> {
     pub signature: H512,
     pub data: T,

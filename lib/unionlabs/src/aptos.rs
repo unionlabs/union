@@ -6,6 +6,7 @@ pub mod ledger_info;
 pub mod object;
 pub mod public_key;
 pub mod signature;
+#[cfg(feature = "bincode")]
 pub mod signed_data;
 pub mod sparse_merkle_proof;
 pub mod state_proof;
