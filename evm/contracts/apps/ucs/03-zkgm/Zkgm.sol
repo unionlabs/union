@@ -202,6 +202,18 @@ library ZkgmLib {
         return operand;
     }
 
+    function encodeForward(
+        Forward memory forward
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            forward.previousDestinationChannelId,
+            forward.nextSourceChannelId,
+            forward.timeoutHeight,
+            forward.timeoutTimestamp,
+            forward.instruction
+        );
+    }
+
     function decodeForward(
         bytes calldata stream
     ) internal pure returns (Forward calldata) {
