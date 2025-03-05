@@ -267,5 +267,3 @@ replace (
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 	github.com/tunabay/go-bitarray => github.com/poisonphang/go-bitarray v0.0.0-20240912214703-d6127bb4d1bd
 )
-
-replace github.com/zondax/hid => github.com/unionlabs/hid v0.0.0-20250305035010-a36753add31a
