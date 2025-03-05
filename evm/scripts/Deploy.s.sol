@@ -244,7 +244,8 @@ abstract contract UnionScript is UnionBase {
                 abi.encode(
                     address(new UCS03Zkgm()),
                     abi.encodeCall(
-                                   UCS03Zkgm.initialize, (IIBCModulePacket(handler), owner, IWETH(weth))
+                        UCS03Zkgm.initialize,
+                        (IIBCModulePacket(handler), owner, IWETH(weth))
                     )
                 )
             )

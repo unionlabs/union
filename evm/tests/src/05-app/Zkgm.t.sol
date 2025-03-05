@@ -145,9 +145,9 @@ contract TestERC20 is ERC20 {
     uint8 _decimals;
 
     constructor(
-                string memory name,
-                string memory symbol,
-                uint8 d
+        string memory name,
+        string memory symbol,
+        uint8 d
     ) ERC20(name, symbol) {
         _decimals = d;
     }
@@ -1353,9 +1353,7 @@ contract ZkgmTests is Test {
         assertEq(zkgm.channelBalanceV2(sourceChannelId, path, token), 0);
         zkgm.doIncreaseOutstanding(sourceChannelId, path, token, amount);
         assertEq(zkgm.channelBalanceV2(sourceChannelId, path, token), amount);
-        zkgm.doDecreaseOutstanding(
-            sourceChannelId, ZkgmLib.reverseChannelPath(path), token, amount
-        );
+        zkgm.doDecreaseOutstanding(sourceChannelId, path, token, amount);
         assertEq(zkgm.channelBalanceV2(sourceChannelId, path, token), 0);
     }
 
@@ -1455,9 +1453,10 @@ contract ZkgmTests is Test {
                 quoteAmount: baseAmount
             })
         );
-        assertEq(zkgm.channelBalanceV2(destinationChannelId, path, quoteToken), 0);
+        assertEq(
+            zkgm.channelBalanceV2(destinationChannelId, path, quoteToken), 0
+        );
     }
-
 
     function test_onRecvPacket_transferNative_unwrap_channel_noOutstanding(
         uint32 sourceChannelId,
@@ -1562,6 +1561,357 @@ contract ZkgmTests is Test {
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: baseAmount
             })
+        );
+    }
+
+    function internalOnAckOrder(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 path,
+        bytes32 salt,
+        address relayer,
+        FungibleAssetOrder memory order,
+        bytes memory ack
+    ) internal {
+        vm.prank(address(handler));
+        zkgm.onAcknowledgementPacket(
+            IBCPacket({
+                sourceChannelId: sourceChannelId,
+                destinationChannelId: destinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: salt,
+                        path: path,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_1,
+                            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                            operand: ZkgmLib.encodeFungibleAssetOrder(order)
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            ack,
+            relayer
+        );
+    }
+
+    function test_onAckPacket_transferNative_unwrap_successAck_protocolFill_noop(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        uint192 path,
+        bytes32 salt,
+        bytes memory sender,
+        bytes memory baseToken,
+        string memory baseTokenSymbol,
+        string memory baseTokenName,
+        uint8 baseTokenDecimals,
+        uint256 baseAmount,
+        bytes memory quoteToken,
+        uint256 quoteAmount
+    ) public {
+        vm.assume(path != 0);
+        vm.assume(sourceChannelId != 0);
+        vm.assume(destinationChannelId != 0);
+        internalOnAckOrder(
+            sourceChannelId,
+            destinationChannelId,
+            path,
+            salt,
+            relayer,
+            FungibleAssetOrder({
+                sender: sender,
+                receiver: abi.encodePacked(address(this)),
+                baseToken: baseToken,
+                baseTokenPath: ZkgmLib.reverseChannelPath(path),
+                baseTokenSymbol: baseTokenSymbol,
+                baseTokenName: baseTokenName,
+                baseTokenDecimals: baseTokenDecimals,
+                baseAmount: baseAmount,
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            }),
+            ZkgmLib.encodeAck(
+                Ack({
+                    tag: ZkgmLib.ACK_SUCCESS,
+                    innerAck: ZkgmLib.encodeFungibleAssetOrderAck(
+                        FungibleAssetOrderAck({
+                            fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
+                            marketMaker: ZkgmLib.ACK_EMPTY
+                        })
+                    )
+                })
+            )
+        );
+        (, bytes32[] memory writeSlots) = vm.accesses(address(zkgm));
+        assertEq(writeSlots.length, 0);
+    }
+
+    function test_onAckPacket_transfer_successAck_marketMakerFill_unescrowAndPay(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        uint192 path,
+        bytes32 salt,
+        bytes memory sender,
+        uint8 baseTokenDecimals,
+        uint256 baseAmount,
+        bytes memory quoteToken,
+        uint256 quoteAmount
+    ) public {
+        vm.assume(relayer != address(0));
+        vm.assume(path > 0);
+        vm.assume(sourceChannelId > 0);
+        vm.assume(destinationChannelId > 0);
+        vm.assume(baseAmount > 0);
+        vm.assume(quoteAmount > 0);
+        zkgm.doIncreaseOutstanding(
+            sourceChannelId, path, address(erc20), baseAmount
+        );
+        erc20.mint(address(zkgm), baseAmount);
+        vm.expectEmit();
+        emit IERC20.Transfer(address(zkgm), relayer, baseAmount);
+        vm.prank(address(handler));
+        internalOnAckOrder(
+            sourceChannelId,
+            destinationChannelId,
+            path,
+            salt,
+            relayer,
+            FungibleAssetOrder({
+                sender: sender,
+                receiver: abi.encodePacked(address(this)),
+                baseToken: abi.encodePacked(erc20),
+                baseTokenPath: 0,
+                baseTokenSymbol: erc20.symbol(),
+                baseTokenName: erc20.name(),
+                baseTokenDecimals: erc20.decimals(),
+                baseAmount: baseAmount,
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            }),
+            ZkgmLib.encodeAck(
+                Ack({
+                    tag: ZkgmLib.ACK_SUCCESS,
+                    innerAck: ZkgmLib.encodeFungibleAssetOrderAck(
+                        FungibleAssetOrderAck({
+                            fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
+                            marketMaker: abi.encodePacked(relayer)
+                        })
+                    )
+                })
+            )
+        );
+    }
+
+    function test_onAckPacket_transfer_successAck_marketMakerFill_mintAndPay(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        uint192 path,
+        bytes32 salt,
+        bytes memory sender,
+        uint8 baseTokenDecimals,
+        uint256 baseAmount,
+        bytes memory quoteToken,
+        uint256 quoteAmount
+    ) public {
+        vm.assume(relayer != address(0));
+        vm.assume(path > 0);
+        vm.assume(sourceChannelId > 0);
+        vm.assume(destinationChannelId > 0);
+        vm.assume(baseAmount > 0);
+        vm.assume(quoteAmount > 0);
+        vm.expectEmit();
+        emit IERC20.Transfer(address(0), relayer, baseAmount);
+        vm.prank(address(handler));
+        internalOnAckOrder(
+            sourceChannelId,
+            destinationChannelId,
+            path,
+            salt,
+            relayer,
+            FungibleAssetOrder({
+                sender: sender,
+                receiver: abi.encodePacked(address(this)),
+                baseToken: abi.encodePacked(erc20),
+                baseTokenPath: ZkgmLib.reverseChannelPath(path),
+                baseTokenSymbol: erc20.symbol(),
+                baseTokenName: erc20.name(),
+                baseTokenDecimals: erc20.decimals(),
+                baseAmount: baseAmount,
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            }),
+            ZkgmLib.encodeAck(
+                Ack({
+                    tag: ZkgmLib.ACK_SUCCESS,
+                    innerAck: ZkgmLib.encodeFungibleAssetOrderAck(
+                        FungibleAssetOrderAck({
+                            fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
+                            marketMaker: abi.encodePacked(relayer)
+                        })
+                    )
+                })
+            )
+        );
+    }
+
+    function test_onAckPacket_transfer_failureAck_unescrowRefund(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        uint192 path,
+        bytes32 salt,
+        address sender,
+        bytes memory receiver,
+        uint8 baseTokenDecimals,
+        uint256 baseAmount,
+        bytes memory quoteToken,
+        uint256 quoteAmount
+    ) public {
+        vm.assume(sender != address(0));
+        vm.assume(relayer != address(0));
+        vm.assume(path > 0);
+        vm.assume(sourceChannelId > 0);
+        vm.assume(destinationChannelId > 0);
+        vm.assume(baseAmount > 0);
+        vm.assume(quoteAmount > 0);
+        erc20.mint(address(zkgm), baseAmount);
+        zkgm.doIncreaseOutstanding(
+            sourceChannelId, path, address(erc20), baseAmount
+        );
+        vm.expectEmit();
+        emit IERC20.Transfer(address(zkgm), sender, baseAmount);
+        vm.prank(address(handler));
+        internalOnAckOrder(
+            sourceChannelId,
+            destinationChannelId,
+            path,
+            salt,
+            relayer,
+            FungibleAssetOrder({
+                sender: abi.encodePacked(sender),
+                receiver: receiver,
+                baseToken: abi.encodePacked(erc20),
+                baseTokenPath: 0,
+                baseTokenSymbol: erc20.symbol(),
+                baseTokenName: erc20.name(),
+                baseTokenDecimals: erc20.decimals(),
+                baseAmount: baseAmount,
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            }),
+            ZkgmLib.encodeAck(
+                Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
+            )
+        );
+    }
+
+    function test_onAckPacket_transfer_failureAck_unescrowRefund_decreaseOutstanding(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        uint192 path,
+        bytes32 salt,
+        address sender,
+        bytes memory receiver,
+        uint8 baseTokenDecimals,
+        uint256 baseAmount,
+        bytes memory quoteToken,
+        uint256 quoteAmount
+    ) public {
+        vm.assume(sender != address(0));
+        vm.assume(relayer != address(0));
+        vm.assume(path > 0);
+        vm.assume(sourceChannelId > 0);
+        vm.assume(destinationChannelId > 0);
+        vm.assume(baseAmount > 0);
+        vm.assume(quoteAmount > 0);
+        erc20.mint(address(zkgm), baseAmount);
+        zkgm.doIncreaseOutstanding(
+            sourceChannelId, path, address(erc20), baseAmount
+        );
+        vm.prank(address(handler));
+        internalOnAckOrder(
+            sourceChannelId,
+            destinationChannelId,
+            path,
+            salt,
+            relayer,
+            FungibleAssetOrder({
+                sender: abi.encodePacked(sender),
+                receiver: receiver,
+                baseToken: abi.encodePacked(erc20),
+                baseTokenPath: 0,
+                baseTokenSymbol: erc20.symbol(),
+                baseTokenName: erc20.name(),
+                baseTokenDecimals: erc20.decimals(),
+                baseAmount: baseAmount,
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            }),
+            ZkgmLib.encodeAck(
+                Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
+            )
+        );
+        assertEq(
+            zkgm.channelBalanceV2(sourceChannelId, path, address(erc20)), 0
+        );
+    }
+
+    function test_onAckPacket_transfer_failureAck_mintRefund(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        uint192 path,
+        bytes32 salt,
+        address sender,
+        bytes memory receiver,
+        uint8 baseTokenDecimals,
+        uint256 baseAmount,
+        bytes memory quoteToken,
+        uint256 quoteAmount
+    ) public {
+        vm.assume(sender != address(0));
+        vm.assume(relayer != address(0));
+        vm.assume(path > 0);
+        vm.assume(sourceChannelId > 0);
+        vm.assume(destinationChannelId > 0);
+        vm.assume(baseAmount > 0);
+        vm.assume(quoteAmount > 0);
+        vm.expectEmit();
+        emit IERC20.Transfer(address(0), sender, baseAmount);
+        vm.prank(address(handler));
+        internalOnAckOrder(
+            sourceChannelId,
+            destinationChannelId,
+            path,
+            salt,
+            relayer,
+            FungibleAssetOrder({
+                sender: abi.encodePacked(sender),
+                receiver: receiver,
+                baseToken: abi.encodePacked(erc20),
+                baseTokenPath: path,
+                baseTokenSymbol: erc20.symbol(),
+                baseTokenName: erc20.name(),
+                baseTokenDecimals: erc20.decimals(),
+                baseAmount: baseAmount,
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            }),
+            ZkgmLib.encodeAck(
+                Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
+            )
         );
     }
 }
