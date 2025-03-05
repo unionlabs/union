@@ -104,5 +104,6 @@ interface IIBCPacket is
     IIBCPacketAck,
     IIBCPacketTimeout,
     IIBCPacketBatchSend,
-    IIBCPacketBatchAck
+    IIBCPacketBatchAck,
+    IIBCModulePacket
 {}
