@@ -5,6 +5,7 @@ import { Effect, Option } from "effect"
 import Truncate from "$lib/components/ui/Truncate.svelte"
 import { tokensQuery } from "$lib/queries/tokens.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
+import Tooltip from "$lib/components/ui/Tooltip.svelte"
 
 interface Props {
   chain: Chain
@@ -67,11 +68,41 @@ const displayDenom = $derived(
     onSome: info => info.symbol
   })
 )
+function formatTokenDetails(token: NonNullable<typeof token.value>) {
+  const details = []
+
+  // Add basic info
+  details.push(`Denom: ${token.denom}`)
+
+  // Add CW20 info if present
+  if (Option.isSome(token.cw20)) {
+    details.push(`CW20 Address: ${token.cw20.value.cw20_token_address}`)
+  }
+
+  // Add representation info
+  token.representations.forEach(rep => {
+    details.push(`${rep.name} (${rep.symbol})`)
+  })
+
+  return details.join("\n")
+}
 </script>
 
-<div class="flex items-center gap-1 font-semibold">
-  {#if Option.isSome(displayAmount)}
-    <span>{displayAmount.value}</span>
-  {/if}
-  <Truncate value={displayDenom} maxLength={10} />
-</div>
+
+<Tooltip>
+  {#snippet trigger()}
+    <div class="flex items-center gap-1 font-semibold">
+      {#if Option.isSome(displayAmount)}
+        <span>{displayAmount.value}</span>
+      {/if}
+      <Truncate value={displayDenom} maxLength={10} />
+    </div>
+  {/snippet}
+  
+  {#snippet content()}
+    {Option.match(token, {
+      onNone: () => "Loading token details...",
+      onSome: formatTokenDetails
+    })}
+  {/snippet}
+</Tooltip>
