@@ -139,20 +139,20 @@ onMount(() => {
           <div>
             <Label>Send Transaction Hash</Label>
             <TransactionHashComponent
-              hash={transfer.packet_send_transaction_hash}
+              hash={transfer.transfer_send_transaction_hash}
             />
           </div>
 
           <div>
             <Label>Send Timestamp</Label>
-            <div>{DateTime.formatIso(transfer.packet_send_timestamp)}</div>
+            <div>{DateTime.formatIso(transfer.transfer_send_timestamp)}</div>
           </div>
 
           <div>
             <Label>Receive Timestamp</Label>
-            {#if Option.isSome(transfer.packet_recv_timestamp)}
+            {#if Option.isSome(transfer.transfer_recv_timestamp)}
               <div>
-                {DateTime.formatIso(transfer.packet_recv_timestamp.value)}
+                {DateTime.formatIso(transfer.transfer_recv_timestamp.value)}
               </div>
             {:else}
               <div class="text-yellow-500">Pending</div>

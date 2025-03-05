@@ -2,7 +2,9 @@ import { Option, Schema } from "effect"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
 // e.g. union.union-testnet-9
-export const UniversalChainId = Schema.String.pipe(Schema.brand("UniversalChainId")).pipe(Schema.pattern(/^.*\..*$/)) 
+export const UniversalChainId = Schema.String.pipe(Schema.brand("UniversalChainId")).pipe(
+  Schema.pattern(/^.*\..*$/)
+)
 export const ChainDisplayName = Schema.String.pipe(Schema.brand("ChainDisplayName"))
 
 export const RpcType = Schema.Union(
