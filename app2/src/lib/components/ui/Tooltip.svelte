@@ -13,20 +13,13 @@ type Props = HTMLAttributes<HTMLDivElement> & {
 let { trigger, content, class: className = "", ...rest }: Props = $props()
 
 let tooltipElement: HTMLDivElement
-let triggerElement: HTMLDivElement
 let isVisible = $state(false)
 let isHoveringTooltip = $state(false)
+let isHoveringTrigger = $state(false)
 
 let lastMouseEvent: MouseEvent | undefined
 let tooltipReady = $state(false)
 let showTimeout: number | undefined
-
-function showTooltip(e: MouseEvent) {
-  lastMouseEvent = e
-  showTimeout = window.setTimeout(() => {
-    isVisible = true
-  }, 1000)
-}
 
 $effect(() => {
   if (isVisible && tooltipElement && lastMouseEvent) {
@@ -43,11 +36,6 @@ function hideTooltip() {
     clearTimeout(showTimeout)
     showTimeout = undefined
   }
-
-  // Only hide if we're not hovering the tooltip
-  if (!isHoveringTooltip) {
-    isVisible = false
-  }
 }
 
 function onTooltipEnter() {
@@ -56,7 +44,30 @@ function onTooltipEnter() {
 
 function onTooltipLeave() {
   isHoveringTooltip = false
-  isVisible = false
+  window.setTimeout(() => {
+    if (!(isHoveringTrigger || isHoveringTooltip)) {
+      isVisible = false
+    }
+  }, 200)
+}
+
+function onTriggerEnter(e: MouseEvent) {
+  isHoveringTrigger = true
+  lastMouseEvent = e
+  showTimeout = window.setTimeout(() => {
+    if (isHoveringTrigger) {
+      isVisible = true
+    }
+  }, 1000)
+}
+
+function onTriggerLeave() {
+  isHoveringTrigger = false
+  window.setTimeout(() => {
+    if (!isHoveringTooltip) {
+      isVisible = false
+    }
+  }, 200)
 }
 
 function updatePosition(e?: MouseEvent) {
@@ -89,22 +100,19 @@ function updatePosition(e?: MouseEvent) {
 
 const tooltipClasses = $derived(
   cn(
-    "fixed z-40 overflow-hidden border border-1 border-zinc-800 bg-black p-2 rounded shadow-md",
+    "fixed z-40 cursor-default overflow-hidden border border-1 border-zinc-800 bg-black p-2 rounded shadow-md",
     isVisible && "opacity-100 visible delay-600",
     isVisible ? "scale-100" : "scale-95",
     className
   )
 )
-
-// const tooltipStyle = $derived(`left: ${position.x}px; top: ${position.y}px`)
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div 
   class="inline-block" 
-  bind:this={triggerElement}
-  onmouseenter={showTooltip}
-  onmouseleave={hideTooltip}
+  onmouseenter={onTriggerEnter}
+  onmouseleave={onTriggerLeave}
 >
   {@render trigger()}
 </div>
@@ -115,6 +123,8 @@ const tooltipClasses = $derived(
   class={tooltipClasses}
   onmouseenter={onTooltipEnter}
   onmouseleave={onTooltipLeave}
+  onclick={(e) => e.stopPropagation()}
+  onmousedown={(e) => e.stopPropagation()}
   transition:scale|local={{
     duration: 150,
     start: 0.95,
