@@ -30,27 +30,22 @@ function updatePosition(e?: MouseEvent) {
   const tooltipRect = tooltipElement.getBoundingClientRect()
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
+  const VERTICAL_OFFSET = 15
 
   // Start with cursor position relative to viewport
-  let x = e.clientX
+  let x = e.clientX - tooltipRect.width / 2 // Center horizontally on cursor
   let y = e.clientY
 
-  // Add offset to position tooltip near cursor
-  const OFFSET_X = 10
-  const OFFSET_Y = 10
-  x += OFFSET_X
-  y += OFFSET_Y
+  // Ensure tooltip stays within horizontal bounds
+  x = Math.max(10, Math.min(viewportWidth - tooltipRect.width - 10, x))
 
-  // Check if tooltip would go off right edge
-  if (x + tooltipRect.width > viewportWidth) {
-    // Position to left of cursor instead
-    x = e.clientX - tooltipRect.width - OFFSET_X
-  }
-
-  // Check if tooltip would go off bottom edge
-  if (y + tooltipRect.height > viewportHeight) {
-    // Position above cursor instead
-    y = e.clientY - tooltipRect.height - OFFSET_Y
+  // Check if there's room above cursor
+  if (e.clientY - tooltipRect.height - VERTICAL_OFFSET > 0) {
+    // Position above cursor
+    y = e.clientY - tooltipRect.height - VERTICAL_OFFSET
+  } else {
+    // Position below cursor
+    y = e.clientY + VERTICAL_OFFSET
   }
 
   tooltipElement.style.left = `${x}px`
