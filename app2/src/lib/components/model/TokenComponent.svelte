@@ -28,12 +28,15 @@ const token = $derived(
 
 // Get display info from token representations
 const displayInfo = $derived(
-  Option.map(token, t => {
+  Option.flatMap(token, t => {
+    if (t.representations.length === 0) {
+      return Option.none()
+    }
     const rep = t.representations[0] // Use first representation
-    return {
+    return Option.some({
       symbol: rep.symbol,
       decimals: rep.decimals
-    }
+    })
   })
 )
 
