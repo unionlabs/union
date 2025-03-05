@@ -12,11 +12,13 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
 use unionlabs::{
     aptos::{
-        account::AccountAddress, signed_data::SignedData, state_proof::StateProof,
+        account::AccountAddress,
+        signed_data::{hash_signature_data, SignedData},
+        state_proof::StateProof,
         transaction_proof::TransactionInfoWithProof,
     },
     ibc::core::client::height::Height,
-    primitives::{H160, H256},
+    primitives::{H160, H256, H512},
 };
 use voyager_message::{
     call::Call,
@@ -236,7 +238,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     },
                     new_height: to,
                 };
-                let signed_header = SignedData::sign(&self.auth_signing_key, header);
+                let signed_data = self
+                    .auth_signing_key
+                    .sign(&hash_signature_data(header.clone()));
+                let signed_header = SignedData {
+                    signature: H512::new(signed_data.to_bytes()),
+                    data: header,
+                };
                 Ok(data(OrderedHeaders {
                     headers: vec![(
                         DecodedHeaderMeta {

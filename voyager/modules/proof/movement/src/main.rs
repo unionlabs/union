@@ -15,12 +15,12 @@ use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
     aptos::{
-        signed_data::SignedData,
+        signed_data::{hash_signature_data, SignedData},
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
         storage_proof::{StateValue, StateValueMetadata, StorageProof},
     },
     ibc::core::client::height::Height,
-    primitives::{H256, U256},
+    primitives::{H256, H512, U256},
     ErrorReporter,
 };
 use voyager_message::{
@@ -157,19 +157,22 @@ impl ProofModuleServer<IbcUnion> for Module {
         //     at.revision_height,
         // ).await;
 
-        let signed_data = SignedData::sign(
-            &self.auth_signing_key,
-            StorageProof {
-                state_value: None,
-                proof: SparseMerkleProof {
-                    leaf: None,
-                    siblings: Vec::new(),
-                },
+        let proof = StorageProof {
+            state_value: None,
+            proof: SparseMerkleProof {
+                leaf: None,
+                siblings: Vec::new(),
             },
-        );
-
+        };
+        let signed_data = self
+            .auth_signing_key
+            .sign(&hash_signature_data(proof.clone()));
+        let signed_proof = SignedData {
+            signature: H512::new(signed_data.to_bytes()),
+            data: proof,
+        };
         Ok((
-            into_value(signed_data),
+            into_value(signed_proof),
             // TODO: Implement properly, see above
             ProofType::Membership,
         ))

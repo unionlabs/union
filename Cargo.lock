@@ -13257,7 +13257,6 @@ dependencies = [
  "chrono",
  "cosmwasm-std 2.1.4",
  "derive_more 0.99.17",
- "ed25519-zebra 4.0.3",
  "either",
  "frame-support-procedural",
  "generic-array 0.14.7",

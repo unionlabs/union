@@ -48,7 +48,6 @@ bcs                  = { workspace = true }
 bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
 borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
 bs58                 = "0.4"
-ed25519-zebra        = { version = "4.0" }
 near-primitives-core = { version = "0.21", optional = true }
 near-sdk             = { workspace = true, optional = true }
 schemars             = { workspace = true, features = ["derive"], optional = true }
