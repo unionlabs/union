@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{StdError, VerificationError};
 use ibc_union_light_client::IbcClientError;
 use unionlabs::ibc::core::client::height::Height;
 
@@ -26,6 +26,10 @@ pub enum Error {
     InvalidIbcPath(String),
     #[error(transparent)]
     StdError(#[from] StdError),
+    #[error("authentication failure")]
+    AuthenticationFailure,
+    #[error(transparent)]
+    VerificationError(#[from] VerificationError),
 }
 
 impl From<Error> for StdError {
