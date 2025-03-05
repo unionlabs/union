@@ -8,7 +8,7 @@ import { Option } from "effect"
 
 <Button variant="secondary" class="flex items-center" onclick={() => uiStore.openWalletModal()}>
   <SharpWalletIcon class="size-5"/>
-  Connect Wallet
+  My Wallets
   <div class="flex items-center gap-1">
     <div class="{Option.isSome(wallets.evmAddress) ? 'pulse-1 bg-green-500 shadow-[0_0_2px_1px_rgba(34,197,94,0.6)]' : 'bg-zinc-800'} w-2 h-2 rounded-full transition-colors duration-200" title="EVM"></div>
     <div class="{Option.isSome(wallets.cosmosAddress) ? 'pulse-2 bg-green-500 shadow-[0_0_2px_1px_rgba(34,197,94,0.6)]' : 'bg-zinc-800'} w-2 h-2 rounded-full transition-colors duration-200" title="Cosmos"></div>
