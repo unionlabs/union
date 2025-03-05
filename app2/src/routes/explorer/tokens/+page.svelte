@@ -18,7 +18,7 @@ $effect(() => {
 <Sections>
 {#if Option.isSome(chains.data)} 
   {#each chains.data.value as chain}
-    <Card>
+    <Card class="overflow-none">
       <h2>{chain.display_name} Tokens</h2>
       
       {#if tokensStore.data.has(chain.chain_id)}

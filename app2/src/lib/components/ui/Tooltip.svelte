@@ -13,77 +13,79 @@ let { trigger, content, class: className = "", ...rest }: Props = $props()
 
 let tooltipElement: HTMLDivElement
 let triggerElement: HTMLDivElement
-let position = $state({
-  placement: "top",
-  shift: 0
-})
+let isVisible = $state(false)
 
-function updatePosition() {
-  if (!(tooltipElement && triggerElement)) return
-
-  const triggerRect = triggerElement.getBoundingClientRect()
-  const tooltipRect = tooltipElement.getBoundingClientRect()
-  const viewportWidth = window.innerWidth
-
-  let placement = "top"
-  let shift = 0
-
-  // Check if there's enough space above
-  if (triggerRect.top - tooltipRect.height < 0) {
-    placement = "bottom"
-  }
-
-  // Calculate horizontal overflow
-  const centerX = triggerRect.left + triggerRect.width / 2
-  const halfWidth = tooltipRect.width / 2
-
-  // Check left edge
-  if (centerX - halfWidth < 0) {
-    shift = -(centerX - halfWidth)
-  }
-  // Check right edge
-  else if (centerX + halfWidth > viewportWidth) {
-    shift = -(centerX + halfWidth - viewportWidth)
-  }
-
-  position = { placement, shift }
+function showTooltip(e: MouseEvent) {
+  updatePosition(e)
+  isVisible = true
 }
 
-$effect(() => {
-  const observer = new ResizeObserver(updatePosition)
-  if (tooltipElement) {
-    observer.observe(tooltipElement)
-  }
-  window.addEventListener("scroll", updatePosition)
-  window.addEventListener("resize", updatePosition)
+function hideTooltip() {
+  isVisible = false
+}
 
-  return () => {
-    observer.disconnect()
-    window.removeEventListener("scroll", updatePosition)
-    window.removeEventListener("resize", updatePosition)
+function updatePosition(e?: MouseEvent) {
+  if (!(tooltipElement && e)) return
+
+  const tooltipRect = tooltipElement.getBoundingClientRect()
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+
+  // Start with cursor position relative to viewport
+  let x = e.clientX
+  let y = e.clientY
+
+  // Add offset to position tooltip near cursor
+  const OFFSET_X = 10
+  const OFFSET_Y = 10
+  x += OFFSET_X
+  y += OFFSET_Y
+
+  // Check if tooltip would go off right edge
+  if (x + tooltipRect.width > viewportWidth) {
+    // Position to left of cursor instead
+    x = e.clientX - tooltipRect.width - OFFSET_X
   }
-})
+
+  // Check if tooltip would go off bottom edge
+  if (y + tooltipRect.height > viewportHeight) {
+    // Position above cursor instead
+    y = e.clientY - tooltipRect.height - OFFSET_Y
+  }
+
+  tooltipElement.style.left = `${x}px`
+  tooltipElement.style.top = `${y}px`
+}
 
 const tooltipClasses = $derived(
   cn(
-    "z-40 overflow-hidden border border-1 border-zinc-800 bg-black p-2 rounded shadow-md",
-    "invisible group-hover:visible absolute left-1/2",
-    position.placement === "top" ? "bottom-full" : "top-full",
+    "fixed z-40 overflow-hidden border border-1 border-zinc-800 bg-black p-2 rounded shadow-md",
+    isVisible && "opacity-100 visible delay-600",
+    isVisible ? "scale-100" : "scale-95",
     className
   )
 )
 
-const tooltipStyle = $derived(`transform: translateX(calc(-50% + ${position.shift}px))`)
+// const tooltipStyle = $derived(`left: ${position.x}px; top: ${position.y}px`)
 </script>
 
-<div class="group relative inline-block" bind:this={triggerElement}>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div 
+  class="inline-block" 
+  bind:this={triggerElement}
+  onmouseenter={showTooltip}
+  onmouseleave={hideTooltip}
+  onmousemove={updatePosition}
+>
   {@render trigger()}
-  <div 
-    bind:this={tooltipElement}
-    class={tooltipClasses}
-    style={tooltipStyle}
-    {...rest}
-  >
-    {@render content()}
-  </div>
 </div>
+
+{#if isVisible}
+<div 
+  bind:this={tooltipElement}
+  class={tooltipClasses}
+  {...rest}
+>
+  {@render content()}
+</div>
+{/if}
