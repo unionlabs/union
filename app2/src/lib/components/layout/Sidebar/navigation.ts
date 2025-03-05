@@ -48,6 +48,11 @@ export const navigation: Array<NavSection> = [
     title: "Explorer",
     items: [
       {
+        path: "/explorer/tokens",
+        title: "Tokens",
+        icon: SharpListIcon
+      },
+      {
         path: "/explorer/transfers",
         title: "Transfers",
         icon: SharpListIcon
