@@ -1021,6 +1021,8 @@ github.com/unionlabs/feemarket v0.0.0-20250302022351-41d27c4c3661 h1:ExiGuShoQRu
 github.com/unionlabs/feemarket v0.0.0-20250302022351-41d27c4c3661/go.mod h1:M9lTQvm9KjN1ZwuAbSOlmciAqm2tKaM9FEEzpiZGwng=
 github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578 h1:Owzup0XvshGNHgS1s0xUI/mZM+fPvTT7dLg7P0cT2vQ=
 github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578/go.mod h1:v2Gy7L/4ZRosZ7Ivs+9SfUDr0f5UlG+EM5t7MPHiLuY=
+github.com/unionlabs/hid v0.0.0-20250305035010-a36753add31a h1:07zWUM2RAngUC0V7+kVmnThiCPybVpfGcf4J/gCUqtw=
+github.com/unionlabs/hid v0.0.0-20250305035010-a36753add31a/go.mod h1:rMxQZj1trHpzLnhRunrWzQj2p8y1Hkipd0QivNdsXmI=
 github.com/unionlabs/ibc-go/modules/capability v0.0.0-20250228202801-8024a4241fb8 h1:VYE5n9AUeAxJp5viQuo6v8gZG0R3k84XHMS+l55f88E=
 github.com/unionlabs/ibc-go/modules/capability v0.0.0-20250228202801-8024a4241fb8/go.mod h1:gwR2WaZNTcpdyJVmYZx+bLw5pmaZt0I1w/eP2jNJV2o=
 github.com/unionlabs/ibc-go/v8 v8.0.0-20250228202801-8024a4241fb8 h1:PgqRrbtizBKah6EZzusoyDD4fPHoui6FoE4A8418mgQ=
@@ -1038,8 +1040,6 @@ github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-github.com/zondax/hid v0.9.2 h1:WCJFnEDMiqGF64nlZz28E9qLVZ0KSJ7xpc5DLEyma2U=
-github.com/zondax/hid v0.9.2/go.mod h1:l5wttcP0jwtdLjqjMMWFVEE7d1zO0jvSPA9OPZxWpEM=
 github.com/zondax/ledger-go v0.14.3 h1:wEpJt2CEcBJ428md/5MgSLsXLBos98sBOyxNmCjfUCw=
 github.com/zondax/ledger-go v0.14.3/go.mod h1:IKKaoxupuB43g4NxeQmbLXv7T9AlQyie1UpHb342ycI=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
