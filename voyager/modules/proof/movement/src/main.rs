@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use aptos_move_ibc::ibc::ClientExt as _;
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
+use ed25519_zebra::SigningKey;
 use ibc_union_spec::{path::StorePath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -14,6 +15,7 @@ use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
     aptos::{
+        signed_data::SignedData,
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
         storage_proof::{StateValue, StateValueMetadata, StorageProof},
     },
@@ -51,6 +53,8 @@ pub struct Module {
     pub movement_rpc_url: String,
 
     pub ibc_handler_address: Address,
+
+    pub auth_signing_key: SigningKey,
 }
 
 impl ProofModule<IbcUnion> for Module {
@@ -68,6 +72,7 @@ impl ProofModule<IbcUnion> for Module {
             aptos_client,
             movement_rpc_url: config.movement_rpc_url,
             ibc_handler_address: config.ibc_handler_address,
+            auth_signing_key: SigningKey::from(*config.auth_private_key.get()),
         })
     }
 }
@@ -78,6 +83,7 @@ pub struct Config {
     pub rpc_url: String,
     pub movement_rpc_url: String,
     pub ibc_handler_address: Address,
+    pub auth_private_key: H256,
 }
 
 impl aptos_move_ibc::ibc::ClientExt for Module {
@@ -151,14 +157,19 @@ impl ProofModuleServer<IbcUnion> for Module {
         //     at.revision_height,
         // ).await;
 
-        Ok((
-            into_value(StorageProof {
+        let signed_data = SignedData::sign(
+            &self.auth_signing_key,
+            StorageProof {
                 state_value: None,
                 proof: SparseMerkleProof {
                     leaf: None,
                     siblings: Vec::new(),
                 },
-            }),
+            },
+        );
+
+        Ok((
+            into_value(signed_data),
             // TODO: Implement properly, see above
             ProofType::Membership,
         ))

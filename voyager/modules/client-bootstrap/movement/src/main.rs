@@ -14,7 +14,7 @@ use unionlabs::{
         transaction_proof::TransactionInfoWithProof,
     },
     ibc::core::client::height::Height,
-    primitives::{FixedBytes, H160, U256},
+    primitives::{FixedBytes, H160, H256, U256},
 };
 use voyager_message::{
     core::{ChainId, ClientType},
@@ -52,7 +52,7 @@ pub struct Module {
 
     pub movement_rest_url: String,
 
-    pub whitelisted_relayers: Vec<String>,
+    pub auth_pubkey: H256,
 }
 
 impl ClientBootstrapModule for Module {
@@ -76,11 +76,7 @@ impl ClientBootstrapModule for Module {
             l1_settlement_address: config.l1_settlement_address,
             l1_client_id: config.l1_client_id,
             movement_rest_url: config.movement_rest_url,
-            whitelisted_relayers: config
-                .whitelisted_relayers
-                .into_iter()
-                .map(Into::into)
-                .collect(),
+            auth_pubkey: config.auth_pubkey,
         })
     }
 }
@@ -109,14 +105,7 @@ pub struct Config {
     /// The RPC endpoint for custom movement apis.
     pub movement_rest_url: String,
 
-    /// The relayers that are allowed to modify this light client
-    ///
-    /// Note that the light client had to be permissioned for now since
-    /// we are waiting for our [PR] to be merged so that we can fetch
-    /// the necessary proofs.
-    ///
-    /// [PR]: https://github.com/movementlabsxyz/movement/pull/645
-    pub whitelisted_relayers: Vec<cosmwasm_std::Addr>,
+    pub auth_pubkey: H256,
 }
 
 impl Module {
@@ -190,7 +179,7 @@ impl ClientBootstrapModuleServer for Module {
             )),
             frozen_height: Height::new(0),
             latest_block_num: height.height(),
-            whitelisted_relayers: self.whitelisted_relayers.clone(),
+            auth_pubkey: self.auth_pubkey,
         })
         .expect("infallible"))
     }

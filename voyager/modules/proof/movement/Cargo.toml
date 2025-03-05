@@ -16,6 +16,7 @@ aptos-move-ibc    = { workspace = true }
 aptos-rest-client = { workspace = true }
 aptos-types       = { workspace = true }
 clap              = { workspace = true, features = ["derive"] }
+ed25519-zebra     = { version = "4.0" }
 ibc-union-spec    = { workspace = true }
 jsonrpsee         = { workspace = true, features = ["macros", "server", "tracing"] }
 reqwest           = { workspace = true, features = ["json"] }

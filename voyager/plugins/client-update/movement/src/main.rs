@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 
 use aptos_rest_client::error::RestError;
 use call::FetchUpdate;
+use ed25519_zebra::SigningKey;
 use ethereum_light_client_types::{account_proof::AccountProof, storage_proof::StorageProof};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -11,11 +12,11 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
 use unionlabs::{
     aptos::{
-        account::AccountAddress, state_proof::StateProof,
+        account::AccountAddress, signed_data::SignedData, state_proof::StateProof,
         transaction_proof::TransactionInfoWithProof,
     },
     ibc::core::client::height::Height,
-    primitives::H160,
+    primitives::{H160, H256},
 };
 use voyager_message::{
     call::Call,
@@ -60,6 +61,8 @@ pub struct Module {
     pub aptos_client: aptos_rest_client::Client,
 
     pub movement_rest_url: String,
+
+    pub auth_signing_key: SigningKey,
 }
 
 impl Plugin for Module {
@@ -89,6 +92,7 @@ impl Plugin for Module {
             l1_settlement_address: config.l1_settlement_address,
             l1_client_id: config.l1_client_id,
             movement_rest_url: config.movement_rest_url,
+            auth_signing_key: SigningKey::from(*config.auth_private_key.get()),
         })
     }
 
@@ -139,6 +143,8 @@ pub struct Config {
 
     /// The RPC endpoint for custom movement apis.
     pub movement_rest_url: String,
+
+    pub auth_private_key: H256,
 }
 
 impl Module {
@@ -212,30 +218,31 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 // NOTE(aeryz): This only works with Union's custom Movement node. When the following PR is merged,
                 // we will uncomment this: https://github.com/movementlabsxyz/movement/pull/645
                 // let header = get_lc_header(&self.movement_rest_url, from, to).await;
+                let header = movement_light_client_types::Header {
+                    // dummy value for now, until movement settles on a public L1
+                    l1_height: 0,
+                    trusted_height: Height::new(from),
+                    state_proof: StateProof::default(),
+                    tx_index: 0,
+                    tx_proof: TransactionInfoWithProof::default(),
+                    state_proof_hash_proof: StorageProof {
+                        key: Default::default(),
+                        value: Default::default(),
+                        proof: Default::default(),
+                    },
+                    settlement_contract_proof: AccountProof {
+                        storage_root: Default::default(),
+                        proof: Default::default(),
+                    },
+                    new_height: to,
+                };
+                let signed_header = SignedData::sign(&self.auth_signing_key, header);
                 Ok(data(OrderedHeaders {
                     headers: vec![(
                         DecodedHeaderMeta {
                             height: Height::new(to),
                         },
-                        serde_json::to_value(movement_light_client_types::Header {
-                            // dummy value for now, until movement settles on a public L1
-                            l1_height: 0,
-                            trusted_height: Height::new(from),
-                            state_proof: StateProof::default(),
-                            tx_index: 0,
-                            tx_proof: TransactionInfoWithProof::default(),
-                            state_proof_hash_proof: StorageProof {
-                                key: Default::default(),
-                                value: Default::default(),
-                                proof: Default::default(),
-                            },
-                            settlement_contract_proof: AccountProof {
-                                storage_root: Default::default(),
-                                proof: Default::default(),
-                            },
-                            new_height: to,
-                        })
-                        .unwrap(),
+                        serde_json::to_value(signed_header).unwrap(),
                     )],
                 }))
             }

@@ -4711,6 +4711,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115531babc129696a58c64a4fef0a8bf9e9698629fb97e9e40767d235cfbcd53"
 dependencies = [
  "pkcs8",
+ "serde",
  "signature 2.2.0",
 ]
 
@@ -4793,6 +4794,7 @@ dependencies = [
  "hashbrown 0.14.3",
  "hex",
  "rand_core 0.6.4",
+ "serde",
  "sha2 0.10.8",
  "zeroize",
 ]
@@ -13255,6 +13257,7 @@ dependencies = [
  "chrono",
  "cosmwasm-std 2.1.4",
  "derive_more 0.99.17",
+ "ed25519-zebra 4.0.3",
  "either",
  "frame-support-procedural",
  "generic-array 0.14.7",
@@ -13934,6 +13937,7 @@ version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
+ "ed25519-zebra 4.0.3",
  "enumorph",
  "ethereum-light-client-types",
  "jsonrpsee",
@@ -14344,6 +14348,7 @@ dependencies = [
  "aptos-rest-client",
  "aptos-types",
  "clap 4.5.4",
+ "ed25519-zebra 4.0.3",
  "ibc-union-spec",
  "jsonrpsee",
  "reqwest 0.11.27",
