@@ -4,6 +4,7 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
+use macros::model;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState};
@@ -260,8 +261,37 @@ impl ClientModuleServer for Module {
                 None::<()>,
             )
         })?;
-        Ok(encode_merkle_proof_for_evm(proof).into())
+
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcSolidity => Ok(encode_merkle_proof_for_evm(proof).into()),
+            SupportedIbcInterface::IbcMoveAptos => Ok(encode_merkle_proof_for_move(proof).into()),
+        }
     }
+}
+
+#[model]
+struct MoveMembershipProof {
+    sub_proof: ics23::existence_proof::ExistenceProof,
+    top_level_proof: ics23::existence_proof::ExistenceProof,
+}
+
+fn encode_merkle_proof_for_move(
+    proof: unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
+) -> Vec<u8> {
+    let proof = ics23::merkle_proof::MerkleProof::try_from(
+        protos::ibc::core::commitment::v1::MerkleProof::from(proof),
+    )
+    .unwrap();
+    match proof {
+        ics23::merkle_proof::MerkleProof::Membership(sub_proof, top_level_proof) => {
+            MoveMembershipProof {
+                sub_proof,
+                top_level_proof,
+            }
+        }
+        ics23::merkle_proof::MerkleProof::NonMembership(_, _) => todo!(),
+    }
+    .encode_as::<Bcs>()
 }
 
 alloy::sol! {
