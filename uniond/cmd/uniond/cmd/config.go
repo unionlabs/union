@@ -12,8 +12,8 @@ import (
 func initCometBFTConfig() *cmtcfg.Config {
 	cfg := cmtcfg.DefaultConfig()
 
-	// Target 3+ second block time
-	cfg.Consensus.TimeoutCommit = 3 * time.Second
+	// Target 5+ second block time
+	cfg.Consensus.TimeoutCommit = 5 * time.Second
 
 	// these values put a higher strain on node memory
 	// cfg.P2P.MaxNumInboundPeers = 100
