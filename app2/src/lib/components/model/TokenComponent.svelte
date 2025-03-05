@@ -68,26 +68,7 @@ const displayDenom = $derived(
     onSome: info => info.symbol
   })
 )
-function formatTokenDetails(token: NonNullable<typeof token.value>) {
-  const details = []
-
-  // Add basic info
-  details.push(`Denom: ${token.denom}`)
-
-  // Add CW20 info if present
-  if (Option.isSome(token.cw20)) {
-    details.push(`CW20 Address: ${token.cw20.value.cw20_token_address}`)
-  }
-
-  // Add representation info
-  token.representations.forEach(rep => {
-    details.push(`${rep.name} (${rep.symbol})`)
-  })
-
-  return details.join("\n")
-}
 </script>
-
 
 <Tooltip>
   {#snippet trigger()}
@@ -100,9 +81,41 @@ function formatTokenDetails(token: NonNullable<typeof token.value>) {
   {/snippet}
   
   {#snippet content()}
-    {Option.match(token, {
-      onNone: () => "Loading token details...",
-      onSome: formatTokenDetails
-    })}
+    {#if Option.isSome(token)}
+      
+        <div class="text-xs flex flex-col gap-4 text-neutral-400">
+          <section class="flex justify-between items-center">
+            {#if token.value.representations.length > 0}
+              <h2 class="text-white font-bold text-sm">{token.value.representations[0].symbol}</h2>
+            {/if}
+            <div class="bg-union-accent-500 text-black font-bold rounded px-1">
+              {Option.isSome(token.value.cw20) ? "CW20" : "BANK"}
+            </div>
+          </section>
+
+          <section>
+            <h3 class="text-white">Denom</h3>
+            {#if Option.isSome(token.value.cw20)}
+              <div>{token.value.cw20.value.cw20_token_address}</div>
+            {/if}
+            <div>{token.value.denom}</div>
+          </section>
+
+          {#each token.value.representations as rep}
+            <section>
+              <div>Name: {rep.name}</div>
+              <div>Symbol: {rep.symbol}</div>
+              <div>Decimals: {rep.decimals}</div>
+              {#each rep.sources as source}
+                {#if source.source.source_uri}
+                  <div>
+                    Source: <a class="underline" href={source.source.source_uri}>{source.source.name}</a>
+                  </div>
+                {/if}
+              {/each}
+            </section>
+          {/each}
+        </div>
+        {/if}
   {/snippet}
 </Tooltip>
