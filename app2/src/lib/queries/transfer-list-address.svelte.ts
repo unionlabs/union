@@ -44,7 +44,7 @@ export const transferListPageLtAddressQuery = (
   limit = LIMIT
 ) =>
   createQueryGraphql({
-    schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
+    schema: Schema.Struct({ v2_transfers: TransferList }),
     document: graphql(
       `
     query TransferListPageLtAddress($page: String!, $addresses: jsonb, $limit: Int!) @cached(ttl: 30) {
@@ -62,7 +62,7 @@ export const transferListPageLtAddressQuery = (
     variables: { page, addresses, limit },
     refetchInterval: "30 seconds",
     writeData: data => {
-      transferListAddress.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders))
+      transferListAddress.data = data.pipe(Option.map(d => d.v2_transfers))
     },
     writeError: error => {
       transferListAddress.error = error
@@ -129,9 +129,7 @@ export const transferListPageGtAddressQuery = (
     variables: { page, addresses, limit },
     refetchInterval: "30 seconds",
     writeData: data => {
-      transferListAddress.data = data.pipe(
-        Option.map(d => d.v2_transfers.toReversed())
-      )
+      transferListAddress.data = data.pipe(Option.map(d => d.v2_transfers.toReversed()))
     },
     writeError: error => {
       transferListAddress.error = error
