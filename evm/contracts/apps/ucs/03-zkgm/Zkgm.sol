@@ -81,6 +81,8 @@ struct FungibleAssetOrderAck {
 }
 
 library ZkgmLib {
+    using LibBytes for *;
+
     bytes public constant ACK_EMPTY = hex"";
 
     uint256 public constant ACK_FAILURE = 0x00;
@@ -99,7 +101,8 @@ library ZkgmLib {
     uint8 public constant INSTR_VERSION_0 = 0x00;
     uint8 public constant INSTR_VERSION_1 = 0x01;
 
-    bytes32 public constant IBC_VERSION = keccak256("ucs03-zkgm-0");
+    string public constant IBC_VERSION_STR = "ucs03-zkgm-0";
+    bytes32 public constant IBC_VERSION = keccak256(bytes(IBC_VERSION_STR));
 
     error ErrUnsupportedVersion();
     error ErrUnimplemented();
