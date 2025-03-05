@@ -41,12 +41,18 @@ onMount(() => {
 
   <Card class="overflow-auto p-6" divided>
     {#if Option.isSome(transferDetails.error)}
-      <ErrorComponent error={transferDetails.error.value}/>
+      <ErrorComponent error={transferDetails.error.value} />
     {:else if Option.isSome(transferDetails.data) && Option.isSome(chains.data)}
       {@const transfer = transferDetails.data.value}
       {@const chainsList = chains.data.value}
-      {@const sourceChain = getChain(chainsList, transfer.source_chain_id)}
-      {@const destChain = getChain(chainsList, transfer.destination_chain_id)}
+      {@const sourceChain = getChain(
+        chainsList,
+        transfer.source_chain.chain_id,
+      )}
+      {@const destChain = getChain(
+        chainsList,
+        transfer.destination_chain.chain_id,
+      )}
 
       <div class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -55,7 +61,7 @@ onMount(() => {
             {#if Option.isSome(sourceChain)}
               <ChainComponent chain={sourceChain.value} />
             {:else}
-              <div>{transfer.source_chain_id}</div>
+              <div>{transfer.source_chain.chain_id}</div>
             {/if}
           </div>
 
@@ -64,11 +70,11 @@ onMount(() => {
             {#if Option.isSome(destChain)}
               <ChainComponent chain={destChain.value} />
             {:else}
-              <div>{transfer.destination_chain_id}</div>
+              <div>{transfer.destination_chain.chain_id}</div>
             {/if}
           </div>
 
-          <div>
+          <!-- <div>
             <Label>Source Connection ID</Label>
             <div class="font-mono text-sm">{transfer.source_connection_id}</div>
           </div>
@@ -86,21 +92,21 @@ onMount(() => {
           <div>
             <Label>Destination Channel ID</Label>
             <div class="font-mono text-sm">{transfer.destination_channel_id}</div>
-          </div>
+          </div> -->
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label>Sender</Label>
             <div>
-              {transfer.sender_normalized}
+              {transfer.sender_canonical}
             </div>
           </div>
 
           <div>
             <Label>Receiver</Label>
             <div>
-              {transfer.receiver_normalized}
+              {transfer.receiver_canonical}
             </div>
           </div>
         </div>
@@ -109,7 +115,7 @@ onMount(() => {
           <div>
             <Label>Base Token</Label>
             {#if Option.isSome(sourceChain)}
-              <TokenComponent 
+              <TokenComponent
                 chain={sourceChain.value}
                 denom={transfer.base_token}
                 amount={transfer.base_amount}
@@ -120,7 +126,7 @@ onMount(() => {
           <div>
             <Label>Quote Token</Label>
             {#if Option.isSome(destChain)}
-              <TokenComponent 
+              <TokenComponent
                 chain={destChain.value}
                 denom={transfer.quote_token}
                 amount={transfer.quote_amount}
@@ -132,18 +138,22 @@ onMount(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label>Send Transaction Hash</Label>
-            <TransactionHashComponent hash={transfer.packet_send_transaction_hash} />
+            <TransactionHashComponent
+              hash={transfer.transfer_send_transaction_hash}
+            />
           </div>
 
           <div>
             <Label>Send Timestamp</Label>
-            <div>{DateTime.formatIso(transfer.packet_send_timestamp)}</div>
+            <div>{DateTime.formatIso(transfer.transfer_send_timestamp)}</div>
           </div>
 
           <div>
             <Label>Receive Timestamp</Label>
-            {#if Option.isSome(transfer.packet_recv_timestamp)}
-              <div>{DateTime.formatIso(transfer.packet_recv_timestamp.value)}</div>
+            {#if Option.isSome(transfer.transfer_recv_timestamp)}
+              <div>
+                {DateTime.formatIso(transfer.transfer_recv_timestamp.value)}
+              </div>
             {:else}
               <div class="text-yellow-500">Pending</div>
             {/if}
@@ -155,7 +165,7 @@ onMount(() => {
             <Label>Traces</Label>
             <div class="space-y-2">
               {#each transfer.traces as trace}
-                {@const chain = getChain(chainsList, trace.chain.chain_id)} 
+                {@const chain = getChain(chainsList, trace.chain.chain_id)}
                 <div class="bg-zinc-100 dark:bg-zinc-800 p-4 rounded">
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -167,26 +177,34 @@ onMount(() => {
                       {#if Option.isSome(chain)}
                         <ChainComponent chain={chain.value} />
                       {:else}
-                        <div class="font-mono text-sm">{trace.chain.chain_id}</div>
+                        <div class="font-mono text-sm">
+                          {trace.chain.chain_id}
+                        </div>
                       {/if}
                     </div>
                     {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(trace.block_hash)}
-                    <div>
-                      <Label>Height</Label>
-                      <div class="font-mono text-sm">{trace.height.value}</div>
-                    </div>
-                    <div>
-                      <Label>Timestamp</Label>
-                      <div class="font-mono text-sm">{DateTime.formatIso(trace.timestamp.value)}</div>
-                    </div>
-                    <div class="col-span-2">
-                      <Label>Transaction Hash</Label>
-                      <TransactionHashComponent hash={trace.transaction_hash.value} />
-                    </div>
-                    <div class="col-span-2">
-                      <Label>Block Hash</Label>
-                      <BlockHashComponent hash={trace.block_hash.value} />
-                    </div>
+                      <div>
+                        <Label>Height</Label>
+                        <div class="font-mono text-sm">
+                          {trace.height.value}
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Timestamp</Label>
+                        <div class="font-mono text-sm">
+                          {DateTime.formatIso(trace.timestamp.value)}
+                        </div>
+                      </div>
+                      <div class="col-span-2">
+                        <Label>Transaction Hash</Label>
+                        <TransactionHashComponent
+                          hash={trace.transaction_hash.value}
+                        />
+                      </div>
+                      <div class="col-span-2">
+                        <Label>Block Hash</Label>
+                        <BlockHashComponent hash={trace.block_hash.value} />
+                      </div>
                     {/if}
                   </div>
                 </div>
@@ -195,7 +213,6 @@ onMount(() => {
           </div>
         {/if}
       </div>
-
     {:else}
       <div class="space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

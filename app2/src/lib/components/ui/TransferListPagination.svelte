@@ -15,19 +15,25 @@ const { data, onLive, onPrevPage, onNextPage }: Props = $props()
 </script>
 
 <div class="flex gap-6">
-  <Button onclick={onLive}>
-    LIVE
-  </Button>
+  <Button onclick={onLive}>LIVE</Button>
   <div class="rounded shadow flex">
-    <button onclick={onPrevPage} class="cursor-pointer border-l border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tl rounded-bl">
+    <button
+      onclick={onPrevPage}
+      class="cursor-pointer border-l border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tl rounded-bl"
+    >
       ←
     </button>
-    <div class="bg-zinc-900 border-t border-b border-zinc-800 flex items-center justify-center px-4 min-w-[250px]">
+    <div
+      class="bg-zinc-900 border-t border-b border-zinc-800 flex items-center justify-center px-4 min-w-[250px]"
+    >
       {#if Option.isSome(data) && data.value.length > 0}
-        <DateTimeComponent value={data.value[0].packet_send_timestamp} />
+        <DateTimeComponent value={data.value[0].transfer_send_timestamp} />
       {/if}
     </div>
-    <button onclick={onNextPage} class="cursor-pointer border-r border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tr rounded-br">
+    <button
+      onclick={onNextPage}
+      class="cursor-pointer border-r border-t border-b bg-zinc-700 border-zinc-600 h-10 w-10 rounded-tr rounded-br"
+    >
       →
     </button>
   </div>
