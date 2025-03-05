@@ -30,10 +30,10 @@ const handleClick = () => {
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div 
-    class="flex gap-8 px-4 py-2 h-[60px] cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors duration-75 items-center"
+    class="flex justify-between gap-8 px-4 py-3 h-16 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors duration-75 items-center"
     onclick={handleClick}
   >
-    <div class="flex-1">
+    <div>
       {#if Option.isSome(sourceChain)}
         <TokenComponent 
           chain={sourceChain.value} 
@@ -51,8 +51,6 @@ const handleClick = () => {
         {/if}
       </div>
     </div>
-    <div>
-      <DateTimeComponent value={transfer.packet_send_timestamp} showSeconds={showSeconds} />
-    </div>
+    <DateTimeComponent class="text-sm" value={transfer.packet_send_timestamp} showSeconds={showSeconds} />
   </div>
 {/if}

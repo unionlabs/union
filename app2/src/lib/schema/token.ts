@@ -45,7 +45,7 @@ export class TokenWrapping extends Schema.Class<TokenWrapping>("TokenWrapping")(
     chain_id: ChainId
   }),
   destination_channel_id: ChannelId,
-  unwrapped_denom: Schema.String
+  unwrapped_denom: TokenRawDenom
 }) {}
 
 export class Token extends Schema.Class<Token>("Token")({
