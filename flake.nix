@@ -72,10 +72,6 @@
       url = "github:googleapis/googleapis?rev=8984ddb508dea0e673b724c58338e810b1d8aee3";
       flake = false;
     };
-    gomod2nix = {
-      url = "github:nix-community/gomod2nix?ref=refs/tags/v1.6.0";
-      inputs.nixpkgs.follows = "nixpkgs-go";
-    };
     wasmd = {
       url = "github:unionlabs/wasmd?rev=913c24df4e0a7a3d791d27fc95313d559e9428b6";
       flake = false;
@@ -161,7 +157,6 @@
       get-flake,
       wasmd,
       solc,
-      gomod2nix,
       ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -274,7 +269,6 @@
           goPkgs = import inputs.nixpkgs-go { inherit system; };
           jsPkgs = import inputs.nixpkgs-js { inherit system; };
           unstablePkgs = import inputs.nixpkgs-unstable { inherit system; };
-          buildGoApplication = gomod2nix.legacyPackages.${system}.buildGoApplication;
         in
         {
           _module = {
@@ -288,7 +282,6 @@
                 jsPkgs
                 unstablePkgs
                 mkCi
-                buildGoApplication
                 ;
 
               gitRev = if (builtins.hasAttr "rev" self) then self.rev else "dirty";
@@ -296,7 +289,6 @@
               pkgs = nixpkgs.legacyPackages.${system}.appendOverlays (
                 with inputs;
                 [
-                  gomod2nix.overlays.default
                   solc.overlay
                   rust-overlay.overlays.default
                   foundry.overlay
@@ -462,7 +454,7 @@
           devShells.default = pkgs.mkShell {
             name = "union-devShell";
             buildInputs =
-              [ rust.toolchains.dev gomod2nix.packages.${system}.default ]
+              [ rust.toolchains.dev ]
               ++ (with pkgs; [
                 clang
                 cargo-llvm-cov
