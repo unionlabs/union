@@ -308,6 +308,16 @@ library ZkgmLib {
         return uint32(path >> currentHopIndex * 32);
     }
 
+    function popChannelFromPath(
+        uint256 path
+    ) internal pure returns (uint256, uint32) {
+        if (path == 0) {
+            return (0, 0);
+        }
+        uint256 currentHopIndex = LibBit.fls(path) / 32;
+        return ((path << 32) >> 32, uint32(path >> currentHopIndex * 32));
+    }
+
     // Reverse a channel path consisting of [a, b, c, ...] to [..., c, b, a]
     function reverseChannelPath(
         uint256 path
