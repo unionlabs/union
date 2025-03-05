@@ -14223,6 +14223,7 @@ name = "voyager-plugin-packet-filter"
 version = "0.0.0"
 dependencies = [
  "ibc-classic-spec",
+ "ibc-union-spec",
  "jsonrpsee",
  "regex",
  "serde",

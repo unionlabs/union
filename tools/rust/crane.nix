@@ -370,7 +370,7 @@
 
                 # find ${crateAttrs.cargoVendorDir} -maxdepth 1 -xtype d | grep -v '^${crateAttrs.cargoVendorDir}$' | sed -E 's@(.+)@ --remap-path-prefix=\1=/@g'
 
-                export RUSTFLAGS="$RUSTFLAGS $(find ${crateAttrs.cargoVendorDir} -maxdepth 1 -xtype d | grep -v '^${crateAttrs.cargoVendorDir}$' | sed -E 's@(.+)@ --remap-path-prefix=\1=@g' | tr '\n' ' ')  --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/alloc/src/= --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/std/src/= --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/core/src/= -Zlocation-detail=none"
+                export RUSTFLAGS="$RUSTFLAGS $(find ${crateAttrs.cargoVendorDir} -maxdepth 1 -xtype d | grep -v '^${crateAttrs.cargoVendorDir}$' | sed -E 's@(.+)@ --remap-path-prefix=\1=@g' | tr '\n' ' ')  --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/alloc/src/= --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/std/src/= --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/core/src/="
 
                 echo "$RUSTFLAGS"
               '';

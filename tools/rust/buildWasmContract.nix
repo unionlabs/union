@@ -62,7 +62,7 @@ let
     "--no-default-features --lib ${
       if features != null then lib.concatStringsSep " " ([ "--features" ] ++ features) else ""
     }";
-  rustflags = "-C link-arg=-s -C target-cpu=mvp -C opt-level=z -C passes=adce,loop-deletion";
+  rustflags = "-C link-arg=-s -C target-cpu=mvp -C opt-level=z -C passes=adce,loop-deletion -Zlocation-detail=none";
 in
 {
   buildWasmContract =

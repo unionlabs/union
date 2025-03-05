@@ -335,7 +335,7 @@
           map (
             lc:
             let
-              name = "migrate-lightclient-${lc}-${args.name}";
+              name = "migrate-lightclient-${args.name}-${lc}";
             in
             {
               inherit name;
@@ -372,7 +372,7 @@
           map (
             app:
             let
-              name = "migrate-app-${app}-${args.name}";
+              name = "migrate-app-${args.name}-${app}";
             in
             {
               inherit name;

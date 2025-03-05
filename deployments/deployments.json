@@ -373,5 +373,35 @@
       }
     },
     "channels": [3]
+  },
+  {
+    "chain_id": "mantra-dukong-1",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "core": {
+        "address": "mantra1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tes7fc58u",
+        "height": 3640558
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "mantra1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ksr00zzn",
+          "height": 3683825
+        },
+        "state-lens/ics23/mpt": {
+          "address": "mantra13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqret6va",
+          "height": 3683833
+        },
+        "tendermint": {
+          "address": "mantra1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqsssgzmjw",
+          "height": 3683842
+        }
+      },
+      "app": {
+        "ucs03": {
+          "address": "mantra1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqchr2gt",
+          "height": 3683850
+        }
+      }
+    }
   }
 ]
