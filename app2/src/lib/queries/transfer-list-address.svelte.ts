@@ -14,20 +14,14 @@ export const transferListLatestAddressQuery = (
   limit = LIMIT
 ) =>
   createQueryGraphql({
-    schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
+    schema: Schema.Struct({ v2_transfers: TransferList }),
     document: graphql(
       `
-    query TransferListLatestAddress($addresses: [String!]!, $limit: Int!) @cached(ttl: 1) {
-      v1_ibc_union_fungible_asset_orders(
-        limit: $limit,
-        distinct_on: sort_order,
-        where: {
-          _or: [
-            { sender_normalized: { _in: $addresses } },
-            { receiver_normalized: { _in: $addresses } }
-          ]
-        },
-        order_by: { sort_order: desc_nulls_last }) {
+    query TransferListLatestAddress($addresses: jsonb, $limit: Int!) @cached(ttl: 1) {
+      v2_transfers(args: {
+        p_limit: $limit,
+        p_canonical_addresses: $addresses
+      }) {
         ...TransferListItem
       }
     }
@@ -37,7 +31,7 @@ export const transferListLatestAddressQuery = (
     variables: { addresses, limit },
     refetchInterval: "1 second",
     writeData: data => {
-      transferListAddress.data = data.pipe(Option.map(d => d.v1_ibc_union_fungible_asset_orders))
+      transferListAddress.data = data.pipe(Option.map(d => d.v2_transfers))
     },
     writeError: error => {
       transferListAddress.error = error
@@ -53,23 +47,12 @@ export const transferListPageLtAddressQuery = (
     schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
     document: graphql(
       `
-    query TransferListPageLtAddress($page: String!, $addresses: [String!]!, $limit: Int!) @cached(ttl: 30) {
-      v1_ibc_union_fungible_asset_orders(
-        limit: $limit,
-        distinct_on: sort_order,
-        where: {
-          _and: [
-            {sort_order: {_lt: $page}},
-            {
-              _or: [
-                { sender_normalized: { _in: $addresses } },
-                { receiver_normalized: { _in: $addresses } }
-              ]
-            }
-          ]
-        },
-        order_by: {sort_order: desc_nulls_last}
-      ) {
+    query TransferListPageLtAddress($page: String!, $addresses: jsonb, $limit: Int!) @cached(ttl: 30) {
+      v2_transfers(args: {
+        p_limit: $limit,
+        p_canonical_addresses: $addresses,
+        p_sort_order: $page
+      }) {
         ...TransferListItem
       }
     }
@@ -127,26 +110,16 @@ export const transferListPageGtAddressQuery = (
   limit = LIMIT
 ) =>
   createQueryGraphql({
-    schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders: TransferList }),
+    schema: Schema.Struct({ v2_transfers: TransferList }),
     document: graphql(
       `
-    query TransferListPageGtAddress($page: String!, $addresses: [String!]!, $limit: Int!) @cached(ttl: 30) {
-      v1_ibc_union_fungible_asset_orders(
-        limit: $limit,
-        distinct_on: sort_order,
-        where: {
-          _and: [
-            {sort_order: {_gt: $page}},
-            {
-              _or: [
-                { sender_normalized: { _in: $addresses } },
-                { receiver_normalized: { _in: $addresses } }
-              ]
-            }
-          ]
-        },
-        order_by: {sort_order: asc_nulls_last}
-      ) {
+    query TransferListPageGtAddress($page: String!, $addresses: jsonb, $limit: Int!) @cached(ttl: 30) {
+      v2_transfers(args: {
+        p_limit: $limit,
+        p_canonical_addresses: $addresses,
+        p_sort_order: $page,
+        p_comparison: "gt"
+      }) {
         ...TransferListItem
       }
     }
@@ -157,7 +130,7 @@ export const transferListPageGtAddressQuery = (
     refetchInterval: "30 seconds",
     writeData: data => {
       transferListAddress.data = data.pipe(
-        Option.map(d => d.v1_ibc_union_fungible_asset_orders.toReversed())
+        Option.map(d => d.v2_transfers.toReversed())
       )
     },
     writeError: error => {
