@@ -2,10 +2,18 @@ pragma solidity ^0.8.27;
 
 import "../Types.sol";
 
+interface IIBCModuleRecv {
+    function onRecvPacket(
+        IBCPacket calldata packet,
+        address relayer,
+        bytes calldata relayerMsg
+    ) external returns (bytes memory);
+}
+
 // IIBCModule defines an interface that implements all the callbacks
 // that modules must define as specified in ICS-26
 // https://github.com/cosmos/ibc/blob/2921c5cec7b18e4ef77677e16a6b693051ae3b35/spec/core/ics-026-routing-module/README.md
-interface IIBCModule {
+interface IIBCModule is IIBCModuleRecv {
     function onChanOpenInit(
         uint32 connectionId,
         uint32 channelId,
@@ -39,12 +47,6 @@ interface IIBCModule {
         IBCPacket calldata packet,
         address marketMaker,
         bytes calldata marketMakerMsg
-    ) external returns (bytes memory);
-
-    function onRecvPacket(
-        IBCPacket calldata packet,
-        address relayer,
-        bytes calldata relayerMsg
     ) external returns (bytes memory);
 
     function onAcknowledgementPacket(
