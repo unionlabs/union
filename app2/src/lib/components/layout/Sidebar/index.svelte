@@ -48,17 +48,19 @@ onMount(() => {
 <div class="relative h-full">
   <div
     bind:this={highlightElement}
-    class="absolute -z-10 bg-zinc-200 dark:bg-zinc-700 rounded-lg transition-all duration-300"
+    class="absolute -z-10 bg-zinc-800 rounded-lg transition-all duration-300"
   ></div>
 
 
-<div class="p-6 min-h-full flex flex-col overflow-y-auto">
-  <img class="self-start h-12" src="/images/union-logo.svg" alt="Union" />
-  <div class="flex flex-col justify-between flex-1 py-6">
+<div class="min-h-full flex flex-col overflow-y-auto">
+  <div class="px-6 py-3 flex items-center">
+    <img class="h-10" src="/images/union-logo.svg" alt="Union" />
+  </div>
+  <div class="flex flex-col justify-between flex-1">
   {#each navigation as section}
-    <section>
+    <section class="border-t-1 border-zinc-900 p-6">
       {#if section.title}
-        <h2 class="font-bold text-xl mb-2">{section.title}</h2>
+        <h2 class="font-bold text-sm -mt-8.5 mb-2.5 text-center uppercase text-zinc-600">{section.title}</h2>
       {/if}
       <ul class="flex flex-col gap-1">
         {#each section.items as item}
@@ -68,12 +70,12 @@ onMount(() => {
               data-path={item.path}
               class={cn(
                 "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-                isCurrentPath(item.path) ? "" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                isCurrentPath(item.path) ? "" : "dark:hover:bg-zinc-900"
               )}
             >
               <svelte:component 
                 this={item.icon} 
-                class="size-5 text-zinc-600 dark:text-zinc-400" 
+                class="size-5 text-zinc-500" 
               />
               {item.title}
             </a>
@@ -84,7 +86,7 @@ onMount(() => {
   {/each}
   </div>
 
-  <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2 p-6 border-t border-zinc-900">
     <ConnectWalletButton/>
     <Button variant="secondary" onclick={() => uiStore.openSettingsModal()}>
       <SharpSettingsIcon class="size-5"/>

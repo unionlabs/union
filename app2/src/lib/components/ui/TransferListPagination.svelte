@@ -15,7 +15,7 @@ const { data, onLive, onPrevPage, onNextPage }: Props = $props()
 </script>
 
 <div class="flex gap-6">
-  <Button class="bg-red-500" onclick={onLive}>
+  <Button onclick={onLive}>
     LIVE
   </Button>
   <div class="rounded shadow flex">

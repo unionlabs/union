@@ -10,7 +10,7 @@ type Props = HTMLAttributes<HTMLHeadingElement> & {
 
 const { children, class: className = "", ...rest }: Props = $props()
 
-const classes = cn("font-bold text-4xl", className)
+const classes = cn("font-bold text-3xl", className)
 </script>
 
 <h2 class={classes} {...rest}>
