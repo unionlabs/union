@@ -5,6 +5,7 @@ import { Bech32 } from "$lib/schema/bech32"
 // For Reference, see: https://docs.union.build/concepts/address-types/
 // We always store bytes arrays as hex-encoded strings
 export const AddressCanonicalBytes = Hex.pipe(Schema.brand("CanonicalBytes"))
+export type AddressCanonicalBytes = typeof AddressCanonicalBytes.Type
 
 // Cosmos Address Types
 export const AddressCosmosCanonical = AddressCanonicalBytes.pipe(

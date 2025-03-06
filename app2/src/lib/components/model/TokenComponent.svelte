@@ -17,13 +17,13 @@ const { chain, denom, amount = undefined }: Props = $props()
 
 // Start the query when the component mounts
 $effect(() => {
-  tokensStore.fetchTokens(chain.chain_id)
+  tokensStore.fetchTokens(chain.universal_chain_id)
 })
 
 // Get token info from store
 const token = $derived(
   tokensStore
-    .getData(chain.chain_id)
+    .getData(chain.universal_chain_id)
     .pipe(Option.flatMap(tokens => Option.fromNullable(tokens.find(t => t.denom === denom))))
 )
 
