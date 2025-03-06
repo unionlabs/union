@@ -6,13 +6,13 @@ import type { switchChain } from "./chain.ts"
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 
 export type SwitchChainState = Data.TaggedEnum<{
-  InProgress: object
+  InProgress: {}
   Complete: { exit: EffectToExit<ReturnType<typeof switchChain>> }
 }>
 export const SwitchChainState = Data.taggedEnum<SwitchChainState>()
 
 export type ApprovalSubmitState = Data.TaggedEnum<{
-  InProgress: object
+  InProgress: {}
   Complete: {
     exit: EffectToExit<ReturnType<typeof switchChain>> // TODO: change function
   }
@@ -26,7 +26,7 @@ export type ApprovalReceiptState = Data.TaggedEnum<{
 export const ApprovalReceiptState = Data.taggedEnum<ApprovalReceiptState>()
 
 export type TransferSubmitState = Data.TaggedEnum<{
-  InProgress: object
+  InProgress: {}
   Complete: { exit: EffectToExit<ReturnType<typeof submitTransfer>> }
 }>
 export const TransferSubmitState = Data.taggedEnum<TransferSubmitState>()
@@ -38,7 +38,7 @@ export type TransferReceiptState = Data.TaggedEnum<{
 export const TransferReceiptState = Data.taggedEnum<TransferReceiptState>()
 
 export type TransferSubmission2 = Data.TaggedEnum<{
-  Pending: object
+  Pending: {}
   SwitchChain: { state: SwitchChainState }
   ApprovalSubmit: { state: ApprovalSubmitState }
   ApprovalReceipt: { state: ApprovalReceiptState }
@@ -48,7 +48,7 @@ export type TransferSubmission2 = Data.TaggedEnum<{
 export const TransferSubmission2 = Data.taggedEnum<TransferSubmission2>()
 
 export type TransferSubmission = Data.TaggedEnum<{
-  Pending: object
+  Pending: {}
   SwitchChain: { state: SwitchChainState }
   TransferSubmit: { state: TransferSubmitState }
   TransferReceipt: { state: TransferReceiptState }

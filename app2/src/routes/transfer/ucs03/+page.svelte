@@ -16,6 +16,7 @@ import { getAccount } from "@wagmi/core"
 import { wagmiConfig } from "$lib/wallet/evm/wagmi-config"
 import { getAddress, type Hex, toHex } from "viem"
 import { bech32AddressToHex } from "@unionlabs/client"
+import { Effect } from "effect"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -40,65 +41,66 @@ BigInt["prototype"].toJSON = function () {
 
 let transferState = $state<TransferSubmission>(TransferSubmission.Pending())
 
-async function submit() {
-  try {
-    const account = getAccount(wagmiConfig)
+const submit = Effect.promise(async () => {
+  const account = getAccount(wagmiConfig)
 
-    if (!(account.isConnected && account.address)) {
-      console.error("Wallet not connected - please connect your wallet first")
-      return
-    }
-
-    console.log("Using connected address:", account.address)
-
-    const receiver = "union10z7xxj2m8q3f7j58uxmff38ws9u8m0vmne2key"
-    const formattedReceiver = receiver.startsWith("0x")
-      ? getAddress(receiver)
-      : getAddress(bech32AddressToHex({ address: receiver }))
-
-    let currentTransactionParams: TransactionEvmParams = {
-      account: account.address as `0x${string}`,
-      abi: ucs03ZkgmAbi,
-      chain: sepolia,
-      functionName: "transferV2",
-      address: "0x84f074c15513f15baea0fbed3ec42f0bd1fb3efa", // ucs03address
-      value: BigInt(0.0080085 * 10 ** 18),
-      args: {
-        sourceChainId: 11155111,
-        baseToken: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
-        baseAmount: 100n,
-        quoteToken:
-          "0x756e696f6e313370786b747532686b387073656b7361616b6135346e677879666d706a6c6a726c65683363633873787671346478616c76747471646d64677635",
-        quoteAmount: 100n,
-        receiver: formattedReceiver,
-        sourceChannelId: 9,
-        wethQuoteToken:
-          "0x756e696f6e31686373343677677033637775723679336c7a733638706b776765687930636777766e637472747a7932666e3630343772346561717a34646b6c6c",
-        timeoutHeight: 0n,
-        timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
-        salt: generateSalt()
-      }
-    }
-
-    console.log("Transaction parameters:", currentTransactionParams)
-
-    transferState = await nextState(transferState, currentTransactionParams)
-
-    while (!hasFailedExit(transferState)) {
-      transferState = await nextState(transferState, currentTransactionParams)
-      if (isComplete(transferState)) {
-        console.log("Transaction completed successfully")
-        break
-      }
-    }
-
-    if (hasFailedExit(transferState)) {
-      console.error("Transaction failed:", transferState)
-    }
-  } catch (error) {
-    console.error("Error submitting transaction:", error)
+  if (!(account.isConnected && account.address)) {
+    console.error("Wallet not connected - please connect your wallet first")
+    return
   }
-}
+
+  console.log("Using connected address:", account.address)
+
+  const receiver = "union10z7xxj2m8q3f7j58uxmff38ws9u8m0vmne2key"
+  const formattedReceiver = receiver.startsWith("0x")
+    ? getAddress(receiver)
+    : getAddress(bech32AddressToHex({ address: receiver }))
+
+  let currentTransactionParams: TransactionEvmParams = {
+    account: account.address,
+    abi: ucs03ZkgmAbi,
+    chain: sepolia,
+    functionName: "transferV2",
+    address: "0x84f074c15513f15baea0fbed3ec42f0bd1fb3efa", // ucs03address
+    value: BigInt(0.0080085 * 10 ** 18),
+    args: {
+      sourceChainId: 11155111,
+      baseToken: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
+      baseAmount: 100n,
+      quoteToken:
+        "0x756e696f6e313370786b747532686b387073656b7361616b6135346e677879666d706a6c6a726c65683363633873787671346478616c76747471646d64677635",
+      quoteAmount: 100n,
+      receiver: formattedReceiver,
+      sourceChannelId: 9,
+      wethQuoteToken:
+        "0x756e696f6e31686373343677677033637775723679336c7a733638706b776765687930636777766e637472747a7932666e3630343772346561717a34646b6c6c",
+      timeoutHeight: 0n,
+      timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
+      salt: generateSalt()
+    }
+  }
+
+  console.log("Transaction parameters:", currentTransactionParams)
+
+  transferState = await nextState(transferState, currentTransactionParams)
+
+  while (!hasFailedExit(transferState)) {
+    transferState = await nextState(transferState, currentTransactionParams)
+    if (isComplete(transferState)) {
+      console.log("Transaction completed successfully")
+      break
+    }
+  }
+
+  if (hasFailedExit(transferState)) {
+    console.error("Transaction failed:", transferState)
+  }
+}).pipe(
+  Effect.catchAll(error => {
+    console.error("Error submitting transaction:", error)
+    return Effect.succeed(undefined)
+  })
+)
 </script>
 
 <Sections>
@@ -108,7 +110,7 @@ async function submit() {
       <Button
               class="mt-4 self-start"
               variant="primary"
-              onclick={submit}
+              onclick={() => Effect.runPromise(submit)}
               disabled={transferState._tag !== "Pending" && !hasFailedExit(transferState) && !isComplete(transferState)}
       >
         {#if transferState._tag !== "Pending" && !hasFailedExit(transferState) && !isComplete(transferState)}

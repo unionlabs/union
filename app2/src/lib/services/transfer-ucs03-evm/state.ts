@@ -7,13 +7,13 @@ import type { waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/ap
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 
 export type SwitchChainState = Data.TaggedEnum<{
-  InProgress: object
+  InProgress: {}
   Complete: { exit: EffectToExit<ReturnType<typeof switchChain>> }
 }>
 export const SwitchChainState = Data.taggedEnum<SwitchChainState>()
 
 export type ApprovalSubmitState = Data.TaggedEnum<{
-  InProgress: object
+  InProgress: {}
   Complete: {
     exit: EffectToExit<ReturnType<typeof switchChain>> // TODO: change function
   }
@@ -27,7 +27,7 @@ export type ApprovalReceiptState = Data.TaggedEnum<{
 export const ApprovalReceiptState = Data.taggedEnum<ApprovalReceiptState>()
 
 export type TransferSubmitState = Data.TaggedEnum<{
-  InProgress: object
+  InProgress: {}
   Complete: { exit: EffectToExit<ReturnType<typeof submitTransfer>> }
 }>
 export const TransferSubmitState = Data.taggedEnum<TransferSubmitState>()
@@ -41,7 +41,7 @@ export const TransferReceiptState = Data.taggedEnum<TransferReceiptState>()
 export const TransferSubmission2 = Data.taggedEnum<TransferSubmission>()
 
 export type TransferSubmission = Data.TaggedEnum<{
-  Pending: object
+  Pending: {}
   SwitchChain: { state: SwitchChainState }
   ApprovalSubmit: { state: ApprovalSubmitState }
   ApprovalReceipt: { state: ApprovalReceiptState }

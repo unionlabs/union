@@ -126,7 +126,7 @@ const onNextPage = async () => {
         <TransferListItemComponent {transfer} showSeconds={false}/>
       {/each}
     {:else}
-      {#each Array(settingsStore.pageLimit).fill(0) as v}
+      {#each Array(settingsStore.pageLimit).fill(0)}
         <TransferListItemComponentSkeleton />
       {/each}
     {/if}
