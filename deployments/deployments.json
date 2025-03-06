@@ -337,7 +337,7 @@
         }
       }
     },
-    "channels": [2]
+    "channels": [2, 4]
   },
   {
     "chain_id": "stride-internal-1",
@@ -372,7 +372,7 @@
         }
       }
     },
-    "channels": [3]
+    "channels": [3, 5]
   },
   {
     "chain_id": "mantra-dukong-1",
