@@ -7,10 +7,10 @@ import type { Environment } from "$lib/constants"
 
 export let chainsQuery = (environment: Environment) =>
   createQueryGraphql({
-    schema: Schema.Struct({ v1_ibc_union_chains: Chains }),
+    schema: Schema.Struct({ v2_chains: Chains }),
     document: graphql(`
     query Chains($environment: String!) @cached(ttl: 60) {
-      v1_ibc_union_chains(where: {enabled: {_eq: true}}) {
+      v2_chains {
         chain_id,
         universal_chain_id,
         display_name,
@@ -31,7 +31,7 @@ export let chainsQuery = (environment: Environment) =>
     variables: { environment },
     refetchInterval: "60 seconds",
     writeData: data => {
-      chains.data = data.pipe(Option.map(d => d.v1_ibc_union_chains))
+      chains.data = data.pipe(Option.map(d => d.v2_chains))
     },
     writeError: error => {
       chains.error = error
