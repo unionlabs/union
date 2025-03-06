@@ -1,6 +1,6 @@
 import { Schema } from "effect"
 import { Hex } from "$lib/schema/hex"
-import { ChainId, UniversalChainId } from "./chain.ts"
+import { UniversalChainId } from "./chain.ts"
 import { ChannelId } from "./channel.ts"
 
 export const TokenRawDenom = Hex.pipe(Schema.brand("TokenRawDenom"))
