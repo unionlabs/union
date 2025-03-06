@@ -3,6 +3,8 @@ import { balancesStore } from "$lib/stores/balances.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
 import { Option } from "effect"
+import Button from "$lib/components/ui/Button.svelte"
+import { RpcType, UniversalChainId } from "$lib/schema/chain"
 
 // Get all entries from the store
 let entries = $derived([...balancesStore.data.entries()])
@@ -12,10 +14,27 @@ function parseKey(key: string) {
   const [universalChainId, address, denom] = key.split(":")
   return { universalChainId, address, denom }
 }
+
+// Example data for testing
+const testData = {
+  chain: {
+    universal_chain_id: UniversalChainId.make("sepolia.11155111"),
+    rpc_type: "evm"
+  },
+  address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e".toLowerCase(),
+  denom: "0x779877A7B0D9E8603169DdbD7836e478b4624789" // LINK token on Sepolia
+}
+
+function fetchTestBalance() {
+  balancesStore.fetchBalance(testData.chain, testData.address, testData.denom)
+}
 </script>
 
 <div class="flex flex-col gap-4 p-4">
-  <SectionTitle>Balances</SectionTitle>
+  <div class="flex justify-between items-center">
+    <SectionTitle>Balances</SectionTitle>
+    <Button onclick={fetchTestBalance}>Fetch Test Balance</Button>
+  </div>
 
   {#if entries.length === 0}
     <Card>
