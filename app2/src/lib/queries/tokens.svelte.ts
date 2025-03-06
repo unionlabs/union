@@ -17,9 +17,6 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
             cw20 {
               cw20_token_address
             }
-            chain {
-              chain_id
-            }
             representations {
               name
               symbol
@@ -34,7 +31,7 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
                 wrapping {
                   destination_channel_id
                   unwrapped_chain {
-                    chain_id
+                    universal_chain_id
                   }
                   unwrapped_denom
                 }
@@ -42,10 +39,10 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
             }
             wrapping {
               unwrapped_chain {
-                chain_id
+                universal_chain_id
               }
               wrapped_chain {
-                chain_id
+                universal_chain_id
               }
               destination_channel_id
               unwrapped_denom

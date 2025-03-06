@@ -1,9 +1,11 @@
 <script lang="ts">
+import { Option } from "effect"
 import { RawIntentsStoreSvelte } from "../raw-intents-store.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03"
+import { chains } from "$lib/stores/chains.svelte"
 import {
   TransferSubmission,
   nextState,
@@ -38,9 +40,14 @@ let transfer: Ucs03TransferEvm = {
 }
 
 const submit = async () => {
-  transferState = await nextState(transferState, transfer)
+  if (Option.isNone(chains.data)) return
+
+  const sourceChain = chains.data.value.find(c => c.chain_id === transfer.sourceChain.id.toString())
+  if (!sourceChain) return
+
+  transferState = await nextState(transferState, transfer, sourceChain)
   while (!hasFailedExit(transferState)) {
-    transferState = await nextState(transferState, transfer)
+    transferState = await nextState(transferState, transfer, sourceChain)
     if (isComplete(transferState)) break
   }
 }

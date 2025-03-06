@@ -16,6 +16,7 @@ export const AddressCosmosZkgm = Hex.pipe(Schema.brand("AddressCosmosZkgm")) // 
 
 // EVM Address Types
 export const AddressEvmCanonical = AddressCanonicalBytes.pipe(Schema.brand("AddressEvmCanonical"))
+export type AddressEvmCanonical = typeof AddressEvmCanonical.Type
 export const AddressEvmDisplay = HexChecksum.pipe(Schema.brand("AddressEvmDisplay"))
 export const AddressEvmZkgm = AddressEvmCanonical
 

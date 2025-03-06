@@ -6,11 +6,12 @@ import type {
   WaitForTransactionReceiptErrorType
 } from "viem"
 import { SendTransactionError, WaitForTransactionReceiptError } from "./errors.ts"
-import { getPublicClient, getWalletClient } from "./clients.ts"
+import { getPublicClient, getWalletClient } from "../evm/clients.ts"
+import type { Chain } from "$lib/schema/chain.ts"
 
-export const submitTransfer = (transactionArgs: SendTransactionParameters) =>
+export const submitTransfer = (chain: Chain, transactionArgs: SendTransactionParameters) =>
   Effect.gen(function* () {
-    const walletClient = yield* getWalletClient
+    const walletClient = yield* getWalletClient(chain)
 
     const hash = yield* Effect.tryPromise({
       try: () => walletClient.sendTransaction(transactionArgs),
@@ -20,9 +21,9 @@ export const submitTransfer = (transactionArgs: SendTransactionParameters) =>
     return hash
   })
 
-export const waitForReceipt = (hash: Hash) =>
+export const waitForReceipt = (chain: Chain, hash: Hash) =>
   Effect.gen(function* () {
-    const publicClient = yield* getPublicClient
+    const publicClient = yield* getPublicClient(chain)
 
     const receipt = yield* Effect.tryPromise({
       try: () => publicClient.waitForTransactionReceipt({ hash }),

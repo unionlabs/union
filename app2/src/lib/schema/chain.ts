@@ -1,4 +1,6 @@
+import { VIEM_CHAINS } from "$lib/constants/viem-chains"
 import { Option, Schema } from "effect"
+import type { Chain as ViemChain } from "viem"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
 // e.g. union.union-testnet-9
@@ -9,11 +11,7 @@ export type UniversalChainId = typeof UniversalChainId.Type
 
 export const ChainDisplayName = Schema.String.pipe(Schema.brand("ChainDisplayName"))
 
-export const RpcType = Schema.Union(
-  Schema.Literal("evm"),
-  Schema.Literal("cosmos"),
-  Schema.Literal("aptos")
-)
+export const RpcType = Schema.Literal("evm", "cosmos", "aptos")
 
 export class ChainFeatures extends Schema.Class<ChainFeatures>("ChainFeatures")({
   channel_list: Schema.Boolean,
@@ -37,7 +35,14 @@ export class Chain extends Schema.Class<Chain>("Chain")({
   addr_prefix: Schema.String,
   testnet: Schema.Boolean,
   features: Schema.Array(ChainFeatures)
-}) {}
+}) {
+  toViemChain(): Option.Option<ViemChain> {
+    if (this.rpc_type !== "evm") {
+      return Option.none()
+    }
+    return Option.fromNullable(VIEM_CHAINS.find(vc => `${vc.id}` === this.chain_id))
+  }
+}
 
 export const Chains = Schema.Array(Chain)
 

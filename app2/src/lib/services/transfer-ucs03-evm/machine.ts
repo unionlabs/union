@@ -7,14 +7,15 @@ import {
   TransferSubmitState
 } from "./state.ts"
 import { Effect } from "effect"
-import type { Address, Chain } from "viem"
+import type { Address, Chain as ViemChain } from "viem"
 import { switchChain } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 import type { HexAddress } from "@unionlabs/client"
 import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
+import type { Chain } from "$lib/schema/chain.ts"
 
 export type Ucs03TransferEvm = {
-  sourceChain: Chain
+  sourceChain: ViemChain
   ucs03address: HexAddress
   baseToken: Address
   baseAmount: bigint
@@ -29,7 +30,8 @@ export type Ucs03TransferEvm = {
 
 export async function nextState(
   ts: TransferSubmission,
-  params: Ucs03TransferEvm
+  params: Ucs03TransferEvm,
+  chain: Chain
 ): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
     Filling: () => {
@@ -54,7 +56,7 @@ export async function nextState(
     ApprovalSubmit: ({ state }) => {
       return ApprovalSubmitState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(approveTransfer(params))
+          const exit = await Effect.runPromiseExit(approveTransfer(chain, params))
           if (exit._tag === "Failure") {
             return TransferSubmission.ApprovalSubmit({
               state: ApprovalSubmitState.Complete({ exit })
@@ -77,7 +79,7 @@ export async function nextState(
     ApprovalReceipt: ({ state }) => {
       return ApprovalReceiptState.$match(state, {
         InProgress: async ({ hash }) => {
-          const exit = await Effect.runPromiseExit(waitForApprovalReceipt(hash))
+          const exit = await Effect.runPromiseExit(waitForApprovalReceipt(chain, hash))
           return TransferSubmission.ApprovalReceipt({
             state: ApprovalReceiptState.Complete({ exit })
           })
@@ -96,7 +98,7 @@ export async function nextState(
     TransferSubmit: ({ state }) => {
       return TransferSubmitState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(submitTransfer(params))
+          const exit = await Effect.runPromiseExit(submitTransfer(chain, params))
           return TransferSubmission.TransferSubmit({
             state: TransferSubmitState.Complete({ exit })
           })
@@ -115,7 +117,7 @@ export async function nextState(
     TransferReceipt: ({ state }) => {
       return TransferReceiptState.$match(state, {
         InProgress: async ({ hash }) => {
-          const exit = await Effect.runPromiseExit(waitForTransferReceipt(hash))
+          const exit = await Effect.runPromiseExit(waitForTransferReceipt(chain, hash))
           return TransferSubmission.TransferReceipt({
             state: TransferReceiptState.Complete({ exit })
           })

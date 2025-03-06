@@ -20,7 +20,7 @@ export const transferListLatestAddressQuery = (
     query TransferListLatestAddress($addresses: jsonb, $limit: Int!) @cached(ttl: 1) {
       v2_transfers(args: {
         p_limit: $limit,
-        p_canonical_addresses: $addresses
+        p_addresses_canonical: $addresses
       }) {
         ...TransferListItem
       }
@@ -50,7 +50,7 @@ export const transferListPageLtAddressQuery = (
     query TransferListPageLtAddress($page: String!, $addresses: jsonb, $limit: Int!) @cached(ttl: 30) {
       v2_transfers(args: {
         p_limit: $limit,
-        p_canonical_addresses: $addresses,
+        p_addresses_canonical: $addresses,
         p_sort_order: $page
       }) {
         ...TransferListItem
@@ -116,7 +116,7 @@ export const transferListPageGtAddressQuery = (
     query TransferListPageGtAddress($page: String!, $addresses: jsonb, $limit: Int!) @cached(ttl: 30) {
       v2_transfers(args: {
         p_limit: $limit,
-        p_canonical_addresses: $addresses,
+        p_addresses_canonical: $addresses,
         p_sort_order: $page,
         p_comparison: "gt"
       }) {

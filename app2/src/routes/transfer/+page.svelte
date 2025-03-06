@@ -5,6 +5,8 @@ import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import { TransferSubmission, nextState, hasFailedExit, isComplete } from "$lib/services/transfer"
+import { chains } from "$lib/stores/chains.svelte"
+import { Option } from "effect"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
@@ -42,9 +44,15 @@ const transactionParams: TransactionParams = {
 }
 
 async function submit() {
-  transferState = await nextState(transferState, transactionParams)
+  const chainsData = Option.getOrNull(chains.data)
+  if (!chainsData) return
+
+  const sourceChain = chainsData.find(c => c.chain_id === transactionParams.chain.id.toString())
+  if (!sourceChain) return
+
+  transferState = await nextState(transferState, transactionParams, sourceChain)
   while (!hasFailedExit(transferState)) {
-    transferState = await nextState(transferState, transactionParams)
+    transferState = await nextState(transferState, transactionParams, sourceChain)
     // If we're in the final state (TransferReceipt.Complete), stop
     if (isComplete(transferState)) {
       break
