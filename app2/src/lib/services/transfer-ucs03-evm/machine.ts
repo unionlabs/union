@@ -7,7 +7,7 @@ import {
   TransferSubmitState
 } from "./state.ts"
 import { Effect } from "effect"
-import type { Chain } from "viem"
+import type { Address, Chain } from "viem"
 import { switchChain } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 import type { HexAddress } from "@unionlabs/client"
@@ -15,20 +15,17 @@ import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-
 
 export type TransactionEvmParams = {
   chain: Chain
-  address: HexAddress
-  args: {
-    sourceChainId: number
-    baseToken: string
-    baseAmount: bigint
-    quoteToken: string
-    quoteAmount: bigint
-    receiver: string
-    sourceChannelId: number
-    wethQuoteToken: string
-    timeoutHeight: bigint
-    timeoutTimestamp: `0x${string}`
-    salt: `0x${string}`
-  }
+  ucs03address: HexAddress
+  sourceChainId: number
+  baseToken: Address
+  baseAmount: bigint
+  quoteToken: string
+  quoteAmount: bigint
+  receiver: string
+  sourceChannelId: number
+  wethQuoteToken: string
+  timeoutHeight: bigint
+  timeoutTimestamp: `0x${string}`
 }
 
 export async function nextState(

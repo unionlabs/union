@@ -5,7 +5,8 @@ import type {
   CreateWalletClientErrorType,
   SendTransactionErrorType,
   SwitchChainErrorType,
-  WaitForTransactionReceiptErrorType
+  WaitForTransactionReceiptErrorType,
+  WriteContractErrorType
 } from "viem"
 
 export class CreateWalletClientError extends Data.TaggedError("CreateWalletClientError")<{
@@ -22,8 +23,8 @@ export class CreatePublicClientError extends Data.TaggedError("CreatePublicClien
   cause: CreatePublicClientErrorType
 }> {}
 
-export class SendTransactionError extends Data.TaggedError("SendTransactionError")<{
-  cause: SendTransactionErrorType
+export class WriteContractError extends Data.TaggedError("WriteContractError")<{
+  cause: WriteContractErrorType
 }> {}
 
 export class SwitchChainError extends Data.TaggedError("SwitchChainError")<{

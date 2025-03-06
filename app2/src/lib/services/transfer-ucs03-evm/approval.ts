@@ -4,9 +4,10 @@ import {
   getAddress,
   type Hash,
   type SendTransactionErrorType,
-  type WaitForTransactionReceiptErrorType
+  type WaitForTransactionReceiptErrorType,
+  type WriteContractErrorType
 } from "viem"
-import { SendTransactionError, WaitForTransactionReceiptError } from "./errors.ts"
+import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
 import { getPublicClient, getWalletClient } from "./clients.ts"
 import type { TransactionEvmParams } from "$lib/services/transfer-ucs03-evm/machine"
 import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
@@ -26,10 +27,10 @@ export const approveTransfer = (transactionArgs: TransactionEvmParams) =>
           abi: erc20Abi,
           chain: transactionArgs.chain,
           functionName: "approve",
-          address: getAddress(transactionArgs.args.baseToken),
-          args: [getAddress(transactionArgs.address), transactionArgs.args.baseAmount]
+          address: transactionArgs.baseToken,
+          args: [transactionArgs.ucs03address, transactionArgs.baseAmount]
         }),
-      catch: err => new SendTransactionError({ cause: err as SendTransactionErrorType })
+      catch: err => new WriteContractError({ cause: err as WriteContractErrorType })
     })
 
     return hash
