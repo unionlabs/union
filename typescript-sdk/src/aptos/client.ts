@@ -164,7 +164,6 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
         const salt = MoveVector.U8(rawSalt)
 
         try {
-          let txn;
           if (authAccess === "key") {
             console.info("key-based flow")
             // Key-based flow using the full AptosAccount
@@ -187,39 +186,38 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
               }
             })
 
-            txn = await aptos.signAndSubmitTransaction({
+            const txn = await aptos.signAndSubmitTransaction({
               signer: signer as AptosAccount,
               transaction: payload
             });
             const receipt = await waitForTransactionReceipt({ aptos, hash: txn.hash });
             return receipt;
-          } else {
-              
-            const saltHex = toHex(new Uint8Array(14) ); 
-            // 14 bytes + 0x 2 bytes and that walletPayload encodes it in it
-            // so it becomes 32 byte.
-            const walletPayload = {
-              function: `${ucs03address}::ibc_app::transfer`,
-              type_arguments: [],
-              arguments: [
-                sourceChannelId.toString(),
-                hexToAscii(receiver), // It is hexing again in it.
-                baseToken,
-                baseAmount.toString(),
-                hexToAscii(quoteToken), // It is hexing again in it.
-                quoteAmount.toString(),
-                18446744073709551615n.toString(),
-                18446744073709551615n.toString(),
-                saltHex
-              ]
-            };
-            try {
-              const signedTxn = await transport.signAndSubmitTransaction({ payload: walletPayload });
-              return ok(signedTxn.hash); // Wrap the string in a successful Result
-            } catch (error) {
-              return err(new Error("Transaction signing failed"));
-            }
+          }   
+          const saltHex = toHex(new Uint8Array(14) ); 
+          // 14 bytes + 0x 2 bytes and that walletPayload encodes it in it
+          // so it becomes 32 byte.
+          const walletPayload = {
+            function: `${ucs03address}::ibc_app::transfer`,
+            type_arguments: [],
+            arguments: [
+              sourceChannelId.toString(),
+              hexToAscii(receiver), // It is hexing again in it.
+              baseToken,
+              baseAmount.toString(),
+              hexToAscii(quoteToken), // It is hexing again in it.
+              quoteAmount.toString(),
+              18446744073709551615n.toString(),
+              18446744073709551615n.toString(),
+              saltHex
+            ]
+          };
+          try {
+            const signedTxn = await transport.signAndSubmitTransaction({ payload: walletPayload });
+            return ok(signedTxn.hash); // Wrap the string in a successful Result
+          } catch (error) {
+            return err(new Error("Transaction signing failed"));
           }
+          
         } catch (error) {
           console.info("error is:", error)
           return err(new Error("failed to execute aptos call", { cause: error as Error }))
@@ -228,9 +226,9 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
     }))
 }
 function toHex(uint8array: Uint8Array): string {
-  return "0x" + Array.from(uint8array)
+  return `0x${Array.from(uint8array)
     .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
+    .join("")}`;  
 }
 
 function hexToAscii(hexString: string): string {
