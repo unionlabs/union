@@ -60,7 +60,7 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
         tokensStore.setData(universalChainId, data.pipe(Option.map(d => d.v1_ibc_union_tokens)))
       },
       writeError: error => {
-        Effect.runSync(Effect.log(`storing new token error for ${universalChainId}`))
+        Effect.runSync(Effect.log(`storing new tokens error for ${universalChainId}`))
         tokensStore.setError(universalChainId, error)
       }
     })
