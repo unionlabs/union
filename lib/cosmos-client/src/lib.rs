@@ -10,7 +10,7 @@ use cometbft_rpc::{
 };
 use protos::cosmos::base::abci;
 use sha2::Digest;
-use tracing::{debug, info};
+use tracing::{debug, info, instrument};
 use unionlabs::{
     bech32::Bech32,
     cosmos::{
@@ -24,7 +24,7 @@ use unionlabs::{
     },
     encoding::{EncodeAs, Proto},
     google::protobuf::any::{Any, TryFromAnyError},
-    primitives::{Bytes, H256},
+    primitives::H256,
     prost::{self, Message, Name},
     ErrorReporter,
 };
@@ -60,6 +60,13 @@ impl<W, Q, G> TxClient<W, Q, G> {
 }
 
 impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
+    #[instrument(
+        skip_all,
+        fields(
+            signer = %self.wallet().address(),
+            memo = %memo.as_ref()
+        )
+    )]
     pub async fn tx<M: Message + Name, R: Message + Default + Name>(
         &self,
         msg: M,
@@ -102,7 +109,10 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
         messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
         memo: impl AsRef<str>,
     ) -> Result<(H256, TxResponse), BroadcastTxCommitError> {
-        let account = self.account_info(self.wallet.address()).await?;
+        let account = self
+            .account_info(self.wallet.address())
+            .await?
+            .unwrap_or_default();
 
         let (tx_body, mut auth_info, simulation_gas_info) =
             self.simulate_tx(messages, memo).await?;
@@ -217,7 +227,10 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
     ) -> Result<(TxBody, AuthInfo, GasInfo), SimulateTxError> {
         use protos::cosmos::tx;
 
-        let account = self.account_info(self.wallet.address()).await?;
+        let account = self
+            .account_info(self.wallet.address())
+            .await?
+            .unwrap_or_default();
 
         let tx_body = TxBody {
             // TODO: Use RawAny here
@@ -285,10 +298,10 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
     pub async fn account_info<T: Clone + AsRef<[u8]>>(
         &self,
         account: Bech32<T>,
-    ) -> Result<BaseAccount, FetchAccountInfoError> {
+    ) -> Result<Option<BaseAccount>, FetchAccountInfoError> {
         debug!(%account, "fetching account");
 
-        Ok(self
+        let account = self
             .rpc
             .client()
             .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::QueryAccountResponse>(
@@ -300,18 +313,26 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
                 false,
             )
             .await?
-            .into_result()?
-            .ok_or_else(|| {
-                FetchAccountInfoError::AccountNotFound(
-                    account.clone().map_data(|bz| bz.as_ref().into()),
-                )
-            })?
-            .account
-            .map(<Any<BaseAccount>>::try_from)
-            .ok_or_else(|| {
-                FetchAccountInfoError::AccountNotFound(account.map_data(|bz| bz.as_ref().into()))
-            })??
-            .0)
+            .into_result()
+            .map_err(|e| match (e.error_code.get(), e.codespace.as_str()) {
+                (22, "sdk") => Ok(None),
+                _ => Err(FetchAccountInfoError::Query(e)),
+            })
+            .or_else(|e| e)?
+            .map(|response| {
+                response
+                    .account
+                    .map(<Any<BaseAccount>>::try_from)
+                    .map(|res| res.map(|a| a.0))
+                    .transpose()
+                    .map_err(Into::into)
+            })
+            .transpose()
+            .map(Option::flatten);
+
+        debug!(?account, "fetched account");
+
+        account
     }
 }
 
@@ -372,8 +393,8 @@ pub enum SimulateTxError {
 
 #[derive(Debug, thiserror::Error)]
 pub enum FetchAccountInfoError {
-    #[error("account {0} not found")]
-    AccountNotFound(Bech32<Bytes>),
+    // #[error("account {0} not found")]
+    // AccountNotFound(Bech32<Bytes>),
     #[error("grpc abci query error")]
     Query(#[from] GrpcAbciQueryError),
     #[error("error decoding account")]

@@ -72,6 +72,11 @@ impl CosmosSigner {
                 .into(),
         )
     }
+
+    #[must_use]
+    pub fn private_key(&self) -> H256 {
+        self.signing_key.to_bytes().into()
+    }
 }
 
 impl Display for CosmosSigner {
