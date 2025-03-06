@@ -1,6 +1,6 @@
 import { Schema } from "effect"
 import { Hex } from "$lib/schema/hex"
-import { ChainId } from "./chain.ts"
+import { ChainId, UniversalChainId } from "./chain.ts"
 import { ChannelId } from "./channel.ts"
 
 export const TokenRawDenom = Hex.pipe(Schema.brand("TokenRawDenom"))
@@ -21,7 +21,7 @@ export class TokenSource extends Schema.Class<TokenSource>("TokenSource")({
 export class TokenSourceWrapping extends Schema.Class<TokenSourceWrapping>("TokenSourceWrapping")({
   destination_channel_id: ChannelId,
   unwrapped_chain: Schema.Struct({
-    chain_id: ChainId
+    universal_chain_id: UniversalChainId
   }),
   unwrapped_denom: TokenRawDenom
 }) {}
@@ -41,10 +41,10 @@ export class TokenRepresentation extends Schema.Class<TokenRepresentation>("Toke
 
 export class TokenWrapping extends Schema.Class<TokenWrapping>("TokenWrapping")({
   unwrapped_chain: Schema.Struct({
-    chain_id: ChainId
+    universal_chain_id: UniversalChainId
   }),
   wrapped_chain: Schema.Struct({
-    chain_id: ChainId
+    universal_chain_id: UniversalChainId
   }),
   destination_channel_id: ChannelId,
   unwrapped_denom: TokenRawDenom
@@ -53,9 +53,6 @@ export class TokenWrapping extends Schema.Class<TokenWrapping>("TokenWrapping")(
 export class Token extends Schema.Class<Token>("Token")({
   denom: TokenRawDenom,
   cw20: Schema.OptionFromNullOr(TokenCw20),
-  chain: Schema.Struct({
-    chain_id: ChainId
-  }),
   representations: Schema.Array(TokenRepresentation),
   wrapping: Schema.Array(TokenWrapping)
 }) {}

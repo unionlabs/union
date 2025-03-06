@@ -9,11 +9,7 @@ export type UniversalChainId = typeof UniversalChainId.Type
 
 export const ChainDisplayName = Schema.String.pipe(Schema.brand("ChainDisplayName"))
 
-export const RpcType = Schema.Union(
-  Schema.Literal("evm"),
-  Schema.Literal("cosmos"),
-  Schema.Literal("aptos")
-)
+export const RpcType = Schema.Literal("evm", "cosmos", "aptos")
 
 export class ChainFeatures extends Schema.Class<ChainFeatures>("ChainFeatures")({
   channel_list: Schema.Boolean,

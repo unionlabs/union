@@ -18,8 +18,9 @@ export const BalanceSchema = Schema.Struct({
 })
 
 import { getPublicClient } from "$lib/services/transfer/clients"
-import { RawTokenBalance, TokenRawAmount } from "$lib/schema/token"
+import { RawTokenBalance, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
 import type { CreatePublicClientError } from "$lib/services/transfer"
+import type { AddressEvmCanonical } from "$lib/schema/address"
 
 const fetchTokenBalance = ({
   client,
@@ -27,8 +28,8 @@ const fetchTokenBalance = ({
   walletAddress
 }: {
   client: PublicClient
-  tokenAddress: Address
-  walletAddress: Address
+  tokenAddress: TokenRawDenom
+  walletAddress: AddressEvmCanonical
 }) =>
   Effect.tryPromise({
     try: () =>
@@ -48,13 +49,14 @@ export const createBalanceQuery = ({
   writeData,
   writeError
 }: {
-  tokenAddress: Address
-  walletAddress: Address
+  tokenAddress: TokenRawDenom
+  walletAddress: AddressEvmCanonical
   refetchInterval: DurationInput
   writeData: (data: RawTokenBalance) => void
   writeError: (error: Option.Option<FetchBalanceError>) => void
 }) => {
   const fetcherPipeline = Effect.gen(function* (_) {
+    yield* Effect.log(`starting balances fetcher for ${walletAddress}:${tokenAddress}`)
     const client = yield* getPublicClient
 
     const balance = yield* Effect.retry(
