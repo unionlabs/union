@@ -1,10 +1,13 @@
 <script lang="ts">
 import { balancesStore } from "$lib/stores/balances.svelte"
+import { chains } from "$lib/stores/chains.svelte"
+import { tokensStore } from "$lib/stores/tokens.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
 import { Option } from "effect"
 import Button from "$lib/components/ui/Button.svelte"
 import { RpcType, UniversalChainId } from "$lib/schema/chain"
+import { AddressEvmCanonical } from "$lib/schema/address"
 
 // Get all entries from the store
 let entries = $derived([...balancesStore.data.entries()])
@@ -15,28 +18,63 @@ function parseKey(key: string) {
   return { universalChainId, address, denom }
 }
 
-// Example data for testing
-const testData = {
-  chain: {
-    universal_chain_id: UniversalChainId.make("sepolia.11155111"),
-    rpc_type: "evm"
-  },
-  address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e".toLowerCase(),
-  denom: "0x779877A7B0D9E8603169DdbD7836e478b4624789" // LINK token on Sepolia
+// Example wallet address - this would come from wallet connection in real app
+const testAddress = AddressEvmCanonical.make(
+  "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA".toLowerCase()
+)
+
+function fetchAllBalances() {
+  const chainsData = Option.getOrNull(chains.data)
+  if (!chainsData) return
+
+  for (const chain of chainsData) {
+    // Only fetch for EVM chains for now
+    if (chain.rpc_type !== "evm") continue
+
+    // Get tokens for this chain
+    const tokens = Option.getOrNull(tokensStore.getData(chain.universal_chain_id))
+    if (!tokens) {
+      // If we don't have tokens yet, trigger a fetch
+      tokensStore.fetchTokens(chain.universal_chain_id)
+      continue
+    }
+
+    // For each token, fetch its balance
+    for (const token of tokens) {
+      balancesStore.fetchBalance(chain, testAddress, token.denom)
+    }
+  }
 }
 
-function fetchTestBalance() {
-  balancesStore.fetchBalance(testData.chain, testData.address, testData.denom)
-}
+// Start fetching tokens when the page loads
+$effect(() => {
+  const chainsData = Option.getOrNull(chains.data)
+  if (!chainsData) return
+
+  for (const chain of chainsData) {
+    if (chain.rpc_type === "evm") {
+      tokensStore.fetchTokens(chain.universal_chain_id)
+    }
+  }
+})
 </script>
 
 <div class="flex flex-col gap-4 p-4">
   <div class="flex justify-between items-center">
     <SectionTitle>Balances</SectionTitle>
-    <Button onclick={fetchTestBalance}>Fetch Test Balance</Button>
+    <Button onclick={fetchAllBalances}>Fetch All Balances</Button>
   </div>
 
-  {#if entries.length === 0}
+  {#if Option.isNone(chains.data)}
+    <Card>
+      <div class="p-4 text-zinc-500">Loading chains...</div>
+    </Card>
+  {:else if Option.isSome(chains.error)}
+    <Card>
+      <div class="p-4 text-red-500">Error loading chains</div>
+    </Card>
+  {:else}
+    {#if entries.length === 0}
     <Card>
       <div class="p-4 text-zinc-500">No balances found</div>
     </Card>
@@ -60,5 +98,7 @@ function fetchTestBalance() {
         </div>
       </Card>
     {/each}
+    {/if}
   {/if}
 </div>
+
