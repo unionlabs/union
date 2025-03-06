@@ -1,16 +1,20 @@
 import { Effect, type Fiber, Option } from "effect"
-import { TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
+import type { TokenRawDenom } from "$lib/schema/token"
 import type { UniversalChainId } from "$lib/schema/chain"
 import { RawTokenBalance } from "$lib/schema/token"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { SvelteMap } from "svelte/reactivity"
+import type { AddressCanonicalBytes } from "$lib/schema/address"
 
 // Composite key type for the maps
-type BalanceKey = `${UniversalChainId}:${TokenRawDenom}`
+type BalanceKey = `${UniversalChainId}:${AddressCanonicalBytes}:${TokenRawDenom}`
 
 // Helper to create the composite key
-const createKey = (universalChainId: UniversalChainId, denom: TokenRawDenom): BalanceKey =>
-  `${universalChainId}:${denom}`
+const createKey = (
+  universalChainId: UniversalChainId,
+  address: AddressCanonicalBytes,
+  denom: TokenRawDenom
+): BalanceKey => `${universalChainId}:${address}:${denom}`
 
 class BalancesStore {
   data = $state(new SvelteMap<BalanceKey, RawTokenBalance>())
@@ -19,37 +23,45 @@ class BalancesStore {
 
   setBalance(
     universalChainId: typeof UniversalChainId.Type,
+    address: AddressCanonicalBytes,
     denom: typeof TokenRawDenom.Type,
     balance: typeof RawTokenBalance.Type
   ) {
-    this.data.set(createKey(universalChainId, denom), balance)
+    this.data.set(createKey(universalChainId, address, denom), balance)
   }
 
   setError(
     universalChainId: UniversalChainId,
+    address: AddressCanonicalBytes,
     denom: TokenRawDenom,
     error: Option.Option<FetchDecodeGraphqlError>
   ) {
-    this.errors.set(createKey(universalChainId, denom), error)
+    this.errors.set(createKey(universalChainId, address, denom), error)
   }
 
-  getBalance(chainId: UniversalChainId, denom: TokenRawDenom): typeof RawTokenBalance.Type {
-    return this.data.get(createKey(chainId, denom)) ?? RawTokenBalance.make(Option.none())
+  getBalance(
+    chainId: UniversalChainId,
+    address: AddressCanonicalBytes,
+    denom: TokenRawDenom
+  ): typeof RawTokenBalance.Type {
+    return this.data.get(createKey(chainId, address, denom)) ?? RawTokenBalance.make(Option.none())
   }
 
   getError(
     universalChainId: UniversalChainId,
+    address: AddressCanonicalBytes,
     denom: TokenRawDenom
   ): Option.Option<FetchDecodeGraphqlError> {
-    return this.errors.get(createKey(universalChainId, denom)) ?? Option.none()
+    return this.errors.get(createKey(universalChainId, address, denom)) ?? Option.none()
   }
 
   fetchBalance(
     universalChainId: UniversalChainId,
+    address: AddressCanonicalBytes,
     denom: TokenRawDenom,
     effect: Effect.Effect<never, never, number>
   ) {
-    const key = createKey(universalChainId, denom)
+    const key = createKey(universalChainId, address, denom)
 
     // If there's already a query running for this combination, don't start another one
     if (this.fibers.has(key)) {
