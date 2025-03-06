@@ -104,7 +104,7 @@
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
 
-        bundle-union-1-image = mkUnionvisorImage self'.packages.bundle-testnet-9;
+        bundle-union-1-image = mkUnionvisorImage self'.packages.bundle-union-1;
 
         bundle-union-1 = mkBundle {
           name = "union-1";
@@ -151,7 +151,7 @@
         };
         bundle = mkOption {
           type = types.package;
-          default = self.packages.${pkgs.system}.bundle-testnet-9;
+          default = self.packages.${pkgs.system}.bundle-union-1;
         };
         logFormat = mkOption {
           type = types.enum [
@@ -164,7 +164,7 @@
         moniker = mkOption { type = types.str; };
         network = mkOption {
           type = types.str;
-          default = "union-testnet-9";
+          default = "union-1";
         };
         seeds = mkOption {
           type = types.str;
