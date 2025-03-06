@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[model(proto(raw(protos::cosmos::auth::v1beta1::BaseAccount), into, from))]
+#[derive(Default)]
 pub struct BaseAccount {
     // REVIEW: is this a bech32 address?
     pub address: String,
