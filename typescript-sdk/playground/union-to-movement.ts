@@ -65,9 +65,7 @@ if (channel_info === null) {
 }
 consola.info("channel", channel_info)
 
-let quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, MUNO_HEX, channel_info
-
-)
+let quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, MUNO_HEX, channel_info)
 if (quoteToken.isErr()) {
   consola.info("could not get quote token")
   consola.error(quoteToken.error)
@@ -85,7 +83,6 @@ if (!PRIVATE_KEY) {
   consola.error("no private key provided")
   process.exit(1)
 }
-
 
 const unionClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,

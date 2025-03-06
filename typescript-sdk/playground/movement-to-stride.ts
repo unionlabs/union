@@ -2,7 +2,7 @@ import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { createUnionClient, bech32AddressToHex } from "#mod.ts"
+import { createUnionClient } from "#mod.ts"
 
 import {
   getChannelInfo,

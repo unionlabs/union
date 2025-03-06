@@ -64,10 +64,10 @@ export async function queryBalances(chain: Chain, address: string) {
 }
 export async function updateBalancesAptos(chain: Chain, address: Address) {
   // Optionally mark expected tokens as "loading" (if chain.tokens exists)
-  if (chain.tokens && chain.tokens.length) {
+  if (chain.tokens && chain.tokens.length > 0) {
     chain.tokens.forEach(token =>
       updateBalance(chain.chain_id, token.denom, { kind: "loading", timestamp: Date.now() })
-    );
+    )
   }
 
   // Define the GraphQL query and variables.
@@ -88,18 +88,18 @@ export async function updateBalancesAptos(chain: Chain, address: Address) {
         }
       }
     }
-  `;
+  `
   const variables = {
     owner_address: address,
     limit: 200,
     offset: 0
-  };
+  }
 
   // Set up the fetch options with appropriate headers.
   const fetchOptions: RequestInit = {
     method: "POST",
-    body: JSON.stringify({ query, variables }),
-  };
+    body: JSON.stringify({ query, variables })
+  }
 
   try {
     // Send the request to the Aptos indexer.
@@ -110,9 +110,9 @@ export async function updateBalancesAptos(chain: Chain, address: Address) {
     if (response.isErr()) {
       throw new Error(response.error.message)
     }
-    const data = response.value.data;
+    const data = response.value.data
     if (!data || !data.current_fungible_asset_balances) {
-      throw new Error("Invalid response data");
+      throw new Error("Invalid response data")
     }
 
     const aptosBalances = data.current_fungible_asset_balances
@@ -133,7 +133,7 @@ export async function updateBalancesAptos(chain: Chain, address: Address) {
   } catch (error: any) {
     console.error("Error fetching Aptos balances", error)
     // On error, update the balances for all tokens with an error state.
-    if (chain.tokens && chain.tokens.length) {
+    if (chain.tokens?.length) {
       chain.tokens.forEach(token =>
         updateBalance(chain.chain_id, token.denom, {
           kind: "error",

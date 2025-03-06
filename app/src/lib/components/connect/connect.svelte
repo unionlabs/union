@@ -34,7 +34,7 @@ let connectedWallets = derived(
 )
 
 // Set to 3 when shipping aptos.
-  const WALLET_COUNT = 3;
+const WALLET_COUNT = 3
 
 $: if ($connectedWallets >= 1) {
   buttonText =

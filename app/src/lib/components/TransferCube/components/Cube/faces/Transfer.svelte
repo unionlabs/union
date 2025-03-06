@@ -88,14 +88,13 @@ const transfer = async () => {
     // @ts-ignore
     transferState.set({ kind: "SWITCHING_TO_CHAIN" })
 
-    let rpcUrl = sourceChain.rpcs.find((rpc) => rpc.type === "rpc")?.url;
-      if (!rpcUrl)
-        return toast.error(`no rpc available for ${sourceChain.display_name}`);
+    let rpcUrl = sourceChain.rpcs.find(rpc => rpc.type === "rpc")?.url
+    if (!rpcUrl) return toast.error(`no rpc available for ${sourceChain.display_name}`)
 
-      if (!rpcUrl.endsWith("/v1", rpcUrl.length - 3)) {
-        rpcUrl = rpcUrl + "/v1";
-      }
-      rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1"; //TODO: Remove this later its for test
+    if (!rpcUrl.endsWith("/v1", rpcUrl.length - 3)) {
+      rpcUrl = rpcUrl + "/v1"
+    }
+    rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1" //TODO: Remove this later its for test
 
     if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
       const chainInfo = await wallet.getNetwork()
@@ -114,7 +113,7 @@ const transfer = async () => {
 
     if (stepBefore($transferState, "TRANSFERRING")) {
       try {
-        let account = await wallet?.getAccount();
+        let account = await wallet?.getAccount()
         const client = createUnionClient({
           chainId: sourceChain.chain_id as AptosChainId,
           account: account,
@@ -141,8 +140,7 @@ const transfer = async () => {
         return
       }
     }
-  }
-  else if (sourceChain.rpc_type === "cosmos" && transferArgs !== "NO_QUOTE_AVAILABLE") {
+  } else if (sourceChain.rpc_type === "cosmos" && transferArgs !== "NO_QUOTE_AVAILABLE") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
     if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
 
@@ -263,7 +261,7 @@ const transfer = async () => {
           receiver: transferArgs.receiver,
           baseToken: fromHex(transferArgs.baseToken, "string")
         }
-        
+
         if (destChain.rpc_type !== "aptos") {
           realArgs.receiver = toHex(transferArgs.receiver)
         }

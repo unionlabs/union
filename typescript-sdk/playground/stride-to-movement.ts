@@ -63,21 +63,19 @@ if (channel_info === null) {
   consola.info("no channel found")
   channel_info = {
     source_chain_id: SOURCE_CHAIN_ID,
-    source_port_id: "7374726964653178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c3234376371333570727573",
+    source_port_id:
+      "7374726964653178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c3234376371333570727573",
     source_channel_id: 5,
     source_connection_id: 333333333,
     destination_chain_id: DESTINATION_CHAIN_ID,
-    destination_port_id:
-      "80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
+    destination_port_id: "80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
     destination_channel_id: 4,
     destination_connection_id: 333333333
   }
 }
 consola.info("channel", channel_info)
 
-let quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, MUNO_HEX, channel_info
-
-)
+let quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, MUNO_HEX, channel_info)
 if (quoteToken.isErr()) {
   consola.info("could not get quote token")
   consola.error(quoteToken.error)
@@ -95,7 +93,6 @@ if (!PRIVATE_KEY) {
   consola.error("no private key provided")
   process.exit(1)
 }
-
 
 const unionClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
