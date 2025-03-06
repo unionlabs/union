@@ -7,6 +7,7 @@ import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
 import { Option } from "effect"
 import Button from "$lib/components/ui/Button.svelte"
 import { RpcType, UniversalChainId } from "$lib/schema/chain"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import { AddressEvmCanonical } from "$lib/schema/address"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 
@@ -65,29 +66,32 @@ $effect(() => {
     </Card>
   {:else}
     {#each Option.getOrNull(chains.data) ?? [] as chain}
+      <Card>
       {#if chain.rpc_type === "evm"}
         {@const tokens = Option.getOrNull(tokensStore.getData(chain.universal_chain_id))}
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col">
           <h3 class="text-lg font-medium mt-4">{chain.universal_chain_id}</h3>
           
           {#if !tokens}
             <Card>
-              <div class="p-4 text-zinc-500">Loading tokens...</div>
+              <div class=" text-zinc-500">Loading tokens...</div>
             </Card>
           {:else if tokens.length === 0}
             <Card>
-              <div class="p-4 text-zinc-500">No tokens found</div>
+              <div class="text-zinc-500">No tokens found</div>
             </Card>
           {:else}
             {#each tokens as token}
               {@const balance = balancesStore.getBalance(chain.universal_chain_id, testAddress, token.denom)}
               {@const error = balancesStore.getError(chain.universal_chain_id, testAddress, token.denom)}
-              <Card>
-                <div class="p-4 flex flex-col gap-2">
-                  <div class="text-sm text-zinc-500">Token: {token.denom}</div>
-                  <div class="font-medium">
-                    Balance: {Option.getOrNull(balance) ?? "Not fetched"}
-                  </div>
+                <div class=" flex flex-col gap-2">
+                  {#if Option.isSome(balance)}
+                    <TokenComponent 
+                      chain={chain} 
+                      denom={token.denom} 
+                      amount={balance.value} 
+                    />
+                  {/if}
                   
                   {#if Option.isSome(error)}
                     <div class="text-red-500 text-sm">
@@ -96,11 +100,11 @@ $effect(() => {
                     <ErrorComponent error={error.value} />
                   {/if}
                 </div>
-              </Card>
             {/each}
           {/if}
         </div>
       {/if}
+      </Card>
     {/each}
   {/if}
 </div>
