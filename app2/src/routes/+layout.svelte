@@ -1,7 +1,7 @@
 <script lang="ts">
 import "../app.css"
 import { onMount } from "svelte"
-import { Effect, Fiber } from "effect"
+import { Effect, Fiber, Option } from "effect"
 import { chainsQuery } from "$lib/queries/chains.svelte"
 import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
 import AppErrors from "$lib/components/layout/AppErrors/index.svelte"
@@ -28,9 +28,14 @@ onMount(() => {
 })
 
 $effect(() => {
-  console.log(wallets.evmAddress)
-  console.log(wallets.cosmosAddress)
-  console.log(wallets.aptosAddress)
+  Effect.runPromise(
+    Effect.log(
+      "connected wallets",
+      wallets.evmAddress.pipe(Option.getOrElse(() => "no evm")),
+      wallets.cosmosAddress.pipe(Option.getOrElse(() => "no cosmos")),
+      wallets.aptosAddress.pipe(Option.getOrElse(() => "no aptos"))
+    )
+  )
 })
 </script>
 
