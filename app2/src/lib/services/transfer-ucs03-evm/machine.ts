@@ -13,10 +13,9 @@ import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 import type { HexAddress } from "@unionlabs/client"
 import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
 
-export type TransactionEvmParams = {
-  chain: Chain
+export type Ucs03TransferEvm = {
+  sourceChain: Chain
   ucs03address: HexAddress
-  sourceChainId: number
   baseToken: Address
   baseAmount: bigint
   quoteToken: string
@@ -30,7 +29,7 @@ export type TransactionEvmParams = {
 
 export async function nextState(
   ts: TransferSubmission,
-  params: TransactionEvmParams
+  params: Ucs03TransferEvm
 ): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
     Filling: () => {
@@ -40,7 +39,7 @@ export async function nextState(
     SwitchChain: ({ state }) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(switchChain(params.chain.id))
+          const exit = await Effect.runPromiseExit(switchChain(params.sourceChain.id))
           return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
         },
         Complete: ({ exit }) => {

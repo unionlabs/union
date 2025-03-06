@@ -25,7 +25,7 @@ export const ApprovalSubmitState = Data.taggedEnum<ApprovalSubmitState>()
 
 export type ApprovalReceiptState = Data.TaggedEnum<{
   InProgress: { readonly hash: Hash }
-  Complete: { exit: EffectToExit<typeof waitForApprovalReceipt> }
+  Complete: { exit: EffectToExit<ReturnType<typeof waitForApprovalReceipt>> }
 }>
 export const ApprovalReceiptState = Data.taggedEnum<ApprovalReceiptState>()
 

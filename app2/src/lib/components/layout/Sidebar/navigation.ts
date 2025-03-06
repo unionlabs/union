@@ -29,6 +29,11 @@ export const navigation: Array<NavSection> = [
         icon: SharpTransferIcon
       },
       {
+        path: "/transfer/ucs03",
+        title: "Transfer UCS03",
+        icon: SharpTransferIcon
+      },
+      {
         path: "/transfers",
         title: "Your Transfers",
         icon: SharpListIcon
