@@ -88,14 +88,6 @@ const transfer = async () => {
     // @ts-ignore
     transferState.set({ kind: "SWITCHING_TO_CHAIN" })
 
-    let rpcUrl = sourceChain.rpcs.find(rpc => rpc.type === "rpc")?.url
-    if (!rpcUrl) return toast.error(`no rpc available for ${sourceChain.display_name}`)
-
-    if (!rpcUrl.endsWith("/v1", rpcUrl.length - 3)) {
-      rpcUrl = `${rpcUrl}/v1`
-    }
-    rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1" //TODO: Remove this later its for test
-
     if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
       const chainInfo = await wallet.getNetwork()
 
