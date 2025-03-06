@@ -47,6 +47,11 @@ export const navigation: Array<NavSection> = [
         path: "/stake",
         title: "Stake with Escher",
         icon: SharpStakeIcon
+      },
+      {
+        path: "/balances",
+        title: "Your Balances",
+        icon: OutlineControlPointDuplicate
       }
     ]
   },
