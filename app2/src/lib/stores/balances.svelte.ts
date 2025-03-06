@@ -2,7 +2,7 @@ import { Effect, type Fiber, Option } from "effect"
 import type { TokenRawDenom } from "$lib/schema/token"
 import type { Chain, UniversalChainId } from "$lib/schema/chain"
 import { RawTokenBalance } from "$lib/schema/token"
-import { createBalanceQuery, type FetchBalanceError } from "$lib/balances/evm"
+import { createBalanceQuery, type FetchBalanceError } from "$lib/services/evm/balances"
 import { SvelteMap } from "svelte/reactivity"
 import { AddressEvmCanonical, type AddressCanonicalBytes } from "$lib/schema/address"
 
