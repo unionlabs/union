@@ -1,3 +1,15 @@
-import { arbitrumSepolia, berachainTestnetbArtio, holesky, sepolia } from "viem/chains"
+import {
+  arbitrumSepolia,
+  berachainTestnetbArtio,
+  holesky,
+  scrollSepolia,
+  sepolia
+} from "viem/chains"
 
-export const VIEM_CHAINS = [sepolia, holesky, berachainTestnetbArtio, arbitrumSepolia]
+export const VIEM_CHAINS = [
+  sepolia,
+  holesky,
+  berachainTestnetbArtio,
+  arbitrumSepolia,
+  scrollSepolia
+]

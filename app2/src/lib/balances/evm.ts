@@ -1,11 +1,20 @@
 import { Data, Effect, Option, Schema, Schedule } from "effect"
 import { erc20Abi, type PublicClient } from "viem"
-import type { Address } from "viem"
 import type { TimeoutException } from "effect/Cause"
 import type { DurationInput } from "effect/Duration"
 import type { ReadContractErrorType } from "viem"
+import { getPublicClient } from "$lib/services/evm/clients"
+import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
+import type { NoViemChainError } from "$lib/services/evm/clients"
+import type { AddressEvmCanonical } from "$lib/schema/address"
+import type { Chain } from "$lib/schema/chain"
+import type { CreatePublicClientError } from "$lib/services/transfer"
 
-export type FetchBalanceError = TimeoutException | ReadContractError | CreatePublicClientError
+export type FetchBalanceError =
+  | NoViemChainError
+  | TimeoutException
+  | ReadContractError
+  | CreatePublicClientError
 export class ReadContractError extends Data.TaggedError("ReadContractError")<{
   cause: ReadContractErrorType
 }> {}
@@ -16,11 +25,6 @@ export const BalanceSchema = Schema.Struct({
   token: Schema.String,
   address: Schema.String
 })
-
-import { getPublicClient } from "$lib/services/transfer/clients"
-import { RawTokenBalance, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
-import type { CreatePublicClientError } from "$lib/services/transfer"
-import type { AddressEvmCanonical } from "$lib/schema/address"
 
 const fetchTokenBalance = ({
   client,
@@ -43,12 +47,14 @@ const fetchTokenBalance = ({
   })
 
 export const createBalanceQuery = ({
+  chain,
   tokenAddress,
   walletAddress,
   refetchInterval,
   writeData,
   writeError
 }: {
+  chain: Chain
   tokenAddress: TokenRawDenom
   walletAddress: AddressEvmCanonical
   refetchInterval: DurationInput
@@ -57,7 +63,7 @@ export const createBalanceQuery = ({
 }) => {
   const fetcherPipeline = Effect.gen(function* (_) {
     yield* Effect.log(`starting balances fetcher for ${walletAddress}:${tokenAddress}`)
-    const client = yield* getPublicClient
+    const client = yield* getPublicClient(chain)
 
     const balance = yield* Effect.retry(
       fetchTokenBalance({ client, tokenAddress, walletAddress }).pipe(Effect.timeout("10 seconds")),

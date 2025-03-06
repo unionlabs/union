@@ -1,6 +1,6 @@
 import { VIEM_CHAINS } from "$lib/constants/viem-chains"
 import { Option, Schema } from "effect"
-import { type Chain as ViemChain } from "viem"
+import type { Chain as ViemChain } from "viem"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
 // e.g. union.union-testnet-9

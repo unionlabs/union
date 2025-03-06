@@ -1,6 +1,5 @@
 export * from "./errors.ts"
 export * from "./chain.ts"
 export * from "./transactions.ts"
-export * from "./clients.ts"
 export * from "./state.ts"
 export * from "./machine.ts"
