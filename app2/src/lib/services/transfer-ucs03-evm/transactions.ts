@@ -1,10 +1,5 @@
 import { Effect } from "effect"
-import type {
-  Hash,
-  SendTransactionErrorType,
-  WaitForTransactionReceiptErrorType,
-  WriteContractErrorType
-} from "viem"
+import type { Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType } from "viem"
 import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
 import { getPublicClient, getWalletClient } from "./clients.ts"
 import type { TransactionEvmParams } from "$lib/services/transfer-ucs03-evm/machine"

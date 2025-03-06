@@ -3,7 +3,6 @@ import { Data } from "effect"
 import type {
   CreatePublicClientErrorType,
   CreateWalletClientErrorType,
-  SendTransactionErrorType,
   SwitchChainErrorType,
   WaitForTransactionReceiptErrorType,
   WriteContractErrorType

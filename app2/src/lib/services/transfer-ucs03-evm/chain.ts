@@ -1,4 +1,4 @@
-import { Effect, pipe } from "effect"
+import { Effect } from "effect"
 import { switchChain as wagmiSwitchChain } from "@wagmi/core"
 import { wagmiConfig, type ConfiguredChainId } from "$lib/wallet/evm/wagmi-config"
 import { SwitchChainError } from "./errors.ts"

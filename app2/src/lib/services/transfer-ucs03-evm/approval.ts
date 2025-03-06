@@ -1,9 +1,7 @@
 import { Effect } from "effect"
 import {
   erc20Abi,
-  getAddress,
   type Hash,
-  type SendTransactionErrorType,
   type WaitForTransactionReceiptErrorType,
   type WriteContractErrorType
 } from "viem"
