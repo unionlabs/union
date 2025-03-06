@@ -92,7 +92,7 @@ const transfer = async () => {
     if (!rpcUrl) return toast.error(`no rpc available for ${sourceChain.display_name}`)
 
     if (!rpcUrl.endsWith("/v1", rpcUrl.length - 3)) {
-      rpcUrl = rpcUrl + "/v1"
+      rpcUrl = `${rpcUrl}/v1`
     }
     rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1" //TODO: Remove this later its for test
 
