@@ -3,7 +3,7 @@ import { RawIntentsStoreSvelte } from "../raw-intents-store.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
-import { ucs03ZkgmAbi } from "$lib/abi/ucs-03"
+import { ucs03ZkgmAbi } from "$lib/abi/ucs03"
 import {
   TransferSubmission,
   nextState,
