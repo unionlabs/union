@@ -22,10 +22,10 @@ class BalancesStore {
   fibers = $state(new SvelteMap<BalanceKey, Fiber.RuntimeFiber<number, never>>())
 
   setBalance(
-    universalChainId: typeof UniversalChainId.Type,
+    universalChainId: UniversalChainId,
     address: AddressCanonicalBytes,
-    denom: typeof TokenRawDenom.Type,
-    balance: typeof RawTokenBalance.Type
+    denom: TokenRawDenom,
+    balance: RawTokenBalance
   ) {
     this.data.set(createKey(universalChainId, address, denom), balance)
   }
@@ -43,7 +43,7 @@ class BalancesStore {
     chainId: UniversalChainId,
     address: AddressCanonicalBytes,
     denom: TokenRawDenom
-  ): typeof RawTokenBalance.Type {
+  ): RawTokenBalance {
     return this.data.get(createKey(chainId, address, denom)) ?? RawTokenBalance.make(Option.none())
   }
 
