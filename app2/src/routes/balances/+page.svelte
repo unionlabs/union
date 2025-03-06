@@ -9,19 +9,8 @@ import Button from "$lib/components/ui/Button.svelte"
 import { RpcType, UniversalChainId } from "$lib/schema/chain"
 import { AddressEvmCanonical } from "$lib/schema/address"
 
-// Get all entries from the store
-let entries = $derived([...balancesStore.data.entries()])
-
-// Parse the composite key back into its components
-function parseKey(key: string) {
-  const [universalChainId, address, denom] = key.split(":")
-  return { universalChainId, address, denom }
-}
-
 // Example wallet address - this would come from wallet connection in real app
-const testAddress = AddressEvmCanonical.make(
-  "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA".toLowerCase()
-)
+const testAddress = AddressEvmCanonical.make("0xe6831e169d77a861a0e71326afa6d80bcc8bc6aa")
 
 function fetchAllBalances() {
   const chainsData = Option.getOrNull(chains.data)
@@ -74,31 +63,43 @@ $effect(() => {
       <div class="p-4 text-red-500">Error loading chains</div>
     </Card>
   {:else}
-    {#if entries.length === 0}
-    <Card>
-      <div class="p-4 text-zinc-500">No balances found</div>
-    </Card>
-  {:else}
-    {#each entries as [key, balance]}
-      {@const { universalChainId, address, denom } = parseKey(key)}
-      <Card>
-        <div class="p-4 flex flex-col gap-2">
-          <div class="text-sm text-zinc-500">Chain: {universalChainId}</div>
-          <div class="text-sm text-zinc-500">Address: {address}</div>
-          <div class="text-sm text-zinc-500">Token: {denom}</div>
-          <div class="font-medium">
-            Balance: {Option.getOrNull(balance)}
-          </div>
+    {#each Option.getOrNull(chains.data) ?? [] as chain}
+      {#if chain.rpc_type === "evm"}
+        {@const tokens = Option.getOrNull(tokensStore.getData(chain.universal_chain_id))}
+        <div class="flex flex-col gap-2">
+          <h3 class="text-lg font-medium mt-4">{chain.universal_chain_id}</h3>
           
-          {#if Option.isSome(balancesStore.getError(universalChainId, address, denom))}
-            <div class="text-red-500 text-sm">
-              Error loading balance
-            </div>
+          {#if !tokens}
+            <Card>
+              <div class="p-4 text-zinc-500">Loading tokens...</div>
+            </Card>
+          {:else if tokens.length === 0}
+            <Card>
+              <div class="p-4 text-zinc-500">No tokens found</div>
+            </Card>
+          {:else}
+            {#each tokens as token}
+              {@const balance = balancesStore.getBalance(chain.universal_chain_id, testAddress, token.denom)}
+              {@const error = balancesStore.getError(chain.universal_chain_id, testAddress, token.denom)}
+              <Card>
+                <div class="p-4 flex flex-col gap-2">
+                  <div class="text-sm text-zinc-500">Token: {token.denom}</div>
+                  <div class="font-medium">
+                    Balance: {Option.getOrNull(balance) ?? "Not fetched"}
+                  </div>
+                  
+                  {#if Option.isSome(error)}
+                    <div class="text-red-500 text-sm">
+                      Error loading balance
+                    </div>
+                  {/if}
+                </div>
+              </Card>
+            {/each}
           {/if}
         </div>
-      </Card>
+      {/if}
     {/each}
-    {/if}
   {/if}
 </div>
 
