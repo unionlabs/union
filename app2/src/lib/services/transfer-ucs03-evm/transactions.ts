@@ -3,6 +3,8 @@ import type { Hash, SendTransactionErrorType, WaitForTransactionReceiptErrorType
 import { SendTransactionError, WaitForTransactionReceiptError } from "./errors.ts"
 import { getPublicClient, getWalletClient } from "./clients.ts"
 import type { TransactionEvmParams } from "$lib/services/transfer-ucs03-evm/machine"
+import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
+import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 
 export const submitTransfer = (transactionArgs: TransactionEvmParams) =>
   Effect.gen(function* () {
@@ -10,36 +12,32 @@ export const submitTransfer = (transactionArgs: TransactionEvmParams) =>
 
     console.log("submit", transactionArgs)
 
+    const account = yield* Effect.flatMap(getAccount, account =>
+      account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
+    )
+
     const hash = yield* Effect.tryPromise({
       try: () => {
-        if (transactionArgs.functionName === "transferV2") {
-          return walletClient.writeContract({
-            account: transactionArgs.account,
-            abi: transactionArgs.abi,
-            chain: transactionArgs.chain,
-            functionName: transactionArgs.functionName,
-            address: transactionArgs.address,
-            value: transactionArgs.value,
-            args: [
-              transactionArgs.args.sourceChannelId,
-              transactionArgs.args.receiver,
-              transactionArgs.args.baseToken,
-              transactionArgs.args.baseAmount,
-              transactionArgs.args.quoteToken,
-              transactionArgs.args.quoteAmount,
-              transactionArgs.args.timeoutHeight,
-              transactionArgs.args.timeoutTimestamp,
-              transactionArgs.args.salt,
-              transactionArgs.args.wethQuoteToken
-            ]
-          })
-        }
-
-        // For other functions, we need to handle them specifically too
-        // since we can't pass transactionArgs directly due to type issues
-        throw new Error(
-          `Function ${transactionArgs.functionName} not implemented in submitTransfer`
-        )
+        return walletClient.writeContract({
+          account: account.address as `0x${string}`,
+          abi: ucs03ZkgmAbi,
+          chain: transactionArgs.chain,
+          functionName: "transferV2",
+          address: transactionArgs.address,
+          value: BigInt(0.0080085 * 10 ** 18),
+          args: [
+            transactionArgs.args.sourceChannelId,
+            transactionArgs.args.receiver,
+            transactionArgs.args.baseToken,
+            transactionArgs.args.baseAmount,
+            transactionArgs.args.quoteToken,
+            transactionArgs.args.quoteAmount,
+            transactionArgs.args.timeoutHeight,
+            transactionArgs.args.timeoutTimestamp,
+            transactionArgs.args.salt,
+            transactionArgs.args.wethQuoteToken
+          ]
+        })
       },
       catch: err => new SendTransactionError({ cause: err as SendTransactionErrorType })
     })
