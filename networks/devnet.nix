@@ -210,13 +210,13 @@
         };
         extraPackages = [
           self'.packages.unionvisor
-          self'.packages.bundle-testnet-next
+          self'.packages.bundle-union-1-next
         ];
         startCommandOverwrite = ''
           mkdir .unionvisor
 
           export UNIONVISOR_ROOT=$(pwd)/.unionvisor
-          export UNIONVISOR_BUNDLE=${self'.packages.bundle-testnet-next}
+          export UNIONVISOR_BUNDLE=${self'.packages.bundle-union-1-next}
 
           ${pkgs.lib.getExe self'.packages.unionvisor} init \
             --moniker union-devnet-minimal \
