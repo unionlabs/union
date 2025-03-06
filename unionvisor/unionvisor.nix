@@ -120,7 +120,7 @@
         bundle-union-1-next = mkBundle {
           name = "union-1-next";
           versions = uniondBundleVersions.complete;
-          nextVersion = "v2.0.0";
+          nextVersion = "v1.1.0";
           genesis = ../networks/genesis/union-testnet-9/genesis.json;
           meta = {
             binary_name = "uniond";
