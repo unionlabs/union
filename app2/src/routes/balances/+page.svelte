@@ -8,6 +8,7 @@ import { Option } from "effect"
 import Button from "$lib/components/ui/Button.svelte"
 import { RpcType, UniversalChainId } from "$lib/schema/chain"
 import { AddressEvmCanonical } from "$lib/schema/address"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 
 // Example wallet address - this would come from wallet connection in real app
 const testAddress = AddressEvmCanonical.make("0xe6831e169d77a861a0e71326afa6d80bcc8bc6aa")
@@ -92,6 +93,7 @@ $effect(() => {
                     <div class="text-red-500 text-sm">
                       Error loading balance
                     </div>
+                    <ErrorComponent error={error.value} />
                   {/if}
                 </div>
               </Card>
