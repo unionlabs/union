@@ -1,0 +1,18 @@
+# This file is auto-generated from Ignite. You can edit
+# the file content but do not change the file name or path.
+#
+# buf.gen.ts.yaml
+#
+version: v1
+managed:
+  enabled: true
+plugins:
+  - plugin: buf.build/community/stephenh-ts-proto
+    out: .
+    opt:
+      - logtostderr=true
+      - allow_merge=true
+      - json_names_for_fields=false
+      - ts_proto_opt=snakeToCamel=true
+      - ts_proto_opt=esModuleInterop=true
+      - ts_proto_out=.

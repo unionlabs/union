@@ -142,11 +142,7 @@ let
         --home $out \
         --recover 2>/dev/null
 
-      ${
-        pkgs.lib.optionalString (sdkVersion < 50) ''
-          sed -i 's/: "stake"/: "${denom}"/g' $out/config/genesis.json
-        ''
-      } 2>/dev/null
+      sed -i 's# "stake"# "${denom}"#g' $out/config/genesis.json
     '';
 
   addDevKeyToKeyringAndGenesis =
@@ -874,6 +870,7 @@ let
                   --api.address            tcp://0.0.0.0:1317 \
                   --api.rpc-max-body-bytes 100000000 \
                   --grpc.address           0.0.0.0:9090 \
+                  --minimum-gas-prices     "0${denom}" \
                   --log_level rpc-server:warn,x/wasm:debug,*:info
               ''
             else

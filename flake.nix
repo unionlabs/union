@@ -501,6 +501,7 @@
                     pkgs.foundry-bin
                     goPkgs.sqlx-cli
                     self'.packages.hasura-cli
+                    self'.packages.ignite-cli
                   ]
                 else
                   [ ]
