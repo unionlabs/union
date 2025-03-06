@@ -1,4 +1,4 @@
-use beacon_api_types::{ExecutionPayloadHeaderSsz, Mainnet};
+use beacon_api_types::{chain_spec::Mainnet, ExecutionPayloadHeaderSsz};
 use berachain_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;

@@ -1,6 +1,6 @@
 use unionlabs::primitives::H256;
 
-use crate::{Checkpoint, Slot};
+use crate::{slot::Slot, Checkpoint};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz))]

@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
-use beacon_api_types::{ExecutionPayloadHeaderSsz, Mainnet};
+use beacon_api_types::{chain_spec::Mainnet, ExecutionPayloadHeaderSsz};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,

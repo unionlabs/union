@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
-use beacon_api_types::{ExecutionPayloadHeaderSsz, Mainnet};
+use beacon_api_types::{ExecutionPayloadHeaderSsz, chain_spec::Mainnet};
 use berachain_light_client_types::Header;
 use ethereum_light_client_types::AccountProof;
 use jsonrpsee::{

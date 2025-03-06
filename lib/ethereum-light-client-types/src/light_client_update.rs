@@ -85,8 +85,8 @@ impl From<LightClientUpdate> for beacon_api_types::LightClientUpdate {
 #[cfg(test)]
 mod tests {
     use beacon_api_types::{
-        execution_payload_header::ExecutionPayloadHeader, BeaconBlockHeader, LightClientHeader,
-        Slot, SyncAggregate, SyncCommittee,
+        execution_payload_header::ExecutionPayloadHeader, slot::Slot, BeaconBlockHeader,
+        LightClientHeader, SyncAggregate, SyncCommittee,
     };
     use unionlabs::{
         encoding::{Bincode, Json},

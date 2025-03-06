@@ -1,4 +1,4 @@
-use crate::{fork::Fork, Slot, Version};
+use crate::{custom_types::Version, fork::Fork, slot::Slot};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz))]

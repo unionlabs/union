@@ -1,4 +1,7 @@
-use beacon_api_types::{ChainSpec, Mainnet, Minimal, PresetBaseKind};
+use beacon_api_types::{
+    chain_spec::{Mainnet, Minimal, PresetBaseKind},
+    ChainSpec,
+};
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::{
     ClientState, ConsensusState, Header, LightClientUpdate, Misbehaviour, StorageProof,

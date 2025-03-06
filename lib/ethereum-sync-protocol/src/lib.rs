@@ -9,9 +9,11 @@ use beacon_api_types::{
         floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
         NEXT_SYNC_COMMITTEE_INDEX,
     },
+    custom_types::DomainType,
     light_client_update::LightClientUpdate,
-    ChainSpec, DomainType, ExecutionPayloadHeaderSsz, ForkParameters, LightClientHeader, Slot,
-    SyncCommittee, SyncCommitteeSsz,
+    slot::Slot,
+    ChainSpec, ExecutionPayloadHeaderSsz, ForkParameters, LightClientHeader, SyncCommittee,
+    SyncCommitteeSsz,
 };
 use ssz::Ssz;
 use typenum::Unsigned;

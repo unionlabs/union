@@ -1,6 +1,8 @@
 use beacon_api_types::{
-    Domain, DomainType, ForkData, ForkParameters, SigningData, Slot, Version,
-    EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
+    custom_types::{Domain, DomainType, Version},
+    slot::Slot,
+    ForkData, ForkParameters, SigningData, EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT,
+    SLOTS_PER_EPOCH,
 };
 use sha2::{Digest, Sha256};
 use ssz::Ssz;

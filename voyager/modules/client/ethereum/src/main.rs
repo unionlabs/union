@@ -1,4 +1,4 @@
-use beacon_api_types::PresetBaseKind;
+use beacon_api_types::chain_spec::PresetBaseKind;
 use ethereum_light_client_types::{ClientState, ConsensusState, Header, StorageProof};
 use jsonrpsee::{
     core::{async_trait, RpcResult},

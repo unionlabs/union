@@ -8,7 +8,8 @@ use alloy::{
 };
 use beacon_api::{client::BeaconApiClient, types::Spec};
 use beacon_api_types::{
-    light_client_update::NextSyncCommitteeBranch, PresetBaseKind, Slot, SyncCommittee,
+    chain_spec::PresetBaseKind, light_client_update::NextSyncCommitteeBranch, slot::Slot,
+    SyncCommittee,
 };
 use bitvec::{order::Msb0, vec::BitVec};
 use ethereum_light_client_types::{

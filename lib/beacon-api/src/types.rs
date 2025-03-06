@@ -1,6 +1,6 @@
 use beacon_api_types::{
-    consts::default_epoch, fork::Fork, light_client_update::LightClientUpdate, BeaconBlockHeader,
-    ForkParameters, PresetBaseKind, Slot, Version,
+    chain_spec::PresetBaseKind, consts::default_epoch, custom_types::Version, fork::Fork,
+    light_client_update::LightClientUpdate, slot::Slot, BeaconBlockHeader, ForkParameters,
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::primitives::{H256, H768};

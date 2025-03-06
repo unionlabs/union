@@ -1,6 +1,6 @@
 use unionlabs::primitives::H256;
 
-use crate::Slot;
+use crate::slot::Slot;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz))]

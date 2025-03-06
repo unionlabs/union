@@ -1,6 +1,6 @@
 use unionlabs::primitives::H256;
 
-use crate::{BeaconBlockBody, Slot};
+use crate::{slot::Slot, BeaconBlockBody};
 #[cfg(feature = "ssz")]
 use crate::{
     BeaconBlockBodySsz, BYTES_PER_LOGS_BLOOM, DEPOSIT_CONTRACT_TREE_DEPTH, MAX_ATTESTATIONS,

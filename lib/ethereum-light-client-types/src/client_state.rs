@@ -1,4 +1,4 @@
-use beacon_api_types::{ForkParameters, PresetBaseKind};
+use beacon_api_types::{chain_spec::PresetBaseKind, ForkParameters};
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{H160, H256, U256},
@@ -22,7 +22,7 @@ pub struct ClientState {
 
 #[cfg(test)]
 mod tests {
-    use beacon_api_types::{Fork, Slot, Version};
+    use beacon_api_types::{custom_types::Version, slot::Slot, Fork};
     use unionlabs::{
         encoding::{Bincode, Json},
         primitives::{FixedBytes, H256},

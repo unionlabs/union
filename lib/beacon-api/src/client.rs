@@ -3,7 +3,7 @@
 use std::fmt::Display;
 
 use beacon_api_types::{
-    GenesisData, LightClientBootstrap, LightClientFinalityUpdate, SignedBeaconBlock, Slot,
+    slot::Slot, GenesisData, LightClientBootstrap, LightClientFinalityUpdate, SignedBeaconBlock,
 };
 use reqwest::{Client, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};

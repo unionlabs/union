@@ -6,7 +6,7 @@ use alloy::{
     rpc::types::BlockTransactionsKind,
 };
 use beacon_api::client::BeaconApiClient;
-use beacon_api_types::{PresetBaseKind, Slot};
+use beacon_api_types::{chain_spec::PresetBaseKind, slot::Slot};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,

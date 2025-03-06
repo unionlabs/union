@@ -3,7 +3,8 @@ use unionlabs::primitives::H256;
 use crate::{
     consts::{floorlog2, FINALIZED_ROOT_INDEX},
     light_client_header::LightClientHeader,
-    Slot, SyncAggregate,
+    slot::Slot,
+    SyncAggregate,
 };
 
 #[derive(Debug, Clone, PartialEq)]
