@@ -11,6 +11,7 @@
     "strict": true,
     "exactOptionalPropertyTypes": true,
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "plugins": [
       {
         "name": "gql.tada/ts-plugin",

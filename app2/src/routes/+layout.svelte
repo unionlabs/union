@@ -13,6 +13,15 @@ import { uiStore } from "$lib/stores/ui.svelte"
 
 let { children } = $props()
 
+/* Hack to be able to JSON.stringify BigInt */
+interface BigInt {
+  toJSON: () => string
+}
+
+BigInt["prototype"].toJSON = function () {
+  return this.toString()
+}
+
 onMount(() => {
   const fiber = Effect.runFork(chainsQuery(ENV()))
   return () => Effect.runPromise(Fiber.interrupt(fiber))

@@ -1,7 +1,7 @@
 import { Schema } from "effect"
 import { ChainReference } from "$lib/schema/chain"
 import { PacketTrace } from "$lib/schema/packet-trace"
-import { TokenRawDenom, TokenRawAmount } from "$lib/schema/token"
+import { TokenRawDenom, TokenRawAmount } from "$lib/schema/token.ts"
 import { AddressCanonicalBytes } from "./address.ts"
 
 export class TransferDetails extends Schema.Class<TransferDetails>("TransferDetails")({
