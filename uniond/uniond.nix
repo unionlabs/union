@@ -52,7 +52,7 @@ _: {
                     (nix-filter.matchExt "md")
                   ];
                 };
-                vendorHash = "sha256-V69IzwiwgRb6tiJg5S2ca7DBYGNtndc39DEtpxJtN/g=";
+                vendorHash = "sha256-cDmTWLB/xJ3TG1x9gR8yTktPiom3DiAcnq85EGQvMKU=";
                 doCheck = true;
                 meta.mainProgram = "uniond";
               }
@@ -62,15 +62,13 @@ _: {
                     inherit CGO_LDFLAGS;
                     nativeBuildInputs = [
                       goPkgs.musl
-                      libwasmvm
                     ];
-                    tags = [ "musl" ];
+                    tags = [ "netgo" ];
                     ldflags = [
                       "-linkmode external"
-                      "-extldflags \"-Wl,-z,muldefs -static\""
                       "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
                       "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
-                      "-X github.com/cosmos/cosmos-sdk/version.BuildTags=musl"
+                      "-X github.com/cosmos/cosmos-sdk/version.BuildTags=netgo"
                     ];
                   }
                 else if pkgs.stdenv.isDarwin then
