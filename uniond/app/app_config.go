@@ -63,6 +63,8 @@ import (
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
+const UNION_MULTI_SIG = "union1wpm2d4h73pd5d6u3p7rw8707rkenduuckhxcsm"
+
 var (
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -296,7 +298,7 @@ var (
 			{
 				Name: poa.ModuleName,
 				Config: appconfig.WrapAny(&poamodule.Module{
-					Authority: "union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua",
+					Authority: UNION_MULTI_SIG,
 				}),
 			},
 			{
