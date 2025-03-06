@@ -12,23 +12,12 @@ import {
   type TransactionEvmParams
 } from "$lib/services/transfer-ucs03-evm"
 import { sepolia } from "viem/chains"
-import { getAccount } from "@wagmi/core"
-import { wagmiConfig } from "$lib/wallet/evm/wagmi-config"
-import { getAddress, type Hex, toHex } from "viem"
+import { getAddress } from "viem"
 import { bech32AddressToHex } from "@unionlabs/client"
 import { Effect } from "effect"
+import { generateSalt } from "$lib/services/transfer-ucs03-evm/salt.ts"
 
 export const rawIntents = new RawIntentsStoreSvelte()
-
-/**
- * generates salts to be used on transfer submission
- * used to prevent transfer hash colissions
- */
-export function generateSalt(): Hex {
-  const rawSalt = new Uint8Array(32)
-  crypto.getRandomValues(rawSalt)
-  return toHex(rawSalt)
-}
 
 /* Hack to be able to JSON.stringify BigInt */
 interface BigInt {
@@ -39,30 +28,17 @@ BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
 
-let transferState = $state<TransferSubmission>(TransferSubmission.Pending())
+let transferState = $state<TransferSubmission>(TransferSubmission.Filling())
 
 const submit = Effect.promise(async () => {
-  const account = getAccount(wagmiConfig)
-
-  if (!(account.isConnected && account.address)) {
-    console.error("Wallet not connected - please connect your wallet first")
-    return
-  }
-
-  console.log("Using connected address:", account.address)
-
   const receiver = "union10z7xxj2m8q3f7j58uxmff38ws9u8m0vmne2key"
   const formattedReceiver = receiver.startsWith("0x")
     ? getAddress(receiver)
     : getAddress(bech32AddressToHex({ address: receiver }))
 
   let currentTransactionParams: TransactionEvmParams = {
-    account: account.address,
-    abi: ucs03ZkgmAbi,
     chain: sepolia,
-    functionName: "transferV2",
-    address: "0x84f074c15513f15baea0fbed3ec42f0bd1fb3efa", // ucs03address
-    value: BigInt(0.0080085 * 10 ** 18),
+    address: "0x84f074c15513f15baea0fbed3ec42f0bd1fb3efa",
     args: {
       sourceChainId: 11155111,
       baseToken: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
@@ -76,7 +52,7 @@ const submit = Effect.promise(async () => {
         "0x756e696f6e31686373343677677033637775723679336c7a733638706b776765687930636777766e637472747a7932666e3630343772346561717a34646b6c6c",
       timeoutHeight: 0n,
       timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
-      salt: generateSalt()
+      salt: Effect.runSync(generateSalt)
     }
   }
 
@@ -111,9 +87,9 @@ const submit = Effect.promise(async () => {
               class="mt-4 self-start"
               variant="primary"
               onclick={() => Effect.runPromise(submit)}
-              disabled={transferState._tag !== "Pending" && !hasFailedExit(transferState) && !isComplete(transferState)}
+              disabled={transferState._tag !== "Filling" && !hasFailedExit(transferState) && !isComplete(transferState)}
       >
-        {#if transferState._tag !== "Pending" && !hasFailedExit(transferState) && !isComplete(transferState)}
+        {#if transferState._tag !== "Filling" && !hasFailedExit(transferState) && !isComplete(transferState)}
           Submitting...
         {:else if hasFailedExit(transferState)}
           Retry
