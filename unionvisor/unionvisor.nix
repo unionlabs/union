@@ -104,10 +104,10 @@
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
 
-        bundle-testnet-9-image = mkUnionvisorImage self'.packages.bundle-testnet-9;
+        bundle-union-1-image = mkUnionvisorImage self'.packages.bundle-testnet-9;
 
-        bundle-testnet-9 = mkBundle {
-          name = "testnet-9";
+        bundle-union-1 = mkBundle {
+          name = "union-1";
           versions = uniondBundleVersions.complete;
           genesis = ../networks/genesis/union-testnet-9/genesis.json;
           meta = {
@@ -117,10 +117,10 @@
           };
         };
 
-        bundle-testnet-next = mkBundle {
-          name = "testnet-next";
+        bundle-union-1-next = mkBundle {
+          name = "union-1-next";
           versions = uniondBundleVersions.complete;
-          nextVersion = "v0.26.0";
+          nextVersion = "v2.0.0";
           genesis = ../networks/genesis/union-testnet-9/genesis.json;
           meta = {
             binary_name = "uniond";
