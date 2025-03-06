@@ -64,7 +64,7 @@ class BalancesStore {
       return
     }
 
-    if (chain.rpc_type === "evm" && chain.universal_chain_id === "sepolia.11155111") {
+    if (chain.rpc_type === "evm" && chain.universal_chain_id === "ethereum.11155111") {
       const query = createBalanceQuery({
         tokenAddress: denom,
         walletAddress: AddressEvmCanonical.make(address),

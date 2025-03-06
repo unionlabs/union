@@ -10570,8 +10570,8 @@ enum v2_transfer_type_select_column {
 }
 
 input v2_transfers_args {
+  p_addresses_canonical: jsonb
   p_block_hash: String
-  p_canonical_addresses: jsonb
   p_comparison: String
   p_limit: Int
   p_packet_hash: String
