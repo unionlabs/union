@@ -30,7 +30,7 @@ BigInt["prototype"].toJSON = function () {
 
 let transferState = $state<TransferSubmission>(TransferSubmission.Filling())
 
-const submit = Effect.promise(async () => {
+const submit = async () => {
   const receiver = "union10z7xxj2m8q3f7j58uxmff38ws9u8m0vmne2key"
   const formattedReceiver = receiver.startsWith("0x")
     ? getAddress(receiver)
@@ -56,27 +56,14 @@ const submit = Effect.promise(async () => {
     }
   }
 
-  console.log("Transaction parameters:", currentTransactionParams)
-
   transferState = await nextState(transferState, currentTransactionParams)
-
   while (!hasFailedExit(transferState)) {
     transferState = await nextState(transferState, currentTransactionParams)
     if (isComplete(transferState)) {
-      console.log("Transaction completed successfully")
       break
     }
   }
-
-  if (hasFailedExit(transferState)) {
-    console.error("Transaction failed:", transferState)
-  }
-}).pipe(
-  Effect.catchAll(error => {
-    console.error("Error submitting transaction:", error)
-    return Effect.succeed(undefined)
-  })
-)
+}
 </script>
 
 <Sections>
@@ -86,7 +73,7 @@ const submit = Effect.promise(async () => {
       <Button
               class="mt-4 self-start"
               variant="primary"
-              onclick={() => Effect.runPromise(submit)}
+              onclick={submit}
               disabled={transferState._tag !== "Filling" && !hasFailedExit(transferState) && !isComplete(transferState)}
       >
         {#if transferState._tag !== "Filling" && !hasFailedExit(transferState) && !isComplete(transferState)}
