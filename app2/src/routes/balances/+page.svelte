@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { balancesStore } from "$lib/stores/balances.svelte"
-  import Card from "$lib/components/ui/Card.svelte"
-  import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
-  import { Option } from "effect"
+import { balancesStore } from "$lib/stores/balances.svelte"
+import Card from "$lib/components/ui/Card.svelte"
+import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
+import { Option } from "effect"
 
-  // Get all entries from the store
-  let entries = $derived([...balancesStore.data.entries()])
+// Get all entries from the store
+let entries = $derived([...balancesStore.data.entries()])
 
-  // Parse the composite key back into its components
-  function parseKey(key: string) {
-    const [universalChainId, address, denom] = key.split(":")
-    return { universalChainId, address, denom }
-  }
+// Parse the composite key back into its components
+function parseKey(key: string) {
+  const [universalChainId, address, denom] = key.split(":")
+  return { universalChainId, address, denom }
+}
 </script>
 
 <div class="flex flex-col gap-4 p-4">
