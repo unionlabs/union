@@ -328,7 +328,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           body_path: release.md
-          prerelease: false
+          prerelease: ${{ contains(${{needs.eval-tag.outputs.version}}, '-rc') || contains(${{needs.eval-tag.outputs.version}}, 'alpha') }}
           repository: unionlabs/union
           token: ${{ secrets.UNION_RELEASES_PAT }}
           name: ${{needs.eval-tag.outputs.component}} ${{needs.eval-tag.outputs.version}}
