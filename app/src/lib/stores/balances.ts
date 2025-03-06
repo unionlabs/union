@@ -111,7 +111,7 @@ export async function updateBalancesAptos(chain: Chain, address: Address) {
       throw new Error(response.error.message)
     }
     const data = response.value.data
-    if (!data || !data.current_fungible_asset_balances) {
+    if (!data?.current_fungible_asset_balances) {
       throw new Error("Invalid response data")
     }
 
@@ -133,7 +133,7 @@ export async function updateBalancesAptos(chain: Chain, address: Address) {
   } catch (error: any) {
     console.error("Error fetching Aptos balances", error)
     // On error, update the balances for all tokens with an error state.
-    if (chain.tokens?.length) {
+    if (chain.tokens?.length > 0) {
       chain.tokens.forEach(token =>
         updateBalance(chain.chain_id, token.denom, {
           kind: "error",

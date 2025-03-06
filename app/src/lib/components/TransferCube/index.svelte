@@ -179,7 +179,7 @@ onMount(() => {
   const unsubscribe = transfer.subscribe(trans => {
     const chain = trans.intents.sourceChain
     if (chain) {
-      let userAddr
+      let userAddr: string | undefined
       if (chain.rpc_type === "evm") {
         userAddr = $userAddress.evm?.canonical.toLowerCase()
       } else if (chain.rpc_type === "aptos" || chain.chain_id === "movement") {
