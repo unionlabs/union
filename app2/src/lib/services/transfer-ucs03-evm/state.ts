@@ -2,7 +2,10 @@ import { Data, type Exit, type Effect } from "effect"
 import type { Hash } from "viem"
 import type { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 import type { switchChain } from "./chain.ts"
-import type { waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval.ts"
+import type {
+  approveTransfer,
+  waitForApprovalReceipt
+} from "$lib/services/transfer-ucs03-evm/approval.ts"
 
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 
@@ -15,7 +18,7 @@ export const SwitchChainState = Data.taggedEnum<SwitchChainState>()
 export type ApprovalSubmitState = Data.TaggedEnum<{
   InProgress: {}
   Complete: {
-    exit: EffectToExit<ReturnType<typeof switchChain>> // TODO: change function
+    exit: EffectToExit<ReturnType<typeof approveTransfer>>
   }
 }>
 export const ApprovalSubmitState = Data.taggedEnum<ApprovalSubmitState>()
