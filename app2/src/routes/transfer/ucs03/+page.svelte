@@ -14,8 +14,6 @@ import {
 import { sepolia } from "viem/chains"
 import { getAddress } from "viem"
 import { bech32AddressToHex } from "@unionlabs/client"
-import { Effect } from "effect"
-import { generateSalt } from "$lib/services/transfer-ucs03-evm/salt.ts"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 let transferState = $state<TransferSubmission>(TransferSubmission.Filling())

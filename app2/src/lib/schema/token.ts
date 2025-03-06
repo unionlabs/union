@@ -59,3 +59,5 @@ export class Token extends Schema.Class<Token>("Token")({
 }) {}
 
 export const Tokens = Schema.Array(Token)
+
+export const RawTokenBalance = Schema.Option(TokenRawAmount).pipe(Schema.brand("RawTokenBalance"))
