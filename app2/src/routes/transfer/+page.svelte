@@ -4,7 +4,7 @@ import Input from "$lib/components/ui/Input.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { TransferSubmission, nextState, hasFailedExit, isComplete } from "$lib/services/transtrfer"
+import { TransferSubmission, nextState, hasFailedExit, isComplete } from "$lib/services/transfer"
 
 export const rawIntents = new RawIntentsStoreSvelte()
 
