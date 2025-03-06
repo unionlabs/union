@@ -179,19 +179,16 @@ onMount(() => {
   const unsubscribe = transfer.subscribe(trans => {
     const chain = trans.intents.sourceChain
     if (chain) {
-        let userAddr;
+      let userAddr
       if (chain.rpc_type === "evm") {
-          userAddr = $userAddress.evm?.canonical.toLowerCase();
-        } else if (
-          chain.rpc_type === "aptos" ||
-          chain.chain_id === "movement"
-        ) {
-          // Use the aptos field for Movement
-          userAddr = $userAddress.aptos?.canonical.toLowerCase();
-        } else {
-          // Fallback to cosmos conversion if needed
-          userAddr = $userAddrCosmos?.canonical;
-        }
+        userAddr = $userAddress.evm?.canonical.toLowerCase()
+      } else if (chain.rpc_type === "aptos" || chain.chain_id === "movement") {
+        // Use the aptos field for Movement
+        userAddr = $userAddress.aptos?.canonical.toLowerCase()
+      } else {
+        // Fallback to cosmos conversion if needed
+        userAddr = $userAddrCosmos?.canonical
+      }
       if (userAddr && (previousSourceChain !== chain.chain_id || previousUserAddr !== userAddr)) {
         previousUserAddr = userAddr
         previousSourceChain = chain.chain_id

@@ -14,9 +14,9 @@ export type AptosSigner = AptosAccount | (AptosBrowserWallet & { accountAddress:
 export type { AptosAccount, AptosBrowserWallet }
 
 export const aptosChainId = [
-  "2",   // aptos testnet
+  "2", // aptos testnet
   "177", // movement porto
-  "250"  // movement bardock
+  "250" // movement bardock
 ] as const
 export type AptosChainId = `${(typeof aptosChainId)[number]}`
 
@@ -33,19 +33,23 @@ export type AptosClientParameters = {
   | { account: AptosAccount; transport: HttpTransport }
   | { account?: AptosPublicAccountInfo; transport: AptosWindowTransport }
 )
-export type WalletSigner = AptosBrowserWallet & { accountAddress: string };
+export type WalletSigner = AptosBrowserWallet & { accountAddress: string }
 
 /**
  * Overloads for retrieving an Aptos client.
  */
 async function getAptosClient(
   parameters: AptosClientParameters & { authAccess: "key" }
-): Promise<{ authAccess: "key"; aptos: Aptos; signer: AptosSigner; transport: HttpTransport }>;
+): Promise<{ authAccess: "key"; aptos: Aptos; signer: AptosSigner; transport: HttpTransport }>
 
 async function getAptosClient(
   parameters: AptosClientParameters & { authAccess: "wallet" }
-): Promise<{ authAccess: "wallet"; aptos: Aptos; signer: AptosSigner; transport: AptosWindowTransport }>;
-
+): Promise<{
+  authAccess: "wallet"
+  aptos: Aptos
+  signer: AptosSigner
+  transport: AptosWindowTransport
+}>
 
 async function getAptosClient(
   parameters: AptosClientParameters & { authAccess: AuthAccess }
@@ -76,22 +80,20 @@ async function getAptosClient(
       throw new Error("Invalid Aptos transport")
     }
     const networkInfo = await parameters.transport.getNetwork()
-    const network =
-      networkInfo.name.toLowerCase() === "mainnet" ? Network.MAINNET : Network.TESTNET
+    const network = networkInfo.name.toLowerCase() === "mainnet" ? Network.MAINNET : Network.TESTNET
     const config = new AptosConfig({ fullnode: networkInfo.url, network })
-  
+
     // Get the connected account
-    const account = await parameters.transport.getAccount?.() ||
-      { address: "" }
+    const account = (await parameters.transport.getAccount?.()) || { address: "" }
     if (!account.address) {
       throw new Error("No account address found from the wallet")
     }
-  
+
     // Create a signer by merging the wallet’s methods with the account address.
     const signer = Object.assign({}, parameters.transport, {
       accountAddress: account.address
-    }) as unknown as AptosAccount  // <== Force-cast to AptosAccount
-  
+    }) as unknown as AptosAccount // <== Force-cast to AptosAccount
+
     return {
       authAccess: "wallet",
       aptos: new Aptos(config),
@@ -99,7 +101,6 @@ async function getAptosClient(
       transport: parameters.transport
     }
   }
-  
 
   throw new Error("Invalid Aptos transport")
 }
@@ -129,10 +130,9 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
         if (typeof clientParameters.transport === "function") {
           console.info("returning key-based client")
           return await getAptosClient({ ...clientParameters, authAccess: "key" })
-        } else {
-          console.info("returning wallet-based client")
-          return await getAptosClient({ ...clientParameters, authAccess: "wallet" })
         }
+        console.info("returning wallet-based client")
+        return await getAptosClient({ ...clientParameters, authAccess: "wallet" })
       }
     }))
     .extend(client => ({
@@ -154,12 +154,12 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
         sourceChannelId,
         ucs03address
       }: TransferAssetParameters<AptosChainId>): Promise<Result<string, Error>> => {
-        const { aptos, signer, authAccess, transport } = await client.getAptosClient();
+        const { aptos, signer, authAccess, transport } = await client.getAptosClient()
 
         const quoteTokenVec = MoveVector.U8(quoteToken)
         const receiverVec = MoveVector.U8(receiver)
 
-        const rawSalt = new Uint8Array(14) 
+        const rawSalt = new Uint8Array(14)
         crypto.getRandomValues(rawSalt)
         const salt = MoveVector.U8(rawSalt)
 
@@ -189,11 +189,11 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
             const txn = await aptos.signAndSubmitTransaction({
               signer: signer as AptosAccount,
               transaction: payload
-            });
-            const receipt = await waitForTransactionReceipt({ aptos, hash: txn.hash });
-            return receipt;
-          }   
-          const saltHex = toHex(new Uint8Array(14) ); 
+            })
+            const receipt = await waitForTransactionReceipt({ aptos, hash: txn.hash })
+            return receipt
+          }
+          const saltHex = toHex(new Uint8Array(14))
           // 14 bytes + 0x 2 bytes and that walletPayload encodes it in it
           // so it becomes 32 byte.
           const walletPayload = {
@@ -210,14 +210,13 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
               18446744073709551615n.toString(),
               saltHex
             ]
-          };
-          try {
-            const signedTxn = await transport.signAndSubmitTransaction({ payload: walletPayload });
-            return ok(signedTxn.hash); // Wrap the string in a successful Result
-          } catch (error) {
-            return err(new Error("Transaction signing failed"));
           }
-          
+          try {
+            const signedTxn = await transport.signAndSubmitTransaction({ payload: walletPayload })
+            return ok(signedTxn.hash) // Wrap the string in a successful Result
+          } catch (error) {
+            return err(new Error("Transaction signing failed"))
+          }
         } catch (error) {
           console.info("error is:", error)
           return err(new Error("failed to execute aptos call", { cause: error as Error }))
@@ -228,17 +227,17 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
 function toHex(uint8array: Uint8Array): string {
   return `0x${Array.from(uint8array)
     .map(b => b.toString(16).padStart(2, "0"))
-    .join("")}`;  
+    .join("")}`
 }
 
 function hexToAscii(hexString: string): string {
   // Remove the "0x" prefix if present.
   if (hexString.startsWith("0x") || hexString.startsWith("0X")) {
-    hexString = hexString.slice(2);
+    hexString = hexString.slice(2)
   }
-  let ascii = "";
+  let ascii = ""
   for (let i = 0; i < hexString.length; i += 2) {
-    ascii += String.fromCharCode(parseInt(hexString.substr(i, 2), 16));
+    ascii += String.fromCharCode(Number.parseInt(hexString.substr(i, 2), 16))
   }
-  return ascii;
+  return ascii
 }

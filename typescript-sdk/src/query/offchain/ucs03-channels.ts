@@ -13,7 +13,7 @@ import { err, ok, ResultAsync, type Result } from "neverthrow"
 import { ucs03ZkgmAbi } from "#abi/ucs-03"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { cosmosRpcs, type CosmosChainId } from "#cosmos/client"
-import { Aptos, AptosConfig, Network, Deserializer, MoveVector } from "@aptos-labs/ts-sdk"
+import { Aptos, AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
 
 const channelsQuery = graphql(/*  GraphQL */ `
   query Ucs03Channels {
