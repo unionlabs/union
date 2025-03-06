@@ -104,10 +104,10 @@
       packages = {
         inherit (unionvisorAll.packages) unionvisor;
 
-        bundle-testnet-9-image = mkUnionvisorImage self'.packages.bundle-testnet-9;
+        bundle-union-1-image = mkUnionvisorImage self'.packages.bundle-union-1;
 
-        bundle-testnet-9 = mkBundle {
-          name = "testnet-9";
+        bundle-union-1 = mkBundle {
+          name = "union-1";
           versions = uniondBundleVersions.complete;
           genesis = ../networks/genesis/union-testnet-9/genesis.json;
           meta = {
@@ -117,10 +117,10 @@
           };
         };
 
-        bundle-testnet-next = mkBundle {
-          name = "testnet-next";
+        bundle-union-1-next = mkBundle {
+          name = "union-1-next";
           versions = uniondBundleVersions.complete;
-          nextVersion = "v0.26.0";
+          nextVersion = "v1.1.0";
           genesis = ../networks/genesis/union-testnet-9/genesis.json;
           meta = {
             binary_name = "uniond";
@@ -151,7 +151,7 @@
         };
         bundle = mkOption {
           type = types.package;
-          default = self.packages.${pkgs.system}.bundle-testnet-9;
+          default = self.packages.${pkgs.system}.bundle-union-1;
         };
         logFormat = mkOption {
           type = types.enum [
@@ -164,7 +164,7 @@
         moniker = mkOption { type = types.str; };
         network = mkOption {
           type = types.str;
-          default = "union-testnet-9";
+          default = "union-1";
         };
         seeds = mkOption {
           type = types.str;
