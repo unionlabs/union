@@ -5,6 +5,8 @@ export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
 export const UniversalChainId = Schema.String.pipe(Schema.brand("UniversalChainId")).pipe(
   Schema.pattern(/^.*\..*$/)
 )
+export type UniversalChainId = typeof UniversalChainId.Type
+
 export const ChainDisplayName = Schema.String.pipe(Schema.brand("ChainDisplayName"))
 
 export const RpcType = Schema.Union(
