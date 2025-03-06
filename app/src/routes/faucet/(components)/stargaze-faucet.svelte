@@ -149,7 +149,6 @@ let stargazeBalance = createQuery(
       data?.find(balance => balance?.symbol === "ustars")
   }))
 )
-console.info("stargazeBalance: ", $stargazeBalance?.data?.balance )
 </script>
 
 <!-- stargaze faucet -->
