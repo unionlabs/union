@@ -44,7 +44,7 @@ export const TransferReceiptState = Data.taggedEnum<TransferReceiptState>()
 export const TransferSubmission2 = Data.taggedEnum<TransferSubmission>()
 
 export type TransferSubmission = Data.TaggedEnum<{
-  Pending: {}
+  Filling: {}
   SwitchChain: { state: SwitchChainState }
   ApprovalSubmit: { state: ApprovalSubmitState }
   ApprovalReceipt: { state: ApprovalReceiptState }
@@ -61,12 +61,12 @@ type StateWithExit =
   | { _tag: "TransferSubmit"; state: TransferSubmitState }
   | { _tag: "TransferReceipt"; state: TransferReceiptState }
 
-export function hasFailedExit(state: StateWithExit | { _tag: "Pending" }): boolean {
-  if (state._tag === "Pending") return false
+export function hasFailedExit(state: StateWithExit | { _tag: "Filling" }): boolean {
+  if (state._tag === "Filling") return false
   return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
 }
 
-export function isComplete(state: StateWithExit | { _tag: "Pending" }): boolean {
+export function isComplete(state: StateWithExit | { _tag: "Filling" }): boolean {
   return (
     state._tag === "TransferReceipt" &&
     state.state._tag === "Complete" &&

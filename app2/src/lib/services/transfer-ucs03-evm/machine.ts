@@ -7,19 +7,15 @@ import {
   TransferSubmitState
 } from "./state.ts"
 import { Effect } from "effect"
-import type { Chain, Address } from "viem"
+import type { Chain } from "viem"
 import { switchChain } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 import type { HexAddress } from "@unionlabs/client"
 import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
 
 export type TransactionEvmParams = {
-  account: Address
-  abi: any
   chain: Chain
-  functionName: string
   address: HexAddress
-  value: bigint
   args: {
     sourceChainId: number
     baseToken: string
@@ -40,7 +36,7 @@ export async function nextState(
   params: TransactionEvmParams
 ): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
-    Pending: () => {
+    Filling: () => {
       return TransferSubmission.SwitchChain({ state: SwitchChainState.InProgress() })
     },
 

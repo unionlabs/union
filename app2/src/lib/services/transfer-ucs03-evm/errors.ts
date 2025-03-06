@@ -30,6 +30,10 @@ export class SwitchChainError extends Data.TaggedError("SwitchChainError")<{
   cause: SwitchChainErrorType
 }> {}
 
+export class getAccountError extends Data.TaggedError("SwitchChainError")<{
+  cause: string
+}> {}
+
 export class ConnectorClientError extends Data.TaggedError("ConnectorClientError")<{
   cause: GetConnectorClientErrorType
 }> {}
