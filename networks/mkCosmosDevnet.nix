@@ -142,11 +142,7 @@ let
         --home $out \
         --recover 2>/dev/null
 
-      ${
-        pkgs.lib.optionalString (sdkVersion < 50) ''
-          sed -i 's/: "stake"/: "${denom}"/g' $out/config/genesis.json
-        ''
-      } 2>/dev/null
+      sed -i 's# "stake"# "${denom}"#g' $out/config/genesis.json
     '';
 
   addDevKeyToKeyringAndGenesis =
