@@ -6,12 +6,13 @@ import {
   TransferSubmitState
 } from "./state.js"
 import { Effect } from "effect"
-import type { Chain, Address } from "viem"
+import type { Chain as ViemChain, Address } from "viem"
 import { switchChain } from "./chain.js"
 import { submitTransfer, waitForReceipt } from "./transactions.js"
+import type { Chain } from "$lib/schema/chain.js"
 
 export type TransactionParams = {
-  chain: Chain
+  chain: ViemChain
   account: Address
   value: bigint
   to: Address
@@ -19,7 +20,8 @@ export type TransactionParams = {
 
 export async function nextState(
   ts: TransferSubmission,
-  params: TransactionParams
+  params: TransactionParams,
+  chain: Chain
 ): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
     Pending: () => {
@@ -43,7 +45,7 @@ export async function nextState(
     TransferSubmit: ({ state }) => {
       return TransferSubmitState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(submitTransfer(params))
+          const exit = await Effect.runPromiseExit(submitTransfer(chain, params))
           return TransferSubmission.TransferSubmit({
             state: TransferSubmitState.Complete({ exit })
           })
@@ -61,7 +63,7 @@ export async function nextState(
     TransferReceipt: ({ state }) => {
       return TransferReceiptState.$match(state, {
         InProgress: async ({ hash }) => {
-          const exit = await Effect.runPromiseExit(waitForReceipt(hash))
+          const exit = await Effect.runPromiseExit(waitForReceipt(chain, hash))
           return TransferSubmission.TransferReceipt({
             state: TransferReceiptState.Complete({ exit })
           })
