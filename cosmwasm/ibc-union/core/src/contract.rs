@@ -4,13 +4,13 @@ use alloy::sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdResult,
+    to_json_binary, to_json_string, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event,
+    MessageInfo, Response, StdResult,
 };
 use cw_storage_plus::Item;
 use ibc_union_msg::{
     lightclient::{
-        QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate, VerifyCreationResponse,
+        QueryMsg as LightClientQuery, Status, UpdateStateResponse, VerifyCreationResponse,
         VerifyCreationResponseEvent,
     },
     module::{ExecuteMsg as ModuleMsg, IbcUnionMsg},
@@ -33,6 +33,7 @@ use ibc_union_spec::{
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
+    encoding::{Bincode, DecodeAs, EncodeAs},
     ethereum::keccak256,
     primitives::{encoding::HexPrefixed, Bytes, H256},
 };
@@ -48,6 +49,8 @@ use crate::{
 };
 
 type ContractResult = Result<Response, ContractError>;
+
+pub const CLIENT_STORAGE_PREFIX: &str = "client/";
 
 pub mod events {
     pub mod client {
@@ -451,7 +454,9 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct IbcUnionMigrateMsg {}
+pub struct IbcUnionMigrateMsg {
+    client_id: u32,
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
@@ -459,8 +464,99 @@ pub fn migrate(
     _env: Env,
     msg: UpgradeMsg<InitMsg, IbcUnionMigrateMsg>,
 ) -> Result<Response, ContractError> {
-    msg.run(deps, init, |_deps, _migrate, _version| {
-        Ok((Response::default(), None))
+    msg.run(deps, init, |mut deps, migrate, _version| {
+        let mut keys = vec![];
+        for key in CLIENT_CONSENSUS_STATES.keys(
+            deps.storage,
+            Some(cw_storage_plus::Bound::inclusive((migrate.client_id, 0))),
+            Some(cw_storage_plus::Bound::inclusive((
+                migrate.client_id,
+                u64::MAX,
+            ))),
+            cosmwasm_std::Order::Descending,
+        ) {
+            let key = key.unwrap();
+            keys.push(key);
+
+            if key.0 != migrate.client_id {
+                panic!("key does not match the migrate id");
+            }
+        }
+
+        // don't remove the final entry
+        let latest_key = keys.pop().unwrap();
+
+        for key in keys.clone() {
+            CLIENT_CONSENSUS_STATES.remove(deps.storage, key);
+            deps.storage.remove(
+                ConsensusStatePath {
+                    client_id: migrate.client_id,
+                    height: key.1,
+                }
+                .key()
+                .as_ref(),
+            );
+        }
+
+        let consensus_state =
+            <ethereum_light_client_types::consensus_state::OldConsensusState as unionlabs::encoding::DecodeAs>::decode_as::<
+                unionlabs::encoding::EthAbi,
+            >(
+                CLIENT_CONSENSUS_STATES
+                    .load(deps.storage, latest_key)?
+                    .as_slice(),
+            )
+            .unwrap();
+
+        let consensus_state = ethereum_light_client_types::consensus_state::ConsensusState {
+            slot: consensus_state.slot,
+            state_root: consensus_state.state_root,
+            storage_root: consensus_state.storage_root,
+            timestamp: consensus_state.timestamp,
+        }
+        .encode_as::<unionlabs::encoding::EthAbi>();
+
+        let client_state = ethereum_light_client_types::client_state::OldClientState::decode_as::<Bincode>(
+            CLIENT_STATES.load(deps.storage, latest_key.0)?.as_slice()
+        ).unwrap();
+
+        let client_state = ethereum_light_client_types::client_state::ClientState {
+            chain_id: client_state.chain_id,
+            chain_spec: client_state.chain_spec,
+            genesis_validators_root: client_state.genesis_validators_root,
+            genesis_time: client_state.genesis_time,
+            fork_parameters: client_state.fork_parameters,
+            latest_height: client_state.latest_height,
+            frozen_height: client_state.frozen_height,
+            ibc_contract_address: client_state.ibc_contract_address,
+            initial_sync_committee: None,
+        }.encode_as::<Bincode>();
+
+        CLIENT_CONSENSUS_STATES.save(deps.storage, latest_key, &consensus_state.to_vec().into())?;
+        CLIENT_STATES.save(
+            deps.storage,
+            latest_key.0,
+            &client_state.to_vec().into(),
+        )?;
+        store_commit(
+            deps.branch(),
+            &ClientStatePath {
+                client_id: migrate.client_id,
+            }
+            .key(),
+            &commit(client_state),
+        )?;
+        store_commit(
+            deps.branch(),
+            &ConsensusStatePath {
+                client_id: migrate.client_id,
+                height: latest_key.1,
+            }
+            .key(),
+            &commit(consensus_state),
+        )?;
+
+        Ok((Response::default().add_event(Event::new("keys").add_attribute("keys", to_json_string(&keys).unwrap())), None))
     })
 }
 
@@ -756,7 +852,7 @@ fn register_client(
 fn create_client(
     mut deps: DepsMut,
     client_type: String,
-    client_state_bytes: Vec<u8>,
+    mut client_state_bytes: Vec<u8>,
     consensus_state_bytes: Vec<u8>,
     _relayer: Addr,
 ) -> Result<Response, ContractError> {
@@ -773,6 +869,9 @@ fn create_client(
             consensus_state: consensus_state_bytes.to_vec().into(),
         },
     )?;
+    if let Some(cs) = verify_creation_response.client_state_bytes {
+        client_state_bytes = cs.into_vec();
+    }
     CLIENT_STATES.save(deps.storage, client_id, &client_state_bytes.to_vec().into())?;
     CLIENT_CONSENSUS_STATES.save(
         deps.storage,
@@ -785,7 +884,7 @@ fn create_client(
         &commit(client_state_bytes),
     )?;
     store_commit(
-        deps,
+        deps.branch(),
         &ConsensusStatePath {
             client_id,
             height: verify_creation_response.latest_height,
@@ -793,15 +892,16 @@ fn create_client(
         .key(),
         &commit(consensus_state_bytes),
     )?;
-    let mut response = Response::new();
-    if let Some(events) = verify_creation_response.events {
-        response = response.add_events(
-            events
-                .into_iter()
-                .map(|e| make_verify_creation_event(client_id, e))
-                .collect::<Vec<_>>(),
-        );
+
+    for (k, v) in verify_creation_response.storage_writes {
+        store_client_data(deps.branch(), client_id, k, v);
     }
+    let response = verify_creation_response
+        .events
+        .into_iter()
+        .fold(Response::new(), |response, e| {
+            response.add_event(make_verify_creation_event(client_id, e))
+        });
     Ok(
         response.add_event(Event::new(events::client::CREATE).add_attributes([
             (events::attribute::CLIENT_TYPE, client_type),
@@ -812,6 +912,19 @@ fn create_client(
             ),
         ])),
     )
+}
+
+fn store_client_data(deps: DepsMut<'_>, client_id: u32, key: Bytes, value: Bytes) {
+    deps.storage.set(
+        [
+            CLIENT_STORAGE_PREFIX.as_bytes(),
+            client_id.to_le_bytes().as_slice(),
+            &key,
+        ]
+        .concat()
+        .as_slice(),
+        &value,
+    );
 }
 
 fn update_client(
@@ -836,10 +949,10 @@ fn update_client(
             return Err(ContractError::ClientNotActive { client_id, status });
         }
 
-        let update = query_light_client::<VerifyClientMessageUpdate>(
+        let update = query_light_client::<UpdateStateResponse>(
             deps.as_ref(),
             client_impl,
-            LightClientQuery::VerifyClientMessage {
+            LightClientQuery::UpdateState {
                 client_id,
                 caller: relayer.into(),
             },
@@ -847,22 +960,19 @@ fn update_client(
         QUERY_STORE.remove(deps.storage);
         update
     };
-    CLIENT_STATES.save(
-        deps.storage,
-        client_id,
-        &update.client_state.to_vec().into(),
-    )?;
-    CLIENT_CONSENSUS_STATES.save(
-        deps.storage,
-        (client_id, update.height),
-        &update.consensus_state.to_vec().into(),
-    )?;
+    if let Some(client_state_bytes) = update.client_state_bytes {
+        store_commit(
+            deps.branch(),
+            &ClientStatePath { client_id }.key(),
+            &commit(&client_state_bytes),
+        )?;
+        CLIENT_STATES.save(
+            deps.storage,
+            client_id,
+            &client_state_bytes.into_vec().into(),
+        )?;
+    }
 
-    store_commit(
-        deps.branch(),
-        &ClientStatePath { client_id }.key(),
-        &commit(update.client_state),
-    )?;
     store_commit(
         deps.branch(),
         &ConsensusStatePath {
@@ -870,8 +980,19 @@ fn update_client(
             height: update.height,
         }
         .key(),
-        &commit(update.consensus_state),
+        &commit(&update.consensus_state_bytes),
     )?;
+
+    CLIENT_CONSENSUS_STATES.save(
+        deps.storage,
+        (client_id, update.height),
+        &update.consensus_state_bytes.into_vec().into(),
+    )?;
+
+    for (k, v) in update.storage_writes {
+        store_client_data(deps.branch(), client_id, k, v);
+    }
+
     Ok(
         Response::new().add_event(Event::new(events::client::UPDATE).add_attributes([
             (events::attribute::CLIENT_ID, client_id.to_string()),
