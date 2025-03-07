@@ -10,6 +10,7 @@ import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
 import DydxFaucet from "./(components)/dydx-faucet.svelte"
 import StrideFaucet from "./(components)/stride-faucet.svelte"
+import StargazeFaucet from "./(components)/stargaze-faucet.svelte"
 import { Button } from "$lib/components/ui/button/index.ts"
 import SpinnerSVG from "$lib/components/spinner-svg.svelte"
 import WalletGateCosmos from "$lib/components/wallet-gate-cosmos.svelte"
@@ -313,6 +314,7 @@ const handleTurnstileError = (e: CustomEvent<{ code: string }>) => {
   <!-- dydx faucet -->
   <DydxFaucet />
   <StrideFaucet />
+  <StargazeFaucet />
   <!--
   <ChainsGate let:chains>
     <ExternalFaucets {chains} />
