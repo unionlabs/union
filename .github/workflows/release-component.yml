@@ -140,12 +140,12 @@ jobs:
           nix build .#packages.x86_64-linux."$COMPONENT" --accept-flake-config
           if [[ "$COMPONENT" =~ uniond-release ]]
           then
-            mv result/bin/uniond "$COMPONENT"-x86_64-linux
+            cp result/bin/uniond "$COMPONENT"-x86_64-linux
           elif [[ $ARCHIVE ]]
           then
             tar -zcf "$COMPONENT"-x86_64-linux result
           else
-            mv result/bin/"$COMPONENT" "$COMPONENT"-x86_64-linux
+            cp result/bin/"$COMPONENT" "$COMPONENT"-x86_64-linux
           fi
       - uses: actions/upload-artifact@v4
         with:
@@ -171,12 +171,12 @@ jobs:
           nix build .#packages.aarch64-linux."$COMPONENT" --accept-flake-config
           if [[ "$COMPONENT" =~ uniond-release ]]
           then
-            mv result/bin/uniond "$COMPONENT"-aarch64-linux
+            cp result/bin/uniond "$COMPONENT"-aarch64-linux
           elif [[ $ARCHIVE ]]
           then
             tar -zcf "$COMPONENT"-aarch64-linux result
           else
-            mv result/bin/"$COMPONENT" "$COMPONENT"-aarch64-linux
+            cp result/bin/"$COMPONENT" "$COMPONENT"-aarch64-linux
           fi
       - uses: actions/upload-artifact@v4
         with:
