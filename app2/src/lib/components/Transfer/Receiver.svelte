@@ -10,13 +10,13 @@
         id="receiver"
         label="receiver"
         required={true}
-        disabled={!transfer.url.destination}
+        disabled={!transfer.raw.destination}
         autocorrect="off"
         spellcheck="false"
         autocomplete="off"
         data-field="receiver"
         placeholder="Enter destination address"
-        value={transfer.url.receiver}
-        oninput={event => transfer.url.updateField('receiver', event)}
+        value={transfer.raw.receiver}
+        oninput={event => transfer.raw.updateField('receiver', event)}
         class="text-center"
 />
