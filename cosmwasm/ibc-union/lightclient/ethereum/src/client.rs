@@ -22,7 +22,10 @@ use unionlabs::{
     primitives::{H256, U256},
 };
 
-use crate::{errors::Error, verification::VerificationContext};
+use crate::{
+    errors::Error,
+    verification::{check_aggregate_pubkey, VerificationContext},
+};
 
 pub enum EthereumLightClient {}
 
@@ -223,6 +226,20 @@ pub fn verify_header<C: ChainSpec>(
 
     let (current_sync_committee, next_sync_committee) =
         header.consensus_update.currently_trusted_sync_committee();
+
+    if current_sync_committee.is_some() {
+        check_aggregate_pubkey(
+            ctx.deps,
+            &current_sync_committee.as_ref().unwrap().pubkeys,
+            consensus_state.current_sync_committee,
+        )?;
+    } else {
+        check_aggregate_pubkey(
+            ctx.deps,
+            &next_sync_committee.as_ref().unwrap().pubkeys,
+            consensus_state.next_sync_committee,
+        )?;
+    }
 
     validate_light_client_update::<C, _>(
         &header.consensus_update.clone().into(),
