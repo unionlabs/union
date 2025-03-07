@@ -156,7 +156,7 @@ let stargazeBalance = createQuery(
         class={cn(
     "w-full max-w-lg rounded-lg font-sans",
     "bg-[url('/images/backgrounds/stride-background.png')]",
-    "bg-[#181825] text-[#FFFFFF] dark:bg-[#2D2D44]/50 dark:text-[#FFFFFF]",
+    "bg-[#181825] text-[rgb(60,0,29)] dark:bg-[#2D2D44]/50 dark:text-[rgb(60,0,29)]",
   )}
 >
   <Card.Header>
