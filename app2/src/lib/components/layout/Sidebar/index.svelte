@@ -53,12 +53,12 @@ onMount(() => {
 
 
 <div class="min-h-full flex flex-col overflow-y-auto">
-  <div class="px-6 py-3 flex items-center">
+  <div class="px-6 flex items-center border-b-1 h-16 border-zinc-900">
     <img class="h-10" src="/images/union-logo.svg" alt="Union" />
   </div>
   <div class="flex flex-col justify-between flex-1">
   {#each navigation as section}
-    <section class="border-t-1 border-zinc-900 p-6">
+    <section class="border-zinc-900 p-6">
       {#if section.title}
         <h2 class="font-bold text-sm -mt-8.5 mb-2.5 text-center uppercase text-zinc-600">{section.title}</h2>
       {/if}

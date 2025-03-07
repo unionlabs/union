@@ -62,7 +62,6 @@ async function submit() {
 </script>
 
 <Sections>
-  <SectionTitle>Transfer</SectionTitle>
   <Card>
     <pre class="text-sm text-zinc-300 whitespace-pre-wrap break-all">{JSON.stringify({
       source: rawIntents.source,
