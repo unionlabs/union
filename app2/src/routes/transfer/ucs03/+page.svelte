@@ -54,7 +54,6 @@ const submit = async () => {
 </script>
 
 <Sections>
-  <SectionTitle>Transfer ucs03 evm</SectionTitle>
   <div class="flex flex-col gap-4">
     <div class="flex gap-4">
       <Button

@@ -101,7 +101,6 @@ const onNextPage = async () => {
 
 <Sections>
   <section>
-    <SectionTitle>Your Transfers</SectionTitle>
     <p class="flex gap-1 text-zinc-200">
       {#if Option.isSome(transferCount.data)}
         You made <span class="text-sky-400 font-bold">{transferCount.data.value.aggregate.count}</span> transfers so far.

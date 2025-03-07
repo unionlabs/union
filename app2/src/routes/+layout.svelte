@@ -4,12 +4,16 @@ import { onMount } from "svelte"
 import { Effect, Fiber, Option } from "effect"
 import { chainsQuery } from "$lib/queries/chains.svelte"
 import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
-import AppErrors from "$lib/components/layout/AppErrors/index.svelte"
 import { ENV } from "$lib/constants"
 import { wallets } from "$lib/stores/wallets.svelte"
 import Wallet from "$lib/components/ui/Wallet/index.svelte"
 import SettingsModal from "$lib/components/SettingsModal.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
+import ErrorsModal from "$lib/components/ErrorsModal.svelte"
+import Button from "$lib/components/ui/Button.svelte"
+import { totalErrorCount } from "$lib/stores/app-errors.svelte"
+import { page } from "$app/state"
+import { navigation } from "$lib/components/layout/Sidebar/navigation.ts"
 
 let { children } = $props()
 
@@ -37,6 +41,16 @@ $effect(() => {
     )
   )
 })
+
+const pageName = $derived(
+  Option.fromNullable(
+    navigation.find(section => section.items.find(s => s.path === page.url.pathname))
+  ).pipe(
+    Option.flatMap(s => Option.fromNullable(s.items.find(i => i.path === page.url.pathname))),
+    Option.map(s => s.title),
+    Option.getOrElse(() => page.url.pathname)
+  )
+)
 </script>
 
 <div class="grid grid-cols-[auto_1fr] min-h-[100svh] w-screen">
@@ -46,7 +60,14 @@ $effect(() => {
   
   <!-- Main content area: Has margin to clear fixed sidebar -->
   <main class="col-start-2 ml-64 max-w-[calc(100vw-calc(var(--spacing)*64))]">
-    <AppErrors/>
+    <header class="flex justify-between items-center h-16 px-8 border-b-1 border-zinc-900">
+      <h1 class="text-xl font-bold">{pageName}</h1>
+      {#if totalErrorCount() > 0}
+        <Button variant="danger" onclick={() => uiStore.openErrorsModal()}>
+          {totalErrorCount()} Error{totalErrorCount() > 1 ? "s" : ""}
+        </Button>
+      {/if}
+    </header>
     {@render children()}
   </main>
 </div>
@@ -54,4 +75,8 @@ $effect(() => {
 <SettingsModal 
   isOpen={uiStore.settingsModalOpen} 
   onClose={() => uiStore.closeSettingsModal()}
+/>
+<ErrorsModal 
+  isOpen={uiStore.errorsModalOpen} 
+  onClose={() => uiStore.closeErrorsModal()}
 />
