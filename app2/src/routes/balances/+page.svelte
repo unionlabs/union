@@ -84,19 +84,22 @@ $effect(() => {
             {#each tokens as token}
               {@const balance = balancesStore.getBalance(chain.universal_chain_id, testAddress, token.denom)}
               {@const error = balancesStore.getError(chain.universal_chain_id, testAddress, token.denom)}
-                <div class=" flex flex-col gap-2">
+                <div class="flex flex-col gap-2 mb-8 ">
                   {#if Option.isSome(balance)}
                     <TokenComponent 
                       chain={chain} 
                       denom={token.denom} 
                       amount={balance.value} 
                     />
+                  {:else}
+                  <div class="text-red-500 font-bold">
+                    NO BALANCE FOR: <TokenComponent 
+                      chain={chain} 
+                      denom={token.denom} 
+                    />
+                  </div>
                   {/if}
-                  
                   {#if Option.isSome(error)}
-                    <div class="text-red-500 text-sm">
-                      Error loading balance
-                    </div>
                     <ErrorComponent error={error.value} />
                   {/if}
                 </div>
