@@ -9,8 +9,7 @@
           "ibc_spec_id": "1.0.0"
         },
         "config": {
-          "rpc_url": "http://localhost:26657",
-          "grpc_url": "http://localhost:9090"
+          "rpc_url": "http://localhost:26657"
         }
       },
       {
@@ -22,8 +21,7 @@
         },
         "config": {
           "rpc_url": "http://localhost:26657",
-          "grpc_url": "http://localhost:9090",
-          "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
+          "ibc_host_contract_address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73"
         }
       },
       {
@@ -34,7 +32,7 @@
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
+          "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
           "rpc_url": "http://localhost:8545"
         }
       }
@@ -49,8 +47,7 @@
         },
         "config": {
           "rpc_url": "http://localhost:26657",
-          "grpc_url": "http://localhost:9090",
-          "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
+          "ibc_host_contract_address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73"
         }
       },
       {
@@ -61,7 +58,7 @@
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
+          "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
           "rpc_url": "http://localhost:8545"
         }
       }
@@ -75,9 +72,7 @@
           "consensus_type": "cometbls"
         },
         "config": {
-          "rpc_url": "http://localhost:26657",
-          "grpc_url": "http://localhost:9090",
-          "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2"
+          "rpc_url": "http://localhost:26657"
         }
       },
       {
@@ -89,7 +84,6 @@
         },
         "config": {
           "chain_spec": "minimal",
-          "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
           "rpc_url": "http://localhost:8545",
           "beacon_rpc_url": "http://localhost:9596"
         }
@@ -140,7 +134,34 @@
         }
       }
     ],
-    "client_bootstrap": []
+    "client_bootstrap": [
+      {
+        "config": {
+          "ibc_host_contract_address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73",
+          "rpc_url": "http://localhost:26657"
+        },
+        "enabled": true,
+        "info": {
+          "chain_id": "union-devnet-1",
+          "client_type": "cometbls"
+        },
+        "path": "./target/debug/voyager-client-bootstrap-module-cometbls"
+      },
+      {
+        "config": {
+          "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
+          "rpc_url": "http://localhost:8545",
+          "chain_spec": "minimal",
+          "beacon_rpc_url": "http://localhost:9596"
+        },
+        "enabled": true,
+        "info": {
+          "chain_id": "32382",
+          "client_type": "ethereum"
+        },
+        "path": "./target/debug/voyager-client-bootstrap-module-ethereum"
+      }
+    ]
   },
   "plugins": [
     {
@@ -149,7 +170,9 @@
       "config": {
         "chain_id": "union-devnet-1",
         "rpc_url": "http://localhost:26657",
-        "grpc_url": "http://localhost:9090"
+        "chunk_block_fetch_size": 1000,
+        "ibc_host_contract_address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73",
+        "refetch_delay": 20
       }
     },
     {
@@ -157,9 +180,8 @@
       "path": "./target/debug/voyager-event-source-plugin-ethereum",
       "config": {
         "chain_id": "32382",
-        "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
-        "rpc_url": "http://localhost:8545",
-        "beacon_rpc_url": "http://localhost:9596"
+        "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
+        "rpc_url": "http://localhost:8545"
       }
     },
     {
@@ -167,7 +189,7 @@
       "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
-        "ibc_host_contract_address": "union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9s3e9fe2",
+        "ibc_host_contract_address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73",
         "keyring": {
           "name": "union-devnet",
           "keys": [
@@ -179,13 +201,12 @@
           ]
         },
         "gas_config": {
-          "gas_price": "1.0",
+          "gas_price": 1.0,
           "gas_denom": "muno",
-          "gas_multiplier": "1.1",
+          "gas_multiplier": 1.1,
           "max_gas": 10000000
         },
-        "rpc_url": "http://localhost:26657",
-        "grpc_url": "http://localhost:9090"
+        "rpc_url": "http://localhost:26657"
       }
     },
     {
@@ -193,7 +214,7 @@
       "path": "./target/debug/voyager-transaction-plugin-ethereum",
       "config": {
         "chain_id": "32382",
-        "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
+        "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
         "multicall_address": "0x9fd9D9528c8373D990a1380B9414bDE179007A35",
         "keyring": {
           "name": "ethereum-devnet",
@@ -264,7 +285,6 @@
       "config": {
         "chain_id": "union-devnet-1",
         "rpc_url": "http://localhost:26657",
-        "grpc_url": "http://localhost:9090",
         "prover_endpoints": ["http://localhost:9999"]
       }
     },
@@ -274,19 +294,33 @@
       "config": {
         "chain_id": "32382",
         "chain_spec": "minimal",
-        "ibc_handler_address": "0xed2af2ad7fe0d92011b26a2e5d1b4dc7d12a47c5",
+        "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
         "rpc_url": "http://localhost:8545",
         "beacon_rpc_url": "http://localhost:9596"
       }
     }
   ],
   "voyager": {
-    "num_workers": 50,
+    "cache": {
+      "state": {
+        "capacity": 10000,
+        "time_to_idle": 60,
+        "time_to_live": 60
+      }
+    },
+    "ipc_client_request_timeout": {
+      "nanos": 0,
+      "secs": 60
+    },
+    "num_workers": 20,
     "queue": {
-      "type": "pg-queue",
       "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",
-      "max_connections": 50,
-      "min_connections": 50
+      "idle_timeout": null,
+      "max_connections": 60,
+      "max_lifetime": null,
+      "min_connections": 50,
+      "optimize_batch_limit": 20,
+      "type": "pg-queue"
     },
     "optimizer_delay_milliseconds": 100
   }
