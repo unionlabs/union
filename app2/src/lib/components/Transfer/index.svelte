@@ -13,11 +13,12 @@
 
   const {transfer} = getTransfer()
 
+  //test
   const runthis = async (): Promise<void> => {
     if (!transfer.sourceChain?.chain_id ||
       !transfer.baseToken?.denom ||
       !transfer.channel ||
-      !transfer.sourceChain?.rpc_type) {
+      !transfer.destinationChain?.rpc_type) {
       console.log('Missing required parameters');
       return;
     }
@@ -27,7 +28,7 @@
         transfer.sourceChain.chain_id,
         transfer.baseToken.denom,
         transfer.channel,
-        transfer.sourceChain.rpc_type
+        transfer.destinationChain.rpc_type
       )
     );
 
