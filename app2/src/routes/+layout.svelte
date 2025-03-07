@@ -42,16 +42,15 @@ $effect(() => {
   )
 })
 
-const pageName = $derived(() => {
-  const sections = navigation.find(section => section.items.find(s => s.path === page.url.pathname))
-  if (!sections) return null
-
-  const item = sections.items.find(i => i.path === page.url.pathname)
-
-  if (!item) return null
-
-  return item.title
-})
+const pageName = $derived(
+  Option.fromNullable(
+    navigation.find(section => section.items.find(s => s.path === page.url.pathname))
+  ).pipe(
+    Option.flatMap(s => Option.fromNullable(s.items.find(i => i.path === page.url.pathname))),
+    Option.map(s => s.title),
+    Option.getOrElse(() => page.url.pathname)
+  )
+)
 </script>
 
 <div class="grid grid-cols-[auto_1fr] min-h-[100svh] w-screen">
@@ -62,7 +61,7 @@ const pageName = $derived(() => {
   <!-- Main content area: Has margin to clear fixed sidebar -->
   <main class="col-start-2 ml-64 max-w-[calc(100vw-calc(var(--spacing)*64))]">
     <header class="flex justify-between items-center h-16 px-8 border-b-1 border-zinc-900">
-      <h1 class="text-xl font-bold">{pageName() ? pageName() : page.url.pathname}</h1>
+      <h1 class="text-xl font-bold">{pageName}</h1>
       {#if totalErrorCount() > 0}
         <Button variant="danger" onclick={() => uiStore.openErrorsModal()}>
           {totalErrorCount()} Error{totalErrorCount() > 1 ? "s" : ""}
