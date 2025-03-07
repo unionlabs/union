@@ -10,6 +10,7 @@
   import ShowData from "$lib/components/Transfer/ShowData.svelte";
   import {getQuoteToken} from "$lib/services/transfer-ucs03-evm/quote-token.ts";
   import {Effect} from "effect";
+  import {getWethQuoteToken} from "$lib/services/transfer-ucs03-evm/weth-token.ts";
 
   const {transfer} = getTransfer()
 
@@ -23,16 +24,27 @@
       return;
     }
 
-    const res = await Effect.runPromise(
+    const quote = await Effect.runPromise(
       getQuoteToken(
-        transfer.sourceChain.chain_id,
-        transfer.baseToken.denom,
+        transfer.sourceChain,
+        transfer.baseToken,
         transfer.channel,
         transfer.destinationChain.rpc_type
       )
     );
 
-    console.log('ZzZZzZZZ', res);
+    if(!transfer.ucs03address) return
+
+    const weth = await Effect.runPromise(
+      getWethQuoteToken(
+        transfer.sourceChain,
+        transfer.ucs03address,
+        transfer.channel,
+      )
+    );
+
+    console.log('quote', quote);
+    console.log('quote', weth);
   };
 
   $effect(() => {
