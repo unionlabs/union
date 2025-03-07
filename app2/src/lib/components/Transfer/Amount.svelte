@@ -8,7 +8,7 @@
        label="amount"
        type="text"
        required={true}
-       disabled={!transfer.url.asset}
+       disabled={!transfer.raw.asset}
        autocorrect="off"
        placeholder="0.00"
        spellcheck="false"
@@ -17,7 +17,7 @@
        data-field="amount"
        autocapitalize="none"
        pattern="^[0-9]*[.]?[0-9]*$"
-       value={transfer.url.amount}
+       value={transfer.raw.amount}
        oninput={(event) => {
                 const input = event.currentTarget;
                 const value = input.value;
@@ -26,9 +26,9 @@
                     ? value.split('.')[1].length <= (transfer.baseToken?.representations[0]?.decimals ?? 0)
                     : true)
                 )) {
-                  transfer.url.updateField('amount', event);
+                  transfer.raw.updateField('amount', event);
                 } else {
-                  input.value = transfer.amount;
+                  input.value = transfer.raw.amount;
                 }
               }}
        class="text-center"

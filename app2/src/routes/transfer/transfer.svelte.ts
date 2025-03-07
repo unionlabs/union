@@ -17,18 +17,18 @@ import {getChannelInfoSafe} from "$lib/services/transfer-ucs03-evm/channel.ts";
 
 export class Transfer {
   isValid = $state(true);
-  url = new RawTransferSvelte();
+  raw = new RawTransferSvelte();
   state = $state<TransferSubmission>(TransferSubmission.Filling())
 
   sourceChain = $derived.by(() => {
     return Option.isSome(chains.data)
-      ? chains.data.value.find(chain => chain.chain_id === this.url.source)
+      ? chains.data.value.find(chain => chain.chain_id === this.raw.source)
       : null;
   });
 
   destinationChain = $derived.by(() => {
     return Option.isSome(chains.data)
-      ? chains.data.value.find(chain => chain.chain_id === this.url.destination)
+      ? chains.data.value.find(chain => chain.chain_id === this.raw.destination)
       : null;
   });
 
@@ -42,16 +42,16 @@ export class Transfer {
   });
 
   baseToken = $derived.by(() => {
-    return this.baseTokens.find((t: Token) => t.denom === this.url.asset) || null
+    return this.baseTokens.find((t: Token) => t.denom === this.raw.asset) || null
   });
 
   parsedAmount = $derived.by(() => {
     if (!this.baseToken) return null
-    return getParsedAmountSafe(this.url.amount.toString(), this.baseToken)
+    return getParsedAmountSafe(this.raw.amount.toString(), this.baseToken)
   });
 
   derivedReceiver = $derived.by(() => {
-    return getDerivedReceiverSafe(this.url.receiver);
+    return getDerivedReceiverSafe(this.raw.receiver);
   });
 
   channel = $derived.by(() => {
@@ -72,6 +72,7 @@ export class Transfer {
   quoteToken = $state()
   wethQuoteToken = $state()
 
+  //Validate this and return as field errors or similar
   args = $derived<Ucs03TransferEvm>({
     sourceChain: getChainFromWagmi(Number(this.sourceChain?.chain_id)) as ViemChain,
     sourceChannelId: this.channel?.source_channel_id,

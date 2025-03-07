@@ -55,4 +55,9 @@ export class ChannelValidationError extends Data.TaggedError("ChannelValidationE
   cause?: unknown | undefined
 }> {}
 
+export class QuoteTokenError extends Data.TaggedError("QuoteTokenError")<{
+  message: string
+  cause?: unknown | undefined
+}> {}
+
 export type SubmitTransferError = WriteContractError | CreateWalletClientError
