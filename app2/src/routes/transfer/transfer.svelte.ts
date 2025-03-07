@@ -11,9 +11,9 @@ import {
 } from "$lib/services/transfer-ucs03-evm";
 import {chains} from "$lib/stores/chains.svelte.ts";
 import {getChainFromWagmi} from "$lib/wallet/evm/index.ts";
-import type {Chain as ViemChain} from "viem";
-import {getChannelInfo} from "@unionlabs/client";
+import {type Chain as ViemChain, fromHex} from "viem";
 import {channels} from "$lib/stores/channels.svelte.ts";
+import {getChannelInfoSafe} from "$lib/services/transfer-ucs03-evm/channel.ts";
 
 export class Transfer {
   isValid = $state(true);
@@ -45,25 +45,36 @@ export class Transfer {
     return this.baseTokens.find((t: Token) => t.denom === this.url.asset) || null
   });
 
-  amount = $derived(this.url.amount);
   parsedAmount = $derived.by(() => {
     if (!this.baseToken) return null
-    return getParsedAmountSafe(this.amount.toString(), this.baseToken)
+    return getParsedAmountSafe(this.url.amount.toString(), this.baseToken)
   });
 
-  receiver = $derived(this.url.receiver);
   derivedReceiver = $derived.by(() => {
-    return getDerivedReceiverSafe(this.receiver);
+    return getDerivedReceiverSafe(this.url.receiver);
   });
 
-  channel = $derived(getChannelInfo(this.sourceChain.chain_id, this.destinationChain.chain_id, channels.data))
-  ucs03address = $state()
+  channel = $derived.by(() => {
+    return Option.isSome(channels.data) && this.sourceChain && this.destinationChain
+      ? getChannelInfoSafe(this.sourceChain.chain_id, this.destinationChain.chain_id, channels.data.value)
+      : null;
+  });
+
+  ucs03address = $derived.by(() => {
+    if (!this.sourceChain || !this.channel?.source_port_id) {
+      return null;
+    }
+    return this.sourceChain.rpc_type === "cosmos"
+      ? fromHex(`0x${this.channel.source_port_id}`, "string")
+      : `0x${this.channel.source_port_id}`;
+  });
+
   quoteToken = $state()
   wethQuoteToken = $state()
 
   args = $derived<Ucs03TransferEvm>({
     sourceChain: getChainFromWagmi(Number(this.sourceChain?.chain_id)) as ViemChain,
-    sourceChannelId: 9,
+    sourceChannelId: this.channel?.source_channel_id,
     ucs03address: "0x84f074c15513f15baea0fbed3ec42f0bd1fb3efa",
     baseToken: this.baseToken?.denom,
     baseAmount: this.parsedAmount,
@@ -85,7 +96,6 @@ export class Transfer {
     }
   }
 }
-
 
 const STATE_KEY = Symbol("TRANSFER");
 

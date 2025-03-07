@@ -10,6 +10,10 @@
 
   const {transfer} = getTransfer()
 
+  $effect(() => {
+    console.log('ZKGM', transfer.ucs03address)
+  })
+
 </script>
 
 <Card class="max-w-md relative flex flex-col gap-2">
