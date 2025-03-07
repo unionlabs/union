@@ -1,4 +1,4 @@
-ame: Release Component
+name: Release Component
 
 on:
   push:
