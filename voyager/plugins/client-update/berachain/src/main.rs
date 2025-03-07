@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
-use beacon_api_types::{ExecutionPayloadHeaderSsz, chain_spec::Mainnet};
+use beacon_api_types::{chain_spec::Mainnet, deneb};
 use berachain_light_client_types::Header;
 use ethereum_light_client_types::AccountProof;
 use jsonrpsee::{
@@ -219,10 +219,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .await
                     .unwrap();
 
-                let execution_header = ExecutionPayloadHeaderSsz::<Mainnet>::decode_as::<Ssz>(
-                    query_result.response.value.expect("big trouble").as_ref(),
-                )
-                .expect("big trouble");
+                let execution_header =
+                    deneb::ExecutionPayloadHeaderSsz::<Mainnet>::decode_as::<Ssz>(
+                        query_result.response.value.expect("big trouble").as_ref(),
+                    )
+                    .expect("big trouble");
 
                 let account_proof = self.fetch_account_update(update_to.height()).await?;
 

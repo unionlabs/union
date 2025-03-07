@@ -12,18 +12,19 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                       = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
-beacon-api                  = { workspace = true }
-beacon-api-types            = { workspace = true, features = ["serde"] }
-bitvec                      = { workspace = true }
-enumorph                    = { workspace = true }
-ethereum-light-client-types = { workspace = true, features = ["serde"] }
-futures                     = { workspace = true }
-jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
-macros                      = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
-tokio                       = { workspace = true }
-tracing                     = { workspace = true }
-unionlabs                   = { workspace = true }
-voyager-message             = { workspace = true }
-voyager-vm                  = { workspace = true }
+alloy                        = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+beacon-api                   = { workspace = true }
+beacon-api-types             = { workspace = true, features = ["serde"] }
+bitvec                       = { workspace = true }
+enumorph                     = { workspace = true }
+ethereum-light-client-types  = { workspace = true, features = ["serde"] }
+ethereum-sync-protocol-types = { workspace = true }
+futures                      = { workspace = true }
+jsonrpsee                    = { workspace = true, features = ["macros", "server", "tracing"] }
+macros                       = { workspace = true }
+serde                        = { workspace = true, features = ["derive"] }
+tokio                        = { workspace = true }
+tracing                      = { workspace = true }
+unionlabs                    = { workspace = true }
+voyager-message              = { workspace = true }
+voyager-vm                   = { workspace = true }

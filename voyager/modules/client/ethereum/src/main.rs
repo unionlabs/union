@@ -1,5 +1,5 @@
 use beacon_api_types::chain_spec::PresetBaseKind;
-use ethereum_light_client_types::{ClientState, ConsensusState, Header, StorageProof};
+use ethereum_light_client_types::{ClientStateV1, ConsensusState, Header, StorageProof};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -66,8 +66,8 @@ impl Module {
         })
     }
 
-    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientState> {
-        <ClientState>::decode_as::<Bincode>(client_state).map_err(|err| {
+    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientStateV1> {
+        <ClientStateV1>::decode_as::<Bincode>(client_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode client state: {err}"),
@@ -142,7 +142,7 @@ impl ClientModuleServer for Module {
             ));
         }
 
-        serde_json::from_value::<ClientState>(client_state)
+        serde_json::from_value::<ClientStateV1>(client_state)
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,

@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
-use beacon_api_types::{chain_spec::Mainnet, ExecutionPayloadHeaderSsz};
+use beacon_api_types::{chain_spec::Mainnet, deneb};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
@@ -94,7 +94,7 @@ impl ConsensusModuleServer for Module {
                 .await
                 .unwrap();
 
-            let execution_header = ExecutionPayloadHeaderSsz::<Mainnet>::decode_as::<Ssz>(
+            let execution_header = deneb::ExecutionPayloadHeaderSsz::<Mainnet>::decode_as::<Ssz>(
                 raw_execution_header
                     .response
                     .value

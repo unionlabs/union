@@ -139,7 +139,7 @@ impl<const BYTES: usize, E: Encoding> FixedBytes<BYTES, E> {
 
 impl<const BYTES: usize, E: Encoding> fmt::Debug for FixedBytes<BYTES, E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("Hash<{BYTES}>({self})"))
+        f.write_fmt(format_args!("FixedBytes<{BYTES}>({self})"))
     }
 }
 

@@ -6,11 +6,8 @@ use alloy::{
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
     rpc::types::BlockTransactionsKind,
 };
-use beacon_api::{client::BeaconApiClient, types::Spec};
-use beacon_api_types::{
-    chain_spec::PresetBaseKind, light_client_update::NextSyncCommitteeBranch, slot::Slot,
-    SyncCommittee,
-};
+use beacon_api::{client::BeaconApiClient, routes::spec::Spec};
+use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, slot::Slot};
 use bitvec::{order::Msb0, vec::BitVec};
 use ethereum_light_client_types::{
     AccountProof, EpochChangeUpdate, Header, LightClientUpdate, LightClientUpdateData,
@@ -301,7 +298,14 @@ impl Module {
                 )
             })?;
 
-        Ok(beacon_slot.data.message.slot)
+        Ok(beacon_slot.response.fold(
+            |b| b.message.slot,
+            |b| b.message.slot,
+            |b| b.message.slot,
+            |b| b.message.slot,
+            |b| b.message.slot,
+            |b| b.message.slot,
+        ))
     }
 
     /// Fetch a client update from the provided trusted height (`update_from`) to at least the
@@ -335,7 +339,7 @@ impl Module {
             return Ok(voyager_vm::data(OrderedHeaders { headers: vec![] }));
         }
 
-        let finality_update = self
+        let finality_update: LightClientUpdateData = self
             .beacon_api_client
             .finality_update()
             .await
@@ -346,7 +350,32 @@ impl Module {
                     None::<()>,
                 )
             })?
-            .data;
+            .fold(
+                |f| match f {},
+                |_| todo!("altair is not supported"),
+                |_| todo!("bellatrix is not supported"),
+                |f| LightClientUpdateData {
+                    attested_header: f.attested_header.into(),
+                    finalized_header: f.finalized_header.into(),
+                    finality_branch: f.finality_branch.to_vec(),
+                    sync_aggregate: f.sync_aggregate,
+                    signature_slot: f.signature_slot,
+                },
+                |f| LightClientUpdateData {
+                    attested_header: f.attested_header.into(),
+                    finalized_header: f.finalized_header.into(),
+                    finality_branch: f.finality_branch.to_vec(),
+                    sync_aggregate: f.sync_aggregate,
+                    signature_slot: f.signature_slot,
+                },
+                |f| LightClientUpdateData {
+                    attested_header: f.attested_header.into(),
+                    finalized_header: f.finalized_header.into(),
+                    finality_branch: f.finality_branch.to_vec(),
+                    sync_aggregate: f.sync_aggregate,
+                    signature_slot: f.signature_slot,
+                },
+            );
 
         let spec = self
             .beacon_api_client
@@ -430,9 +459,17 @@ impl Module {
                     None::<()>,
                 )
             })?
-            .0
             .into_iter()
-            .map(|x| x.data)
+            .map(|x| {
+                x.fold::<ethereum_sync_protocol_types::LightClientUpdate>(
+                    |u| match u {},
+                    |_| todo!("altair is not supported"),
+                    |_| todo!("bellatrix is not supported"),
+                    |u| u.into(),
+                    |u| u.into(),
+                    |u| u.into(),
+                )
+            })
             .collect::<Vec<_>>();
 
         info!(
@@ -502,19 +539,8 @@ impl Module {
             info!("has finality update");
             // do finality update
             Some(
-                self.make_header(
-                    last_update_block_number,
-                    LightClientUpdateData {
-                        attested_header: finality_update.attested_header,
-                        finalized_header: finality_update.finalized_header,
-                        finality_branch: finality_update.finality_branch,
-                        sync_aggregate: finality_update.sync_aggregate,
-                        signature_slot: finality_update.signature_slot,
-                    },
-                    None,
-                    &spec,
-                )
-                .await?,
+                self.make_header(last_update_block_number, finality_update, None, &spec)
+                    .await?,
             )
         };
 
@@ -595,7 +621,7 @@ impl Module {
         currently_trusted_block_number: u64,
         light_client_update_data: LightClientUpdateData,
         // if this is an epoch change update, provide the next sync committee for the target epoch
-        next_sync_committee: Option<(SyncCommittee, NextSyncCommitteeBranch)>,
+        next_sync_committee: Option<(SyncCommittee, Vec<H256>)>,
         spec: &Spec,
     ) -> RpcResult<Header> {
         // When we fetch the update at this height, the `next_sync_committee` will
@@ -626,9 +652,17 @@ impl Module {
                     None::<()>,
                 )
             })?
-            .0
             .into_iter()
-            .map(|x| x.data)
+            .map(|x| {
+                x.fold::<ethereum_sync_protocol_types::LightClientUpdate>(
+                    |u| match u {},
+                    |_| todo!("altair is not supported"),
+                    |_| todo!("bellatrix is not supported"),
+                    |u| u.into(),
+                    |u| u.into(),
+                    |u| u.into(),
+                )
+            })
             .collect::<Vec<_>>()
             .pop()
             .expect("one update was requested, if the rpc returns a value it should be valid here");

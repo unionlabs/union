@@ -63,11 +63,14 @@ macro_rules! consts_traits {
             }
         )+
 
+        #[allow(non_camel_case_types)]
         pub trait ChainSpec: 'static + Debug + Clone + PartialEq + Eq + Default + Send + Sync + Unpin + $($CONST+)+ {
             const PRESET: crate::preset::Preset;
             // const PRESET_BASE_KIND: PresetBaseKind;
 
             type PERIOD: 'static + Unsigned;
+
+            type MAX_ATTESTATIONS_ELECTRA: 'static + Debug + Clone + PartialEq + Eq + Default + Send + Sync + Unpin + Unsigned + NonZero;
         }
 
         with_dollar_sign! {
@@ -91,6 +94,11 @@ macro_rules! consts_traits {
                                 <Self as EPOCHS_PER_SYNC_COMMITTEE_PERIOD>::EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
                                 <Self as SLOTS_PER_EPOCH>::SLOTS_PER_EPOCH,
                             >;
+
+                            type MAX_ATTESTATIONS_ELECTRA = typenum::Prod<
+                                <Self as MAX_VALIDATORS_PER_COMMITTEE>::MAX_VALIDATORS_PER_COMMITTEE,
+                                <Self as MAX_COMMITTEES_PER_SLOT>::MAX_COMMITTEES_PER_SLOT,
+                            >;
                         }
                     };
                 }
@@ -101,6 +109,7 @@ macro_rules! consts_traits {
 
 consts_traits![
     // Misc
+    MAX_COMMITTEES_PER_SLOT,
     DEPOSIT_CONTRACT_TREE_DEPTH,
     MAX_VALIDATORS_PER_COMMITTEE,
     // Time parameters
@@ -126,6 +135,12 @@ consts_traits![
     // Sync protocol
     MIN_SYNC_COMMITTEE_PARTICIPANTS,
     UPDATE_TIMEOUT,
+    // <https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#execution>
+    MAX_DEPOSIT_REQUESTS_PER_PAYLOAD,
+    // <https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#execution>
+    MAX_WITHDRAWAL_REQUESTS_PER_PAYLOAD,
+    // <https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#execution>
+    MAX_CONSOLIDATION_REQUESTS_PER_PAYLOAD,
 ];
 
 mk_chain_spec!(Minimal is crate::preset::MINIMAL);

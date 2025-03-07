@@ -19,9 +19,12 @@ pub struct Header {
 #[cfg(test)]
 mod tests {
     use beacon_api_types::{
-        execution_payload_header::ExecutionPayloadHeader, slot::Slot, BeaconBlockHeader,
-        LightClientHeader, SyncAggregate, SyncCommittee,
+        altair::{SyncAggregate, SyncCommittee},
+        deneb::ExecutionPayloadHeader,
+        phase0::BeaconBlockHeader,
+        slot::Slot,
     };
+    use ethereum_sync_protocol_types::LightClientHeader;
     use unionlabs::{
         encoding::{Bincode, Json},
         primitives::{H160, H256, H384, H768, U256},
@@ -43,7 +46,7 @@ mod tests {
                     pubkeys: vec![H384::new([0xAA; 48])],
                     aggregate_pubkey: H384::new([0xAA; 48]),
                 },
-                next_sync_committee_branch: [H256::new([0xAA; 32]); 5],
+                next_sync_committee_branch: vec![H256::new([0xAA; 32]); 5],
                 update_data: LightClientUpdateData {
                     attested_header: LightClientHeader {
                         beacon: BeaconBlockHeader {
@@ -72,7 +75,7 @@ mod tests {
                             blob_gas_used: 100,
                             excess_blob_gas: 100,
                         },
-                        execution_branch: [H256::new([0xAA; 32]); 4],
+                        execution_branch: vec![H256::new([0xAA; 32]); 4],
                     },
                     finalized_header: LightClientHeader {
                         beacon: BeaconBlockHeader {
@@ -101,9 +104,9 @@ mod tests {
                             blob_gas_used: 100,
                             excess_blob_gas: 100,
                         },
-                        execution_branch: [H256::new([0xAA; 32]); 4],
+                        execution_branch: vec![H256::new([0xAA; 32]); 4],
                     },
-                    finality_branch: [H256::new([0xAA; 32]); 6],
+                    finality_branch: vec![H256::new([0xAA; 32]); 6],
                     sync_aggregate: SyncAggregate {
                         sync_committee_bits: [1, 2, 3].to_vec(),
                         sync_committee_signature: H768::new([0xAA; 96]),

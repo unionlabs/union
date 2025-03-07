@@ -4,6 +4,7 @@
 pub struct Preset {
     /// Misc
     /// ---------------------------------------------------------------
+    pub MAX_COMMITTEES_PER_SLOT: usize,
     pub DEPOSIT_CONTRACT_TREE_DEPTH: usize,
     pub MAX_VALIDATORS_PER_COMMITTEE: usize,
 
@@ -39,10 +40,15 @@ pub struct Preset {
     /// ---------------------------------------------------------------
     pub MIN_SYNC_COMMITTEE_PARTICIPANTS: usize,
     pub UPDATE_TIMEOUT: usize,
+
+    pub MAX_DEPOSIT_REQUESTS_PER_PAYLOAD: usize,
+    pub MAX_WITHDRAWAL_REQUESTS_PER_PAYLOAD: usize,
+    pub MAX_CONSOLIDATION_REQUESTS_PER_PAYLOAD: usize,
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/presets/mainnet>
 pub const MAINNET: Preset = Preset {
+    MAX_COMMITTEES_PER_SLOT: 64,
     DEPOSIT_CONTRACT_TREE_DEPTH: 32,
     MAX_VALIDATORS_PER_COMMITTEE: 2048,
 
@@ -66,10 +72,15 @@ pub const MAINNET: Preset = Preset {
     BYTES_PER_LOGS_BLOOM: 256,
     MAX_EXTRA_DATA_BYTES: 32,
     MAX_WITHDRAWALS_PER_PAYLOAD: 16,
+
+    MAX_DEPOSIT_REQUESTS_PER_PAYLOAD: 8192,
+    MAX_WITHDRAWAL_REQUESTS_PER_PAYLOAD: 16,
+    MAX_CONSOLIDATION_REQUESTS_PER_PAYLOAD: 2,
 };
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/presets/minimal>
 pub const MINIMAL: Preset = Preset {
+    MAX_COMMITTEES_PER_SLOT: 4,
     DEPOSIT_CONTRACT_TREE_DEPTH: 32,
     MAX_VALIDATORS_PER_COMMITTEE: 2048,
 
@@ -94,4 +105,8 @@ pub const MINIMAL: Preset = Preset {
     BYTES_PER_LOGS_BLOOM: 256,
     MAX_EXTRA_DATA_BYTES: 32,
     MAX_WITHDRAWALS_PER_PAYLOAD: 4,
+
+    MAX_CONSOLIDATION_REQUESTS_PER_PAYLOAD: 2,
+    MAX_DEPOSIT_REQUESTS_PER_PAYLOAD: 4,
+    MAX_WITHDRAWAL_REQUESTS_PER_PAYLOAD: 2,
 };

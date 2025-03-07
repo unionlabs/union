@@ -66,6 +66,7 @@ members = [
   "lib/arbitrum-verifier",
   "lib/cometbls-groth16-verifier",
   "lib/ethereum-sync-protocol",
+  "lib/ethereum-sync-protocol-types",
   "lib/evm-storage-verifier",
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
@@ -192,6 +193,7 @@ members = [
   "cosmwasm/ucs03-zkgm-token-minter-api",
   "cosmwasm/cw20-base",
   "lib/scroll-types",
+  "lib/fork-schedules",
 ]
 
 [workspace.package]
@@ -216,12 +218,14 @@ opt-level = 3
 [workspace.dependencies]
 aptos-move-ibc     = { path = "generated/rust/aptos-move-ibc", default-features = false }
 aptos-verifier     = { path = "lib/aptos-verifier", default-features = false }
-beacon-api         = { path = "lib/beacon-api", default-features = false }
-beacon-api-types   = { path = "lib/beacon-api-types", default-features = false }
 cometbft-rpc       = { path = "lib/cometbft-rpc", default-features = false }
 cometbft-types     = { path = "lib/cometbft-types", default-features = false }
 concurrent-keyring = { path = "lib/concurrent-keyring", default-features = false }
 cosmos-client      = { path = "lib/cosmos-client", default-features = false }
+
+beacon-api       = { path = "lib/beacon-api", default-features = false }
+beacon-api-types = { path = "lib/beacon-api-types", default-features = false }
+fork-schedules   = { path = "lib/fork-schedules", default-features = false }
 
 state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
 
@@ -234,10 +238,11 @@ cometbls-light-client-types = { path = "lib/cometbls-light-client-types", defaul
 
 scroll-light-client-types = { path = "lib/scroll-light-client-types", default-features = false }
 
-ethereum-light-client       = { path = "cosmwasm/ibc-union/lightclient/ethereum", default-features = false }
-ethereum-light-client-types = { path = "lib/ethereum-light-client-types", default-features = false }
-ethereum-sync-protocol      = { path = "lib/ethereum-sync-protocol", default-features = false }
-evm-storage-verifier        = { path = "lib/evm-storage-verifier", default-features = false }
+ethereum-light-client        = { path = "cosmwasm/ibc-union/lightclient/ethereum", default-features = false }
+ethereum-light-client-types  = { path = "lib/ethereum-light-client-types", default-features = false }
+ethereum-sync-protocol       = { path = "lib/ethereum-sync-protocol", default-features = false }
+ethereum-sync-protocol-types = { path = "lib/ethereum-sync-protocol-types", default-features = false }
+evm-storage-verifier         = { path = "lib/evm-storage-verifier", default-features = false }
 
 berachain-light-client-types = { path = "lib/berachain-light-client-types", default-features = false }
 scroll-api                   = { path = "lib/scroll-api", default-features = false }

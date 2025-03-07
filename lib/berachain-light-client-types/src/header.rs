@@ -1,4 +1,4 @@
-use beacon_api_types::execution_payload_header::ExecutionPayloadHeader;
+use beacon_api_types::deneb::ExecutionPayloadHeader;
 use ethereum_light_client_types::AccountProof;
 use unionlabs::ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof};
 
