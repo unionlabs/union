@@ -90,8 +90,8 @@ jobs:
         env:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
         run: |
-          nix build .#packages.x86_64-linux.\"$COMPONENT\"-image --accept-flake-config
-          cp -Lr result x86_64-linux.\"$COMPONENT\"-image
+          nix build .#packages.x86_64-linux."$COMPONENT"-image --accept-flake-config
+          cp -Lr result x86_64-linux."$COMPONENT"-image
       - uses: actions/upload-artifact@v4
         with:
           name: x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
