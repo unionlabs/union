@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
+    "postinstall": "patch-package",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "eslint .",
@@ -15,6 +16,12 @@
     "test": "npm run test:unit -- --run"
   },
   "devDependencies": {
+    "@cosmjs/amino": "^0.33.0",
+    "@cosmjs/cosmwasm-stargate": "0.33.0",
+    "@cosmjs/proto-signing": "^0.33.0",
+    "@cosmjs/stargate": "0.33.0",
+    "@cosmjs/tendermint-rpc": "^0.33.0",
+    "patch-package": "^8.0.0",
     "@effect/platform": "^0.77.2",
     "@eslint/compat": "^1.2.6",
     "@eslint/js": "^9.20.0",
