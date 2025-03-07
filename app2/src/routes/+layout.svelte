@@ -11,6 +11,7 @@ import SettingsModal from "$lib/components/SettingsModal.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import ErrorsModal from "$lib/components/ErrorsModal.svelte"
 import Button from "$lib/components/ui/Button.svelte"
+import { totalErrorCount } from "$lib/stores/app-errors.svelte"
 
 let { children } = $props()
 
@@ -47,11 +48,13 @@ $effect(() => {
   
   <!-- Main content area: Has margin to clear fixed sidebar -->
   <main class="col-start-2 ml-64 max-w-[calc(100vw-calc(var(--spacing)*64))]">
-    <header class="flex justify-between items-center h-16 px-6 border-b-1 border-zinc-900">
+    <header class="flex justify-between items-center h-16 px-8 border-b-1 border-zinc-900">
       <h1 class="text-xl font-bold">Transfer</h1>
-      <Button variant="danger" onclick={() => uiStore.openErrorsModal()}>
-        Errors
-      </Button>
+      {#if totalErrorCount() > 0}
+        <Button variant="danger" onclick={() => uiStore.openErrorsModal()}>
+          {totalErrorCount()} Error{totalErrorCount() > 1 ? "s" : ""}
+        </Button>
+      {/if}
     </header>
     {@render children()}
   </main>

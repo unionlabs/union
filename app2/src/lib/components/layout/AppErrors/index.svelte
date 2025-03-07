@@ -7,28 +7,18 @@ import Card from "$lib/components/ui/Card.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import { cn } from "$lib/utils"
 
-// Get all token errors from the store
-const tokenErrors = $derived(
-  Array.from(tokensStore.error.entries())
-    .filter(([_, error]) => Option.isSome(error))
-    .map(([chainId, error]) => ({
-      chainId,
-      error: error.value
-    }))
-)
-
-const totalErrors = $derived((Option.isSome(chains.error) ? 1 : 0) + tokenErrors.length)
+import { totalErrorCount, tokenErrors } from "$lib/stores/app-errors.svelte"
 
 let isExpanded = $state(false)
 </script>
 
-{#if totalErrors > 0}
+{#if totalErrorCount() > 0}
   <button
     class="w-full px-4 py-2 flex items-center justify-between"
     onclick={() => isExpanded = !isExpanded}
   >
     <span class="font-semibold text-red-500">
-      {totalErrors} Error{totalErrors > 1 ? "s" : ""}
+      {totalErrorCount()} Error{totalErrorCount() > 1 ? "s" : ""}
     </span>
     <span class={cn(
       "transition-transform text-red-500",

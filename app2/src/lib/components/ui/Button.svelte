@@ -36,8 +36,7 @@ const classes = cn(
     "focus-visible:ring-zinc-400"
   ],
   variant === "danger" && [
-    "bg-red-600 border-red-500 border text-white hover:bg-red-700",
-    "dark:bg-red-600 dark:hover:bg-red-700",
+    "bg-red-500 border-red-400 border text-white hover:bg-red-700",
     "focus-visible:ring-red-500"
   ],
 

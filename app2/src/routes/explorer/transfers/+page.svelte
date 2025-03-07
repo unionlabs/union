@@ -62,7 +62,6 @@ const onNextPage = async () => {
 </script>
 
 <Sections>
-  <SectionTitle>Transfers</SectionTitle>
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferList.data) && Option.isSome(chains.data)}
       {@const chainss = chains.data.value}
