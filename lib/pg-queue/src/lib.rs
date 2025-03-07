@@ -37,6 +37,7 @@ pub mod metrics;
 pub struct PgQueue<T> {
     client: PgPool,
     optimize_batch_limit: Option<i64>,
+    retryable_error_priority_decrease: Option<i64>,
     __marker: PhantomData<fn() -> T>,
 }
 
@@ -48,7 +49,10 @@ pub struct PgQueueConfig {
     pub min_connections: Option<u32>,
     pub idle_timeout: Option<Duration>,
     pub max_lifetime: Option<Duration>,
+    #[serde(default)]
     pub optimize_batch_limit: Option<i64>,
+    #[serde(default)]
+    pub retryable_error_priority_decrease: Option<i64>,
 }
 
 impl PgQueueConfig {
@@ -69,10 +73,21 @@ struct Id {
 }
 
 #[derive(Debug, FromRow)]
-struct Record {
+struct QueueRecord {
     id: i64,
     parents: Vec<i64>,
     item: String,
+    created_at: sqlx::types::time::OffsetDateTime,
+    priority: i64,
+}
+
+#[derive(Debug, FromRow)]
+struct OptimizeRecord {
+    id: i64,
+    #[allow(dead_code)]
+    parents: Vec<i64>,
+    item: String,
+    #[allow(dead_code)]
     created_at: sqlx::types::time::OffsetDateTime,
 }
 
@@ -177,6 +192,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         // });
 
         let optimize_batch_limit = config.optimize_batch_limit;
+        let retryable_error_priority_decrease = config.retryable_error_priority_decrease;
 
         let pool = config.into_pg_pool().await?;
 
@@ -186,7 +202,8 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                 id BIGSERIAL PRIMARY KEY,
                 item JSONB NOT NULL,
                 parents BIGINT[] DEFAULT '{}',
-                created_at timestamptz NOT NULL DEFAULT now()
+                created_at timestamptz NOT NULL DEFAULT now(),
+                priority int8 NOT NULL DEFAULT 0
             );
 
             CREATE TABLE IF NOT EXISTS optimize(
@@ -216,7 +233,9 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 
             CREATE INDEX IF NOT EXISTS index_queue_id ON queue(id);
 
-            CREATE INDEX IF NOT EXISTS index_queue_created_at ON queue(created_at) include (id);
+            CREATE INDEX IF NOT EXISTS index_queue_created_at ON queue(created_at ASC) INCLUDE (id);
+
+            CREATE INDEX IF NOT EXISTS index_queue_priority_created_at ON queue(priority DESC, created_at ASC) INCLUDE (id);
             "#,
         )
         .try_for_each(|result| async move {
@@ -229,6 +248,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         Ok(Self {
             client: pool,
             optimize_batch_limit,
+            retryable_error_priority_decrease,
             __marker: PhantomData,
         })
     }
@@ -329,6 +349,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                 FROM
                   queue
                 ORDER BY
+                  priority DESC,
                   created_at ASC
                 FOR UPDATE
                   SKIP LOCKED
@@ -337,24 +358,29 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
               id,
               parents,
               item::text,
+              priority,
               created_at
             "#,
         )
-        .try_map(|x| Record::from_row(&x))
+        .try_map(|x| QueueRecord::from_row(&x))
         .fetch_optional(tx.as_mut())
         .await?;
 
         match row {
             Some(record) => {
-                let span = info_span!("processing item", item_id = record.id);
+                let span = info_span!(
+                    "processing item",
+                    item_id = record.id,
+                    priority = record.priority
+                );
 
                 trace!(%record.item);
 
                 // really don't feel like defining a new error type right now
-                let op = de(&record.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+                let op = de::<Op<T>>(&record.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
 
                 let timer = ITEM_PROCESSING_DURATION.start_timer();
-                let (r, res) = f(op, ItemId::new(record.id).unwrap())
+                let (r, res) = f(op.clone(), ItemId::new(record.id).unwrap())
                     .instrument(span.clone())
                     .await;
                 let _ = timer.stop_and_record();
@@ -376,13 +402,16 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                             sqlx::query(
                                 "
                                 INSERT INTO
-                                queue  (id, item,      parents)
-                                VALUES ($1, $2::JSONB, $3     )
+                                queue  (id, item,      parents, priority)
+                                VALUES ($1, $2::JSONB, $3,      $4      )
                                 ",
                             )
                             .bind(record.id)
                             .bind(record.item)
                             .bind(record.parents)
+                            .bind(record.priority.saturating_sub(
+                                self.retryable_error_priority_decrease.unwrap_or_default(),
+                            ))
                             .execute(tx.as_mut())
                             .await?;
 
@@ -503,7 +532,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         )
         .bind(tag)
         .bind(self.optimize_batch_limit)
-        .try_map(|x| Record::from_row(&x))
+        .try_map(|x| OptimizeRecord::from_row(&x))
         .fetch_all(tx.as_mut())
         .await
         .map_err(Either::Left)?;
@@ -610,7 +639,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 }
 
 async fn insert_error(
-    record: Record,
+    record: QueueRecord,
     error: String,
     mut tx: Transaction<'static, Postgres>,
 ) -> Result<(), sqlx::Error> {
