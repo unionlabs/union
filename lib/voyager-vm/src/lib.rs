@@ -100,13 +100,7 @@ impl ItemId {
     }
 }
 
-#[derive(
-    ::macros::Debug,
-    ::frame_support_procedural::CloneNoBound,
-    ::frame_support_procedural::PartialEqNoBound,
-    ::serde::Serialize,
-    ::serde::Deserialize,
-)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(
     tag = "@type",
     content = "@value",
@@ -114,7 +108,6 @@ impl ItemId {
     bound(serialize = "", deserialize = ""),
     deny_unknown_fields
 )]
-#[debug(bound())]
 pub enum Op<T: QueueMessage> {
     /// Inert data that will either be used in an [`Op::Promise`] or bubbled up to the top and sent as
     /// an output.
@@ -152,15 +145,8 @@ pub enum Op<T: QueueMessage> {
     Noop,
 }
 
-#[derive(
-    ::macros::Debug,
-    ::frame_support_procedural::CloneNoBound,
-    ::frame_support_procedural::PartialEqNoBound,
-    ::serde::Serialize,
-    ::serde::Deserialize,
-)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)]
-#[debug(bound())]
 pub struct Promise<T: QueueMessage> {
     /// Messages that are expected to resolve to [`Op::Data`].
     pub queue: VecDeque<Op<T>>,
@@ -202,7 +188,8 @@ pub trait Visit<T: QueueMessage> {
 pub trait OpT =
     Debug + Clone + PartialEq + Serialize + for<'a> Deserialize<'a> + Send + Sync + Unpin;
 
-pub trait QueueMessage: Sized + 'static {
+// NOTE: Extra bounds are just for ease of use for derives
+pub trait QueueMessage: Debug + Clone + PartialEq + Sized + 'static {
     type Data: OpT;
     type Call: CallT<Self> + OpT;
     type Callback: CallbackT<Self> + OpT;

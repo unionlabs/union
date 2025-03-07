@@ -249,14 +249,6 @@ impl<const BYTES: usize, E: Encoding> FromStr for FixedBytes<BYTES, E> {
     }
 }
 
-// #[derive(DebugNoBound, thiserror::Error)]
-// pub enum HashDecodeError<E: Encoding> {
-//     #[error("invalid encoding")]
-//     InvalidEncoding(#[source] E::Error),
-//     #[error("invalid length")]
-//     FixedBytesError(#[from] FixedBytesError),
-// }
-
 impl<E: Encoding, const BYTES: usize> Default for FixedBytes<BYTES, E> {
     fn default() -> Self {
         Self::new([0_u8; BYTES])

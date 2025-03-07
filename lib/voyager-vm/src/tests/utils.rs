@@ -6,6 +6,7 @@ use subset_of::SubsetOf;
 
 use crate::{call, data, noop, CallT, CallbackT, Context, Op, QueueError, QueueMessage};
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum SimpleMessage {}
 
 impl QueueMessage for SimpleMessage {

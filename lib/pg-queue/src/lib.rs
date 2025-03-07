@@ -3,7 +3,6 @@ use std::{
     marker::PhantomData, time::Duration,
 };
 
-use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures_util::TryStreamExt;
 use itertools::Itertools;
 use schemars::JsonSchema;
@@ -33,7 +32,7 @@ pub mod metrics;
 /// item JSONB
 /// error TEXT
 /// ```
-#[derive(DebugNoBound, CloneNoBound)]
+#[derive(Debug, Clone)]
 pub struct PgQueue<T> {
     client: PgPool,
     optimize_batch_limit: Option<i64>,

@@ -8,7 +8,6 @@ use std::{
 };
 
 use either::Either;
-use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use tracing::{debug, error, info, info_span, trace, Instrument};
 use unionlabs::ErrorReporter;
 
@@ -18,7 +17,7 @@ use crate::{
     Captures, EnqueueResult, ItemId, Op, Queue, QueueError, QueueMessage,
 };
 
-#[derive(DebugNoBound, CloneNoBound)]
+#[derive(Debug, Clone)]
 pub struct InMemoryQueue<T: QueueMessage> {
     idx: Arc<AtomicU32>,
     ready: Arc<Mutex<BTreeMap<u32, Item<T>>>>,
@@ -27,7 +26,7 @@ pub struct InMemoryQueue<T: QueueMessage> {
     optimizer_queue: Arc<Mutex<BTreeMap<String, BTreeMap<u32, Item<T>>>>>,
 }
 
-#[derive(DebugNoBound, CloneNoBound)]
+#[derive(Debug, Clone)]
 pub(crate) struct Item<T: QueueMessage> {
     #[allow(dead_code)] // used in debug
     parents: Vec<u32>,

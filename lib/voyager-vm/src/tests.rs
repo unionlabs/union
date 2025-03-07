@@ -8,6 +8,7 @@ use crate::{
 
 pub mod utils;
 
+#[derive(Debug, Clone, PartialEq)]
 enum UnitMessage {}
 
 impl QueueMessage for UnitMessage {
