@@ -399,7 +399,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 log,
                             } => {
                                 if let Some((msg_idx, log)) = parse_msg_idx_from_log(&log) {
-                                    let _span = info_span!("cosmos msg failed", msg_idx);
+                                    let _span = info_span!("cosmos msg failed", msg_idx).entered();
                                     info!(%log);
 
                                     match self.fatal_errors.get(&(codespace.clone(), error_code)) {
