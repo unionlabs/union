@@ -7,13 +7,37 @@
   import Amount from "$lib/components/Transfer/Amount.svelte";
   import Receiver from "$lib/components/Transfer/Receiver.svelte";
   import {getTransfer} from "../../../routes/transfer/transfer.svelte.ts";
+  import ShowData from "$lib/components/Transfer/ShowData.svelte";
+  import {getQuoteToken} from "$lib/services/transfer-ucs03-evm/quote-token.ts";
+  import {Effect} from "effect";
 
   const {transfer} = getTransfer()
 
-  $effect(() => {
-    console.log('ZKGM', transfer.ucs03address)
-  })
+  const runthis = async (): Promise<void> => {
+    if (!transfer.sourceChain?.chain_id ||
+      !transfer.baseToken?.denom ||
+      !transfer.channel ||
+      !transfer.sourceChain?.rpc_type) {
+      console.log('Missing required parameters');
+      return;
+    }
 
+    const res = await Effect.runPromise(
+      getQuoteToken(
+        transfer.sourceChain.chain_id,
+        transfer.baseToken.denom,
+        transfer.channel,
+        transfer.sourceChain.rpc_type
+      )
+    );
+
+    console.log('ZzZZzZZZ', res);
+  };
+
+  $effect(() => {
+    console.log(transfer.sourceChain?.chain_id, transfer.baseToken?.denom, transfer.channel, transfer.sourceChain?.rpc_type)
+    runthis()
+  })
 </script>
 
 <Card class="max-w-md relative flex flex-col gap-2">
@@ -22,6 +46,10 @@
   <Assets/>
   <Amount/>
   <Receiver/>
+  
+  <!-- For testing -->
+  <ShowData />
+
 
   <Button
           class="mt-2"
