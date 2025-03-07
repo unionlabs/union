@@ -1,4 +1,4 @@
-use unionlabs::bls::BlsSignature;
+use unionlabs::primitives::H768;
 
 use crate::AttestationData;
 
@@ -8,7 +8,7 @@ pub struct Attestation {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     pub aggregation_bits: Vec<u8>,
     pub data: AttestationData,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }
 
 #[cfg(feature = "ssz")]
@@ -22,5 +22,5 @@ pub struct AttestationSsz<C: crate::MAX_VALIDATORS_PER_COMMITTEE> {
     // #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     pub aggregation_bits: ssz::types::BitList<C::MAX_VALIDATORS_PER_COMMITTEE>,
     pub data: AttestationData,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }

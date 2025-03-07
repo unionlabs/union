@@ -486,7 +486,7 @@ contract UCS01Relay is
         bytes calldata
     )
         external
-        override(IBCAppBase, IIBCModule)
+        override(IBCAppBase, IIBCModuleRecv)
         onlyIBC
         returns (bytes memory)
     {

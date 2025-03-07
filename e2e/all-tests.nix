@@ -28,7 +28,7 @@
             upgrades = import ./upgrades.nix {
               inherit e2e pkgs;
               inherit (self'.packages) unionvisor;
-              bundle = self'.packages.bundle-testnet-next;
+              bundle = self'.packages.bundle-union-1-next;
             };
           in
           {

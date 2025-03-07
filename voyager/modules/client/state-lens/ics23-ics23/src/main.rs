@@ -4,6 +4,7 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
+use macros::model;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState};
@@ -14,6 +15,7 @@ use unionlabs::{
     encoding::{Bcs, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
+    tuple::AsTuple,
     union::ics23,
     ErrorReporter,
 };
@@ -111,14 +113,17 @@ impl Module {
                     )
                 })
             }
-            SupportedIbcInterface::IbcMoveAptos => ClientState::decode_as::<Bcs>(client_state)
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode client state: {}", ErrorReporter(err)),
-                        None::<()>,
-                    )
-                }),
+            SupportedIbcInterface::IbcMoveAptos => {
+                <ClientState as AsTuple>::Tuple::decode_as::<Bcs>(client_state)
+                    .map(ClientState::from_tuple)
+                    .map_err(|err| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("unable to decode client state: {}", ErrorReporter(err)),
+                            None::<()>,
+                        )
+                    })
+            }
         }
     }
 
@@ -199,7 +204,7 @@ impl ClientModuleServer for Module {
                 )
             })
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcMoveAptos => cs.encode_as::<Bcs>(),
+                SupportedIbcInterface::IbcMoveAptos => cs.as_tuple().encode_as::<Bcs>(),
                 SupportedIbcInterface::IbcSolidity => cs.abi_encode_params(),
             })
             .map(Into::into)
@@ -256,8 +261,37 @@ impl ClientModuleServer for Module {
                 None::<()>,
             )
         })?;
-        Ok(encode_merkle_proof_for_evm(proof).into())
+
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcSolidity => Ok(encode_merkle_proof_for_evm(proof).into()),
+            SupportedIbcInterface::IbcMoveAptos => Ok(encode_merkle_proof_for_move(proof).into()),
+        }
     }
+}
+
+#[model]
+struct MoveMembershipProof {
+    sub_proof: ics23::existence_proof::ExistenceProof,
+    top_level_proof: ics23::existence_proof::ExistenceProof,
+}
+
+fn encode_merkle_proof_for_move(
+    proof: unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
+) -> Vec<u8> {
+    let proof = ics23::merkle_proof::MerkleProof::try_from(
+        protos::ibc::core::commitment::v1::MerkleProof::from(proof),
+    )
+    .unwrap();
+    match proof {
+        ics23::merkle_proof::MerkleProof::Membership(sub_proof, top_level_proof) => {
+            MoveMembershipProof {
+                sub_proof,
+                top_level_proof,
+            }
+        }
+        ics23::merkle_proof::MerkleProof::NonMembership(_, _) => todo!(),
+    }
+    .encode_as::<Bcs>()
 }
 
 alloy::sol! {

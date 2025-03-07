@@ -1,13 +1,24 @@
 <script lang="ts">
+import type { HTMLAttributes } from "svelte/elements"
 import { Chain } from "$lib/schema/chain"
-interface Props {
+import { cn } from "$lib/utils"
+
+type Props = HTMLAttributes<HTMLDivElement> & {
   chain: Chain
+  class?: string
 }
 
-let { chain }: Props = $props()
+const { chain, class: className = "", ...rest }: Props = $props()
+
+const classes = cn("flex flex-col text-md font-semibold", className)
 </script>
 
-<div class="p-4">
-	<h2 class="text-lg font-bold">{chain.display_name}</h2>
-	<div>{chain.chain_id}</div>
+<div class={classes} {...rest}>
+  <p>{chain.display_name}</p>
+  <!--
+  <div>{chain.chain_id}</div>
+  <div>{chain.testnet}</div>
+  <div>{chain.rpc_type}</div>
+  <div>{JSON.stringify(chain.features)}</div>
+  !-->
 </div>

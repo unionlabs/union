@@ -1,0 +1,37 @@
+# This file is auto-generated from Ignite.
+# DO NOT EDIT
+#
+# buf.lock
+#
+version: v1
+deps:
+  - remote: buf.build
+    owner: cosmos
+    repository: cosmos-proto
+    commit: 04467658e59e44bbb22fe568206e1f70
+    digest: shake256:73a640bd60e0c523b0f8237ff34eab67c45a38b64bbbde1d80224819d272dbf316ac183526bd245f994af6608b025f5130483d0133c5edd385531326b5990466
+  - remote: buf.build
+    owner: cosmos
+    repository: cosmos-sdk
+    commit: 05419252bcc241ea8023acf1ed4cadc5
+    digest: shake256:1e54a48c19a8b59d35e0a7efa76402939f515f2d8005df099856f24c37c20a52800308f025abb8cffcd014d437b49707388aaca4865d9d063d8f25d5d4eb77d5
+  - remote: buf.build
+    owner: cosmos
+    repository: gogo-proto
+    commit: 88ef6483f90f478fb938c37dde52ece3
+    digest: shake256:89c45df2aa11e0cff97b0d695436713db3d993d76792e9f8dc1ae90e6ab9a9bec55503d48ceedd6b86069ab07d3041b32001b2bfe0227fa725dd515ff381e5ba
+  - remote: buf.build
+    owner: cosmos
+    repository: ics23
+    commit: a9ee7c290ef34ee69d3f141b9b44dcee
+    digest: shake256:255dbee3e92a370723bf4d72b34868b18e7570543f30f79c0c8c10a5a332d230175e0c29cb7ebcb8020706312e3cd37c23974df0bacfb60a4afb968fee4c1afc
+  - remote: buf.build
+    owner: googleapis
+    repository: googleapis
+    commit: 09703837a2ed48dbbbb3fdfbe6a84f5c
+    digest: shake256:de26a277fc28b8b411ecf58729d78d32fcf15090ffd998a4469225b17889bfb51442eaab04bb7a8d88d203ecdf0a9febd4ffd52c18ed1c2229160c7bd353ca95
+  - remote: buf.build
+    owner: protocolbuffers
+    repository: wellknowntypes
+    commit: 3186086b2a8e44d9acdeeef2423c5de7
+    digest: shake256:3b9dc2f56d9ed2e4001f95b701985fd803f7e2559b19b6a18d5f4e792cfdde320e765638de69fff037edc202b0006532d7ff19eab9465526b5ec628e4a5e5a1a

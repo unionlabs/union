@@ -5,8 +5,9 @@ use bip32::{
     PrivateKey, PublicKey,
 };
 use ripemd::Digest;
+use unionlabs_primitives::{FixedBytes, H160};
 
-use crate::primitives::H256;
+use crate::{bech32::Bech32, primitives::H256};
 
 /// A simple wrapper around a cosmos signer (ECDSA), easily representable as a bech32 string.
 #[derive(Debug, Clone)]
@@ -42,8 +43,8 @@ impl CosmosSigner {
     }
 
     #[must_use]
-    pub fn public_key(&self) -> [u8; 33] {
-        self.signing_key.public_key().to_bytes()
+    pub fn public_key(&self) -> FixedBytes<33> {
+        self.signing_key.public_key().to_bytes().into()
     }
 
     /// Attempt to sign the given bytes.
@@ -54,24 +55,33 @@ impl CosmosSigner {
     pub fn try_sign(&self, bytes: &[u8]) -> Result<Signature, ecdsa::Error> {
         Signer::<Signature>::try_sign(&self.signing_key, bytes)
     }
-}
 
-impl Display for CosmosSigner {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    #[must_use]
+    pub fn address(&self) -> Bech32<H160> {
         // TODO: benchmark this, and consider caching it in the struct
         // bech32(prefix, ripemd(sha256(pubkey)))
-        let encoded = subtle_encoding::bech32::encode(
-            &self.prefix,
+        Bech32::new(
+            self.prefix.clone(),
             ripemd::Ripemd160::new()
                 .chain_update(
                     sha2::Sha256::new()
                         .chain_update(self.signing_key.public_key().to_bytes())
                         .finalize(),
                 )
-                .finalize(),
-        );
+                .finalize()
+                .into(),
+        )
+    }
 
-        f.write_str(&encoded)
+    #[must_use]
+    pub fn private_key(&self) -> H256 {
+        self.signing_key.to_bytes().into()
+    }
+}
+
+impl Display for CosmosSigner {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.address())
     }
 }
 

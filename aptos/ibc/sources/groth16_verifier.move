@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -88,17 +88,20 @@ module ibc::groth16_verifier {
     use std::bcs;
     use std::string::{Self, String};
 
-    const ALPHA_G1: vector<u8> = x"99a818c167016f7f6d02d84005a5ed1f7c6c19c4ddf15733b67acc0129076709ff810d9d3374808069c1ea1e5d263a90cf8181b98b415805797176357acec708";
-    const BETA_G2: vector<u8> = x"742884ea18a00ef31874d5fc5511b18fa9391dc69b971b898a2dbfc644033f15656dc92f1f94dc170026cd80212e5160d2539e7e8b40885d1d60b770d25f3599";
-    const GAMMA_G2: vector<u8> = x"19b6719e42c42ed1df46fa08c870c5241a52913b65d9b43679e089c2e0bb1622cf3a489ca7927f4f81400a2ebd739a935bceb3224264eff8e248311ae96be7a0";
-    const DELTA_G2: vector<u8> = x"eb044ddb951e9b28eda7da93aba341ef2c96a4d6182ca785a32018c9c803d405fcb9f04a31c988a2f5a64710ffafe101831d6147259b54e45d47e0d1184c5e29";
-    const PEDERSEN_G: vector<u8> = x"5ae56dc014a8137712f4584658ba6f7e390cc39892f97e56ca859887d8d8f0138719bd9ffa2bba963951da2e08ba92ffc1049ba2f1fd7d7f03b02c13f8f67d25";
-    const PEDERSEN_G_ROOT_SIGMA_NEG: vector<u8> = x"af5b4e30123a344339321dd621b5fdf9cd9870625928fa07235f011cdf04a1026863cae2f2b0c0ce457e81ad25a068fb1cb86026096be8e3f75c55a741e1bfaf";
+    friend ibc::cometbls_lc;
+
+    const ALPHA_G1: vector<u8> = x"c7e253d6dbb0b365b15775ae9f8aa0ffcc1c8cde0bd7a4e8c0b376b0d92952240223184a278d794b2d6bc8c64a0b007ab47333fa5e4be9464eb8db8859c83ea5";
+    const BETA_G2: vector<u8> = x"44d2615ebda233e141f4ca0a1270e1269680b20507d55f6872540af6c1bc2424dba1298a9727ff392b6f7f48b3e88e20cf925b7024be9992d3bbfae8820a0987";
+    const GAMMA_G2: vector<u8> = x"edf692d95cbdde46ddda5ef7d422436779445c5e66006a42761e1f12efde0018c212f3aeb785e49712e7a9353349aaf1255dfb31b7bf60723a480d9293938e99";
+    const DELTA_G2: vector<u8> = x"dc047186b12c9c677d34f3e2d5c826655e363239ee6eb2e4348d3fa7d2a5ac02e6972cd8563ce0d488b8063c4e51559172db66508e31265a07de0ba9efdbb887";
+    const PEDERSEN_G: vector<u8> = x"edf692d95cbdde46ddda5ef7d422436779445c5e66006a42761e1f12efde0018c212f3aeb785e49712e7a9353349aaf1255dfb31b7bf60723a480d9293938e19";
+    const PEDERSEN_G_ROOT_SIGMA_NEG: vector<u8> = x"dc047186b12c9c677d34f3e2d5c826655e363239ee6eb2e4348d3fa7d2a5ac02e6972cd8563ce0d488b8063c4e51559172db66508e31265a07de0ba9efdbb887";
     const GAMMA_ABC_G1: vector<vector<u8>> = vector[
-        x"81925330941d53d8cec1c44210f6c882fee82c4ae97cb64b4f864327e54318270624cb7325a89fea7ad2cbde478a7ba38eca18bba1f024f672b1f89cc6423325",
-        x"ca4b125d5e1a2ec0e22672434fbe9ca0e3ca15b0c20e16e9020ed6f471be0d0b0ce070b6a8b95f687014d83de09f9efe33caaf16aa92e5ec888376d3eb9a0b13",
-        x"c790c4a1918ab12e7e3c36005b2f5cbcf5408ced98033571760c7cf4d5939e02d9f1ee6a9c13b6ebbe2e11dab23f5600040fcb833bb5798faecf9d451005f12c"
+        x"3e2753d1e56abd9bd5fbbdd7fa35f27f7bc43c0cc97335453e1df217388a5d2f32c4e7d7178d82fcdc848793025d76c8ea0f0a2387fc75ce86fdb14221a27f14",
+        x"9a6bb65aef69c0c8f60f1a8c833e4904686ca4083a89201ad07b991c8eb9812a6ffb78639dadc1986e57987c20a67bcc94ec57f1a1d6d420ec5c07a8ad3869a7",
+        x"b76ab396dfe5e21691ff953b5d5edafffd6e49fbe75e5ce39cf80d14ce969417fc3c9f640033aad5e454cdd85f8e8c93a5466e647d6b670359ce8846d4e72603"
     ];
+
     const HMAC_O: vector<u8> = x"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
     const HMAC_I: vector<u8> = x"75595B5342747A653636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636";
     const PRIME_R_MINUS_ONE: vector<u8> = x"000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430";
@@ -117,19 +120,7 @@ module ibc::groth16_verifier {
         proof_commitment_pok: Element<G1>
     }
 
-    public fun default(): ZKP {
-        ZKP {
-            proof: Proof {
-                a: zero(),
-                b: zero(),
-                c: zero()
-            },
-            proof_commitment: zero(),
-            proof_commitment_pok: zero()
-        }
-    }
-
-    public fun verify_zkp(
+    public(friend) fun verify_zkp(
         chain_id: &String,
         trusted_validators_hash: &vector<u8>,
         light_header_hash: vector<u8>,
@@ -220,7 +211,7 @@ module ibc::groth16_verifier {
         eq<Gt>(&res, &zero<Gt>())
     }
 
-    public fun parse_zkp(buf: vector<u8>): ZKP {
+    public(friend) fun parse_zkp(buf: vector<u8>): ZKP {
         let cursor = 0;
 
         let a =
@@ -290,32 +281,31 @@ module ibc::groth16_verifier {
         (hmac % prime_r_minus_one) + 1
     }
 
+    #[test_only]
+    public fun default(): ZKP {
+        ZKP {
+            proof: Proof {
+                a: zero(),
+                b: zero(),
+                c: zero()
+            },
+            proof_commitment: zero(),
+            proof_commitment_pok: zero()
+        }
+    }
+
     #[test]
     fun test_verify_zkp_ok() {
         let zkp =
             parse_zkp(
-                vector[
-                    182, 45, 6, 207, 148, 135, 217, 54, 117, 138, 138, 207, 38, 255, 85,
-                    190, 238, 132, 244, 47, 117, 22, 101, 146, 207, 194, 213, 80, 167, 72,
-                    74, 169, 246, 165, 153, 78, 96, 154, 235, 56, 127, 151, 155, 175, 8, 5,
-                    20, 89, 168, 115, 208, 45, 210, 54, 93, 85, 134, 82, 203, 239, 77, 255,
-                    247, 47, 67, 186, 201, 193, 137, 216, 93, 133, 119, 57, 224, 118, 172,
-                    226, 5, 60, 156, 213, 39, 230, 252, 194, 253, 59, 76, 37, 204, 76, 224,
-                    168, 184, 14, 195, 138, 89, 220, 217, 178, 116, 29, 75, 36, 245, 254,
-                    131, 116, 240, 25, 125, 19, 134, 222, 239, 34, 17, 253, 116, 209, 179,
-                    101, 103, 204, 117, 146, 64, 57, 108, 169, 217, 240, 192, 178, 192, 20,
-                    145, 189, 30, 252, 229, 53, 30, 188, 117, 24, 192, 28, 130, 184, 137,
-                    18, 183, 238, 98, 33, 173, 24, 10, 108, 233, 132, 185, 129, 54, 66,
-                    128, 116, 227, 120, 228, 91, 88, 217, 52, 6, 207, 159, 57, 154, 165,
-                    76, 142, 198, 160, 81, 127, 224, 177, 31
-                ]
+                x"21dd0bec9257ffaf9257d81e735ad91c0cf7ea0f10825a44d2031e2a1456cf03c734368377259eb336ef0f75ca08e6968c1840d53d73462566e17cdd901195025e949c5e386430974e0667a8c9d7523aec088df879bd2c8c76210493f1e7bc068ba4bf6e6fd6c6ba7e3405539a07042ee871009a1d4de53360a328a05b8a17ae39481dbf8678e72dbcea77beee754378cf31561cf23dd84bcadd83f62cdc8da6d2bde655171be094768d965d96cc1de0b6a1036506bfaaeed0b680f3369fbf89"
             );
 
         let res =
             verify_zkp(
                 &std::string::utf8(b"union-devnet-1337"),
-                &x"1B7EA0F1B3E574F8D50A12827CCEA43CFF858C2716AE05370CC40AE8EC521FD8",
-                x"00000000000000000000000000000000000000000000000000000000cafebabe0000000000000000000000000000000000000000000000000000000065f87b2e000000000000000000000000000000000000000000000000000000001dc74c161b7ea0f1b3e574f8d50a12827ccea43cff858c2716ae05370cc40ae8ec521fd81b7ea0f1b3e574f8d50a12827ccea43cff858c2716ae05370cc40ae8ec521fd83a34fc963eefaae9b7c0d3dff89180d91f3e31073e654f732340ceedd77dd25b",
+                &x"20DDFE7A0F75C65D876316091ECCD494A54A2BB324C872015F73E528D53CB9C4",
+                x"00000000000000000000000000000000000000000000000000000000cafebabe00000000000000000000000000000000000000000000000000000000673f5ac3000000000000000000000000000000000000000000000000000000003b7e468e20ddfe7a0f75c65d876316091eccd494a54a2bb324c872015f73e528d53cb9c420ddfe7a0f75c65d876316091eccd494a54a2bb324c872015f73e528d53cb9c4ee7e3e58f98ac95d63ce93b270981df3ee54ca367f8d521ed1f444717595cd36",
                 &zkp
             );
 

@@ -31,7 +31,7 @@ use ibc_union_spec::{
     },
     types::{Channel, ChannelState, Connection, ConnectionState, Packet},
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
     ethereum::keccak256,
     primitives::{encoding::HexPrefixed, Bytes, H256},
@@ -594,9 +594,10 @@ fn timeout_packet(
     .key();
 
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyNonMembership {
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyNonMembership {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
@@ -664,9 +665,10 @@ fn acknowledge_packet(
     .key();
 
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyMembership {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
@@ -762,9 +764,10 @@ fn create_client(
     let client_id = next_client_id(deps.branch())?;
     CLIENT_TYPES.save(deps.storage, client_id, &client_type)?;
     CLIENT_IMPLS.save(deps.storage, client_id, &client_impl)?;
-    let verify_creation_response = deps.querier.query_wasm_smart::<VerifyCreationResponse>(
-        &client_impl,
-        &LightClientQuery::VerifyCreation {
+    let verify_creation_response = query_light_client::<VerifyCreationResponse>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyCreation {
             client_id,
             client_state: client_state_bytes.to_vec().into(),
             consensus_state: consensus_state_bytes.to_vec().into(),
@@ -822,9 +825,21 @@ fn update_client(
         // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
         // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
         QUERY_STORE.save(deps.storage, &client_message.into())?;
-        let update = deps.querier.query_wasm_smart::<VerifyClientMessageUpdate>(
-            &client_impl,
-            &LightClientQuery::VerifyClientMessage {
+
+        let status = query_light_client::<Status>(
+            deps.as_ref(),
+            client_impl.clone(),
+            LightClientQuery::GetStatus { client_id },
+        )?;
+
+        if !matches!(status, Status::Active) {
+            return Err(ContractError::ClientNotActive { client_id, status });
+        }
+
+        let update = query_light_client::<VerifyClientMessageUpdate>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyClientMessage {
                 client_id,
                 caller: relayer.into(),
             },
@@ -919,9 +934,10 @@ fn connection_open_try(
     };
 
     let client_impl = client_impl(deps.as_ref(), client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyMembership {
             client_id,
             height: proof_height,
             proof: proof_init.into(),
@@ -972,9 +988,10 @@ fn connection_open_ack(
         counterparty_connection_id: connection_id,
     };
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyMembership {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_try.into(),
@@ -1029,9 +1046,10 @@ fn connection_open_confirm(
         counterparty_connection_id: connection_id,
     };
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyMembership {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_ack.into(),
@@ -1130,9 +1148,10 @@ fn channel_open_try(
         version: counterparty_version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyMembership {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_init.into(),
@@ -1208,9 +1227,10 @@ fn channel_open_ack(
         version: counterparty_version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyMembership {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_try.into(),
@@ -1276,9 +1296,10 @@ fn channel_open_confirm(
         version: channel.version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyMembership {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_ack.into(),
@@ -1375,9 +1396,10 @@ fn channel_close_confirm(
         version: channel.version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyMembership {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_init.into(),
@@ -1448,9 +1470,10 @@ fn process_receive(
         .key();
 
         let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-        deps.querier.query_wasm_smart::<()>(
-            &client_impl,
-            &LightClientQuery::VerifyMembership {
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof.to_vec().into(),
@@ -1787,9 +1810,10 @@ fn set_packet_receive(deps: DepsMut, commitment_key: H256) -> bool {
 
 fn get_timestamp_at_height(deps: Deps, client_id: u32, height: u64) -> Result<u64, ContractError> {
     let client_impl = client_impl(deps, client_id)?;
-    let timestamp = deps.querier.query_wasm_smart(
+    let timestamp = query_light_client(
+        deps,
         client_impl,
-        &LightClientQuery::GetTimestamp { client_id, height },
+        LightClientQuery::GetTimestamp { client_id, height },
     )?;
     Ok(timestamp)
 }
@@ -1811,9 +1835,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         )?),
         QueryMsg::GetLatestHeight { client_id } => {
             let client_impl = client_impl(deps, client_id)?;
-            let latest_height = deps.querier.query_wasm_smart::<u64>(
+            let latest_height = query_light_client::<u64>(
+                deps,
                 client_impl,
-                &LightClientQuery::GetLatestHeight { client_id },
+                LightClientQuery::GetLatestHeight { client_id },
             )?;
             Ok(to_json_binary(&latest_height)?)
         }
@@ -1828,9 +1853,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
         }
         QueryMsg::GetStatus { client_id } => {
             let client_impl = client_impl(deps, client_id)?;
-            let status = deps.querier.query_wasm_smart::<Status>(
+            let status = query_light_client::<Status>(
+                deps,
                 client_impl,
-                &LightClientQuery::GetStatus { client_id },
+                LightClientQuery::GetStatus { client_id },
             )?;
             Ok(to_json_binary(&status)?)
         }
@@ -1876,6 +1902,20 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             Ok(to_json_binary(&commit)?)
         }
     }
+}
+
+fn query_light_client<T: DeserializeOwned>(
+    deps: Deps,
+    client_impl: Addr,
+    query: LightClientQuery,
+) -> Result<T, ContractError> {
+    deps.querier
+        .query_wasm_smart::<T>(&client_impl, &query)
+        .map_err(|error| ContractError::CannotQueryLightClient {
+            client_impl,
+            query: Box::new(query),
+            error,
+        })
 }
 
 fn make_verify_creation_event(client_id: u32, event: VerifyCreationResponseEvent) -> Event {

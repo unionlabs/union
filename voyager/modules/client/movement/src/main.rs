@@ -1,4 +1,3 @@
-use chain_utils::BoxDynError;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -22,6 +21,7 @@ use voyager_message::{
         Timestamp,
     },
     module::{ClientModuleInfo, ClientModuleServer},
+    vm::BoxDynError,
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
 

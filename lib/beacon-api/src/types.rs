@@ -1,9 +1,9 @@
 use beacon_api_types::{
-    fork::Fork, light_client_update::LightClientUpdate, BeaconBlockHeader, ForkParameters,
-    PresetBaseKind, Slot, Version,
+    consts::default_epoch, fork::Fork, light_client_update::LightClientUpdate, BeaconBlockHeader,
+    ForkParameters, PresetBaseKind, Slot, Version,
 };
 use serde::{Deserialize, Serialize};
-use unionlabs::{bls::BlsSignature, primitives::H256};
+use unionlabs::primitives::{H256, H768};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeaconHeaderData {
@@ -16,7 +16,7 @@ pub struct BeaconHeaderData {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeaconHeaderSignature {
     pub message: BeaconBlockHeader,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -41,20 +41,30 @@ pub struct Spec {
     // MIN_GENESIS_ACTIVE_VALIDATOR_COUNT: 1300,
     // MIN_GENESIS_TIME: 1655647200,
     pub genesis_fork_version: Version,
+
     #[serde(with = "::serde_utils::string")]
     pub genesis_delay: u64,
+
     pub altair_fork_version: Version,
-    #[serde(with = "::serde_utils::string")]
+    #[serde(with = "::serde_utils::string", default = "default_epoch")]
     pub altair_fork_epoch: u64,
+
     pub bellatrix_fork_version: Version,
-    #[serde(with = "::serde_utils::string")]
+    #[serde(with = "::serde_utils::string", default = "default_epoch")]
     pub bellatrix_fork_epoch: u64,
+
     pub capella_fork_version: Version,
-    #[serde(with = "::serde_utils::string")]
+    #[serde(with = "::serde_utils::string", default = "default_epoch")]
     pub capella_fork_epoch: u64,
+
     pub deneb_fork_version: Version,
-    #[serde(with = "::serde_utils::string")]
+    #[serde(with = "::serde_utils::string", default = "default_epoch")]
     pub deneb_fork_epoch: u64,
+
+    pub electra_fork_version: Version,
+    #[serde(with = "::serde_utils::string", default = "default_epoch")]
+    pub electra_fork_epoch: u64,
+
     #[serde(with = "::serde_utils::string")]
     pub seconds_per_slot: u64,
     // SECONDS_PER_ETH1_BLOCK: 14,
@@ -184,6 +194,10 @@ impl Spec {
                 version: self.deneb_fork_version,
                 epoch: self.deneb_fork_epoch,
             },
+            // electra: Fork {
+            //     version: self.electra_fork_version,
+            //     epoch: self.electra_fork_epoch,
+            // },
         }
     }
 

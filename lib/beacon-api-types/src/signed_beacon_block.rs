@@ -1,4 +1,4 @@
-use unionlabs::bls::BlsSignature;
+use unionlabs::primitives::H768;
 
 use crate::BeaconBlock;
 
@@ -6,7 +6,7 @@ use crate::BeaconBlock;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SignedBeaconBlock {
     pub message: BeaconBlock,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }
 
 #[cfg(feature = "ssz")]
@@ -34,5 +34,5 @@ pub struct SignedBeaconBlockSsz<
         + crate::SYNC_COMMITTEE_SIZE,
 > {
     pub message: crate::BeaconBlockSsz<C>,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }

@@ -12,7 +12,7 @@ use ethereum_sync_protocol::{
 use evm_storage_verifier::{
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
-use ibc_union_light_client::{IbcClientCtx, IbcClientError};
+use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use unionlabs::{
     encoding::Bincode,
@@ -22,11 +22,14 @@ use unionlabs::{
     primitives::{H256, U256},
 };
 
-use crate::{errors::Error, verification::VerificationContext};
+use crate::{
+    errors::Error,
+    verification::{check_aggregate_pubkey, VerificationContext},
+};
 
 pub enum EthereumLightClient {}
 
-impl ibc_union_light_client::IbcClient for EthereumLightClient {
+impl IbcClient for EthereumLightClient {
     type Error = Error;
 
     type CustomQuery = Empty;
@@ -85,7 +88,9 @@ impl ibc_union_light_client::IbcClient for EthereumLightClient {
         client_state.chain_id.to_string()
     }
 
-    fn status(client_state: &Self::ClientState) -> Status {
+    fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
+        let _ = ctx;
+
         if client_state.frozen_height.height() != 0 {
             Status::Frozen
         } else {
@@ -221,6 +226,20 @@ pub fn verify_header<C: ChainSpec>(
 
     let (current_sync_committee, next_sync_committee) =
         header.consensus_update.currently_trusted_sync_committee();
+
+    if current_sync_committee.is_some() {
+        check_aggregate_pubkey(
+            ctx.deps,
+            &current_sync_committee.as_ref().unwrap().pubkeys,
+            consensus_state.current_sync_committee,
+        )?;
+    } else {
+        check_aggregate_pubkey(
+            ctx.deps,
+            &next_sync_committee.as_ref().unwrap().pubkeys,
+            consensus_state.next_sync_committee,
+        )?;
+    }
 
     validate_light_client_update::<C, _>(
         &header.consensus_update.clone().into(),

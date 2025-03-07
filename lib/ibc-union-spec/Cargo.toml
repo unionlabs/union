@@ -36,4 +36,4 @@ ethabi              = ["dep:alloy-sol-types", "unionlabs/ethabi"]
 ibc-solidity-compat = ["dep:ibc-solidity"]
 schemars            = ["dep:schemars", "voyager-core/schemars", "unionlabs/schemars"]
 serde               = ["dep:serde", "voyager-core/serde"]
-tracing             = ["dep:tracing"]
+tracing             = ["dep:tracing", "ethabi"]                                       # ethabi for the packet hash in logs

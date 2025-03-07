@@ -165,6 +165,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::PacketSend(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
 
             data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
@@ -184,6 +187,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::PacketRecv(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
             data.maker_msg = %e.maker_msg,
 
@@ -204,6 +210,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::IntentPacketRecv(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
             data.market_maker_msg = %e.market_maker_msg,
 
@@ -224,6 +233,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::WriteAck(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
             data.acknowledgement = %e.acknowledgement,
 
@@ -244,6 +256,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::PacketAck(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
             data.acknowledgement = %e.acknowledgement,
 
@@ -264,6 +279,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::PacketTimeout(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
 
             data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,

@@ -14,7 +14,6 @@ workspace = true
 [dependencies]
 aptos-move-ibc              = { workspace = true }
 aptos-rest-client           = { workspace = true }
-chain-utils                 = { workspace = true }
 cosmwasm-std                = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 movement-light-client-types = { workspace = true, features = ["serde"] }

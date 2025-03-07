@@ -90,7 +90,7 @@
         }
       }
     },
-    "channels": [1, 3, 4, 5, 8, 23, 24]
+    "channels": [1, 3, 4, 5, 8, 24, 27, 29]
   },
   {
     "chain_id": "elgafar-1",
@@ -327,17 +327,17 @@
     "ibc_interface": "ibc-move/aptos",
     "deployments": {
       "core": {
-        "address": "0xabb42eb73b0f9a0fba78ff731387f4093ea49098bdcf31ed3ee8d0413358070f",
-        "height": 1084359
+        "address": "0x477b3da5350abcabc36a980528e879f4db89b0abb4a76324407a1478e6bf30cc",
+        "height": 1106107
       },
       "app": {
         "ucs03": {
-          "address": "0x2a39b63d0b2cf431c2f68f6240288ec94a99e0a6afdd370cb1464b704e48eee7",
-          "height": 1084369
+          "address": "0x80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
+          "height": 1106112
         }
       }
     },
-    "channels": [2, 3]
+    "channels": [2, 4]
   },
   {
     "chain_id": "stride-internal-1",
@@ -372,6 +372,36 @@
         }
       }
     },
-    "channels": [1, 2]
+    "channels": [3, 5]
+  },
+  {
+    "chain_id": "mantra-dukong-1",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "core": {
+        "address": "mantra1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tes7fc58u",
+        "height": 3640558
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "mantra1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ksr00zzn",
+          "height": 3683825
+        },
+        "state-lens/ics23/mpt": {
+          "address": "mantra13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqret6va",
+          "height": 3683833
+        },
+        "tendermint": {
+          "address": "mantra1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqsssgzmjw",
+          "height": 3683842
+        }
+      },
+      "app": {
+        "ucs03": {
+          "address": "mantra1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqchr2gt",
+          "height": 3683850
+        }
+      }
+    }
   }
 ]

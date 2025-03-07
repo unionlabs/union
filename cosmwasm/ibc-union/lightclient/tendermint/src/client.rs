@@ -91,10 +91,7 @@ impl IbcClient for TendermintLightClient {
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<
-        (u64, Self::ClientState, Self::ConsensusState),
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
+    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
         match header.validator_set.validators.first().map(|v| &v.pub_key) {
@@ -124,7 +121,9 @@ impl IbcClient for TendermintLightClient {
         Err(Error::Unimplemented.into())
     }
 
-    fn status(client_state: &Self::ClientState) -> Status {
+    fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
+        let _ = ctx;
+
         // FIXME: read latest consensus to verify if client expired
         // if is_client_expired(
         //     &consensus_state.timestamp,

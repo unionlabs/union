@@ -289,7 +289,8 @@ const transfer = async () => {
     const unionClient = createUnionClient({
       account: connectorClient.account,
       chainId: sourceChain.chain_id as EvmChainId,
-      transport: custom(window.ethereum) as unknown as HttpTransport
+      // Use the provider from the connector instead of window.ethereum
+      transport: custom(connectorClient.transport) as unknown as HttpTransport
     })
 
     if (!selectedChain) {

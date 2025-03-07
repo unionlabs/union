@@ -50,7 +50,7 @@
         denom = "muno";
         keyType = "bn254";
         validatorCount = 4;
-        sdkVersion = 52;
+        sdkVersion = 50;
         genesisOverwrites = {
           app_state = {
             gov.params = {
@@ -184,7 +184,7 @@
       };
 
       devnet-union-minimal = mkCosmosDevnet {
-        node = (get-flake inputs.v0_25_0).packages.${system}.uniond;
+        node = (get-flake inputs.v1_0_0).packages.${system}.uniond;
         chainId = "union-minimal-devnet-1";
         chainName = "union-minimal";
         denom = "muno";
@@ -210,13 +210,13 @@
         };
         extraPackages = [
           self'.packages.unionvisor
-          self'.packages.bundle-testnet-next
+          self'.packages.bundle-union-1-next
         ];
         startCommandOverwrite = ''
           mkdir .unionvisor
 
           export UNIONVISOR_ROOT=$(pwd)/.unionvisor
-          export UNIONVISOR_BUNDLE=${self'.packages.bundle-testnet-next}
+          export UNIONVISOR_BUNDLE=${self'.packages.bundle-union-1-next}
 
           ${pkgs.lib.getExe self'.packages.unionvisor} init \
             --moniker union-devnet-minimal \

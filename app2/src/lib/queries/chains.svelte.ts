@@ -1,33 +1,39 @@
 import { Chains } from "$lib/schema/chain"
 import { createQueryGraphql } from "$lib/utils/queries"
-import { ParseResult, Schema } from "effect"
+import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 import { chains } from "$lib/stores/chains.svelte"
+import type { Environment } from "$lib/constants"
 
-const ChainsResponseSchema = Schema.Struct({ v1_ibc_union_chains: Chains })
-
-const ChainsFromResponse = Schema.transformOrFail(ChainsResponseSchema, Chains, {
-  strict: true,
-  decode: input => ParseResult.succeed(input.v1_ibc_union_chains),
-  encode: (x, _, ast) => ParseResult.fail(new ParseResult.Forbidden(ast, x, "I will never encode"))
-})
-
-export let chainsQuery = createQueryGraphql({
-  schema: ChainsFromResponse,
-  document: graphql(`
-    query Chains {
-      v1_ibc_union_chains(where: {enabled: {_eq: true}}) {
+export let chainsQuery = (environment: Environment) =>
+  createQueryGraphql({
+    schema: Schema.Struct({ v2_chains: Chains }),
+    document: graphql(`
+    query Chains($environment: String!) @cached(ttl: 60) {
+      v2_chains {
         chain_id,
+        universal_chain_id,
         display_name,
-        addr_prefix
+        addr_prefix,
+        rpc_type,
+        testnet,
+        features(where: {environment: {_eq: $environment}}) {
+          channel_list
+          connection_list,
+          index_status,
+          packet_list,
+          transfer_submission,
+          transfer_list
+        }
       }
     }
   `),
-  refetchInterval: "5 seconds",
-  writeData: data => {
-    chains.data = data
-  },
-  writeError: error => {
-    chains.error = error
-  }
-})
+    variables: { environment },
+    refetchInterval: "60 seconds",
+    writeData: data => {
+      chains.data = data.pipe(Option.map(d => d.v2_chains))
+    },
+    writeError: error => {
+      chains.error = error
+    }
+  })

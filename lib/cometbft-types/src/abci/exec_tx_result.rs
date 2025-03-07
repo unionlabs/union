@@ -4,11 +4,11 @@ use unionlabs::{
     primitives::{encoding::Base64, Bytes},
 };
 
-use crate::abci::event::Event;
+use crate::{abci::event::Event, code::Code};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExecTxResult {
-    pub code: u32,
+    pub code: Code,
     pub data: Option<Bytes<Base64>>,
     /// nondeterministic
     pub log: String,
@@ -34,7 +34,7 @@ pub mod proto {
 
         fn try_from(value: protos::cometbft::abci::v1::ExecTxResult) -> Result<Self, Self::Error> {
             Ok(Self {
-                code: value.code,
+                code: value.code.into(),
                 data: Some(value.data.into()),
                 log: value.log,
                 info: value.info,
@@ -57,7 +57,7 @@ pub mod proto {
     impl From<ExecTxResult> for protos::cometbft::abci::v1::ExecTxResult {
         fn from(value: ExecTxResult) -> Self {
             Self {
-                code: value.code,
+                code: value.code.into(),
                 data: value.data.unwrap_or_default().into(),
                 log: value.log,
                 info: value.info,

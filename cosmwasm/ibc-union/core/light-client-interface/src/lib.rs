@@ -214,7 +214,7 @@ pub trait IbcClient: Sized {
     fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String;
 
     /// Get the status of the client
-    fn status(client_state: &Self::ClientState) -> Status;
+    fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status;
 
     /// Verify the initial state of the client
     fn verify_creation(
@@ -266,7 +266,10 @@ pub fn query<T: IbcClient>(
             let ibc_host = IBC_HOST.load(deps.storage)?;
             let client_state =
                 read_client_state::<T>(deps.querier.into_empty(), &ibc_host, client_id)?;
-            let status = T::status(&client_state);
+            let status = T::status(
+                IbcClientCtx::new(client_id, ibc_host, deps, env),
+                &client_state,
+            );
             to_json_binary(&status).map_err(Into::into)
         }
         QueryMsg::VerifyCreation {

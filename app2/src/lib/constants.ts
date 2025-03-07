@@ -1,4 +1,4 @@
-type Environment = "PRODUCTION" | "STAGING" | "DEVELOPMENT"
+export type Environment = "PRODUCTION" | "STAGING" | "DEVELOPMENT"
 
 export const ENV = (): Environment =>
   window.location.hostname === "app.union.build"

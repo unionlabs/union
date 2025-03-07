@@ -23,6 +23,8 @@ ibc-union-light-client        = { workspace = true }
 ibc-union-msg                 = { workspace = true }
 num-rational                  = "0.4.2"
 protos                        = { workspace = true }
+rand                          = "0.6"
+rand_chacha                   = "0.3.1"
 serde                         = { workspace = true, features = ["derive"] }
 serde_json                    = { workspace = true }
 sha2                          = { workspace = true }

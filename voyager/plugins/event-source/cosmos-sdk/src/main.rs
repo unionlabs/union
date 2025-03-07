@@ -67,7 +67,6 @@ pub struct Module {
     pub chain_revision: u64,
 
     pub cometbft_client: cometbft_rpc::Client,
-    pub grpc_url: String,
 
     pub chunk_block_fetch_size: u64,
     pub refetch_delay: u64,
@@ -86,7 +85,6 @@ pub struct Config {
     pub chunk_block_fetch_size: u64,
     #[serde(default = "default_refetch_delay")]
     pub refetch_delay: u64,
-    pub grpc_url: String,
 
     #[serde(default)]
     pub ibc_host_contract_address: Option<Bech32<H256>>,
@@ -135,7 +133,6 @@ impl Plugin for Module {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            grpc_url: config.grpc_url,
             chunk_block_fetch_size: config.chunk_block_fetch_size,
             refetch_delay: config.refetch_delay,
             checksum_cache: Arc::new(DashMap::default()),

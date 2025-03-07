@@ -27,7 +27,7 @@ members = [
   "lib/cosmos-client",
   "lib/cometbft-types",
 
-  "lib/chain-utils",
+  "lib/concurrent-keyring",
   "lib/gnark-key-parser",
   "lib/gnark-mimc",
   # "lib/ibc-vm-rs",
@@ -191,6 +191,7 @@ members = [
   "cosmwasm/cw20-token-minter",
   "cosmwasm/ucs03-zkgm-token-minter-api",
   "cosmwasm/cw20-base",
+  "lib/scroll-types",
 ]
 
 [workspace.package]
@@ -213,14 +214,14 @@ lto       = "thin"
 opt-level = 3
 
 [workspace.dependencies]
-aptos-move-ibc   = { path = "generated/rust/aptos-move-ibc", default-features = false }
-aptos-verifier   = { path = "lib/aptos-verifier", default-features = false }
-beacon-api       = { path = "lib/beacon-api", default-features = false }
-beacon-api-types = { path = "lib/beacon-api-types", default-features = false }
-chain-utils      = { path = "lib/chain-utils", default-features = false }
-cometbft-rpc     = { path = "lib/cometbft-rpc", default-features = false }
-cometbft-types   = { path = "lib/cometbft-types", default-features = false }
-cosmos-client    = { path = "lib/cosmos-client", default-features = false }
+aptos-move-ibc     = { path = "generated/rust/aptos-move-ibc", default-features = false }
+aptos-verifier     = { path = "lib/aptos-verifier", default-features = false }
+beacon-api         = { path = "lib/beacon-api", default-features = false }
+beacon-api-types   = { path = "lib/beacon-api-types", default-features = false }
+cometbft-rpc       = { path = "lib/cometbft-rpc", default-features = false }
+cometbft-types     = { path = "lib/cometbft-types", default-features = false }
+concurrent-keyring = { path = "lib/concurrent-keyring", default-features = false }
+cosmos-client      = { path = "lib/cosmos-client", default-features = false }
 
 state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
 
@@ -242,6 +243,7 @@ berachain-light-client-types = { path = "lib/berachain-light-client-types", defa
 scroll-api                   = { path = "lib/scroll-api", default-features = false }
 scroll-codec                 = { path = "lib/scroll-codec", default-features = false }
 scroll-rpc                   = { path = "lib/scroll-rpc", default-features = false }
+scroll-types                 = { path = "lib/scroll-types", default-features = false }
 
 state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23-light-client-types", default-features = false }
 state-lens-ics23-mpt-light-client-types   = { path = "lib/state-lens-ics23-mpt-light-client-types", default-features = false }
@@ -303,7 +305,6 @@ voyager-message = { path = "lib/voyager-message", default-features = false }
 voyager-vm      = { path = "lib/voyager-vm", default-features = false }
 
 # external dependencies
-milagro_bls    = { git = "https://github.com/Snowfork/milagro_bls", rev = "bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095", default-features = false }
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 
 alloy            = { version = "0.11.1", default-features = false }

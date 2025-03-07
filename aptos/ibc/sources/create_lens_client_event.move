@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -61,6 +61,10 @@
 module ibc::create_lens_client_event {
     use std::string::String;
 
+    friend ibc::ibc;
+    friend ibc::state_lens_ics23_mpt_lc;
+    friend ibc::state_lens_ics23_ics23_lc;
+
     struct CreateLensClientEvent has copy, drop, store {
         client_id: u32,
         l2_chain_id: String,
@@ -68,33 +72,28 @@ module ibc::create_lens_client_event {
         l2_client_id: u32
     }
 
-    public fun new(
+    public(friend) fun new(
         client_id: u32,
         l2_chain_id: String,
         l1_client_id: u32,
         l2_client_id: u32
     ): CreateLensClientEvent {
-        CreateLensClientEvent {        
-            client_id,
-            l2_chain_id,
-            l1_client_id,
-            l2_client_id
-        }
+        CreateLensClientEvent { client_id, l2_chain_id, l1_client_id, l2_client_id }
     }
 
-    public fun client_id(self: &CreateLensClientEvent): u32 {
+    public(friend) fun client_id(self: &CreateLensClientEvent): u32 {
         self.client_id
     }
 
-    public fun l2_chain_id(self: &CreateLensClientEvent): String {
+    public(friend) fun l2_chain_id(self: &CreateLensClientEvent): String {
         self.l2_chain_id
     }
 
-    public fun l1_client_id(self: &CreateLensClientEvent): u32 {
+    public(friend) fun l1_client_id(self: &CreateLensClientEvent): u32 {
         self.l1_client_id
     }
 
-    public fun l2_client_id(self: &CreateLensClientEvent): u32 {
+    public(friend) fun l2_client_id(self: &CreateLensClientEvent): u32 {
         self.l2_client_id
     }
 }

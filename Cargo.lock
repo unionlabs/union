@@ -736,11 +736,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "amcl"
-version = "0.3.0"
-source = "git+https://github.com/Snowfork/milagro_bls?rev=bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095#bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095"
-
-[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2011,6 +2006,15 @@ dependencies = [
 
 [[package]]
 name = "autocfg"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0dde43e75fd43e8a1bf86103336bc699aa8d17ad1be60c76c0bdfd4828e19b78"
+dependencies = [
+ "autocfg 1.2.0",
+]
+
+[[package]]
+name = "autocfg"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1fdabc7756949593fe60f30ec81974b613357de856987752631dea1e3394c80"
@@ -2911,41 +2915,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
-name = "chain-utils"
-version = "0.0.0"
-dependencies = [
- "beacon-api",
- "berachain-light-client-types",
- "bip32",
- "cometbft-rpc",
- "crossbeam-queue",
- "dashmap 5.5.3",
- "enumorph",
- "frame-support-procedural",
- "futures",
- "hex",
- "hex-literal",
- "ics23",
- "num-rational 0.4.2",
- "num_enum",
- "prost 0.12.6",
- "protos",
- "rand 0.8.5",
- "scroll-api",
- "scroll-rpc",
- "serde",
- "serde-utils",
- "sha2 0.10.8",
- "tendermint-light-client-types",
- "thiserror 1.0.69",
- "tokio",
- "tonic 0.10.2",
- "tracing",
- "tracing-subscriber 0.3.18",
- "unionlabs",
-]
-
-[[package]]
 name = "chrono"
 version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3009,7 +2978,7 @@ version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6995bbe186456c36307f8ea36be3eefe42f49d106896414e18efc4fb2f846b5"
 dependencies = [
- "autocfg",
+ "autocfg 1.2.0",
 ]
 
 [[package]]
@@ -3088,6 +3057,15 @@ dependencies = [
  "once_cell",
  "textwrap 0.16.1",
  "zeroize",
+]
+
+[[package]]
+name = "cloudabi"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddfc5b9aa5d4507acaf872de71051dfd0e309860e88966e1051e462a077aac4f"
+dependencies = [
+ "bitflags 1.3.2",
 ]
 
 [[package]]
@@ -3278,6 +3256,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "concurrent-keyring"
+version = "0.0.0"
+dependencies = [
+ "beacon-api",
+ "berachain-light-client-types",
+ "bip32",
+ "cometbft-rpc",
+ "crossbeam-queue",
+ "dashmap 5.5.3",
+ "enumorph",
+ "frame-support-procedural",
+ "futures",
+ "hex",
+ "hex-literal",
+ "ics23",
+ "num-rational 0.4.2",
+ "num_enum",
+ "prost 0.12.6",
+ "protos",
+ "rand 0.8.5",
+ "scroll-api",
+ "scroll-rpc",
+ "serde",
+ "serde-utils",
+ "sha2 0.10.8",
+ "tendermint-light-client-types",
+ "thiserror 1.0.69",
+ "tokio",
+ "tonic 0.10.2",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3443,7 +3456,6 @@ dependencies = [
 name = "cosmos-client"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "bip32",
  "cometbft-rpc",
  "num-rational 0.4.2",
@@ -3451,6 +3463,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.8",
+ "thiserror 1.0.69",
  "tokio",
  "tracing",
  "unionlabs",
@@ -3526,6 +3539,8 @@ dependencies = [
  "ibc-union-msg",
  "num-rational 0.4.2",
  "protos",
+ "rand 0.6.5",
+ "rand_chacha 0.3.1",
  "serde",
  "serde_json",
  "sha2 0.10.8",
@@ -4628,7 +4643,6 @@ dependencies = [
  "async-graphql-axum",
  "async-sqlite",
  "axum 0.7.5",
- "chain-utils",
  "chrono",
  "clap 4.5.4",
  "cometbft-rpc",
@@ -5011,7 +5025,6 @@ version = "0.0.0"
 dependencies = [
  "beacon-api-types",
  "hex-literal",
- "milagro_bls",
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
@@ -5458,7 +5471,7 @@ version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88a41f105fe1d5b6b34b2055e3dc59bb79b46b48b2040b9e6c7b4b5de097aa41"
 dependencies = [
- "autocfg",
+ "autocfg 1.2.0",
 ]
 
 [[package]]
@@ -5793,8 +5806,11 @@ name = "gnark-key-parser"
 version = "0.0.0"
 dependencies = [
  "arith",
+ "ark-bn254",
  "ark-ff 0.4.2",
+ "ark-serialize 0.4.2",
  "hex",
+ "num-bigint 0.4.6",
  "substrate-bn",
  "thiserror 1.0.69",
 ]
@@ -5824,7 +5840,7 @@ dependencies = [
  "ff",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "rand_xorshift",
+ "rand_xorshift 0.3.0",
  "subtle 2.5.0",
 ]
 
@@ -6743,7 +6759,7 @@ version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
 dependencies = [
- "autocfg",
+ "autocfg 1.2.0",
  "hashbrown 0.12.3",
  "serde",
 ]
@@ -7357,7 +7373,7 @@ version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c168f8615b12bc01f9c17e2eb0cc07dcae1940121185446edc3744920e8ef45"
 dependencies = [
- "autocfg",
+ "autocfg 1.2.0",
  "scopeguard",
 ]
 
@@ -7533,16 +7549,6 @@ dependencies = [
  "byteorder",
  "keccak",
  "rand_core 0.6.4",
- "zeroize",
-]
-
-[[package]]
-name = "milagro_bls"
-version = "1.5.0"
-source = "git+https://github.com/Snowfork/milagro_bls?rev=bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095#bc2b5b5e8d48b7e2e1bfaa56dc2d93e13cb32095"
-dependencies = [
- "amcl",
- "rand 0.8.5",
  "zeroize",
 ]
 
@@ -8426,7 +8432,7 @@ version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f6f7833f2cbf2360a6cfd58cd41a53aa7a90bd4c202f5b1c7dd2ed73c57b2c3"
 dependencies = [
- "autocfg",
+ "autocfg 1.2.0",
  "num-integer",
  "num-traits",
  "rand 0.7.3",
@@ -8501,7 +8507,7 @@ version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1429034a0490724d0075ebb2bc9e875d6503c3cf69e235a8941aa757d83ef5bf"
 dependencies = [
- "autocfg",
+ "autocfg 1.2.0",
  "num-integer",
  "num-traits",
 ]
@@ -8512,7 +8518,7 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "12ac428b1cb17fce6f731001d307d351ec70a6d202fc2e60f7d4c5e42d8f4f07"
 dependencies = [
- "autocfg",
+ "autocfg 1.2.0",
  "num-bigint 0.3.3",
  "num-integer",
  "num-traits",
@@ -8536,7 +8542,7 @@ version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
 dependencies = [
- "autocfg",
+ "autocfg 1.2.0",
  "libm",
 ]
 
@@ -9693,7 +9699,7 @@ dependencies = [
  "num-traits",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
- "rand_xorshift",
+ "rand_xorshift 0.3.0",
  "regex-syntax 0.8.3",
  "rusty-fork",
  "tempfile",
@@ -9885,6 +9891,25 @@ dependencies = [
 
 [[package]]
 name = "rand"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d71dacdc3c88c1fde3885a3be3fbab9f35724e6ce99467f7d9c5026132184ca"
+dependencies = [
+ "autocfg 0.1.8",
+ "libc",
+ "rand_chacha 0.1.1",
+ "rand_core 0.4.2",
+ "rand_hc 0.1.0",
+ "rand_isaac",
+ "rand_jitter",
+ "rand_os",
+ "rand_pcg",
+ "rand_xorshift 0.1.1",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "rand"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a6b1679d49b24bbfe0c803429aa1874472f50d9b363131f0e89fc356b544d03"
@@ -9893,7 +9918,7 @@ dependencies = [
  "libc",
  "rand_chacha 0.2.2",
  "rand_core 0.5.1",
- "rand_hc",
+ "rand_hc 0.2.0",
 ]
 
 [[package]]
@@ -9917,6 +9942,16 @@ dependencies = [
  "rand_chacha 0.9.0",
  "rand_core 0.9.1",
  "zerocopy 0.8.18",
+]
+
+[[package]]
+name = "rand_chacha"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "556d3a1ca6600bfcbab7c7c91ccb085ac7fbbcd70e008a98742e7847f4f7bcef"
+dependencies = [
+ "autocfg 0.1.8",
+ "rand_core 0.3.1",
 ]
 
 [[package]]
@@ -9994,11 +10029,73 @@ dependencies = [
 
 [[package]]
 name = "rand_hc"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b40677c7be09ae76218dc623efbf7b18e34bced3f38883af07bb75630a21bc4"
+dependencies = [
+ "rand_core 0.3.1",
+]
+
+[[package]]
+name = "rand_hc"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
 dependencies = [
  "rand_core 0.5.1",
+]
+
+[[package]]
+name = "rand_isaac"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ded997c9d5f13925be2a6fd7e66bf1872597f759fd9dd93513dd7e92e5a5ee08"
+dependencies = [
+ "rand_core 0.3.1",
+]
+
+[[package]]
+name = "rand_jitter"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1166d5c91dc97b88d1decc3285bb0a99ed84b05cfd0bc2341bdf2d43fc41e39b"
+dependencies = [
+ "libc",
+ "rand_core 0.4.2",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "rand_os"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b75f676a1e053fc562eafbb47838d67c84801e38fc1ba459e8f180deabd5071"
+dependencies = [
+ "cloudabi",
+ "fuchsia-cprng",
+ "libc",
+ "rand_core 0.4.2",
+ "rdrand",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "rand_pcg"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "abf9b09b01790cfe0364f52bf32995ea3c39f4d2dd011eac241d2914146d0b44"
+dependencies = [
+ "autocfg 0.1.8",
+ "rand_core 0.4.2",
+]
+
+[[package]]
+name = "rand_xorshift"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbf7e9e623549b0e21f6e97cf8ecf247c1a8fd2e8a992ae265314300b2455d5c"
+dependencies = [
+ "rand_core 0.3.1",
 ]
 
 [[package]]
@@ -10748,6 +10845,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "scroll-types"
+version = "0.0.0"
+dependencies = [
+ "unionlabs",
+]
+
+[[package]]
 name = "scroll-verifier"
 version = "0.0.0"
 dependencies = [
@@ -10755,6 +10859,7 @@ dependencies = [
  "rlp",
  "scroll-codec",
  "scroll-light-client-types",
+ "scroll-types",
  "thiserror 1.0.69",
  "unionlabs",
  "zktrie",
@@ -11303,7 +11408,7 @@ version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f92a496fb766b417c996b9c5e57daf2f7ad3b0bebe1ccfca4856390e3d3bb67"
 dependencies = [
- "autocfg",
+ "autocfg 1.2.0",
 ]
 
 [[package]]
@@ -11731,6 +11836,7 @@ version = "0.0.0"
 dependencies = [
  "aptos-verifier",
  "bcs 0.1.6",
+ "bincode 2.0.0-rc.3",
  "cometbls-light-client",
  "cosmwasm-std 2.1.4",
  "hex-literal",
@@ -13267,7 +13373,6 @@ dependencies = [
  "hex-literal",
  "k256",
  "macros",
- "milagro_bls",
  "near-primitives-core",
  "near-sdk",
  "paste",
@@ -13582,7 +13687,6 @@ version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
- "chain-utils",
  "cosmwasm-std 2.1.4",
  "jsonrpsee",
  "movement-light-client-types",
@@ -13738,7 +13842,6 @@ dependencies = [
 name = "voyager-client-module-movement"
 version = "0.0.0"
 dependencies = [
- "chain-utils",
  "jsonrpsee",
  "movement-light-client-types",
  "serde",
@@ -13778,7 +13881,6 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
- "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
  "futures",
@@ -13804,7 +13906,6 @@ name = "voyager-client-module-state-lens-ics23-smt"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
  "futures",
@@ -13904,7 +14005,6 @@ dependencies = [
  "beacon-api",
  "beacon-api-types",
  "bitvec 1.0.1",
- "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
  "futures",
@@ -13945,7 +14045,6 @@ version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
- "chain-utils",
  "enumorph",
  "ethereum-light-client-types",
  "jsonrpsee",
@@ -14071,7 +14170,6 @@ version = "0.0.0"
 dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
- "chain-utils",
  "jsonrpsee",
  "serde",
  "thiserror 1.0.69",
@@ -14236,6 +14334,7 @@ name = "voyager-plugin-packet-filter"
 version = "0.0.0"
 dependencies = [
  "ibc-classic-spec",
+ "ibc-union-spec",
  "jsonrpsee",
  "regex",
  "serde",
@@ -14463,7 +14562,7 @@ dependencies = [
  "aptos-move-ibc",
  "aptos-rest-client",
  "aptos-types",
- "chain-utils",
+ "concurrent-keyring",
  "enumorph",
  "ibc-union-spec",
  "jsonrpsee",
@@ -14483,8 +14582,9 @@ name = "voyager-transaction-plugin-cosmos-sdk"
 version = "0.0.0"
 dependencies = [
  "bip32",
- "chain-utils",
  "cometbft-rpc",
+ "concurrent-keyring",
+ "cosmos-client",
  "enumorph",
  "ibc-classic-spec",
  "ibc-union",
@@ -14512,7 +14612,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bip32",
- "chain-utils",
+ "concurrent-keyring",
  "enumorph",
  "ibc-solidity",
  "ibc-union-spec",

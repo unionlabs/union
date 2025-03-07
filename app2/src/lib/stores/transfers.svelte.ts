@@ -1,10 +1,17 @@
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { Option } from "effect"
-import type { TransferList } from "$lib/schema/transfer-list"
+import type { TransferList, TransferCount } from "$lib/schema/transfer-list"
 
 class TransferListStore {
-  data: Option.Option<typeof TransferList.Type> = $state(Option.none())
-  error: Option.Option<FetchDecodeGraphqlError> = $state(Option.none())
+  data = $state(Option.none<typeof TransferList.Type>())
+  error = $state(Option.none<FetchDecodeGraphqlError>())
+}
+
+class TransferCountStore {
+  data = $state(Option.none<typeof TransferCount.Type>())
+  error = $state(Option.none<FetchDecodeGraphqlError>())
 }
 
 export const transferList = new TransferListStore()
+export const transferListAddress = new TransferListStore()
+export const transferCount = new TransferCountStore()

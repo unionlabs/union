@@ -363,6 +363,18 @@
                   " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}"
                 );
               RUSTFLAGS = rustflags;
+
+              preBuild = ''
+                echo "cargoVendorDir: ${crateAttrs.cargoVendorDir}"
+                echo "rustToolchain: ${cargoBuildRustToolchain'}"
+
+                # find ${crateAttrs.cargoVendorDir} -maxdepth 1 -xtype d | grep -v '^${crateAttrs.cargoVendorDir}$' | sed -E 's@(.+)@ --remap-path-prefix=\1=/@g'
+
+                export RUSTFLAGS="$RUSTFLAGS $(find ${crateAttrs.cargoVendorDir} -maxdepth 1 -xtype d | grep -v '^${crateAttrs.cargoVendorDir}$' | sed -E 's@(.+)@ --remap-path-prefix=\1=@g' | tr '\n' ' ')  --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/alloc/src/= --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/std/src/= --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/core/src/="
+
+                echo "$RUSTFLAGS"
+              '';
+
               # we don't want to run cargo check/ cargo test on this derivation since we do that in a separate package
               doCheck = false;
               meta =

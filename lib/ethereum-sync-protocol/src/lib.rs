@@ -1,6 +1,5 @@
 extern crate alloc;
 
-pub mod crypto;
 pub mod error;
 // REVIEW: Unused?
 pub mod utils;
@@ -399,7 +398,7 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
 //             &self,
 //             public_keys: impl IntoIterator<Item = &'pk BlsPublicKey>,
 //             msg: Vec<u8>,
-//             signature: BlsSignature,
+//             signature: H768,
 //         ) -> Result<(), Error> {
 //             let res = crate::crypto::fast_aggregate_verify_unchecked(
 //                 public_keys.into_iter().collect::<Vec<_>>().as_slice(),

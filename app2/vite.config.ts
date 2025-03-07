@@ -11,7 +11,6 @@ export default defineConfig({
       {
         extends: "./vite.config.ts",
         plugins: [svelteTesting()],
-
         test: {
           name: "client",
           environment: "jsdom",

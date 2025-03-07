@@ -75,6 +75,7 @@ pub mod rpc;
 pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
 pub use voyager_core as core;
+pub use voyager_vm as vm;
 
 pub enum VoyagerMessage {}
 

@@ -16,7 +16,6 @@ test-include = ["lib/ethereum-sync-protocol/src/test/"]
 
 [dependencies]
 beacon-api-types = { workspace = true, features = ["ssz"] }
-milagro_bls      = { workspace = true }
 serde-utils      = { workspace = true }
 sha2             = { workspace = true }
 ssz              = { workspace = true }

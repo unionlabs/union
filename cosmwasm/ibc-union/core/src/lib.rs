@@ -7,6 +7,7 @@ pub mod state;
 mod tests;
 
 use cosmwasm_std::{Addr, StdError};
+use ibc_union_msg::lightclient::Status;
 use ibc_union_spec::types::{ChannelState, ConnectionState};
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
@@ -121,12 +122,24 @@ pub enum ContractError {
         "{} cannot migrate the client {client_id} when there's no consensus state at height {height}", ContractErrorKind::from(self)
     )]
     CannotMigrateWithNoConsensusState { client_id: u32, height: u64 },
+    #[error(
+        "{} cannot query light client {client_impl} with {query:?}: {error}",
+        ContractErrorKind::from(self)
+    )]
+    CannotQueryLightClient {
+        client_impl: Addr,
+        query: Box<ibc_union_msg::lightclient::QueryMsg>,
+        error: StdError,
+    },
+    #[error(
+        "{} client {client_id} is not active (status {status:?})",
+        ContractErrorKind::from(self)
+    )]
+    ClientNotActive { client_id: u32, status: Status },
 }
 
 impl ContractErrorKind {
-    pub fn parse_from_error_message(s: &str) -> Option<Self> {
-        let (err, _) = s.split_once(' ')?;
-
-        err.strip_prefix("IBC_UNION_ERR_")?.parse().ok()
+    pub fn parse(s: &str) -> Option<Self> {
+        s.strip_prefix("IBC_UNION_ERR_")?.parse().ok()
     }
 }

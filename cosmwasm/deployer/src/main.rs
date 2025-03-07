@@ -1,17 +1,30 @@
 use std::{collections::BTreeMap, ops::Deref, path::PathBuf};
 
 use anyhow::{bail, Context, Result};
+use bip32::secp256k1::ecdsa::SigningKey;
 use clap::Parser;
 use cometbft_rpc::rpc_types::GrpcAbciQueryError;
-use cosmos_client::{Ctx, GasConfig};
+use cosmos_client::{
+    gas::GasConfig,
+    rpc::{Rpc, RpcT},
+    wallet::{LocalSigner, WalletT},
+    TxClient,
+};
 use cosmwasm_std::Addr;
 use hex_literal::hex;
-use protos::cosmwasm::wasm::v1::{
-    AccessConfig, AccessType, MsgExecuteContract, MsgExecuteContractResponse,
-    MsgInstantiateContract2, MsgInstantiateContract2Response, MsgMigrateContract,
-    MsgMigrateContractResponse, MsgStoreCode, MsgStoreCodeResponse, MsgUpdateInstantiateConfig,
-    MsgUpdateInstantiateConfigResponse, QuerySmartContractStateRequest,
-    QuerySmartContractStateResponse,
+use protos::{
+    cosmos::bank::v1beta1::{MsgSend, MsgSendResponse},
+    cosmwasm::wasm::v1::{
+        AccessConfig, AccessType, MsgExecuteContract, MsgExecuteContractResponse,
+        MsgInstantiateContract2, MsgInstantiateContract2Response, MsgMigrateContract,
+        MsgMigrateContractResponse, MsgStoreCode, MsgStoreCodeResponse, MsgUpdateInstantiateConfig,
+        MsgUpdateInstantiateConfigResponse, QuerySmartContractStateRequest,
+        QuerySmartContractStateResponse,
+    },
+};
+use rand_chacha::{
+    rand_core::{block::BlockRng, SeedableRng},
+    ChaChaCore,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -80,6 +93,8 @@ enum App {
         #[arg(long)]
         bech32_prefix: String,
     },
+    #[command(subcommand)]
+    Tx(TxCmd),
 }
 
 #[derive(Debug, Clone, PartialEq, Default, clap::Args)]
@@ -97,6 +112,30 @@ enum QueryCmd {
         rpc_url: String,
         #[arg(long)]
         code_id: u64,
+    },
+}
+
+#[derive(clap::Subcommand)]
+enum TxCmd {
+    CreateSigners {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long)]
+        count: u32,
+        #[arg(long)]
+        output: PathBuf,
+    },
+    InitSigners {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long)]
+        funder_private_key: H256,
+        #[arg(long)]
+        path: PathBuf,
+        #[arg(long)]
+        amount: u128,
+        #[command(flatten)]
+        gas_config: GasConfigArgs,
     },
 }
 
@@ -247,7 +286,7 @@ async fn do_main() -> Result<()> {
                 &std::fs::read(contracts).context("reading contracts path")?,
             )?;
 
-            let ctx = Deployer(Ctx::new(rpc_url, private_key, gas_config.into()).await?);
+            let ctx = Deployer::new(rpc_url, private_key, gas_config).await?;
 
             let bytecode_base_address = ctx
                 .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), BYTECODE_BASE)
@@ -265,7 +304,7 @@ async fn do_main() -> Result<()> {
                     let (_, response) = ctx
                         .tx::<_, MsgStoreCodeResponse>(
                             MsgStoreCode {
-                                sender: ctx.signer().to_string(),
+                                sender: ctx.wallet().address().to_string(),
                                 wasm_byte_code: BYTECODE_BASE_BYTECODE.to_vec(),
                                 instantiate_permission: Some(AccessConfig {
                                     permission: AccessType::Everybody.into(),
@@ -279,8 +318,8 @@ async fn do_main() -> Result<()> {
 
                     ctx.tx::<_, MsgInstantiateContract2Response>(
                         MsgInstantiateContract2 {
-                            sender: ctx.signer().to_string(),
-                            admin: ctx.signer().to_string(),
+                            sender: ctx.wallet().address().to_string(),
+                            admin: ctx.wallet().address().to_string(),
                             code_id: response.code_id,
                             label: BYTECODE_BASE.to_string(),
                             msg: b"{}".to_vec(),
@@ -329,6 +368,7 @@ async fn do_main() -> Result<()> {
                     .await?;
 
                 let response = ctx
+                    .rpc()
                     .client()
                     .grpc_abci_query::<_, QuerySmartContractStateResponse>(
                         "/cosmwasm.wasm.v1.Query/SmartContractState",
@@ -355,7 +395,7 @@ async fn do_main() -> Result<()> {
                 } else {
                     ctx.tx::<_, MsgExecuteContractResponse>(
                         MsgExecuteContract {
-                            sender: ctx.signer().to_string(),
+                            sender: ctx.wallet().address().to_string(),
                             contract: core_address.clone(),
                             msg: serde_json::to_vec(
                                 &ibc_union_msg::msg::ExecuteMsg::RegisterClient(
@@ -384,7 +424,7 @@ async fn do_main() -> Result<()> {
                 let salt = format!("{APP}/{UCS03}");
 
                 let ucs03_address = instantiate2_address(
-                    ctx.signer().to_string().parse().unwrap(),
+                    ctx.wallet().address(),
                     sha2(BYTECODE_BASE_BYTECODE),
                     &salt,
                 )
@@ -398,7 +438,7 @@ async fn do_main() -> Result<()> {
                     let (tx_hash, response) = ctx
                         .tx::<_, MsgStoreCodeResponse>(
                             MsgStoreCode {
-                                sender: ctx.signer().to_string(),
+                                sender: ctx.wallet().address().to_string(),
                                 wasm_byte_code: std::fs::read(ucs03_config.token_minter_path)?,
                                 instantiate_permission: None,
                             },
@@ -416,7 +456,7 @@ async fn do_main() -> Result<()> {
                         let (tx_hash, _) = ctx
                             .tx::<_, MsgUpdateInstantiateConfigResponse>(
                                 MsgUpdateInstantiateConfig {
-                                    sender: ctx.signer().to_string(),
+                                    sender: ctx.wallet().address().to_string(),
                                     code_id: minter_code_id,
                                     new_instantiate_permission: Some(AccessConfig {
                                         permission: AccessType::AnyOfAddresses.into(),
@@ -439,7 +479,7 @@ async fn do_main() -> Result<()> {
                     }
 
                     let token_minter_address = instantiate2_address(
-                        ucs03_address.parse().unwrap(),
+                        ucs03_address.parse::<Bech32<Bytes>>().unwrap(),
                         response.checksum.try_into().unwrap(),
                         &ucs03_zkgm::contract::minter_salt(),
                     )
@@ -450,7 +490,7 @@ async fn do_main() -> Result<()> {
                             let (tx_hash, response) = ctx
                                 .tx::<_, MsgStoreCodeResponse>(
                                     MsgStoreCode {
-                                        sender: ctx.signer().to_string(),
+                                        sender: ctx.wallet().address().to_string(),
                                         wasm_byte_code: std::fs::read(cw20_base)?,
                                         instantiate_permission: None,
                                     },
@@ -468,7 +508,7 @@ async fn do_main() -> Result<()> {
                                 let (tx_hash, _) = ctx
                                     .tx::<_, MsgUpdateInstantiateConfigResponse>(
                                         MsgUpdateInstantiateConfig {
-                                            sender: ctx.signer().to_string(),
+                                            sender: ctx.wallet().address().to_string(),
                                             code_id,
                                             new_instantiate_permission: Some(AccessConfig {
                                                 permission: AccessType::AnyOfAddresses.into(),
@@ -503,7 +543,7 @@ async fn do_main() -> Result<()> {
                         bytecode_base_code_id,
                         ucs03_zkgm::msg::InitMsg {
                             config: ucs03_zkgm::msg::Config {
-                                admin: Addr::unchecked(ctx.signer().to_string()),
+                                admin: Addr::unchecked(ctx.wallet().address().to_string()),
                                 ibc_host: Addr::unchecked(core_address.clone()),
                                 token_minter_code_id: minter_code_id,
                             },
@@ -528,14 +568,12 @@ async fn do_main() -> Result<()> {
                 &std::fs::read(addresses).context("reading addresses path")?,
             )?;
 
-            let ctx = Deployer(
-                Ctx::new(
-                    rpc_url,
-                    hex!("9a95f0bb285a5d81415a0571cebbb63dbef2c7a0c90f9b60a40572552da3eac3").into(),
-                    GasConfig::default(),
-                )
-                .await?,
-            );
+            let ctx = Deployer::new(
+                rpc_url,
+                hex!("9a95f0bb285a5d81415a0571cebbb63dbef2c7a0c90f9b60a40572552da3eac3").into(),
+                GasConfigArgs::default(),
+            )
+            .await?;
 
             let mut heights = BTreeMap::new();
 
@@ -607,7 +645,7 @@ async fn do_main() -> Result<()> {
         } => {
             let new_bytecode = std::fs::read(new_bytecode).context("reading new bytecode")?;
 
-            let ctx = Deployer(Ctx::new(rpc_url, private_key, gas_config.into()).await?);
+            let ctx = Deployer::new(rpc_url, private_key, gas_config).await?;
 
             let contract_info = ctx
                 .contract_info(address.to_string())
@@ -626,7 +664,7 @@ async fn do_main() -> Result<()> {
             let (tx_hash, store_code_response) = ctx
                 .tx::<_, MsgStoreCodeResponse>(
                     MsgStoreCode {
-                        sender: ctx.signer().to_string(),
+                        sender: ctx.wallet().address().to_string(),
                         wasm_byte_code: new_bytecode,
                         ..Default::default()
                     },
@@ -644,7 +682,7 @@ async fn do_main() -> Result<()> {
             let (tx_hash, _migrate_response) = ctx
                 .tx::<_, MsgMigrateContractResponse>(
                     MsgMigrateContract {
-                        sender: ctx.signer().to_string(),
+                        sender: ctx.wallet().address().to_string(),
                         contract: address.to_string(),
                         code_id: store_code_response.code_id,
                         msg: json!({ "migrate": {} }).to_string().into_bytes(),
@@ -663,6 +701,132 @@ async fn do_main() -> Result<()> {
             "{}",
             CosmosSigner::from_raw(*private_key.get(), bech32_prefix).unwrap(),
         ),
+        App::Tx(tx_cmd) => match tx_cmd {
+            TxCmd::CreateSigners {
+                rpc_url,
+                count,
+                output,
+            } => {
+                let mut rng = BlockRng::new(ChaChaCore::from_rng(rand_chacha::rand_core::OsRng)?);
+
+                let client = cometbft_rpc::Client::new(rpc_url).await?;
+
+                let bech32_prefix = client
+                    .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::Bech32PrefixResponse>(
+                        "/cosmos.auth.v1beta1.Query/Bech32Prefix",
+                        &protos::cosmos::auth::v1beta1::Bech32PrefixRequest {},
+                        None,
+                        false,
+                    )
+                    .await
+                    .context("querying bech32 prefix")?
+                    .into_result()?
+                    .unwrap()
+                    .bech32_prefix;
+
+                let signers = (0..count)
+                    .map(|_| {
+                        let signer =
+                            CosmosSigner::new(SigningKey::random(&mut rng), bech32_prefix.clone());
+
+                        info!("signer created: {signer}");
+
+                        signer
+                    })
+                    .collect::<Vec<_>>();
+
+                write_output(
+                    Some(output),
+                    signers.iter().map(|s| s.private_key()).collect::<Vec<_>>(),
+                )?;
+            }
+            TxCmd::InitSigners {
+                rpc_url,
+                funder_private_key,
+                path,
+                amount,
+                gas_config,
+            } => {
+                let funder =
+                    Deployer::new(rpc_url.clone(), funder_private_key, gas_config.clone()).await?;
+
+                let bech32_prefix = funder
+                    .rpc()
+                    .client()
+                    .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::Bech32PrefixResponse>(
+                        "/cosmos.auth.v1beta1.Query/Bech32Prefix",
+                        &protos::cosmos::auth::v1beta1::Bech32PrefixRequest {},
+                        None,
+                        false,
+                    )
+                    .await
+                    .context("querying bech32 prefix")?
+                    .into_result()?
+                    .unwrap()
+                    .bech32_prefix;
+
+                let signers = serde_json::from_slice::<Vec<H256>>(
+                    &std::fs::read(path).context("reading signers path")?,
+                )?
+                .into_iter()
+                .map(|s| CosmosSigner::new_from_bytes(s, bech32_prefix.clone()).unwrap());
+
+                for (idx, signer) in signers.clone().enumerate() {
+                    info!("signer {signer} ({idx})");
+                    if funder.account_info(signer.address()).await?.is_none() {
+                        info!("funding signer {signer}");
+
+                        funder
+                            .tx::<_, MsgSendResponse>(
+                                MsgSend {
+                                    from_address: funder.wallet().address().to_string(),
+                                    to_address: signer.to_string(),
+                                    amount: vec![Coin {
+                                        denom: gas_config.gas_denom.clone(),
+                                        amount,
+                                    }
+                                    .into()],
+                                },
+                                "",
+                            )
+                            .await?;
+
+                        info!("funded signer {signer}");
+
+                        let signer = Deployer::new(
+                            rpc_url.clone(),
+                            signer.private_key(),
+                            gas_config.clone(),
+                        )
+                        .await?;
+
+                        signer
+                            .tx::<_, MsgSendResponse>(
+                                MsgSend {
+                                    from_address: signer.wallet().address().to_string(),
+                                    to_address: signer.wallet().address().to_string(),
+                                    amount: vec![Coin {
+                                        denom: gas_config.gas_denom.clone(),
+                                        amount: 1,
+                                    }
+                                    .into()],
+                                },
+                                "",
+                            )
+                            .await?;
+
+                        info!("initiated signer {}", signer.wallet().address());
+                    } else {
+                        info!("signer {signer} already funded")
+                    }
+                }
+
+                write_output(
+                    None,
+                    signers.into_iter().map(|s| s.address()).collect::<Vec<_>>(),
+                )?;
+            }
+        },
     }
 
     Ok(())
@@ -736,10 +900,10 @@ fn u128_saturating_mul_f64(u: u128, f: f64) -> u128 {
     // .expect("overflow")
 }
 
-struct Deployer(Ctx);
+struct Deployer(TxClient<LocalSigner, Rpc, GasConfig>);
 
 impl Deref for Deployer {
-    type Target = Ctx;
+    type Target = TxClient<LocalSigner, Rpc, GasConfig>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -747,12 +911,44 @@ impl Deref for Deployer {
 }
 
 impl Deployer {
+    async fn new(
+        rpc_url: String,
+        private_key: H256,
+        gas_config: GasConfigArgs,
+    ) -> Result<Deployer> {
+        let rpc = Rpc::new(rpc_url).await?;
+
+        let bech32_prefix = rpc
+            .client()
+            .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::Bech32PrefixResponse>(
+                "/cosmos.auth.v1beta1.Query/Bech32Prefix",
+                &protos::cosmos::auth::v1beta1::Bech32PrefixRequest {},
+                None,
+                false,
+            )
+            .await
+            .context("querying bech32 prefix")?
+            .into_result()?
+            .unwrap()
+            .bech32_prefix;
+
+        let ctx = TxClient::new(
+            LocalSigner::new(private_key, bech32_prefix),
+            rpc,
+            gas_config.into(),
+        );
+
+        let ctx = Deployer(ctx);
+
+        Ok(ctx)
+    }
+
     async fn contract_info(
         &self,
         address: String,
     ) -> Result<Option<protos::cosmwasm::wasm::v1::ContractInfo>> {
         let result = self
-            .0
+            .rpc()
             .client()
             .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryContractInfoResponse>(
                 "/cosmwasm.wasm.v1.Query/ContractInfo",
@@ -777,6 +973,7 @@ impl Deployer {
 
     async fn code_checksum(&self, code_id: u64) -> Result<Option<H256>> {
         let result = self
+            .rpc()
             .client()
             .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryCodeResponse>(
                 "/cosmwasm.wasm.v1.Query/Code",
@@ -833,6 +1030,7 @@ impl Deployer {
         >,
     > {
         Ok(self
+            .rpc()
             .client()
             .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryContractHistoryResponse>(
                 "/cosmwasm.wasm.v1.Query/ContractHistory",
@@ -848,15 +1046,11 @@ impl Deployer {
     }
 
     async fn instantiate2_address(&self, checksum: H256, salt: &str) -> Result<String> {
-        let bech32 = self
-            .signer()
-            .to_string()
-            .parse::<Bech32<Vec<u8>>>()
-            .unwrap();
+        let bech32 = self.wallet().address();
 
         let addr = cosmwasm_std::instantiate2_address(
             checksum.get(),
-            &bech32.data().as_slice().into(),
+            &(bech32.data().get().as_slice().into()),
             salt.as_bytes(),
         )?;
 
@@ -883,8 +1077,8 @@ impl Deployer {
                 let (_, instantiate2_response) = self
                     .tx::<_, MsgInstantiateContract2Response>(
                         MsgInstantiateContract2 {
-                            sender: self.signer().to_string(),
-                            admin: self.signer().to_string(),
+                            sender: self.wallet().address().to_string(),
+                            admin: self.wallet().address().to_string(),
                             code_id: bytecode_base_code_id,
                             label: salt.clone(),
                             msg: json!({}).to_string().into_bytes(),
@@ -906,7 +1100,7 @@ impl Deployer {
         let (tx_hash, store_code_response) = self
             .tx::<_, MsgStoreCodeResponse>(
                 MsgStoreCode {
-                    sender: self.signer().to_string(),
+                    sender: self.wallet().address().to_string(),
                     wasm_byte_code,
                     ..Default::default()
                 },
@@ -923,7 +1117,7 @@ impl Deployer {
         let (_, _migrate_response) = self
             .tx::<_, MsgMigrateContractResponse>(
                 MsgMigrateContract {
-                    sender: self.signer().to_string(),
+                    sender: self.wallet().address().to_string(),
                     contract: address.clone(),
                     code_id: store_code_response.code_id,
                     msg: json!({ "init": msg }).to_string().into_bytes(),
@@ -967,6 +1161,7 @@ impl Deployer {
         address: &str,
     ) -> Result<()> {
         let bytecode_base_code_info = self
+            .rpc()
             .client()
             .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryCodeResponse>(
                 "/cosmwasm.wasm.v1.Query/Code",
@@ -1000,7 +1195,7 @@ impl Deployer {
             let (tx_hash, _) = self
                 .tx::<_, MsgUpdateInstantiateConfigResponse>(
                     MsgUpdateInstantiateConfig {
-                        sender: self.signer().to_string(),
+                        sender: self.wallet().address().to_string(),
                         code_id: bytecode_base_code_id,
                         new_instantiate_permission: Some(AccessConfig {
                             permission: AccessType::AnyOfAddresses.into(),
@@ -1035,10 +1230,14 @@ enum ContractDeployState {
     Initiated,
 }
 
-fn instantiate2_address(address: Bech32<Bytes>, checksum: H256, salt: &str) -> Result<String> {
+fn instantiate2_address(
+    address: Bech32<impl AsRef<[u8]>>,
+    checksum: H256,
+    salt: &str,
+) -> Result<String> {
     let addr = cosmwasm_std::instantiate2_address(
         checksum.get(),
-        &address.data()[..].into(),
+        &address.data().as_ref().into(),
         salt.as_bytes(),
     )?;
 

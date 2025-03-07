@@ -130,12 +130,8 @@
     };
 
     # uniond versions
-    v0_25_0 = {
-      url = "github:unionlabs/union/release/uniond/v0.25.0";
-      flake = false;
-    };
-    v0_26_0 = {
-      url = "github:unionlabs/union/release/uniond/v0.26.0";
+    v1_0_0 = {
+      url = "github:unionlabs/union/release/uniond/v1.0.0";
       flake = false;
     };
   };
@@ -261,7 +257,7 @@
           versions = builtins.fromJSON (builtins.readFile ./versions/versions.json);
 
           uniondBundleVersions = rec {
-            complete = versions.union-testnet-9.versions;
+            complete = versions.union-1.versions;
             first = pkgs.lib.lists.head complete;
             last = pkgs.lib.lists.last complete;
           };
@@ -501,6 +497,7 @@
                     pkgs.foundry-bin
                     goPkgs.sqlx-cli
                     self'.packages.hasura-cli
+                    self'.packages.ignite-cli
                   ]
                 else
                   [ ]
@@ -528,7 +525,7 @@
           };
           # https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt
           treefmt = import ./treefmt.nix {
-            # inherit (self'.packages) movefmt;
+            inherit (self'.packages) movefmt;
             inherit
               pkgs
               jsPkgs

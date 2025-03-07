@@ -2,7 +2,7 @@ name: Release Component
 
 on:
   push:
-    tags: ['*/v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+', '*/v[0-9]+\.[0-9]+\.[0-9]+']
+    tags: ['*/v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+*', '*/v[0-9]+\.[0-9]+\.[0-9]+*']
 
 jobs:
   eval-tag:
@@ -90,8 +90,8 @@ jobs:
         env:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
         run: |
-          nix build .#packages.x86_64-linux.\"$COMPONENT\"-image --accept-flake-config
-          cp -Lr result x86_64-linux.\"$COMPONENT\"-image
+          nix build .#packages.x86_64-linux."$COMPONENT"-image --accept-flake-config
+          cp -Lr result x86_64-linux."$COMPONENT"-image
       - uses: actions/upload-artifact@v4
         with:
           name: x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
@@ -140,12 +140,12 @@ jobs:
           nix build .#packages.x86_64-linux."$COMPONENT" --accept-flake-config
           if [[ "$COMPONENT" =~ uniond-release ]]
           then
-            mv result/bin/uniond "$COMPONENT"-x86_64-linux
+            cp result/bin/uniond "$COMPONENT"-x86_64-linux
           elif [[ $ARCHIVE ]]
           then
             tar -zcf "$COMPONENT"-x86_64-linux result
           else
-            mv result/bin/"$COMPONENT" "$COMPONENT"-x86_64-linux
+            cp result/bin/"$COMPONENT" "$COMPONENT"-x86_64-linux
           fi
       - uses: actions/upload-artifact@v4
         with:
@@ -171,12 +171,12 @@ jobs:
           nix build .#packages.aarch64-linux."$COMPONENT" --accept-flake-config
           if [[ "$COMPONENT" =~ uniond-release ]]
           then
-            mv result/bin/uniond "$COMPONENT"-aarch64-linux
+            cp result/bin/uniond "$COMPONENT"-aarch64-linux
           elif [[ $ARCHIVE ]]
           then
             tar -zcf "$COMPONENT"-aarch64-linux result
           else
-            mv result/bin/"$COMPONENT" "$COMPONENT"-aarch64-linux
+            cp result/bin/"$COMPONENT" "$COMPONENT"-aarch64-linux
           fi
       - uses: actions/upload-artifact@v4
         with:
@@ -195,7 +195,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: docker/login-action@v2
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -265,7 +265,7 @@ jobs:
           echo "downloaded & installed regctl"
           regctl registry set --tls disabled localhost:5000
           regctl image mod "localhost:5000/unionlabs/$COMPONENT:$TAG" --to-oci --create "$TAG" --annotation org.opencontainers.image.description="$(cat "$GITHUB_WORKSPACE/.github/container-descriptions/$COMPONENT.txt")"
-      - uses: docker/login-action@v2
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -328,7 +328,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           body_path: release.md
-          prerelease: false
+          prerelease: ${{ contains(needs.eval-tag.outputs.version, '-rc') || contains(needs.eval-tag.outputs.version, 'alpha') }}
           repository: unionlabs/union
           token: ${{ secrets.UNION_RELEASES_PAT }}
           name: ${{needs.eval-tag.outputs.component}} ${{needs.eval-tag.outputs.version}}

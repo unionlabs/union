@@ -139,7 +139,9 @@ impl IbcClient for EthermintLightClient {
         Err(Error::from(tendermint_light_client::errors::Error::Unimplemented).into())
     }
 
-    fn status(client_state: &Self::ClientState) -> Status {
+    fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
+        let _ = ctx;
+
         // FIXME: read latest consensus to verify if client expired
         // if is_client_expired(
         //     &consensus_state.timestamp,

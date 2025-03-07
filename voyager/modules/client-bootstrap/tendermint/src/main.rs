@@ -39,7 +39,6 @@ pub struct Module {
 
     pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
-    pub grpc_url: String,
 
     pub ccv_consumer_chain: bool,
 
@@ -50,7 +49,6 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    pub grpc_url: String,
     #[serde(default)]
     pub ccv_consumer_chain: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -88,7 +86,6 @@ impl ClientBootstrapModule for Module {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            grpc_url: config.grpc_url,
             ccv_consumer_chain: config.ccv_consumer_chain,
             ibc_host_contract_address: config
                 .ibc_host_contract_address
