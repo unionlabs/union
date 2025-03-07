@@ -242,7 +242,7 @@ replace (
 	github.com/skip-mev/feemarket => github.com/unionlabs/feemarket v0.0.0-20250302022351-41d27c4c3661
 )
 
-replace github.com/strangelove-ventures/poa => github.com/unionlabs/poa v0.0.0-20250306020342-184ac47152ae
+replace github.com/strangelove-ventures/poa => github.com/unionlabs/poa v0.0.0-20250306233111-2fd246e706c1
 
 replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20250228223503-fa271bbe8508
 

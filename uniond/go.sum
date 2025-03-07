@@ -1025,8 +1025,8 @@ github.com/unionlabs/ibc-go/modules/capability v0.0.0-20250228202801-8024a4241fb
 github.com/unionlabs/ibc-go/modules/capability v0.0.0-20250228202801-8024a4241fb8/go.mod h1:gwR2WaZNTcpdyJVmYZx+bLw5pmaZt0I1w/eP2jNJV2o=
 github.com/unionlabs/ibc-go/v8 v8.0.0-20250228202801-8024a4241fb8 h1:PgqRrbtizBKah6EZzusoyDD4fPHoui6FoE4A8418mgQ=
 github.com/unionlabs/ibc-go/v8 v8.0.0-20250228202801-8024a4241fb8/go.mod h1:FtR4596WBCLYmuBlzhq8nne2F/Boruc3ZcajfnPEPe0=
-github.com/unionlabs/poa v0.0.0-20250306020342-184ac47152ae h1:sMj52UORsGHODsTVAabyps1PmbfvsuLySUdo9p0b1gE=
-github.com/unionlabs/poa v0.0.0-20250306020342-184ac47152ae/go.mod h1:UZDN3YBGVdXH7IcJZmnIhQJt7St5qRTNQVAWdjX5lqU=
+github.com/unionlabs/poa v0.0.0-20250306233111-2fd246e706c1 h1:Pf9KkMiuMc2JhYlmi4YO4XDDVsgsHBocQXKhp/8RDSE=
+github.com/unionlabs/poa v0.0.0-20250306233111-2fd246e706c1/go.mod h1:UZDN3YBGVdXH7IcJZmnIhQJt7St5qRTNQVAWdjX5lqU=
 github.com/unionlabs/wasmd v0.0.0-20250228223503-fa271bbe8508 h1:+Nbq/9l6mZZfVLWxfzhDrFNRdzKaYZwwl77g3N4v+iw=
 github.com/unionlabs/wasmd v0.0.0-20250228223503-fa271bbe8508/go.mod h1:REcL/5QdzI+YuGnXFE5FyoETa4bupJZXSNGjZXzWLO4=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
