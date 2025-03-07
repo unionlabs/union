@@ -8,19 +8,20 @@ import { writable, type Writable } from "svelte/store"
 import Truncate from "$lib/components/truncate.svelte"
 import * as Card from "$lib/components/ui/card/index.ts"
 import { Input } from "$lib/components/ui/input/index.ts"
-import DydxFaucet from "./(components)/dydx-faucet.svelte"
-import StrideFaucet from "./(components)/stride-faucet.svelte"
 import { Button } from "$lib/components/ui/button/index.ts"
 import SpinnerSVG from "$lib/components/spinner-svg.svelte"
 import WalletGateCosmos from "$lib/components/wallet-gate-cosmos.svelte"
 import ChainsGate from "$lib/components/chains-gate.svelte"
 import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
 import type { DiscriminatedUnion } from "$lib/utilities/types.ts"
-import ExternalFaucets from "./(components)/external-faucets.svelte"
 import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts"
 import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
 import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
 import { Turnstile } from "svelte-turnstile"
+
+// import ExternalFaucets from "./(components)/external-faucets.svelte"
+// import DydxFaucet from "./(components)/dydx-faucet.svelte"
+// import StrideFaucet from "./(components)/stride-faucet.svelte"
 
 type FaucetState = DiscriminatedUnion<
   "kind",
@@ -310,9 +311,9 @@ const handleTurnstileError = (e: CustomEvent<{ code: string }>) => {
       {/if}
     </Card.Content>
   </Card.Root>
-  <!-- dydx faucet -->
-  <DydxFaucet />
-  <StrideFaucet />
+
+<!--  <DydxFaucet />-->
+<!--  <StrideFaucet />-->
   <!--
   <ChainsGate let:chains>
     <ExternalFaucets {chains} />
