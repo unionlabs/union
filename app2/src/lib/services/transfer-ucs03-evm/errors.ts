@@ -38,4 +38,9 @@ export class ConnectorClientError extends Data.TaggedError("ConnectorClientError
   cause: GetConnectorClientErrorType
 }> {}
 
-export type SubmitTransferError = SendTransactionError | CreateWalletClientError
+export class AddressValidationError extends Data.TaggedError("AddressValidationError")<{
+  input: string
+  cause?: unknown | undefined
+}> {}
+
+export type SubmitTransferError = WriteContractError | CreateWalletClientError
