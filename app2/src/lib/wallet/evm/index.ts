@@ -2,5 +2,8 @@ export {
   evmConnect,
   sepoliaStore,
   type EvmWalletId,
-  evmWalletsInformation
+  evmWalletsInformation,
 } from "./config.svelte"
+export {
+  getChainFromWagmi
+} from "./wagmi-config.ts"

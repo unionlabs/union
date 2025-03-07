@@ -1,5 +1,5 @@
 <script lang="ts">
-import { RawIntentsStoreSvelte } from "./raw-intents-store.svelte"
+import { RawTransferSvelte } from "./raw-transfer.svelte.js"
 import Input from "$lib/components/ui/Input.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
@@ -8,7 +8,7 @@ import { TransferSubmission, nextState, hasFailedExit, isComplete } from "$lib/s
 import { chains } from "$lib/stores/chains.svelte"
 import { Option } from "effect"
 
-export const rawIntents = new RawIntentsStoreSvelte()
+export const rawIntents = new RawTransferSvelte()
 
 function resetAll() {
   rawIntents.clearUrlParameters()
@@ -82,7 +82,7 @@ async function submit() {
 
     <Input
       id="destination"
-      label="Destination" 
+      label="Destination"
       value={rawIntents.destination}
       oninput={(e) => rawIntents.updateField('destination', e)}
     />

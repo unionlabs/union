@@ -7,7 +7,7 @@ import { graphql } from "gql.tada"
 
 export const tokensQuery = (universalChainId: UniversalChainId) =>
   Effect.gen(function* () {
-    yield* Effect.log(`starting token fetcher for ${universalChainId}`)
+    yield* Effect.log(`zkgm starting token fetcher for ${universalChainId}`)
     const response = yield* createQueryGraphql({
       schema: Schema.Struct({ v1_ibc_union_tokens: Schema.Array(Token) }),
       document: graphql(`

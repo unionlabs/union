@@ -61,6 +61,16 @@ export class Token extends Schema.Class<Token>("Token")({
   wrapping: Schema.Array(TokenWrapping)
 }) {}
 
+export class QuoteToken extends Schema.Class<QuoteToken>("QuoteToken")({
+  QuoteSuccess: Schema.Struct({
+    type: Schema.Literal("UNWRAPPED", "NEW_WRAPPED"),
+    quote_token: Hex, // Assuming quote_token is a hex string like 0x...
+  }),
+  NoQuoteAvailable: Schema.Struct({
+    type: Schema.Literal("NO_QUOTE_AVAILABLE"),
+  }),
+}) {}
+
 export const Tokens = Schema.Array(Token)
 export type Tokens = typeof Tokens.Type
 
