@@ -6,10 +6,11 @@ import type { Channel } from "$lib/schema/channel.ts";
 import { request } from "graphql-request";
 import { GRAQPHQL_URL } from "@unionlabs/client";
 import { graphql } from "gql.tada";
-import type { RpcType } from "$lib/schema/chain.ts";
+import {Chain, type RpcType} from "$lib/schema/chain.ts";
 import { getChainFromWagmi } from "$lib/wallet/evm";
 import { getCosmWasmClient } from "$lib/services/cosmos/clients";
 import {type CosmosChainId, cosmosRpcs} from "$lib/services/cosmos/rpc.ts";
+import type {Token} from "$lib/schema/token.ts";
 
 //quick and drity
 
@@ -24,24 +25,21 @@ const tokenWrappingQuery = graphql(/* GraphQL */ `
 `);
 
 export const getQuoteToken = (
-  source_chain_id: string,
-  base_token: Hex,
+  sourceChain: Chain,
+  base_token: Token,
   channel: Channel,
   chainType: typeof RpcType.Type
 ) => Effect.gen(function* () {
   const { v1_ibc_union_tokens } = yield* Effect.tryPromise({
     try: () => request(GRAQPHQL_URL, tokenWrappingQuery, {
-      base_token,
-      destination_channel_id: channel.source_channel_id, // Convert to Int
-      source_chain_id
+      base_token: base_token.denom,
+      destination_channel_id: channel.source_channel_id,
+      source_chain_id: sourceChain.chain_id
     }),
     catch: (error) => {
-      console.error("@unionlabs/client-[getQuoteToken]", error);
       return new Error("Failed to get quote token from GraphQL", { cause: error });
     }
   });
-
-  console.log(v1_ibc_union_tokens)
 
   const quote_token = v1_ibc_union_tokens[0]?.wrapping[0]?.unwrapped_address_hex;
   if (quote_token) {
@@ -50,7 +48,7 @@ export const getQuoteToken = (
 
 
   if (chainType === "cosmos") {
-    let rpc = cosmosRpcs[channel.destination_chain_id as CosmosChainId]
+    const rpc = cosmosRpcs[channel.destination_chain_id as CosmosChainId]
     const client = yield* getCosmWasmClient(rpc);
     const predictedQuoteToken = yield* Effect.tryPromise({
       try: () => client.queryContractSmart(
