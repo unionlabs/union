@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Chain } from "$lib/schema/chain"
+import type { Chain, UniversalChainId } from "$lib/schema/chain"
 import type { TokenRawDenom, TokenRawAmount } from "$lib/schema/token"
 import { Effect, Option } from "effect"
 import Truncate from "$lib/components/ui/Truncate.svelte"
@@ -92,6 +92,7 @@ const displayDenom = $derived(
             </div>
           </section>
           <section>
+            {chain.universal_chain_id}
             {#each token.value.wrapping as wrap}
               ← {wrap.unwrapped_chain.universal_chain_id}
             {/each}
