@@ -43,4 +43,10 @@ export class AddressValidationError extends Data.TaggedError("AddressValidationE
   cause?: unknown | undefined
 }> {}
 
+export class AmountParsingError extends Data.TaggedError("AmountParsingError")<{
+  input: string
+  decimals: number
+  cause?: unknown | undefined
+}> {}
+
 export type SubmitTransferError = WriteContractError | CreateWalletClientError
