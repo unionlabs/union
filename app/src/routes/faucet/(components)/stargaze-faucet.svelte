@@ -40,7 +40,9 @@ let stargazeAddress = derived(cosmosStore, $cosmosStore =>
     : ""
 )
 
-let stargazeFaucetState: Writable<DydxFaucetState> = writable({ kind: "IDLE" })
+let stargazeFaucetState: Writable<DydxFaucetState> = writable({
+  kind: "IDLE"
+})
 let turnstileToken = ""
 let resetTurnstile: () => void
 let showTurnstile = false
@@ -55,8 +57,12 @@ const verifyWithTurnstile = () => {
 
 const requestStarsFromFaucet = async () => {
   console.info("stargazeAddress: ", $stargazeAddress)
+
   if ($stargazeFaucetState.kind === "VERIFIED") {
-    stargazeFaucetState.set({ kind: "SUBMITTING", captchaToken: turnstileToken })
+    stargazeFaucetState.set({
+      kind: "SUBMITTING",
+      captchaToken: turnstileToken
+    })
   }
 
   if ($stargazeFaucetState.kind === "SUBMITTING") {
@@ -153,7 +159,7 @@ let stargazeBalance = createQuery(
 
 <!-- stargaze faucet -->
 <Card.Root
-        class={cn(
+  class={cn(
     "w-full max-w-lg rounded-lg font-sans",
     "bg-[url('/images/backgrounds/stride-background.png')]",
     "bg-[#181825] text-[rgb(60,0,29)] dark:bg-[#2D2D44]/50 dark:text-[rgb(60,0,29)]",
@@ -162,7 +168,11 @@ let stargazeBalance = createQuery(
   <Card.Header>
     <Card.Title class="flex justify-between select-none">
       <p class="flex gap-x-3">
-        <a target="_blank" rel="noopener noreferrer" href="https://www.stargaze.zone/">
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          href="https://www.stargaze.zone/"
+        >
           <img src="/images/logo/stargaze-logo.svg" alt="" class="w-18" />
         </a>
         Faucet
@@ -173,33 +183,37 @@ let stargazeBalance = createQuery(
     {#if $stargazeFaucetState.kind === "RESULT_OK"}
       <p>
         Tokens sent: <a
-              target="_blank"
-              rel="noopener noreferrer"
-              href={`https://testnet.ping.pub/stargaze/tx/${$stargazeFaucetState.message}`}
-      >
-        <Truncate class="underline" value={$stargazeFaucetState.message} type="hash" />
-      </a>
+          target="_blank"
+          rel="noopener noreferrer"
+          href={`https://testnet.ping.pub/stargaze/tx/${$stargazeFaucetState.message}`}
+        >
+          <Truncate
+            class="underline"
+            value={$stargazeFaucetState.message}
+            type="hash"
+          />
+        </a>
       </p>
     {:else if $stargazeFaucetState.kind === "RESULT_ERR"}
       <p class="mb-4">
         {$stargazeFaucetState.error}
       </p>
       <Button
-              class={cn(
+        class={cn(
           "bg-[rgb(60,0,29)] text-[#ffffff] dark:bg-[rgb(60,0,29)] dark:text-[#ffffff]",
           "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0",
         )}
-              on:click={() => stargazeFaucetState.set({ kind: "IDLE" })}
+        on:click={() => stargazeFaucetState.set({ kind: "IDLE" })}
       >
         Retry
       </Button>
     {:else}
       <form
-              action="?"
-              method="POST"
-              name="faucet-form"
-              class="flex flex-col w-full gap-4"
-              on:submit|preventDefault
+        action="?"
+        method="POST"
+        name="faucet-form"
+        class="flex flex-col w-full gap-4"
+        on:submit|preventDefault
       >
         <div>
           <Label for="address">Address</Label>
@@ -207,32 +221,33 @@ let stargazeBalance = createQuery(
             <div class="w-full">
               <div class="relative w-full mb-2">
                 <Input
-                        type="text"
-                        minlength={44}
-                        maxlength={44}
-                        readonly={true}
-                        required={true}
-                        autocorrect="off"
-                        id="stargaze-address"
-                        autocomplete="off"
-                        spellcheck="false"
-                        autocapitalize="none"
-                        value={$stargazeAddress}
-                        data-lpignore={true}
-                        data-1p-ignore={true}
-                        placeholder="stars14ea6…"
-                        name="stargaze-wallet-address"
-                        class={cn(
+                  type="text"
+                  minlength={44}
+                  maxlength={44}
+                  readonly={true}
+                  required={true}
+                  autocorrect="off"
+                  id="stargaze-address"
+                  autocomplete="off"
+                  spellcheck="false"
+                  autocapitalize="none"
+                  value={$stargazeAddress}
+                  data-lpignore={true}
+                  data-1p-ignore={true}
+                  placeholder="stars14ea6…"
+                  name="stargaze-wallet-address"
+                  class={cn(
                     "bg-[#2D2D44] text-[#ffffff] dark:bg-[#181825] dark:text-[#ffffff]",
                     "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0",
                   )}
-                        pattern={createCosmosSdkAddressRegex({ prefix: "stargaze" }).source}
+                  pattern={createCosmosSdkAddressRegex({ prefix: "stargaze" })
+                    .source}
                 />
               </div>
               <div class="flex justify-between px-1">
                 <div class="text-xs">
                   <p>
-                    {#if $stargazeAddress?.indexOf("stargaze") === 0 && $stargazeBalance.status === "success"}
+                    {#if $stargazeAddress?.indexOf("stars") === 0 && $stargazeBalance.status === "success"}
                       <!--
                       <span>Balance: </span>
                       {$stargazeBalance?.data?.balance ?? 0}
@@ -249,27 +264,27 @@ let stargazeBalance = createQuery(
         </div>
         {#if showTurnstile}
           <Turnstile
-                  siteKey="0x4AAAAAAA-eVs5k0b8Q1dl5"
-                  on:callback={handleTurnstileCallback}
-                  on:error={handleTurnstileError}
-                  theme="auto"
-                  size="normal"
-                  bind:reset={resetTurnstile}
+            siteKey="0x4AAAAAAA-eVs5k0b8Q1dl5"
+            on:callback={handleTurnstileCallback}
+            on:error={handleTurnstileError}
+            theme="auto"
+            size="normal"
+            bind:reset={resetTurnstile}
           />
         {/if}
         <div class="flex flex-row items-center gap-4">
           {#if $stargazeFaucetState.kind === "IDLE" || $stargazeFaucetState.kind === "VERIFYING"}
             <Button
-                    type="button"
-                    on:click={event => {
-                event.preventDefault()
-                verifyWithTurnstile()
+              type="button"
+              on:click={(event) => {
+                event.preventDefault();
+                verifyWithTurnstile();
               }}
-                    disabled={!isValidBech32Address($stargazeAddress) ||
+              disabled={!isValidBech32Address($stargazeAddress) ||
                 $stargazeFaucetState.kind === "VERIFYING"}
-                    class={cn(
+              class={cn(
                 "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
-                "bg-[#E6007A] text-[#ffffff] dark:bg-[#E6007A] dark:text-[#ffffff]"
+                "bg-[#E6007A] text-[#ffffff] dark:bg-[#E6007A] dark:text-[#ffffff]",
               )}
             >
               Verify
@@ -279,17 +294,17 @@ let stargazeBalance = createQuery(
                 </span>
               {/if}
             </Button>
-          {:else if $stargazeFaucetState.kind === "VERIFIED" || $stargazeFaucetState.kind === "SUBMITTING"}
+          {:else if $stargazeFaucetState.kind === "VERIFIED" || $stargazeFaucetState.kind === "SUBMITTING" || true}
             <Button
-                    type="button"
-                    on:click={event => {
-                event.preventDefault()
-                requestStarsFromFaucet()
+              type="button"
+              on:click={(event) => {
+                event.preventDefault();
+                requestStarsFromFaucet();
               }}
-                    disabled={$stargazeFaucetState.kind === "SUBMITTING"}
-                    class={cn(
+              disabled={$stargazeFaucetState.kind === "SUBMITTING"}
+              class={cn(
                 "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
-                "bg-[#E6007A] text-[#ffffff] dark:bg-[#E6007A] dark:text-[#ffffff]"
+                "bg-[#E6007A] text-[#ffffff] dark:bg-[#E6007A] dark:text-[#ffffff]",
               )}
             >
               Submit
@@ -301,14 +316,14 @@ let stargazeBalance = createQuery(
             </Button>
           {:else if $stargazeFaucetState.kind === "VERIFICATION_FAILED"}
             <Button
-                    type="button"
-                    on:click={event => {
-                event.preventDefault()
-                resetVerification()
+              type="button"
+              on:click={(event) => {
+                event.preventDefault();
+                resetVerification();
               }}
-                    class={cn(
+              class={cn(
                 "min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 rounded-md",
-                "bg-[#E6007A] text-[#ffffff] dark:bg-[#E6007A] dark:text-[#ffffff]"
+                "bg-[#E6007A] text-[#ffffff] dark:bg-[#E6007A] dark:text-[#ffffff]",
               )}
             >
               Reset
@@ -317,13 +332,13 @@ let stargazeBalance = createQuery(
           {/if}
           <p class="text-xs">
             USTARS faucet is provided by <a
-                  class="text-[#E6007A]"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  href="https://www.stargaze.zone/"
-          >
-            stargaze.zone
-          </a>
+              class="text-[#E6007A]"
+              target="_blank"
+              rel="noopener noreferrer"
+              href="https://www.stargaze.zone/"
+            >
+              stargaze.zone
+            </a>
             <span> and protected by Cloudflare Turnstile.</span>
           </p>
         </div>
