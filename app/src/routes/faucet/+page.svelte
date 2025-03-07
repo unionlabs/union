@@ -1,152 +1,152 @@
 <script lang="ts">
-  import request from "graphql-request";
-  import { onDestroy, onMount } from "svelte";
-  import { cn } from "$lib/utilities/shadcn.ts";
-  import { URLS } from "$lib/constants/index.ts";
-  import { Label } from "$lib/components/ui/label";
-  import { writable, type Writable } from "svelte/store";
-  import Truncate from "$lib/components/truncate.svelte";
-  import * as Card from "$lib/components/ui/card/index.ts";
-  import { Input } from "$lib/components/ui/input/index.ts";
-  import StargazeFaucet from "./(components)/stargaze-faucet.svelte";
-  import { Button } from "$lib/components/ui/button/index.ts";
-  import SpinnerSVG from "$lib/components/spinner-svg.svelte";
-  import WalletGateCosmos from "$lib/components/wallet-gate-cosmos.svelte";
-  import ChainsGate from "$lib/components/chains-gate.svelte";
-  import { cosmosStore } from "$/lib/wallet/cosmos/config.ts";
-  import type { DiscriminatedUnion } from "$lib/utilities/types.ts";
-  import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts";
-  import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts";
-  import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts";
-  import { Turnstile } from "svelte-turnstile";
+import request from "graphql-request"
+import { onDestroy, onMount } from "svelte"
+import { cn } from "$lib/utilities/shadcn.ts"
+import { URLS } from "$lib/constants/index.ts"
+import { Label } from "$lib/components/ui/label"
+import { writable, type Writable } from "svelte/store"
+import Truncate from "$lib/components/truncate.svelte"
+import * as Card from "$lib/components/ui/card/index.ts"
+import { Input } from "$lib/components/ui/input/index.ts"
+import StargazeFaucet from "./(components)/stargaze-faucet.svelte"
+import { Button } from "$lib/components/ui/button/index.ts"
+import SpinnerSVG from "$lib/components/spinner-svg.svelte"
+import WalletGateCosmos from "$lib/components/wallet-gate-cosmos.svelte"
+import ChainsGate from "$lib/components/chains-gate.svelte"
+import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
+import type { DiscriminatedUnion } from "$lib/utilities/types.ts"
+import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts"
+import { isValidCosmosAddress } from "$lib/wallet/utilities/validate.ts"
+import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
+import { Turnstile } from "svelte-turnstile"
 
-  // import ExternalFaucets from "./(components)/external-faucets.svelte"
-  // import DydxFaucet from "./(components)/dydx-faucet.svelte"
-  // import StrideFaucet from "./(components)/stride-faucet.svelte"
+// import ExternalFaucets from "./(components)/external-faucets.svelte"
+// import DydxFaucet from "./(components)/dydx-faucet.svelte"
+// import StrideFaucet from "./(components)/stride-faucet.svelte"
 
-  type FaucetState = DiscriminatedUnion<
-    "kind",
-    {
-      IDLE: {};
-      VERIFYING: {};
-      VERIFIED: {};
-      SUBMITTING: { captchaToken: string };
-      RESULT_OK: { message: string };
-      RESULT_ERR: { error: string };
-      VERIFICATION_FAILED: { error: string };
-    }
-  >;
+type FaucetState = DiscriminatedUnion<
+  "kind",
+  {
+    IDLE: {}
+    VERIFYING: {}
+    VERIFIED: {}
+    SUBMITTING: { captchaToken: string }
+    RESULT_OK: { message: string }
+    RESULT_ERR: { error: string }
+    VERIFICATION_FAILED: { error: string }
+  }
+>
 
-  let address = "";
-  let turnstileToken = "";
-  let resetTurnstile: () => void;
-  let showTurnstile = false;
+let address = ""
+let turnstileToken = ""
+let resetTurnstile: () => void
+let showTurnstile = false
 
-  onMount(() => {
-    address = $cosmosStore.address ?? "";
-  });
+onMount(() => {
+  address = $cosmosStore.address ?? ""
+})
 
-  const unsubscribe = cosmosStore.subscribe((v) => {
-    if (address !== v.address) {
-      address = v.address ?? "";
-    }
-  });
+const unsubscribe = cosmosStore.subscribe(v => {
+  if (address !== v.address) {
+    address = v.address ?? ""
+  }
+})
 
-  onDestroy(() => {
-    unsubscribe();
-  });
+onDestroy(() => {
+  unsubscribe()
+})
 
-  const resetInput = () => {
-    address = $cosmosStore.address ?? "";
-  };
+const resetInput = () => {
+  address = $cosmosStore.address ?? ""
+}
 
-  let unoFaucetState: Writable<FaucetState> = writable({ kind: "IDLE" });
+let unoFaucetState: Writable<FaucetState> = writable({ kind: "IDLE" })
 
-  const verifyWithTurnstile = () => {
-    if ($unoFaucetState.kind === "IDLE") {
-      showTurnstile = true;
-      unoFaucetState.set({ kind: "VERIFYING" });
-      resetTurnstile?.(); // Trigger verification
-    }
-  };
+const verifyWithTurnstile = () => {
+  if ($unoFaucetState.kind === "IDLE") {
+    showTurnstile = true
+    unoFaucetState.set({ kind: "VERIFYING" })
+    resetTurnstile?.() // Trigger verification
+  }
+}
 
-  const requestUnoFromFaucet = async () => {
-    if ($unoFaucetState.kind === "VERIFIED") {
-      unoFaucetState.set({ kind: "SUBMITTING", captchaToken: turnstileToken });
-    }
+const requestUnoFromFaucet = async () => {
+  if ($unoFaucetState.kind === "VERIFIED") {
+    unoFaucetState.set({ kind: "SUBMITTING", captchaToken: turnstileToken })
+  }
 
-    if ($unoFaucetState.kind === "SUBMITTING") {
-      try {
-        const result = await request(URLS().GRAPHQL, faucetUnoMutation2, {
-          chainId: "union-testnet-9",
-          denom: "muno",
-          address,
-          captchaToken: $unoFaucetState.captchaToken,
-        });
-        if (result.send === null) {
-          unoFaucetState.set({
-            kind: "RESULT_ERR",
-            error: "Empty faucet response",
-          });
-          turnstileToken = "";
-          showTurnstile = false;
-          return;
-        }
-
-        if (result.send.startsWith("ERROR")) {
-          console.error(result.send);
-          unoFaucetState.set({
-            kind: "RESULT_ERR",
-            error: `Error from faucet`,
-          });
-          turnstileToken = "";
-          showTurnstile = false;
-          return;
-        }
-
-        unoFaucetState.set({
-          kind: "RESULT_OK",
-          message: result.send,
-        });
-        turnstileToken = "";
-        showTurnstile = false;
-      } catch (error) {
+  if ($unoFaucetState.kind === "SUBMITTING") {
+    try {
+      const result = await request(URLS().GRAPHQL, faucetUnoMutation2, {
+        chainId: "union-testnet-9",
+        denom: "muno",
+        address,
+        captchaToken: $unoFaucetState.captchaToken
+      })
+      if (result.send === null) {
         unoFaucetState.set({
           kind: "RESULT_ERR",
-          error: `Faucet error: ${error}`,
-        });
-        turnstileToken = "";
-        showTurnstile = false;
-        return;
+          error: "Empty faucet response"
+        })
+        turnstileToken = ""
+        showTurnstile = false
+        return
       }
-    }
-  };
 
-  const resetVerification = () => {
-    if ($unoFaucetState.kind === "VERIFICATION_FAILED") {
-      turnstileToken = "";
-      showTurnstile = false;
-      unoFaucetState.set({ kind: "IDLE" });
-    }
-  };
+      if (result.send.startsWith("ERROR")) {
+        console.error(result.send)
+        unoFaucetState.set({
+          kind: "RESULT_ERR",
+          error: `Error from faucet`
+        })
+        turnstileToken = ""
+        showTurnstile = false
+        return
+      }
 
-  const handleTurnstileCallback = (
-    e: CustomEvent<{ token: string; preClearanceObtained: boolean }>,
-  ) => {
-    turnstileToken = e.detail.token;
-    if ($unoFaucetState.kind === "VERIFYING") {
-      unoFaucetState.set({ kind: "VERIFIED" });
-    }
-  };
-
-  const handleTurnstileError = (e: CustomEvent<{ code: string }>) => {
-    if ($unoFaucetState.kind === "VERIFYING") {
       unoFaucetState.set({
-        kind: "VERIFICATION_FAILED",
-        error: `Verification error: ${e.detail.code}`,
-      });
+        kind: "RESULT_OK",
+        message: result.send
+      })
+      turnstileToken = ""
+      showTurnstile = false
+    } catch (error) {
+      unoFaucetState.set({
+        kind: "RESULT_ERR",
+        error: `Faucet error: ${error}`
+      })
+      turnstileToken = ""
+      showTurnstile = false
+      return
     }
-  };
+  }
+}
+
+const resetVerification = () => {
+  if ($unoFaucetState.kind === "VERIFICATION_FAILED") {
+    turnstileToken = ""
+    showTurnstile = false
+    unoFaucetState.set({ kind: "IDLE" })
+  }
+}
+
+const handleTurnstileCallback = (
+  e: CustomEvent<{ token: string; preClearanceObtained: boolean }>
+) => {
+  turnstileToken = e.detail.token
+  if ($unoFaucetState.kind === "VERIFYING") {
+    unoFaucetState.set({ kind: "VERIFIED" })
+  }
+}
+
+const handleTurnstileError = (e: CustomEvent<{ code: string }>) => {
+  if ($unoFaucetState.kind === "VERIFYING") {
+    unoFaucetState.set({
+      kind: "VERIFICATION_FAILED",
+      error: `Verification error: ${e.detail.code}`
+    })
+  }
+}
 </script>
 
 <svelte:head>
