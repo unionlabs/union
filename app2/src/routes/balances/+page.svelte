@@ -10,6 +10,7 @@ import { RpcType, UniversalChainId } from "$lib/schema/chain"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import { AddressEvmCanonical } from "$lib/schema/address"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import Sections from "$lib/components/ui/Sections.svelte"
 
 // Example wallet address - this would come from wallet connection in real app
 const testAddress = AddressEvmCanonical.make("0xe6831e169d77a861a0e71326afa6d80bcc8bc6aa")
@@ -50,9 +51,8 @@ $effect(() => {
 })
 </script>
 
-<div class="flex flex-col gap-4 p-4">
+<Sections>
   <div class="flex justify-between items-center">
-    <SectionTitle>Balances</SectionTitle>
     <Button onclick={fetchAllBalances}>Fetch All Balances</Button>
   </div>
 
@@ -107,5 +107,5 @@ $effect(() => {
       </Card>
     {/each}
   {/if}
-</div>
+</Sections>
 
