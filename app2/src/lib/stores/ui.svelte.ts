@@ -2,7 +2,7 @@ class UiStore {
   // TODO: make Option<"wallet"|"settings"|"errors">
   walletModalOpen: boolean = $state(false)
   settingsModalOpen: boolean = $state(false)
-  errorsModalOpen: boolean = $state(true)
+  errorsModalOpen: boolean = $state(false)
 
   private closeAllModals() {
     this.walletModalOpen = false
