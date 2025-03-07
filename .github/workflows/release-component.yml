@@ -1,4 +1,4 @@
-name: Release Component
+ame: Release Component
 
 on:
   push:
@@ -195,7 +195,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: docker/login-action@v2
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -265,7 +265,7 @@ jobs:
           echo "downloaded & installed regctl"
           regctl registry set --tls disabled localhost:5000
           regctl image mod "localhost:5000/unionlabs/$COMPONENT:$TAG" --to-oci --create "$TAG" --annotation org.opencontainers.image.description="$(cat "$GITHUB_WORKSPACE/.github/container-descriptions/$COMPONENT.txt")"
-      - uses: docker/login-action@v2
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
