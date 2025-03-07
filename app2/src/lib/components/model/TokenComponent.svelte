@@ -91,6 +91,11 @@ const displayDenom = $derived(
               {Option.isSome(token.value.cw20) ? "?" : "??"}
             </div>
           </section>
+          <section>
+            {#each token.value.wrapping as wrap}
+              ← {wrap.unwrapped_chain.universal_chain_id}
+            {/each}
+          </section>
 
           <section>
             <h3 class="text-white">Denom</h3>
@@ -114,6 +119,7 @@ const displayDenom = $derived(
               {/each}
             </section>
           {/each}
+
         </div>
         {/if}
   {/snippet}
