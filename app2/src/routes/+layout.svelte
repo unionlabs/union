@@ -12,6 +12,8 @@ import { uiStore } from "$lib/stores/ui.svelte"
 import ErrorsModal from "$lib/components/ErrorsModal.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import { totalErrorCount } from "$lib/stores/app-errors.svelte"
+import { page } from "$app/state"
+import { navigation } from "$lib/components/layout/Sidebar/navigation.ts"
 
 let { children } = $props()
 
@@ -39,6 +41,17 @@ $effect(() => {
     )
   )
 })
+
+const pageName = $derived(() => {
+  const sections = navigation.find(section => section.items.find(s => s.path === page.url.pathname))
+  if (!sections) return null
+
+  const item = sections.items.find(i => i.path === page.url.pathname)
+
+  if (!item) return null
+
+  return item.title
+})
 </script>
 
 <div class="grid grid-cols-[auto_1fr] min-h-[100svh] w-screen">
@@ -49,7 +62,7 @@ $effect(() => {
   <!-- Main content area: Has margin to clear fixed sidebar -->
   <main class="col-start-2 ml-64 max-w-[calc(100vw-calc(var(--spacing)*64))]">
     <header class="flex justify-between items-center h-16 px-8 border-b-1 border-zinc-900">
-      <h1 class="text-xl font-bold">Transfer</h1>
+      <h1 class="text-xl font-bold">{pageName() ? pageName() : page.url.pathname}</h1>
       {#if totalErrorCount() > 0}
         <Button variant="danger" onclick={() => uiStore.openErrorsModal()}>
           {totalErrorCount()} Error{totalErrorCount() > 1 ? "s" : ""}
