@@ -12,8 +12,8 @@ use ethereum_light_client_types::{
 };
 use ethereum_sync_protocol::{
     utils::{
-        compute_epoch_at_slot, compute_slot_at_timestamp, compute_timestamp_at_slot,
-        validate_signature_supermajority,
+        compute_epoch_at_slot, compute_slot_at_timestamp, compute_sync_committee_period_at_slot,
+        compute_timestamp_at_slot, validate_signature_supermajority,
     },
     validate_light_client_update,
 };
@@ -126,10 +126,10 @@ impl IbcClient for EthereumLightClient {
         // We only require this at the creation phase. The client then manages the committees in a separate storage.
         client_state.initial_sync_committee = None;
 
-        let current_epoch = if client_state.chain_spec == PresetBaseKind::Minimal {
-            compute_epoch_at_slot::<Minimal>(Slot::new(client_state.latest_height))
+        let current_sync_period = if client_state.chain_spec == PresetBaseKind::Minimal {
+            compute_sync_committee_period_at_slot::<Minimal>(Slot::new(client_state.latest_height))
         } else {
-            compute_epoch_at_slot::<Mainnet>(Slot::new(client_state.latest_height))
+            compute_sync_committee_period_at_slot::<Mainnet>(Slot::new(client_state.latest_height))
         };
 
         // Set the client state so that it overwrites the one that is passed.
@@ -137,12 +137,12 @@ impl IbcClient for EthereumLightClient {
         Ok(ClientCreation::empty()
             .set_client_state(ClientState::V1(client_state))
             .add_storage_write(
-                sync_committee_store_key(current_epoch),
-                &initial_sync_committee.current_sync_committee,
+                sync_committee_store_key(current_sync_period),
+                &inverse_sync_committee_pubkeys(&initial_sync_committee.current_sync_committee),
             )
             .add_storage_write(
-                sync_committee_store_key(current_epoch + 1),
-                &initial_sync_committee.next_sync_committee,
+                sync_committee_store_key(current_sync_period + 1),
+                &inverse_sync_committee_pubkeys(&initial_sync_committee.next_sync_committee),
             ))
     }
 
@@ -265,17 +265,15 @@ pub fn verify_header<C: ChainSpec>(
         compute_slot_at_timestamp::<C>(client_state.genesis_time, ctx.env.block.time.seconds())
             .ok_or(Error::IntegerOverflow)?;
 
-    let epoch = compute_epoch_at_slot::<C>(
-        header
-            .consensus_update
-            .update_data()
-            .finalized_header
-            .beacon
-            .slot,
-    );
-
     let sync_committee =
-        ctx.read_self_storage::<SyncCommittee>(&sync_committee_store_key(epoch))?;
+        ctx.read_self_storage::<SyncCommittee>(&sync_committee_store_key_by_slot::<C>(
+            header
+                .consensus_update
+                .update_data()
+                .finalized_header
+                .beacon
+                .slot,
+        ))?;
     let (current_sync_committee, next_sync_committee) = match header.consensus_update {
         LightClientUpdate::EpochChange(_) => (None, Some(&sync_committee)),
         LightClientUpdate::WithinEpoch(_) => (Some(&sync_committee), None),
@@ -366,21 +364,24 @@ fn update_state<C: ChainSpec>(
 }
 
 /// Additive inverse the public keys to do inverse aggregation
-fn inverse_sync_committee_pubkeys(sync_committee: &mut SyncCommittee) {
-    sync_committee.pubkeys = sync_committee
-        .pubkeys
-        .iter()
-        .map(|x| {
-            -G1Affine::deserialize_compressed(x.as_ref())
-                .expect("pubkey that is validated by the sync protocol is valid")
-        })
-        .map(|x| {
-            let mut buf = vec![];
-            x.serialize_compressed(&mut buf)
-                .expect("serializing into a buffer will always work");
-            buf.try_into().expect("compressed data first H384")
-        })
-        .collect();
+fn inverse_sync_committee_pubkeys(sync_committee: &SyncCommittee) -> SyncCommittee {
+    SyncCommittee {
+        pubkeys: sync_committee
+            .pubkeys
+            .iter()
+            .map(|x| {
+                -G1Affine::deserialize_compressed(x.as_ref())
+                    .expect("pubkey that is validated by the sync protocol is valid")
+            })
+            .map(|x| {
+                let mut buf = vec![];
+                x.serialize_compressed(&mut buf)
+                    .expect("serializing into a buffer will always work");
+                buf.try_into().expect("compressed data first H384")
+            })
+            .collect(),
+        aggregate_pubkey: sync_committee.aggregate_pubkey,
+    }
 }
 
 pub fn verify_misbehaviour<C: ChainSpec>(
@@ -479,8 +480,14 @@ pub fn verify_misbehaviour<C: ChainSpec>(
     Ok(())
 }
 
-fn sync_committee_store_key(epoch: u64) -> Bytes {
-    epoch.to_le_bytes().into()
+fn sync_committee_store_key(sync_period: u64) -> Bytes {
+    sync_period.to_le_bytes().into()
+}
+
+fn sync_committee_store_key_by_slot<C: ChainSpec>(slot: Slot) -> Bytes {
+    compute_sync_committee_period_at_slot::<C>(slot)
+        .to_le_bytes()
+        .into()
 }
 
 // #[cfg(test)]

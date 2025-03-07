@@ -519,24 +519,22 @@ fn read_storage<V: Decode<T::Encoding>, T: IbcClient>(
     client_id: u32,
     key: &[u8],
 ) -> Result<V, IbcClientError<T>> {
-    let value = from_json::<Bytes<Base64>>(
-        querier
-            .query_wasm_raw(
-                ibc_host,
-                [
-                    CLIENT_STORAGE_PREFIX.as_bytes(),
-                    &client_id.to_le_bytes(),
-                    key,
-                ]
-                .concat(),
-            )?
-            .ok_or_else(|| {
-                IbcClientError::Std(StdError::generic_err(format!(
-                    "unable to read the storage of client {client_id} with key {key:?}"
-                )))
-            })?,
-    )?;
+    let value = querier
+        .query_wasm_raw(
+            ibc_host,
+            [
+                CLIENT_STORAGE_PREFIX.as_bytes(),
+                &client_id.to_le_bytes(),
+                key,
+            ]
+            .concat(),
+        )?
+        .ok_or_else(|| {
+            IbcClientError::Std(StdError::generic_err(format!(
+                "unable to read the storage of client {client_id} with key {key:?}"
+            )))
+        })?;
 
     V::decode_as::<T::Encoding>(&value)
-        .map_err(|_| IbcClientError::Decode(DecodeError::RawStorage(value.into_encoding())))
+        .map_err(|_| IbcClientError::Decode(DecodeError::RawStorage(Bytes::new(value))))
 }
