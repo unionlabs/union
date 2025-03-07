@@ -13,8 +13,6 @@
   function ensureTokensForChain() {
     const chainId = transfer.sourceChain?.universal_chain_id;
     if (!chainId) return;
-
-    console.log(tokensStore.getData(chainId));
     const tokenData = tokensStore.getData(chainId);
     if (Option.isNone(tokenData)) {
       tokensStore.fetchTokens(chainId);
@@ -102,13 +100,3 @@
     {(transfer.baseToken?.representations[0]?.name ?? transfer.url.asset) || "Select asset"}
   </button>
 </div>
-
-<style>
-  .space-y-1 > * + * {
-    margin-top: 0.25rem;
-  }
-
-  .space-y-2 > * + * {
-    margin-top: 0.5rem;
-  }
-</style>
