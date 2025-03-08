@@ -79,7 +79,7 @@ export class BalancesStore {
             chain,
             tokenAddress: denom,
             walletAddress: AddressEvmCanonical.make(address),
-            refetchInterval: "1 minute",
+            refetchInterval: "15 minutes",
             writeData: balance =>
               this.setBalance(chain.universal_chain_id, address, denom, balance),
             writeError: error => this.setError(chain.universal_chain_id, address, denom, error)
@@ -88,7 +88,7 @@ export class BalancesStore {
             chain,
             tokenAddress: denom,
             walletAddress: AddressCosmosCanonical.make(address),
-            refetchInterval: "1 minute",
+            refetchInterval: "15 minutes",
             writeData: balance =>
               this.setBalance(chain.universal_chain_id, address, denom, balance),
             writeError: error => this.setError(chain.universal_chain_id, address, denom, error)
