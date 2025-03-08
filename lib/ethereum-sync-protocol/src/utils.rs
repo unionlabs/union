@@ -1,4 +1,5 @@
 use beacon_api_types::{
+    consts::{floorlog2, get_subtree_index},
     Domain, DomainType, ForkData, ForkParameters, SigningData, Slot, Version,
     EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
 };
@@ -17,7 +18,9 @@ use crate::{
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/fork.md#modified-compute_fork_version)
 pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Version {
-    if epoch >= fork_parameters.deneb.epoch {
+    if epoch >= fork_parameters.electra.epoch {
+        fork_parameters.electra.version
+    } else if epoch >= fork_parameters.deneb.epoch {
         fork_parameters.deneb.version
     } else if epoch >= fork_parameters.capella.epoch {
         fork_parameters.capella.version
@@ -137,12 +140,12 @@ pub fn validate_signature_supermajority(sync_committee_bits: &[u8]) -> bool {
 pub fn validate_merkle_branch<'a>(
     leaf: &H256,
     branch: impl IntoIterator<Item = &'a H256>,
-    depth: usize,
-    index: u64,
+    gindex: u64,
     root: &H256,
 ) -> Result<(), Error> {
+    let depth = floorlog2(gindex);
+    let index = get_subtree_index(gindex);
     let branch = branch.into_iter().cloned().collect::<Vec<_>>();
-
     'block: {
         let mut value = *leaf;
 
@@ -338,8 +341,8 @@ pub fn validate_merkle_branch<'a>(
 //     //         validate_merkle_branch(
 //     //             &valid_leaf,
 //     //             &valid_branch,
-//     //             floorlog2(EXECUTION_PAYLOAD_INDEX),
-//     //             EXECUTION_PAYLOAD_INDEX,
+//     //             floorlog2(EXECUTION_PAYLOAD_GINDEX),
+//     //             EXECUTION_PAYLOAD_GINDEX,
 //     //             &valid_root,
 //     //         ),
 //     //         Ok(())
@@ -349,8 +352,8 @@ pub fn validate_merkle_branch<'a>(
 //     //     assert!(validate_merkle_branch(
 //     //         &valid_leaf,
 //     //         &valid_branch,
-//     //         floorlog2(EXECUTION_PAYLOAD_INDEX),
-//     //         EXECUTION_PAYLOAD_INDEX + 1,
+//     //         floorlog2(EXECUTION_PAYLOAD_GINDEX),
+//     //         EXECUTION_PAYLOAD_GINDEX + 1,
 //     //         &valid_root,
 //     //     )
 //     //     .is_err());
@@ -365,8 +368,8 @@ pub fn validate_merkle_branch<'a>(
 //     //     assert!(validate_merkle_branch(
 //     //         &invalid_leaf,
 //     //         &valid_branch,
-//     //         floorlog2(EXECUTION_PAYLOAD_INDEX),
-//     //         EXECUTION_PAYLOAD_INDEX,
+//     //         floorlog2(EXECUTION_PAYLOAD_GINDEX),
+//     //         EXECUTION_PAYLOAD_GINDEX,
 //     //         &valid_root,
 //     //     )
 //     //     .is_err());
@@ -381,8 +384,8 @@ pub fn validate_merkle_branch<'a>(
 //     //     assert!(validate_merkle_branch(
 //     //         &valid_leaf,
 //     //         &invalid_branch,
-//     //         floorlog2(EXECUTION_PAYLOAD_INDEX),
-//     //         EXECUTION_PAYLOAD_INDEX,
+//     //         floorlog2(EXECUTION_PAYLOAD_GINDEX),
+//     //         EXECUTION_PAYLOAD_GINDEX,
 //     //         &valid_root,
 //     //     )
 //     //     .is_err());
