@@ -24,8 +24,15 @@ contract TestZkgm is UCS03Zkgm {
         uint256 path,
         Forward calldata forward
     ) public returns (bytes memory) {
-        return
-            executeForward(ibcPacket, relayer, relayerMsg, salt, path, forward);
+        return executeForward(
+            ibcPacket,
+            relayer,
+            relayerMsg,
+            salt,
+            path,
+            ZkgmLib.INSTR_VERSION_0,
+            forward
+        );
     }
 
     function doExecuteMultiplex(
@@ -66,6 +73,8 @@ contract TestZkgm is UCS03Zkgm {
 }
 
 contract TestIBCHandler is IIBCModulePacket {
+    event OnSendPacket(IBCPacket packet);
+
     using LibBytes for *;
 
     error ErrInvalidChannel();
@@ -96,6 +105,7 @@ contract TestIBCHandler is IIBCModulePacket {
             timeoutTimestamp: timeoutTimestamp
         });
         acks[IBCPacketLib.commitPacketMemory(packet)] = hex"01";
+        emit OnSendPacket(packet);
         return packet;
     }
 
@@ -410,7 +420,7 @@ contract ZkgmTests is Test {
         );
     }
 
-    function test_popChannelFromPath(
+    function test_popChannelFromPath_ok(
         uint32 a,
         uint32 b,
         uint32 c,
@@ -471,6 +481,177 @@ contract ZkgmTests is Test {
             ZkgmLib.popChannelFromPath(channelPath);
         assertEq(baseChannelPath, expectedBaseChannelPath);
         assertEq(finalChannelId, h);
+    }
+
+    function test_popChannelFromPath_ok_2(
+        uint32 a,
+        uint32 b,
+        uint32 c,
+        uint32 d,
+        uint32 e,
+        uint32 f,
+        uint32 g,
+        uint32 h
+    ) public {
+        vm.assume(a > 0);
+        vm.assume(b > 0);
+        vm.assume(c > 0);
+        vm.assume(d > 0);
+        vm.assume(e > 0);
+        vm.assume(f > 0);
+        vm.assume(g > 0);
+        vm.assume(h > 0);
+        uint256 expectedBaseChannelPath = ZkgmLib.updateChannelPath(
+            ZkgmLib.updateChannelPath(
+                ZkgmLib.updateChannelPath(
+                    ZkgmLib.updateChannelPath(
+                        ZkgmLib.updateChannelPath(
+                            ZkgmLib.updateChannelPath(0, a), b
+                        ),
+                        c
+                    ),
+                    d
+                ),
+                e
+            ),
+            f
+        );
+        uint256 channelPath = ZkgmLib.updateChannelPath(
+            ZkgmLib.updateChannelPath(expectedBaseChannelPath, g), h
+        );
+        (uint256 baseChannelPath, uint32 finalChannelId) =
+            ZkgmLib.popChannelFromPath(channelPath);
+        (uint256 baseChannelPath2, uint32 finalChannelId2) =
+            ZkgmLib.popChannelFromPath(baseChannelPath);
+        assertEq(bytes32(baseChannelPath2), bytes32(expectedBaseChannelPath));
+        assertEq(finalChannelId, h);
+        assertEq(finalChannelId2, g);
+    }
+
+    function test_dequeueChannelFromPath_ok(
+        uint32 a,
+        uint32 b,
+        uint32 c,
+        uint32 d,
+        uint32 e,
+        uint32 f,
+        uint32 g,
+        uint32 h
+    ) public {
+        vm.assume(a > 0);
+        vm.assume(b > 0);
+        vm.assume(c > 0);
+        vm.assume(d > 0);
+        vm.assume(e > 0);
+        vm.assume(f > 0);
+        vm.assume(g > 0);
+        vm.assume(h > 0);
+        uint256 channelPath = ZkgmLib.updateChannelPath(
+            ZkgmLib.updateChannelPath(
+                ZkgmLib.updateChannelPath(
+                    ZkgmLib.updateChannelPath(
+                        ZkgmLib.updateChannelPath(
+                            ZkgmLib.updateChannelPath(
+                                ZkgmLib.updateChannelPath(
+                                    ZkgmLib.updateChannelPath(0, a), b
+                                ),
+                                c
+                            ),
+                            d
+                        ),
+                        e
+                    ),
+                    f
+                ),
+                g
+            ),
+            h
+        );
+        uint256 expectedBaseChannelPath = ZkgmLib.updateChannelPath(
+            ZkgmLib.updateChannelPath(
+                ZkgmLib.updateChannelPath(
+                    ZkgmLib.updateChannelPath(
+                        ZkgmLib.updateChannelPath(
+                            ZkgmLib.updateChannelPath(
+                                ZkgmLib.updateChannelPath(0, b), c
+                            ),
+                            d
+                        ),
+                        e
+                    ),
+                    f
+                ),
+                g
+            ),
+            h
+        );
+        (uint256 tailChannelPath, uint32 firstChannelId) =
+            ZkgmLib.dequeueChannelFromPath(channelPath);
+        assertEq(tailChannelPath, expectedBaseChannelPath);
+        assertEq(firstChannelId, a);
+    }
+
+    function test_dequeueChannelFromPath_ok_2(
+        uint32 a,
+        uint32 b,
+        uint32 c,
+        uint32 d,
+        uint32 e,
+        uint32 f,
+        uint32 g,
+        uint32 h
+    ) public {
+        vm.assume(a > 0);
+        vm.assume(b > 0);
+        vm.assume(c > 0);
+        vm.assume(d > 0);
+        vm.assume(e > 0);
+        vm.assume(f > 0);
+        vm.assume(g > 0);
+        vm.assume(h > 0);
+        uint256 channelPath = ZkgmLib.updateChannelPath(
+            ZkgmLib.updateChannelPath(
+                ZkgmLib.updateChannelPath(
+                    ZkgmLib.updateChannelPath(
+                        ZkgmLib.updateChannelPath(
+                            ZkgmLib.updateChannelPath(
+                                ZkgmLib.updateChannelPath(
+                                    ZkgmLib.updateChannelPath(0, a), b
+                                ),
+                                c
+                            ),
+                            d
+                        ),
+                        e
+                    ),
+                    f
+                ),
+                g
+            ),
+            h
+        );
+        uint256 expectedBaseChannelPath = ZkgmLib.updateChannelPath(
+            ZkgmLib.updateChannelPath(
+                ZkgmLib.updateChannelPath(
+                    ZkgmLib.updateChannelPath(
+                        ZkgmLib.updateChannelPath(
+                            ZkgmLib.updateChannelPath(0, c), d
+                        ),
+                        e
+                    ),
+                    f
+                ),
+                g
+            ),
+            h
+        );
+        (uint256 tailChannelPath, uint32 firstChannelId) =
+            ZkgmLib.dequeueChannelFromPath(channelPath);
+        (uint256 tailChannelPath2, uint32 secondChannelId) =
+            ZkgmLib.dequeueChannelFromPath(tailChannelPath);
+        assertEq(tailChannelPath2, expectedBaseChannelPath);
+        assertEq(firstChannelId, a);
+        assertEq(secondChannelId, b);
     }
 
     function test_onChanOpenInit_onlyIBC(
@@ -677,8 +858,9 @@ contract ZkgmTests is Test {
                 opcode: ZkgmLib.OP_FORWARD,
                 operand: ZkgmLib.encodeForward(
                     Forward({
-                        previousDestinationChannelId: 10,
-                        nextSourceChannelId: 1,
+                        path: ZkgmLib.updateChannelPath(
+                            ZkgmLib.updateChannelPath(0, 10), 1
+                        ),
                         timeoutHeight: type(uint64).max,
                         timeoutTimestamp: 0,
                         instruction: Instruction({
@@ -713,8 +895,9 @@ contract ZkgmTests is Test {
                 opcode: ZkgmLib.OP_FORWARD,
                 operand: ZkgmLib.encodeForward(
                     Forward({
-                        previousDestinationChannelId: 10,
-                        nextSourceChannelId: 1,
+                        path: ZkgmLib.updateChannelPath(
+                            ZkgmLib.updateChannelPath(0, 10), 1
+                        ),
                         timeoutHeight: type(uint64).max,
                         timeoutTimestamp: 0,
                         instruction: dummyMultiplex
@@ -788,6 +971,28 @@ contract ZkgmTests is Test {
         vm.assume(nextSourceChannelId != 0);
         vm.assume(nextDestinationChannelId != 0);
         handler.setChannel(nextSourceChannelId, nextDestinationChannelId);
+        // We expect the protocol to re-emit a packet with the updated path and the sub-instruction
+        vm.expectEmit();
+        emit TestIBCHandler.OnSendPacket(
+            IBCPacket({
+                sourceChannelId: nextSourceChannelId,
+                destinationChannelId: nextDestinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: keccak256(abi.encode(salt)),
+                        path: ZkgmLib.updateChannelPath(
+                            ZkgmLib.updateChannelPath(
+                                path, previousDestinationChannelId
+                            ),
+                            nextSourceChannelId
+                        ),
+                        instruction: dummyMultiplex
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            })
+        );
         bytes memory ack = zkgm.doExecuteForward(
             IBCPacket({
                 sourceChannelId: previousSourceChannelId,
@@ -801,8 +1006,100 @@ contract ZkgmTests is Test {
             salt,
             uint256(path),
             Forward({
-                previousDestinationChannelId: previousDestinationChannelId,
-                nextSourceChannelId: nextSourceChannelId,
+                path: ZkgmLib.updateChannelPath(
+                    ZkgmLib.updateChannelPath(0, previousDestinationChannelId),
+                    nextSourceChannelId
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0,
+                instruction: dummyMultiplex
+            })
+        );
+        assertEq(ZkgmLib.ACK_EMPTY, ack);
+    }
+
+    function test_executeForward_double_ok(
+        uint32 previousSourceChannelId,
+        uint32 previousDestinationChannelId,
+        uint32 nextSourceChannelId,
+        uint32 nextDestinationChannelId,
+        uint32 previousDestinationChannelId2,
+        uint32 nextSourceChannelId2,
+        bytes32 salt,
+        uint128 path,
+        address relayer,
+        bytes memory relayerMsg
+    ) public {
+        vm.assume(previousSourceChannelId != 0);
+        vm.assume(previousDestinationChannelId != 0);
+        vm.assume(nextSourceChannelId != 0);
+        vm.assume(nextDestinationChannelId != 0);
+        vm.assume(previousDestinationChannelId2 != 0);
+        vm.assume(nextSourceChannelId2 != 0);
+        handler.setChannel(nextSourceChannelId, nextDestinationChannelId);
+        // We expect the protocol to re-emit a forward
+        vm.expectEmit();
+        emit TestIBCHandler.OnSendPacket(
+            IBCPacket({
+                sourceChannelId: nextSourceChannelId,
+                destinationChannelId: nextDestinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: keccak256(abi.encode(salt)),
+                        path: ZkgmLib.updateChannelPath(
+                            ZkgmLib.updateChannelPath(
+                                path, previousDestinationChannelId
+                            ),
+                            nextSourceChannelId
+                        ),
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_0,
+                            opcode: ZkgmLib.OP_FORWARD,
+                            operand: ZkgmLib.encodeForward(
+                                Forward({
+                                    path: ZkgmLib.updateChannelPath(
+                                        ZkgmLib.updateChannelPath(
+                                            0, previousDestinationChannelId2
+                                        ),
+                                        nextSourceChannelId2
+                                    ),
+                                    timeoutHeight: type(uint64).max,
+                                    timeoutTimestamp: 0,
+                                    instruction: dummyMultiplex
+                                })
+                            )
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            })
+        );
+        bytes memory ack = zkgm.doExecuteForward(
+            IBCPacket({
+                sourceChannelId: previousSourceChannelId,
+                destinationChannelId: previousDestinationChannelId,
+                data: hex"",
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            relayer,
+            relayerMsg,
+            salt,
+            uint256(path),
+            Forward({
+                path: ZkgmLib.updateChannelPath(
+                    ZkgmLib.updateChannelPath(
+                        ZkgmLib.updateChannelPath(
+                            ZkgmLib.updateChannelPath(
+                                0, previousDestinationChannelId
+                            ),
+                            nextSourceChannelId
+                        ),
+                        previousDestinationChannelId2
+                    ),
+                    nextSourceChannelId2
+                ),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: 0,
                 instruction: dummyMultiplex
@@ -843,8 +1140,10 @@ contract ZkgmTests is Test {
             salt,
             uint256(path),
             Forward({
-                previousDestinationChannelId: fakeDestinationChannelId,
-                nextSourceChannelId: nextSourceChannelId,
+                path: ZkgmLib.updateChannelPath(
+                    ZkgmLib.updateChannelPath(0, fakeDestinationChannelId),
+                    nextSourceChannelId
+                ),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: 0,
                 instruction: dummyMultiplex
@@ -884,8 +1183,10 @@ contract ZkgmTests is Test {
             salt,
             uint256(path),
             Forward({
-                previousDestinationChannelId: previousDestinationChannelId,
-                nextSourceChannelId: wrongNextSourceChannelId,
+                path: ZkgmLib.updateChannelPath(
+                    ZkgmLib.updateChannelPath(0, previousDestinationChannelId),
+                    wrongNextSourceChannelId
+                ),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: 0,
                 instruction: dummyMultiplex
