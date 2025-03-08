@@ -16,7 +16,7 @@ const createKey = (
   denom: TokenRawDenom
 ): BalanceKey => `${universalChainId}:${address}:${denom}`
 
-class BalancesStore {
+export class BalancesStore {
   data = $state(new SvelteMap<BalanceKey, RawTokenBalance>())
   errors = $state(new SvelteMap<BalanceKey, Option.Option<FetchBalanceError>>())
   fibers = $state(new SvelteMap<BalanceKey, Fiber.RuntimeFiber<number, never>>())

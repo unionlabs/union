@@ -58,6 +58,7 @@ export class Token extends Schema.Class<Token>("Token")({
 }) {}
 
 export const Tokens = Schema.Array(Token)
+export type Tokens = typeof Tokens.Type
 
 export const RawTokenBalance = Schema.Option(TokenRawAmount).pipe(Schema.brand("RawTokenBalance"))
 export type RawTokenBalance = typeof RawTokenBalance.Type
