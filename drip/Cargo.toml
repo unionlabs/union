@@ -30,5 +30,5 @@ async-graphql-axum = "7.0.6"
 async-sqlite       = { version = "0.2.2", features = ["bundled", "array", "vtab"] }
 axum               = "0.7.5"
 cosmos-client      = { workspace = true }
-reqwest            = { workspace = true, features = ["json"] }
+reqwest            = { workspace = true, features = ["json", "rustls-tls"] }
 subtle-encoding    = { workspace = true, features = ["bech32-preview"] }

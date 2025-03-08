@@ -15,10 +15,11 @@
     let
       drip = crane.buildWorkspaceMember {
         crateDirFromRoot = "drip";
+        dev = true;
       };
     in
     {
-      packages.drip = drip.packages.drip;
+      packages.drip = drip.packages.drip-dev;
     };
 
   flake.nixosModules.drip =
