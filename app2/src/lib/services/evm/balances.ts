@@ -10,7 +10,7 @@ import type { AddressEvmCanonical } from "$lib/schema/address"
 import type { Chain } from "$lib/schema/chain"
 import type { CreatePublicClientError } from "$lib/services/transfer"
 
-export type FetchBalanceError =
+export type FetchEvmBalanceError =
   | NoViemChainError
   | TimeoutException
   | ReadContractError
@@ -76,7 +76,7 @@ export const createBalanceQuery = ({
   walletAddress: AddressEvmCanonical
   refetchInterval: DurationInput
   writeData: (data: RawTokenBalance) => void
-  writeError: (error: Option.Option<FetchBalanceError>) => void
+  writeError: (error: Option.Option<FetchEvmBalanceError>) => void
 }) => {
   const fetcherPipeline = Effect.gen(function* (_) {
     yield* Effect.log(`starting balances fetcher for ${walletAddress}:${tokenAddress}`)
@@ -89,7 +89,7 @@ export const createBalanceQuery = ({
       Schedule.exponential("2 seconds", 2.0).pipe(
         Schedule.intersect(Schedule.recurs(8)),
         Schedule.whileInput(
-          (error: FetchBalanceError) =>
+          (error: FetchEvmBalanceError) =>
             (error._tag === "ReadContractError" || error._tag === "FetchNativeBalanceError") &&
             error.cause?.message?.includes("HTTP request failed")
         )
