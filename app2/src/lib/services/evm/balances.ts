@@ -67,7 +67,7 @@ export const createBalanceQuery = ({
 
     const balance = yield* Effect.retry(
       fetchTokenBalance({ client, tokenAddress, walletAddress }).pipe(Effect.timeout("10 seconds")),
-      { times: 4 }
+      Schedule.exponential("250 millis", 2.0).pipe(Schedule.intersect(Schedule.recurs(8)))
     )
 
     yield* Effect.sync(() => {
