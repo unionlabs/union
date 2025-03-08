@@ -101,7 +101,7 @@ function fetchAllBalances() {
 
   for (const chain of chainsData) {
     // Only fetch for EVM chains for now
-    if (chain.rpc_type !== "evm") continue
+    if (chain.rpc_type === "aptos") continue
 
     // Get tokens for this chain
     const tokens = Option.getOrNull(tokensStore.getData(chain.universal_chain_id))
@@ -124,7 +124,7 @@ $effect(() => {
   if (!chainsData) return
 
   for (const chain of chainsData) {
-    if (chain.rpc_type === "evm") {
+    if (chain.rpc_type === "evm" || chain.rpc_type === "cosmos") {
       tokensStore.fetchTokens(chain.universal_chain_id)
     }
   }
@@ -148,7 +148,7 @@ $effect(() => {
     {#each Option.getOrNull(chains.data) ?? [] as chain}
       <Card>
       <h3 class="text-lg font-medium mt-4">{chain.universal_chain_id}</h3>
-      {#if chain.rpc_type === "evm"}
+      {#if chain.rpc_type !== "aptos"}
         <div class="flex flex-col">
           
           {#if Option.isNone(sortedBalances)}

@@ -2,7 +2,7 @@ import { VIEM_CHAINS } from "$lib/constants/viem-chains"
 import { Option, Schema } from "effect"
 import type { Chain as ViemChain } from "viem"
 import { AddressCosmosCanonical, AddressCosmosDisplay } from "./address"
-import { bech32 } from "@scure/bech32"
+import { bech32, bytes } from "@scure/base"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
 // e.g. union.union-testnet-9
@@ -51,7 +51,7 @@ export class Chain extends Schema.Class<Chain>("Chain")({
     }
 
     try {
-      const words = bech32.toWords(Buffer.from(address, "hex"))
+      const words = bech32.toWords(bytes("hex", address.slice(2)))
       const encoded = bech32.encode(this.addr_prefix, words)
       return Option.some(encoded as AddressCosmosDisplay)
     } catch {

@@ -61,10 +61,10 @@ export const createCosmosBalanceQuery = ({
     yield* Effect.log(`starting cosmos balances fetcher for ${walletAddress}:${tokenAddress}`)
 
     // TODO: Get RPC URL from chain config
-    const rpcUrl = "https://rpc.testnet-9.union.build"
-
+    const rpcUrl = "https://rest.testnet-9.union.build"
+    const displayAddress = yield* chain.toCosmosDisplay(walletAddress)
     const balance = yield* Effect.retry(
-      fetchCosmosBalance({ rpcUrl, walletAddress, denom: tokenAddress }),
+      fetchCosmosBalance({ rpcUrl, walletAddress: displayAddress, denom: tokenAddress }),
       Schedule.exponential("2 seconds", 2.0).pipe(
         Schedule.intersect(Schedule.recurs(8)),
         Schedule.whileInput(
