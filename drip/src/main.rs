@@ -119,7 +119,7 @@ async fn main() {
         .unwrap();
 }
 
-#[instrument(skip_all, fields(chain_id = chain.id))]
+#[instrument(skip_all, fields(chain_id = %chain.id))]
 async fn poll_loop(pool: Pool, chain: Chain, batch_size: usize) {
     info!("spawning worker for chain");
 
@@ -325,7 +325,7 @@ struct ChainClient {
 }
 
 impl ChainClient {
-    #[instrument(skip_all, fields(chain_id = chain.id))]
+    #[instrument(skip_all, fields(chain_id = %chain.id))]
     pub async fn new(chain: &Chain) -> Self {
         let rpc = Rpc::new(chain.rpc_url.clone()).await.unwrap();
 
@@ -411,8 +411,8 @@ impl ChainClient {
     #[instrument(
         skip_all,
         fields(
-            chain_id = self.chain.id,
-            requests.len = requests.len()
+            chain_id = %self.chain.id,
+            requests.len = %requests.len()
         )
     )]
     async fn send(&self, requests: &Vec<SendRequest>) -> anyhow::Result<H256> {
@@ -473,7 +473,7 @@ pub struct CaptchaSecret(pub String);
 
 #[Object]
 impl Mutation {
-    #[instrument(skip_all, fields(chain_id, address, denom))]
+    #[instrument(skip_all, fields(%chain_id, %address, %denom))]
     async fn send<'ctx>(
         &self,
         ctx: &Context<'ctx>,
