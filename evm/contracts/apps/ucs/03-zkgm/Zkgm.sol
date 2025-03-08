@@ -36,8 +36,7 @@ struct Instruction {
 }
 
 struct Forward {
-    uint32 previousDestinationChannelId;
-    uint32 nextSourceChannelId;
+    uint256 path;
     uint64 timeoutHeight;
     uint64 timeoutTimestamp;
     Instruction instruction;
@@ -121,6 +120,7 @@ library ZkgmLib {
     error ErrInvalidAssetDecimals();
     error ErrInvalidAssetName();
     error ErrInvalidBatchInstruction();
+    error ErrInvalidForwardInstruction();
     error ErrInvalidMultiplexSender();
     error ErrInvalidForwardDestinationChannelId();
 
@@ -208,8 +208,7 @@ library ZkgmLib {
         Forward memory forward
     ) internal pure returns (bytes memory) {
         return abi.encode(
-            forward.previousDestinationChannelId,
-            forward.nextSourceChannelId,
+            forward.path,
             forward.timeoutHeight,
             forward.timeoutTimestamp,
             forward.instruction
@@ -299,7 +298,7 @@ library ZkgmLib {
         return (uint256(nextChannelId) << 32 * nextHopIndex) | path;
     }
 
-    // Extract the last channel from a path, popping the top non-zero u32.
+    // Extract the last channel from a path
     function lastChannelFromPath(
         uint256 path
     ) internal pure returns (uint32) {
@@ -317,7 +316,17 @@ library ZkgmLib {
             return (0, 0);
         }
         uint256 currentHopIndex = LibBit.fls(path) / 32;
-        return ((path << 32) >> 32, uint32(path >> currentHopIndex * 32));
+        uint256 clearShift = (8 - currentHopIndex) * 32;
+        return (
+            (path << clearShift) >> clearShift,
+            uint32(path >> currentHopIndex * 32)
+        );
+    }
+
+    function dequeueChannelFromPath(
+        uint256 path
+    ) internal pure returns (uint256, uint32) {
+        return (path >> 32, uint32(path));
     }
 
     // Reverse a channel path consisting of [a, b, c, ...] to [..., c, b, a]
@@ -337,6 +346,13 @@ library ZkgmLib {
         uint8 opcode
     ) internal returns (bool) {
         return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER;
+    }
+
+    function isAllowedForwardInstruction(
+        uint8 opcode
+    ) internal returns (bool) {
+        return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
+            || opcode == OP_BATCH;
     }
 
     function makeFungibleAssetOrder(
@@ -670,9 +686,7 @@ contract UCS03Zkgm is
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            verifyForward(
-                channelId, path, ZkgmLib.decodeForward(instruction.operand)
-            );
+            verifyForward(channelId, ZkgmLib.decodeForward(instruction.operand));
         } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
@@ -761,19 +775,12 @@ contract UCS03Zkgm is
 
     function verifyForward(
         uint32 channelId,
-        uint256 path,
         Forward calldata forward
     ) internal {
-        verifyInternal(
-            channelId,
-            ZkgmLib.updateChannelPath(
-                ZkgmLib.updateChannelPath(
-                    path, forward.previousDestinationChannelId
-                ),
-                forward.nextSourceChannelId
-            ),
-            forward.instruction
-        );
+        if (!ZkgmLib.isAllowedForwardInstruction(forward.instruction.opcode)) {
+            revert ZkgmLib.ErrInvalidForwardInstruction();
+        }
+        verifyInternal(channelId, forward.path, forward.instruction);
     }
 
     function verifyMultiplex(
@@ -890,6 +897,7 @@ contract UCS03Zkgm is
                 relayerMsg,
                 salt,
                 path,
+                instruction.version,
                 ZkgmLib.decodeForward(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
@@ -941,19 +949,40 @@ contract UCS03Zkgm is
         bytes calldata relayerMsg,
         bytes32 salt,
         uint256 path,
+        uint8 version,
         Forward calldata forward
     ) internal returns (bytes memory) {
-        if (
-            ibcPacket.destinationChannelId
-                != forward.previousDestinationChannelId
-        ) {
+        (uint256 tailPath, uint32 previousDestinationChannelId) =
+            ZkgmLib.dequeueChannelFromPath(forward.path);
+        (uint256 continuationPath, uint32 nextSourceChannelId) =
+            ZkgmLib.dequeueChannelFromPath(tailPath);
+        if (ibcPacket.destinationChannelId != previousDestinationChannelId) {
             revert ZkgmLib.ErrInvalidForwardDestinationChannelId();
+        }
+        Instruction memory nextInstruction;
+        if (continuationPath == 0) {
+            // If we are done hopping, the sub-instruction is dispatched for execution.
+            nextInstruction = forward.instruction;
+        } else {
+            // If we are not done, the continuation path is used and the forward is re-executed.
+            nextInstruction = Instruction({
+                version: version,
+                opcode: ZkgmLib.OP_FORWARD,
+                operand: ZkgmLib.encodeForward(
+                    Forward({
+                        path: continuationPath,
+                        timeoutHeight: forward.timeoutHeight,
+                        timeoutTimestamp: forward.timeoutTimestamp,
+                        instruction: forward.instruction
+                    })
+                )
+            });
         }
         // TODO: consider using a magic value for few bytes of the salt in order
         // to know that it's a forwarded instruction in the acknowledgement, without
         // having to index in `inFlightPacket`, saving gas in the process.
         IBCPacket memory sentPacket = ibcHandler.sendPacket(
-            forward.nextSourceChannelId,
+            nextSourceChannelId,
             forward.timeoutHeight,
             forward.timeoutTimestamp,
             ZkgmLib.encode(
@@ -961,11 +990,11 @@ contract UCS03Zkgm is
                     salt: keccak256(abi.encode(salt)),
                     path: ZkgmLib.updateChannelPath(
                         ZkgmLib.updateChannelPath(
-                            path, ibcPacket.destinationChannelId
+                            path, previousDestinationChannelId
                         ),
-                        forward.nextSourceChannelId
+                        nextSourceChannelId
                     ),
-                    instruction: forward.instruction
+                    instruction: nextInstruction
                 })
             )
         );
@@ -1240,7 +1269,6 @@ contract UCS03Zkgm is
             acknowledgeForward(
                 ibcPacket,
                 relayer,
-                path,
                 salt,
                 ZkgmLib.decodeForward(instruction.operand),
                 successful,
@@ -1298,7 +1326,6 @@ contract UCS03Zkgm is
     function acknowledgeForward(
         IBCPacket calldata ibcPacket,
         address relayer,
-        uint256 path,
         bytes32 salt,
         Forward calldata forward,
         bool successful,
@@ -1307,12 +1334,7 @@ contract UCS03Zkgm is
         acknowledgeInternal(
             ibcPacket,
             relayer,
-            ZkgmLib.updateChannelPath(
-                ZkgmLib.updateChannelPath(
-                    path, forward.previousDestinationChannelId
-                ),
-                forward.nextSourceChannelId
-            ),
+            forward.path,
             salt,
             forward.instruction,
             successful,
@@ -1455,10 +1477,7 @@ contract UCS03Zkgm is
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             timeoutForward(
-                ibcPacket,
-                relayer,
-                path,
-                ZkgmLib.decodeForward(instruction.operand)
+                ibcPacket, relayer, ZkgmLib.decodeForward(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
@@ -1490,20 +1509,9 @@ contract UCS03Zkgm is
     function timeoutForward(
         IBCPacket calldata ibcPacket,
         address relayer,
-        uint256 path,
         Forward calldata forward
     ) internal {
-        timeoutInternal(
-            ibcPacket,
-            relayer,
-            ZkgmLib.updateChannelPath(
-                ZkgmLib.updateChannelPath(
-                    path, forward.previousDestinationChannelId
-                ),
-                forward.nextSourceChannelId
-            ),
-            forward.instruction
-        );
+        timeoutInternal(ibcPacket, relayer, forward.path, forward.instruction);
     }
 
     function timeoutMultiplex(
