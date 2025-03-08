@@ -67,7 +67,14 @@ export const createBalanceQuery = ({
 
     const balance = yield* Effect.retry(
       fetchTokenBalance({ client, tokenAddress, walletAddress }).pipe(Effect.timeout("10 seconds")),
-      Schedule.exponential("250 millis", 2.0).pipe(Schedule.intersect(Schedule.recurs(8)))
+      Schedule.exponential("250 millis", 2.0).pipe(
+        Schedule.intersect(Schedule.recurs(8)),
+        Schedule.whileInput(
+          (error: FetchBalanceError) =>
+            error._tag === "ReadContractError" &&
+            error.cause.message?.includes("HTTP request failed")
+        )
+      )
     )
 
     yield* Effect.sync(() => {
