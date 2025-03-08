@@ -147,10 +147,9 @@ $effect(() => {
   {:else}
     {#each Option.getOrNull(chains.data) ?? [] as chain}
       <Card>
+      <h3 class="text-lg font-medium mt-4">{chain.universal_chain_id}</h3>
       {#if chain.rpc_type === "evm"}
-        {@const tokens = Option.getOrNull(tokensStore.getData(chain.universal_chain_id))}
         <div class="flex flex-col">
-          <h3 class="text-lg font-medium mt-4">{chain.universal_chain_id}</h3>
           
           {#if Option.isNone(sortedBalances)}
             <Card>
