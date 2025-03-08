@@ -48,5 +48,8 @@
     "viem": "^2.23.5",
     "vite": "^6.1.0",
     "vitest": "^3.0.5"
+  },
+  "dependencies": {
+    "@scure/base": "^1.2.4"
   }
 }

@@ -4,7 +4,7 @@ import { fetchDecode } from "$lib/utils/queries"
 import type { DurationInput } from "effect/Duration"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
 import type { Chain } from "$lib/schema/chain"
-import type { AddressCosmosCanonical } from "$lib/schema/address"
+import type { AddressCosmosCanonical, AddressCosmosDisplay } from "$lib/schema/address"
 import { FetchHttpClient } from "@effect/platform"
 
 export type FetchCosmosBalanceError = TimeoutException | QueryBankBalanceError | CreateClientError
@@ -19,8 +19,10 @@ export class CreateClientError extends Data.TaggedError("CreateClientError")<{
 
 // Schema for the balance response from Cosmos chain
 export const CosmosBalanceSchema = Schema.Struct({
-  amount: Schema.String,
-  denom: Schema.String
+  balance: Schema.Struct({
+    amount: Schema.String,
+    denom: Schema.String
+  })
 })
 
 const fetchCosmosBalance = ({
@@ -29,14 +31,14 @@ const fetchCosmosBalance = ({
   denom
 }: {
   rpcUrl: string
-  walletAddress: AddressCosmosCanonical
+  walletAddress: AddressCosmosDisplay
   denom: TokenRawDenom
 }) =>
   fetchDecode(
     CosmosBalanceSchema,
-    `${rpcUrl}/cosmos/bank/v1beta1/balances/${walletAddress}/${denom}`
+    `${rpcUrl}/cosmos/bank/v1beta1/balances/${walletAddress}/by_denom?denom=${denom}`
   ).pipe(
-    Effect.map(response => response.amount),
+    Effect.map(response => response.balance.amount),
     Effect.mapError(err => new QueryBankBalanceError({ cause: err }))
   )
 
@@ -59,7 +61,7 @@ export const createCosmosBalanceQuery = ({
     yield* Effect.log(`starting cosmos balances fetcher for ${walletAddress}:${tokenAddress}`)
 
     // TODO: Get RPC URL from chain config
-    const rpcUrl = "https://rpc.cosmos.directory/cosmoshub"
+    const rpcUrl = "https://rpc.testnet-9.union.build"
 
     const balance = yield* Effect.retry(
       fetchCosmosBalance({ rpcUrl, walletAddress, denom: tokenAddress }),

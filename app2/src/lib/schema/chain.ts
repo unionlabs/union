@@ -1,6 +1,8 @@
 import { VIEM_CHAINS } from "$lib/constants/viem-chains"
 import { Option, Schema } from "effect"
 import type { Chain as ViemChain } from "viem"
+import { AddressCosmosCanonical, AddressCosmosDisplay } from "./address"
+import { bech32 } from "@scure/bech32"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
 // e.g. union.union-testnet-9
@@ -41,6 +43,20 @@ export class Chain extends Schema.Class<Chain>("Chain")({
       return Option.none()
     }
     return Option.fromNullable(VIEM_CHAINS.find(vc => `${vc.id}` === this.chain_id))
+  }
+
+  toCosmosDisplay(address: AddressCosmosCanonical): Option.Option<AddressCosmosDisplay> {
+    if (this.rpc_type !== "cosmos") {
+      return Option.none()
+    }
+
+    try {
+      const words = bech32.toWords(Buffer.from(address, "hex"))
+      const encoded = bech32.encode(this.addr_prefix, words)
+      return Option.some(encoded as AddressCosmosDisplay)
+    } catch {
+      return Option.none()
+    }
   }
 }
 
