@@ -1,8 +1,8 @@
 import { Data, Effect, Option, Schema, Schedule } from "effect"
-import { erc20Abi, type PublicClient } from "viem"
+import { erc20Abi, fromHex, type PublicClient } from "viem"
 import type { TimeoutException } from "effect/Cause"
 import type { DurationInput } from "effect/Duration"
-import type { ReadContractErrorType } from "viem"
+import type { GetBalanceErrorType, ReadContractErrorType } from "viem"
 import { getPublicClient } from "$lib/services/evm/clients"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
 import type { NoViemChainError } from "$lib/services/evm/clients"
@@ -14,7 +14,12 @@ export type FetchBalanceError =
   | NoViemChainError
   | TimeoutException
   | ReadContractError
+  | FetchNativeBalanceError
   | CreatePublicClientError
+
+export class FetchNativeBalanceError extends Data.TaggedError("FetchNativeBalanceError")<{
+  cause: GetBalanceErrorType
+}> {}
 export class ReadContractError extends Data.TaggedError("ReadContractError")<{
   cause: ReadContractErrorType
 }> {}
@@ -25,6 +30,18 @@ export const BalanceSchema = Schema.Struct({
   token: Schema.String,
   address: Schema.String
 })
+
+const fetchNativeBalance = ({
+  client,
+  walletAddress
+}: {
+  client: PublicClient
+  walletAddress: AddressEvmCanonical
+}) =>
+  Effect.tryPromise({
+    try: () => client.getBalance({ address: walletAddress }),
+    catch: err => new FetchNativeBalanceError({ cause: err as GetBalanceErrorType })
+  })
 
 const fetchTokenBalance = ({
   client,
@@ -66,13 +83,15 @@ export const createBalanceQuery = ({
     const client = yield* getPublicClient(chain)
 
     const balance = yield* Effect.retry(
-      fetchTokenBalance({ client, tokenAddress, walletAddress }).pipe(Effect.timeout("10 seconds")),
-      Schedule.exponential("250 millis", 2.0).pipe(
+      fromHex(tokenAddress, "string") === "native"
+        ? fetchNativeBalance({ client, walletAddress })
+        : fetchTokenBalance({ client, tokenAddress, walletAddress }),
+      Schedule.exponential("2 seconds", 2.0).pipe(
         Schedule.intersect(Schedule.recurs(8)),
         Schedule.whileInput(
           (error: FetchBalanceError) =>
-            error._tag === "ReadContractError" &&
-            error.cause.message?.includes("HTTP request failed")
+            (error._tag === "ReadContractError" || error._tag === "FetchNativeBalanceError") &&
+            error.cause?.message?.includes("HTTP request failed")
         )
       )
     )
