@@ -1,6 +1,6 @@
 import { Effect, Option, Schema } from "effect"
 import type { UniversalChainId } from "$lib/schema/chain"
-import { Token } from "$lib/schema/token"
+import { Token, TokenRawDenom } from "$lib/schema/token"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import { graphql } from "gql.tada"
@@ -54,7 +54,18 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
       refetchInterval: "10 minutes",
       writeData: data => {
         Effect.runSync(Effect.log(`storing new tokens for ${universalChainId}`))
-        tokensStore.setData(universalChainId, data.pipe(Option.map(d => d.v1_ibc_union_tokens)))
+        tokensStore.setData(
+          universalChainId,
+          // Can be removed when this invalid denom is removed from hubble
+          data.pipe(
+            Option.map(d =>
+              d.v1_ibc_union_tokens.filter(
+                token =>
+                  token.denom !== TokenRawDenom.make("0x0000000000000000000000000000000000000000")
+              )
+            )
+          )
+        )
       },
       writeError: error => {
         Effect.runSync(Effect.log(`storing new tokens error for ${universalChainId}`))
