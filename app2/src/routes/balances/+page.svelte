@@ -8,7 +8,7 @@ import { Option } from "effect"
 import Button from "$lib/components/ui/Button.svelte"
 import { Chain, RpcType, UniversalChainId } from "$lib/schema/chain"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-import { AddressEvmCanonical } from "$lib/schema/address"
+import { AddressCanonicalBytes, AddressEvmCanonical } from "$lib/schema/address"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import type { Tokens } from "$lib/schema/token"
@@ -16,11 +16,16 @@ import type { Tokens } from "$lib/schema/token"
 // Example wallet address - this would come from wallet connection in real app
 const testAddress = AddressEvmCanonical.make("0xe6831e169d77a861a0e71326afa6d80bcc8bc6aa")
 
-const getSortedTokens = (tokens: Tokens, chain: Chain, bs: BalancesStore) =>
+const getSortedTokens = (
+  tokens: Tokens,
+  chain: Chain,
+  bs: BalancesStore,
+  address: AddressCanonicalBytes
+) =>
   tokens
     .map(token => {
-      const balance = bs.getBalance(chain.universal_chain_id, testAddress, token.denom)
-      const error = bs.getError(chain.universal_chain_id, testAddress, token.denom)
+      const balance = bs.getBalance(chain.universal_chain_id, address, token.denom)
+      const error = bs.getError(chain.universal_chain_id, address, token.denom)
       const tokenInfo = tokensStore
         .getData(chain.universal_chain_id)
         .pipe(
@@ -84,7 +89,7 @@ const sortedBalances = $derived(
         chain,
         tokens: tokensStore
           .getData(chain.universal_chain_id)
-          .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore)))
+          .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, testAddress)))
       }))
     )
   )
@@ -152,13 +157,13 @@ $effect(() => {
               <div class="text-zinc-500">Loading balances...</div>
             </Card>
           {:else}
-            {@const chainData = Option.fromNullable(sortedBalances.value.find(v => v.chain.universal_chain_id === chain.universal_chain_id))}
-            {#if Option.isNone(chainData) || Option.isNone(chainData.value.tokens)}
+            {@const tokensForChain = Option.fromNullable(sortedBalances.value.find(v => v.chain.universal_chain_id === chain.universal_chain_id)).pipe(Option.flatMap(c => c.tokens))}
+            {#if Option.isNone(tokensForChain)}
               <Card>
                 <div class="text-zinc-500">No balances found</div>
               </Card>
             {:else}
-              {#each chainData.value.tokens.value as { token, balance, error }}
+              {#each tokensForChain.value as { token, balance, error }}
                 <div class="flex flex-col gap-2 mb-8">
                   {#if Option.isSome(balance)}
                     <TokenComponent 
