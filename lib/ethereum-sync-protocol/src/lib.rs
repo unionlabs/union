@@ -18,7 +18,7 @@ use typenum::Unsigned;
 use unionlabs::{
     ensure,
     primitives::{H256, H384, H768},
-    BytesBitIterator,
+    BytesBitIteratorLE,
 };
 
 use crate::{
@@ -72,7 +72,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
 ) -> Result<(), Error> {
     // verify that the sync committee has sufficient participants
     let sync_aggregate = &update.sync_aggregate;
-    let set_bits = BytesBitIterator::new(&sync_aggregate.sync_committee_bits)
+    let set_bits = BytesBitIteratorLE::new(&sync_aggregate.sync_committee_bits)
         .filter(|included| *included)
         .count();
     ensure(
@@ -208,7 +208,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
 
     // It's not mandatory for all of the members of the sync committee to participate. So we are extracting the
     // public keys of the ones who participated.
-    let participant_pubkeys = BytesBitIterator::new(&sync_aggregate.sync_committee_bits)
+    let participant_pubkeys = BytesBitIteratorLE::new(&sync_aggregate.sync_committee_bits)
         .zip(sync_committee.pubkeys.iter())
         .filter_map(|(included, pubkey)| if included { Some(pubkey) } else { None })
         .collect::<Vec<_>>();

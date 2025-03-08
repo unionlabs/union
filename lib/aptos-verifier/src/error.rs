@@ -10,6 +10,8 @@ pub enum Error {
     MaxSiblingsExceeded(usize),
     #[error("storage verification error")]
     StorageVerification(#[from] StorageVerificationError),
+    #[error("the epoch order must be incrementing sequentially and one by one")]
+    InvalidEpochOrder,
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]

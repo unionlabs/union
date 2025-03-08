@@ -1103,6 +1103,38 @@ version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
 
 [[package]]
+name = "aptos-light-client"
+version = "0.0.0"
+dependencies = [
+ "aptos-crypto",
+ "aptos-light-client-types",
+ "aptos-types",
+ "aptos-verifier",
+ "bcs 0.1.6",
+ "cosmwasm-std 2.1.4",
+ "hex-literal",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "rlp",
+ "serde",
+ "serde-utils",
+ "thiserror 1.0.69",
+ "unionlabs",
+ "unionlabs-cosmwasm-upgradable",
+]
+
+[[package]]
+name = "aptos-light-client-types"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.0-rc.3",
+ "hex-literal",
+ "serde",
+ "unionlabs",
+]
+
+[[package]]
 name = "aptos-log-derive"
 version = "0.1.0"
 source = "git+https://github.com/unionlabs/aptos-core#fe7990782729b7366350827bd25275b50f5bcf88"
@@ -1369,7 +1401,9 @@ name = "aptos-verifier"
 version = "0.0.0"
 dependencies = [
  "bcs 0.1.6",
+ "cosmwasm-crypto 2.1.4",
  "hex-literal",
+ "serde",
  "sha3 0.10.8",
  "thiserror 1.0.69",
  "unionlabs",
