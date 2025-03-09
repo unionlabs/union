@@ -16,6 +16,13 @@ pub const COMMITMENT_MAGIC: H256 = {
     H256::new(bz)
 };
 
+/// 0x0200000000000000000000000000000000000000000000000000000000000000
+pub const COMMITMENT_MAGIC_ACK: H256 = {
+    let mut bz = [0; 32];
+    bz[0] = 2;
+    H256::new(bz)
+};
+
 pub const COMMITMENT_NULL: H256 = H256::new([0; 32]);
 
 pub const CLIENT_STATE: U256 = U256::from_limbs([0, 0, 0, 0]);

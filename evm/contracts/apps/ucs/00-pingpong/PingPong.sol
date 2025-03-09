@@ -26,7 +26,13 @@ library PingPongLib {
     event Ring(bool ping);
     event TimedOut();
     event Acknowledged();
-    event Zkgoblim(uint32 channelId, bytes sender, bytes message);
+    event Zkgoblim(
+        uint256 path,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        bytes sender,
+        bytes message
+    );
 
     function encode(
         PingPongPacket memory packet
@@ -204,13 +210,17 @@ contract PingPong is
     }
 
     function onZkgm(
-        uint32 channelId,
+        uint256 path,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
         bytes calldata sender,
         bytes calldata message
     ) public {
         if (msg.sender != zkgmProtocol) {
             revert PingPongLib.ErrOnlyZKGM();
         }
-        emit PingPongLib.Zkgoblim(channelId, sender, message);
+        emit PingPongLib.Zkgoblim(
+            path, sourceChannelId, destinationChannelId, sender, message
+        );
     }
 }
