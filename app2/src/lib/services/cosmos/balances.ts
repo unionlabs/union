@@ -124,7 +124,7 @@ export const createCosmosBalanceQuery = ({
       `starting balances fetcher for ${chain.universal_chain_id}:${displayAddress}:${decodedDenom}`
     )
 
-    let balance = yield* decodedDenom.startsWith("union1")
+    let balance = yield* decodedDenom.startsWith(`${chain.addr_prefix}1`)
       ? Effect.retry(
           fetchCw20Balance({
             rpcUrl,
