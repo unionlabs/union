@@ -38,14 +38,14 @@ export class CreateClientError extends Data.TaggedError("CreateClientError")<{
 // Schema for the balance response from Cosmos chain
 export const CosmosBalanceSchema = Schema.Struct({
   balance: Schema.Struct({
-    amount: Schema.BigInt
+    amount: TokenRawAmount
   })
 })
 
 // Schema for CW20 balance response
 export const Cw20BalanceSchema = Schema.Struct({
   data: Schema.Struct({
-    balance: Schema.BigInt
+    balance: TokenRawAmount
   })
 })
 
