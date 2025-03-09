@@ -2,11 +2,15 @@
 import type { HttpClientError } from "@effect/platform/HttpClientError"
 import type { TimeoutException, UnknownException } from "effect/Cause"
 import type { ParseError } from "effect/ParseResult"
+import type { NoViemChainError } from "$lib/services/evm/clients"
+import type { ReadContractError, FetchNativeBalanceError } from "$lib/services/evm/balances"
+import type { CreatePublicClientError } from "$lib/services/transfer/errors"
+import type { QueryBankBalanceError, CreateClientError } from "$lib/services/cosmos/balances"
 import { slide } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
 
 interface Props {
-  error: UnknownException | HttpClientError | ParseError | TimeoutException
+  error: UnknownException | HttpClientError | ParseError | TimeoutException | NoViemChainError | ReadContractError | FetchNativeBalanceError | CreatePublicClientError | QueryBankBalanceError | CreateClientError
 }
 
 let { error }: Props = $props()
@@ -24,6 +28,18 @@ function getUserFriendlyMessage(error: Props["error"]): string {
       return "The request timed out because it took too long. Please try again."
     case "UnknownException":
       return "An unexpected error occurred."
+    case "NoViemChain":
+      return "Chain configuration not found for the selected network."
+    case "ReadContractError":
+      return "Failed to read contract data from the network."
+    case "FetchNativeBalanceError":
+      return "Failed to fetch native token balance."
+    case "CreatePublicClientError":
+      return "Failed to create network connection."
+    case "QueryBankBalanceError":
+      return "Failed to query bank balance from the network."
+    case "CreateClientError":
+      return "Failed to create client connection."
     default:
       return "Something went wrong. Please try again later."
   }
@@ -81,6 +97,24 @@ function getUserFriendlyMessage(error: Props["error"]): string {
         {:else if error._tag === "UnknownException"}
           <p>This is an unknown exception. Full details here:</p>
           <pre class="text-sm">{JSON.stringify(error, null, 2)}</pre>
+        {:else if error._tag === "NoViemChain"}
+          <p>Chain ID: {error.chain.chain_id}</p>
+          <p>Universal Chain ID: {error.chain.universal_chain_id}</p>
+        {:else if error._tag === "ReadContractError"}
+          <p>Error cause:</p>
+          <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+        {:else if error._tag === "FetchNativeBalanceError"}
+          <p>Error cause:</p>
+          <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+        {:else if error._tag === "CreatePublicClientError"}
+          <p>Error cause:</p>
+          <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+        {:else if error._tag === "QueryBankBalanceError"}
+          <p>Error cause:</p>
+          <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+        {:else if error._tag === "CreateClientError"}
+          <p>Error cause:</p>
+          <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
         {/if}
       </section>
     </div>
