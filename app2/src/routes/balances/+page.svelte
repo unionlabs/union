@@ -15,6 +15,7 @@ import type { Tokens } from "$lib/schema/token"
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 
 function fetchAllBalances() {
   const chainsData = Option.getOrNull(chains.data)
@@ -69,31 +70,30 @@ $effect(() => {
   {:else}
     {#each Option.getOrNull(chains.data) ?? [] as chain}
       <Card>
-      <h3 class="text-lg font-medium mt-4">{chain.universal_chain_id}</h3>
+      <ChainComponent {chain}/>
       {#if chain.rpc_type !== "aptos"}
         <div class="flex flex-col">
           
           {#if Option.isNone(sortedBalancesStore.sortedBalances)}
-            <Card>
-              <div class="text-zinc-500">Loading balances...</div>
-            </Card>
+            <div class="text-zinc-500">Loading balances...</div>
           {:else}
             {@const tokensForChain = Option.fromNullable(sortedBalancesStore.sortedBalances.value.find(v => v.chain.universal_chain_id === chain.universal_chain_id)).pipe(Option.flatMap(c => c.tokens))}
             {#if Option.isNone(tokensForChain)}
-              <Card>
-                <div class="text-zinc-500">No balances found</div>
-              </Card>
+              <div class="text-zinc-500">No balances found</div>
             {:else}
-              {#each tokensForChain.value as { token, balance, error, numericValue }}
-                <div class="flex flex-col gap-2 mb-8">
-                  {#if uiStore.showZeroBalances || numericValue > 0n}
+              {#each tokensForChain.value.filter(t => 
+                Option.isSome(t.error) || 
+                Option.isNone(t.balance) || 
+                uiStore.showZeroBalances || 
+                t.numericValue > 0n
+              ) as { token, balance, error }}
+                <div class="flex flex-col gap-2">
                   {#if Option.isSome(balance)}
-                      <TokenComponent 
-                        chain={chain} 
-                        denom={token.denom} 
-                        amount={balance.value} 
-                      />
-                    {/if}
+                    <TokenComponent 
+                      chain={chain} 
+                      denom={token.denom} 
+                      amount={balance.value} 
+                    />
                   {:else}
                     <div class="text-red-500 font-bold">
                       NO BALANCE FOR: <TokenComponent 
