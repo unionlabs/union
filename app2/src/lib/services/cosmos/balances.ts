@@ -1,4 +1,4 @@
-import { Data, Effect, Option, Schema } from "effect"
+import { Data, Effect, Option, Schema, Schedule } from "effect"
 import { fetchDecode } from "$lib/utils/queries"
 import type { DurationInput } from "effect/Duration"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
@@ -31,15 +31,13 @@ export class Base64EncodeError extends Data.TaggedError("Base64EncodeError")<{
   cause: unknown
 }> {}
 
-// Schema for the balance response from Cosmos chain
-export const CosmosBalanceSchema = Schema.Struct({
+export const CosmosBankBalanceSchema = Schema.Struct({
   balance: Schema.Struct({
     amount: TokenRawAmount
   })
 })
 
-// Schema for CW20 balance response
-export const Cw20BalanceSchema = Schema.Struct({
+export const CosmosCw20BalanceSchema = Schema.Struct({
   data: Schema.Struct({
     balance: TokenRawAmount
   })
@@ -63,7 +61,7 @@ const fetchCosmosCw20Balance = ({
     })
 
     const response = yield* fetchDecode(
-      Cw20BalanceSchema,
+      CosmosCw20BalanceSchema,
       `${rpcUrl}/cosmwasm/wasm/v1/contract/${contractAddress}/smart/${base64Query}`
     )
 
@@ -80,7 +78,7 @@ const fetchCosmosBankBalance = ({
   denom: string
 }) =>
   fetchDecode(
-    CosmosBalanceSchema,
+    CosmosBankBalanceSchema,
     `${rpcUrl}/cosmos/bank/v1beta1/balances/${walletAddress}/by_denom?denom=${denom}`
   ).pipe(Effect.map(response => response.balance.amount))
 
@@ -115,8 +113,8 @@ export const createCosmosBalanceQuery = ({
     const fetchBalance = decodedDenom.startsWith(`${chain.addr_prefix}1`)
       ? fetchCosmosCw20Balance({
           rpcUrl,
+          walletAddress: displayAddress,
           contractAddress: AddressCosmosDisplay.make(decodedDenom as `${string}1${string}`),
-          walletAddress: displayAddress
         })
       : fetchCosmosBankBalance({ 
           rpcUrl, 
@@ -126,16 +124,11 @@ export const createCosmosBalanceQuery = ({
 
     let balance = yield* Effect.retry(fetchBalance, cosmosBalanceRetrySchedule)
 
-    yield* Effect.sync(() => {
-      writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
-      writeError(Option.none())
-    })
+    writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
+    writeError(Option.none())
   }).pipe(
     Effect.tapError(error =>
-      Effect.gen(function* () {
-        yield* Effect.log("writing error", error)
-        writeError(Option.some(error))
-      })
+      Effect.sync(() => writeError(Option.some(error)))
     ),
     Effect.catchAll(_ => Effect.succeed(null))
   )
