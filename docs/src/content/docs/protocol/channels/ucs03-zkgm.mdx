@@ -1,5 +1,5 @@
 ---
-title: "ucs03-zkgm-1"
+title: "ucs03-zkgm-0"
 sidebar:
   badge:
     text: live
@@ -10,7 +10,7 @@ import Mermaid from "#/components/Mermaid.astro";
 
 # Overview
 
-`ucs03-zkgm-1` is the most advanced and recommended protocol to use for 
+`ucs03-zkgm-1` is the most advanced and recommended protocol to use for
 
 - message passing
 - transfers (assets and NFTs)
@@ -21,29 +21,24 @@ It's the most gas-efficient version and suitable for almost all use cases.
 
 ## Protocol
 
-There are two main modes for a packet to be transferred using `ucs03-zkgm-1`. The main mode, which always succeeds for any chain, 
+There are two main modes for a packet to be transferred using `ucs03-zkgm-1`. The main mode, which always succeeds for any chain,
 leverages state lenses to create a recursive connection and a communication channel between two chains.
 
 
 <Mermaid
   content={`
 sequenceDiagram
-    critical   
-        Chain A ->> Union: ClientUpdate
-        Union ->> Chain B: ClientUpdate
-        Chain A -->> Chain B: Packet
-    end 
-    Chain B ->> Union: ClientUpdate
-    Union ->> Chain A: ClientUpdate
-    Chain B -->> Chain A: Acknowledgement
+    Chain A ->> Chain B: Packet
+    Chain B ->> Chain A: Acknowledgement
+    note over Chain A,Chain B: Client updates via Union happen in background
 `}/>
 
-The packet submission is not routed through any PFM middleware, which avoids re-execution on Union, unlike `ucs01-relay-1`. The core protocol is 
+The packet submission is not routed through any PFM middleware, which avoids re-execution on Union, unlike `ucs01-relay-1`. The core protocol is
 significantly more gas efficient over multi-hop-based protocols.
 
 ### Open Filling
 
-A groundbreaking protocol improvement on IBC and trust-minimized bridging in general, is that `ucs03-zkgm-1` allows arbitrary filling of orders by any party. 
+A groundbreaking protocol improvement on IBC and trust-minimized bridging in general, is that `ucs03-zkgm-1` allows arbitrary filling of orders by any party.
 
 :::tip
 
@@ -58,28 +53,20 @@ fillers can rely on preconfirmations to reduce the risk of reorgs.
 <Mermaid
   content={`
 sequenceDiagram
-    participant Chain A
-    participant Union
-    participant Chain B
-    critical
-        Chain A -->> Chain B: Packet   
-        Chain A ->> Union: ClientUpdate
-        Union ->> Chain B: ClientUpdate
-    end 
-    Chain B ->> Union: ClientUpdate
-    Union ->> Chain A: ClientUpdate
-    Chain B -->> Chain A: Acknowledgement
+    Chain A ->> Chain B: Packet (via Filler)
+    Chain B ->> Chain A: Acknowledgement
+    note over Chain A,Chain B: Filler can act before finality
 `}/>
 
 Theoretically, a filler can submit the transfer to the destination side before the transaction is included on the source, given that they protect themselves against double-spend attacks.
 
-The `Acknowledgement`, which may contain arbitrary payloads, is used to encode information on the filler and repay the filler for the service by unlocking assets from the vault. 
+The `Acknowledgement`, which may contain arbitrary payloads, is used to encode information on the filler and repay the filler for the service by unlocking assets from the vault.
 
 Open filling is opt-in for any protocol, allowing for the same optimizations that `ucs03-zkgm-1` leverages to increase transfer speeds.
 
 ### Batching
 
-To minimize the cost of packet verification (which is dominated by membership proofs), packets may be batched. This means that at scale, the gas cost of transfers tends to the 
+To minimize the cost of packet verification (which is dominated by membership proofs), packets may be batched. This means that at scale, the gas cost of transfers tends to the
 erc20 gas cost, which is the theoretical optimum.
 
 :::note
@@ -88,3 +75,298 @@ Read more on filling and counterparty risk [here](/concepts/filling).
 
 :::
 
+## Specification
+
+The zkgm protocol abstracts away multiple facets of IBC and Union's assets transfer protocol (uc01).
+We employ versioning in this protocol to ensure backward compatibility with future upgrades (not relying on the IBC channel upgrade feature).
+Each instruction has a version and opcode to allow for protocol evolution.
+Its features include:
+- batching
+- forward/callback envelopes
+- channel multiplexing
+- fungible assets transfer
+- non-fungible assets transfer
+
+### Packet
+
+An instruction is structured as following:
+```solidity
+struct Instruction {
+    uint8 version;    // Protocol version
+    uint8 opcode;     // Instruction type
+    bytes operand;    // Instruction-specific data
+}
+```
+
+A zkgm packet wraps an instruction with routing information:
+```solidity
+struct ZkgmPacket {
+    bytes32 salt;          // Unique packet identifier
+    uint256 path;          // Channel routing information
+    Instruction instruction; // The instruction to execute
+}
+```
+
+#### Salt
+
+The `salt` is a `bytes32` field used for unique and deterministic packet hashing.
+
+For forwarded packets, the salt is tinted with a magic value `0xC0DE00000000000000000000000000000000000000000000000000000000BABE` to distinguish them from regular packets. The next salt is derived as `keccak256(previous_salt)` with the magic value applied.
+
+#### Path
+
+The `path` is a `uint256` field used to track the packet route and asset origins. It consists of compressed `uint32` channel IDs where each 32-bit segment represents a hop by combining the previous destination channel with the next source channel: `prevDstChannel0 | nextSrcChannel0 << 32 | prevDstChannel1 << 64 ...`.
+
+The path is updated when:
+- Forwarding packets by appending channel pairs
+- Tracking asset origins for wrapped tokens
+- Validating return paths match the original route
+
+The construction allows up to 8 hops (256/32 bits) with each hop containing both the previous destination and next source channel IDs.
+
+The construction
+
+- `opcode` is a `uint8` representing the [zkgm instruction](#instructions) to execute
+- `operand` is a `bytes` representing the instruction-specific data
+
+- `version` is a `uint8` representing the protocol version
+
+:::note
+
+The `version` field is embedded in every instruction. One may think that this value is redundant for recursive packets. The reality is that upgrade propagation may take time (optimistic rollups for instance) and having every instruction specifying their version will allow to dispatch from a higher version to a lower one. This is specifically true for packet forwarding (chain **A** running version `X` forwarding to a chain **B** running version `Y`).
+
+:::
+
+
+### Instructions
+
+#### 0x00 - Forward
+
+The forward instruction uses opcode `0x00` and requires version `INSTR_VERSION_0`.
+
+Its packet structure is:
+```solidity
+struct Forward {
+    uint256 path;              // Channel sequence as (prevDst,nextSrc) pairs
+    uint64 timeoutHeight;      // Block height timeout
+    uint64 timeoutTimestamp;   // Unix timestamp timeout
+    Instruction instruction;    // Instruction to forward
+}
+```
+
+:::tip
+
+The forward instruction can wrap Multiplex, FungibleAssetOrder, or Batch instructions. The path parameter encodes pairs of (previous destination channel, next source channel) for routing. For example, to forward through a single hop, you need both the previous destination channel ID and the next source channel ID that form the connection between chains.
+
+The protocol verifies that only these specific instructions can be forwarded and that the channel pairs are valid.
+
+:::
+
+<Mermaid
+  content={`
+sequenceDiagram
+    Chain A ->> Chain B: Forward Packet
+    Chain B ->> Chain C: Original Packet
+    Chain C ->> Chain B: Acknowledgement
+    Chain B ->> Chain A: Forward Acknowledgement
+`}/>
+
+#### 0x01 - Multiplex
+
+The multiplex instruction uses opcode `0x01` and requires version `INSTR_VERSION_0`.
+
+Its packet structure is:
+```solidity
+struct Multiplex {
+    bytes sender;            // Source chain sender address (must match msg.sender)
+    bool eureka;            // Whether to use IBC-style callbacks
+    bytes contractAddress;   // Target contract address on destination
+    bytes contractCalldata;  // Call data for the target contract
+}
+```
+
+The multiplex instruction has two modes:
+
+1. Standard Mode (eureka = false):
+   - Target must implement IEurekaModule interface
+   - Calls `onZkgm(path, sourceChannel, destChannel, sender, calldata)` on target
+   - Returns success acknowledgement immediately
+   - Fire-and-forget style, no callback to sender
+
+2. IBC Mode (eureka = true):
+   - Calls `onRecvPacket(packet, relayer, relayerMsg)` on target
+   - Packet contains path, sender and calldata
+   - Target must return non-empty acknowledgement
+   - Acknowledgement forwarded back to original sender
+
+The sender address is verified to match the transaction sender to prevent impersonation.
+
+If the target contract is invalid or calls fail:
+- Standard mode returns failure acknowledgement
+- IBC mode propagates target's error response
+
+:::tip
+Example of a contract implementing IEurekaModule:
+```solidity
+contract MyEurekaContract is IEurekaModule {
+    event MessageReceived(
+        uint256 path,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address sender,
+        bytes message
+    );
+
+    function onZkgm(
+        uint256 path,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        bytes calldata sender,
+        bytes calldata message
+    ) external {
+        // Verify caller is zkgm contract
+        require(msg.sender == address(zkgm), "Only zkgm");
+
+        // Process the cross-chain message
+        emit MessageReceived(
+            path,
+            sourceChannelId,
+            destinationChannelId,
+            address(bytes20(sender)),
+            message
+        );
+    }
+}
+```
+:::
+
+<Mermaid
+  content={`
+sequenceDiagram
+    participant X as Contract X
+    participant B as Chain B
+    participant Y as Contract Y
+
+    X ->> B: Multiplex Message
+    alt IS NOT EUREKA
+        B ->> Y: onZkgm()
+        B ->> X: Success Ack
+    else IS EUREKA
+        B ->> Y: onRecvPacket()
+        Y ->> B: Custom Ack
+        B ->> X: Custom Ack
+    end
+`}/>
+
+#### 0x02 - Batch
+
+The batch instruction uses opcode `0x02` and requires version `INSTR_VERSION_0`.
+
+Its packet structure is:
+```solidity
+struct Batch {
+    Instruction[] instructions;  // Array of instructions to execute
+}
+```
+
+The batch executes multiple instructions atomically with these rules:
+
+- Instructions execute in sequence
+- Only Multiplex and FungibleAssetOrder instructions allowed in batches
+- All instructions must complete synchronously
+- If any instruction fails, entire batch reverts
+- Acknowledgements from all instructions are collected
+- Batch acknowledgement contains array of individual acknowledgements
+
+This allows atomic composition of transfers and contract calls in a single transaction.
+
+<Mermaid
+  content={`
+sequenceDiagram
+    Chain A ->> Chain B: Batch [p₀, p₁, ...]
+    activate Chain B
+    Chain B ->> Chain B: Execute All Packets
+    Chain B ->> Chain A: Batch Acknowledgement
+    deactivate Chain B
+`}/>
+
+:::tip
+
+In combination with forward envelopes or multiplexing, this batching mechanism is very useful to call contract before/after message execution (transfer an asset, swap it then stake the final asset).
+
+:::
+
+#### 0x03 - Fungible Asset Order
+
+The fungible asset order instruction uses opcode `0x03` and requires version `INSTR_VERSION_1`.
+
+Its packet structure is:
+```solidity
+struct FungibleAssetOrder {
+    bytes sender;             // Source chain sender address
+    bytes receiver;           // Destination chain receiver address
+    bytes baseToken;          // Token being sent
+    uint256 baseAmount;       // Amount being sent
+    string baseTokenSymbol;   // Token symbol for wrapped asset
+    string baseTokenName;     // Token name for wrapped asset
+    uint8 baseTokenDecimals;  // Token decimals for wrapped asset
+    uint256 baseTokenPath;    // Origin path for unwrapping
+    bytes quoteToken;         // Token requested in return
+    uint256 quoteAmount;      // Minimum amount requested
+}
+```
+
+The order can be filled in two ways:
+
+1. Protocol Fill - If the quote token matches the wrapped version of the base token and base amount >= quote amount:
+   - For new assets: Deploy wrapped token contract and mint quote amount to receiver
+   - For returning assets: Unwrap base token and transfer quote amount to receiver
+   - Any difference between baseAmount and quoteAmount is minted/transferred to the relayer as a fee
+
+2. Market Maker Fill - Any party can fill the order by providing the quote token:
+   - Market maker is specified in acknowledgement
+   - Base token is transferred/minted to market maker
+   - Market maker must handle quote token transfer on behalf of the protocol
+
+The acknowledgement includes:
+- Fill type (Protocol = `0xB0CAD0` or MarketMaker = `0xD1CEC45E`)
+- Market maker address for MM fills (empty for protocol fills)
+
+If the order fails or times out:
+- For new assets: Base token is minted back to sender
+- For returning assets: Base token is transferred back to sender
+- Outstanding balances are decreased
+
+
+<Mermaid
+  content={`
+sequenceDiagram
+    participant X as Sender
+    participant B as Chain B
+    participant MM as Market Maker
+
+    X ->> B: Asset Transfer Order
+    alt Protocol Fill
+        B ->> B: Verify & Mint/Transfer
+        B ->> X: Protocol Fill Ack
+    else Market Maker Fill
+        MM ->> B: Fill Order
+        B ->> MM: Transfer Base Token
+        B ->> X: MM Fill Ack
+    end
+`}/>
+
+:::tip
+
+A user can split a big order over multiple packets to have a partial-filling like behavior.
+For instance, one could split a \$100K order over 10 packets to allow different participants (usually market makers) to fill chunks of \$10K.
+
+Read more on filling [here](/concepts/filling).
+
+:::
+
+:::warn
+
+If any of the order in the `orders` list is failing on execution, the whole packet is reverted and a failure acknowledgement will be yield.
+
+:::

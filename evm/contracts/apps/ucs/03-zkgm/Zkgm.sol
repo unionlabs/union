@@ -563,7 +563,7 @@ contract UCS03Zkgm is
             operand: ZkgmLib.encodeMultiplex(
                 Multiplex({
                     sender: abi.encodePacked(msg.sender),
-                    eureka: true,
+                    eureka: false,
                     contractAddress: contractAddress,
                     contractCalldata: contractCalldata
                 })
@@ -1048,7 +1048,7 @@ contract UCS03Zkgm is
         Multiplex calldata multiplex
     ) internal returns (bytes memory) {
         address contractAddress = address(bytes20(multiplex.contractAddress));
-        if (multiplex.eureka) {
+        if (!multiplex.eureka) {
             IEurekaModule(contractAddress).onZkgm(
                 path,
                 ibcPacket.sourceChannelId,
@@ -1399,7 +1399,7 @@ contract UCS03Zkgm is
         bool successful,
         bytes calldata ack
     ) internal {
-        if (successful && !multiplex.eureka) {
+        if (successful && multiplex.eureka) {
             IBCPacket memory multiplexIbcPacket = IBCPacket({
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
@@ -1572,7 +1572,7 @@ contract UCS03Zkgm is
         uint256 path,
         Multiplex calldata multiplex
     ) internal {
-        if (!multiplex.eureka) {
+        if (multiplex.eureka) {
             IBCPacket memory multiplexIbcPacket = IBCPacket({
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
