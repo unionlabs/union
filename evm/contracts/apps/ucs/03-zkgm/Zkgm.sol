@@ -13,6 +13,7 @@ import "solady/utils/CREATE3.sol";
 import "solady/utils/LibBit.sol";
 import "solady/utils/LibString.sol";
 import "solady/utils/LibBytes.sol";
+import "solady/utils/EfficientHashLib.sol";
 
 import "../../Base.sol";
 import "../../../core/04-channel/IBCPacket.sol";
@@ -666,7 +667,7 @@ contract UCS03Zkgm is
             timeoutTimestamp,
             ZkgmLib.encode(
                 ZkgmPacket({
-                    salt: keccak256(
+                    salt: EfficientHashLib.hash(
                         abi.encodePacked(abi.encodePacked(msg.sender), salt)
                     ),
                     path: 0,
@@ -847,8 +848,8 @@ contract UCS03Zkgm is
             // Special case where we should avoid the packet from being
             // received entirely as it is only fillable by a market maker.
             if (
-                keccak256(acknowledgement)
-                    == keccak256(ZkgmLib.ACK_ERR_ONLYMAKER)
+                EfficientHashLib.hash(acknowledgement)
+                    == EfficientHashLib.hash(ZkgmLib.ACK_ERR_ONLYMAKER)
             ) {
                 revert ZkgmLib.ErrOnlyMaker();
             }
@@ -1060,7 +1061,9 @@ contract UCS03Zkgm is
             IBCPacket memory multiplexIbcPacket = IBCPacket({
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
-                data: abi.encode(multiplex.sender, multiplex.contractCalldata),
+                data: ZkgmLib.encodeMultiplexCalldata(
+                    path, multiplex.sender, multiplex.contractCalldata
+                ),
                 timeoutHeight: ibcPacket.timeoutHeight,
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
             });
@@ -1087,7 +1090,8 @@ contract UCS03Zkgm is
         uint32 channel,
         bytes calldata token
     ) internal view returns (address, bytes32) {
-        bytes32 wrappedTokenSalt = keccak256(abi.encode(path, channel, token));
+        bytes32 wrappedTokenSalt =
+            EfficientHashLib.hash(abi.encode(path, channel, token));
         address wrappedToken =
             CREATE3.predictDeterministicAddress(wrappedTokenSalt);
         return (wrappedToken, wrappedTokenSalt);
@@ -1628,7 +1632,7 @@ contract UCS03Zkgm is
         string calldata version,
         address
     ) external virtual override onlyIBC {
-        if (keccak256(bytes(version)) != ZkgmLib.IBC_VERSION) {
+        if (EfficientHashLib.hash(bytes(version)) != ZkgmLib.IBC_VERSION) {
             revert ZkgmLib.ErrInvalidIBCVersion();
         }
     }
@@ -1641,10 +1645,13 @@ contract UCS03Zkgm is
         string calldata counterpartyVersion,
         address
     ) external virtual override onlyIBC {
-        if (keccak256(bytes(version)) != ZkgmLib.IBC_VERSION) {
+        if (EfficientHashLib.hash(bytes(version)) != ZkgmLib.IBC_VERSION) {
             revert ZkgmLib.ErrInvalidIBCVersion();
         }
-        if (keccak256(bytes(counterpartyVersion)) != ZkgmLib.IBC_VERSION) {
+        if (
+            EfficientHashLib.hash(bytes(counterpartyVersion))
+                != ZkgmLib.IBC_VERSION
+        ) {
             revert ZkgmLib.ErrInvalidIBCVersion();
         }
     }
