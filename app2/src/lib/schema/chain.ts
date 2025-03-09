@@ -29,6 +29,14 @@ export class ChainReference extends Schema.Class<Chain>("ChainReference")({
   universal_chain_id: UniversalChainId
 }) {}
 
+export const RpcProtocolType = Schema.Literal("rpc", "rest", "grpc")
+export type RpcProtocolType = typeof RpcProtocolType.Type
+
+export class Rpc extends Schema.Class<Rpc>("Rpc")({
+  type: RpcProtocolType,
+  url: Schema.URL
+}) {}
+
 export class Chain extends Schema.Class<Chain>("Chain")({
   chain_id: ChainId,
   universal_chain_id: UniversalChainId,
@@ -36,7 +44,8 @@ export class Chain extends Schema.Class<Chain>("Chain")({
   rpc_type: RpcType,
   addr_prefix: Schema.String,
   testnet: Schema.Boolean,
-  features: Schema.Array(ChainFeatures)
+  features: Schema.Array(ChainFeatures),
+  rpcs: Schema.Array(Rpc)
 }) {
   toViemChain(): Option.Option<ViemChain> {
     if (this.rpc_type !== "evm") {

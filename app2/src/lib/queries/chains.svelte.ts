@@ -24,6 +24,10 @@ export let chainsQuery = (environment: Environment) =>
           packet_list,
           transfer_submission,
           transfer_list
+        },
+        rpcs {
+          type
+          url
         }
       }
     }
