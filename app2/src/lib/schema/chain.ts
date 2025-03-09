@@ -78,6 +78,12 @@ export class Chain extends Schema.Class<Chain>("Chain")({
       return Option.none()
     }
   }
+
+  getRpcUrl(type: RpcProtocolType): Option.Option<URL> {
+    return Option.fromNullable(
+      this.rpcs.find(rpc => rpc.type === type)?.url
+    )
+  }
 }
 
 export const Chains = Schema.Array(Chain)
