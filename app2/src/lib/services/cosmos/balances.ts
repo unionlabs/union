@@ -5,13 +5,23 @@ import type { DurationInput } from "effect/Duration"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
 import type { Chain } from "$lib/schema/chain"
 import type { AddressCosmosCanonical, AddressCosmosDisplay } from "$lib/schema/address"
-import { FetchHttpClient } from "@effect/platform"
+import { FetchHttpClient, type HttpClientError } from "@effect/platform"
 import { fromHex } from "viem"
 import { withTracerDisabledWhen } from "@effect/platform/HttpClient"
+import type { ParseError } from "effect/ParseResult"
 
-export type FetchCosmosBalanceError = TimeoutException | QueryBankBalanceError | CreateClientError
+export type FetchCosmosBalanceError =
+  | ParseError
+  | QueryBankBalanceError
+  | Base64EncodeError
+  | Error
+  | HttpClientError.HttpClientError
 
-export class QueryBankBalanceError extends Data.TaggedError("QueryBankBalanceError")<{
+class QueryBankBalanceError extends Data.TaggedError("QueryBankBalanceError")<{
+  cause: unknown
+}> {}
+
+export class Base64EncodeError extends Data.TaggedError("Base64EncodeError")<{
   cause: unknown
 }> {}
 
@@ -42,14 +52,30 @@ const fetchCw20Balance = ({
   contractAddress: string
   walletAddress: AddressCosmosDisplay
 }) =>
-  fetchDecode(
-    Cw20BalanceSchema,
-    `${rpcUrl}/cosmwasm/wasm/v1/contract/${contractAddress}/smart/${Buffer.from(
-      JSON.stringify({ balance: { address: walletAddress } })
-    ).toString("base64")}`
-  ).pipe(
-    Effect.map(response => response.data.balance),
-    Effect.mapError(err => new QueryBankBalanceError({ cause: err }))
+  Effect.gen(function* (_) {
+    yield* Effect.log(
+      `fetching CW20 balance for contract ${contractAddress} and wallet ${walletAddress}`
+    )
+
+    const queryJson = { balance: { address: walletAddress } }
+
+    const base64Query = yield* Effect.try({
+      try: () => btoa(JSON.stringify(queryJson)),
+      catch: error => new Base64EncodeError({ cause: error })
+    })
+
+    const response = yield* fetchDecode(
+      Cw20BalanceSchema,
+      `${rpcUrl}/cosmwasm/wasm/v1/contract/${contractAddress}/smart/${base64Query}`
+    )
+
+    yield* Effect.log(`received CW20 balance response for ${contractAddress}`, response)
+
+    return response.data.balance
+  }).pipe(
+    Effect.tapError(error =>
+      Effect.log(`error fetching CW20 balance for ${contractAddress}`, error)
+    )
   )
 
 const fetchCosmosBalance = ({
@@ -85,10 +111,6 @@ export const createCosmosBalanceQuery = ({
     if (chain.universal_chain_id !== "union.union-testnet-9")
       yield* Effect.fail(new Error("Only union supported"))
 
-    yield* Effect.log(
-      `starting balances fetcher for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`
-    )
-
     // TODO: Get RPC URL from chain config
     const rpcUrl = "https://rest.testnet-9.union.build"
     const displayAddress = yield* chain.toCosmosDisplay(walletAddress)
@@ -98,6 +120,10 @@ export const createCosmosBalanceQuery = ({
       catch: error => new QueryBankBalanceError({ cause: error })
     })
 
+    yield* Effect.log(
+      `starting balances fetcher for ${chain.universal_chain_id}:${displayAddress}:${decodedDenom}`
+    )
+
     let balance = yield* decodedDenom.startsWith("union1")
       ? Effect.retry(
           fetchCw20Balance({
@@ -105,21 +131,14 @@ export const createCosmosBalanceQuery = ({
             contractAddress: decodedDenom,
             walletAddress: displayAddress
           }),
-          Schedule.exponential("2 seconds", 2.0).pipe(
-            Schedule.intersect(Schedule.recurs(8)),
-            Schedule.whileInput(
-              (error: FetchCosmosBalanceError) =>
-                error._tag === "QueryBankBalanceError" &&
-                error.cause instanceof Error &&
-                error.cause.message.includes("HTTP")
-            )
-          )
+          Schedule.exponential("2 seconds", 2.0).pipe(Schedule.intersect(Schedule.recurs(2)))
         )
       : // Regular bank balance query
         Effect.retry(
           fetchCosmosBalance({ rpcUrl, walletAddress: displayAddress, denom: decodedDenom }),
           Schedule.exponential("2 seconds", 2.0).pipe(Schedule.intersect(Schedule.recurs(8)))
         )
+    yield* Effect.log("fetched balance", balance)
 
     yield* Effect.sync(() => {
       writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
@@ -127,7 +146,8 @@ export const createCosmosBalanceQuery = ({
     })
   }).pipe(
     Effect.tapError(error =>
-      Effect.sync(() => {
+      Effect.gen(function* () {
+        yield* Effect.log("writing error", error)
         writeError(Option.some(error))
       })
     ),
@@ -140,6 +160,6 @@ export const createCosmosBalanceQuery = ({
   ).pipe(
     Effect.scoped,
     Effect.provide(FetchHttpClient.layer),
-    withTracerDisabledWhen(() => true)
+    withTracerDisabledWhen(() => true) // important! this prevents CORS issues: https://github.com/Effect-TS/effect/issues/4568
   )
 }

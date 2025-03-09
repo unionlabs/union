@@ -180,6 +180,10 @@ $effect(() => {
                     </div>
                   {/if}
                   {#if Option.isSome(error)}
+                    ERROR FOR: <TokenComponent 
+                        chain={chain} 
+                        denom={token.denom} 
+                      />
                     <ErrorComponent error={error.value} />
                   {/if}
                 </div>
