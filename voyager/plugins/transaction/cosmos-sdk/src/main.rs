@@ -340,7 +340,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     Some(Err(err)) => {
                         // dbg!(&err);
 
-                        let mut split_msgs = false;
+                        // let mut split_msgs = false;
 
                         match err {
                             _ if let Some(err) = err.as_json_rpc_error() => {
@@ -399,7 +399,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 log,
                             } => {
                                 if let Some((msg_idx, log)) = parse_msg_idx_from_log(&log) {
-                                    let _span = info_span!("cosmos msg failed", msg_idx);
+                                    let _span = info_span!("cosmos msg failed", msg_idx).entered();
                                     info!(%log);
 
                                     match self.fatal_errors.get(&(codespace.clone(), error_code)) {
@@ -429,17 +429,39 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                                 }
                                                 _ => {
                                                     warn!("ibc-union error ({err}): {log}");
-                                                    split_msgs = true;
+                                                    // split_msgs = true;
                                                 }
                                             },
                                             None => {
                                                 warn!("error submitting transaction ({codespace}, {error_code}): {log}");
-                                                split_msgs = true;
+                                                // split_msgs = true;
                                             }
                                         },
                                     }
 
-                                    if !split_msgs {
+                                    // if !split_msgs {
+                                    //     msgs.remove(msg_idx);
+
+                                    //     if msgs.is_empty() {
+                                    //         Ok(noop())
+                                    //     } else {
+                                    //         Ok(call(PluginMessage::new(
+                                    //             self.plugin_name(),
+                                    //             ModuleCall::SubmitTransaction(msgs),
+                                    //         )))
+                                    //     }
+                                    // } else
+                                    if msgs.len() == 1 {
+                                        warn!("cosmos msg failed");
+
+                                        Ok(noop())
+                                    } else {
+                                        // Ok(seq(msgs.into_iter().map(|msg| {
+                                        //     call(PluginMessage::new(
+                                        //         self.plugin_name(),
+                                        //         ModuleCall::SubmitTransaction(vec![msg]),
+                                        //     ))
+                                        // })))
                                         msgs.remove(msg_idx);
 
                                         if msgs.is_empty() {
@@ -450,17 +472,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                                 ModuleCall::SubmitTransaction(msgs),
                                             )))
                                         }
-                                    } else if msgs.len() == 1 {
-                                        warn!("cosmos msg failed");
-
-                                        Ok(noop())
-                                    } else {
-                                        Ok(seq(msgs.into_iter().map(|msg| {
-                                            call(PluginMessage::new(
-                                                self.plugin_name(),
-                                                ModuleCall::SubmitTransaction(vec![msg]),
-                                            ))
-                                        })))
                                     }
                                 } else if log.contains("insufficient funds") {
                                     warn!("out of gas");

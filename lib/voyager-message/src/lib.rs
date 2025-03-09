@@ -77,6 +77,7 @@ pub use reth_ipc;
 pub use voyager_core as core;
 pub use voyager_vm as vm;
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum VoyagerMessage {}
 
 impl QueueMessage for VoyagerMessage {
