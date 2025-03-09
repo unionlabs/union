@@ -3,12 +3,11 @@ import { fetchDecode } from "$lib/utils/queries"
 import type { DurationInput } from "effect/Duration"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
 import type { Chain } from "$lib/schema/chain"
-import type { AddressCosmosCanonical, AddressCosmosDisplay } from "$lib/schema/address"
+import { type AddressCosmosCanonical, AddressCosmosDisplay } from "$lib/schema/address"
 import { FetchHttpClient, type HttpClientError } from "@effect/platform"
 import { fromHexString, FromHexError } from "$lib/utils/hex"
 import { withTracerDisabledWhen } from "@effect/platform/HttpClient"
 import type { ParseError } from "effect/ParseResult"
-import type { URL } from "effect/Schema"
 
 export class NoRestRpcError extends Data.TaggedError("NoRestRpcError")<{
   chain: Chain
@@ -51,7 +50,7 @@ const fetchCw20Balance = ({
   walletAddress
 }: {
   rpcUrl: URL
-  contractAddress: string
+  contractAddress: AddressCosmosDisplay
   walletAddress: AddressCosmosDisplay
 }) =>
   Effect.gen(function* (_) {
@@ -75,7 +74,7 @@ const fetchCosmosBalance = ({
   walletAddress,
   denom
 }: {
-  rpcUrl: string
+  rpcUrl: URL
   walletAddress: AddressCosmosDisplay
   denom: string
 }) =>
@@ -106,7 +105,6 @@ export const createCosmosBalanceQuery = ({
     })
 
     const displayAddress = yield* chain.toCosmosDisplay(walletAddress)
-
     const decodedDenom = yield* fromHexString(tokenAddress)
 
     yield* Effect.log(
@@ -117,7 +115,7 @@ export const createCosmosBalanceQuery = ({
       ? Effect.retry(
           fetchCw20Balance({
             rpcUrl,
-            contractAddress: decodedDenom,
+            contractAddress: AddressCosmosDisplay.make(decodedDenom as `${string}1${string}`),
             walletAddress: displayAddress
           }),
           Schedule.exponential("2 seconds", 2.0).pipe(Schedule.intersect(Schedule.recurs(8)))
