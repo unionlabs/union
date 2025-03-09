@@ -58,7 +58,7 @@ $: progressMap = $showDetailedTrace
 
 // Display texts
 $: statusText = {
-  transferring: "Your funds are on the way. Please hold tight.",
+  transferring: "Your funds are on the way.",
   transferred: `This transfer is complete. Your funds are ready to use on ${$stats.data?.destination_chain?.display_name}`,
   acknowledged: "Transfer complete. Your funds are confirmed."
 }
@@ -121,6 +121,10 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
     <!-- MAIN CONTENT AREA -->
     {#if transferStatus === "transferring" || !showDetailedTrace}
       <div>
+        <p class="mt-1 text-sm">
+          Due to Union Testnet 9's extreme popularity, transfers are fully filling the blocks of connected networks. Therefore, transfers will take longer to complete. You can close this tab, transfers will eventually be filled when connected networks have enough blockspace.
+        </p>
+        <!--
         {#if $stats.isLoading || !medianRecv}
           <p class="mt-1 text-neutral-400 text-sm">Calculating ETA...</p>
         {:else}
@@ -135,6 +139,7 @@ $: delayAck = medianAck ? Math.max(0, elapsed - medianAck) : 0
             </p>
           {/if}
         {/if}
+        !-->
       </div>
     {:else if transferStatus === "transferred" && $showDetailedTrace}
       <div>
