@@ -27,7 +27,7 @@ use ibc_union_msg::{
 use ibc_union_spec::{
     path::{
         BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
-        ConsensusStatePath, COMMITMENT_MAGIC,
+        ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
     },
     types::{Channel, ChannelState, Connection, ConnectionState, Packet},
 };
@@ -604,7 +604,7 @@ fn timeout_packet(
             path: commitment_key.into_bytes(),
         },
     )?;
-    delete_packet_commitment(deps.branch(), source_channel, &packet)?;
+    mark_packet_as_acknowledged(deps.branch(), source_channel, &packet)?;
 
     if packet.timeout_timestamp == 0 && packet.timeout_height == 0 {
         return Err(ContractError::TimeoutMustBeSet);
@@ -681,7 +681,7 @@ fn acknowledge_packet(
     let mut events = Vec::with_capacity(packets.len());
     let mut messages = Vec::with_capacity(packets.len());
     for (packet, ack) in packets.into_iter().zip(acknowledgements) {
-        delete_packet_commitment(deps.branch(), source_channel, &packet)?;
+        mark_packet_as_acknowledged(deps.branch(), source_channel, &packet)?;
         events.push(Event::new(events::packet::ACK).add_attributes([
             (
                 events::attribute::PACKET,
@@ -704,7 +704,7 @@ fn acknowledge_packet(
     Ok(Response::new().add_events(events).add_messages(messages))
 }
 
-fn delete_packet_commitment(
+fn mark_packet_as_acknowledged(
     deps: DepsMut,
     source_channel: u32,
     packet: &Packet,
@@ -718,10 +718,13 @@ fn delete_packet_commitment(
         .storage
         .get(commitment_key.as_ref())
         .unwrap_or(H256::<HexPrefixed>::default().into_bytes().into_vec());
+    if commitment == COMMITMENT_MAGIC_ACK.as_ref() {
+        return Err(ContractError::PacketAlreadyAcknowledged);
+    }
     if commitment != COMMITMENT_MAGIC.as_ref() {
         return Err(ContractError::PacketCommitmentNotFound);
     }
-    deps.storage.remove(commitment_key.as_ref());
+    store_commit(deps, &commitment_key, &COMMITMENT_MAGIC_ACK)?;
     Ok(())
 }
 

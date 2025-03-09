@@ -11,6 +11,8 @@ import "../Types.sol";
 library IBCPacketLib {
     bytes32 public constant COMMITMENT_MAGIC =
         0x0100000000000000000000000000000000000000000000000000000000000000;
+    bytes32 public constant COMMITMENT_MAGIC_ACK =
+        0x0200000000000000000000000000000000000000000000000000000000000000;
     bytes32 public constant COMMITMENT_NULL = bytes32(uint256(0));
 
     event PacketSend(IBCPacket packet);
@@ -365,7 +367,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         IIBCModule module = lookupModuleByChannel(sourceChannelId);
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = msg_.packets[i];
-            deletePacketCommitment(sourceChannelId, packet);
+            markPacketAsAcknowledged(sourceChannelId, packet);
             bytes calldata acknowledgement = msg_.acknowledgements[i];
             module.onAcknowledgementPacket(
                 packet, acknowledgement, msg_.relayer
@@ -399,7 +401,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             revert IBCErrors.ErrInvalidProof();
         }
         IIBCModule module = lookupModuleByChannel(sourceChannelId);
-        deletePacketCommitment(sourceChannelId, packet);
+        markPacketAsAcknowledged(sourceChannelId, packet);
         if (packet.timeoutTimestamp == 0 && packet.timeoutHeight == 0) {
             revert IBCErrors.ErrTimeoutMustBeSet();
         }
@@ -444,7 +446,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         );
     }
 
-    function deletePacketCommitment(
+    function markPacketAsAcknowledged(
         uint32 sourceChannelId,
         IBCPacket calldata packet
     ) internal {
@@ -452,9 +454,12 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             sourceChannelId, IBCPacketLib.commitPacket(packet)
         );
         bytes32 commitment = commitments[commitmentKey];
+        if (commitment == IBCPacketLib.COMMITMENT_MAGIC_ACK) {
+            revert IBCErrors.ErrPacketAlreadyAcknowledged();
+        }
         if (commitment != IBCPacketLib.COMMITMENT_MAGIC) {
             revert IBCErrors.ErrPacketCommitmentNotFound();
         }
-        delete commitments[commitmentKey];
+        commitments[commitmentKey] = IBCPacketLib.COMMITMENT_MAGIC_ACK;
     }
 }

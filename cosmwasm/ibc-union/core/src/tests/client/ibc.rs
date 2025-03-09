@@ -150,6 +150,7 @@ fn update_client_ok() {
                     client_state: vec![3, 2, 1].into(),
                 })
             }
+            LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -195,6 +196,7 @@ fn update_client_ko() {
                 events: None,
             }),
             LightClientQueryMsg::VerifyClientMessage { .. } => to_json_binary(&0),
+            LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -246,6 +248,7 @@ fn update_client_commitments_saved() {
                     client_state: vec![3, 2, 1].into(),
                 })
             }
+            LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
             msg => panic!("should not be called: {:?}", msg),
         }));
 

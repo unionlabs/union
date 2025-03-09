@@ -87,6 +87,11 @@ pub enum ContractError {
     TimeoutHeightNotReached,
     #[error("{} channel ({0}) does not exist", ContractErrorKind::from(self))]
     ChannelNotExist(u32),
+    #[error(
+        "{} packet has been already acknowledged",
+        ContractErrorKind::from(self)
+    )]
+    PacketAlreadyAcknowledged,
     #[error("{} packet commitment not found", ContractErrorKind::from(self))]
     PacketCommitmentNotFound,
     #[error(

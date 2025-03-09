@@ -669,7 +669,7 @@ contract IBCPacketTests is Test {
         handler.acknowledgePacket(msg_);
     }
 
-    function test_acknowledgePacket_commitmentRemoved(
+    function test_acknowledgePacket_commitmentMarked(
         uint32 destinationChannel,
         bytes calldata message,
         uint8 nbPackets
@@ -690,7 +690,7 @@ contract IBCPacketTests is Test {
                         IBCPacketLib.commitPacketMemory(msg_.packets[i])
                     )
                 ),
-                IBCPacketLib.COMMITMENT_NULL
+                IBCPacketLib.COMMITMENT_MAGIC_ACK
             );
         }
     }
@@ -755,7 +755,7 @@ contract IBCPacketTests is Test {
         return msg_;
     }
 
-    function test_timeoutPacket_timestamp_commitmentRemoved(
+    function test_timeoutPacket_timestamp_commitmentMarked(
         uint32 destinationChannel,
         bytes calldata message,
         uint32 timestamp,
@@ -770,7 +770,7 @@ contract IBCPacketTests is Test {
                     channelId, IBCPacketLib.commitPacketMemory(msg_.packet)
                 )
             ),
-            IBCPacketLib.COMMITMENT_NULL
+            IBCPacketLib.COMMITMENT_MAGIC_ACK
         );
     }
 
@@ -853,7 +853,7 @@ contract IBCPacketTests is Test {
                     channelId, IBCPacketLib.commitPacketMemory(msg_.packet)
                 )
             ),
-            IBCPacketLib.COMMITMENT_NULL
+            IBCPacketLib.COMMITMENT_MAGIC_ACK
         );
     }
 

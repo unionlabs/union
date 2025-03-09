@@ -53,6 +53,7 @@ library IBCErrors {
     error ErrPacketNotReceived();
     error ErrAcknowledgementAlreadyExists();
     error ErrPacketCommitmentNotFound();
+    error ErrPacketAlreadyAcknowledged();
     error ErrTimeoutHeightNotReached();
     error ErrTimeoutTimestampNotReached();
     error ErrNotEnoughPackets();
