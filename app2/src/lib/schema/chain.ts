@@ -37,6 +37,16 @@ export class Rpc extends Schema.Class<Rpc>("Rpc")({
   url: Schema.URL
 }) {}
 
+export class Explorer extends Schema.Class<Explorer>("Explorer")({
+  address_url: Schema.URL,
+  block_url: Schema.URL,
+  description: Schema.String,
+  display_name: Schema.String,
+  home_url: Schema.URL,
+  name: Schema.String,
+  tx_url: Schema.URL
+}) {}
+
 export class Chain extends Schema.Class<Chain>("Chain")({
   chain_id: ChainId,
   universal_chain_id: UniversalChainId,
@@ -45,7 +55,8 @@ export class Chain extends Schema.Class<Chain>("Chain")({
   addr_prefix: Schema.String,
   testnet: Schema.Boolean,
   features: Schema.Array(ChainFeatures),
-  rpcs: Schema.Array(Rpc)
+  rpcs: Schema.Array(Rpc),
+  explorers: Schema.Array(Explorer)
 }) {
   toViemChain(): Option.Option<ViemChain> {
     if (this.rpc_type !== "evm") {

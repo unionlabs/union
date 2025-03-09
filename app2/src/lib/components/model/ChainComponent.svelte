@@ -52,6 +52,25 @@ const classes = cn("flex flex-col text-md font-semibold", className)
         </div>
       </section>
 
+      {#if chain.explorers.length > 0}
+        <section>
+          <h3 class="text-white">Explorers</h3>
+          <div class="flex flex-col gap-2">
+            {#each chain.explorers as explorer}
+              <div class="flex flex-col">
+                <div class="flex items-center gap-2">
+                  <span class="text-white">{explorer.display_name}</span>
+                  <a href={explorer.home_url} class="underline" target="_blank" rel="noopener noreferrer">
+                    {explorer.home_url}
+                  </a>
+                </div>
+                <div class="text-xs">{explorer.description}</div>
+              </div>
+            {/each}
+          </div>
+        </section>
+      {/if}
+
       <section>
         <h3 class="text-white">Features</h3>
         <div class="grid grid-cols-2 gap-x-4">

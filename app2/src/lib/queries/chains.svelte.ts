@@ -28,6 +28,15 @@ export let chainsQuery = (environment: Environment) =>
         rpcs {
           type
           url
+        },
+        explorers {
+          address_url
+          block_url
+          description
+          display_name
+          home_url
+          name
+          tx_url
         }
       }
     }
