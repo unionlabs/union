@@ -102,7 +102,6 @@ function fetchAllBalances() {
   for (const chain of chainsData) {
     // Only fetch for EVM chains for now
     if (chain.rpc_type === "aptos") continue
-    if (chain.universal_chain_id !== "union.union-testnet-9") continue
 
     // Get tokens for this chain
     const tokens = Option.getOrNull(tokensStore.getData(chain.universal_chain_id))

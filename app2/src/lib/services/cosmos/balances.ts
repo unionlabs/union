@@ -9,11 +9,17 @@ import { FetchHttpClient, type HttpClientError } from "@effect/platform"
 import { fromHex } from "viem"
 import { withTracerDisabledWhen } from "@effect/platform/HttpClient"
 import type { ParseError } from "effect/ParseResult"
+import type { URL } from "effect/Schema"
+
+export class NoRestRpcError extends Data.TaggedError("NoRestRpcError")<{
+  chain: Chain
+}> {}
 
 export type FetchCosmosBalanceError =
   | ParseError
   | QueryBankBalanceError
   | Base64EncodeError
+  | NoRestRpcError
   | Error
   | HttpClientError.HttpClientError
 
@@ -48,15 +54,11 @@ const fetchCw20Balance = ({
   contractAddress,
   walletAddress
 }: {
-  rpcUrl: string
+  rpcUrl: URL
   contractAddress: string
   walletAddress: AddressCosmosDisplay
 }) =>
   Effect.gen(function* (_) {
-    yield* Effect.log(
-      `fetching CW20 balance for contract ${contractAddress} and wallet ${walletAddress}`
-    )
-
     const queryJson = { balance: { address: walletAddress } }
 
     const base64Query = yield* Effect.try({
@@ -68,8 +70,6 @@ const fetchCw20Balance = ({
       Cw20BalanceSchema,
       `${rpcUrl}/cosmwasm/wasm/v1/contract/${contractAddress}/smart/${base64Query}`
     )
-
-    yield* Effect.log(`received CW20 balance response for ${contractAddress}`, response)
 
     return response.data.balance
   }).pipe(
@@ -108,11 +108,11 @@ export const createCosmosBalanceQuery = ({
   writeError: (error: Option.Option<FetchCosmosBalanceError>) => void
 }) => {
   const fetcherPipeline = Effect.gen(function* () {
-    if (chain.universal_chain_id !== "union.union-testnet-9")
-      yield* Effect.fail(new Error("Only union supported"))
+    const rpcUrl = yield* Option.match(chain.getRpcUrl("rest"), {
+      onNone: () => Effect.fail(new NoRestRpcError({ chain })),
+      onSome: Effect.succeed
+    })
 
-    // TODO: Get RPC URL from chain config
-    const rpcUrl = "https://rest.testnet-9.union.build"
     const displayAddress = yield* chain.toCosmosDisplay(walletAddress)
 
     const decodedDenom = yield* Effect.try({

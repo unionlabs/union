@@ -1,7 +1,7 @@
 import { VIEM_CHAINS } from "$lib/constants/viem-chains"
 import { Option, Schema } from "effect"
 import type { Chain as ViemChain } from "viem"
-import { AddressCosmosCanonical, AddressCosmosDisplay } from "./address"
+import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address"
 import { bech32, bytes } from "@scure/base"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
@@ -80,9 +80,7 @@ export class Chain extends Schema.Class<Chain>("Chain")({
   }
 
   getRpcUrl(type: RpcProtocolType): Option.Option<URL> {
-    return Option.fromNullable(
-      this.rpcs.find(rpc => rpc.type === type)?.url
-    )
+    return Option.fromNullable(this.rpcs.find(rpc => rpc.type === type)?.url)
   }
 }
 
