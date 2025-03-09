@@ -63,58 +63,57 @@ $effect(() => {
     <Card>
       <div class="p-4 text-zinc-500">Loading chains...</div>
     </Card>
-  {:else if Option.isSome(chains.error)}
-    <Card>
-      <div class="p-4 text-red-500">Error loading chains</div>
-    </Card>
   {:else}
     {#each Option.getOrNull(chains.data) ?? [] as chain}
-      <Card>
-      <ChainComponent {chain}/>
-      {#if chain.rpc_type !== "aptos"}
-        <div class="flex flex-col">
-          
-          {#if Option.isNone(sortedBalancesStore.sortedBalances)}
-            <div class="text-zinc-500">Loading balances...</div>
-          {:else}
-            {@const tokensForChain = Option.fromNullable(sortedBalancesStore.sortedBalances.value.find(v => v.chain.universal_chain_id === chain.universal_chain_id)).pipe(Option.flatMap(c => c.tokens))}
-            {#if Option.isNone(tokensForChain)}
-              <div class="text-zinc-500">No balances found</div>
+      <Card divided>
+        <section class="p-4">
+          <ChainComponent {chain}/>
+        </section>
+        <section class="p-4">
+        {#if chain.rpc_type !== "aptos"}
+          <div class="flex flex-col">
+            {#if Option.isNone(sortedBalancesStore.sortedBalances)}
+              <div class="text-zinc-500">Loading balances...</div>
             {:else}
-              {#each tokensForChain.value.filter(t => 
-                Option.isSome(t.error) || 
-                Option.isNone(t.balance) || 
-                uiStore.showZeroBalances || 
-                t.numericValue > 0n
-              ) as { token, balance, error }}
-                <div class="flex flex-col gap-2">
-                  {#if Option.isSome(balance)}
-                    <TokenComponent 
-                      chain={chain} 
-                      denom={token.denom} 
-                      amount={balance.value} 
-                    />
-                  {:else}
-                    <div class="text-red-500 font-bold">
-                      NO BALANCE FOR: <TokenComponent 
+              {@const tokensForChain = Option.fromNullable(sortedBalancesStore.sortedBalances.value.find(v => v.chain.universal_chain_id === chain.universal_chain_id)).pipe(Option.flatMap(c => c.tokens))}
+              {#if Option.isNone(tokensForChain)}
+                <div class="text-zinc-500">No balances found</div>
+              {:else}
+                {#each tokensForChain.value.filter(t => 
+                  Option.isSome(t.error) || 
+                  Option.isNone(t.balance) || 
+                  uiStore.showZeroBalances || 
+                  t.numericValue > 0n
+                ) as { token, balance, error }}
+                  <div class="flex flex-col gap-2">
+                    {#if Option.isSome(balance)}
+                      <TokenComponent 
                         chain={chain} 
                         denom={token.denom} 
+                        amount={balance.value} 
                       />
-                    </div>
-                  {/if}
-                  {#if Option.isSome(error)}
-                    ERROR FOR: <TokenComponent 
-                        chain={chain} 
-                        denom={token.denom} 
-                      />
-                    <ErrorComponent error={error.value} />
-                  {/if}
-                </div>
-              {/each}
+                    {:else}
+                      <div class="text-red-500 font-bold">
+                        NO BALANCE FOR: <TokenComponent 
+                          chain={chain} 
+                          denom={token.denom} 
+                        />
+                      </div>
+                    {/if}
+                    {#if Option.isSome(error)}
+                      ERROR FOR: <TokenComponent 
+                          chain={chain} 
+                          denom={token.denom} 
+                        />
+                      <ErrorComponent error={error.value} />
+                    {/if}
+                  </div>
+                {/each}
+              {/if}
             {/if}
-          {/if}
-        </div>
-      {/if}
+          </div>
+        {/if}
+        </section>
       </Card>
     {/each}
   {/if}
