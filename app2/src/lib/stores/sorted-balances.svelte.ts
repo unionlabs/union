@@ -1,7 +1,7 @@
 import { Option } from "effect"
 import type { Chain } from "$lib/schema/chain"
 import type { AddressCanonicalBytes } from "$lib/schema/address"
-import type { Tokens, TokenRawDenom, RawTokenBalance, TokenRawAmount } from "$lib/schema/token"
+import type { Tokens, TokenRawDenom, TokenRawAmount } from "$lib/schema/token"
 import { balancesStore, type BalancesStore } from "./balances.svelte"
 import { chains } from "./chains.svelte"
 import { tokensStore } from "./tokens.svelte"
@@ -95,7 +95,7 @@ class SortedBalancesStore {
 
           return {
             chain,
-            tokens: Option.flatMap(address, addr => 
+            tokens: Option.flatMap(address, addr =>
               tokensStore
                 .getData(chain.universal_chain_id)
                 .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, addr)))

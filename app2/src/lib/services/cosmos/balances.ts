@@ -1,5 +1,4 @@
 import { Data, Effect, Option, Schema, Schedule } from "effect"
-import type { TimeoutException } from "effect/Cause"
 import { fetchDecode } from "$lib/utils/queries"
 import type { DurationInput } from "effect/Duration"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
@@ -72,11 +71,7 @@ const fetchCw20Balance = ({
     )
 
     return response.data.balance
-  }).pipe(
-    Effect.tapError(error =>
-      Effect.log(`error fetching CW20 balance for ${contractAddress}`, error)
-    )
-  )
+  })
 
 const fetchCosmosBalance = ({
   rpcUrl,
@@ -138,7 +133,6 @@ export const createCosmosBalanceQuery = ({
           fetchCosmosBalance({ rpcUrl, walletAddress: displayAddress, denom: decodedDenom }),
           Schedule.exponential("2 seconds", 2.0).pipe(Schedule.intersect(Schedule.recurs(8)))
         )
-    yield* Effect.log("fetched balance", balance)
 
     yield* Effect.sync(() => {
       writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))

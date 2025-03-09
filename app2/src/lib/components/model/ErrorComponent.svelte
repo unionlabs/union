@@ -5,12 +5,27 @@ import type { ParseError } from "effect/ParseResult"
 import type { NoViemChainError } from "$lib/services/evm/clients"
 import type { ReadContractError, FetchNativeBalanceError } from "$lib/services/evm/balances"
 import type { CreatePublicClientError } from "$lib/services/transfer/errors"
-import type { QueryBankBalanceError, CreateClientError, Base64EncodeError } from "$lib/services/cosmos/balances"
+import type {
+  QueryBankBalanceError,
+  CreateClientError,
+  Base64EncodeError
+} from "$lib/services/cosmos/balances"
 import { slide } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
 
 interface Props {
-  error: UnknownException | HttpClientError | ParseError | TimeoutException | NoViemChainError | ReadContractError | FetchNativeBalanceError | CreatePublicClientError | QueryBankBalanceError | CreateClientError | Base64EncodeError
+  error:
+    | UnknownException
+    | HttpClientError
+    | ParseError
+    | TimeoutException
+    | NoViemChainError
+    | ReadContractError
+    | FetchNativeBalanceError
+    | CreatePublicClientError
+    | QueryBankBalanceError
+    | CreateClientError
+    | Base64EncodeError
 }
 
 let { error }: Props = $props()
