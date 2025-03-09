@@ -2,7 +2,7 @@ import { Effect, type Fiber, Option } from "effect"
 import type { TokenRawDenom } from "$lib/schema/token"
 import type { Chain, UniversalChainId } from "$lib/schema/chain"
 import { RawTokenBalance } from "$lib/schema/token"
-import { createBalanceQuery, type FetchEvmBalanceError } from "$lib/services/evm/balances"
+import { createEvmBalanceQuery, type FetchEvmBalanceError } from "$lib/services/evm/balances"
 import {
   createCosmosBalanceQuery,
   type FetchCosmosBalanceError
@@ -75,7 +75,7 @@ export class BalancesStore {
 
     let query =
       chain.rpc_type === "evm"
-        ? createBalanceQuery({
+        ? createEvmBalanceQuery({
             chain,
             tokenAddress: denom,
             walletAddress: AddressEvmCanonical.make(address),

@@ -5,8 +5,9 @@ import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema
 import type { Chain, NoRpcError } from "$lib/schema/chain"
 import { type AddressCosmosCanonical, AddressCosmosDisplay } from "$lib/schema/address"
 import { FetchHttpClient, type HttpClientError } from "@effect/platform"
-import { fromHexString, FromHexError } from "$lib/utils/hex"
+import { fromHexString, type FromHexError } from "$lib/utils/hex"
 import { cosmosBalanceRetrySchedule } from "$lib/constants/schedules"
+import { toBase64, type Base64EncodeError } from "$lib/utils/base64"
 import { withTracerDisabledWhen } from "@effect/platform/HttpClient"
 import type { ParseError } from "effect/ParseResult"
 
@@ -20,10 +21,6 @@ export type FetchCosmosBalanceError =
   | HttpClientError.HttpClientError
 
 class QueryBankBalanceError extends Data.TaggedError("QueryBankBalanceError")<{
-  cause: unknown
-}> {}
-
-export class Base64EncodeError extends Data.TaggedError("Base64EncodeError")<{
   cause: unknown
 }> {}
 
@@ -51,12 +48,10 @@ const fetchCosmosCw20Balance = ({
   Effect.gen(function* (_) {
     const queryJson = { balance: { address: walletAddress } }
 
-    const base64Query = yield* Effect.try({
-      try: () => btoa(JSON.stringify(queryJson)),
-      catch: error => new Base64EncodeError({ cause: error })
-    })
+    const base64Query = yield* toBase64(queryJson)
 
-    const response = yield* fetchDecode( // I'm not entirely sure why this errors, but it is typesafe
+    const response = yield* fetchDecode(
+      // I'm not entirely sure why this errors, but it is typesafe
       CosmosCw20BalanceSchema,
       `${rpcUrl}/cosmwasm/wasm/v1/contract/${contractAddress}/smart/${base64Query}`
     )
@@ -73,7 +68,8 @@ const fetchCosmosBankBalance = ({
   walletAddress: AddressCosmosDisplay
   denom: string
 }) =>
-  fetchDecode( // I'm not entirely sure why this errors, but it is typesafe
+  fetchDecode(
+    // I'm not entirely sure why this errors, but it is typesafe
     CosmosBankBalanceSchema,
     `${rpcUrl}/cosmos/bank/v1beta1/balances/${walletAddress}/by_denom?denom=${denom}`
   ).pipe(Effect.map(response => response.balance.amount))
@@ -106,12 +102,12 @@ export const createCosmosBalanceQuery = ({
       ? fetchCosmosCw20Balance({
           rpcUrl,
           walletAddress: displayAddress,
-          contractAddress: AddressCosmosDisplay.make(decodedDenom as `${string}1${string}`),
+          contractAddress: AddressCosmosDisplay.make(decodedDenom as `${string}1${string}`)
         })
-      : fetchCosmosBankBalance({ 
-          rpcUrl, 
-          walletAddress: displayAddress, 
-          denom: decodedDenom 
+      : fetchCosmosBankBalance({
+          rpcUrl,
+          walletAddress: displayAddress,
+          denom: decodedDenom
         })
 
     let balance = yield* Effect.retry(fetchBalance, cosmosBalanceRetrySchedule)
@@ -119,9 +115,7 @@ export const createCosmosBalanceQuery = ({
     writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
     writeError(Option.none())
   }).pipe(
-    Effect.tapError(error =>
-      Effect.sync(() => writeError(Option.some(error)))
-    ),
+    Effect.tapError(error => Effect.sync(() => writeError(Option.some(error)))),
     Effect.catchAll(_ => Effect.succeed(null))
   )
 
