@@ -14,6 +14,7 @@ import Sections from "$lib/components/ui/Sections.svelte"
 import type { Tokens } from "$lib/schema/token"
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
 
 function fetchAllBalances() {
   const chainsData = Option.getOrNull(chains.data)
@@ -83,14 +84,16 @@ $effect(() => {
                 <div class="text-zinc-500">No balances found</div>
               </Card>
             {:else}
-              {#each tokensForChain.value as { token, balance, error }}
+              {#each tokensForChain.value as { token, balance, error, numericValue }}
                 <div class="flex flex-col gap-2 mb-8">
+                  {#if uiStore.showZeroBalances || numericValue > 0n}
                   {#if Option.isSome(balance)}
-                    <TokenComponent 
-                      chain={chain} 
-                      denom={token.denom} 
-                      amount={balance.value} 
-                    />
+                      <TokenComponent 
+                        chain={chain} 
+                        denom={token.denom} 
+                        amount={balance.value} 
+                      />
+                    {/if}
                   {:else}
                     <div class="text-red-500 font-bold">
                       NO BALANCE FOR: <TokenComponent 
