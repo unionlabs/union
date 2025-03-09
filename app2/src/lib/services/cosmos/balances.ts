@@ -7,6 +7,7 @@ import type { Chain } from "$lib/schema/chain"
 import type { AddressCosmosCanonical, AddressCosmosDisplay } from "$lib/schema/address"
 import { FetchHttpClient } from "@effect/platform"
 import { fromHex } from "viem"
+import { withTracerDisabledWhen } from "@effect/platform/HttpClient"
 
 export type FetchCosmosBalanceError = TimeoutException | QueryBankBalanceError | CreateClientError
 
@@ -21,15 +22,14 @@ export class CreateClientError extends Data.TaggedError("CreateClientError")<{
 // Schema for the balance response from Cosmos chain
 export const CosmosBalanceSchema = Schema.Struct({
   balance: Schema.Struct({
-    amount: Schema.String,
-    denom: Schema.String
+    amount: Schema.BigInt
   })
 })
 
 // Schema for CW20 balance response
 export const Cw20BalanceSchema = Schema.Struct({
   data: Schema.Struct({
-    balance: Schema.String
+    balance: Schema.BigInt
   })
 })
 
@@ -64,10 +64,7 @@ const fetchCosmosBalance = ({
   fetchDecode(
     CosmosBalanceSchema,
     `${rpcUrl}/cosmos/bank/v1beta1/balances/${walletAddress}/by_denom?denom=${denom}`
-  ).pipe(
-    Effect.map(response => response.balance.amount),
-    Effect.mapError(err => new QueryBankBalanceError({ cause: err }))
-  )
+  ).pipe(Effect.map(response => response.balance.amount))
 
 export const createCosmosBalanceQuery = ({
   chain,
@@ -87,7 +84,10 @@ export const createCosmosBalanceQuery = ({
   const fetcherPipeline = Effect.gen(function* () {
     if (chain.universal_chain_id !== "union.union-testnet-9")
       yield* Effect.fail(new Error("Only union supported"))
-    yield* Effect.log(`starting cosmos balances fetcher for ${walletAddress}:${tokenAddress}`)
+
+    yield* Effect.log(
+      `starting balances fetcher for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`
+    )
 
     // TODO: Get RPC URL from chain config
     const rpcUrl = "https://rest.testnet-9.union.build"
@@ -137,5 +137,9 @@ export const createCosmosBalanceQuery = ({
   return Effect.repeat(
     fetcherPipeline,
     Schedule.addDelay(Schedule.repeatForever, () => refetchInterval)
-  ).pipe(Effect.scoped, Effect.provide(FetchHttpClient.layer))
+  ).pipe(
+    Effect.scoped,
+    Effect.provide(FetchHttpClient.layer),
+    withTracerDisabledWhen(() => true)
+  )
 }

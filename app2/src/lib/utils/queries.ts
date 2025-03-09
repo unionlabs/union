@@ -7,6 +7,7 @@ import type { TadaDocumentNode } from "gql.tada"
 import { request } from "graphql-request"
 import { URLS } from "$lib/constants"
 import type { TimeoutException, UnknownException } from "effect/Cause"
+import { withTracerDisabledWhen } from "@effect/platform/HttpClient"
 
 export type FetchDecodeError = HttpClientError | ParseError | TimeoutException
 
