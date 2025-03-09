@@ -5,7 +5,7 @@ import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema
 import type { Chain } from "$lib/schema/chain"
 import type { AddressCosmosCanonical, AddressCosmosDisplay } from "$lib/schema/address"
 import { FetchHttpClient, type HttpClientError } from "@effect/platform"
-import { fromHex } from "viem"
+import { fromHexString, FromHexError } from "$lib/utils/hex"
 import { withTracerDisabledWhen } from "@effect/platform/HttpClient"
 import type { ParseError } from "effect/ParseResult"
 import type { URL } from "effect/Schema"
@@ -19,6 +19,7 @@ export type FetchCosmosBalanceError =
   | QueryBankBalanceError
   | Base64EncodeError
   | NoRestRpcError
+  | FromHexError
   | Error
   | HttpClientError.HttpClientError
 
@@ -27,10 +28,6 @@ class QueryBankBalanceError extends Data.TaggedError("QueryBankBalanceError")<{
 }> {}
 
 export class Base64EncodeError extends Data.TaggedError("Base64EncodeError")<{
-  cause: unknown
-}> {}
-
-export class CreateClientError extends Data.TaggedError("CreateClientError")<{
   cause: unknown
 }> {}
 
@@ -110,10 +107,7 @@ export const createCosmosBalanceQuery = ({
 
     const displayAddress = yield* chain.toCosmosDisplay(walletAddress)
 
-    const decodedDenom = yield* Effect.try({
-      try: () => fromHex(tokenAddress, "string"),
-      catch: error => new QueryBankBalanceError({ cause: error })
-    })
+    const decodedDenom = yield* fromHexString(tokenAddress)
 
     yield* Effect.log(
       `starting balances fetcher for ${chain.universal_chain_id}:${displayAddress}:${decodedDenom}`
@@ -126,7 +120,7 @@ export const createCosmosBalanceQuery = ({
             contractAddress: decodedDenom,
             walletAddress: displayAddress
           }),
-          Schedule.exponential("2 seconds", 2.0).pipe(Schedule.intersect(Schedule.recurs(2)))
+          Schedule.exponential("2 seconds", 2.0).pipe(Schedule.intersect(Schedule.recurs(8)))
         )
       : // Regular bank balance query
         Effect.retry(

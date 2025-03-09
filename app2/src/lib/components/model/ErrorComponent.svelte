@@ -5,11 +5,7 @@ import type { ParseError } from "effect/ParseResult"
 import type { NoViemChainError } from "$lib/services/evm/clients"
 import type { ReadContractError, FetchNativeBalanceError } from "$lib/services/evm/balances"
 import type { CreatePublicClientError } from "$lib/services/transfer/errors"
-import type {
-  QueryBankBalanceError,
-  CreateClientError,
-  Base64EncodeError
-} from "$lib/services/cosmos/balances"
+import type { QueryBankBalanceError, Base64EncodeError } from "$lib/services/cosmos/balances"
 import { slide } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
 
@@ -24,7 +20,6 @@ interface Props {
     | FetchNativeBalanceError
     | CreatePublicClientError
     | QueryBankBalanceError
-    | CreateClientError
     | Base64EncodeError
 }
 
@@ -53,8 +48,6 @@ function getUserFriendlyMessage(error: Props["error"]): string {
       return "Failed to create network connection."
     case "QueryBankBalanceError":
       return "Failed to query bank balance from the network."
-    case "CreateClientError":
-      return "Failed to create client connection."
     case "Base64EncodeError":
       return "Failed to encode query parameters."
     default:
@@ -127,9 +120,6 @@ function getUserFriendlyMessage(error: Props["error"]): string {
           <p>Error cause:</p>
           <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
         {:else if error._tag === "QueryBankBalanceError"}
-          <p>Error cause:</p>
-          <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
-        {:else if error._tag === "CreateClientError"}
           <p>Error cause:</p>
           <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
         {:else if error._tag === "Base64EncodeError"}
