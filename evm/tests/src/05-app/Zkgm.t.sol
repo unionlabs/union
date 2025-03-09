@@ -39,10 +39,13 @@ contract TestZkgm is UCS03Zkgm {
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes calldata relayerMsg,
+        uint256 path,
         bytes32 salt,
         Multiplex calldata multiplex
     ) public returns (bytes memory) {
-        return executeMultiplex(ibcPacket, relayer, relayerMsg, salt, multiplex);
+        return executeMultiplex(
+            ibcPacket, relayer, relayerMsg, path, salt, multiplex
+        );
     }
 
     function doVerify(
@@ -174,7 +177,13 @@ contract TestERC20 is ERC20 {
 contract TestMultiplexTarget is IEurekaModule, IIBCModuleRecv {
     error ErrNotZkgm();
 
-    event OnZkgm(uint32 channelId, bytes sender, bytes message);
+    event OnZkgm(
+        uint256 path,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        bytes sender,
+        bytes message
+    );
     event OnRecvPacket(IBCPacket packet, address relayer, bytes relayerMsg);
 
     address zkgm;
@@ -197,11 +206,15 @@ contract TestMultiplexTarget is IEurekaModule, IIBCModuleRecv {
     }
 
     function onZkgm(
-        uint32 channelId,
+        uint256 path,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
         bytes calldata sender,
         bytes calldata message
     ) public onlyZkgm {
-        emit OnZkgm(channelId, sender, message);
+        emit OnZkgm(
+            path, sourceChannelId, destinationChannelId, sender, message
+        );
     }
 
     function onRecvPacket(
@@ -979,7 +992,7 @@ contract ZkgmTests is Test {
                 destinationChannelId: nextDestinationChannelId,
                 data: ZkgmLib.encode(
                     ZkgmPacket({
-                        salt: keccak256(abi.encode(salt)),
+                        salt: ZkgmLib.deriveForwardSalt(salt),
                         path: ZkgmLib.updateChannelPath(
                             ZkgmLib.updateChannelPath(
                                 path, previousDestinationChannelId
@@ -1045,7 +1058,7 @@ contract ZkgmTests is Test {
                 destinationChannelId: nextDestinationChannelId,
                 data: ZkgmLib.encode(
                     ZkgmPacket({
-                        salt: keccak256(abi.encode(salt)),
+                        salt: ZkgmLib.deriveForwardSalt(salt),
                         path: ZkgmLib.updateChannelPath(
                             ZkgmLib.updateChannelPath(
                                 path, previousDestinationChannelId
@@ -1199,6 +1212,7 @@ contract ZkgmTests is Test {
         uint32 destinationChannelId,
         address relayer,
         bytes calldata relayerMsg,
+        uint256 path,
         bytes32 salt,
         bytes calldata sender,
         bytes calldata contractCalldata
@@ -1207,7 +1221,11 @@ contract ZkgmTests is Test {
         vm.assume(destinationChannelId != 0);
         vm.expectEmit();
         emit TestMultiplexTarget.OnZkgm(
-            destinationChannelId, sender, contractCalldata
+            path,
+            sourceChannelId,
+            destinationChannelId,
+            sender,
+            contractCalldata
         );
         bytes memory ack = zkgm.doExecuteMultiplex(
             IBCPacket({
@@ -1219,6 +1237,7 @@ contract ZkgmTests is Test {
             }),
             relayer,
             relayerMsg,
+            path,
             salt,
             Multiplex({
                 sender: sender,
@@ -1235,6 +1254,7 @@ contract ZkgmTests is Test {
         uint32 destinationChannelId,
         address relayer,
         bytes calldata relayerMsg,
+        uint256 path,
         bytes32 salt,
         bytes calldata sender,
         bytes calldata contractCalldata
@@ -1246,7 +1266,9 @@ contract ZkgmTests is Test {
             IBCPacket({
                 sourceChannelId: sourceChannelId,
                 destinationChannelId: destinationChannelId,
-                data: abi.encode(sender, contractCalldata),
+                data: ZkgmLib.encodeMultiplexCalldata(
+                    path, sender, contractCalldata
+                ),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: 0
             }),
@@ -1263,6 +1285,7 @@ contract ZkgmTests is Test {
             }),
             relayer,
             relayerMsg,
+            path,
             salt,
             Multiplex({
                 sender: sender,
@@ -2214,5 +2237,12 @@ contract ZkgmTests is Test {
                 Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
             )
         );
+    }
+
+    function test_tintForwardSalt_ok(
+        bytes32 salt
+    ) public {
+        assertFalse(ZkgmLib.isSaltForwardTinted(salt));
+        assertTrue(ZkgmLib.isSaltForwardTinted(ZkgmLib.tintForwardSalt(salt)));
     }
 }

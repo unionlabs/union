@@ -101,6 +101,9 @@ library ZkgmLib {
     uint8 public constant INSTR_VERSION_0 = 0x00;
     uint8 public constant INSTR_VERSION_1 = 0x01;
 
+    bytes32 public constant FORWARD_SALT_MAGIC =
+        0xC0DE00000000000000000000000000000000000000000000000000000000BABE;
+
     string public constant IBC_VERSION_STR = "ucs03-zkgm-0";
     bytes32 public constant IBC_VERSION = keccak256(bytes(IBC_VERSION_STR));
 
@@ -344,13 +347,13 @@ library ZkgmLib {
 
     function isAllowedBatchInstruction(
         uint8 opcode
-    ) internal returns (bool) {
+    ) internal pure returns (bool) {
         return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER;
     }
 
     function isAllowedForwardInstruction(
         uint8 opcode
-    ) internal returns (bool) {
+    ) internal pure returns (bool) {
         return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
             || opcode == OP_BATCH;
     }
@@ -392,6 +395,39 @@ library ZkgmLib {
             quoteToken: quoteToken,
             quoteAmount: quoteAmount
         });
+    }
+
+    function tintForwardSalt(
+        bytes32 salt
+    ) internal pure returns (bytes32) {
+        return FORWARD_SALT_MAGIC | (salt & ~FORWARD_SALT_MAGIC);
+    }
+
+    function isSaltForwardTinted(
+        bytes32 salt
+    ) internal pure returns (bool) {
+        return (salt & FORWARD_SALT_MAGIC) == FORWARD_SALT_MAGIC;
+    }
+
+    function deriveForwardSalt(
+        bytes32 salt
+    ) internal pure returns (bytes32) {
+        return tintForwardSalt(EfficientHashLib.hash(salt));
+    }
+
+    function deriveBatchSalt(
+        uint256 index,
+        bytes32 salt
+    ) internal pure returns (bytes32) {
+        return EfficientHashLib.hash(bytes32(index), salt);
+    }
+
+    function encodeMultiplexCalldata(
+        uint256 path,
+        bytes calldata contractAddress,
+        bytes calldata contractCalldata
+    ) internal pure returns (bytes memory) {
+        return abi.encode(path, contractAddress, contractCalldata);
     }
 }
 
@@ -908,6 +944,7 @@ contract UCS03Zkgm is
                 ibcPacket,
                 relayer,
                 relayerMsg,
+                path,
                 salt,
                 ZkgmLib.decodeMultiplex(instruction.operand)
             );
@@ -932,7 +969,7 @@ contract UCS03Zkgm is
                 ibcPacket,
                 relayer,
                 relayerMsg,
-                keccak256(abi.encode(i, salt)),
+                ZkgmLib.deriveBatchSalt(i, salt),
                 path,
                 instruction
             );
@@ -978,16 +1015,13 @@ contract UCS03Zkgm is
                 )
             });
         }
-        // TODO: consider using a magic value for few bytes of the salt in order
-        // to know that it's a forwarded instruction in the acknowledgement, without
-        // having to index in `inFlightPacket`, saving gas in the process.
         IBCPacket memory sentPacket = ibcHandler.sendPacket(
             nextSourceChannelId,
             forward.timeoutHeight,
             forward.timeoutTimestamp,
             ZkgmLib.encode(
                 ZkgmPacket({
-                    salt: keccak256(abi.encode(salt)),
+                    salt: ZkgmLib.deriveForwardSalt(salt),
                     path: ZkgmLib.updateChannelPath(
                         ZkgmLib.updateChannelPath(
                             path, previousDestinationChannelId
@@ -1008,12 +1042,15 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes calldata relayerMsg,
+        uint256 path,
         bytes32 salt,
         Multiplex calldata multiplex
     ) internal returns (bytes memory) {
         address contractAddress = address(bytes20(multiplex.contractAddress));
         if (multiplex.eureka) {
             IEurekaModule(contractAddress).onZkgm(
+                path,
+                ibcPacket.sourceChannelId,
                 ibcPacket.destinationChannelId,
                 multiplex.sender,
                 multiplex.contractCalldata
@@ -1196,30 +1233,37 @@ contract UCS03Zkgm is
         }
     }
 
+    function isInFlightPacket(
+        bytes32 packetHash
+    ) internal pure returns (bool) {
+        return ZkgmLib.isSaltForwardTinted(packetHash);
+    }
+
     function onAcknowledgementPacket(
         IBCPacket calldata ibcPacket,
         bytes calldata ack,
         address relayer
     ) external virtual override onlyIBC {
         bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
-        IBCPacket memory parent = inFlightPacket[packetHash];
-        // Specific case of forwarding where the ack is threaded back directly.
-        if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
-            ibcHandler.writeAcknowledgement(parent, ack);
-            delete inFlightPacket[packetHash];
-        } else {
-            ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
-            Ack calldata zkgmAck = ZkgmLib.decodeAck(ack);
-            acknowledgeInternal(
-                ibcPacket,
-                relayer,
-                zkgmPacket.path,
-                zkgmPacket.salt,
-                zkgmPacket.instruction,
-                zkgmAck.tag == ZkgmLib.ACK_SUCCESS,
-                zkgmAck.innerAck
-            );
+        if (isInFlightPacket(packetHash)) {
+            IBCPacket memory parent = inFlightPacket[packetHash];
+            if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
+                ibcHandler.writeAcknowledgement(parent, ack);
+                delete inFlightPacket[packetHash];
+                return;
+            }
         }
+        ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
+        Ack calldata zkgmAck = ZkgmLib.decodeAck(ack);
+        acknowledgeInternal(
+            ibcPacket,
+            relayer,
+            zkgmPacket.path,
+            zkgmPacket.salt,
+            zkgmPacket.instruction,
+            zkgmAck.tag == ZkgmLib.ACK_SUCCESS,
+            zkgmAck.innerAck
+        );
     }
 
     function acknowledgeInternal(
@@ -1315,7 +1359,7 @@ contract UCS03Zkgm is
                 ibcPacket,
                 relayer,
                 path,
-                keccak256(abi.encode(i, salt)),
+                ZkgmLib.deriveBatchSalt(i, salt),
                 batch.instructions[i],
                 successful,
                 syscallAck
@@ -1355,8 +1399,8 @@ contract UCS03Zkgm is
             IBCPacket memory multiplexIbcPacket = IBCPacket({
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
-                data: abi.encode(
-                    multiplex.contractAddress, multiplex.contractCalldata
+                data: ZkgmLib.encodeMultiplexCalldata(
+                    path, multiplex.sender, multiplex.contractCalldata
                 ),
                 timeoutHeight: ibcPacket.timeoutHeight,
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
@@ -1424,22 +1468,26 @@ contract UCS03Zkgm is
         address relayer
     ) external virtual override onlyIBC {
         bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
-        IBCPacket memory parent = inFlightPacket[packetHash];
-        // Specific case of forwarding where the failure is threaded back directly.
-        if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
-            ibcHandler.writeAcknowledgement(
-                parent,
-                ZkgmLib.encodeAck(
-                    Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
-                )
-            );
-            delete inFlightPacket[packetHash];
-        } else {
-            ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
-            timeoutInternal(
-                ibcPacket, relayer, zkgmPacket.path, zkgmPacket.instruction
-            );
+        if (isInFlightPacket(packetHash)) {
+            IBCPacket memory parent = inFlightPacket[packetHash];
+            if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
+                ibcHandler.writeAcknowledgement(
+                    parent,
+                    ZkgmLib.encodeAck(
+                        Ack({
+                            tag: ZkgmLib.ACK_FAILURE,
+                            innerAck: ZkgmLib.ACK_EMPTY
+                        })
+                    )
+                );
+                delete inFlightPacket[packetHash];
+                return;
+            }
         }
+        ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
+        timeoutInternal(
+            ibcPacket, relayer, zkgmPacket.path, zkgmPacket.instruction
+        );
     }
 
     function timeoutInternal(
@@ -1524,8 +1572,8 @@ contract UCS03Zkgm is
             IBCPacket memory multiplexIbcPacket = IBCPacket({
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
-                data: abi.encode(
-                    multiplex.contractAddress, multiplex.contractCalldata
+                data: ZkgmLib.encodeMultiplexCalldata(
+                    path, multiplex.contractAddress, multiplex.contractCalldata
                 ),
                 timeoutHeight: ibcPacket.timeoutHeight,
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
