@@ -240,7 +240,7 @@ contract ZkgmTests is Test {
         operand: ZkgmLib.encodeMultiplex(
             Multiplex({
                 sender: abi.encodePacked(address(0)),
-                eureka: true,
+                eureka: false,
                 contractAddress: abi.encodePacked(address(0)),
                 contractCalldata: hex""
             })
@@ -882,7 +882,7 @@ contract ZkgmTests is Test {
                             operand: ZkgmLib.encodeMultiplex(
                                 Multiplex({
                                     sender: abi.encodePacked(this),
-                                    eureka: true,
+                                    eureka: false,
                                     contractAddress: abi.encodePacked(this),
                                     contractCalldata: hex""
                                 })
@@ -934,7 +934,7 @@ contract ZkgmTests is Test {
                 operand: ZkgmLib.encodeMultiplex(
                     Multiplex({
                         sender: abi.encodePacked(address(this)),
-                        eureka: true,
+                        eureka: false,
                         contractAddress: contractAddress,
                         contractCalldata: contractCalldata
                     })
@@ -960,7 +960,7 @@ contract ZkgmTests is Test {
                 operand: ZkgmLib.encodeMultiplex(
                     Multiplex({
                         sender: abi.encodePacked(sender),
-                        eureka: true,
+                        eureka: false,
                         contractAddress: contractAddress,
                         contractCalldata: contractCalldata
                     })
@@ -1241,7 +1241,7 @@ contract ZkgmTests is Test {
             salt,
             Multiplex({
                 sender: sender,
-                eureka: true,
+                eureka: false,
                 contractAddress: abi.encodePacked(address(multiplexTarget)),
                 contractCalldata: contractCalldata
             })
@@ -1289,7 +1289,7 @@ contract ZkgmTests is Test {
             salt,
             Multiplex({
                 sender: sender,
-                eureka: false,
+                eureka: true,
                 contractAddress: abi.encodePacked(address(multiplexTarget)),
                 contractCalldata: contractCalldata
             })
@@ -1351,7 +1351,7 @@ contract ZkgmTests is Test {
                             operand: ZkgmLib.encodeMultiplex(
                                 Multiplex({
                                     sender: sender,
-                                    eureka: true,
+                                    eureka: false,
                                     contractAddress: abi.encodePacked(address(0)),
                                     contractCalldata: contractCalldata
                                 })

@@ -302,7 +302,7 @@ fn timeout_internal(
                 });
             }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
-            if !multiplex.eureka {
+            if multiplex.eureka {
                 // TODO: implement when execute is implemented
                 Err(ContractError::Unimplemented)
             } else {
@@ -414,7 +414,7 @@ fn acknowledge_internal(
                 });
             }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
-            if !multiplex.eureka {
+            if multiplex.eureka {
                 // TODO: implement when execute is implemented
                 Err(ContractError::Unimplemented)
             } else {
@@ -693,7 +693,7 @@ fn execute_multiplex(
     _relayer: Addr,
     _relayer_msg: Bytes,
     _salt: H256,
-    _path: alloy::primitives::U256,
+    path: alloy::primitives::U256,
     multiplex: Multiplex,
 ) -> Result<(Bytes, Response), ContractError> {
     let contract_address = deps
@@ -704,25 +704,27 @@ fn execute_multiplex(
         )
         .map_err(|_| ContractError::UnableToValidateMultiplexTarget)?;
     if multiplex.eureka {
-        Ok((
-            TAG_ACK_SUCCESS.abi_encode().into(),
-            Response::new().add_message(wasm_execute(
-                contract_address,
-                &EurekaMsg::OnZkgm {
-                    channel_id: packet.destination_channel_id,
-                    sender: multiplex.sender.to_vec().into(),
-                    message: multiplex.contract_calldata.to_vec().into(),
-                },
-                vec![],
-            )?),
-        ))
-    } else {
         // TODO: implement non eureka multiplexing, add a new msg `WriteAck` by
         // maintaining the hashing from packet to ack or thread the ack back
         // from the events directly? Beware we'll need to use submessage+reply
         // for execute_batch when implementing this as we need the ack to yield
         // the batch ack
         Err(ContractError::Unimplemented)
+    } else {
+        Ok((
+            TAG_ACK_SUCCESS.abi_encode().into(),
+            Response::new().add_message(wasm_execute(
+                contract_address,
+                &EurekaMsg::OnZkgm {
+                    path: Uint256::from_be_bytes(path.to_be_bytes()),
+                    source_channel_id: packet.source_channel_id,
+                    destination_channel_id: packet.destination_channel_id,
+                    sender: multiplex.sender.to_vec().into(),
+                    message: multiplex.contract_calldata.to_vec().into(),
+                },
+                vec![],
+            )?),
+        ))
     }
 }
 
