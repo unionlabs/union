@@ -1,5 +1,5 @@
 import { VIEM_CHAINS } from "$lib/constants/viem-chains"
-import { Option, Schema } from "effect"
+import { Data, Effect, Option, Schema } from "effect"
 import type { Chain as ViemChain } from "viem"
 import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
 import { bech32, bytes } from "@scure/base"
@@ -47,6 +47,11 @@ export class Explorer extends Schema.Class<Explorer>("Explorer")({
   tx_url: Schema.URL
 }) {}
 
+export class NoRpcError extends Data.TaggedError("NoRpcError")<{
+  chain: Chain
+  type: RpcProtocolType
+}> {}
+
 export class Chain extends Schema.Class<Chain>("Chain")({
   chain_id: ChainId,
   universal_chain_id: UniversalChainId,
@@ -81,6 +86,13 @@ export class Chain extends Schema.Class<Chain>("Chain")({
 
   getRpcUrl(type: RpcProtocolType): Option.Option<URL> {
     return Option.fromNullable(this.rpcs.find(rpc => rpc.type === type)?.url)
+  }
+
+  requireRpcUrl(type: RpcProtocolType): Effect.Effect<URL, NoRpcError> {
+    return Option.match(this.getRpcUrl(type), {
+      onNone: () => Effect.fail(new NoRpcError({ chain: this, type })),
+      onSome: Effect.succeed
+    })
   }
 }
 

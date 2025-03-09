@@ -2,7 +2,7 @@ import { Data, Effect, Option, Schema, Schedule } from "effect"
 import { fetchDecode } from "$lib/utils/queries"
 import type { DurationInput } from "effect/Duration"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
-import type { Chain } from "$lib/schema/chain"
+import type { Chain, NoRpcError } from "$lib/schema/chain"
 import { type AddressCosmosCanonical, AddressCosmosDisplay } from "$lib/schema/address"
 import { FetchHttpClient, type HttpClientError } from "@effect/platform"
 import { fromHexString, FromHexError } from "$lib/utils/hex"
@@ -10,15 +10,11 @@ import { cosmosBalanceRetrySchedule } from "$lib/constants/schedules"
 import { withTracerDisabledWhen } from "@effect/platform/HttpClient"
 import type { ParseError } from "effect/ParseResult"
 
-export class NoRestRpcError extends Data.TaggedError("NoRestRpcError")<{
-  chain: Chain
-}> {}
-
 export type FetchCosmosBalanceError =
   | ParseError
   | QueryBankBalanceError
   | Base64EncodeError
-  | NoRestRpcError
+  | NoRpcError
   | FromHexError
   | Error
   | HttpClientError.HttpClientError
@@ -60,7 +56,7 @@ const fetchCosmosCw20Balance = ({
       catch: error => new Base64EncodeError({ cause: error })
     })
 
-    const response = yield* fetchDecode(
+    const response = yield* fetchDecode( // I'm not entirely sure why this errors, but it is typesafe
       CosmosCw20BalanceSchema,
       `${rpcUrl}/cosmwasm/wasm/v1/contract/${contractAddress}/smart/${base64Query}`
     )
@@ -77,7 +73,7 @@ const fetchCosmosBankBalance = ({
   walletAddress: AddressCosmosDisplay
   denom: string
 }) =>
-  fetchDecode(
+  fetchDecode( // I'm not entirely sure why this errors, but it is typesafe
     CosmosBankBalanceSchema,
     `${rpcUrl}/cosmos/bank/v1beta1/balances/${walletAddress}/by_denom?denom=${denom}`
   ).pipe(Effect.map(response => response.balance.amount))
@@ -98,16 +94,12 @@ export const createCosmosBalanceQuery = ({
   writeError: (error: Option.Option<FetchCosmosBalanceError>) => void
 }) => {
   const fetcherPipeline = Effect.gen(function* () {
-    const rpcUrl = yield* Option.match(chain.getRpcUrl("rest"), {
-      onNone: () => Effect.fail(new NoRestRpcError({ chain })),
-      onSome: Effect.succeed
-    })
-
+    const rpcUrl = yield* chain.requireRpcUrl("rest")
     const displayAddress = yield* chain.toCosmosDisplay(walletAddress)
     const decodedDenom = yield* fromHexString(tokenAddress)
 
     yield* Effect.log(
-      `starting balances fetcher for ${chain.universal_chain_id}:${displayAddress}:${decodedDenom}`
+      `starting balance fetcher for ${chain.universal_chain_id}:${displayAddress}:${decodedDenom}`
     )
 
     const fetchBalance = decodedDenom.startsWith(`${chain.addr_prefix}1`)

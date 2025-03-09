@@ -6,6 +6,7 @@ import type { NoViemChainError } from "$lib/services/evm/clients"
 import type { ReadContractError, FetchNativeBalanceError } from "$lib/services/evm/balances"
 import type { CreatePublicClientError } from "$lib/services/transfer/errors"
 import type { QueryBankBalanceError, Base64EncodeError } from "$lib/services/cosmos/balances"
+import type { NoRpcError } from "$lib/schema/chain"
 import { slide } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
 
@@ -21,6 +22,7 @@ interface Props {
     | CreatePublicClientError
     | QueryBankBalanceError
     | Base64EncodeError
+    | NoRpcError
 }
 
 let { error }: Props = $props()
@@ -50,6 +52,8 @@ function getUserFriendlyMessage(error: Props["error"]): string {
       return "Failed to query bank balance from the network."
     case "Base64EncodeError":
       return "Failed to encode query parameters."
+    case "NoRpcError":
+      return `No ${error.type} endpoint available for ${error.chain.display_name}.`
     default:
       return "Something went wrong. Please try again later."
   }
@@ -125,6 +129,11 @@ function getUserFriendlyMessage(error: Props["error"]): string {
         {:else if error._tag === "Base64EncodeError"}
           <p>Error cause:</p>
           <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+        {:else if error._tag === "NoRpcError"}
+          <p>Chain: {error.chain.display_name}</p>
+          <p>RPC Type: {error.type}</p>
+          <p>Available RPC types:</p>
+          <pre class="text-sm">{JSON.stringify(error.chain.rpcs.map(r => r.type), null, 2)}</pre>
         {/if}
       </section>
     </div>
