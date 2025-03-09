@@ -9,8 +9,8 @@ import Tooltip from "$lib/components/ui/Tooltip.svelte"
 
 interface Props {
   chain: Chain
-  denom: typeof TokenRawDenom.Type
-  amount?: typeof TokenRawAmount.Type
+  denom: TokenRawDenom
+  amount?: TokenRawAmount
 }
 
 const { chain, denom, amount = undefined }: Props = $props()
