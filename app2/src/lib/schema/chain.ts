@@ -1,6 +1,8 @@
 import { VIEM_CHAINS } from "$lib/constants/viem-chains"
-import { Option, Schema } from "effect"
+import { Data, Effect, Option, Schema } from "effect"
 import type { Chain as ViemChain } from "viem"
+import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
+import { bech32, bytes } from "@scure/base"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
 // e.g. union.union-testnet-9
@@ -27,6 +29,39 @@ export class ChainReference extends Schema.Class<Chain>("ChainReference")({
   universal_chain_id: UniversalChainId
 }) {}
 
+export const RpcProtocolType = Schema.Literal("rpc", "rest", "grpc")
+export type RpcProtocolType = typeof RpcProtocolType.Type
+
+export class Rpc extends Schema.Class<Rpc>("Rpc")({
+  type: RpcProtocolType,
+  url: Schema.URL
+}) {}
+
+export class Explorer extends Schema.Class<Explorer>("Explorer")({
+  address_url: Schema.URL,
+  block_url: Schema.URL,
+  description: Schema.String,
+  display_name: Schema.String,
+  home_url: Schema.URL,
+  name: Schema.String,
+  tx_url: Schema.URL
+}) {}
+
+export class NoRpcError extends Data.TaggedError("NoRpcError")<{
+  chain: Chain
+  type: RpcProtocolType
+}> {}
+
+export class NotACosmosChainError extends Data.TaggedError("NotACosmosChainError")<{
+  chain: Chain
+}> {}
+
+export class CosmosAddressEncodeError extends Data.TaggedError("CosmosAddressEncodeError")<{
+  cause: unknown
+  address: string
+  prefix: string
+}> {}
+
 export class Chain extends Schema.Class<Chain>("Chain")({
   chain_id: ChainId,
   universal_chain_id: UniversalChainId,
@@ -34,13 +69,48 @@ export class Chain extends Schema.Class<Chain>("Chain")({
   rpc_type: RpcType,
   addr_prefix: Schema.String,
   testnet: Schema.Boolean,
-  features: Schema.Array(ChainFeatures)
+  features: Schema.Array(ChainFeatures),
+  rpcs: Schema.Array(Rpc),
+  explorers: Schema.Array(Explorer)
 }) {
   toViemChain(): Option.Option<ViemChain> {
     if (this.rpc_type !== "evm") {
       return Option.none()
     }
     return Option.fromNullable(VIEM_CHAINS.find(vc => `${vc.id}` === this.chain_id))
+  }
+
+  toCosmosDisplay(
+    address: AddressCosmosCanonical
+  ): Effect.Effect<AddressCosmosDisplay, NotACosmosChainError | CosmosAddressEncodeError> {
+    if (this.rpc_type !== "cosmos") {
+      return Effect.fail(new NotACosmosChainError({ chain: this }))
+    }
+
+    return Effect.try({
+      try: () => {
+        const words = bech32.toWords(bytes("hex", address.slice(2)))
+        const encoded = bech32.encode(this.addr_prefix, words)
+        return encoded as AddressCosmosDisplay
+      },
+      catch: error =>
+        new CosmosAddressEncodeError({
+          cause: error,
+          address: address,
+          prefix: this.addr_prefix
+        })
+    })
+  }
+
+  getRpcUrl(type: RpcProtocolType): Option.Option<URL> {
+    return Option.fromNullable(this.rpcs.find(rpc => rpc.type === type)?.url)
+  }
+
+  requireRpcUrl(type: RpcProtocolType): Effect.Effect<URL, NoRpcError> {
+    return Option.match(this.getRpcUrl(type), {
+      onNone: () => Effect.fail(new NoRpcError({ chain: this, type })),
+      onSome: Effect.succeed
+    })
   }
 }
 

@@ -47,6 +47,7 @@
     "typescript-eslint": "^8.24.1",
     "viem": "^2.23.5",
     "vite": "^6.1.0",
-    "vitest": "^3.0.5"
+    "vitest": "^3.0.5",
+    "@scure/base": "^1.2.4"
   }
 }

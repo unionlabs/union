@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Chain } from "$lib/schema/chain"
+import type { Chain, UniversalChainId } from "$lib/schema/chain"
 import type { TokenRawDenom, TokenRawAmount } from "$lib/schema/token"
 import { Effect, Option } from "effect"
 import Truncate from "$lib/components/ui/Truncate.svelte"
@@ -9,8 +9,8 @@ import Tooltip from "$lib/components/ui/Tooltip.svelte"
 
 interface Props {
   chain: Chain
-  denom: typeof TokenRawDenom.Type
-  amount?: typeof TokenRawAmount.Type
+  denom: TokenRawDenom
+  amount?: TokenRawAmount
 }
 
 const { chain, denom, amount = undefined }: Props = $props()
@@ -91,6 +91,12 @@ const displayDenom = $derived(
               {Option.isSome(token.value.cw20) ? "?" : "??"}
             </div>
           </section>
+          <section>
+            {chain.universal_chain_id}
+            {#each token.value.wrapping as wrap}
+              ← {wrap.unwrapped_chain.universal_chain_id}
+            {/each}
+          </section>
 
           <section>
             <h3 class="text-white">Denom</h3>
@@ -114,6 +120,7 @@ const displayDenom = $derived(
               {/each}
             </section>
           {/each}
+
         </div>
         {/if}
   {/snippet}

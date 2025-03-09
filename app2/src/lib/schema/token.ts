@@ -6,7 +6,11 @@ import { ChannelId } from "./channel.ts"
 export const TokenRawDenom = Hex.pipe(Schema.brand("TokenRawDenom"))
 export type TokenRawDenom = typeof TokenRawDenom.Type
 
+export const CosmosBankDenom = Schema.String.pipe(Schema.brand("CosmosBankDenom"))
+export type CosmosBankDenom = typeof CosmosBankDenom.Type
+
 export const TokenRawAmount = Schema.BigInt.pipe(Schema.brand("TokenRawAmount"))
+export type TokenRawAmount = typeof TokenRawAmount.Type
 
 export class TokenCw20 extends Schema.Class<TokenCw20>("TokenCw20")({
   cw20_token_address: Schema.String
@@ -58,6 +62,7 @@ export class Token extends Schema.Class<Token>("Token")({
 }) {}
 
 export const Tokens = Schema.Array(Token)
+export type Tokens = typeof Tokens.Type
 
 export const RawTokenBalance = Schema.Option(TokenRawAmount).pipe(Schema.brand("RawTokenBalance"))
 export type RawTokenBalance = typeof RawTokenBalance.Type

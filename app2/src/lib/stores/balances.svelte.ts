@@ -2,9 +2,17 @@ import { Effect, type Fiber, Option } from "effect"
 import type { TokenRawDenom } from "$lib/schema/token"
 import type { Chain, UniversalChainId } from "$lib/schema/chain"
 import { RawTokenBalance } from "$lib/schema/token"
-import { createBalanceQuery, type FetchBalanceError } from "$lib/services/evm/balances"
+import { createEvmBalanceQuery, type FetchEvmBalanceError } from "$lib/services/evm/balances"
+import {
+  createCosmosBalanceQuery,
+  type FetchCosmosBalanceError
+} from "$lib/services/cosmos/balances"
 import { SvelteMap } from "svelte/reactivity"
-import { AddressEvmCanonical, type AddressCanonicalBytes } from "$lib/schema/address"
+import {
+  AddressEvmCanonical,
+  AddressCosmosCanonical,
+  type AddressCanonicalBytes
+} from "$lib/schema/address"
 
 // Composite key type for the maps
 type BalanceKey = `${UniversalChainId}:${AddressCanonicalBytes}:${TokenRawDenom}`
@@ -16,9 +24,11 @@ const createKey = (
   denom: TokenRawDenom
 ): BalanceKey => `${universalChainId}:${address}:${denom}`
 
-class BalancesStore {
+export class BalancesStore {
   data = $state(new SvelteMap<BalanceKey, RawTokenBalance>())
-  errors = $state(new SvelteMap<BalanceKey, Option.Option<FetchBalanceError>>())
+  errors = $state(
+    new SvelteMap<BalanceKey, Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError>>()
+  )
   fibers = $state(new SvelteMap<BalanceKey, Fiber.RuntimeFiber<number, never>>())
 
   setBalance(
@@ -34,7 +44,7 @@ class BalancesStore {
     universalChainId: UniversalChainId,
     address: AddressCanonicalBytes,
     denom: TokenRawDenom,
-    error: Option.Option<FetchBalanceError>
+    error: Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError>
   ) {
     this.errors.set(createKey(universalChainId, address, denom), error)
   }
@@ -51,7 +61,7 @@ class BalancesStore {
     universalChainId: UniversalChainId,
     address: AddressCanonicalBytes,
     denom: TokenRawDenom
-  ): Option.Option<FetchBalanceError> {
+  ): Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError> {
     return this.errors.get(createKey(universalChainId, address, denom)) ?? Option.none()
   }
 
@@ -63,19 +73,29 @@ class BalancesStore {
       return
     }
 
-    if (chain.rpc_type === "evm") {
-      const query = createBalanceQuery({
-        chain,
-        tokenAddress: denom,
-        walletAddress: AddressEvmCanonical.make(address),
-        refetchInterval: "1 minute",
-        writeData: balance => this.setBalance(chain.universal_chain_id, address, denom, balance),
-        writeError: error => this.setError(chain.universal_chain_id, address, denom, error)
-      })
+    let query =
+      chain.rpc_type === "evm"
+        ? createEvmBalanceQuery({
+            chain,
+            tokenAddress: denom,
+            walletAddress: AddressEvmCanonical.make(address),
+            refetchInterval: "15 minutes",
+            writeData: balance =>
+              this.setBalance(chain.universal_chain_id, address, denom, balance),
+            writeError: error => this.setError(chain.universal_chain_id, address, denom, error)
+          })
+        : createCosmosBalanceQuery({
+            chain,
+            tokenAddress: denom,
+            walletAddress: AddressCosmosCanonical.make(address),
+            refetchInterval: "15 minutes",
+            writeData: balance =>
+              this.setBalance(chain.universal_chain_id, address, denom, balance),
+            writeError: error => this.setError(chain.universal_chain_id, address, denom, error)
+          })
 
-      const fiber = Effect.runFork(query)
-      this.fibers.set(key, fiber)
-    }
+    const fiber = Effect.runFork(query)
+    this.fibers.set(key, fiber)
   }
 }
 

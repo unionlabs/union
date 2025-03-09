@@ -11,7 +11,11 @@ export type AddressCanonicalBytes = typeof AddressCanonicalBytes.Type
 export const AddressCosmosCanonical = AddressCanonicalBytes.pipe(
   Schema.brand("AddressCosmosCanonical")
 )
+export type AddressCosmosCanonical = typeof AddressCosmosCanonical.Type
+
 export const AddressCosmosDisplay = Bech32.pipe(Schema.brand("AddressCosmosDisplay"))
+export type AddressCosmosDisplay = typeof AddressCosmosDisplay.Type
+
 export const AddressCosmosZkgm = Hex.pipe(Schema.brand("AddressCosmosZkgm")) // Hex<Bech32<Hrp, Cosmos.Canonical>>
 
 // EVM Address Types

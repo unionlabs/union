@@ -1,20 +1,28 @@
-import { Data, Effect, Option, Schema, Schedule } from "effect"
+import { Schedule, Data, Effect, Option, Schema } from "effect"
 import { erc20Abi, type PublicClient } from "viem"
 import type { TimeoutException } from "effect/Cause"
 import type { DurationInput } from "effect/Duration"
-import type { ReadContractErrorType } from "viem"
+import type { GetBalanceErrorType, ReadContractErrorType } from "viem"
 import { getPublicClient } from "$lib/services/evm/clients"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
 import type { NoViemChainError } from "$lib/services/evm/clients"
 import type { AddressEvmCanonical } from "$lib/schema/address"
 import type { Chain } from "$lib/schema/chain"
 import type { CreatePublicClientError } from "$lib/services/transfer"
+import { fromHexString, type FromHexError } from "$lib/utils/hex"
+import { evmBalanceRetrySchedule } from "$lib/constants/schedules"
 
-export type FetchBalanceError =
+export type FetchEvmBalanceError =
   | NoViemChainError
+  | FromHexError
   | TimeoutException
   | ReadContractError
+  | FetchNativeBalanceError
   | CreatePublicClientError
+
+export class FetchNativeBalanceError extends Data.TaggedError("FetchNativeBalanceError")<{
+  cause: GetBalanceErrorType
+}> {}
 export class ReadContractError extends Data.TaggedError("ReadContractError")<{
   cause: ReadContractErrorType
 }> {}
@@ -26,7 +34,19 @@ export const BalanceSchema = Schema.Struct({
   address: Schema.String
 })
 
-const fetchTokenBalance = ({
+const fetchEvmGasBalance = ({
+  client,
+  walletAddress
+}: {
+  client: PublicClient
+  walletAddress: AddressEvmCanonical
+}) =>
+  Effect.tryPromise({
+    try: () => client.getBalance({ address: walletAddress }),
+    catch: err => new FetchNativeBalanceError({ cause: err as GetBalanceErrorType })
+  })
+
+const fetchEvmErc20Balance = ({
   client,
   tokenAddress,
   walletAddress
@@ -46,7 +66,7 @@ const fetchTokenBalance = ({
     catch: err => new ReadContractError({ cause: err as ReadContractErrorType })
   })
 
-export const createBalanceQuery = ({
+export const createEvmBalanceQuery = ({
   chain,
   tokenAddress,
   walletAddress,
@@ -59,27 +79,27 @@ export const createBalanceQuery = ({
   walletAddress: AddressEvmCanonical
   refetchInterval: DurationInput
   writeData: (data: RawTokenBalance) => void
-  writeError: (error: Option.Option<FetchBalanceError>) => void
+  writeError: (error: Option.Option<FetchEvmBalanceError>) => void
 }) => {
   const fetcherPipeline = Effect.gen(function* (_) {
-    yield* Effect.log(`starting balances fetcher for ${walletAddress}:${tokenAddress}`)
     const client = yield* getPublicClient(chain)
+    const decodedDenom = yield* fromHexString(tokenAddress)
 
-    const balance = yield* Effect.retry(
-      fetchTokenBalance({ client, tokenAddress, walletAddress }).pipe(Effect.timeout("10 seconds")),
-      { times: 4 }
+    yield* Effect.log(
+      `starting balances fetcher for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`
     )
 
-    yield* Effect.sync(() => {
-      writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
-      writeError(Option.none())
-    })
+    const fetchBalance =
+      decodedDenom === "native"
+        ? fetchEvmGasBalance({ client, walletAddress })
+        : fetchEvmErc20Balance({ client, tokenAddress, walletAddress })
+
+    const balance = yield* Effect.retry(fetchBalance, evmBalanceRetrySchedule)
+
+    writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
+    writeError(Option.none())
   }).pipe(
-    Effect.tapError(error =>
-      Effect.sync(() => {
-        writeError(Option.some(error))
-      })
-    ),
+    Effect.tapError(error => Effect.sync(() => writeError(Option.some(error)))),
     Effect.catchAll(_ => Effect.succeed(null))
   )
 

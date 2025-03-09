@@ -1,6 +1,7 @@
 <script lang="ts">
 import Modal from "./ui/Modal.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
 import Button from "./ui/Button.svelte"
 
 type Props = {
@@ -12,10 +13,12 @@ const { isOpen, onClose }: Props = $props()
 
 let tempPageLimit = $state(settingsStore.pageLimit)
 let tempShowQuoteTokens = $state(settingsStore.showQuoteTokens)
+let tempShowZeroBalances = $state(uiStore.showZeroBalances)
 
 function handleSave() {
   settingsStore.pageLimit = tempPageLimit
   settingsStore.showQuoteTokens = tempShowQuoteTokens
+  uiStore.showZeroBalances = tempShowZeroBalances
   onClose()
 }
 </script>
@@ -46,6 +49,17 @@ function handleSave() {
           class="form-checkbox"
         />
         <span class="text-sm font-medium">Show quote tokens</span>
+      </label>
+    </div>
+
+    <div class="space-y-2">
+      <label class="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          bind:checked={tempShowZeroBalances}
+          class="form-checkbox"
+        />
+        <span class="text-sm font-medium">Show zero balances</span>
       </label>
     </div>
 
