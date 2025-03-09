@@ -1,13 +1,11 @@
 import { Option } from "effect"
 import type { Chain } from "$lib/schema/chain"
-import { AddressEvmCanonical, type AddressCanonicalBytes } from "$lib/schema/address"
+import type { AddressCanonicalBytes } from "$lib/schema/address"
 import type { Tokens, TokenRawDenom, RawTokenBalance, TokenRawAmount } from "$lib/schema/token"
 import { balancesStore, type BalancesStore } from "./balances.svelte"
 import { chains } from "./chains.svelte"
 import { tokensStore } from "./tokens.svelte"
-
-// todo: fetch from wallets
-const testAddress = AddressEvmCanonical.make("0xe6831e169d77a861a0e71326afa6d80bcc8bc6aa")
+import { wallets } from "./wallets.svelte"
 
 export type SortedTokenInfo = {
   token: { denom: TokenRawDenom }
@@ -92,12 +90,18 @@ class SortedBalancesStore {
   sortedBalances = $derived(
     chains.data.pipe(
       Option.map(d =>
-        d.map(chain => ({
-          chain,
-          tokens: tokensStore
-            .getData(chain.universal_chain_id)
-            .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, testAddress)))
-        }))
+        d.map(chain => {
+          const address = wallets.getAddressForChain(chain)
+
+          return {
+            chain,
+            tokens: Option.flatMap(address, addr => 
+              tokensStore
+                .getData(chain.universal_chain_id)
+                .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, addr)))
+            )
+          }
+        })
       )
     )
   )

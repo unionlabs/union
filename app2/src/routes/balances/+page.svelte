@@ -12,19 +12,17 @@ import { AddressCanonicalBytes, AddressEvmCanonical } from "$lib/schema/address"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import type { Tokens } from "$lib/schema/token"
-
-// Example wallet address - this would come from wallet connection in real app
-const testAddress = AddressEvmCanonical.make("0xe6831e169d77a861a0e71326afa6d80bcc8bc6aa")
-
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte"
+import { wallets } from "$lib/stores/wallets.svelte"
 
 function fetchAllBalances() {
   const chainsData = Option.getOrNull(chains.data)
   if (!chainsData) return
 
   for (const chain of chainsData) {
-    // Only fetch for EVM chains for now
-    if (chain.rpc_type === "aptos") continue
+    const address = Option.getOrNull(wallets.getAddressForChain(chain))
+
+    if (!address) continue
 
     // Get tokens for this chain
     const tokens = Option.getOrNull(tokensStore.getData(chain.universal_chain_id))
@@ -36,7 +34,7 @@ function fetchAllBalances() {
 
     // For each token, fetch its balance
     for (const token of tokens) {
-      balancesStore.fetchBalance(chain, testAddress, token.denom)
+      balancesStore.fetchBalance(chain, address, token.denom)
     }
   }
 }
