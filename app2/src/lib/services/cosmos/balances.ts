@@ -45,8 +45,8 @@ const fetchCosmosCw20Balance = ({
   walletAddress
 }: {
   rpcUrl: URL
-  contractAddress: AddressCosmosDisplay
   walletAddress: AddressCosmosDisplay
+  contractAddress: AddressCosmosDisplay
 }) =>
   Effect.gen(function* (_) {
     const queryJson = { balance: { address: walletAddress } }
