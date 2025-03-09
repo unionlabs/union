@@ -1,5 +1,5 @@
 import { Schedule, Data, Effect, Option, Schema } from "effect"
-import { erc20Abi, fromHex, type PublicClient } from "viem"
+import { erc20Abi, type PublicClient } from "viem"
 import type { TimeoutException } from "effect/Cause"
 import type { DurationInput } from "effect/Duration"
 import type { GetBalanceErrorType, ReadContractErrorType } from "viem"
@@ -9,7 +9,7 @@ import type { NoViemChainError } from "$lib/services/evm/clients"
 import type { AddressEvmCanonical } from "$lib/schema/address"
 import type { Chain } from "$lib/schema/chain"
 import type { CreatePublicClientError } from "$lib/services/transfer"
-import { fromHexString, FromHexError } from "$lib/utils/hex"
+import { fromHexString, type FromHexError } from "$lib/utils/hex"
 import { evmBalanceRetrySchedule } from "$lib/constants/schedules"
 
 export type FetchEvmBalanceError =
@@ -83,23 +83,23 @@ export const createEvmBalanceQuery = ({
 }) => {
   const fetcherPipeline = Effect.gen(function* (_) {
     const client = yield* getPublicClient(chain)
-    const decodedDenom =  yield* fromHexString(tokenAddress)
+    const decodedDenom = yield* fromHexString(tokenAddress)
 
-    yield* Effect.log(`starting balances fetcher for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`)
+    yield* Effect.log(
+      `starting balances fetcher for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`
+    )
 
-    const fetchBalance = decodedDenom === "native"
+    const fetchBalance =
+      decodedDenom === "native"
         ? fetchEvmGasBalance({ client, walletAddress })
         : fetchEvmErc20Balance({ client, tokenAddress, walletAddress })
-
 
     const balance = yield* Effect.retry(fetchBalance, evmBalanceRetrySchedule)
 
     writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
     writeError(Option.none())
   }).pipe(
-    Effect.tapError(error =>
-      Effect.sync(() =>  writeError(Option.some(error)) )
-    ),
+    Effect.tapError(error => Effect.sync(() => writeError(Option.some(error)))),
     Effect.catchAll(_ => Effect.succeed(null))
   )
 

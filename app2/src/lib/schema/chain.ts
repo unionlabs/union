@@ -80,7 +80,9 @@ export class Chain extends Schema.Class<Chain>("Chain")({
     return Option.fromNullable(VIEM_CHAINS.find(vc => `${vc.id}` === this.chain_id))
   }
 
-  toCosmosDisplay(address: AddressCosmosCanonical): Effect.Effect<AddressCosmosDisplay, NotACosmosChainError | CosmosAddressEncodeError> {
+  toCosmosDisplay(
+    address: AddressCosmosCanonical
+  ): Effect.Effect<AddressCosmosDisplay, NotACosmosChainError | CosmosAddressEncodeError> {
     if (this.rpc_type !== "cosmos") {
       return Effect.fail(new NotACosmosChainError({ chain: this }))
     }
@@ -91,11 +93,12 @@ export class Chain extends Schema.Class<Chain>("Chain")({
         const encoded = bech32.encode(this.addr_prefix, words)
         return encoded as AddressCosmosDisplay
       },
-      catch: error => new CosmosAddressEncodeError({ 
-        cause: error, 
-        address: address,
-        prefix: this.addr_prefix
-      })
+      catch: error =>
+        new CosmosAddressEncodeError({
+          cause: error,
+          address: address,
+          prefix: this.addr_prefix
+        })
     })
   }
 
