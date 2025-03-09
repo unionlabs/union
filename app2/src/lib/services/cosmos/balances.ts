@@ -1,4 +1,4 @@
-import { Data, Effect, Option, Schema, Schedule } from "effect"
+import { Data, Effect, Option, Schema } from "effect"
 import { fetchDecode } from "$lib/utils/queries"
 import type { DurationInput } from "effect/Duration"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
@@ -6,6 +6,7 @@ import type { Chain } from "$lib/schema/chain"
 import { type AddressCosmosCanonical, AddressCosmosDisplay } from "$lib/schema/address"
 import { FetchHttpClient, type HttpClientError } from "@effect/platform"
 import { fromHexString, FromHexError } from "$lib/utils/hex"
+import { cosmosBalanceRetrySchedule } from "$lib/constants/schedules"
 import { withTracerDisabledWhen } from "@effect/platform/HttpClient"
 import type { ParseError } from "effect/ParseResult"
 
@@ -44,7 +45,7 @@ export const Cw20BalanceSchema = Schema.Struct({
   })
 })
 
-const fetchCw20Balance = ({
+const fetchCosmosCw20Balance = ({
   rpcUrl,
   contractAddress,
   walletAddress
@@ -69,7 +70,7 @@ const fetchCw20Balance = ({
     return response.data.balance
   })
 
-const fetchCosmosBalance = ({
+const fetchCosmosBankBalance = ({
   rpcUrl,
   walletAddress,
   denom
@@ -111,20 +112,19 @@ export const createCosmosBalanceQuery = ({
       `starting balances fetcher for ${chain.universal_chain_id}:${displayAddress}:${decodedDenom}`
     )
 
-    let balance = yield* decodedDenom.startsWith(`${chain.addr_prefix}1`)
-      ? Effect.retry(
-          fetchCw20Balance({
-            rpcUrl,
-            contractAddress: AddressCosmosDisplay.make(decodedDenom as `${string}1${string}`),
-            walletAddress: displayAddress
-          }),
-          Schedule.exponential("2 seconds", 2.0).pipe(Schedule.intersect(Schedule.recurs(8)))
-        )
-      : // Regular bank balance query
-        Effect.retry(
-          fetchCosmosBalance({ rpcUrl, walletAddress: displayAddress, denom: decodedDenom }),
-          Schedule.exponential("2 seconds", 2.0).pipe(Schedule.intersect(Schedule.recurs(8)))
-        )
+    const fetchBalance = decodedDenom.startsWith(`${chain.addr_prefix}1`)
+      ? fetchCosmosCw20Balance({
+          rpcUrl,
+          contractAddress: AddressCosmosDisplay.make(decodedDenom as `${string}1${string}`),
+          walletAddress: displayAddress
+        })
+      : fetchCosmosBankBalance({ 
+          rpcUrl, 
+          walletAddress: displayAddress, 
+          denom: decodedDenom 
+        })
+
+    let balance = yield* Effect.retry(fetchBalance, cosmosBalanceRetrySchedule)
 
     yield* Effect.sync(() => {
       writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
