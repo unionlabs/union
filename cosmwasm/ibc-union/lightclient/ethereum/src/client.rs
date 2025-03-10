@@ -1,7 +1,8 @@
-use beacon_api_types::{ChainSpec, Mainnet, Minimal, PresetBaseKind};
+use beacon_api_types::chain_spec::{ChainSpec, Mainnet, Minimal, PresetBaseKind};
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::{
-    ClientState, ConsensusState, Header, LightClientUpdate, Misbehaviour, StorageProof,
+    ClientState, ClientStateV1, ConsensusState, Header, LightClientUpdate, Misbehaviour,
+    StorageProof,
 };
 use ethereum_sync_protocol::{
     utils::{
@@ -81,17 +82,26 @@ impl IbcClient for EthereumLightClient {
     }
 
     fn get_latest_height(client_state: &Self::ClientState) -> u64 {
-        client_state.latest_height
+        match client_state {
+            ClientState::V1(cs) => cs.latest_height,
+        }
     }
 
     fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
-        client_state.chain_id.to_string()
+        match client_state {
+            ClientState::V1(cs) => cs.chain_id.to_string(),
+        }
     }
 
     fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
         let _ = ctx;
 
-        if client_state.frozen_height.height() != 0 {
+        if match client_state {
+            ClientState::V1(cs) => cs.frozen_height,
+        }
+        .height()
+            != 0
+        {
             Status::Frozen
         } else {
             Status::Active
@@ -110,7 +120,7 @@ impl IbcClient for EthereumLightClient {
         header: Header,
         _caller: cosmwasm_std::Addr,
     ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
-        let client_state = ctx.read_self_client_state()?;
+        let ClientState::V1(client_state) = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
 
         match client_state.chain_spec {
@@ -131,7 +141,7 @@ impl IbcClient for EthereumLightClient {
         let consensus_state =
             ctx.read_self_consensus_state(misbehaviour.trusted_height.height())?;
 
-        let mut client_state = ctx.read_self_client_state()?;
+        let ClientState::V1(mut client_state) = ctx.read_self_client_state()?;
 
         match client_state.chain_spec {
             PresetBaseKind::Minimal => {
@@ -144,7 +154,7 @@ impl IbcClient for EthereumLightClient {
 
         client_state.frozen_height = Height::new(1);
 
-        Ok(client_state)
+        Ok(ClientState::V1(client_state))
     }
 }
 
@@ -214,7 +224,7 @@ pub fn check_commitment_key(path: H256, key: U256) -> Result<(), Error> {
 
 pub fn verify_header<C: ChainSpec>(
     ctx: &IbcClientCtx<EthereumLightClient>,
-    client_state: ClientState,
+    client_state: ClientStateV1,
     consensus_state: ConsensusState,
     header: Header,
 ) -> Result<(u64, ClientState, ConsensusState), Error> {
@@ -242,13 +252,13 @@ pub fn verify_header<C: ChainSpec>(
     }
 
     validate_light_client_update::<C, _>(
-        &header.consensus_update.clone().into(),
+        client_state.chain_id,
+        &header.consensus_update.clone().into_light_client_update(),
         current_sync_committee,
         next_sync_committee,
         current_slot,
         consensus_state.slot,
         client_state.genesis_validators_root,
-        &client_state.fork_parameters,
         VerificationContext { deps: ctx.deps },
     )
     .map_err(Error::ValidateLightClient)?;
@@ -275,7 +285,7 @@ pub fn verify_header<C: ChainSpec>(
 }
 
 fn update_state<C: ChainSpec>(
-    mut client_state: ClientState,
+    mut client_state: ClientStateV1,
     mut consensus_state: ConsensusState,
     header: Header,
 ) -> Result<(u64, ClientState, ConsensusState), Error> {
@@ -313,12 +323,16 @@ fn update_state<C: ChainSpec>(
         }
     }
 
-    Ok((updated_height, client_state, consensus_state))
+    Ok((
+        updated_height,
+        ClientState::V1(client_state),
+        consensus_state,
+    ))
 }
 
 pub fn verify_misbehaviour<C: ChainSpec>(
     ctx: &IbcClientCtx<EthereumLightClient>,
-    client_state: &ClientState,
+    client_state: &ClientStateV1,
     consensus_state: ConsensusState,
     misbehaviour: Misbehaviour,
 ) -> Result<(), Error> {
@@ -357,13 +371,13 @@ pub fn verify_misbehaviour<C: ChainSpec>(
 
     // Make sure both headers would have been accepted by the light client
     validate_light_client_update::<C, VerificationContext>(
-        &misbehaviour.update_1.clone().into(),
+        client_state.chain_id,
+        &misbehaviour.update_1.clone().into_light_client_update(),
         current_sync_committee,
         next_sync_committee,
         current_slot,
         consensus_state.slot,
         client_state.genesis_validators_root,
-        &client_state.fork_parameters,
         VerificationContext { deps: ctx.deps },
     )
     .map_err(Error::ValidateLightClient)?;
@@ -384,13 +398,13 @@ pub fn verify_misbehaviour<C: ChainSpec>(
         misbehaviour.update_2.currently_trusted_sync_committee();
 
     validate_light_client_update::<C, VerificationContext>(
-        &misbehaviour.update_2.clone().into(),
+        client_state.chain_id,
+        &misbehaviour.update_1.into_light_client_update(),
         current_sync_committee,
         next_sync_committee,
         current_slot,
         consensus_state.slot,
         client_state.genesis_validators_root,
-        &client_state.fork_parameters,
         VerificationContext { deps: ctx.deps },
     )
     .map_err(Error::ValidateLightClient)?;

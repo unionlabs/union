@@ -5013,6 +5013,7 @@ dependencies = [
  "beacon-api-types",
  "bincode 2.0.0-rc.3",
  "ethereum-light-client-types",
+ "ethereum-sync-protocol-types",
  "hex-literal",
  "serde",
  "thiserror 1.0.69",
@@ -5024,6 +5025,8 @@ name = "ethereum-sync-protocol"
 version = "0.0.0"
 dependencies = [
  "beacon-api-types",
+ "ethereum-sync-protocol-types",
+ "fork-schedules",
  "hex-literal",
  "serde-utils",
  "serde_json",
@@ -5032,6 +5035,16 @@ dependencies = [
  "thiserror 1.0.69",
  "typenum",
  "unionlabs",
+]
+
+[[package]]
+name = "ethereum-sync-protocol-types"
+version = "0.0.0"
+dependencies = [
+ "beacon-api-types",
+ "bincode 2.0.0-rc.3",
+ "serde",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -5405,6 +5418,16 @@ name = "foreign-types-shared"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
+
+[[package]]
+name = "fork-schedules"
+version = "0.0.0"
+dependencies = [
+ "beacon-api-types",
+ "hex-literal",
+ "macros",
+ "unionlabs-primitives",
+]
 
 [[package]]
 name = "form_urlencoded"
@@ -13651,6 +13674,7 @@ dependencies = [
  "beacon-api",
  "beacon-api-types",
  "ethereum-light-client-types",
+ "ethereum-sync-protocol-types",
  "jsonrpsee",
  "serde",
  "serde_json",
@@ -14007,6 +14031,7 @@ dependencies = [
  "bitvec 1.0.1",
  "enumorph",
  "ethereum-light-client-types",
+ "ethereum-sync-protocol-types",
  "futures",
  "jsonrpsee",
  "macros",

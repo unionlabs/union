@@ -1,7 +1,11 @@
 use beacon_api_types::{
-    Domain, DomainType, ForkData, ForkParameters, SigningData, Slot, Version,
-    EPOCHS_PER_SYNC_COMMITTEE_PERIOD, SECONDS_PER_SLOT, SLOTS_PER_EPOCH,
+    chain_spec::ChainSpec,
+    consts::{floorlog2, get_subtree_index},
+    custom_types::{Domain, DomainType, Version},
+    phase0::{ForkData, SigningData},
+    slot::Slot,
 };
+use fork_schedules::{ForkSchedule, Forks};
 use sha2::{Digest, Sha256};
 use ssz::Ssz;
 use typenum::Unsigned;
@@ -12,53 +16,62 @@ use crate::{
     GENESIS_SLOT,
 };
 
-/// Returns the fork version based on the `epoch` and `fork_parameters`.
-/// NOTE: This implementation is based on capella.
+/// Returns the fork version based on the `epoch` and `chain_id`.
 ///
-/// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/capella/fork.md#modified-compute_fork_version)
-pub fn compute_fork_version(fork_parameters: &ForkParameters, epoch: u64) -> Version {
-    if epoch >= fork_parameters.deneb.epoch {
-        fork_parameters.deneb.version
-    } else if epoch >= fork_parameters.capella.epoch {
-        fork_parameters.capella.version
-    } else if epoch >= fork_parameters.bellatrix.epoch {
-        fork_parameters.bellatrix.version
-    } else if epoch >= fork_parameters.altair.epoch {
-        fork_parameters.altair.version
+/// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/fork.md#modified-compute_fork_version)
+pub fn compute_fork_version(chain_id: u64, epoch: u64) -> Version {
+    let fs = ForkSchedule::for_chain_id(chain_id);
+
+    if let Some(fork) = fs.fork(Forks::Electra)
+        && epoch >= fork.epoch
+    {
+        fork.current_version
+    } else if let Some(fork) = fs.fork(Forks::Deneb)
+        && epoch >= fork.epoch
+    {
+        fork.current_version
+    } else if let Some(fork) = fs.fork(Forks::Deneb)
+        && epoch >= fork.epoch
+    {
+        fork.current_version
+    } else if let Some(fork) = fs.fork(Forks::Deneb)
+        && epoch >= fork.epoch
+    {
+        fork.current_version
+    } else if let Some(fork) = fs.fork(Forks::Deneb)
+        && epoch >= fork.epoch
+    {
+        fork.current_version
     } else {
-        fork_parameters.genesis_fork_version
+        fs.genesis().current_version
     }
 }
 
 /// Returns the sync committee period at a given `slot`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#compute_sync_committee_period_at_slot)
-pub fn compute_sync_committee_period_at_slot<
-    C: SLOTS_PER_EPOCH + EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
->(
-    slot: Slot,
-) -> u64 {
+pub fn compute_sync_committee_period_at_slot<C: ChainSpec>(slot: Slot) -> u64 {
     compute_sync_committee_period::<C>(compute_epoch_at_slot::<C>(slot))
 }
 
 /// Returns the epoch at a given `slot`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#compute_epoch_at_slot)
-pub fn compute_epoch_at_slot<C: SLOTS_PER_EPOCH>(slot: Slot) -> u64 {
+pub fn compute_epoch_at_slot<C: ChainSpec>(slot: Slot) -> u64 {
     slot.get() / C::SLOTS_PER_EPOCH::U64
 }
 
 /// Returns the sync committee period at a given `epoch`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/validator.md#sync-committee)
-pub fn compute_sync_committee_period<C: EPOCHS_PER_SYNC_COMMITTEE_PERIOD>(epoch: u64) -> u64 {
+pub fn compute_sync_committee_period<C: ChainSpec>(epoch: u64) -> u64 {
     epoch / C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64
 }
 
 /// Returns the timestamp at a `slot`, respect to `genesis_time`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/bellatrix/beacon-chain.md#compute_timestamp_at_slot)
-pub fn compute_timestamp_at_slot<C: SECONDS_PER_SLOT>(genesis_time: u64, slot: Slot) -> u64 {
+pub fn compute_timestamp_at_slot<C: ChainSpec>(genesis_time: u64, slot: Slot) -> u64 {
     // REVIEW: Should genesis slot be a config param or a constant?
     let slots_since_genesis = slot - GENESIS_SLOT;
     genesis_time + (slots_since_genesis.get() * C::SECONDS_PER_SLOT::U64)
@@ -108,7 +121,7 @@ pub fn compute_signing_root<T: Ssz>(ssz_object: &T, domain: Domain) -> H256 {
 }
 
 /// Return the slot at timestamp with respect to the genesis time
-pub fn compute_slot_at_timestamp<C: SECONDS_PER_SLOT>(
+pub fn compute_slot_at_timestamp<C: ChainSpec>(
     genesis_time: u64,
     timestamp_seconds: u64,
 ) -> Option<Slot> {
@@ -137,10 +150,12 @@ pub fn validate_signature_supermajority(sync_committee_bits: &[u8]) -> bool {
 pub fn validate_merkle_branch<'a>(
     leaf: &H256,
     branch: impl IntoIterator<Item = &'a H256>,
-    depth: usize,
-    index: u64,
+    gindex: u64,
     root: &H256,
 ) -> Result<(), Error> {
+    let depth = floorlog2(gindex);
+    let index = get_subtree_index(gindex);
+
     let branch = branch.into_iter().cloned().collect::<Vec<_>>();
 
     'block: {
