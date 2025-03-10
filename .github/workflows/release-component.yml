@@ -2,7 +2,7 @@ name: Release Component
 
 on:
   push:
-    tags: ['*/v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+*', '*/v[0-9]+\.[0-9]+\.[0-9]+*']
+    # tags: ['*/v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+*', '*/v[0-9]+\.[0-9]+\.[0-9]+*']
 
 jobs:
   eval-tag:
@@ -17,7 +17,7 @@ jobs:
     steps:
       - id: eval
         env:
-          TAG: ${{github.ref_name}}
+          TAG: bundle-union-1
         run: |
           component="${TAG%/*}"
           case $component in
@@ -275,6 +275,7 @@ jobs:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
           TAG: ${{ needs.eval-tag.outputs.version }}
         run: |
+          exit 1
           wget https://github.com/rapidsai/skopeo/releases/download/v1.12/skopeo-linux-amd64 -O ./skopeo
           chmod +x ./skopeo && sudo cp ./skopeo /usr/bin
           echo "downloaded & installed skopeo"
@@ -324,6 +325,7 @@ jobs:
             echo "Setting binary output"
             echo "FILES=**/$COMPONENT-*" >> $GITHUB_OUTPUT
           fi
+          exit 1
           tree
       - uses: softprops/action-gh-release@v2
         with:
