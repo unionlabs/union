@@ -138,11 +138,11 @@ impl IbcClient for EthereumLightClient {
             .set_client_state(ClientState::V1(client_state))
             .add_storage_write(
                 sync_committee_store_key(current_sync_period),
-                &inverse_sync_committee_pubkeys(&initial_sync_committee.current_sync_committee),
+                inverse_sync_committee_pubkeys(&initial_sync_committee.current_sync_committee),
             )
             .add_storage_write(
                 sync_committee_store_key(current_sync_period + 1),
-                &inverse_sync_committee_pubkeys(&initial_sync_committee.next_sync_committee),
+                inverse_sync_committee_pubkeys(&initial_sync_committee.next_sync_committee),
             ))
     }
 
@@ -353,7 +353,7 @@ fn update_state<C: ChainSpec>(
     if let LightClientUpdate::EpochChange(update) = &mut header.consensus_update {
         let current_epoch =
             compute_epoch_at_slot::<C>(update.update_data.finalized_header.beacon.slot);
-        inverse_sync_committee_pubkeys(&mut update.next_sync_committee);
+        inverse_sync_committee_pubkeys(&update.next_sync_committee);
         state_update = state_update.add_storage_write(
             sync_committee_store_key(current_epoch + 1),
             &update.next_sync_committee,

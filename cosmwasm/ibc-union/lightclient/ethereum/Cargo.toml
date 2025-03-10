@@ -37,15 +37,15 @@ unionlabs                     = { workspace = true, features = ["ethabi"] }
 unionlabs-cosmwasm-upgradable = { workspace = true }
 
 [dev-dependencies]
-base64                 = { workspace = true }
-beacon-api             = { workspace = true }
-ethereum-sync-protocol = { workspace = true, features = ["test-utils"] }
-hex-literal            = { workspace = true }
-lazy_static            = "1.4.0"
-protos                 = { workspace = true, features = ["proto_full", "std"] }
-serde-utils            = { workspace = true }
-serde_json             = { workspace = true }
-unionlabs              = { workspace = true, features = ["std"] }
+base64                       = { workspace = true }
+beacon-api                   = { workspace = true }
+ethereum-sync-protocol-types = { workspace = true }
+hex-literal                  = { workspace = true }
+lazy_static                  = "1.4.0"
+protos                       = { workspace = true, features = ["proto_full", "std"] }
+serde-utils                  = { workspace = true }
+serde_json                   = { workspace = true }
+unionlabs                    = { workspace = true, features = ["std"] }
 
 [features]
 # enabling this feature disables exposing the entrypoints and setting `#[global_allocator]`
