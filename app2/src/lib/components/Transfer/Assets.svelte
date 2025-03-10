@@ -1,10 +1,10 @@
 <script lang="ts">
   import Label from "$lib/components/ui/Label.svelte";
-  import {getTransfer} from "../../../routes/transfer/transfer.svelte.ts";
   import {Option} from "effect";
   import {tokensStore} from "$lib/stores/tokens.svelte.ts";
   import Input from "$lib/components/ui/Input.svelte";
   import {fade, fly} from "svelte/transition";
+  import {getTransfer} from "$lib/components/Transfer/transfer.svelte.ts";
 
   const {transfer} = getTransfer();
   let open = $state(false);

@@ -4,8 +4,8 @@
   import {cn} from "$lib/utils";
   import {tokensStore} from "$lib/stores/tokens.svelte.ts";
   import Label from "$lib/components/ui/Label.svelte";
-  import {getTransfer} from "../../../routes/transfer/transfer.svelte.ts";
   import {fade, fly} from "svelte/transition";
+  import {getTransfer} from "$lib/components/Transfer/transfer.svelte.ts";
 
   type Props = {
     type: "source" | "destination";

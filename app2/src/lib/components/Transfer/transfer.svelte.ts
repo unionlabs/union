@@ -60,14 +60,11 @@ export class Transfer {
       : null;
   });
 
-  ucs03address = $derived.by(() => {
-    if (!this.sourceChain || !this.channel?.source_port_id) {
-      return null;
-    }
-    return this.sourceChain.rpc_type === "cosmos"
+  ucs03address = $derived(    this.sourceChain && this.channel?.source_port_id
+    ? this.sourceChain.rpc_type === "cosmos"
       ? fromHex(`0x${this.channel.source_port_id}`, "string")
-      : `0x${this.channel.source_port_id}`;
-  });
+      : `0x${this.channel.source_port_id}`
+    : null)
 
   quoteToken = $state()
   wethQuoteToken = $state()

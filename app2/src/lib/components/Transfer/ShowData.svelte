@@ -1,5 +1,6 @@
 <script lang="ts">
-  import {getTransfer} from "../../../routes/transfer/transfer.svelte.js";
+
+  import {getTransfer} from "$lib/components/Transfer/transfer.svelte.ts";
 
   const {transfer} = getTransfer()
 </script>
