@@ -131,18 +131,18 @@ onMount(() => {
               {#each transfer.traces as trace, i}
                 {@const chain = getChain(chainsList, trace.chain.chain_id)}
                 <!-- Timeline line -->
-                <div class="absolute left-2 top-8 bottom-0 w-0.5 bg-zinc-200 dark:bg-zinc-700" />
+                <div class="absolute left-2 top-8 z-10 bottom-0 w-0.5 bg-zinc-200 dark:bg-zinc-700" ></div>
                 
                 <!-- Timeline item -->
                 <div class="relative flex items-start gap-4 ml-6">
                   <!-- Timeline dot -->
-                  <div class="absolute -left-[1.75rem] mt-1.5">
+                  <div class="absolute z-20 -left-[1.5rem]">
                     <div class="h-4 w-4 rounded-full bg-zinc-300 dark:bg-zinc-600 ring-4 ring-white dark:ring-zinc-900" />
                   </div>
                   
                   <!-- Content -->
-                  <div class="flex-1 bg-zinc-50 dark:bg-zinc-900 p-4 rounded-lg">
-                    <div class="flex items-center gap-3 mb-2">
+                  <div class="flex-1 bg-zinc-50 dark:bg-zinc-900 px-4 rounded-lg">
+                    <div class="flex items-center gap-2">
                       <span class="font-medium text-zinc-900 dark:text-zinc-100">
                         {trace.type}
                       </span>
@@ -154,20 +154,15 @@ onMount(() => {
                     </div>
                     
                     {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(trace.block_hash)}
-                      <div class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-                        <div class="flex items-center gap-2">
-                          <span class="font-medium">Height:</span>
-                          <span class="font-mono">{trace.height.value}</span>
-                        </div>
+                      <div class="flex flex-col gap-1 text-sm text-zinc-600 dark:text-zinc-400">
                         <div>
-                          <span class="font-medium">Time:</span>
-                          <DateTimeComponent value={trace.timestamp.value} class="font-mono" />
+                          <DateTimeComponent value={trace.timestamp.value} />
+                          <span>at height {trace.height.value}</span>
                         </div>
-                        <div>
-                          <span class="font-medium">Transaction:</span>
-                          <TransactionHashComponent hash={trace.transaction_hash.value} />
+                        <div class="flex gap-2">
+                          <span class="font-medium">Tx:</span> <TransactionHashComponent hash={trace.transaction_hash.value} />
                         </div>
-                        <div>
+                        <div class="flex gap-2">
                           <span class="font-medium">Block:</span>
                           <BlockHashComponent hash={trace.block_hash.value} />
                         </div>
