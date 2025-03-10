@@ -1,4 +1,4 @@
-use beacon_api_types::Slot;
+use beacon_api_types::slot::Slot;
 use unionlabs::primitives::{H256, H384, H768};
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]

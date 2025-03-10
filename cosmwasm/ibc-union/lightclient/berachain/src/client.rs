@@ -1,4 +1,4 @@
-use beacon_api_types::{ExecutionPayloadHeaderSsz, Mainnet};
+use beacon_api_types::{chain_spec::Mainnet, deneb};
 use berachain_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;
@@ -122,7 +122,7 @@ impl IbcClient for BerachainLightClient {
                 b"beacon".to_vec(),
                 [LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX].to_vec(),
             ],
-            ExecutionPayloadHeaderSsz::<Mainnet>::try_from(header.execution_header.clone())
+            deneb::ExecutionPayloadHeaderSsz::<Mainnet>::try_from(header.execution_header.clone())
                 .map_err(Into::<Error>::into)?
                 .encode_as::<Ssz>(),
         )

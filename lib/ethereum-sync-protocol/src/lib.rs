@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 extern crate alloc;
 
 pub mod error;
@@ -5,14 +6,19 @@ pub mod error;
 pub mod utils;
 
 use beacon_api_types::{
+    altair::{self, SyncCommittee},
+    chain_spec::ChainSpec,
     consts::{
-        floorlog2, get_subtree_index, EXECUTION_PAYLOAD_INDEX, FINALIZED_ROOT_INDEX,
-        NEXT_SYNC_COMMITTEE_INDEX,
+        CURRENT_SYNC_COMMITTEE_GINDEX, CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA,
+        EXECUTION_PAYLOAD_GINDEX, FINALIZED_ROOT_GINDEX, FINALIZED_ROOT_GINDEX_ELECTRA,
+        NEXT_SYNC_COMMITTEE_GINDEX, NEXT_SYNC_COMMITTEE_GINDEX_ELECTRA,
     },
-    light_client_update::LightClientUpdate,
-    ChainSpec, DomainType, ExecutionPayloadHeaderSsz, ForkParameters, LightClientHeader, Slot,
-    SyncCommittee, SyncCommitteeSsz,
+    custom_types::DomainType,
+    deneb,
+    slot::Slot,
 };
+use ethereum_sync_protocol_types::LightClientHeader;
+use fork_schedules::{ForkSchedule, Forks};
 use ssz::Ssz;
 use typenum::Unsigned;
 use unionlabs::{
@@ -61,13 +67,13 @@ pub trait BlsVerify {
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#validate_light_client_update)
 #[allow(clippy::too_many_arguments)]
 pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
-    update: &LightClientUpdate,
+    chain_id: u64,
+    update: &ethereum_sync_protocol_types::LightClientUpdate,
     current_sync_committee: Option<&SyncCommittee>,
     next_sync_committee: Option<&SyncCommittee>,
     current_slot: Slot,
     finalized_slot: Slot,
     genesis_validators_root: H256,
-    fork_parameters: &ForkParameters,
     bls_verifier: V,
 ) -> Result<(), Error> {
     // verify that the sync committee has sufficient participants
@@ -80,7 +86,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
         Error::InsufficientSyncCommitteeParticipants(set_bits),
     )?;
 
-    is_valid_light_client_header::<C>(fork_parameters, &update.attested_header)?;
+    is_valid_light_client_header::<C>(chain_id, &update.attested_header)?;
 
     // verify that the update does not skip a sync committee period
     let update_attested_slot = update.attested_header.beacon.slot;
@@ -162,14 +168,13 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
     // Verify that the `finality_branch`, if present, confirms `finalized_header`
     // to match the finalized checkpoint root saved in the state of `attested_header`.
     // NOTE(aeryz): We always expect to get `finalized_header` and it's embedded into the type definition.
-    is_valid_light_client_header::<C>(fork_parameters, &update.finalized_header)?;
+    is_valid_light_client_header::<C>(chain_id, &update.finalized_header)?;
 
     // This confirms that the `finalized_header` is really finalized.
     validate_merkle_branch(
         &update.finalized_header.beacon.tree_hash_root(),
         &update.finality_branch,
-        floorlog2(FINALIZED_ROOT_INDEX),
-        get_subtree_index(FINALIZED_ROOT_INDEX),
+        finalized_root_gindex_at_slot::<C>(chain_id, update_attested_slot),
         &update.attested_header.beacon.state_root,
     )?;
 
@@ -189,12 +194,15 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
         }
         // This validates the given next sync committee against the attested header's state root.
         validate_merkle_branch(
-            &TryInto::<SyncCommitteeSsz<C>>::try_into(next_sync_committee.clone())
+            &TryInto::<altair::SyncCommitteeSsz<C>>::try_into(next_sync_committee.clone())
                 .unwrap()
                 .tree_hash_root(),
-            &update.next_sync_committee_branch.unwrap_or_default(),
-            floorlog2(NEXT_SYNC_COMMITTEE_INDEX),
-            get_subtree_index(NEXT_SYNC_COMMITTEE_INDEX),
+            update
+                .next_sync_committee_branch
+                .clone()
+                .unwrap_or_default()
+                .iter(),
+            next_sync_committee_gindex_at_slot::<C>(chain_id, update_attested_slot),
             &update.attested_header.beacon.state_root,
         )?;
     }
@@ -214,16 +222,16 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
         .collect::<Vec<_>>();
 
     let fork_version_slot = Slot::new(std::cmp::max(update.signature_slot.get(), 1) - 1);
-    let fork_version = compute_fork_version(
-        fork_parameters,
-        compute_epoch_at_slot::<C>(fork_version_slot),
-    );
+    let fork_version =
+        compute_fork_version(chain_id, compute_epoch_at_slot::<C>(fork_version_slot));
 
     let domain = compute_domain(
         DomainType::SYNC_COMMITTEE,
         Some(fork_version),
         Some(genesis_validators_root),
-        fork_parameters.genesis_fork_version,
+        ForkSchedule::for_chain_id(chain_id)
+            .genesis()
+            .current_version,
     );
     let signing_root = compute_signing_root(&update.attested_header.beacon, domain);
 
@@ -239,20 +247,31 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
 /// Computes the execution block root hash.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/light-client/sync-protocol.md#modified-get_lc_execution_root)
-pub fn get_lc_execution_root<C: ChainSpec>(
-    fork_parameters: &ForkParameters,
-    header: &LightClientHeader,
-) -> H256 {
+pub fn get_lc_execution_root<C: ChainSpec>(chain_id: u64, header: &LightClientHeader) -> H256 {
+    let fs = ForkSchedule::for_chain_id(chain_id);
+
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
-    if epoch >= fork_parameters.deneb.epoch {
-        return TryInto::<ExecutionPayloadHeaderSsz<C>>::try_into(header.execution.clone())
+
+    // No new field in electra
+    if let Some(fork) = fs.fork(Forks::Electra)
+        && epoch >= fork.epoch
+    {
+        return TryInto::<deneb::ExecutionPayloadHeaderSsz<C>>::try_into(header.execution.clone())
+            .unwrap()
+            .tree_hash_root();
+    }
+
+    if let Some(fork) = fs.fork(Forks::Deneb)
+        && epoch >= fork.epoch
+    {
+        return TryInto::<deneb::ExecutionPayloadHeaderSsz<C>>::try_into(header.execution.clone())
             .unwrap()
             .tree_hash_root();
     }
 
     // TODO: Figure out what to do here
-    // if epoch >= fork_parameters.capella.epoch {
-    //     return CapellaExecutionPayloadHeader::from(header.execution.clone())
+    // if epoch >= fork_parameters.deneb.epoch {
+    //     return denebExecutionPayloadHeader::from(header.execution.clone())
     //         .tree_hash_root()
     //         .into();
     // }
@@ -264,30 +283,77 @@ pub fn get_lc_execution_root<C: ChainSpec>(
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/light-client/sync-protocol.md#modified-is_valid_light_client_header)
 pub fn is_valid_light_client_header<C: ChainSpec>(
-    fork_parameters: &ForkParameters,
+    chain_id: u64,
     header: &LightClientHeader,
 ) -> Result<(), Error> {
+    let fs = ForkSchedule::for_chain_id(chain_id);
+
     let epoch = compute_epoch_at_slot::<C>(header.beacon.slot);
 
-    if epoch < fork_parameters.deneb.epoch {
-        ensure(
-            header.execution.blob_gas_used == 0 && header.execution.excess_blob_gas == 0,
-            Error::MustBeDeneb,
-        )?;
+    if let Some(fork) = fs.fork(Forks::Deneb) {
+        if epoch < fork.epoch {
+            ensure(
+                header.execution.blob_gas_used == 0 && header.execution.excess_blob_gas == 0,
+                Error::MustBeDeneb,
+            )?;
+        }
+
+        ensure(epoch >= fork.epoch, Error::InvalidChainVersion)?;
+    } else {
+        unreachable!("all known chains support deneb");
     }
 
-    ensure(
-        epoch >= fork_parameters.capella.epoch,
-        Error::InvalidChainVersion,
-    )?;
-
     validate_merkle_branch(
-        &get_lc_execution_root::<C>(fork_parameters, header),
+        &get_lc_execution_root::<C>(chain_id, header),
         &header.execution_branch,
-        floorlog2(EXECUTION_PAYLOAD_INDEX),
-        get_subtree_index(EXECUTION_PAYLOAD_INDEX),
+        EXECUTION_PAYLOAD_GINDEX,
         &header.beacon.body_root,
     )
+}
+
+/// <https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#finalized_root_gindex_at_slot>
+pub fn finalized_root_gindex_at_slot<C: ChainSpec>(chain_id: u64, slot: Slot) -> u64 {
+    let fs = ForkSchedule::for_chain_id(chain_id);
+
+    let epoch = compute_epoch_at_slot::<C>(slot);
+
+    if let Some(fork) = fs.fork(Forks::Electra)
+        && epoch >= fork.epoch
+    {
+        return FINALIZED_ROOT_GINDEX_ELECTRA;
+    }
+
+    FINALIZED_ROOT_GINDEX
+}
+
+/// <https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#current_sync_committee_gindex_at_slot>
+pub fn current_sync_committee_gindex_at_slot<C: ChainSpec>(chain_id: u64, slot: Slot) -> u64 {
+    let fs = ForkSchedule::for_chain_id(chain_id);
+
+    let epoch = compute_epoch_at_slot::<C>(slot);
+
+    if let Some(fork) = fs.fork(Forks::Electra)
+        && epoch >= fork.epoch
+    {
+        return CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA;
+    }
+
+    CURRENT_SYNC_COMMITTEE_GINDEX
+}
+
+/// <https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#next_sync_committee_gindex_at_slot>
+pub fn next_sync_committee_gindex_at_slot<C: ChainSpec>(chain_id: u64, slot: Slot) -> u64 {
+    let fs = ForkSchedule::for_chain_id(chain_id);
+
+    let epoch = compute_epoch_at_slot::<C>(slot);
+
+    if let Some(fork) = fs.fork(Forks::Electra)
+        && epoch >= fork.epoch
+    {
+        return NEXT_SYNC_COMMITTEE_GINDEX_ELECTRA;
+    }
+
+    NEXT_SYNC_COMMITTEE_GINDEX
 }
 
 // #[cfg(test)]

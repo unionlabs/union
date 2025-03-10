@@ -15,13 +15,15 @@ workspace = true
 test-include = ["lib/ethereum-sync-protocol/src/test/"]
 
 [dependencies]
-beacon-api-types = { workspace = true, features = ["ssz"] }
-serde-utils      = { workspace = true }
-sha2             = { workspace = true }
-ssz              = { workspace = true }
-thiserror        = { workspace = true }
-typenum          = { workspace = true, features = ["const-generics", "no_std"] }
-unionlabs        = { workspace = true }
+beacon-api-types             = { workspace = true, features = ["ssz"] }
+ethereum-sync-protocol-types = { workspace = true }
+fork-schedules               = { workspace = true }
+serde-utils                  = { workspace = true }
+sha2                         = { workspace = true }
+ssz                          = { workspace = true }
+thiserror                    = { workspace = true }
+typenum                      = { workspace = true, features = ["const-generics", "no_std"] }
+unionlabs                    = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
