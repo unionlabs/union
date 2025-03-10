@@ -32,13 +32,6 @@ onMount(() => {
 </script>
 
 <Sections>
-  <div class="flex items-center gap-4">
-    <a href="/explorer/transfers" class="text-blue-500 hover:underline">
-      &larr; Back to Transfers
-    </a>
-    <h1 class="font-bold text-2xl">Transfer Details</h1>
-  </div>
-
   <Card class="overflow-auto p-6" divided>
     {#if Option.isSome(transferDetails.error)}
       <ErrorComponent error={transferDetails.error.value} />
