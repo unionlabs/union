@@ -52,14 +52,20 @@ onMount(() => {
 
       <div class="space-y-8">
         <!-- Token Transfer Display -->
-        <div class="flex flex-col items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
           {#if Option.isSome(sourceChain)}
-            <div class="text-4xl font-bold mb-2">
+            <div class="flex flex-col text-2xl items-center">
               <TokenComponent
                 chain={sourceChain.value}
                 denom={transfer.base_token}
                 amount={transfer.base_amount}
               />
+            {#if Option.isSome(destChain)}
+              <TokenComponent
+                chain={destChain.value}
+                denom={transfer.quote_token}
+                amount={transfer.quote_amount}
+              />
+            {/if}
             </div>
           {/if}
           
@@ -96,23 +102,9 @@ onMount(() => {
                 {/if}
               </div>
             </div>
-          </div>
 
         </div>
 
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <Label>Quote Token</Label>
-            {#if Option.isSome(destChain)}
-              <TokenComponent
-                chain={destChain.value}
-                denom={transfer.quote_token}
-                amount={transfer.quote_amount}
-              />
-            {/if}
-          </div>
-        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 

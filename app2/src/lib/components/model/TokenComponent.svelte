@@ -73,16 +73,19 @@ const displayDenom = $derived(
 <Tooltip>
   {#snippet trigger()}
     <div class="flex items-center gap-2 font-semibold">
-      {#if Option.isSome(displayAmount)}
-        <span>{displayAmount.value}</span>
-      {/if}
+      <span>
+        {Option.match(displayAmount, {
+          onNone: () => amount === undefined ? "" : amount.toString(),
+          onSome: value => value
+        })}
+      </span>
       <Truncate value={displayDenom} maxLength={10} showCopy={false} />
     </div>
   {/snippet}
   
   {#snippet content()}
     {#if Option.isSome(token)}
-        <div class="text-sm flex flex-col gap-4 text-neutral-400">
+        <div class="text-sm flex flex-col gap-4 text-neutral-400 text-left">
           <section class="flex justify-between items-center">
             {#if token.value.representations.length > 0}
               <h2 class="text-white font-bold text-lg">{token.value.representations[0].symbol}</h2>
