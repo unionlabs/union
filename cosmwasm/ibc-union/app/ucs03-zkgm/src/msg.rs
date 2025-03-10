@@ -63,7 +63,9 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum EurekaMsg {
     OnZkgm {
-        channel_id: u32,
+        path: Uint256,
+        source_channel_id: u32,
+        destination_channel_id: u32,
         sender: Bytes,
         message: Bytes,
     },

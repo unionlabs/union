@@ -15,14 +15,14 @@ are the same, these channels are connected to each other.
 
 ### Status
 
-A channel goes through different states referred to as status: `INIT`, `TRY`, `ACK`, and `CONFIRM`. Unless you 
-are opening channels yourself, you only need to concern yourself with the `CONFIRM` state, which means the channel 
+A channel goes through different states referred to as status: `INIT`, `TRY`, `ACK`, and `CONFIRM`. Unless you
+are opening channels yourself, you only need to concern yourself with the `CONFIRM` state, which means the channel
 can now relay messages and assets.
 
 ### version
 
-Channels serve different protocol types, indicated by their `version`. These can be fully custom, although most of the 
-time they will be one of the enshrined types (such as [`ucs03-zkgm-1`](/protocol/channels/ucs03-zkgm)). In other cases,
+Channels serve different protocol types, indicated by their `version`. These can be fully custom, although most of the
+time they will be one of the enshrined types (such as [`ucs03-zkgm-0`](/protocol/channels/ucs03-zkgm)). In other cases,
 they can be fully custom, like
 
 ```json
