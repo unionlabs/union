@@ -19,12 +19,6 @@ export const getWethQuoteToken = (
 
   const publicClient = yield* getPublicClient(sourceChain);
 
-  console.log("Getting WETH address from contract:", {
-    address: ucs03Address,
-    chain: sourceChain.chain_id
-  });
-
-
   const wethAddress = yield* Effect.tryPromise({
     try: () => publicClient.readContract({
       address: ucs03Address,
@@ -33,7 +27,7 @@ export const getWethQuoteToken = (
       args: []
     }) as Promise<Hex>,
     catch: (error) => {
-      console.error("Failed to get WETH address:", error);
+      // console.error("Failed to get WETH address:", error);
       return new Error("Failed to get WETH address from zkgm contract", { cause: error });
     }
   });
@@ -48,7 +42,7 @@ export const getWethQuoteToken = (
   ).pipe(
     Effect.map(result => ({wethQuoteToken: result.quote_token})),
     Effect.catchAll(error => {
-      console.log("Error getting WETH quote token:", error);
+      // console.log("Error getting WETH quote token:", error);
       return Effect.succeed({type: "NO_WETH_QUOTE" as const});
     })
   );

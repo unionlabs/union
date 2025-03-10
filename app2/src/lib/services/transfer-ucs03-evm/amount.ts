@@ -6,13 +6,13 @@ import type {Token} from "$lib/schema/token.ts";
 export const parseAmountEffect = (amount: string, token: Token) =>
   Effect.gen(function* () {
     if (!token) {
-      return BigInt(0)
+      return BigInt(0).toString()
     }
 
     const decimals = token.representations[0]?.decimals ?? 0
 
     if (!amount || amount.trim() === '') {
-      return BigInt(0)
+      return BigInt(0).toString()
     }
 
     return yield* Effect.try({
@@ -25,10 +25,10 @@ export const parseAmountEffect = (amount: string, token: Token) =>
     })
   })
 
-export const getParsedAmountSafe = (amount: string, token: Token): bigint => {
+export const getParsedAmountSafe = (amount: string, token: Token): string => {
   const result = Effect.runSync(
     Effect.either(parseAmountEffect(amount, token))
   )
 
-  return result._tag === 'Right' ? result.right : BigInt(0)
+  return result._tag === 'Right' ? result.right.toString() : BigInt(0).toString()
 }
