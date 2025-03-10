@@ -113,7 +113,9 @@ export class Chain extends Schema.Class<Chain>("Chain")({
     })
   }
 
-  getDisplayAddress(address: AddressCanonicalBytes): Effect.Effect<string, NotACosmosChainError | CosmosAddressEncodeError> {
+  getDisplayAddress(
+    address: AddressCanonicalBytes
+  ): Effect.Effect<string, NotACosmosChainError | CosmosAddressEncodeError> {
     switch (this.rpc_type) {
       case "cosmos":
         return this.toCosmosDisplay(address)
