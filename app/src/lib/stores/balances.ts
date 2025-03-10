@@ -55,10 +55,93 @@ export async function queryBalances(chain: Chain, address: string) {
       await updateBalancesCosmos(chain, address)
       break
     case "aptos":
-      console.error("aptos balance fetching currently unsupported")
+      await updateBalancesAptos(chain, address as Address)
+      // console.error("aptos balance fetching currently unsupported")
       break
     default:
       console.error("invalid rpc type in balance fetching")
+  }
+}
+export async function updateBalancesAptos(chain: Chain, address: Address) {
+  // Optionally mark expected tokens as "loading" (if chain.tokens exists)
+  if (chain.tokens && chain.tokens.length > 0) {
+    chain.tokens.forEach(token =>
+      updateBalance(chain.chain_id, token.denom, { kind: "loading", timestamp: Date.now() })
+    )
+  }
+
+  // Define the GraphQL query and variables.
+  const query = `
+    query CoinsData($owner_address: String, $limit: Int, $offset: Int) {
+      current_fungible_asset_balances(
+        where: {owner_address: {_eq: $owner_address}}
+        limit: $limit
+        offset: $offset
+      ) {
+        amount
+        asset_type
+        metadata {
+          name
+          decimals
+          symbol
+          token_standard
+        }
+      }
+    }
+  `
+  const variables = {
+    owner_address: address,
+    limit: 200,
+    offset: 0
+  }
+
+  // Set up the fetch options with appropriate headers.
+  const fetchOptions: RequestInit = {
+    method: "POST",
+    body: JSON.stringify({ query, variables })
+  }
+
+  try {
+    // Send the request to the Aptos indexer.
+    const response = await fetchJson(
+      "https://indexer.testnet.movementnetwork.xyz/v1/graphql",
+      fetchOptions
+    )
+    if (response.isErr()) {
+      throw new Error(response.error.message)
+    }
+    const data = response.value.data
+    if (!data?.current_fungible_asset_balances) {
+      throw new Error("Invalid response data")
+    }
+
+    const aptosBalances = data.current_fungible_asset_balances
+      .filter((token: any) => token.metadata.token_standard === "v2")
+      .map((token: any) => ({
+        denom: token.asset_type,
+        amount: token.amount
+      }))
+
+    console.info("aptosBalances: ", aptosBalances)
+    aptosBalances.forEach(token => {
+      updateBalance(chain.chain_id, token.denom, {
+        kind: "balance",
+        amount: token.amount,
+        timestamp: Date.now()
+      })
+    })
+  } catch (error: any) {
+    console.error("Error fetching Aptos balances", error)
+    // On error, update the balances for all tokens with an error state.
+    if (chain.tokens?.length > 0) {
+      chain.tokens.forEach(token =>
+        updateBalance(chain.chain_id, token.denom, {
+          kind: "error",
+          error: error.message,
+          timestamp: Date.now()
+        })
+      )
+    }
   }
 }
 

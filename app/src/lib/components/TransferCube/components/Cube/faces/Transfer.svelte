@@ -9,7 +9,8 @@ import {
   type AptosBrowserWallet,
   http,
   type CosmosChainId,
-  isValidBech32ContractAddress
+  isValidBech32ContractAddress,
+  type AptosChainId
 } from "@unionlabs/client"
 import { custom, getConnectorClient, switchChain, waitForTransactionReceipt } from "@wagmi/core"
 import { fromHex, isHex, type HttpTransport, toHex } from "viem"
@@ -63,82 +64,75 @@ const transfer = async () => {
   // )
 
   /** --- APTOS START --- */
-  //  if ($validation.transfer.sourceChain.rpc_type === "aptos") {
-  //    const { connectedWallet, connectionStatus } = get(aptosStore)
-  //    if ($userAddressAptos === null) return toast.error("No aptos user address found")
-  //
-  //    if (connectionStatus !== "connected" || !connectedWallet) {
-  //      transferState.set({
-  //        kind: "SWITCHING_TO_CHAIN",
-  //        warning: new Error("No wallet connected")
-  //      })
-  //      return
-  //    }
-  //
-  //    const wallet = getAptosWallet(connectedWallet)
-  //    if (!wallet) {
-  //      transferState.set({
-  //        kind: "SWITCHING_TO_CHAIN",
-  //        warning: new Error(`${connectedWallet} wallet not found`)
-  //      })
-  //      return
-  //    }
-  //
-  //    // @ts-ignore
-  //    transferState.set({ kind: "SWITCHING_TO_CHAIN" })
-  //
-  //    const rpcUrl = $validation.transfer.sourceChain?.rpcs.find(rpc => rpc.type === "rpc")?.url
-  //    if (!rpcUrl)
-  //      return toast.error(`no rpc available for ${$validation.transfer.sourceChain?.display_name}`)
-  //
-  //    if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
-  //      const chainInfo = await wallet.getNetwork()
-  //
-  //      if (chainInfo?.chainId.toString() !== $validation.transfer.sourceChain.chain_id) {
-  //        transferState.set({
-  //          kind: "SWITCHING_TO_CHAIN",
-  //          warning: new Error("Failed to switch chain")
-  //        })
-  //        return
-  //      }
-  //
-  //      // @ts-ignore
-  //      transferState.set({ kind: "CONFIRMING_TRANSFER" })
-  //    }
-  //
-  //    if (stepBefore($transferState, "TRANSFERRING")) {
-  //      try {
-  //        const client = createUnionClient({
-  //          chainId: "2",
-  //          account: await wallet?.getAccount(),
-  //          transport: wallet as AptosBrowserWallet
-  //        })
-  //
-  //        const transferPayload = {
-  //          simulate: true,
-  //          receiver: $validation.transfer.receiver,
-  //          amount: parsedAmount,
-  //          authAccess: "wallet",
-  //          denomAddress: $validation.transfer.asset?.balance,
-  //          destinationChainId: $validation.transfer.destinationChain.chain_id as ChainId
-  //        } satisfies TransferAssetsParameters<"2">
-  //
-  //        const transfer = await client.transferAsset(transferPayload)
-  //
-  //        if (transfer.isErr()) throw transfer.error
-  //        transferState.set({ kind: "TRANSFERRING", transferHash: transfer.value })
-  //      } catch (error) {
-  //        if (error instanceof Error) {
-  //          // @ts-ignore
-  //          transferState.set({ kind: "CONFIRMING_TRANSFER", error })
-  //        }
-  //        return
-  //      }
-  //    }
-  //
-  //    /** --- APTOS END --- */
-  //    /** --- COSOS START --- */
-  if (sourceChain.rpc_type === "cosmos" && transferArgs !== "NO_QUOTE_AVAILABLE") {
+  if (sourceChain.rpc_type === "aptos") {
+    const { connectedWallet, connectionStatus } = get(aptosStore)
+    if ($userAddressAptos === null) return toast.error("No aptos user address found")
+
+    if (connectionStatus !== "connected" || !connectedWallet) {
+      transferState.set({
+        kind: "SWITCHING_TO_CHAIN",
+        warning: new Error("No wallet connected")
+      })
+      return
+    }
+
+    const wallet = getAptosWallet(connectedWallet)
+    if (!wallet) {
+      transferState.set({
+        kind: "SWITCHING_TO_CHAIN",
+        warning: new Error(`${connectedWallet} wallet not found`)
+      })
+      return
+    }
+
+    // @ts-ignore
+    transferState.set({ kind: "SWITCHING_TO_CHAIN" })
+
+    if (stepBefore($transferState, "CONFIRMING_TRANSFER")) {
+      const chainInfo = await wallet.getNetwork()
+
+      if (chainInfo?.chainId.toString() !== sourceChain.chain_id) {
+        transferState.set({
+          kind: "SWITCHING_TO_CHAIN",
+          warning: new Error("Failed to switch chain")
+        })
+        return
+      }
+
+      // @ts-ignore
+      transferState.set({ kind: "CONFIRMING_TRANSFER" })
+    }
+
+    if (stepBefore($transferState, "TRANSFERRING")) {
+      try {
+        let account = await wallet?.getAccount()
+        const client = createUnionClient({
+          chainId: sourceChain.chain_id as AptosChainId,
+          account: account,
+          transport: wallet
+        })
+
+        let realArgs = {
+          ...transferArgs,
+          receiver: toHex(transferArgs.receiver)
+        }
+
+        const transfer = await client.transferAsset(realArgs)
+
+        if (transfer.isErr()) throw transfer.error
+        transferState.set({
+          kind: "TRANSFERRING",
+          transferHash: transfer.value
+        })
+      } catch (error) {
+        if (error instanceof Error) {
+          // @ts-ignore
+          transferState.set({ kind: "CONFIRMING_TRANSFER", error })
+        }
+        return
+      }
+    }
+  } else if (sourceChain.rpc_type === "cosmos" && transferArgs !== "NO_QUOTE_AVAILABLE") {
     const { connectedWallet, connectionStatus } = get(cosmosStore)
     if ($userAddrCosmos === null) return toast.error("No Cosmos user address found")
 
@@ -256,8 +250,12 @@ const transfer = async () => {
         })
         let realArgs = {
           ...transferArgs,
-          receiver: toHex(transferArgs.receiver),
+          receiver: transferArgs.receiver,
           baseToken: fromHex(transferArgs.baseToken, "string")
+        }
+
+        if (destChain.rpc_type !== "aptos") {
+          realArgs.receiver = toHex(transferArgs.receiver)
         }
 
         console.log("args", realArgs)
