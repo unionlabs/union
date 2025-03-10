@@ -21,8 +21,8 @@ jobs:
         run: |
           component="${TAG%/*}"
           case $component in
-            bundle-testnet-9)
-              attrs="[\"bundle-testnet-9\", \"bundle-testnet-9-image\"]"
+            bundle-union-1)
+              attrs="[\"bundle-union-1\", \"bundle-union-1-image\"]"
               systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
