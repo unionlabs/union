@@ -8,6 +8,6 @@ interface Props {
 const { hash }: Props = $props()
 </script>
 
-<div class="font-mono text-sm break-all bg-zinc-100 dark:bg-zinc-800 rounded">
+<div class="font-mono text-sm break-all rounded">
   <Truncate value={hash} maxLength={12} />
 </div>

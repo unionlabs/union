@@ -8,9 +8,10 @@ interface Props extends HTMLAttributes<HTMLDivElement> {
   value: string
   maxLength?: number
   class?: string
+  showCopy?: boolean
 }
 
-const { value, maxLength = 8, class: className = "", ...rest }: Props = $props()
+const { value, maxLength = 8, class: className = "", showCopy = true, ...rest }: Props = $props()
 
 const shouldTruncate = $derived(value.length > maxLength)
 const displayValue = $derived(
@@ -35,18 +36,20 @@ async function copyToClipboard() {
   <span title={shouldTruncate ? value : undefined}>
     {displayValue}
   </span>
-  <button
-    type="button"
-    class="p-1 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-    onclick={(e) => {
-      e.stopPropagation()
-      copyToClipboard()
-    }}
-  >
-    {#if showCopied}
-      <SharpCheckIcon class="text-green-500" />
-    {:else}
-      <SharpContentCopyIcon />
-    {/if}
-  </button>
+  {#if showCopy}
+    <button
+      type="button"
+      class="p-1 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+      onclick={(e) => {
+        e.stopPropagation()
+        copyToClipboard()
+      }}
+    >
+      {#if showCopied}
+        <SharpCheckIcon class="text-green-500" />
+      {:else}
+        <SharpContentCopyIcon />
+      {/if}
+    </button>
+  {/if}
 </div>
