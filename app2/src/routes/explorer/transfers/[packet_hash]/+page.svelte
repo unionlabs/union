@@ -14,6 +14,7 @@ import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import { chains } from "$lib/stores/chains.svelte"
+import { settingsStore } from "$lib/stores/settings.svelte"
 import { getChain } from "$lib/schema/chain"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 
@@ -51,59 +52,65 @@ onMount(() => {
       )}
 
       <div class="space-y-8">
-        <!-- Token Transfer Display -->
-          {#if Option.isSome(sourceChain)}
-            <div class="flex flex-col text-2xl items-center">
+        <!-- Chain and Token Transfer Display -->
+        <div class="flex flex-col items-center gap-2">
+          <div class="text-2xl">
+            {#if !settingsStore.showQuoteTokens}
               <TokenComponent
                 chain={sourceChain.value}
                 denom={transfer.base_token}
                 amount={transfer.base_amount}
               />
-            {#if Option.isSome(destChain)}
-              <TokenComponent
-                chain={destChain.value}
-                denom={transfer.quote_token}
-                amount={transfer.quote_amount}
-              />
             {/if}
-            </div>
-          {/if}
-          
-          <!-- Chain Transfer Indicator -->
-          <div class="flex flex-col items-center gap-2 mt-4">
-            <div class="flex items-center gap-4">
+          </div>
+          <div class="flex items-center gap-4">
+            {#if Option.isSome(sourceChain)}
               <div class="flex flex-col items-end">
-                {#if Option.isSome(sourceChain)}
-                  <ChainComponent chain={sourceChain.value} />
-                  <AddressComponent
-                    address={transfer.sender_canonical}
+                {#if settingsStore.showQuoteTokens}
+                  <TokenComponent
                     chain={sourceChain.value}
-                    class="text-sm text-zinc-500"
+                    denom={transfer.base_token}
+                    amount={transfer.base_amount}
                   />
-                {:else}
-                  <div>{transfer.source_chain.chain_id}</div>
-                  <div class="font-mono text-sm text-zinc-500">{transfer.sender_canonical}</div>
                 {/if}
+                <div class="flex flex-col items-end">
+                  {#if Option.isSome(sourceChain)}
+                    <ChainComponent chain={sourceChain.value} />
+                    <AddressComponent
+                      address={transfer.sender_canonical}
+                      chain={sourceChain.value}
+                    />
+                  {:else}
+                    <div>{transfer.source_chain.chain_id}</div>
+                    <div class="font-mono text-sm text-zinc-500">{transfer.sender_canonical}</div>
+                  {/if}
+                </div>
               </div>
               
               <SharpRightArrowIcon class="w-8 h-8 text-zinc-400" />
               
               <div class="flex flex-col items-start">
+                {#if settingsStore.showQuoteTokens && Option.isSome(destChain)}
+                  <TokenComponent
+                    chain={destChain.value}
+                    denom={transfer.quote_token}
+                    amount={transfer.quote_amount}
+                  />
+                {/if}
                 {#if Option.isSome(destChain)}
                   <ChainComponent chain={destChain.value} />
                   <AddressComponent
                     address={transfer.receiver_canonical}
                     chain={destChain.value}
-                    class="text-sm text-zinc-500"
                   />
                 {:else}
                   <div>{transfer.destination_chain.chain_id}</div>
                   <div class="font-mono text-sm text-zinc-500">{transfer.receiver_canonical}</div>
                 {/if}
               </div>
+            {/if}
             </div>
-
-        </div>
+          </div>
 
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
