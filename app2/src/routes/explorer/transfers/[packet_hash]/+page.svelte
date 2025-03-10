@@ -79,6 +79,7 @@ onMount(() => {
                     <AddressComponent
                       address={transfer.sender_canonical}
                       chain={sourceChain.value}
+                      class="text-zinc-400"
                     />
                   {:else}
                     <div>{transfer.source_chain.chain_id}</div>
@@ -87,7 +88,9 @@ onMount(() => {
                 </div>
               </div>
               
-              <SharpRightArrowIcon class="w-8 h-8 text-zinc-400" />
+              <div class="flex flex-col items-center gap-1">
+                <SharpRightArrowIcon class="w-8 h-8 text-zinc-400" />
+              </div>
               
               <div class="flex flex-col items-start">
                 {#if settingsStore.showQuoteTokens && Option.isSome(destChain)}
@@ -102,6 +105,7 @@ onMount(() => {
                   <AddressComponent
                     address={transfer.receiver_canonical}
                     chain={destChain.value}
+                    class="text-zinc-400"
                   />
                 {:else}
                   <div>{transfer.destination_chain.chain_id}</div>
@@ -110,25 +114,15 @@ onMount(() => {
               </div>
             {/if}
             </div>
+              <div class="text-sm text-zinc-500 flex flex-col items-center">
+                <DateTimeComponent value={transfer.transfer_send_timestamp} showSeconds={false} />
+                {#if Option.isSome(transfer.transfer_recv_timestamp)}
+                  <DateTimeComponent value={transfer.transfer_recv_timestamp.value} showSeconds={false} />
+                {/if}
+              </div>
           </div>
 
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          <div>
-            <Label>Send Timestamp</Label>
-            <DateTimeComponent value={transfer.transfer_send_timestamp} />
-          </div>
-
-          <div>
-            <Label>Receive Timestamp</Label>
-            {#if Option.isSome(transfer.transfer_recv_timestamp)}
-              <DateTimeComponent value={transfer.transfer_recv_timestamp.value} />
-            {:else}
-              <div class="text-yellow-500">Pending</div>
-            {/if}
-          </div>
-        </div>
 
         {#if transfer.traces.length > 0}
           <div class="relative">
