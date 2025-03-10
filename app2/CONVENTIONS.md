@@ -90,7 +90,6 @@ let total = $derived(count * 2)
 let store = $state(initialValue)
 ```
 
-
 ## Array syntax
 
 use `Array<T>` rather than `T[]`
