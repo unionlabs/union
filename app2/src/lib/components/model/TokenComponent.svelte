@@ -76,7 +76,7 @@ const displayDenom = $derived(
       {#if Option.isSome(displayAmount)}
         <span>{displayAmount.value}</span>
       {/if}
-      <Truncate value={displayDenom} maxLength={10} />
+      <Truncate value={displayDenom} maxLength={10} showCopy={false} />
     </div>
   {/snippet}
   
