@@ -20,6 +20,7 @@ schemars.workspace       = true
 serde                    = { workspace = true }
 serde_json               = { workspace = true, features = ["unbounded_depth"] }
 sqlx                     = { workspace = true, features = ["postgres", "migrate", "macros", "json", "runtime-tokio", "time"] }
+time                     = { workspace = true }
 tokio                    = { workspace = true, features = ["time"] }
 tracing                  = { workspace = true }
 voyager-vm               = { workspace = true }

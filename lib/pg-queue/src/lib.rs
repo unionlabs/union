@@ -1,3 +1,4 @@
+use core::f64;
 use std::{
     borrow::Borrow, cmp::Eq, collections::HashMap, fmt::Write, future::Future, hash::Hash,
     marker::PhantomData, time::Duration,
@@ -36,7 +37,8 @@ pub mod metrics;
 pub struct PgQueue<T> {
     client: PgPool,
     optimize_batch_limit: Option<i64>,
-    retryable_error_priority_decrease: Option<i64>,
+    retryable_error_expo_backoff_max: Option<f64>,
+    retryable_error_expo_backoff_multiplier: Option<f64>,
     __marker: PhantomData<fn() -> T>,
 }
 
@@ -51,7 +53,9 @@ pub struct PgQueueConfig {
     #[serde(default)]
     pub optimize_batch_limit: Option<i64>,
     #[serde(default)]
-    pub retryable_error_priority_decrease: Option<i64>,
+    pub retryable_error_expo_backoff_max: Option<f64>,
+    #[serde(default)]
+    pub retryable_error_expo_backoff_multiplier: Option<f64>,
 }
 
 impl PgQueueConfig {
@@ -76,8 +80,8 @@ struct QueueRecord {
     id: i64,
     parents: Vec<i64>,
     item: String,
-    created_at: sqlx::types::time::OffsetDateTime,
-    priority: i64,
+    created_at: time::OffsetDateTime,
+    attempt: i64,
 }
 
 #[derive(Debug, FromRow)]
@@ -87,7 +91,7 @@ struct OptimizeRecord {
     parents: Vec<i64>,
     item: String,
     #[allow(dead_code)]
-    created_at: sqlx::types::time::OffsetDateTime,
+    created_at: time::OffsetDateTime,
 }
 
 #[derive(Debug, FromRow, Serialize)]
@@ -191,50 +195,57 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         // });
 
         let optimize_batch_limit = config.optimize_batch_limit;
-        let retryable_error_priority_decrease = config.retryable_error_priority_decrease;
+        let retryable_error_expo_backoff_multiplier =
+            config.retryable_error_expo_backoff_multiplier;
+        let retryable_error_expo_backoff_max = config.retryable_error_expo_backoff_max;
 
         let pool = config.into_pg_pool().await?;
 
         pool.execute_many(
             r#"
-            CREATE TABLE IF NOT EXISTS queue(
+            CREATE TABLE IF NOT EXISTS
+              queue (
                 id BIGSERIAL PRIMARY KEY,
                 item JSONB NOT NULL,
                 parents BIGINT[] DEFAULT '{}',
                 created_at timestamptz NOT NULL DEFAULT now(),
-                priority int8 NOT NULL DEFAULT 0
-            );
+                handle_at timestamptz NOT NULL DEFAULT now(),
+                attempt INT8 NOT NULL DEFAULT 0
+              );
 
-            CREATE TABLE IF NOT EXISTS optimize(
+            CREATE TABLE IF NOT EXISTS
+              optimize (
                 -- TODO: Figure out how to do this properly
                 id BIGINT PRIMARY KEY DEFAULT nextval('queue_id_seq'::regclass),
                 item JSONB NOT NULL,
                 tag text NOT NULL,
                 parents BIGINT[] DEFAULT '{}',
                 created_at timestamptz NOT NULL DEFAULT now()
-            );
+              );
 
-            CREATE TABLE IF NOT EXISTS done(
+            CREATE TABLE IF NOT EXISTS
+              done (
                 id BIGINT,
                 item JSONB NOT NULL,
                 parents BIGINT[] DEFAULT '{}',
                 created_at timestamptz NOT NULL DEFAULT now(),
                 PRIMARY KEY (id, created_at)
-            );
+              );
 
-            CREATE TABLE IF NOT EXISTS failed(
+            CREATE TABLE IF NOT EXISTS
+              failed (
                 id BIGINT PRIMARY KEY,
                 item JSONB NOT NULL,
                 parents BIGINT[] DEFAULT '{}',
                 message TEXT,
                 created_at timestamptz NOT NULL DEFAULT now()
-            );
+              );
 
-            CREATE INDEX IF NOT EXISTS index_queue_id ON queue(id);
+            CREATE INDEX IF NOT EXISTS index_queue_id ON queue (id);
 
-            CREATE INDEX IF NOT EXISTS index_queue_created_at ON queue(created_at ASC) INCLUDE (id);
+            CREATE INDEX IF NOT EXISTS index_queue_created_at ON queue (created_at ASC) INCLUDE (id);
 
-            CREATE INDEX IF NOT EXISTS index_queue_priority_created_at ON queue(priority DESC, created_at ASC) INCLUDE (id);
+            CREATE INDEX IF NOT EXISTS index_queue_handle_at ON queue(handle_at DESC) INCLUDE (id);
             "#,
         )
         .try_for_each(|result| async move {
@@ -247,7 +258,8 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         Ok(Self {
             client: pool,
             optimize_batch_limit,
-            retryable_error_priority_decrease,
+            retryable_error_expo_backoff_max,
+            retryable_error_expo_backoff_multiplier,
             __marker: PhantomData,
         })
     }
@@ -347,9 +359,10 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                   id
                 FROM
                   queue
+                WHERE
+                  handle_at < now()
                 ORDER BY
-                  priority DESC,
-                  created_at ASC
+                  handle_at ASC
                 FOR UPDATE
                   SKIP LOCKED
                 LIMIT 1)
@@ -357,7 +370,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
               id,
               parents,
               item::text,
-              priority,
+              attempt,
               created_at
             "#,
         )
@@ -372,7 +385,8 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                     record,
                     f,
                     filter,
-                    self.retryable_error_priority_decrease,
+                    self.retryable_error_expo_backoff_max,
+                    self.retryable_error_expo_backoff_multiplier,
                 )
                 .await?
             }
@@ -529,7 +543,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
     skip_all,
     fields(
         item_id = record.id,
-        priority = record.priority
+        attempt = record.attempt
     )
 )]
 async fn process_item<'a, T: QueueMessage, F, Fut, R>(
@@ -537,7 +551,8 @@ async fn process_item<'a, T: QueueMessage, F, Fut, R>(
     record: QueueRecord,
     f: F,
     filter: &'a T::Filter,
-    retryable_error_priority_decrease: Option<i64>,
+    retryable_error_expo_backoff_max: Option<f64>,
+    retryable_error_expo_backoff_multiplier: Option<f64>,
 ) -> Result<Option<R>, sqlx::Error>
 where
     F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
@@ -569,18 +584,30 @@ where
             sqlx::query(
                 "
                 INSERT INTO
-                queue  (id, item,      parents, priority)
-                VALUES ($1, $2::JSONB, $3,      $4      )
+                queue  (id, item,      parents, attempt, handle_at, created_at)
+                VALUES ($1, $2::JSONB, $3,      $4,      $5,        $6        )
                 ",
             )
             .bind(record.id)
             .bind(record.item)
             .bind(record.parents)
+            .bind(record.attempt.saturating_add(1))
             .bind(
-                record
-                    .priority
-                    .saturating_sub(retryable_error_priority_decrease.unwrap_or_default()),
+                time::OffsetDateTime::now_utc().saturating_add(
+                    Duration::try_from_secs_f64(
+                        (record.attempt as f64)
+                            .powf(retryable_error_expo_backoff_multiplier.unwrap_or(1.5))
+                            .clamp(
+                                f64::MIN,
+                                retryable_error_expo_backoff_max.unwrap_or(f64::MAX),
+                            ),
+                    )
+                    .unwrap_or(Duration::MAX)
+                    .try_into()
+                    .unwrap_or(time::Duration::MAX),
+                ),
             )
+            .bind(record.created_at)
             .execute(tx.as_mut())
             .await?;
 
