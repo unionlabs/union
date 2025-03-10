@@ -3,6 +3,10 @@ import { page } from "$app/state"
 import { navigation } from "../Sidebar/navigation"
 import { Option } from "effect"
 
+const toTitleCase = (str: string): string => {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
 type Crumb = {
   title: string
   path: string
@@ -38,7 +42,7 @@ const breadcrumbs = $derived(
         .find(item => item.path === currentPath)
 
       crumbs.push({
-        title: matchingItem?.title || part,
+        title: matchingItem?.title || toTitleCase(part),
         path: currentPath
       })
     }
