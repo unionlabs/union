@@ -1,5 +1,7 @@
 use unionlabs::{
-    aptos::account::AccountAddress, ibc::core::client::height::Height, primitives::H160,
+    aptos::account::AccountAddress,
+    ibc::core::client::height::Height,
+    primitives::{H160, H256},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -13,5 +15,5 @@ pub struct ClientState {
     pub table_handle: AccountAddress,
     pub frozen_height: Height,
     pub latest_block_num: u64,
-    pub whitelisted_relayers: Vec<String>,
+    pub auth_pubkey: H256,
 }

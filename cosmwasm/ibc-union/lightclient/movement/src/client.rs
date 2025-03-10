@@ -6,7 +6,8 @@ use movement_light_client_types::{
 };
 use unionlabs::{
     aptos::{
-        account::AccountAddress, storage_proof::StorageProof, transaction_info::TransactionInfo,
+        account::AccountAddress, signed_data::SignedData, storage_proof::StorageProof,
+        transaction_info::TransactionInfo,
     },
     encoding::Bincode,
     primitives::{H256, U256},
@@ -28,7 +29,7 @@ impl IbcClient for MovementLightClient {
 
     type CustomQuery = Empty;
 
-    type Header = Header;
+    type Header = SignedData<Header>;
 
     type Misbehaviour = Header;
 
@@ -36,17 +37,30 @@ impl IbcClient for MovementLightClient {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = StorageProof;
+    type StorageProof = SignedData<StorageProof>;
 
     type Encoding = Bincode;
 
     fn verify_membership(
-        _ctx: IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         _height: u64,
         _key: Vec<u8>,
-        _storage_proof: Self::StorageProof,
+        storage_proof: Self::StorageProof,
         _value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
+        let client_state = ctx.read_self_client_state()?;
+        if !ctx
+            .deps
+            .api
+            .ed25519_verify(
+                &storage_proof.hash(),
+                storage_proof.signature.as_ref(),
+                client_state.auth_pubkey.as_ref(),
+            )
+            .map_err(Into::<Error>::into)?
+        {
+            return Err(Error::AuthenticationFailure.into());
+        }
         // let client_state = ctx.read_self_client_state()?;
         // let consensus_state = ctx.read_self_consensus_state(height)?;
         // verify_membership(
@@ -101,15 +115,22 @@ impl IbcClient for MovementLightClient {
     fn verify_header(
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
-        caller: cosmwasm_std::Addr,
+        _caller: cosmwasm_std::Addr,
     ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         // Check if caller is whitelisted
-        if !client_state
-            .whitelisted_relayers
-            .contains(&caller.to_string())
+
+        if !ctx
+            .deps
+            .api
+            .ed25519_verify(
+                &header.hash(),
+                header.signature.as_ref(),
+                client_state.auth_pubkey.as_ref(),
+            )
+            .map_err(Into::<Error>::into)?
         {
-            return Err(IbcClientError::UnauthorizedCaller(caller.to_string()));
+            return Err(Error::AuthenticationFailure.into());
         }
 
         // NOTE(aeryz): FOR AUDITORS and NERDS:
@@ -167,7 +188,7 @@ impl IbcClient for MovementLightClient {
             )
             .unwrap();
         }
-        update_state(client_state, header).map_err(Into::into)
+        update_state(client_state, header.data).map_err(Into::into)
     }
 
     fn misbehaviour(
