@@ -18,7 +18,10 @@ use anyhow::{anyhow, Context as _};
 use clap::Parser;
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
-use pg_queue::PgQueueConfig;
+use pg_queue::{
+    default_max_connections, default_min_connections, default_retryable_error_expo_backoff_max,
+    default_retryable_error_expo_backoff_multiplier, PgQueueConfig,
+};
 use schemars::gen::{SchemaGenerator, SchemaSettings};
 use serde::Serialize;
 use tikv_jemallocator::Jemalloc;
@@ -159,14 +162,17 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     rpc_laddr: default_rpc_laddr(),
                     metrics_endpoint: default_metrics_endpoint(),
                     queue: QueueConfig::PgQueue(PgQueueConfig {
-                        database_url: String::new(),
-                        max_connections: None,
-                        min_connections: None,
+                        database_url: "postgres://postgres:postgrespassword@127.0.0.1:5432/default"
+                            .into(),
+                        max_connections: default_max_connections(),
+                        min_connections: default_min_connections(),
                         idle_timeout: None,
                         max_lifetime: None,
                         optimize_batch_limit: None,
-                        retryable_error_expo_backoff_max: None,
-                        retryable_error_expo_backoff_multiplier: None,
+                        retryable_error_expo_backoff_max: default_retryable_error_expo_backoff_max(
+                        ),
+                        retryable_error_expo_backoff_multiplier:
+                            default_retryable_error_expo_backoff_multiplier(),
                     }),
                     optimizer_delay_milliseconds: 100,
                     ipc_client_request_timeout: Duration::new(60, 0),
