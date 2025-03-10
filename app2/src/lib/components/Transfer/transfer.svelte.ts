@@ -1,4 +1,4 @@
-import {Option} from 'effect';
+import {Effect, Either, Option, ParseResult, Schema} from 'effect';
 import {RawTransferSvelte} from './raw-transfer.svelte.ts';
 import {getContext, setContext} from "svelte";
 import type {Token} from "$lib/schema/token.ts";
@@ -14,11 +14,30 @@ import {getChainFromWagmi} from "$lib/wallet/evm/index.ts";
 import {type Chain as ViemChain, fromHex} from "viem";
 import {channels} from "$lib/stores/channels.svelte.ts";
 import {getChannelInfoSafe} from "$lib/services/transfer-ucs03-evm/channel.ts";
+import type {Channel} from "$lib/schema/channel.ts";
+import {TransferSchema} from "$lib/schema/transfer-args.ts";
+
+type TransferType = typeof TransferSchema.Type
+
+type Valid = {
+  isValid: true;
+  args: TransferType;
+  errors?: undefined;
+}
+
+type NotValid = {
+  isValid: false;
+  args: Partial<TransferType>;
+  errors: Array<string>;
+}
+
+type ValidationResult = Valid | NotValid;
 
 export class Transfer {
-  isValid = $state(true);
   raw = new RawTransferSvelte();
   state = $state<TransferSubmission>(TransferSubmission.Filling())
+
+
 
   sourceChain = $derived.by(() => {
     return Option.isSome(chains.data)
@@ -54,7 +73,7 @@ export class Transfer {
     return getDerivedReceiverSafe(this.raw.receiver);
   });
 
-  channel = $derived.by(() => {
+  channel: Channel | null = $derived.by(() => {
     return Option.isSome(channels.data) && this.sourceChain && this.destinationChain
       ? getChannelInfoSafe(this.sourceChain.chain_id, this.destinationChain.chain_id, channels.data.value)
       : null;
@@ -69,11 +88,11 @@ export class Transfer {
   quoteToken = $state()
   wethQuoteToken = $state()
 
-  //Validate this and return as field errors or similar
-  args = $derived<Ucs03TransferEvm>({
+  args = $derived({
     sourceChain: getChainFromWagmi(Number(this.sourceChain?.chain_id)) as ViemChain,
+    destinationRpcType: this.sourceChain?.rpc_type,
     sourceChannelId: this.channel?.source_channel_id,
-    ucs03address: "0x84f074c15513f15baea0fbed3ec42f0bd1fb3efa",
+    ucs03address: this.ucs03address,
     baseToken: this.baseToken?.denom,
     baseAmount: this.parsedAmount,
     quoteToken: this.quoteToken,
@@ -82,6 +101,29 @@ export class Transfer {
     timeoutHeight: 0n,
     timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
     wethQuoteToken: this.wethQuoteToken
+  })
+
+  validationResult = $derived.by(() => {
+    console.log('BA', this.args.baseAmount)
+    const validationEffect = Schema.decode(TransferSchema)(this.args);
+    return Effect.runSync(Effect.either(validationEffect));
+  });
+  isValid = $derived(Either.isRight(this.validationResult));
+
+  fieldErrors = $derived.by(() => {
+    if (Either.isLeft(this.validationResult)) {
+      const errorArray = ParseResult.ArrayFormatter.formatErrorSync(this.validationResult.left);
+      const fieldErrorMap = {};
+
+      for (const error of errorArray) {
+        if (error.path && error.path.length > 0) {
+          const fieldPath = error.path.join('.');
+          fieldErrorMap[fieldPath] = error.message;
+        }
+      }
+
+      return fieldErrorMap;
+    } else return  {}
   });
 
   submit = async () => {

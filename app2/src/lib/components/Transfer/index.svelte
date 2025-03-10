@@ -48,6 +48,7 @@
   };
 
   $effect(() => {
+    console.log('[VALIDATION]', transfer.fieldErrors)
     console.log(transfer.sourceChain?.chain_id, transfer.baseToken?.denom, transfer.channel, transfer.sourceChain?.rpc_type)
     runthis()
   })
