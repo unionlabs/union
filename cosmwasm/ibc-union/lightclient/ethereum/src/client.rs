@@ -1,7 +1,4 @@
-use ark_bls12_381::G1Affine;
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use beacon_api_types::{
-    altair::SyncCommittee,
     chain_spec::{ChainSpec, Mainnet, Minimal, PresetBaseKind},
     slot::Slot,
 };
@@ -32,7 +29,9 @@ use unionlabs::{
     primitives::{Bytes, H256, U256},
 };
 
-use crate::{errors::Error, verification::VerificationContext};
+use crate::{
+    errors::Error, inverse_sync_committee::InverseSyncCommittee, verification::VerificationContext,
+};
 
 pub enum EthereumLightClient {}
 
@@ -138,11 +137,11 @@ impl IbcClient for EthereumLightClient {
             .set_client_state(ClientState::V1(client_state))
             .add_storage_write(
                 sync_committee_store_key(current_sync_period),
-                inverse_sync_committee_pubkeys(&initial_sync_committee.current_sync_committee),
+                InverseSyncCommittee::take_inverse(&initial_sync_committee.current_sync_committee),
             )
             .add_storage_write(
                 sync_committee_store_key(current_sync_period + 1),
-                inverse_sync_committee_pubkeys(&initial_sync_committee.next_sync_committee),
+                InverseSyncCommittee::take_inverse(&initial_sync_committee.next_sync_committee),
             ))
     }
 
@@ -265,15 +264,16 @@ pub fn verify_header<C: ChainSpec>(
         compute_slot_at_timestamp::<C>(client_state.genesis_time, ctx.env.block.time.seconds())
             .ok_or(Error::IntegerOverflow)?;
 
-    let sync_committee =
-        ctx.read_self_storage::<SyncCommittee>(&sync_committee_store_key_by_slot::<C>(
+    let sync_committee = ctx
+        .read_self_storage::<InverseSyncCommittee>(&sync_committee_store_key_by_slot::<C>(
             header
                 .consensus_update
                 .update_data()
                 .finalized_header
                 .beacon
                 .slot,
-        ))?;
+        ))?
+        .as_sync_committee();
     let (current_sync_committee, next_sync_committee) = match header.consensus_update {
         LightClientUpdate::EpochChange(_) => (None, Some(&sync_committee)),
         LightClientUpdate::WithinEpoch(_) => (Some(&sync_committee), None),
@@ -353,35 +353,13 @@ fn update_state<C: ChainSpec>(
     if let LightClientUpdate::EpochChange(update) = &mut header.consensus_update {
         let current_epoch =
             compute_epoch_at_slot::<C>(update.update_data.finalized_header.beacon.slot);
-        inverse_sync_committee_pubkeys(&update.next_sync_committee);
         state_update = state_update.add_storage_write(
             sync_committee_store_key(current_epoch + 1),
-            &update.next_sync_committee,
+            InverseSyncCommittee::take_inverse(&update.next_sync_committee),
         );
     }
 
     Ok(state_update)
-}
-
-/// Additive inverse the public keys to do inverse aggregation
-fn inverse_sync_committee_pubkeys(sync_committee: &SyncCommittee) -> SyncCommittee {
-    SyncCommittee {
-        pubkeys: sync_committee
-            .pubkeys
-            .iter()
-            .map(|x| {
-                -G1Affine::deserialize_compressed(x.as_ref())
-                    .expect("pubkey that is validated by the sync protocol is valid")
-            })
-            .map(|x| {
-                let mut buf = vec![];
-                x.serialize_compressed(&mut buf)
-                    .expect("serializing into a buffer will always work");
-                buf.try_into().expect("compressed data first H384")
-            })
-            .collect(),
-        aggregate_pubkey: sync_committee.aggregate_pubkey,
-    }
 }
 
 pub fn verify_misbehaviour<C: ChainSpec>(
@@ -422,8 +400,9 @@ pub fn verify_misbehaviour<C: ChainSpec>(
 
     let epoch = compute_epoch_at_slot::<C>(slot_1);
 
-    let sync_committee =
-        ctx.read_self_storage::<SyncCommittee>(&sync_committee_store_key(epoch))?;
+    let sync_committee = ctx
+        .read_self_storage::<InverseSyncCommittee>(&sync_committee_store_key(epoch))?
+        .as_sync_committee();
     let (current_sync_committee, next_sync_committee) = match misbehaviour.update_1 {
         LightClientUpdate::EpochChange(_) => (None, Some(&sync_committee)),
         LightClientUpdate::WithinEpoch(_) => (Some(&sync_committee), None),
