@@ -162,6 +162,10 @@
           type = types.attrs;
           default = { };
         };
+        voyager-queue-extra = mkOption {
+          type = types.attrs;
+          default = { };
+        };
       };
 
       config =
@@ -179,7 +183,7 @@
                   idle_timeout = null;
                   max_lifetime = null;
                   inherit (cfg) optimize_batch_limit;
-                };
+                } // cfg.voyager-queue-extra;
               };
             }
           );
