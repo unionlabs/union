@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {createTransfer} from "./transfer.svelte.ts";
+  import {createTransfer} from "$lib/components/Transfer/transfer.svelte.ts";
 
   let { children } = $props()
 

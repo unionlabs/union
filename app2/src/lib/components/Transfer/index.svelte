@@ -6,11 +6,11 @@
   import Assets from "$lib/components/Transfer/Assets.svelte";
   import Amount from "$lib/components/Transfer/Amount.svelte";
   import Receiver from "$lib/components/Transfer/Receiver.svelte";
-  import {getTransfer} from "../../../routes/transfer/transfer.svelte.ts";
   import ShowData from "$lib/components/Transfer/ShowData.svelte";
   import {getQuoteToken} from "$lib/services/transfer-ucs03-evm/quote-token.ts";
   import {Effect} from "effect";
   import {getWethQuoteToken} from "$lib/services/transfer-ucs03-evm/weth-token.ts";
+  import {getTransfer} from "$lib/components/Transfer/transfer.svelte.ts";
 
   const {transfer} = getTransfer()
 
@@ -26,14 +26,14 @@
 
     const quote = await Effect.runPromise(
       getQuoteToken(
-        transfer.sourceChain,
-        transfer.baseToken,
+        transfer.sourceChain.chain_id,
+        transfer.baseToken.denom,
         transfer.channel,
         transfer.destinationChain.rpc_type
       )
     );
 
-    if(!transfer.ucs03address) return
+    if (!transfer.ucs03address) return
 
     const weth = await Effect.runPromise(
       getWethQuoteToken(
@@ -44,7 +44,7 @@
     );
 
     console.log('quote', quote);
-    console.log('quote', weth);
+    console.log('weth', weth);
   };
 
   $effect(() => {
@@ -59,10 +59,10 @@
   <Assets/>
   <Amount/>
   <Receiver/>
-  
-  <!-- For testing -->
-  <ShowData />
 
+  <!-- For testing -->
+  <ShowData/>
+  <!-- For testing -->
 
   <Button
           class="mt-2"
