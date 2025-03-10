@@ -112,6 +112,21 @@ export class Chain extends Schema.Class<Chain>("Chain")({
       onSome: Effect.succeed
     })
   }
+
+  getDisplayAddress(address: AddressCanonicalBytes): Effect.Effect<string, NotACosmosChainError | CosmosAddressEncodeError> {
+    switch (this.rpc_type) {
+      case "cosmos":
+        return this.toCosmosDisplay(address)
+      case "evm":
+        // For EVM, capitalize the address
+        return Effect.succeed(address.slice(0, 2) + address.slice(2).toUpperCase())
+      case "aptos":
+        // Aptos uses the canonical format
+        return Effect.succeed(address)
+      default:
+        return Effect.fail(new NotACosmosChainError({ chain: this }))
+    }
+  }
 }
 
 export const Chains = Schema.Array(Chain)

@@ -72,7 +72,7 @@ const displayDenom = $derived(
 
 <Tooltip>
   {#snippet trigger()}
-    <div class="flex items-center gap-1 font-semibold">
+    <div class="flex items-center gap-2 font-semibold">
       {#if Option.isSome(displayAmount)}
         <span>{displayAmount.value}</span>
       {/if}
