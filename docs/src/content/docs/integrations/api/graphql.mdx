@@ -60,14 +60,14 @@ This schema can be used by API clients and editors like VSCode to provide a bett
 The following definitions are used across the schema and documentation:
 
 - `source`: The chain or rollup where the packet is sent from, often prefixed such as `source_timestamp` or `source_transaction_hash`.
-- `destination`: The chain or roll-up that receives the packet. 
+- `destination`: The chain or roll-up that receives the packet.
 - `sender`: the contract or [EOA](https://ethereum.org/en/developers/docs/accounts/) that made the transfer.
 - `receiver`: the contract or [EOA](https://ethereum.org/en/developers/docs/accounts/) that received the transfer.
 
 ## Queries
 
 Below we have documented some common useful queries that are also leveraged in [app.union.build](https://app.union.build). For all queries, Union
-provides caches to increase performance. Use the syntax `@cached(ttl: ${time_in_seconds})` to cache the query. The cache key, which is used 
+provides caches to increase performance. Use the syntax `@cached(ttl: ${time_in_seconds})` to cache the query. The cache key, which is used
 to map the query to the response, is computed by hashing:
 
 - the GraphQL query.
@@ -78,7 +78,7 @@ Caching can dramatically improve performance. Always add at least `@cached(ttl: 
 
 ### Transfers
 
-Transfers facilitated by Union (either `ucs01-relay-1` or `ics20-1`) are queryable using v1_transfers.
+Transfers facilitated by Union (either `ucs03-zkgm-0` or `ics20-1`) are queryable using v1_transfers.
 
 ```graphql
 query GetLatest10Transfers @cached(ttl: 1) {
@@ -103,10 +103,10 @@ To query for specific addresses, add the `sender` and `receiver` to the where cl
 ```graphql
 query GetAllUserTransfers @cached(ttl: 1) {
   v1_transfers(
-    order_by: { source_timestamp: desc }, 
+    order_by: { source_timestamp: desc },
     where: {
       _or: [
-        { sender: { _eq: "union1sw44hacrewvkuvm70zfxhwa9u6vm4f8yc8spqu" }},  
+        { sender: { _eq: "union1sw44hacrewvkuvm70zfxhwa9u6vm4f8yc8spqu" }},
         { receiver: { _eq: "union1sw44hacrewvkuvm70zfxhwa9u6vm4f8yc8spqu" }}
       ]
     }
@@ -181,7 +181,7 @@ query GetTracesByHash @cached(ttl: 1) {
 }
 ```
 
-The `v1_traces.data` field is dependent on the type and may contain chain-specific information as well. The `v1_transfers` and `v1_packets` 
+The `v1_traces.data` field is dependent on the type and may contain chain-specific information as well. The `v1_transfers` and `v1_packets`
 also have a relation to traces, to allow for all info of a specific transfer or packet.
 
 ```graphql
@@ -210,7 +210,7 @@ query GetLatest10TransfersWithTraces @cached(ttl: 1) {
 
 ### Assets
 
-Unionlabs provides a curated registry of different assets across different chains, including the bridged asset info for Union's assets. 
+Unionlabs provides a curated registry of different assets across different chains, including the bridged asset info for Union's assets.
 
 ```graphql
 query GetAllSupportedAssets @cached(ttl: 1) {
