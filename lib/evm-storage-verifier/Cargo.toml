@@ -11,6 +11,9 @@ repository   = { workspace = true }
 [lints]
 workspace = true
 
+[package.metadata.crane]
+test-include = ["lib/evm-storage-verifier/src/test/"]
+
 [dependencies]
 hash-db            = { version = "0.16.0", default-features = false }
 hash256-std-hasher = { version = "0.15.2", default-features = false }
@@ -21,3 +24,9 @@ sha3               = { workspace = true }
 thiserror          = { workspace = true }
 trie-db            = { version = "0.28", default-features = false }
 unionlabs          = { workspace = true, features = ["rlp"] }
+
+[dev-dependencies]
+alloy       = { workspace = true, features = ["rpc-types"] }
+hex-literal = { workspace = true }
+lazy_static = "1.4.0"
+serde_json = { workspace = true }

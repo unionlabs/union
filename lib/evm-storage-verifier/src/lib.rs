@@ -114,3 +114,255 @@ fn get_node(
     let trie = TrieDBBuilder::<EthLayout>::new(&db, &root).build();
     Ok(trie.get(&keccak_256(key.as_ref()))?)
 }
+
+#[cfg(test)]
+mod tests {
+    use alloy::rpc::types::EIP1186AccountProofResponse;
+    use hex_literal::hex;
+    use lazy_static::lazy_static;
+
+    use super::*;
+
+    lazy_static! {
+        pub static ref VALID_ABSENCE_PROOF: EIP1186AccountProofResponse =
+            serde_json::from_str(include_str!("./test/valid_absence_proof_sepolia.json")).unwrap();
+        pub static ref VALID_STORAGE_PROOF: EIP1186AccountProofResponse =
+            serde_json::from_str(include_str!("./test/valid_storage_proof_sepolia.json")).unwrap();
+    }
+
+    // Fetch a finality update to obtain a state root at a certain height, then fetch the proofs based on that height
+    const STATE_ROOT_AT_7882953: H256 = H256::new(hex!(
+        "545e7cf676baca0fad067f9884fbb2a42090c0fa63a00c217c60688917deee6e"
+    ));
+
+    #[test]
+    fn verify_storage_absence_works() {
+        assert_eq!(
+            verify_storage_absence(
+                H256::new(VALID_ABSENCE_PROOF.storage_hash.0),
+                U256::from_be_bytes(VALID_ABSENCE_PROOF.storage_proof[0].key.as_b256().0),
+                &VALID_ABSENCE_PROOF.storage_proof[0].proof,
+            ),
+            Ok(true)
+        );
+    }
+
+    #[test]
+    fn verify_storage_absence_fails_when_altered_proof() {
+        let proof = VALID_ABSENCE_PROOF.storage_proof[0]
+            .proof
+            .iter()
+            .cloned()
+            .map(|x| [x, vec![1].into()].concat());
+        assert!(matches!(
+            verify_storage_absence(
+                H256::new(VALID_ABSENCE_PROOF.storage_hash.0),
+                U256::from_be_bytes(VALID_ABSENCE_PROOF.storage_proof[0].key.as_b256().0),
+                proof,
+            ),
+            Err(Error::Trie(_))
+        ));
+    }
+
+    #[test]
+    fn verify_storage_absence_fails_when_altered_root() {
+        let mut storage_hash = VALID_ABSENCE_PROOF.storage_hash.0.clone();
+        storage_hash[0] ^= 0xFF;
+
+        assert!(matches!(
+            verify_storage_absence(
+                H256::new(storage_hash),
+                U256::from_be_bytes(VALID_ABSENCE_PROOF.storage_proof[0].key.as_b256().0),
+                &VALID_ABSENCE_PROOF.storage_proof[0].proof,
+            ),
+            Err(Error::Trie(_))
+        ));
+    }
+
+    #[test]
+    fn verify_storage_absence_fails_when_altered_key() {
+        let mut key = VALID_ABSENCE_PROOF.storage_proof[0].key.as_b256().0;
+        key[0] ^= 0xFF;
+
+        assert!(matches!(
+            verify_storage_absence(
+                H256::new(VALID_ABSENCE_PROOF.storage_hash.0),
+                U256::from_be_bytes(key),
+                &VALID_ABSENCE_PROOF.storage_proof[0].proof,
+            ),
+            Err(Error::Trie(_))
+        ));
+    }
+
+    #[test]
+    fn verify_storage_verification_fails_when_absent() {
+        assert!(matches!(
+            verify_storage_proof(
+                H256::new(VALID_ABSENCE_PROOF.storage_hash.0),
+                U256::from_be_bytes(VALID_ABSENCE_PROOF.storage_proof[0].key.as_b256().0),
+                &VALID_ABSENCE_PROOF.storage_proof[0]
+                    .value
+                    .to_be_bytes::<32>(),
+                &VALID_ABSENCE_PROOF.storage_proof[0].proof,
+            ),
+            Err(Error::ValueMissing { .. })
+        ));
+    }
+
+    #[test]
+    fn verify_storage_verication_works() {
+        assert_eq!(
+            verify_storage_proof(
+                H256::new(VALID_STORAGE_PROOF.storage_hash.0),
+                U256::from_be_bytes(VALID_STORAGE_PROOF.storage_proof[0].key.as_b256().0),
+                &rlp::encode(
+                    &VALID_STORAGE_PROOF.storage_proof[0]
+                        .value
+                        .to_be_bytes::<32>()
+                        .as_slice()
+                ),
+                &VALID_STORAGE_PROOF.storage_proof[0].proof,
+            ),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn verify_absence_verification_fails_when_key_exists() {
+        assert_eq!(
+            verify_storage_absence(
+                H256::new(VALID_STORAGE_PROOF.storage_hash.0),
+                U256::from_be_bytes(VALID_STORAGE_PROOF.storage_proof[0].key.as_b256().0),
+                &VALID_STORAGE_PROOF.storage_proof[0].proof,
+            ),
+            Ok(false)
+        );
+    }
+
+    #[test]
+    fn verify_storage_verification_fails_when_altered_root() {
+        let mut storage_hash = VALID_STORAGE_PROOF.storage_hash.0.clone();
+        storage_hash[0] ^= 0xFF;
+
+        assert!(matches!(
+            verify_storage_proof(
+                H256::new(storage_hash),
+                U256::from_be_bytes(VALID_STORAGE_PROOF.storage_proof[0].key.as_b256().0),
+                &rlp::encode(
+                    &VALID_STORAGE_PROOF.storage_proof[0]
+                        .value
+                        .to_be_bytes::<32>()
+                        .as_slice()
+                ),
+                &VALID_STORAGE_PROOF.storage_proof[0].proof,
+            ),
+            Err(Error::Trie(_))
+        ));
+    }
+
+    #[test]
+    fn verify_storage_verification_fails_when_altered_proof() {
+        let proof = VALID_ABSENCE_PROOF.storage_proof[0]
+            .proof
+            .iter()
+            .cloned()
+            .map(|x| [x, vec![1].into()].concat());
+
+        assert!(matches!(
+            verify_storage_proof(
+                H256::new(VALID_STORAGE_PROOF.storage_hash.0),
+                U256::from_be_bytes(VALID_STORAGE_PROOF.storage_proof[0].key.as_b256().0),
+                &rlp::encode(
+                    &VALID_STORAGE_PROOF.storage_proof[0]
+                        .value
+                        .to_be_bytes::<32>()
+                        .as_slice()
+                ),
+                proof,
+            ),
+            Err(Error::Trie(_))
+        ));
+    }
+
+    #[test]
+    fn verify_storage_verification_fails_when_altered_key() {
+        let mut key = VALID_STORAGE_PROOF.storage_proof[0].key.as_b256().0;
+        key[0] ^= 0xFF;
+
+        assert!(matches!(
+            verify_storage_proof(
+                H256::new(VALID_STORAGE_PROOF.storage_hash.0),
+                U256::from_be_bytes(key),
+                &rlp::encode(
+                    &VALID_STORAGE_PROOF.storage_proof[0]
+                        .value
+                        .to_be_bytes::<32>()
+                        .as_slice()
+                ),
+                &VALID_STORAGE_PROOF.storage_proof[0].proof,
+            ),
+            Err(Error::Trie(_))
+        ));
+    }
+
+    #[test]
+    fn verify_storage_verification_fails_when_altered_value() {
+        let mut value = VALID_STORAGE_PROOF.storage_proof[0]
+            .value
+            .to_be_bytes::<32>();
+        value[0] ^= 0xFF;
+
+        assert!(matches!(
+            verify_storage_proof(
+                H256::new(VALID_STORAGE_PROOF.storage_hash.0),
+                U256::from_be_bytes(VALID_STORAGE_PROOF.storage_proof[0].key.as_b256().0),
+                &rlp::encode(&value.as_slice()),
+                &VALID_STORAGE_PROOF.storage_proof[0].proof,
+            ),
+            Err(Error::ValueMismatch { .. })
+        ));
+    }
+
+    #[test]
+    fn verify_account_proof_works() {
+        assert_eq!(
+            verify_account_storage_root(
+                STATE_ROOT_AT_7882953,
+                &H160::new(*VALID_STORAGE_PROOF.address.as_ref()),
+                &VALID_STORAGE_PROOF.account_proof,
+                &H256::new(VALID_STORAGE_PROOF.storage_hash.0),
+            ),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn verify_account_proof_fails_with_altered_root() {
+        let mut root = STATE_ROOT_AT_7882953;
+        root[0] ^= 0xFF;
+        assert!(matches!(
+            verify_account_storage_root(
+                root,
+                &H160::new(*VALID_STORAGE_PROOF.address.as_ref()),
+                &VALID_STORAGE_PROOF.account_proof,
+                &H256::new(VALID_STORAGE_PROOF.storage_hash.0),
+            ),
+            Err(Error::Trie(_))
+        ));
+    }
+
+    #[test]
+    fn verify_account_proof_fails_with_altered_storage_root() {
+        let mut storage_root = VALID_STORAGE_PROOF.storage_hash.0;
+        storage_root[0] ^= 0xFF;
+        assert!(matches!(
+            verify_account_storage_root(
+                STATE_ROOT_AT_7882953,
+                &H160::new(*VALID_STORAGE_PROOF.address.as_ref()),
+                &VALID_STORAGE_PROOF.account_proof,
+                &H256::new(storage_root),
+            ),
+            Err(Error::ValueMismatch { .. })
+        ));
+    }
+}
