@@ -24,12 +24,17 @@ pub const CHANNEL_BALANCE: Map<(u32, String), Uint256> = Map::new("channel_balan
 /// This is cleared after execution is complete.
 pub const EXECUTING_PACKET: Item<Packet> = Item::new("executing_packet");
 
+/// Flag to indicate that the currently executing packet is a batch.
+/// This is used to determine how to handle acknowledgements in the reply handler.
 pub const EXECUTING_PACKET_IS_BATCH: Item<()> = Item::new("executing_packet_is_batch");
 
 /// Temporarily stores the acknowledgement from packet execution.
 /// This is used to retrieve the acknowledgement in the reply handler.
 pub const EXECUTION_ACK: Item<Bytes> = Item::new("execution_ack");
 
+/// Stores acknowledgements from batch instruction executions.
+/// Each instruction in a batch generates its own acknowledgement, which is stored here
+/// until all instructions have been executed, then combined into a single batch acknowledgement.
 pub const BATCH_EXECUTION_ACKS: Item<Vec<Bytes>> = Item::new("batch_execution_acks");
 
 /// Maps wrapped token denoms to their original token bytes representation.

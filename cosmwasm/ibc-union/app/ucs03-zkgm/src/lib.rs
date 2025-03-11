@@ -70,9 +70,7 @@ pub enum ContractError {
     ContractCreationEventNotFound,
     #[error("{0:?}")]
     InvalidPath(ParseError),
-    #[error(
-        "forward previousDestinationChannelId mistmatch, actual: {actual}, expted: {expected}"
-    )]
+    #[error("forward previousDestinationChannelId mismatch, actual: {actual}, expted: {expected}")]
     InvalidForwardDestinationChannelId { actual: u32, expected: u32 },
     #[error("forward (sent) packet is missing from the reply")]
     ForwardedPacketMissingInReply,

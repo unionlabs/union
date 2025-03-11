@@ -190,7 +190,7 @@ pub fn execute(
             if info.sender != env.contract.address {
                 Err(ContractError::OnlySelf)
             } else {
-                if let Some(()) = EXECUTING_PACKET_IS_BATCH.may_load(deps.storage)? {
+                if EXECUTING_PACKET_IS_BATCH.may_load(deps.storage)?.is_some() {
                     let acks = match BATCH_EXECUTION_ACKS.load(deps.storage) {
                         Ok(mut batch_acks) => {
                             batch_acks.push(ack);
@@ -533,9 +533,7 @@ fn acknowledge_internal(
                 });
             }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
-            acknowledge_multiplex(
-                deps, env, info, packet, relayer, path, salt, multiplex, successful, ack,
-            )
+            acknowledge_multiplex(deps, packet, relayer, path, multiplex, successful, ack)
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
@@ -654,12 +652,9 @@ fn acknowledge_fungible_asset_order(
 
 fn acknowledge_multiplex(
     deps: DepsMut,
-    _env: Env,
-    _info: MessageInfo,
     packet: Packet,
     relayer: Addr,
     path: U256,
-    _salt: H256,
     multiplex: Multiplex,
     successful: bool,
     ack: Bytes,
@@ -783,17 +778,7 @@ fn execute_internal(
                 });
             }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
-            execute_multiplex(
-                deps,
-                env,
-                info,
-                packet,
-                relayer,
-                relayer_msg,
-                salt,
-                path,
-                multiplex,
-            )
+            execute_multiplex(deps, env, packet, relayer, relayer_msg, path, multiplex)
         }
         OP_FORWARD => {
             if instruction.version > INSTR_VERSION_0 {
@@ -925,11 +910,9 @@ fn execute_forward(
 fn execute_multiplex(
     deps: DepsMut,
     env: Env,
-    _info: MessageInfo,
     packet: Packet,
     relayer: Addr,
     relayer_msg: Bytes,
-    _salt: H256,
     path: U256,
     multiplex: Multiplex,
 ) -> Result<Response, ContractError> {
