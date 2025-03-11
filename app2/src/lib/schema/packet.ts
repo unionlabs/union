@@ -3,6 +3,8 @@ import { SortOrder } from "$lib/schema/sort-order"
 import { Hex } from "$lib/schema/hex"
 import { ChainId, UniversalChainId } from "$lib/schema/chain"
 import { ChannelId } from "$lib/schema/channel"
+import { ConnectionId } from "$lib/schema/connection"
+import { ClientId } from "$lib/schema/client"
 
 export const PacketHash = Schema.String.pipe(Schema.pattern(/^0x[0-9a-f]{64}$/)).pipe(
   Schema.brand("PacketHash")
@@ -27,14 +29,15 @@ export class PacketListItem extends Schema.Class<PacketListItem>("PacketListItem
 
 export const PacketList = Schema.Array(PacketListItem)
 
+
 export class PacketDetails extends Schema.Class<PacketDetails>("PacketDetails")({
   packet_hash: PacketHash,
   channel_version: Schema.String,
   data: Schema.Any,
   destination_chain_id: ChainId,
   destination_channel_id: ChannelId,
-  destination_client_id: Schema.Number,
-  destination_connection_id: Schema.Number,
+  destination_client_id: ClientId,
+  destination_connection_id: ConnectionId,
   destination_port_id: Schema.String,
   destination_universal_chain_id: UniversalChainId,
   packet_ack_block_hash: Schema.OptionFromNullOr(Hex),
@@ -54,8 +57,8 @@ export class PacketDetails extends Schema.Class<PacketDetails>("PacketDetails")(
   packet_send_transaction_hash: Schema.OptionFromNullOr(Hex),
   sort_order: SortOrder,
   source_channel_id: ChannelId,
-  source_client_id: Schema.Number,
-  source_connection_id: Schema.Number,
+  source_client_id: ClientId,
+  source_connection_id: ConnectionId,
   source_port_id: Schema.String,
   source_universal_chain_id: UniversalChainId,
   status: Schema.String,
