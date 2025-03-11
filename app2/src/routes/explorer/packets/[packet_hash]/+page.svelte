@@ -267,21 +267,23 @@ const goBack = () => {
       </div>
       
       <div class="p-4">
+        <Label>Timeout Height</Label>
+        <div class="text-sm">{packetDetails.data.value.timeout_height}</div>
+      </div>
+      
+      <div class="p-4">
         <Label>Packet Data</Label>
         <pre class="overflow-auto text-xs mt-2">{JSON.stringify(packetDetails.data.value.data, null, 2)}</pre>
       </div>
       
       <div class="p-4">
-        <Label>Timeout Height</Label>
-        <div class="text-sm">{packetDetails.data.value.timeout_height}</div>
+        <Label>Decoded Data</Label>
+        {#if Option.isSome(packetDetails.data.value.decoded)}
+          <pre class="overflow-auto text-xs mt-2">{JSON.stringify(packetDetails.data.value.decoded.value, null, 2)}</pre>
+        {:else}
+          <div class="text-sm text-zinc-500 mt-2">No data decoding available for this packet</div>
+        {/if}
       </div>
-      
-      {#if Option.isSome(Option.fromNullable(packetDetails.data.value.decoded))}
-        <div class="p-4">
-          <Label>Decoded Data</Label>
-          <pre class="overflow-auto text-xs mt-2">{JSON.stringify(packetDetails.data.value.decoded, null, 2)}</pre>
-        </div>
-      {/if}
       
       {#if Option.isSome(packetDetails.data.value.acknowledgement)}
         <div class="p-4">
