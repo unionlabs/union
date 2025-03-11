@@ -23,15 +23,17 @@ onMount(() => {
   const pageParam = page.url.searchParams.get("page")
 
   const initializeQuery = async () => {
-    let effect: Effect.Effect
+    let effect: Effect.Effect<any>
 
     if (pageParam) {
       if (pageParam.startsWith("-")) {
         // Greater-than query (prev page)
         const sortOrder = pageParam.substring(1)
+        // @ts-ignore sorOrder is not strictly a SortOrder, but this is desired behavior
         effect = transferListPageGtQuery(sortOrder, settingsStore.pageLimit)
       } else {
         // Less-than query (next page)
+        // @ts-ignore pageParam is not strictly a SortOrder, but this is desired behavior
         effect = transferListPageLtQuery(pageParam, settingsStore.pageLimit)
       }
     } else {
