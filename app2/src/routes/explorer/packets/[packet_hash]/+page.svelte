@@ -33,9 +33,9 @@ onMount(() => {
 
 const sourceChain = $derived(
   Option.flatMap(
-    Option.flatMap(packetDetails.data, data => 
+    Option.flatMap(packetDetails.data, data =>
       Option.flatMap(chains.data, chainsData =>
-        getChain(chainsData, data.source_universal_chain_id)
+        getChain(chainsData, data.source_universal_chain_id.split(".")[1])
       )
     )
   )
@@ -43,9 +43,9 @@ const sourceChain = $derived(
 
 const destinationChain = $derived(
   Option.flatMap(
-    Option.flatMap(packetDetails.data, data => 
+    Option.flatMap(packetDetails.data, data =>
       Option.flatMap(chains.data, chainsData =>
-        getChain(chainsData, data.destination_universal_chain_id)
+        getChain(chainsData, data.destination_universal_chain_id.split(".")[1])
       )
     )
   )
@@ -57,8 +57,6 @@ const goBack = () => {
 </script>
 
 <Sections>
-  <Button onclick={goBack} class="mb-4">← Back to Packets</Button>
-  
   {#if Option.isSome(packetDetails.error)}
     <Card>
       <ErrorComponent error={packetDetails.error.value} />
@@ -116,17 +114,17 @@ const goBack = () => {
           <DateTimeComponent value={packetDetails.data.value.packet_send_timestamp} />
         </div>
         
-        {#if Option.isSome(Option.fromNullable(packetDetails.data.value.packet_recv_timestamp))}
+        {#if Option.isSome(packetDetails.data.value.packet_recv_timestamp)}
           <div>
             <Label>Receive Timestamp</Label>
-            <DateTimeComponent value={packetDetails.data.value.packet_recv_timestamp} />
+            <DateTimeComponent value={packetDetails.data.value.packet_recv_timestamp.value} />
           </div>
         {/if}
         
-        {#if Option.isSome(Option.fromNullable(packetDetails.data.value.packet_ack_timestamp))}
+        {#if Option.isSome(packetDetails.data.value.packet_ack_timestamp)}
           <div>
             <Label>Ack Timestamp</Label>
-            <DateTimeComponent value={packetDetails.data.value.packet_ack_timestamp} />
+            <DateTimeComponent value={packetDetails.data.value.packet_ack_timestamp.value} />
           </div>
         {/if}
       </div>

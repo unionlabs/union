@@ -8,7 +8,7 @@ class TransferListStore {
   fiber = $state(Option.none<Fiber.RuntimeFiber<any, never>>())
 
   async runEffect<R>(effect: Effect.Effect<R>) {
-    transferList.data = Option.none()
+    this.data = Option.none()
     await this.interruptFiber()
     const fiber = Effect.runFork(effect)
     this.fiber = Option.some(fiber)

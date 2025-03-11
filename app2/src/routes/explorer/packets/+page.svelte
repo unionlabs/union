@@ -25,8 +25,8 @@ onMount(() => {
   const pageParam = page.url.searchParams.get("page")
 
   const initializeQuery = async () => {
-    let effect;
-    
+    let effect: Effect.Effect<any>
+
     if (pageParam) {
       try {
         if (pageParam.startsWith("-")) {
@@ -37,7 +37,7 @@ onMount(() => {
             errors: "all",
             onExcessProperty: "ignore"
           })
-          
+
           effect = packetListPageGtQuery(parsedSortOrder, settingsStore.pageLimit)
         } else {
           // Less-than query (next page)
@@ -46,7 +46,7 @@ onMount(() => {
             errors: "all",
             onExcessProperty: "ignore"
           })
-          
+
           effect = packetListPageLtQuery(parsedSortOrder, settingsStore.pageLimit)
         }
       } catch (error) {
@@ -60,7 +60,7 @@ onMount(() => {
       // No page param, load latest
       effect = packetListLatestQuery(settingsStore.pageLimit)
     }
-    
+
     await packetList.runEffect(effect)
   }
 
@@ -83,14 +83,14 @@ const onPrevPage = async () => {
   if (Option.isSome(packetList.data)) {
     let firstSortOrder = packetList.data.value.at(0)?.sort_order
     if (!firstSortOrder) return
-    
+
     // Validate that the sort order is valid
     try {
       const parsedSortOrder = Schema.decodeSync(SortOrder)(firstSortOrder, {
         errors: "all",
         onExcessProperty: "ignore"
       })
-      
+
       await packetList.runEffect(packetListPageGtQuery(parsedSortOrder, settingsStore.pageLimit))
       // Update URL with the new page param, prefixed with '-' for greater-than queries
       goto(`?page=-${parsedSortOrder}`, { replaceState: true })
@@ -104,14 +104,14 @@ const onNextPage = async () => {
   if (Option.isSome(packetList.data)) {
     let lastSortOrder = packetList.data.value.at(-1)?.sort_order
     if (!lastSortOrder) return
-    
+
     // Validate that the sort order is valid
     try {
       const parsedSortOrder = Schema.decodeSync(SortOrder)(lastSortOrder, {
         errors: "all",
         onExcessProperty: "ignore"
       })
-      
+
       await packetList.runEffect(packetListPageLtQuery(parsedSortOrder, settingsStore.pageLimit))
       // Update URL with the new page param (no prefix for less-than queries)
       goto(`?page=${parsedSortOrder}`, { replaceState: true })
