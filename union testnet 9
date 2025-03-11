@@ -1,0 +1,1 @@
+docker pull ghcr.io/unionlabs/bundle-testnet-9:$UNIONVISOR_VERSION
