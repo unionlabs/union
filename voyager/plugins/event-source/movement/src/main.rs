@@ -724,6 +724,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     events::IbcEvent::TimeoutPacket(_) => todo!(),
                 };
 
+                ibc_union_spec::log_event(&full_event, &self.chain_id);
+
                 let voyager_client = e.try_get::<VoyagerClient>()?;
 
                 let client_info = voyager_client
