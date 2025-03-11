@@ -6,13 +6,13 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Binary,
     CodeInfoResponse, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QueryRequest, Reply,
-    Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
+    Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256, Uint64, WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
-use ibc_union_spec::types::Packet;
+use ibc_union_spec::{path::BatchPacketsPath, types::Packet};
 use ucs03_zkgm_token_minter_api::{
     LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg, DISPATCH_EVENT, DISPATCH_EVENT_ATTR,
 };
@@ -24,15 +24,16 @@ use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::{
     com::{
-        decode_fungible_asset, Ack, Batch, BatchAck, FungibleAssetOrder, FungibleAssetOrderAck,
-        Instruction, Multiplex, ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER,
-        FILL_TYPE_PROTOCOL, INSTR_VERSION_0, INSTR_VERSION_1, OP_BATCH, OP_FUNGIBLE_ASSET_ORDER,
-        OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
+        decode_fungible_asset, Ack, Batch, BatchAck, Forward, FungibleAssetOrder,
+        FungibleAssetOrderAck, Instruction, Multiplex, ZkgmPacket, ACK_ERR_ONLY_MAKER,
+        FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0,
+        INSTR_VERSION_1, OP_BATCH, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX,
+        TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
     },
     msg::{EurekaMsg, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg},
     state::{
-        CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN,
-        TOKEN_MINTER, TOKEN_ORIGIN,
+        BATCH_EXECUTION_ACKS, CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, EXECUTING_PACKET_IS_BATCH,
+        EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN, IN_FLIGHT_PACKET, TOKEN_MINTER, TOKEN_ORIGIN,
     },
     ContractError,
 };
@@ -42,6 +43,8 @@ pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
 pub const EXECUTE_REPLY_ID: u64 = 0x1337;
 pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
 pub const ESCROW_REPLY_ID: u64 = 0xcafe;
+pub const FORWARD_REPLY_ID: u64 = 0xbabe;
+pub const MULTIPLEX_REPLY_ID: u64 = 0xface;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
 
@@ -133,7 +136,7 @@ pub fn execute(
                         Ok(Response::default().add_submessage(SubMsg::reply_always(
                             wasm_execute(
                                 env.contract.address,
-                                &ExecuteMsg::ExecutePacket {
+                                &ExecuteMsg::InternalExecutePacket {
                                     packet,
                                     relayer,
                                     relayer_msg,
@@ -165,14 +168,14 @@ pub fn execute(
                 ),
             }
         }
-        ExecuteMsg::BatchExecute { msgs } => {
+        ExecuteMsg::InternalBatchExecute { msgs } => {
             if info.sender != env.contract.address {
                 Err(ContractError::OnlySelf)
             } else {
                 Ok(Response::default().add_messages(msgs))
             }
         }
-        ExecuteMsg::ExecutePacket {
+        ExecuteMsg::InternalExecutePacket {
             packet,
             relayer,
             relayer_msg,
@@ -181,6 +184,27 @@ pub fn execute(
                 Err(ContractError::OnlySelf)
             } else {
                 execute_packet(deps, env, info, packet, relayer, relayer_msg)
+            }
+        }
+        ExecuteMsg::InternalWriteAck { ack } => {
+            if info.sender != env.contract.address {
+                Err(ContractError::OnlySelf)
+            } else {
+                if let Some(()) = EXECUTING_PACKET_IS_BATCH.may_load(deps.storage)? {
+                    let acks = match BATCH_EXECUTION_ACKS.load(deps.storage) {
+                        Ok(mut batch_acks) => {
+                            batch_acks.push(ack);
+                            batch_acks
+                        }
+                        Err(_) => {
+                            vec![ack]
+                        }
+                    };
+                    BATCH_EXECUTION_ACKS.save(deps.storage, &acks)?;
+                } else {
+                    EXECUTION_ACK.save(deps.storage, &ack)?;
+                }
+                Ok(Response::new())
             }
         }
         ExecuteMsg::Transfer {
@@ -233,6 +257,45 @@ fn timeout_packet(
     packet: Packet,
     relayer: Addr,
 ) -> Result<Response, ContractError> {
+    // Check if this is an in-flight packet (forwarded packet)
+    let packet_hash = keccak256(packet.abi_encode());
+    let is_forward_tinted = is_salt_forward_tinted(packet_hash);
+
+    if is_forward_tinted {
+        // This is a forwarded packet timeout
+        // Find the parent packet that initiated the forward
+        let commitment_key = BatchPacketsPath {
+            channel_id: packet.source_channel_id,
+            batch_hash: packet_hash,
+        }
+        .key();
+
+        if let Some(parent_packet) =
+            IN_FLIGHT_PACKET.may_load(deps.storage, commitment_key.into_bytes().into())?
+        {
+            // Forward the timeout to the parent packet
+            let config = CONFIG.load(deps.storage)?;
+            IN_FLIGHT_PACKET.remove(deps.storage, commitment_key.into_bytes().into());
+
+            // Write a failure acknowledgement to the parent packet
+            return Ok(Response::new().add_message(wasm_execute(
+                &config.ibc_host,
+                &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
+                    channel_id: parent_packet.destination_channel_id,
+                    packet: parent_packet,
+                    acknowledgement: Ack {
+                        tag: TAG_ACK_FAILURE,
+                        inner_ack: Default::default(),
+                    }
+                    .abi_encode_params()
+                    .into(),
+                }),
+                vec![],
+            )?));
+        }
+    }
+
+    // Normal packet timeout
     let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
     timeout_internal(
         deps,
@@ -254,7 +317,7 @@ fn timeout_internal(
     packet: Packet,
     relayer: Addr,
     salt: H256,
-    _path: alloy::primitives::U256,
+    path: U256,
     instruction: Instruction,
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
@@ -282,10 +345,8 @@ fn timeout_internal(
                     info.clone(),
                     packet.clone(),
                     relayer.clone(),
-                    keccak256(
-                        (alloy::primitives::U256::try_from(i).unwrap(), salt.get()).abi_encode(),
-                    ),
-                    _path,
+                    derive_batch_salt(i.try_into().unwrap(), salt),
+                    path,
                     instruction,
                 )?;
                 response = response
@@ -302,16 +363,56 @@ fn timeout_internal(
                 });
             }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
-            if multiplex.eureka {
-                // TODO: implement when execute is implemented
-                Err(ContractError::Unimplemented)
-            } else {
-                Ok(Response::new())
-            }
+            timeout_multiplex(deps, packet, relayer, path, multiplex)
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
         }),
+    }
+}
+
+fn timeout_multiplex(
+    deps: DepsMut,
+    packet: Packet,
+    relayer: Addr,
+    path: U256,
+    multiplex: Multiplex,
+) -> Result<Response, ContractError> {
+    if multiplex.eureka {
+        // For eureka mode, forward the timeout to the sender contract
+        let sender_addr = deps
+            .api
+            .addr_validate(
+                str::from_utf8(&multiplex.sender).map_err(|_| ContractError::InvalidSender)?,
+            )
+            .map_err(|_| ContractError::UnableToValidateSender)?;
+
+        // Create a virtual packet with the multiplex data
+        let multiplex_packet = Packet {
+            source_channel_id: packet.source_channel_id,
+            destination_channel_id: packet.destination_channel_id,
+            data: encode_multiplex_calldata(
+                path,
+                multiplex.sender,
+                multiplex.contract_calldata.clone(),
+            )
+            .into(),
+            timeout_height: packet.timeout_height,
+            timeout_timestamp: packet.timeout_timestamp,
+        };
+
+        // Forward the timeout to the sender contract
+        Ok(Response::new().add_message(wasm_execute(
+            sender_addr,
+            &IbcUnionMsg::OnTimeoutPacket {
+                packet: multiplex_packet,
+                relayer: relayer.to_string(),
+            },
+            vec![],
+        )?))
+    } else {
+        // For standard mode, no action needed
+        Ok(Response::new())
     }
 }
 
@@ -323,6 +424,39 @@ fn acknowledge_packet(
     relayer: Addr,
     ack: Bytes,
 ) -> Result<Response, ContractError> {
+    // Check if this is an in-flight packet (forwarded packet)
+    let packet_hash = keccak256(packet.abi_encode());
+    let is_forward_tinted = is_salt_forward_tinted(packet_hash);
+
+    if is_forward_tinted {
+        // This is a forwarded packet acknowledgement
+        // Find the parent packet that initiated the forward
+        let commitment_key = BatchPacketsPath {
+            channel_id: packet.source_channel_id,
+            batch_hash: packet_hash,
+        }
+        .key();
+
+        if let Some(parent_packet) =
+            IN_FLIGHT_PACKET.may_load(deps.storage, commitment_key.into_bytes().into())?
+        {
+            // Forward the acknowledgement to the parent packet
+            IN_FLIGHT_PACKET.remove(deps.storage, commitment_key.into_bytes().into());
+
+            let config = CONFIG.load(deps.storage)?;
+            return Ok(Response::new().add_message(wasm_execute(
+                &config.ibc_host,
+                &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
+                    channel_id: parent_packet.destination_channel_id,
+                    packet: parent_packet,
+                    acknowledgement: ack,
+                }),
+                vec![],
+            )?));
+        }
+    }
+
+    // Normal packet acknowledgement
     let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
     let ack = Ack::abi_decode_params(&ack, true)?;
     acknowledge_internal(
@@ -347,7 +481,7 @@ fn acknowledge_internal(
     packet: Packet,
     relayer: Addr,
     salt: H256,
-    path: alloy::primitives::U256,
+    path: U256,
     instruction: Instruction,
     successful: bool,
     ack: Bytes,
@@ -389,9 +523,7 @@ fn acknowledge_internal(
                     info.clone(),
                     packet.clone(),
                     relayer.clone(),
-                    keccak256(
-                        (alloy::primitives::U256::try_from(i).unwrap(), salt.get()).abi_encode(),
-                    ),
+                    derive_batch_salt(i.try_into().unwrap(), salt),
                     path,
                     instruction,
                     successful,
@@ -414,12 +546,9 @@ fn acknowledge_internal(
                 });
             }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
-            if multiplex.eureka {
-                // TODO: implement when execute is implemented
-                Err(ContractError::Unimplemented)
-            } else {
-                Ok(Response::new())
-            }
+            acknowledge_multiplex(
+                deps, env, info, packet, relayer, path, salt, multiplex, successful, ack,
+            )
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
@@ -478,7 +607,7 @@ fn acknowledge_fungible_asset_order(
     packet: Packet,
     _relayer: Addr,
     _salt: H256,
-    _path: alloy::primitives::U256,
+    _path: U256,
     order: FungibleAssetOrder,
     order_ack: Option<FungibleAssetOrderAck>,
 ) -> Result<Response, ContractError> {
@@ -536,6 +665,57 @@ fn acknowledge_fungible_asset_order(
     }
 }
 
+fn acknowledge_multiplex(
+    deps: DepsMut,
+    _env: Env,
+    _info: MessageInfo,
+    packet: Packet,
+    relayer: Addr,
+    path: U256,
+    _salt: H256,
+    multiplex: Multiplex,
+    successful: bool,
+    ack: Bytes,
+) -> Result<Response, ContractError> {
+    if successful && multiplex.eureka {
+        // For eureka mode, forward the acknowledgement to the sender contract
+        let sender_addr = deps
+            .api
+            .addr_validate(
+                str::from_utf8(&multiplex.sender).map_err(|_| ContractError::InvalidSender)?,
+            )
+            .map_err(|_| ContractError::UnableToValidateSender)?;
+
+        // Create a virtual packet with the multiplex data
+        let multiplex_packet = Packet {
+            source_channel_id: packet.source_channel_id,
+            destination_channel_id: packet.destination_channel_id,
+            data: encode_multiplex_calldata(
+                path,
+                multiplex.sender,
+                multiplex.contract_calldata.clone(),
+            )
+            .into(),
+            timeout_height: packet.timeout_height,
+            timeout_timestamp: packet.timeout_timestamp,
+        };
+
+        // Forward the acknowledgement to the sender contract
+        Ok(Response::new().add_message(wasm_execute(
+            sender_addr,
+            &IbcUnionMsg::OnAcknowledgementPacket {
+                packet: multiplex_packet,
+                acknowledgement: ack,
+                relayer: relayer.to_string(),
+            },
+            vec![],
+        )?))
+    } else {
+        // For standard mode or failed eureka, no action needed
+        Ok(Response::new())
+    }
+}
+
 fn execute_packet(
     mut deps: DepsMut,
     env: Env,
@@ -545,7 +725,7 @@ fn execute_packet(
     relayer_msg: Bytes,
 ) -> Result<Response, ContractError> {
     let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
-    let (ack, response) = execute_internal(
+    execute_internal(
         deps.branch(),
         env,
         info,
@@ -555,9 +735,7 @@ fn execute_packet(
         zkgm_packet.salt.into(),
         zkgm_packet.path,
         zkgm_packet.instruction,
-    )?;
-    EXECUTION_ACK.save(deps.storage, &ack)?;
-    Ok(response)
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -569,9 +747,9 @@ fn execute_internal(
     relayer: Addr,
     relayer_msg: Bytes,
     salt: H256,
-    path: alloy::primitives::U256,
+    path: U256,
     instruction: Instruction,
-) -> Result<(Bytes, Response), ContractError> {
+) -> Result<Response, ContractError> {
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
             if instruction.version > INSTR_VERSION_1 {
@@ -630,6 +808,25 @@ fn execute_internal(
                 multiplex,
             )
         }
+        OP_FORWARD => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
+            let forward = Forward::abi_decode_params(&instruction.operand, true)?;
+            execute_forward(
+                deps,
+                env,
+                info,
+                packet,
+                relayer,
+                relayer_msg,
+                salt,
+                path,
+                forward,
+            )
+        }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
         }),
@@ -660,42 +857,95 @@ fn query_predict_wrapped_token(
         .wrapped_token)
 }
 
-// fn predict_wrapped_denom(path: alloy::primitives::U256, channel: u32, token: Bytes) -> String {
-//     // TokenFactory denom name limit
-//     const MAX_DENOM_LENGTH: usize = 44;
-
-//     let token_hash = keccak256(
-//         [
-//             path.to_be_bytes_vec().as_ref(),
-//             channel.to_be_bytes().as_ref(),
-//             &token,
-//         ]
-//         .concat(),
-//     )
-//     .get()
-//     .to_base58();
-
-//     // https://en.wikipedia.org/wiki/Binary-to-text_encoding
-//     // Luckily, base58 encoding has ~0.73 efficiency:
-//     // (1 / 0.73) * 32 = 43.8356164384
-//     // TokenFactory denom name limit
-//     assert!(token_hash.len() <= MAX_DENOM_LENGTH);
-
-//     token_hash.to_string()
-// }
-
 #[allow(clippy::too_many_arguments)]
-fn execute_multiplex(
+fn execute_forward(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     _info: MessageInfo,
     packet: Packet,
     _relayer: Addr,
     _relayer_msg: Bytes,
+    salt: H256,
+    path: U256,
+    forward: Forward,
+) -> Result<Response, ContractError> {
+    let (tail_path, previous_destination_channel_id) = dequeue_channel_from_path(forward.path);
+    let (continuation_path, next_source_channel_id) = dequeue_channel_from_path(tail_path);
+
+    if packet.destination_channel_id != previous_destination_channel_id {
+        return Err(ContractError::InvalidForwardDestinationChannelId {
+            actual: previous_destination_channel_id,
+            expected: packet.destination_channel_id,
+        });
+    }
+
+    let next_instruction = if continuation_path == U256::ZERO {
+        // If we are done hopping, the sub-instruction is dispatched for execution
+        forward.instruction
+    } else {
+        // If we are not done, the continuation path is used and the forward is re-executed
+        Instruction {
+            version: INSTR_VERSION_0,
+            opcode: OP_FORWARD,
+            operand: Forward {
+                path: continuation_path,
+                timeout_height: forward.timeout_height,
+                timeout_timestamp: forward.timeout_timestamp,
+                instruction: forward.instruction,
+            }
+            .abi_encode_params()
+            .into(),
+        }
+    };
+
+    let config = CONFIG.load(deps.storage)?;
+    let next_path = update_channel_path(
+        update_channel_path(path, previous_destination_channel_id),
+        next_source_channel_id,
+    );
+
+    let next_packet = MsgSendPacket {
+        source_channel: next_source_channel_id,
+        timeout_height: forward.timeout_height,
+        timeout_timestamp: forward.timeout_timestamp,
+        data: ZkgmPacket {
+            salt: derive_forward_salt(salt).into(),
+            path: next_path,
+            instruction: next_instruction,
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    Ok(Response::new()
+        .add_submessage(SubMsg::reply_on_success(
+            wasm_execute(
+                &config.ibc_host,
+                &ibc_union_msg::msg::ExecuteMsg::PacketSend(next_packet),
+                vec![],
+            )?,
+            FORWARD_REPLY_ID,
+        ))
+        .add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: Default::default(),
+            },
+            vec![],
+        )?))
+}
+
+fn execute_multiplex(
+    deps: DepsMut,
+    env: Env,
+    _info: MessageInfo,
+    packet: Packet,
+    relayer: Addr,
+    relayer_msg: Bytes,
     _salt: H256,
-    path: alloy::primitives::U256,
+    path: U256,
     multiplex: Multiplex,
-) -> Result<(Bytes, Response), ContractError> {
+) -> Result<Response, ContractError> {
     let contract_address = deps
         .api
         .addr_validate(
@@ -703,17 +953,39 @@ fn execute_multiplex(
                 .map_err(|_| ContractError::InvalidContractAddress)?,
         )
         .map_err(|_| ContractError::UnableToValidateMultiplexTarget)?;
+
     if multiplex.eureka {
-        // TODO: implement non eureka multiplexing, add a new msg `WriteAck` by
-        // maintaining the hashing from packet to ack or thread the ack back
-        // from the events directly? Beware we'll need to use submessage+reply
-        // for execute_batch when implementing this as we need the ack to yield
-        // the batch ack
-        Err(ContractError::Unimplemented)
+        // Create a virtual packet with the multiplex data, consistent with ack and timeout handling
+        let multiplex_packet = Packet {
+            source_channel_id: packet.source_channel_id,
+            destination_channel_id: packet.destination_channel_id,
+            data: encode_multiplex_calldata(
+                path,
+                multiplex.sender.clone(),
+                multiplex.contract_calldata.clone(),
+            )
+            .into(),
+            timeout_height: packet.timeout_height,
+            timeout_timestamp: packet.timeout_timestamp,
+        };
+
+        // Call the target contract with a reply to capture the acknowledgement
+        Ok(Response::new().add_submessage(SubMsg::reply_on_success(
+            wasm_execute(
+                contract_address,
+                &IbcUnionMsg::OnRecvPacket {
+                    packet: multiplex_packet,
+                    relayer: relayer.into(),
+                    relayer_msg,
+                },
+                vec![],
+            )?,
+            MULTIPLEX_REPLY_ID,
+        )))
     } else {
-        Ok((
-            TAG_ACK_SUCCESS.abi_encode().into(),
-            Response::new().add_message(wasm_execute(
+        // Standard mode - fire and forget
+        Ok(Response::new()
+            .add_message(wasm_execute(
                 contract_address,
                 &EurekaMsg::OnZkgm {
                     path: Uint256::from_be_bytes(path.to_be_bytes()),
@@ -723,8 +995,14 @@ fn execute_multiplex(
                     message: multiplex.contract_calldata.to_vec().into(),
                 },
                 vec![],
-            )?),
-        ))
+            )?)
+            .add_message(wasm_execute(
+                env.contract.address,
+                &ExecuteMsg::InternalWriteAck {
+                    ack: TAG_ACK_SUCCESS.abi_encode().into(),
+                },
+                vec![],
+            )?))
     }
 }
 
@@ -737,20 +1015,20 @@ fn execute_batch(
     relayer: Addr,
     relayer_msg: Bytes,
     salt: H256,
-    path: alloy::primitives::U256,
+    path: U256,
     batch: Batch,
-) -> Result<(Bytes, Response), ContractError> {
+) -> Result<Response, ContractError> {
+    EXECUTING_PACKET_IS_BATCH.save(deps.storage, &())?;
     let mut response = Response::new();
-    let mut acks = Vec::<Bytes>::with_capacity(batch.instructions.len());
     for (i, instruction) in batch.instructions.into_iter().enumerate() {
-        let (ack, sub_response) = execute_internal(
+        let sub_response = execute_internal(
             deps.branch(),
             env.clone(),
             info.clone(),
             packet.clone(),
             relayer.clone(),
             relayer_msg.clone(),
-            keccak256((alloy::primitives::U256::try_from(i).unwrap(), salt.get()).abi_encode()),
+            derive_batch_salt(i.try_into().unwrap(), salt),
             path,
             instruction,
         )?;
@@ -758,22 +1036,14 @@ fn execute_batch(
             .add_attributes(sub_response.attributes)
             .add_events(sub_response.events)
             .add_submessages(sub_response.messages);
-        acks.push(ack);
     }
-    Ok((
-        BatchAck {
-            acknowledgements: acks.into_iter().map(Into::into).collect(),
-        }
-        .abi_encode_params()
-        .into(),
-        response,
-    ))
+    Ok(response)
 }
 
 #[allow(clippy::too_many_arguments)]
 fn execute_fungible_asset_order(
     deps: DepsMut,
-    _: Env,
+    env: Env,
     _info: MessageInfo,
     packet: Packet,
     relayer: Addr,
@@ -781,9 +1051,15 @@ fn execute_fungible_asset_order(
     _salt: H256,
     path: U256,
     order: FungibleAssetOrder,
-) -> Result<(Bytes, Response), ContractError> {
+) -> Result<Response, ContractError> {
     if order.quote_amount > order.base_amount {
-        return Ok((ACK_ERR_ONLY_MAKER.into(), Response::new()));
+        return Ok(Response::new().add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: ACK_ERR_ONLY_MAKER.into(),
+            },
+            vec![],
+        )?));
     }
 
     let minter = TOKEN_MINTER.load(deps.storage)?;
@@ -854,7 +1130,7 @@ fn execute_fungible_asset_order(
                 vec![],
             )?));
         }
-    } else if order.base_token_path == alloy::primitives::U256::from(packet.source_channel_id) {
+    } else if order.base_token_path == U256::from(packet.source_channel_id) {
         let quote_token = String::from_utf8(Vec::from(order.quote_token))
             .map_err(|_| ContractError::InvalidQuoteToken)?;
         CHANNEL_BALANCE.update(
@@ -888,22 +1164,38 @@ fn execute_fungible_asset_order(
             )?));
         }
     } else {
-        return Ok((ACK_ERR_ONLY_MAKER.into(), Response::new()));
+        return Ok(Response::new().add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: ACK_ERR_ONLY_MAKER.into(),
+            },
+            vec![],
+        )?));
     };
-    Ok((
-        FungibleAssetOrderAck {
-            fill_type: FILL_TYPE_PROTOCOL,
-            market_maker: Default::default(),
-        }
-        .abi_encode_params()
-        .into(),
-        Response::new().add_submessages(messages),
-    ))
+    Ok(Response::new()
+        .add_submessages(messages)
+        .add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: FungibleAssetOrderAck {
+                    fill_type: FILL_TYPE_PROTOCOL,
+                    market_maker: Default::default(),
+                }
+                .abi_encode_params()
+                .into(),
+            },
+            vec![],
+        )?))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, ContractError> {
+pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, ContractError> {
     match reply.id {
+        // This reply is triggered after we escrow tokens in the token minter contract.
+        // We need to handle this reply to process any dispatch events that the token minter might have
+        // emitted during the escrow operation. These events can contain additional messages that need
+        // to be executed as part of the token transfer process, such as updating balances or
+        // performing additional token operations.
         ESCROW_REPLY_ID => {
             let Some(dispatch) = reply
                 .result
@@ -929,15 +1221,36 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
                 Err(_) => Ok(Response::new()),
             }
         }
+        // This reply is triggered after we execute a packet.
+        // We need to handle this reply to process the acknowledgement that was generated during
+        // packet execution. This is a critical part of the IBC protocol - after a packet is
+        // executed, we must write an acknowledgement back to the source chain. This reply
+        // allows us to collect the acknowledgement data (which may come from batch instructions
+        // or a single instruction) and format it properly before sending it back through the
+        // IBC host contract.
         EXECUTE_REPLY_ID => {
             let ibc_host = CONFIG.load(deps.storage)?.ibc_host;
             let packet = EXECUTING_PACKET.load(deps.storage)?;
             EXECUTING_PACKET.remove(deps.storage);
             match reply.result {
                 SubMsgResult::Ok(_) => {
-                    // If the execution succedeed ack is guaranteed to exist.
-                    let execution_ack = EXECUTION_ACK.load(deps.storage)?;
-                    EXECUTION_ACK.remove(deps.storage);
+                    // If the execution succedeed one of the acks is guaranteed to exist.
+                    let execution_ack = if EXECUTING_PACKET_IS_BATCH.load(deps.storage).is_ok() {
+                        let acknowledgement = EXECUTION_ACK.load(deps.storage)?;
+                        EXECUTION_ACK.remove(deps.storage);
+                        acknowledgement
+                    } else {
+                        let acknowledgements = BATCH_EXECUTION_ACKS.load(deps.storage)?;
+                        BATCH_EXECUTION_ACKS.remove(deps.storage);
+                        BatchAck {
+                            acknowledgements: acknowledgements
+                                .into_iter()
+                                .map(Into::into)
+                                .collect::<Vec<_>>(),
+                        }
+                        .abi_encode_params()
+                        .into()
+                    };
                     match execution_ack {
                         // Specific value when the execution must be replayed by a MM. No
                         // side effects were executed. We break the TX for MMs to be able to
@@ -988,6 +1301,70 @@ pub fn reply(deps: DepsMut, _env: Env, reply: Reply) -> Result<Response, Contrac
                 }
             }
         }
+        // This reply is triggered after we forward a packet to another chain.
+        // We need to handle this reply to store the sent packet in our in-flight packet mapping.
+        // This is crucial for the forwarding mechanism - when the forwarded packet is acknowledged
+        // or times out, we need to be able to find the original packet that initiated the forward
+        // so we can properly propagate the acknowledgement or timeout back to the source chain.
+        // Without this reply handling, we would lose track of forwarded packets.
+        FORWARD_REPLY_ID => {
+            if let SubMsgResult::Ok(reply_data) = reply.result {
+                let sent_packet = serde_json_wasm::from_slice::<Packet>(
+                    #[allow(deprecated)]
+                    reply_data.data.clone().unwrap_or_default().as_slice(),
+                )
+                .map_err(|error| ContractError::CouldNotDeserializeSentPacket {
+                    error,
+                    #[allow(deprecated)]
+                    sent_packet_data: Vec::from(reply_data.data.unwrap_or_default()).into(),
+                })?;
+                let commitment_key = BatchPacketsPath {
+                    channel_id: sent_packet.source_channel_id,
+                    batch_hash: keccak256(sent_packet.abi_encode()),
+                }
+                .key();
+                IN_FLIGHT_PACKET.save(
+                    deps.storage,
+                    commitment_key.into_bytes().into(),
+                    &sent_packet,
+                )?;
+                Ok(Response::new())
+            } else {
+                Err(ContractError::ForwardedPacketMissingInReply)
+            }
+        }
+        // This reply is triggered after we call a contract in eureka mode.
+        // We need to handle this reply to capture the acknowledgement returned by the target
+        // contract. In the eureka mode of multiplex operations, the target contract must return
+        // an acknowledgement that needs to be forwarded back to the source chain. This reply
+        // allows us to capture that acknowledgement and store it so it can be included in the
+        // packet acknowledgement. Without this reply, we wouldn't be able to support the
+        // eureka mode of multiplex operations.
+        MULTIPLEX_REPLY_ID => {
+            // Extract the acknowledgement from the reply
+            if let SubMsgResult::Ok(reply_data) = reply.result {
+                #[allow(deprecated)]
+                let acknowledgement = reply_data.data.unwrap_or_default();
+
+                // If the acknowledgement is empty, we can't proceed
+                if acknowledgement.is_empty() {
+                    return Err(ContractError::AsyncMultiplexUnsupported);
+                }
+
+                Ok(Response::new().add_message(wasm_execute(
+                    env.contract.address,
+                    &ExecuteMsg::InternalWriteAck {
+                        ack: Vec::from(acknowledgement).into(),
+                    },
+                    vec![],
+                )?))
+            } else {
+                Err(ContractError::AsyncMultiplexUnsupported)
+            }
+        }
+        // For any other reply ID, we don't know how to handle it, so we return an error.
+        // This is a safety measure to ensure we don't silently ignore unexpected replies,
+        // which could indicate a bug in the contract or an attempt to exploit it.
         _ => Err(ContractError::UnknownReply { id: reply.id }),
     }
 }
@@ -1085,7 +1462,7 @@ fn transfer(
             timeout_timestamp,
             data: ZkgmPacket {
                 salt: salt.into(),
-                path: alloy::primitives::U256::ZERO,
+                path: U256::ZERO,
                 instruction: Instruction {
                     version: INSTR_VERSION_1,
                     opcode: OP_FUNGIBLE_ASSET_ORDER,
@@ -1098,12 +1475,10 @@ fn transfer(
                         base_token_name,
                         base_token_decimals,
                         base_token_path: origin
-                            .map(|x| alloy::primitives::U256::from_be_bytes(x.to_be_bytes()))
-                            .unwrap_or(alloy::primitives::U256::ZERO),
+                            .map(|x| U256::from_be_bytes(x.to_be_bytes()))
+                            .unwrap_or(U256::ZERO),
                         quote_token: Vec::from(quote_token).into(),
-                        quote_amount: alloy::primitives::U256::from_be_bytes(
-                            quote_amount.to_be_bytes(),
-                        ),
+                        quote_amount: U256::from_be_bytes(quote_amount.to_be_bytes()),
                     }
                     .abi_encode_params()
                     .into(),
@@ -1198,4 +1573,60 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
             })?)
         }
     }
+}
+
+fn derive_batch_salt(index: U256, salt: H256) -> H256 {
+    keccak256((index, salt.get()).abi_encode())
+}
+
+fn dequeue_channel_from_path(path: U256) -> (U256, u32) {
+    if path == U256::ZERO {
+        (U256::ZERO, 0)
+    } else {
+        (
+            path >> 32,
+            u32::try_from(
+                Uint64::try_from(Uint256::from_be_bytes(
+                    (path & U256::from(u32::MAX)).to_be_bytes(),
+                ))
+                .expect("impossible")
+                .u64(),
+            )
+            .expect("impossible"),
+        )
+    }
+}
+
+fn update_channel_path(path: U256, next_channel_id: u32) -> U256 {
+    if path == U256::ZERO {
+        U256::from(next_channel_id)
+    } else {
+        let next_hop_index = path.leading_zeros() / 32 + 1;
+        if next_hop_index > 7 {
+            panic!("invalid hops"); // This matches the solidity revert
+        }
+        (U256::from(next_channel_id) << (32 * next_hop_index)) | path
+    }
+}
+
+fn tint_forward_salt(salt: H256) -> H256 {
+    (FORWARD_SALT_MAGIC | (U256::from_be_bytes(*salt.get()) & !FORWARD_SALT_MAGIC))
+        .to_be_bytes()
+        .into()
+}
+
+fn is_salt_forward_tinted(salt: H256) -> bool {
+    (U256::from_be_bytes(*salt.get()) & FORWARD_SALT_MAGIC) == FORWARD_SALT_MAGIC
+}
+
+fn derive_forward_salt(salt: H256) -> H256 {
+    tint_forward_salt(keccak256(salt.abi_encode()))
+}
+
+pub fn encode_multiplex_calldata(
+    path: U256,
+    sender: alloy::primitives::Bytes,
+    contract_calldata: alloy::primitives::Bytes,
+) -> Vec<u8> {
+    alloy::sol_types::SolValue::abi_encode(&(path, sender, contract_calldata))
 }

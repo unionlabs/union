@@ -16,6 +16,11 @@ pub const TAG_ACK_SUCCESS: U256 = U256::from_be_slice(&[1]);
 pub const FILL_TYPE_PROTOCOL: U256 = U256::from_be_slice(&[0xB0, 0xCA, 0xD0]);
 pub const FILL_TYPE_MARKETMAKER: U256 = U256::from_be_slice(&[0xD1, 0xCE, 0xC4, 0x5E]);
 
+pub const FORWARD_SALT_MAGIC: U256 = U256::from_be_slice(&[
+    0xC0, 0xDE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xBA, 0xBE,
+]);
+
 alloy::sol! {
   #[derive(Debug)]
   struct ZkgmPacket {
@@ -32,7 +37,7 @@ alloy::sol! {
   }
 
   struct Forward {
-      uint32 channel_id;
+      uint256 path;
       uint64 timeout_height;
       uint64 timeout_timestamp;
       Instruction instruction;

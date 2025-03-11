@@ -425,10 +425,10 @@ library ZkgmLib {
 
     function encodeMultiplexCalldata(
         uint256 path,
-        bytes calldata contractAddress,
+        bytes calldata sender,
         bytes calldata contractCalldata
     ) internal pure returns (bytes memory) {
-        return abi.encode(path, contractAddress, contractCalldata);
+        return abi.encode(path, sender, contractCalldata);
     }
 }
 

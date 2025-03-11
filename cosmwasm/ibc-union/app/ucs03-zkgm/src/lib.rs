@@ -5,6 +5,7 @@ mod state;
 use alloy::primitives::ruint::ParseError;
 use cosmwasm_std::StdError;
 use thiserror::Error;
+use unionlabs::primitives::Bytes;
 use unionlabs_cosmwasm_upgradable::UpgradeError;
 
 #[derive(Error, Debug, PartialEq)]
@@ -69,4 +70,17 @@ pub enum ContractError {
     ContractCreationEventNotFound,
     #[error("{0:?}")]
     InvalidPath(ParseError),
+    #[error(
+        "forward previousDestinationChannelId mistmatch, actual: {actual}, expted: {expected}"
+    )]
+    InvalidForwardDestinationChannelId { actual: u32, expected: u32 },
+    #[error("forward (sent) packet is missing from the reply")]
+    ForwardedPacketMissingInReply,
+    #[error("could not deserialize sent packet on reply, data: {sent_packet_data}")]
+    CouldNotDeserializeSentPacket {
+        error: serde_json_wasm::de::Error,
+        sent_packet_data: Bytes,
+    },
+    #[error("asynchronous multiplexing is not supported")]
+    AsyncMultiplexUnsupported,
 }

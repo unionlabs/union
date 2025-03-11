@@ -37,6 +37,7 @@ pub enum TokenMinterInitMsg {
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    // Public messages
     Transfer {
         channel_id: u32,
         receiver: Bytes,
@@ -48,15 +49,20 @@ pub enum ExecuteMsg {
         timeout_timestamp: u64,
         salt: H256,
     },
-    BatchExecute {
+    IbcUnionMsg(ibc_union_msg::module::IbcUnionMsg),
+
+    // Internal privileged messages
+    InternalBatchExecute {
         msgs: Vec<CosmosMsg>,
     },
-    ExecutePacket {
+    InternalExecutePacket {
         packet: Packet,
         relayer: Addr,
         relayer_msg: Bytes,
     },
-    IbcUnionMsg(ibc_union_msg::module::IbcUnionMsg),
+    InternalWriteAck {
+        ack: Bytes,
+    },
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
