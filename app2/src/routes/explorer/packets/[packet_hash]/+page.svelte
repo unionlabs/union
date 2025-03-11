@@ -177,6 +177,7 @@ const goBack = () => {
       </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+        <!-- Send information -->
         {#if Option.isSome(packetDetails.data.value.packet_send_transaction_hash)}
           <div>
             <Label>Send Transaction Hash</Label>
@@ -184,6 +185,21 @@ const goBack = () => {
           </div>
         {/if}
         
+        {#if Option.isSome(packetDetails.data.value.packet_send_height)}
+          <div>
+            <Label>Send Height</Label>
+            <div class="text-sm">{packetDetails.data.value.packet_send_height.value}</div>
+          </div>
+        {/if}
+        
+        {#if Option.isSome(packetDetails.data.value.packet_send_block_hash)}
+          <div>
+            <Label>Send Block Hash</Label>
+            <div class="text-sm break-all">{packetDetails.data.value.packet_send_block_hash.value}</div>
+          </div>
+        {/if}
+        
+        <!-- Receive information -->
         {#if Option.isSome(packetDetails.data.value.packet_recv_transaction_hash)}
           <div>
             <Label>Receive Transaction Hash</Label>
@@ -191,6 +207,21 @@ const goBack = () => {
           </div>
         {/if}
         
+        {#if Option.isSome(packetDetails.data.value.packet_recv_height)}
+          <div>
+            <Label>Receive Height</Label>
+            <div class="text-sm">{packetDetails.data.value.packet_recv_height.value}</div>
+          </div>
+        {/if}
+        
+        {#if Option.isSome(packetDetails.data.value.packet_recv_block_hash)}
+          <div>
+            <Label>Receive Block Hash</Label>
+            <div class="text-sm break-all">{packetDetails.data.value.packet_recv_block_hash.value}</div>
+          </div>
+        {/if}
+        
+        <!-- Ack information -->
         {#if Option.isSome(packetDetails.data.value.packet_ack_transaction_hash)}
           <div>
             <Label>Ack Transaction Hash</Label>
@@ -198,10 +229,39 @@ const goBack = () => {
           </div>
         {/if}
         
+        {#if Option.isSome(packetDetails.data.value.packet_ack_height)}
+          <div>
+            <Label>Ack Height</Label>
+            <div class="text-sm">{packetDetails.data.value.packet_ack_height.value}</div>
+          </div>
+        {/if}
+        
+        {#if Option.isSome(packetDetails.data.value.packet_ack_block_hash)}
+          <div>
+            <Label>Ack Block Hash</Label>
+            <div class="text-sm break-all">{packetDetails.data.value.packet_ack_block_hash.value}</div>
+          </div>
+        {/if}
+        
+        <!-- Write Ack information -->
         {#if Option.isSome(packetDetails.data.value.write_ack_transaction_hash)}
           <div>
             <Label>Write Ack Transaction Hash</Label>
             <div class="text-sm break-all">{packetDetails.data.value.write_ack_transaction_hash.value}</div>
+          </div>
+        {/if}
+        
+        {#if Option.isSome(packetDetails.data.value.write_ack_height)}
+          <div>
+            <Label>Write Ack Height</Label>
+            <div class="text-sm">{packetDetails.data.value.write_ack_height.value}</div>
+          </div>
+        {/if}
+        
+        {#if Option.isSome(packetDetails.data.value.write_ack_block_hash)}
+          <div>
+            <Label>Write Ack Block Hash</Label>
+            <div class="text-sm break-all">{packetDetails.data.value.write_ack_block_hash.value}</div>
           </div>
         {/if}
       </div>
@@ -209,6 +269,11 @@ const goBack = () => {
       <div class="p-4">
         <Label>Packet Data</Label>
         <pre class="overflow-auto text-xs mt-2">{JSON.stringify(packetDetails.data.value.data, null, 2)}</pre>
+      </div>
+      
+      <div class="p-4">
+        <Label>Timeout Height</Label>
+        <div class="text-sm">{packetDetails.data.value.timeout_height}</div>
       </div>
       
       {#if Option.isSome(Option.fromNullable(packetDetails.data.value.decoded))}

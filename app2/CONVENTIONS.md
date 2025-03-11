@@ -1,9 +1,9 @@
 # Project Conventions
 
-
 ## Type Safety
 
 - Use Effect's type-safe alternatives where possible:
+
   ```typescript
   // Instead of:
   let value: string | null | undefined
@@ -11,8 +11,8 @@
   // Use:
   let value: Option<string>
   ```
-- Never use `try {} catch {}` blocks. always use Effect. When dealing with unsafe functions from libraries, use `Effect.tryPromie(() => somePromiseFn())`
 
+- Never use `try {} catch {}` blocks. always use Effect. When dealing with unsafe functions from libraries, use `Effect.tryPromie(() => somePromiseFn())`
 
 - Do NOT do `Option.isSome(Option.fromNullable(T))` if `T` is already an `Option` type
 
