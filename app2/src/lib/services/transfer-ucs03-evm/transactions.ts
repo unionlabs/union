@@ -1,14 +1,14 @@
-import {Effect} from "effect"
-import type {Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType} from "viem"
-import {WaitForTransactionReceiptError, WriteContractError} from "./errors.ts"
-import {getPublicClient, getWalletClient} from "../evm/clients.ts"
-import {getAccount} from "$lib/services/transfer-ucs03-evm/account.ts"
-import {ucs03ZkgmAbi} from "$lib/abi/ucs03.ts"
-import {generateSalt} from "./salt.ts"
-import type {Chain} from "$lib/schema/chain.ts"
-import {ValidTransfer} from "$lib/schema/transfer-args.ts"
+import { Effect } from "effect"
+import type { Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType } from "viem"
+import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
+import { getPublicClient, getWalletClient } from "../evm/clients.ts"
+import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
+import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
+import { generateSalt } from "./salt.ts"
+import type { Chain } from "$lib/schema/chain.ts"
+import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 
-export const submitTransfer = (chain: Chain, transfer:  ValidTransfer) =>
+export const submitTransfer = (chain: Chain, transfer: ValidTransfer) =>
   Effect.gen(function* () {
     const walletClient = yield* getWalletClient(chain)
 
@@ -18,7 +18,7 @@ export const submitTransfer = (chain: Chain, transfer:  ValidTransfer) =>
 
     const salt = yield* generateSalt
 
-    return yield * Effect.tryPromise({
+    return yield* Effect.tryPromise({
       try: () => {
         return walletClient.writeContract({
           account: account.address as `0x${string}`,
@@ -41,16 +41,16 @@ export const submitTransfer = (chain: Chain, transfer:  ValidTransfer) =>
           ]
         })
       },
-      catch: err => new WriteContractError({cause: err as WriteContractErrorType})
+      catch: err => new WriteContractError({ cause: err as WriteContractErrorType })
     })
   })
 
 export const waitForTransferReceipt = (chain: Chain, hash: Hash) =>
   Effect.gen(function* () {
     const publicClient = yield* getPublicClient(chain)
-    return yield * Effect.tryPromise({
-      try: () => publicClient.waitForTransactionReceipt({hash}),
+    return yield* Effect.tryPromise({
+      try: () => publicClient.waitForTransactionReceipt({ hash }),
       catch: err =>
-        new WaitForTransactionReceiptError({cause: err as WaitForTransactionReceiptErrorType})
+        new WaitForTransactionReceiptError({ cause: err as WaitForTransactionReceiptErrorType })
     })
   })

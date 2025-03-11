@@ -11,7 +11,7 @@ import { switchChain } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
 import type { Chain } from "$lib/schema/chain.ts"
-import type {ValidTransferType} from "$lib/schema/transfer-args.ts";
+import type { ValidTransferType } from "$lib/schema/transfer-args.ts"
 
 export async function nextState(
   ts: TransferSubmission,

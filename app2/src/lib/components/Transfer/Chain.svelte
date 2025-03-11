@@ -53,7 +53,7 @@ let open = $state(false)
       "transition-all duration-200 cursor-pointer"
     )}
   >
-    {#if type === "source" && transfer.raw.source && !transfer.sourceChain}
+    {#if type === "source" && transfer.raw.source && Option.isNone(transfer.sourceChain)}
     <span class="flex items-center justify-center">
       <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -61,7 +61,7 @@ let open = $state(false)
       </svg>
       Loading...
     </span>
-    {:else if type === "destination" && transfer.raw.destination && !transfer.destinationChain}
+    {:else if type === "destination" && transfer.raw.destination && Option.isNone(transfer.destinationChain)}
     <span class="flex items-center justify-center">
       <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -70,9 +70,13 @@ let open = $state(false)
       Loading...
     </span>
     {:else if type === "source"}
-      {transfer.sourceChain ? transfer.sourceChain.display_name : `Select ${type} chain`}
+      {Option.isSome(transfer.sourceChain)
+        ? transfer.sourceChain.value.display_name
+        : `Select ${type} chain`}
     {:else}
-      {transfer.destinationChain ? transfer.destinationChain.display_name : `Select ${type} chain`}
+      {Option.isSome(transfer.destinationChain)
+        ? transfer.destinationChain.value.display_name
+        : `Select ${type} chain`}
     {/if}
   </button>
 </div>

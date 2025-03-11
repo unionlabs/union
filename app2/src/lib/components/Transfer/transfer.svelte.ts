@@ -16,10 +16,8 @@ import { type Address, type Chain as ViemChain, fromHex, type Hex } from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import type { Channel } from "$lib/schema/channel.ts"
-import {
-  TransferSchema,
-} from "$lib/schema/transfer-args.ts"
-import { getQuoteToken as getQuoteTokenEffect  } from "$lib/services/transfer-ucs03-evm/quote-token.ts"
+import { TransferSchema } from "$lib/schema/transfer-args.ts"
+import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/quote-token.ts"
 import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/weth-token.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 
@@ -202,10 +200,10 @@ export class Transfer {
       : { isValid: false, args: this.args }
   })
 
-// Simple derived property for isValid
+  // Simple derived property for isValid
   isValid = $derived(this.transferResult.isValid)
 
-// Clean submit method with proper type checking
+  // Clean submit method with proper type checking
   submit = async () => {
     if (Option.isNone(chains.data) || Option.isNone(this.sourceChain)) return
     if (!this.transferResult.isValid) {
