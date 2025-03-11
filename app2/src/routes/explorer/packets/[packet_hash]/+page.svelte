@@ -139,10 +139,34 @@ const goBack = () => {
           </div>
         {/if}
         
+        {#if Option.isSome(packetDetails.data.value.packet_recv_maker)}
+          <div>
+            <Label>Receive Maker</Label>
+            <div class="text-sm break-all">
+              <div>{packetDetails.data.value.packet_recv_maker.value}</div>
+              <div class="text-xs text-zinc-500 mt-1">
+                {fromHex(packetDetails.data.value.packet_recv_maker.value, "string")}
+              </div>
+            </div>
+          </div>
+        {/if}
+        
         {#if Option.isSome(packetDetails.data.value.packet_ack_timestamp)}
           <div>
             <Label>Ack Timestamp</Label>
             <DateTimeComponent value={packetDetails.data.value.packet_ack_timestamp.value} />
+          </div>
+        {/if}
+        
+        {#if Option.isSome(packetDetails.data.value.packet_ack_maker)}
+          <div>
+            <Label>Ack Maker</Label>
+            <div class="text-sm break-all">
+              <div>{packetDetails.data.value.packet_ack_maker.value}</div>
+              <div class="text-xs text-zinc-500 mt-1">
+                {fromHex(packetDetails.data.value.packet_ack_maker.value, "string")}
+              </div>
+            </div>
           </div>
         {/if}
         
