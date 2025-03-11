@@ -16,9 +16,11 @@ import { type Address, type Chain as ViemChain, fromHex, type Hex } from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import type { Channel } from "$lib/schema/channel.ts"
-import { TransferSchema } from "$lib/schema/transfer-args.ts"
-import { getQuoteToken } from "$lib/services/transfer-ucs03-evm/quote-token.ts"
-import { getWethQuoteToken } from "$lib/services/transfer-ucs03-evm/weth-token.ts"
+import {
+  TransferSchema,
+} from "$lib/schema/transfer-args.ts"
+import { getQuoteToken as getQuoteTokenEffect  } from "$lib/services/transfer-ucs03-evm/quote-token.ts"
+import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/weth-token.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 
 export class Transfer {
@@ -86,14 +88,10 @@ export class Transfer {
       return Option.none()
     }
 
-    const sourcePortId = this.channel.value.source_port_id
-    const sourceChain = this.sourceChain.value
-
-    // Create the Hex value first, then wrap it in Option
     const hexAddress: Hex =
-      sourceChain.rpc_type === "cosmos"
-        ? (fromHex(`0x${sourcePortId}`, "string") as Hex)
-        : (`0x${sourcePortId}` as Hex)
+      this.sourceChain.value.rpc_type === "cosmos"
+        ? (fromHex(`0x${this.channel.value.source_port_id}`, "string") as Hex)
+        : (`0x${this.channel.value.source_port_id}` as Hex)
 
     return Option.some(hexAddress)
   })
@@ -101,7 +99,7 @@ export class Transfer {
   quoteToken = $state<Option.Option<typeof QuoteData.Type>>(Option.none())
   wethQuoteToken = $state<Option.Option<typeof WethTokenData.Type>>(Option.none())
 
-  getQ = async () => {
+  getQuoteToken = async () => {
     this.quoteToken = Option.some({ type: "QUOTE_LOADING" })
 
     if (Option.isNone(this.sourceChain)) console.log("[quoteToken] Missing sourceChain")
@@ -122,7 +120,7 @@ export class Transfer {
     }
 
     const result = await Effect.runPromise(
-      getQuoteToken(
+      getQuoteTokenEffect(
         this.sourceChain.value,
         denomOpt.value,
         this.channel.value,
@@ -135,7 +133,7 @@ export class Transfer {
     return result
   }
 
-  getW = async () => {
+  getWethQuoteToken = async () => {
     if (Option.isNone(this.sourceChain)) console.log("[wethQuoteToken] Missing sourceChain")
     if (Option.isNone(this.destinationChain))
       console.log("[wethQuoteToken] Missing destinationChain")
@@ -153,7 +151,7 @@ export class Transfer {
     }
 
     const result = await Effect.runPromise(
-      getWethQuoteToken(
+      getWethQuoteTokenEffect(
         this.sourceChain.value,
         this.ucs03address.value,
         this.channel.value,
@@ -170,7 +168,7 @@ export class Transfer {
     const channelValue = Option.getOrNull(this.channel)
     const baseTokenValue = Option.isSome(this.baseToken) ? this.baseToken.value : null
     const parsedAmountValue = Option.getOrNull(this.parsedAmount)
-    const quoteTokenValue = Option.isSome(this.quoteToken) ? this.quoteToken.value : null
+    const quoteTokenValue = Option.getOrNull(this.quoteToken) ? this.quoteToken : null
     const derivedReceiverValue = Option.getOrNull(this.derivedReceiver)
     const ucs03addressValue = Option.getOrNull(this.ucs03address)
     const wethQuoteTokenValue = Option.isSome(this.wethQuoteToken)
@@ -196,21 +194,27 @@ export class Transfer {
     }
   })
 
-  validationResult = $derived.by(() => {
-    console.log("BA", this.args.baseAmount)
+  transferResult = $derived.by(() => {
     const validationEffect = Schema.decode(TransferSchema)(this.args)
-    return Effect.runSync(Effect.either(validationEffect))
+    const result = Effect.runSync(Effect.either(validationEffect))
+    return Either.isRight(result)
+      ? { isValid: true, args: result.right }
+      : { isValid: false, args: this.args }
   })
 
-  isValid = $derived(Either.isRight(this.validationResult))
+// Simple derived property for isValid
+  isValid = $derived(this.transferResult.isValid)
 
+// Clean submit method with proper type checking
   submit = async () => {
     if (Option.isNone(chains.data) || Option.isNone(this.sourceChain)) return
-
-    this.state = await nextState(this.state, this.args, this.sourceChain.value)
-
+    if (!this.transferResult.isValid) {
+      console.error("Cannot submit with invalid transfer arguments")
+      return
+    }
+    this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value)
     while (!hasFailedExit(this.state)) {
-      this.state = await nextState(this.state, this.args, this.sourceChain.value)
+      this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value)
       if (isComplete(this.state)) break
     }
   }

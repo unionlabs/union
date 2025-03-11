@@ -9,9 +9,10 @@ import Receiver from "$lib/components/Transfer/Receiver.svelte"
 import ShowData from "$lib/components/Transfer/ShowData.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 
+//Decide when to run these, either just reactive or on user interaction
 $effect(() => {
-  transfer.getQ()
-  transfer.getW()
+  transfer.getQuoteToken()
+  transfer.getWethQuoteToken()
 })
 </script>
 

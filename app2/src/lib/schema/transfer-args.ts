@@ -1,10 +1,13 @@
-import { Schema } from "effect"
-import { RpcType } from "$lib/schema/chain"
-import { EVMWethToken, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
-import { ChannelId } from "$lib/schema/channel"
-import { isValidCanonicalForChain } from "$lib/utils/convert-display"
+import {Schema} from "effect"
+import {Chain, RpcType} from "$lib/schema/chain"
+import {EVMWethToken, TokenRawAmount, TokenRawDenom} from "$lib/schema/token"
+import {ChannelId} from "$lib/schema/channel"
+import {isValidCanonicalForChain} from "$lib/utils/convert-display"
 
 const BaseTransferFields = {
+  sourceChain: Chain.annotations({
+    message: () => "sourceChain cant be empty"
+  }),
   baseToken: TokenRawDenom.annotations({
     message: () => "baseToken must be a non-empty string (e.g., token address or symbol)"
   }),
@@ -28,11 +31,11 @@ const BaseTransferFields = {
 const EVMTransferSchema = Schema.Struct({
   ...BaseTransferFields,
   sourceRpcType: RpcType.pipe(
-    Schema.filter(v => v === "evm", { message: () => "type must be 'evm'" })
+    Schema.filter(v => v === "evm", {message: () => "type must be 'evm'"})
   ),
   wethToken: EVMWethToken,
   receiver: Schema.String.pipe(
-    Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
+    Schema.nonEmptyString({message: () => "receiver must be a non-empty string"})
   )
 }).pipe(
   Schema.filter(data =>
@@ -42,15 +45,16 @@ const EVMTransferSchema = Schema.Struct({
   )
 )
 
-export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")(EVMTransferSchema) {}
+export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")(EVMTransferSchema) {
+}
 
 const CosmosTransferSchema = Schema.Struct({
   ...BaseTransferFields,
   sourceRpcType: RpcType.pipe(
-    Schema.filter(v => v === "cosmos", { message: () => "type must be 'cosmos'" })
+    Schema.filter(v => v === "cosmos", {message: () => "type must be 'cosmos'"})
   ),
   receiver: Schema.String.pipe(
-    Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
+    Schema.nonEmptyString({message: () => "receiver must be a non-empty string"})
   )
 }).pipe(
   Schema.filter(data =>
@@ -62,15 +66,16 @@ const CosmosTransferSchema = Schema.Struct({
 
 export class CosmosTransfer extends Schema.Class<CosmosTransfer>("CosmosTransfer")(
   CosmosTransferSchema
-) {}
+) {
+}
 
 const AptosTransferSchema = Schema.Struct({
   ...BaseTransferFields,
   sourceRpcType: RpcType.pipe(
-    Schema.filter(v => v === "aptos", { message: () => "type must be 'aptos'" })
+    Schema.filter(v => v === "aptos", {message: () => "type must be 'aptos'"})
   ),
   receiver: Schema.String.pipe(
-    Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
+    Schema.nonEmptyString({message: () => "receiver must be a non-empty string"})
   )
 }).pipe(
   Schema.filter(data =>
@@ -82,7 +87,8 @@ const AptosTransferSchema = Schema.Struct({
 
 export class AptosTransfer extends Schema.Class<AptosTransfer>("AptosTransfer")(
   AptosTransferSchema
-) {}
+) {
+}
 
 export const TransferSchema = Schema.Union(EVMTransfer, CosmosTransfer, AptosTransfer).annotations({
   identifier: "Transfer",
@@ -90,7 +96,33 @@ export const TransferSchema = Schema.Union(EVMTransfer, CosmosTransfer, AptosTra
   description: "transfer arguments"
 })
 
-export type TransferArgs = Schema.Schema.Type<typeof TransferSchema>
-export type EVMTransferType = Schema.Schema.Type<typeof EVMTransfer>
-export type CosmosTransferType = Schema.Schema.Type<typeof CosmosTransfer>
-export type AptosTransferType = Schema.Schema.Type<typeof AptosTransfer>
+export const ValidTransferSchema = Schema.Struct({
+  isValid: Schema.Literal(true),
+  args: TransferSchema
+}).annotations({
+  identifier: "ValidTransfer",
+  title: "Valid Transfer",
+  description: "A valid transfer with complete arguments"
+})
+
+export class ValidTransfer extends Schema.Class<ValidTransfer>("ValidTransfer")(ValidTransferSchema) {
+}
+
+export const NotValidTransferSchema = Schema.Struct({
+  isValid: Schema.Literal(false),
+  args: Schema.partial(
+    Schema.Union(
+      Schema.partial(EVMTransferSchema),
+      Schema.partial(CosmosTransferSchema),
+      Schema.partial(AptosTransferSchema)
+    )
+  )
+}).annotations({
+  identifier: "NotValidTransfer",
+  title: "Invalid Transfer",
+  description: "An invalid transfer with partial arguments"
+})
+
+export class NotValidTransfer extends Schema.Class<NotValidTransfer>("NotValidTransfer")(NotValidTransferSchema) {
+}
+
