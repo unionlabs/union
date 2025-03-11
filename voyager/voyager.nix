@@ -82,12 +82,64 @@
           type = types.package;
           default = self.packages.${pkgs.system}.voyager;
         };
-        modules = mkOption {
-          type = types.attrs;
-        };
+        modules =
+          let
+            moduleConfigType =
+              infoOptions:
+              mkOption {
+                type = types.listOf (
+                  types.submodule {
+                    options = {
+                      enabled = mkOption {
+                        type = types.bool;
+                        default = true;
+                      };
+                      path = mkOption {
+                        type = types.path;
+                      };
+                      config = mkOption {
+                        type = types.attrs;
+                        default = { };
+                      };
+                      info = mkOption {
+                        type = types.submodule {
+                          options = infoOptions;
+                        };
+                      };
+                    };
+                  }
+                );
+              };
+          in
+          mkOption {
+            type = types.submodule {
+              options = {
+                client = moduleConfigType {
+                  client_type = mkOption { type = types.str; };
+                  consensus_type = mkOption { type = types.str; };
+                  ibc_interface = mkOption { type = types.str; };
+                  ibc_spec_id = mkOption { type = types.str; };
+                };
+                client_bootstrap = moduleConfigType {
+                  chain_id = mkOption { type = types.str; };
+                  client_type = mkOption { type = types.str; };
+                };
+                consensus = moduleConfigType {
+                  chain_id = mkOption { type = types.str; };
+                  consensus_type = mkOption { type = types.str; };
+                };
+                proof = moduleConfigType {
+                  chain_id = mkOption { type = types.str; };
+                  ibc_spec_id = mkOption { type = types.str; };
+                };
+                state = moduleConfigType {
+                  chain_id = mkOption { type = types.str; };
+                  ibc_spec_id = mkOption { type = types.str; };
+                };
+              };
+            };
+          };
         plugins = mkOption {
-          # The configuration design is breaking quite often, would be a waste
-          # of effort to fix the type for now.
           type = types.listOf (
             types.submodule {
               options = {
@@ -101,29 +153,94 @@
             }
           );
         };
-        optimize_batch_limit = mkOption {
-          type = types.int;
-          default = 100;
-        };
-        workers = mkOption {
-          type = types.int;
-          default = 20;
-        };
+        voyager =
+          let
+            durationType = types.submodule {
+              options = {
+                secs = mkOption { type = types.int; };
+                nanos = mkOption { type = types.int; };
+              };
+            };
+            cacheType = types.submodule {
+              options = {
+                capacity = mkOption { type = types.int; };
+                time_to_live = mkOption { type = types.int; };
+                time_to_idle = mkOption { type = types.int; };
+              };
+            };
+          in
+          mkOption {
+            type = types.submodule {
+              options = {
+                num_workers = mkOption {
+                  type = types.int;
+                };
+                rest_laddr = mkOption {
+                  type = types.nullOr types.str;
+                  default = null;
+                  example = "0.0.0.0:7177";
+                };
+                rpc_laddr = mkOption {
+                  type = types.nullOr types.str;
+                  default = null;
+                  example = "0.0.0.0:7178";
+                };
+                queue = mkOption {
+                  type = types.submodule {
+                    options = {
+                      database_url = mkOption {
+                        type = types.str;
+                        default = "postgres://voyager:voyager@localhost/voyager";
+                      };
+                      max_connections = mkOption {
+                        type = types.int;
+                      };
+                      min_connections = mkOption {
+                        type = types.int;
+                      };
+                      idle_timeout = mkOption {
+                        type = types.nullOr durationType;
+                        default = null;
+                      };
+                      optimize_batch_limit = mkOption {
+                        type = types.nullOr types.int;
+                        default = null;
+                      };
+                      max_lifetime = mkOption {
+                        type = types.nullOr durationType;
+                        default = null;
+                      };
+                      retryable_error_expo_backoff_max = mkOption {
+                        type = types.nullOr types.float;
+                        default = null;
+                      };
+                      retryable_error_expo_backoff_multiplier = mkOption {
+                        type = types.nullOr types.float;
+                        default = null;
+                      };
+                    };
+                  };
+                };
+                optimizer_delay_milliseconds = mkOption {
+                  type = types.nullOr types.int;
+                  default = null;
+                };
+                ipc_client_request_timeout = mkOption {
+                  type = durationType;
+                };
+                cache = mkOption {
+                  type = types.submodule {
+                    options = {
+                      state = mkOption { type = cacheType; };
+                    };
+                  };
+                };
+              };
+            };
+          };
         runtime-max-secs = mkOption {
           type = types.int;
           default = 1800;
-        };
-        db-url = mkOption {
-          type = types.str;
-          default = "postgres://voyager:voyager@localhost/voyager";
-        };
-        db-min-conn = mkOption {
-          type = types.int;
-          default = 20;
-        };
-        db-max-conn = mkOption {
-          type = types.int;
-          default = 20;
         };
         log-level = mkOption {
           type = types.str;
@@ -148,44 +265,16 @@
           default = null;
           example = 20971520;
         };
-        rest_laddr = mkOption {
-          type = types.str;
-          default = "0.0.0.0:7177";
-          example = "0.0.0.0:7177";
-        };
-        rpc_laddr = mkOption {
-          type = types.str;
-          default = "0.0.0.0:7178";
-          example = "0.0.0.0:7178";
-        };
-        voyager-extra = mkOption {
-          type = types.attrs;
-          default = { };
-        };
-        voyager-queue-extra = mkOption {
-          type = types.attrs;
-          default = { };
-        };
       };
 
       config =
         let
           configJson = pkgs.writeText "config.json" (
-            builtins.toJSON {
-              inherit (cfg) plugins modules;
-              voyager = cfg.voyager-extra // {
-                num_workers = cfg.workers;
-                queue = {
-                  type = "pg-queue";
-                  database_url = cfg.db-url;
-                  min_connections = cfg.db-min-conn;
-                  max_connections = cfg.db-max-conn;
-                  idle_timeout = null;
-                  max_lifetime = null;
-                  inherit (cfg) optimize_batch_limit;
-                } // cfg.voyager-queue-extra;
-              };
-            }
+            builtins.toJSON (
+              recursiveUpdate (filterAttrsRecursive (_n: v: v != null) cfg) {
+                voyager.queue.type = "pg-queue";
+              }
+            )
           );
         in
         mkIf cfg.enable {
@@ -194,7 +283,7 @@
               name = "voyager";
               runtimeInputs = [ cfg.package ];
               text = ''
-                ${pkgs.lib.getExe cfg.package} --config-file-path ${configJson} "$@"
+                ${getExe cfg.package} --config-file-path ${configJson} "$@"
               '';
             })
           ];
@@ -205,10 +294,10 @@
               serviceConfig = {
                 Type = "simple";
                 ExecStart = ''
-                  ${pkgs.lib.getExe cfg.package} \
+                  ${getExe cfg.package} \
                     --config-file-path ${configJson} \
                     -l ${cfg.log-format} ${
-                      pkgs.lib.optionalString (cfg.stack-size != null) "--stack-size ${toString cfg.stack-size}"
+                      optionalString (cfg.stack-size != null) "--stack-size ${toString cfg.stack-size}"
                     } \
                     start
                 '';

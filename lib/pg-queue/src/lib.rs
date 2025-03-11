@@ -37,8 +37,8 @@ pub mod metrics;
 pub struct PgQueue<T> {
     client: PgPool,
     optimize_batch_limit: Option<i64>,
-    retryable_error_expo_backoff_max: Option<f64>,
-    retryable_error_expo_backoff_multiplier: Option<f64>,
+    retryable_error_expo_backoff_max: f64,
+    retryable_error_expo_backoff_multiplier: f64,
     __marker: PhantomData<fn() -> T>,
 }
 
@@ -46,23 +46,43 @@ pub struct PgQueue<T> {
 #[serde(deny_unknown_fields)]
 pub struct PgQueueConfig {
     pub database_url: String,
-    pub max_connections: Option<u32>,
-    pub min_connections: Option<u32>,
+    #[serde(default = "default_max_connections")]
+    pub max_connections: u32,
+    #[serde(default = "default_min_connections")]
+    pub min_connections: u32,
+    #[serde(default)]
     pub idle_timeout: Option<Duration>,
+    #[serde(default)]
     pub max_lifetime: Option<Duration>,
     #[serde(default)]
     pub optimize_batch_limit: Option<i64>,
-    #[serde(default)]
-    pub retryable_error_expo_backoff_max: Option<f64>,
-    #[serde(default)]
-    pub retryable_error_expo_backoff_multiplier: Option<f64>,
+    #[serde(default = "default_retryable_error_expo_backoff_max")]
+    pub retryable_error_expo_backoff_max: f64,
+    #[serde(default = "default_retryable_error_expo_backoff_multiplier")]
+    pub retryable_error_expo_backoff_multiplier: f64,
+}
+
+pub const fn default_max_connections() -> u32 {
+    10
+}
+
+pub const fn default_min_connections() -> u32 {
+    0
+}
+
+pub const fn default_retryable_error_expo_backoff_max() -> f64 {
+    60.0 * 5.0
+}
+
+pub const fn default_retryable_error_expo_backoff_multiplier() -> f64 {
+    2.0
 }
 
 impl PgQueueConfig {
     pub async fn into_pg_pool(self) -> sqlx::Result<PgPool> {
         PgPoolOptions::new()
-            .max_connections(self.max_connections.unwrap_or(10))
-            .min_connections(self.min_connections.unwrap_or(0))
+            .max_connections(self.max_connections)
+            .min_connections(self.min_connections)
             .idle_timeout(self.idle_timeout)
             .max_lifetime(self.max_lifetime)
             .connect(&self.database_url)
@@ -551,8 +571,8 @@ async fn process_item<'a, T: QueueMessage, F, Fut, R>(
     record: QueueRecord,
     f: F,
     filter: &'a T::Filter,
-    retryable_error_expo_backoff_max: Option<f64>,
-    retryable_error_expo_backoff_multiplier: Option<f64>,
+    retryable_error_expo_backoff_max: f64,
+    retryable_error_expo_backoff_multiplier: f64,
 ) -> Result<Option<R>, sqlx::Error>
 where
     F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
@@ -596,11 +616,8 @@ where
                 time::OffsetDateTime::now_utc().saturating_add(
                     Duration::try_from_secs_f64(
                         (record.attempt as f64)
-                            .powf(retryable_error_expo_backoff_multiplier.unwrap_or(1.5))
-                            .clamp(
-                                f64::MIN,
-                                retryable_error_expo_backoff_max.unwrap_or(f64::MAX),
-                            ),
+                            .powf(retryable_error_expo_backoff_multiplier)
+                            .clamp(f64::MIN, retryable_error_expo_backoff_max),
                     )
                     .unwrap_or(Duration::MAX)
                     .try_into()
