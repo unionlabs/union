@@ -1706,6 +1706,7 @@ type query_root {
 
 type streak {
   destination_chain_id: String!
+  destination_universal_chain_id: String!
   end_timestamp: timestamptz!
   seconds: Int!
   start_timestamp: timestamptz!
@@ -1719,6 +1720,7 @@ input streak_bool_exp_bool_exp {
   _not: streak_bool_exp_bool_exp
   _or: [streak_bool_exp_bool_exp!]
   destination_chain_id: String_comparison_exp
+  destination_universal_chain_id: String_comparison_exp
   end_timestamp: timestamptz_comparison_exp
   seconds: Int_comparison_exp
   start_timestamp: timestamptz_comparison_exp
@@ -1727,6 +1729,9 @@ input streak_bool_exp_bool_exp {
 enum streak_enum_name {
   """column name"""
   destination_chain_id
+
+  """column name"""
+  destination_universal_chain_id
 
   """column name"""
   end_timestamp
@@ -1741,6 +1746,7 @@ enum streak_enum_name {
 """Ordering options when selecting data from "streak"."""
 input streak_order_by {
   destination_chain_id: order_by
+  destination_universal_chain_id: order_by
   end_timestamp: order_by
   seconds: order_by
   start_timestamp: order_by
@@ -10699,7 +10705,9 @@ type v2_transfer_type {
 
   """An object relationship"""
   fee_token_meta: v2_token_meta
+  fee_type: String
   packet_hash: String
+  packet_shape: String
   quote_amount: String
   quote_token: String
 
@@ -10742,6 +10750,7 @@ type v2_transfer_type {
   transfer_recv_transaction_hash: String
   transfer_send_timestamp: timestamptz
   transfer_send_transaction_hash: String
+  wrap_direction: String
 }
 
 """
@@ -10763,7 +10772,9 @@ input v2_transfer_type_bool_exp {
   fee_amount: String_comparison_exp
   fee_token: String_comparison_exp
   fee_token_meta: v2_token_meta_bool_exp
+  fee_type: String_comparison_exp
   packet_hash: String_comparison_exp
+  packet_shape: String_comparison_exp
   quote_amount: String_comparison_exp
   quote_token: String_comparison_exp
   quote_token_meta: v2_token_meta_bool_exp
@@ -10783,6 +10794,7 @@ input v2_transfer_type_bool_exp {
   transfer_recv_transaction_hash: String_comparison_exp
   transfer_send_timestamp: timestamptz_comparison_exp
   transfer_send_transaction_hash: String_comparison_exp
+  wrap_direction: String_comparison_exp
 }
 
 """Ordering options when selecting data from "v2.transfer_type"."""
@@ -10799,7 +10811,9 @@ input v2_transfer_type_order_by {
   fee_amount: order_by
   fee_token: order_by
   fee_token_meta: v2_token_meta_order_by
+  fee_type: order_by
   packet_hash: order_by
+  packet_shape: order_by
   quote_amount: order_by
   quote_token: order_by
   quote_token_meta: v2_token_meta_order_by
@@ -10819,6 +10833,7 @@ input v2_transfer_type_order_by {
   transfer_recv_transaction_hash: order_by
   transfer_send_timestamp: order_by
   transfer_send_transaction_hash: order_by
+  wrap_direction: order_by
 }
 
 """
@@ -10853,7 +10868,13 @@ enum v2_transfer_type_select_column {
   fee_token
 
   """column name"""
+  fee_type
+
+  """column name"""
   packet_hash
+
+  """column name"""
+  packet_shape
 
   """column name"""
   quote_amount
@@ -10902,6 +10923,9 @@ enum v2_transfer_type_select_column {
 
   """column name"""
   transfer_send_transaction_hash
+
+  """column name"""
+  wrap_direction
 }
 
 input v2_transfers_args {

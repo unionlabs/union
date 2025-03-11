@@ -16,13 +16,11 @@ export const transferByPacketHashQuery = (packetHash: string) =>
         }) {
           sender_canonical
           source_chain {
-            chain_id
             universal_chain_id
           }
           transfer_send_transaction_hash
           receiver_canonical
           destination_chain {
-            chain_id
             universal_chain_id
           }
           transfer_send_timestamp
@@ -38,7 +36,7 @@ export const transferByPacketHashQuery = (packetHash: string) =>
             timestamp
             transaction_hash
             chain {
-              chain_id
+              universal_chain_id
             }
           }
         }

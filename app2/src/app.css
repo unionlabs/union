@@ -1,3 +1,7 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-zinc-925: oklch(0.1755 0.0055 285.854);
+}

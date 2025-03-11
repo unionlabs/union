@@ -3,20 +3,46 @@ import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
-import { page } from "$app/stores"
+import { page } from "$app/state"
 import { cn } from "$lib/utils"
 import { onMount } from "svelte"
 import { navigation } from "./navigation.js"
 
-const isCurrentPath = (path: string) => $page.url.pathname === path
+const isCurrentPath = (path: string) => {
+  // Exact match
+  if (page.url.pathname === path) return true
+
+  // Check if current path is a subroute of the navigation item
+  // For example, /explorer/packets/123 should highlight /explorer/packets
+  if (path !== "/" && page.url.pathname.startsWith(`${path}/`)) return true
+
+  return false
+}
 
 let highlightElement: HTMLElement
 
 const updateHighlightPosition = () => {
-  if ($page.url.pathname && highlightElement) {
-    const newActive = document.querySelector(`[data-path="${$page.url.pathname}"]`) as HTMLElement
-    if (newActive) {
-      const rect = newActive.getBoundingClientRect()
+  if (page.url.pathname && highlightElement) {
+    // Find the best matching navigation item
+    let bestMatch: HTMLElement | null = null
+    let bestMatchLength = 0
+
+    // Check all navigation items to find the best match
+    const allNavItems = document.querySelectorAll("[data-path]")
+    allNavItems.forEach(item => {
+      const itemPath = item.getAttribute("data-path")
+      if (
+        itemPath &&
+        (page.url.pathname === itemPath ||
+          (page.url.pathname.startsWith(`${itemPath}/`) && itemPath.length > bestMatchLength))
+      ) {
+        bestMatch = item as HTMLElement
+        bestMatchLength = itemPath.length
+      }
+    })
+
+    if (bestMatch) {
+      const rect = bestMatch.getBoundingClientRect()
       highlightElement.style.top = `${rect.top}px`
       highlightElement.style.left = `${rect.left}px`
       highlightElement.style.width = `${rect.width}px`
@@ -29,7 +55,7 @@ const updateHighlightPosition = () => {
 }
 
 $effect(() => {
-  if ($page.url.pathname) {
+  if (page.url.pathname) {
     updateHighlightPosition()
   }
 })
@@ -73,8 +99,7 @@ onMount(() => {
                 isCurrentPath(item.path) ? "" : "dark:hover:bg-zinc-900"
               )}
             >
-              <svelte:component 
-                this={item.icon} 
+              <item.icon 
                 class="size-5 text-zinc-500" 
               />
               {item.title}

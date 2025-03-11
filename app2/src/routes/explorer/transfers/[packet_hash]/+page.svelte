@@ -44,11 +44,11 @@ onMount(() => {
       {@const chainsList = chains.data.value}
       {@const sourceChain = getChain(
         chainsList,
-        transfer.source_chain.chain_id,
+        transfer.source_chain.universal_chain_id,
       )}
       {@const destChain = getChain(
         chainsList,
-        transfer.destination_chain.chain_id,
+        transfer.destination_chain.universal_chain_id,
       )}
 
       <div class="space-y-8">
@@ -129,7 +129,7 @@ onMount(() => {
             <Label>Transfer Timeline</Label>
             <div class="mt-4 space-y-8">
               {#each transfer.traces as trace, i}
-                {@const chain = getChain(chainsList, trace.chain.chain_id)}
+                {@const chain = getChain(chainsList, trace.chain.universal_chain_id)}
                 <!-- Timeline line -->
                 <div class="absolute left-2 top-8 z-10 bottom-0 w-0.5 bg-zinc-200 dark:bg-zinc-700" ></div>
                 
@@ -149,7 +149,7 @@ onMount(() => {
                       {#if Option.isSome(chain)}
                         <ChainComponent chain={chain.value} />
                       {:else}
-                        <span class="font-mono text-sm">{trace.chain.chain_id}</span>
+                        <span class="font-mono text-sm">{trace.chain.universal_chain_id}</span>
                       {/if}
                     </div>
                     

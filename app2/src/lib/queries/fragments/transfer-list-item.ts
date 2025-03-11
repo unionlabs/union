@@ -3,11 +3,9 @@ import { graphql } from "gql.tada"
 export const transferListItemFragment = graphql(`
     fragment TransferListItem on v2_transfer_type {
         source_chain {
-            chain_id
             universal_chain_id
         }
         destination_chain {
-            chain_id
             universal_chain_id
         }
         sender_canonical

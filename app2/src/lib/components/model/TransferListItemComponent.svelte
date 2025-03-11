@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { TransferListItem } from "$lib/schema/transfer-list"
 import { Option } from "effect"
-import { getChain } from "$lib/schema/chain"
+import { getChain, UniversalChainId } from "$lib/schema/chain"
 import ChainComponent from "./ChainComponent.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import Label from "../ui/Label.svelte"
@@ -25,15 +25,15 @@ const handleClick = () => {
 
 {#if Option.isSome(chains.data)}
   {@const chainss = chains.data.value}
-  {@const sourceChain = getChain(chainss, transfer.source_chain.chain_id)}
+  {@const sourceChain = getChain(chainss, transfer.source_chain.universal_chain_id)}
   {@const destinationChain = getChain(
     chainss,
-    transfer.destination_chain.chain_id,
+    transfer.destination_chain.universal_chain_id,
   )}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="flex justify-between gap-8 px-4 py-3 h-16 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors duration-75 items-center"
+    class="flex justify-between gap-8 px-4 py-3 h-16 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors duration-75 items-center"
     onclick={handleClick}
   >
     <div>
