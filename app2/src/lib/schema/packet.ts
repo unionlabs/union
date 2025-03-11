@@ -5,6 +5,7 @@ import { ChainId, UniversalChainId } from "$lib/schema/chain"
 import { ChannelId } from "$lib/schema/channel"
 import { ConnectionId } from "$lib/schema/connection"
 import { ClientId } from "$lib/schema/client"
+import { PortId } from "$lib/schema/port"
 
 export const PacketHash = Schema.String.pipe(Schema.pattern(/^0x[0-9a-f]{64}$/)).pipe(
   Schema.brand("PacketHash")
@@ -38,7 +39,7 @@ export class PacketDetails extends Schema.Class<PacketDetails>("PacketDetails")(
   destination_channel_id: ChannelId,
   destination_client_id: ClientId,
   destination_connection_id: ConnectionId,
-  destination_port_id: Schema.String,
+  destination_port_id: PortId,
   destination_universal_chain_id: UniversalChainId,
   packet_ack_block_hash: Schema.OptionFromNullOr(Hex),
   packet_ack_height: Schema.OptionFromNullOr(Schema.Number),
@@ -59,7 +60,7 @@ export class PacketDetails extends Schema.Class<PacketDetails>("PacketDetails")(
   source_channel_id: ChannelId,
   source_client_id: ClientId,
   source_connection_id: ConnectionId,
-  source_port_id: Schema.String,
+  source_port_id: PortId,
   source_universal_chain_id: UniversalChainId,
   status: Schema.String,
   timeout_height: Schema.String,
