@@ -24,7 +24,10 @@ const BaseTransferFields = {
   }),
   destinationRpcType: RpcType.annotations({
     message: () => "destinationType must be a valid RPC type ('evm', 'cosmos', or 'aptos')"
-  })
+  }),
+  ucs03address: Schema.String,
+  timeoutHeight: Schema.BigInt,
+  timeoutTimestamp: Schema.String
 }
 
 const EVMTransferSchema = Schema.Struct({

@@ -85,10 +85,15 @@ export const QuoteData = Schema.Union(
   }),
   Schema.Struct({
     type: Schema.Literal("QUOTE_LOADING")
+  }),
+  Schema.Struct({
+    type: Schema.Literal("QUOTE_MISSING_ARGUMENTS")
   })
 )
 
 export const WethTokenData = Schema.Union(
   Schema.Struct({ wethQuoteToken: Schema.String }),
-  Schema.Struct({ type: Schema.Literal("NO_WETH_QUOTE") })
+  Schema.Struct({ type: Schema.Literal("NO_WETH_QUOTE") }),
+  Schema.Struct({ type: Schema.Literal("WETH_LOADING") }),
+  Schema.Struct({ type: Schema.Literal("WETH_MISSING_ARGUMENTS") })
 )

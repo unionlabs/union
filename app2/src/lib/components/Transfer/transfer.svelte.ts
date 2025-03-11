@@ -12,7 +12,7 @@ import {
 } from "$lib/services/transfer-ucs03-evm"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { getChainFromWagmi } from "$lib/wallet/evm/index.ts"
-import { type Address, type Chain as ViemChain, fromHex, type Hex } from "viem"
+import { type Address, fromHex, type Hex } from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import type { Channel } from "$lib/schema/channel.ts"
@@ -98,24 +98,18 @@ export class Transfer {
   wethQuoteToken = $state<Option.Option<typeof WethTokenData.Type>>(Option.none())
 
   getQuoteToken = async () => {
-    this.quoteToken = Option.some({ type: "QUOTE_LOADING" })
-
-    if (Option.isNone(this.sourceChain)) console.log("[quoteToken] Missing sourceChain")
-    if (Option.isNone(this.destinationChain)) console.log("[quoteToken] Missing destinationChain")
-    if (Option.isNone(this.baseToken)) console.log("[quoteToken] Missing baseToken")
-    if (Option.isNone(this.channel)) console.log("[quoteToken] Missing channel")
-
     const denomOpt = Option.flatMap(this.baseToken, token => Option.fromNullable(token.denom))
-
     if (
       Option.isNone(this.sourceChain) ||
       Option.isNone(this.destinationChain) ||
       Option.isNone(denomOpt) ||
       Option.isNone(this.channel)
     ) {
-      this.quoteToken = Option.none()
+      this.quoteToken = Option.some({ type: "QUOTE_MISSING_ARGUMENTS" })
       return null
     }
+
+    this.quoteToken = Option.some({ type: "QUOTE_LOADING" })
 
     const result = await Effect.runPromise(
       getQuoteTokenEffect(
@@ -126,27 +120,22 @@ export class Transfer {
       )
     )
 
-    console.log("[quoteToken]", result)
     this.quoteToken = Option.some(result)
     return result
   }
 
   getWethQuoteToken = async () => {
-    if (Option.isNone(this.sourceChain)) console.log("[wethQuoteToken] Missing sourceChain")
-    if (Option.isNone(this.destinationChain))
-      console.log("[wethQuoteToken] Missing destinationChain")
-    if (Option.isNone(this.ucs03address)) console.log("[wethQuoteToken] Missing ucs03address")
-    if (Option.isNone(this.channel)) console.log("[wethQuoteToken] Missing channel")
-
     if (
       Option.isNone(this.sourceChain) ||
       Option.isNone(this.destinationChain) ||
       Option.isNone(this.ucs03address) ||
       Option.isNone(this.channel)
     ) {
-      this.wethQuoteToken = Option.none()
+      this.wethQuoteToken = Option.some({ type: "WETH_MISSING_ARGUMENTS" })
       return null
     }
+
+    this.wethQuoteToken = Option.some({ type: "WETH_LOADING" })
 
     const result = await Effect.runPromise(
       getWethQuoteTokenEffect(
@@ -173,9 +162,7 @@ export class Transfer {
     const wethQuoteTokenValue = Option.getOrNull(this.wethQuoteToken)
 
     return {
-      sourceChain: sourceChainValue
-        ? (getChainFromWagmi(Number(sourceChainValue.chain_id)) as ViemChain)
-        : null,
+      sourceChain: sourceChainValue ? getChainFromWagmi(Number(sourceChainValue.chain_id)) : null,
       sourceRpcType: sourceChainValue?.rpc_type,
       destinationRpcType: destinationChainValue?.rpc_type,
       sourceChannelId: channelValue?.source_channel_id,
