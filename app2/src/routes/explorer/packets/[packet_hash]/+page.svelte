@@ -88,9 +88,25 @@ const goBack = () => {
         </div>
         
         <div>
-          <Label>Channel Version</Label>
-          <div class="text-sm">{packetDetails.data.value.channel_version}</div>
+          <Label>Source Client ID</Label>
+          <div class="text-sm">{packetDetails.data.value.source_client_id}</div>
         </div>
+        
+        <div>
+          <Label>Destination Client ID</Label>
+          <div class="text-sm">{packetDetails.data.value.destination_client_id}</div>
+        </div>
+        
+        <div>
+          <Label>Source Connection ID</Label>
+          <div class="text-sm">{packetDetails.data.value.source_connection_id}</div>
+        </div>
+        
+        <div>
+          <Label>Destination Connection ID</Label>
+          <div class="text-sm">{packetDetails.data.value.destination_connection_id}</div>
+        </div>
+        
         
         <div>
           <Label>Source Channel ID</Label>
@@ -101,7 +117,6 @@ const goBack = () => {
           <Label>Destination Channel ID</Label>
           <div class="text-sm">{packetDetails.data.value.destination_channel_id}</div>
         </div>
-        
         <div>
           <Label>Send Timestamp</Label>
           <DateTimeComponent value={packetDetails.data.value.packet_send_timestamp} />
@@ -120,6 +135,10 @@ const goBack = () => {
             <DateTimeComponent value={packetDetails.data.value.packet_ack_timestamp.value} />
           </div>
         {/if}
+        <div>
+          <Label>Channel Version</Label>
+          <div class="text-sm">{packetDetails.data.value.channel_version}</div>
+        </div>
       </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
