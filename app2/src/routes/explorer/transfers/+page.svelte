@@ -19,33 +19,35 @@ import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 
-let fiber: Fiber.Fiber<any, any>
-
 onMount(() => {
   const pageParam = page.url.searchParams.get("page")
 
-  if (pageParam) {
-    if (pageParam.startsWith("-")) {
-      // Greater-than query (prev page)
-      const sortOrder = pageParam.substring(1)
-      fiber = Effect.runFork(transferListPageGtQuery(sortOrder, settingsStore.pageLimit))
+  const initializeQuery = async () => {
+    if (pageParam) {
+      if (pageParam.startsWith("-")) {
+        // Greater-than query (prev page)
+        const sortOrder = pageParam.substring(1)
+        await transferList.runEffect(transferListPageGtQuery(sortOrder, settingsStore.pageLimit))
+      } else {
+        // Less-than query (next page)
+        await transferList.runEffect(transferListPageLtQuery(pageParam, settingsStore.pageLimit))
+      }
     } else {
-      // Less-than query (next page)
-      fiber = Effect.runFork(transferListPageLtQuery(pageParam, settingsStore.pageLimit))
+      // No page param, load latest
+      await transferList.runEffect(transferListLatestQuery(settingsStore.pageLimit))
     }
-  } else {
-    // No page param, load latest
-    fiber = Effect.runFork(transferListLatestQuery(settingsStore.pageLimit))
   }
 
-  return () => Effect.runPromise(Fiber.interrupt(fiber))
+  initializeQuery()
+
+  return () => {
+    transferList.interruptFiber()
+  }
 })
 
 const onLive = async () => {
   if (Option.isSome(transferList.data)) {
-    transferList.data = Option.none()
-    await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListLatestQuery(settingsStore.pageLimit))
+    await transferList.runEffect(transferListLatestQuery(settingsStore.pageLimit))
     // Remove page param from URL
     goto("?", { replaceState: true })
   }
@@ -55,9 +57,7 @@ const onPrevPage = async () => {
   if (Option.isSome(transferList.data)) {
     let firstSortOrder = transferList.data.value.at(0)?.sort_order
     if (!firstSortOrder) return
-    transferList.data = Option.none()
-    await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListPageGtQuery(firstSortOrder, settingsStore.pageLimit))
+    await transferList.runEffect(transferListPageGtQuery(firstSortOrder, settingsStore.pageLimit))
     // Update URL with the new page param, prefixed with '-' for greater-than queries
     goto(`?page=-${firstSortOrder}`, { replaceState: true })
   }
@@ -67,9 +67,7 @@ const onNextPage = async () => {
   if (Option.isSome(transferList.data)) {
     let lastSortOrder = transferList.data.value.at(-1)?.sort_order
     if (!lastSortOrder) return
-    transferList.data = Option.none()
-    await Effect.runPromise(Fiber.interrupt(fiber))
-    fiber = Effect.runFork(transferListPageLtQuery(lastSortOrder, settingsStore.pageLimit))
+    await transferList.runEffect(transferListPageLtQuery(lastSortOrder, settingsStore.pageLimit))
     // Update URL with the new page param (no prefix for less-than queries)
     goto(`?page=${lastSortOrder}`, { replaceState: true })
   }
