@@ -23,19 +23,23 @@ onMount(() => {
   const pageParam = page.url.searchParams.get("page")
 
   const initializeQuery = async () => {
+    let effect: Effect.Effect
+
     if (pageParam) {
       if (pageParam.startsWith("-")) {
         // Greater-than query (prev page)
         const sortOrder = pageParam.substring(1)
-        await transferList.runEffect(transferListPageGtQuery(sortOrder, settingsStore.pageLimit))
+        effect = transferListPageGtQuery(sortOrder, settingsStore.pageLimit)
       } else {
         // Less-than query (next page)
-        await transferList.runEffect(transferListPageLtQuery(pageParam, settingsStore.pageLimit))
+        effect = transferListPageLtQuery(pageParam, settingsStore.pageLimit)
       }
     } else {
       // No page param, load latest
-      await transferList.runEffect(transferListLatestQuery(settingsStore.pageLimit))
+      effect = transferListLatestQuery(settingsStore.pageLimit)
     }
+
+    await transferList.runEffect(effect)
   }
 
   initializeQuery()
