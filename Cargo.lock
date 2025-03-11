@@ -5202,6 +5202,7 @@ dependencies = [
  "ethereum-sync-protocol-types",
  "fork-schedules",
  "hex-literal",
+ "lazy_static",
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
