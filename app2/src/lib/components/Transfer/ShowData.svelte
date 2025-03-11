@@ -1,8 +1,6 @@
 <script lang="ts">
 
-  import {getTransfer} from "$lib/components/Transfer/transfer.svelte.ts";
-
-  const {transfer} = getTransfer()
+import {transfer} from "$lib/components/Transfer/transfer.svelte.ts";
 </script>
 <ul class="text-xs text-sky-300 w-full truncate">
   <li>
@@ -48,7 +46,7 @@
   <li>
     <span class="text-zinc-300">quoteToken</span>:
     {#if transfer.quoteToken}
-      {transfer.quoteToken}
+      {JSON.stringify(transfer.quoteToken)}
     {:else}
       <span class="text-red-500">No value</span>
     {/if}
@@ -64,7 +62,7 @@
   <li>
     <span class="text-zinc-300">wethToken</span>:
     {#if transfer.wethQuoteToken}
-      {transfer.wethQuoteToken}
+      {JSON.stringify(transfer.wethQuoteToken)}
     {:else}
       <span class="text-red-500">No value</span>
     {/if}

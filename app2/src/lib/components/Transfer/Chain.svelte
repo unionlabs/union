@@ -5,7 +5,7 @@
   import {tokensStore} from "$lib/stores/tokens.svelte.ts";
   import Label from "$lib/components/ui/Label.svelte";
   import {fade, fly} from "svelte/transition";
-  import {getTransfer} from "$lib/components/Transfer/transfer.svelte.ts";
+  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts";
 
   type Props = {
     type: "source" | "destination";
@@ -14,7 +14,6 @@
   let {type}: Props = $props();
   let open = $state(false);
 
-  const {transfer} = getTransfer();
 </script>
 
 {#if open}

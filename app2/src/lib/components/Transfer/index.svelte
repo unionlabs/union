@@ -7,50 +7,11 @@
   import Amount from "$lib/components/Transfer/Amount.svelte";
   import Receiver from "$lib/components/Transfer/Receiver.svelte";
   import ShowData from "$lib/components/Transfer/ShowData.svelte";
-  import {getQuoteToken} from "$lib/services/transfer-ucs03-evm/quote-token.ts";
-  import {Effect} from "effect";
-  import {getWethQuoteToken} from "$lib/services/transfer-ucs03-evm/weth-token.ts";
-  import {getTransfer} from "$lib/components/Transfer/transfer.svelte.ts";
-
-  const {transfer} = getTransfer()
-
-  //test
-  const runthis = async (): Promise<void> => {
-    if (!transfer.sourceChain?.chain_id ||
-      !transfer.baseToken?.denom ||
-      !transfer.channel ||
-      !transfer.destinationChain?.rpc_type) {
-      console.log('Missing required parameters');
-      return;
-    }
-
-    const quote = await Effect.runPromise(
-      getQuoteToken(
-        transfer.sourceChain.chain_id,
-        transfer.baseToken.denom,
-        transfer.channel,
-        transfer.destinationChain.rpc_type
-      )
-    );
-
-    if (!transfer.ucs03address) return
-
-    const weth = await Effect.runPromise(
-      getWethQuoteToken(
-        transfer.sourceChain,
-        transfer.ucs03address,
-        transfer.channel,
-      )
-    );
-
-    console.log('quote', quote);
-    console.log('weth', weth);
-  };
+  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts";
 
   $effect(() => {
-    console.log('[VALIDATION]', transfer.fieldErrors)
-    console.log(transfer.sourceChain?.chain_id, transfer.baseToken?.denom, transfer.channel, transfer.sourceChain?.rpc_type)
-    runthis()
+    transfer.getQ()
+    transfer.getW()
   })
 </script>
 

@@ -4,9 +4,8 @@
   import {tokensStore} from "$lib/stores/tokens.svelte.ts";
   import Input from "$lib/components/ui/Input.svelte";
   import {fade, fly} from "svelte/transition";
-  import {getTransfer} from "$lib/components/Transfer/transfer.svelte.ts";
+  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts";
 
-  const {transfer} = getTransfer();
   let open = $state(false);
   let searchQuery = $state("");
 
@@ -20,6 +19,7 @@
   }
 
   $effect(() => {
+    // eslint-disable-next-line no-undef
     if (transfer.sourceChain) {
       ensureTokensForChain();
     }
