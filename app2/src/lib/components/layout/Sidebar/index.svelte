@@ -14,7 +14,7 @@ const isCurrentPath = (path: string) => {
 
   // Check if current path is a subroute of the navigation item
   // For example, /explorer/packets/123 should highlight /explorer/packets
-  if (path !== "/" && page.url.pathname.startsWith(path + "/")) return true
+  if (path !== "/" && page.url.pathname.startsWith(`${path}/`)) return true
 
   return false
 }
