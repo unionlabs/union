@@ -16,6 +16,8 @@ import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import { page } from "$app/state"
 import { goto } from "$app/navigation"
+import AddressComponent from "$lib/components/model/AddressComponent.svelte"
+import { fromHex } from "viem"
 
 onMount(() => {
   const packetHash = page.params.packet_hash
@@ -63,12 +65,10 @@ const goBack = () => {
           <Label>Packet Hash</Label>
           <div class="text-sm break-all">{packetDetails.data.value.packet_hash}</div>
         </div>
-        
         <div>
-          <Label>Status</Label>
-          <div class="text-sm">{packetDetails.data.value.status}</div>
+          <Label>Channel Version</Label>
+          <div class="text-sm">{packetDetails.data.value.channel_version}</div>
         </div>
-        
         <div>
           <Label>Source Chain</Label>
           {#if Option.isSome(sourceChain)}
@@ -117,6 +117,16 @@ const goBack = () => {
           <Label>Destination Channel ID</Label>
           <div class="text-sm">{packetDetails.data.value.destination_channel_id}</div>
         </div>
+        
+        <div>
+          <Label>Source Port ID</Label>
+          <div class="text-sm font-mono break-all">{fromHex(packetDetails.data.value.source_port_id, "string")}</div>
+        </div>
+        
+        <div>
+          <Label>Destination Port ID</Label>
+          <div class="text-sm font-mono break-all">{fromHex(packetDetails.data.value.destination_port_id, "string")}</div>
+        </div>
         <div>
           <Label>Send Timestamp</Label>
           <DateTimeComponent value={packetDetails.data.value.packet_send_timestamp} />
@@ -135,9 +145,10 @@ const goBack = () => {
             <DateTimeComponent value={packetDetails.data.value.packet_ack_timestamp.value} />
           </div>
         {/if}
+        
         <div>
-          <Label>Channel Version</Label>
-          <div class="text-sm">{packetDetails.data.value.channel_version}</div>
+          <Label>Status</Label>
+          <div class="text-sm">{packetDetails.data.value.status}</div>
         </div>
       </div>
       
