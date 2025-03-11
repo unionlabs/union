@@ -101,6 +101,7 @@ export class Transfer {
 
   getQuoteToken = async () => {
     const denomOpt = Option.flatMap(this.baseToken, token => Option.fromNullable(token.denom))
+
     if (
       Option.isNone(this.sourceChain) ||
       Option.isNone(this.destinationChain) ||
@@ -113,17 +114,37 @@ export class Transfer {
 
     this.quoteToken = Option.some({ type: "QUOTE_LOADING" })
 
-    const result = await Effect.runPromise(
-      getQuoteTokenEffect(
-        this.sourceChain.value,
-        denomOpt.value,
-        this.channel.value,
-        this.destinationChain.value
-      )
-    )
+    const sourceChainValue = this.sourceChain.value
+    const denomValue = denomOpt.value
+    const channelValue = this.channel.value
+    const destinationChainValue = this.destinationChain.value
+    const setQuoteToken = (value: Option.Option<typeof QuoteData.Type>) => {
+      this.quoteToken = value
+    }
 
-    this.quoteToken = Option.some(result)
-    return result
+    return Effect.gen(function* () {
+      const result = yield* getQuoteTokenEffect(
+        sourceChainValue,
+        denomValue,
+        channelValue,
+        destinationChainValue
+      )
+      setQuoteToken(Option.some(result))
+      return result
+    }).pipe(
+      Effect.catchAll(error =>
+        Effect.sync(() => {
+          setQuoteToken(
+            Option.some({
+              type: "QUOTE_ERROR",
+              error: error.message
+            })
+          )
+          return null
+        })
+      ),
+      Effect.runPromise
+    )
   }
 
   getWethQuoteToken = async () => {
@@ -133,23 +154,43 @@ export class Transfer {
       Option.isNone(this.ucs03address) ||
       Option.isNone(this.channel)
     ) {
-      this.wethQuoteToken = Option.some({ type: "WETH_MISSING_ARGUMENTS" })
+      this.wethQuoteToken = Option.some({ type: "WETH_MISSING_ARGUMENTS" } as const)
       return null
     }
 
-    this.wethQuoteToken = Option.some({ type: "WETH_LOADING" })
+    this.wethQuoteToken = Option.some({ type: "WETH_LOADING" } as const)
 
-    const result = await Effect.runPromise(
-      getWethQuoteTokenEffect(
-        this.sourceChain.value,
-        this.ucs03address.value,
-        this.channel.value,
-        this.destinationChain.value
+    const sourceChainValue = this.sourceChain.value
+    const ucs03addressValue = this.ucs03address.value
+    const channelValue = this.channel.value
+    const destinationChainValue = this.destinationChain.value
+    const setWethQuoteToken = (value: Option.Option<typeof WethTokenData.Type>) => {
+      this.wethQuoteToken = value
+    }
+
+    return Effect.gen(function* () {
+      const result: typeof WethTokenData.Type = yield* getWethQuoteTokenEffect(
+        sourceChainValue,
+        ucs03addressValue,
+        channelValue,
+        destinationChainValue
       )
+      setWethQuoteToken(Option.some(result))
+      return result
+    }).pipe(
+      Effect.catchAll(error =>
+        Effect.sync(() => {
+          setWethQuoteToken(
+            Option.some({
+              type: "WETH_ERROR",
+              error: error.message
+            })
+          )
+          return null
+        })
+      ),
+      Effect.runPromise
     )
-
-    this.wethQuoteToken = Option.some(result)
-    return result
   }
 
   args = $derived.by(() => {
