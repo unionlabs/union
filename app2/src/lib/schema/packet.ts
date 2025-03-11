@@ -2,10 +2,11 @@ import { Schema } from "effect"
 import { SortOrder } from "$lib/schema/sort-order"
 import { Hex } from "$lib/schema/hex"
 import { ChainId, UniversalChainId } from "$lib/schema/chain"
-import { ChannelId } from "$lib/schema/channel"
+import { ChannelId, ChannelVersion } from "$lib/schema/channel"
 import { ConnectionId } from "$lib/schema/connection"
 import { ClientId } from "$lib/schema/client"
 import { PortId } from "$lib/schema/port"
+import { Height } from "$lib/schema/height"
 
 export const PacketHash = Schema.String.pipe(Schema.pattern(/^0x[0-9a-f]{64}$/)).pipe(
   Schema.brand("PacketHash")
@@ -15,7 +16,7 @@ export type PacketHash = typeof PacketHash.Type
 
 export class PacketListItem extends Schema.Class<PacketListItem>("PacketListItem")({
   packet_hash: PacketHash,
-  channel_version: Schema.String,
+  channel_version: ChannelVersion,
   destination_chain_id: ChainId,
   destination_channel_id: ChannelId,
   destination_universal_chain_id: UniversalChainId,
@@ -30,10 +31,9 @@ export class PacketListItem extends Schema.Class<PacketListItem>("PacketListItem
 
 export const PacketList = Schema.Array(PacketListItem)
 
-
 export class PacketDetails extends Schema.Class<PacketDetails>("PacketDetails")({
   packet_hash: PacketHash,
-  channel_version: Schema.String,
+  channel_version: ChannelVersion,
   data: Schema.Any,
   destination_chain_id: ChainId,
   destination_channel_id: ChannelId,
@@ -42,18 +42,18 @@ export class PacketDetails extends Schema.Class<PacketDetails>("PacketDetails")(
   destination_port_id: PortId,
   destination_universal_chain_id: UniversalChainId,
   packet_ack_block_hash: Schema.OptionFromNullOr(Hex),
-  packet_ack_height: Schema.OptionFromNullOr(Schema.Number),
+  packet_ack_height: Schema.OptionFromNullOr(Height),
   packet_ack_maker: Schema.OptionFromNullOr(Schema.String),
   packet_ack_timestamp: Schema.OptionFromNullOr(Schema.DateTimeUtc),
   packet_ack_transaction_hash: Schema.OptionFromNullOr(Hex),
   packet_recv_block_hash: Schema.OptionFromNullOr(Hex),
-  packet_recv_height: Schema.OptionFromNullOr(Schema.Number),
+  packet_recv_height: Schema.OptionFromNullOr(Height),
   packet_recv_maker: Schema.OptionFromNullOr(Schema.String),
   packet_recv_maker_msg: Schema.OptionFromNullOr(Schema.String),
   packet_recv_timestamp: Schema.OptionFromNullOr(Schema.DateTimeUtc),
   packet_recv_transaction_hash: Schema.OptionFromNullOr(Hex),
   packet_send_block_hash: Schema.OptionFromNullOr(Hex),
-  packet_send_height: Schema.OptionFromNullOr(Schema.Number),
+  packet_send_height: Schema.OptionFromNullOr(Height),
   packet_send_timestamp: Schema.DateTimeUtc,
   packet_send_transaction_hash: Schema.OptionFromNullOr(Hex),
   sort_order: SortOrder,
@@ -63,7 +63,7 @@ export class PacketDetails extends Schema.Class<PacketDetails>("PacketDetails")(
   source_port_id: PortId,
   source_universal_chain_id: UniversalChainId,
   status: Schema.String,
-  timeout_height: Schema.String,
+  timeout_height: Height,
   timeout_timestamp: Schema.String,
   write_ack_block_hash: Schema.OptionFromNullOr(Hex),
   write_ack_height: Schema.OptionFromNullOr(Schema.Number),
