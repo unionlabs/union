@@ -18,7 +18,7 @@ use evm_storage_verifier::{
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
 use ibc_union_light_client::{
-    ClientCreation, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
 use unionlabs::{
@@ -116,7 +116,7 @@ impl IbcClient for EthereumLightClient {
     fn verify_creation(
         client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<ClientCreation<Self>, IbcClientError<Self>> {
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>> {
         let ClientState::V1(client_state) = client_state;
         let Some(initial_sync_committee) = client_state.initial_sync_committee.as_ref() else {
             return Err(Error::NoInitialSyncCommittee.into());
@@ -133,7 +133,7 @@ impl IbcClient for EthereumLightClient {
 
         // Set the client state so that it overwrites the one that is passed.
         // Also save the current and next sync committees with the corresponding epoch numbers.
-        Ok(ClientCreation::empty()
+        Ok(ClientCreationResult::new()
             .overwrite_client_state(ClientState::V1(client_state))
             .add_storage_write(
                 sync_committee_store_key(current_sync_period),

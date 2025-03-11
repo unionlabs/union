@@ -2,7 +2,7 @@ use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::Empty;
 use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{
-    ClientCreation, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use ibc_union_spec::path::ConsensusStatePath;
@@ -105,9 +105,9 @@ impl IbcClient for StateLensIcs23MptLightClient {
     fn verify_creation(
         client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<ClientCreation<Self>, IbcClientError<StateLensIcs23MptLightClient>> {
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<StateLensIcs23MptLightClient>> {
         Ok(
-            ClientCreation::empty().add_event(VerifyCreationResponseEvent::CreateLensClient {
+            ClientCreationResult::new().add_event(VerifyCreationResponseEvent::CreateLensClient {
                 l1_client_id: client_state.l1_client_id,
                 l2_client_id: client_state.l2_client_id,
                 l2_chain_id: client_state.l2_chain_id.clone(),

@@ -3,7 +3,7 @@ use cosmwasm_std::Empty;
 use ethereum_light_client::client::EthereumLightClient;
 use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{
-    ClientCreation, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
 use unionlabs::encoding::Bincode;
@@ -112,8 +112,8 @@ impl IbcClient for ArbitrumLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<ClientCreation<Self>, IbcClientError<ArbitrumLightClient>> {
-        Ok(ClientCreation::empty())
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<ArbitrumLightClient>> {
+        Ok(ClientCreationResult::new())
     }
 
     fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {

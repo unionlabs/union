@@ -215,7 +215,7 @@ impl<T: IbcClient> StateUpdate<T> {
 }
 
 /// Client creation output type
-pub struct ClientCreation<T: IbcClient> {
+pub struct ClientCreationResult<T: IbcClient> {
     /// The client state that is going to be stored by IBC. If set to `None`, IBC will store the
     /// client state given by the creator as is
     pub client_state: Option<T::ClientState>,
@@ -226,13 +226,9 @@ pub struct ClientCreation<T: IbcClient> {
     pub storage_writes: StorageWrites,
 }
 
-impl<T: IbcClient> ClientCreation<T> {
-    pub fn empty() -> Self {
-        Self {
-            client_state: None,
-            events: Vec::new(),
-            storage_writes: Default::default(),
-        }
+impl<T: IbcClient> ClientCreationResult<T> {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn add_event(mut self, event: VerifyCreationResponseEvent) -> Self {
@@ -248,6 +244,16 @@ impl<T: IbcClient> ClientCreation<T> {
     pub fn overwrite_client_state(mut self, client_state: T::ClientState) -> Self {
         self.client_state = Some(client_state);
         self
+    }
+}
+
+impl<T: IbcClient> Default for ClientCreationResult<T> {
+    fn default() -> Self {
+        Self {
+            client_state: None,
+            events: Vec::new(),
+            storage_writes: Default::default(),
+        }
     }
 }
 
@@ -301,7 +307,7 @@ pub trait IbcClient: Sized {
     fn verify_creation(
         client_state: &Self::ClientState,
         consensus_state: &Self::ConsensusState,
-    ) -> Result<ClientCreation<Self>, IbcClientError<Self>>;
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>>;
 
     /// Verify `header` against the trusted state (`client_state` and `consensus_state`)
     /// and return `(updated height, updated client state, updated consensus state)`
