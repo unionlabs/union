@@ -6,17 +6,19 @@ import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import { generateSalt } from "./salt.ts"
 import type { Chain } from "$lib/schema/chain.ts"
-import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
+import {ValidTransfer} from "$lib/schema/transfer-args.ts"
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
-    const walletClient = yield* getWalletClient(chain)
+    if (transfer.sourceRpcType !== "evm") {
+      return yield* Effect.fail(new Error("Only EVM transfers are supported"));
+    }
 
+    const walletClient = yield* getWalletClient(chain);
     const account = yield* Effect.flatMap(getAccount, account =>
       account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
-    )
-
-    const salt = yield* generateSalt
+    );
+    const salt = yield* generateSalt;
 
     return yield* Effect.tryPromise({
       try: () => {
@@ -37,13 +39,13 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
             transfer.timeoutHeight,
             transfer.timeoutTimestamp,
             salt,
-            transfer.wethQuoteToken
+            transfer.wethToken
           ]
-        })
+        });
       },
       catch: err => new WriteContractError({ cause: err as WriteContractErrorType })
-    })
-  })
+    });
+  });
 
 export const waitForTransferReceipt = (chain: Chain, hash: Hash) =>
   Effect.gen(function* () {

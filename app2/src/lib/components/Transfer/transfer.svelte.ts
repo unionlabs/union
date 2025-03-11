@@ -204,7 +204,6 @@ export class Transfer {
 
   // Clean submit method with proper type checking
   submit = async () => {
-    console.log('Breee', this.transferResult.args)
     if (Option.isNone(chains.data) || Option.isNone(this.sourceChain)) return
     this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value)
     while (!hasFailedExit(this.state)) {
