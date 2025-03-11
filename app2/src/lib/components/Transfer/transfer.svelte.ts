@@ -163,22 +163,21 @@ export class Transfer {
 
   args = $derived.by(() => {
     const sourceChainValue = Option.getOrNull(this.sourceChain)
+    const destinationChainValue = Option.getOrNull(this.destinationChain)
     const channelValue = Option.getOrNull(this.channel)
-    const baseTokenValue = Option.isSome(this.baseToken) ? this.baseToken.value : null
+    const baseTokenValue = Option.getOrNull(this.baseToken)
     const parsedAmountValue = Option.getOrNull(this.parsedAmount)
-    const quoteTokenValue = Option.getOrNull(this.quoteToken) ? this.quoteToken : null
+    const quoteTokenValue = Option.getOrNull(this.quoteToken)
     const derivedReceiverValue = Option.getOrNull(this.derivedReceiver)
     const ucs03addressValue = Option.getOrNull(this.ucs03address)
-    const wethQuoteTokenValue = Option.isSome(this.wethQuoteToken)
-      ? this.wethQuoteToken.value
-      : null
+    const wethQuoteTokenValue = Option.getOrNull(this.wethQuoteToken)
 
     return {
       sourceChain: sourceChainValue
         ? (getChainFromWagmi(Number(sourceChainValue.chain_id)) as ViemChain)
         : null,
       sourceRpcType: sourceChainValue?.rpc_type,
-      destinationRpcType: sourceChainValue?.rpc_type,
+      destinationRpcType: destinationChainValue?.rpc_type,
       sourceChannelId: channelValue?.source_channel_id,
       ucs03address: ucs03addressValue,
       baseToken: baseTokenValue?.denom,
@@ -205,11 +204,8 @@ export class Transfer {
 
   // Clean submit method with proper type checking
   submit = async () => {
+    console.log('Breee', this.transferResult.args)
     if (Option.isNone(chains.data) || Option.isNone(this.sourceChain)) return
-    if (!this.transferResult.isValid) {
-      console.error("Cannot submit with invalid transfer arguments")
-      return
-    }
     this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value)
     while (!hasFailedExit(this.state)) {
       this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value)

@@ -11,11 +11,11 @@ import { switchChain } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
 import type { Chain } from "$lib/schema/chain.ts"
-import type { ValidTransferType } from "$lib/schema/transfer-args.ts"
+import type {ValidTransfer} from "$lib/schema/transfer-args.ts";
 
 export async function nextState(
   ts: TransferSubmission,
-  params: ValidTransferType["args"],
+  params: ValidTransfer["args"],
   chain: Chain
 ): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
@@ -26,7 +26,7 @@ export async function nextState(
     SwitchChain: ({ state }) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
-          //@ts-ignore
+          console.log(params.sourceChain)
           const exit = await Effect.runPromiseExit(switchChain(params.sourceChain.id))
           return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
         },
@@ -42,6 +42,7 @@ export async function nextState(
     ApprovalSubmit: ({ state }) => {
       return ApprovalSubmitState.$match(state, {
         InProgress: async () => {
+          console.log(params)
           const exit = await Effect.runPromiseExit(approveTransfer(chain, params))
           if (exit._tag === "Failure") {
             return TransferSubmission.ApprovalSubmit({

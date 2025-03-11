@@ -1,6 +1,7 @@
 <script lang="ts">
-import Input from "$lib/components/ui/Input.svelte"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+  import Input from "$lib/components/ui/Input.svelte"
+  import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+  import { Option } from "effect"
 </script>
 <Input id="amount"
        label="amount"
@@ -19,9 +20,13 @@ import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
        oninput={(event) => {
                 const input = event.currentTarget;
                 const value = input.value;
+                const maxDecimals = Option.isSome(transfer.baseToken)
+                  ? (transfer.baseToken.value.representations[0]?.decimals ?? 0)
+                  : 0;
+
                 if (value === '' || (/^\d*\.?\d*$/.test(value) &&
                   (value.includes('.')
-                    ? value.split('.')[1].length <= (transfer.baseToken?.representations[0]?.decimals ?? 0)
+                    ? value.split('.')[1].length <= maxDecimals
                     : true)
                 )) {
                   transfer.raw.updateField('amount', event);

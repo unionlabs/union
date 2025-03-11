@@ -8,7 +8,7 @@ import { generateSalt } from "./salt.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 
-export const submitTransfer = (chain: Chain, transfer: ValidTransfer) =>
+export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
     const walletClient = yield* getWalletClient(chain)
 
@@ -23,21 +23,21 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer) =>
         return walletClient.writeContract({
           account: account.address as `0x${string}`,
           abi: ucs03ZkgmAbi,
-          chain: transfer.args.sourceChain,
+          chain: transfer.sourceChain,
           functionName: "transferV2",
-          address: transfer.args.ucs03address,
+          address: transfer.ucs03address,
           value: BigInt(0.0080085 * 10 ** 18),
           args: [
-            transfer.args.sourceChannelId,
-            transfer.args.receiver,
-            transfer.args.baseToken,
-            transfer.args.baseAmount,
-            transfer.args.quoteToken,
-            transfer.args.quoteAmount,
-            transfer.args.timeoutHeight,
-            transfer.args.timeoutTimestamp,
+            transfer.sourceChannelId,
+            transfer.receiver,
+            transfer.baseToken,
+            transfer.baseAmount,
+            transfer.quoteToken,
+            transfer.quoteAmount,
+            transfer.timeoutHeight,
+            transfer.timeoutTimestamp,
             salt,
-            transfer.args.wethQuoteToken
+            transfer.wethQuoteToken
           ]
         })
       },
