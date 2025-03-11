@@ -83,4 +83,4 @@ export const tokenWrappingQuery = graphql(/* GraphQL */ `
             }
         }
     }
-`);
+`)

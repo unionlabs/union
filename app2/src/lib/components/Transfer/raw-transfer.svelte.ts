@@ -1,5 +1,5 @@
 import { debounce } from "$lib/utils"
-import {getContext, setContext} from "svelte";
+import { getContext, setContext } from "svelte"
 
 /**
  * Type definition for form fields managed by this store
@@ -45,7 +45,6 @@ export class RawTransferSvelte {
 
     // Check if we have any parameters to initialize from
     if ([...searchParams.entries()].length > 0) {
-
       // Load values from URL parameters if they exist
       const initialValues: Partial<FormFields> = {}
 
@@ -92,7 +91,6 @@ export class RawTransferSvelte {
    * @param value Partial state object with fields to update
    */
   setWithoutUrlUpdate = (value: Partial<FormFields>) => {
-
     // Create a new cleaned state with updated values
     const newParams = this.cleanState({
       source: this.source,
@@ -213,21 +211,20 @@ export class RawTransferSvelte {
   }
 }
 
-
-const STATE_KEY = Symbol("RAW_TRANSFER");
+const STATE_KEY = Symbol("RAW_TRANSFER")
 
 export interface RawTransfer {
-  rawTransfer: RawTransferSvelte;
+  rawTransfer: RawTransferSvelte
 }
 
 export function createRawTransferState() {
   const state: RawTransfer = {
-    rawTransfer: new RawTransferSvelte(),
-  };
-  setContext(STATE_KEY, state);
-  return state;
+    rawTransfer: new RawTransferSvelte()
+  }
+  setContext(STATE_KEY, state)
+  return state
 }
 
 export function getRawTransferState(): RawTransfer {
-  return getContext<RawTransfer>(STATE_KEY);
+  return getContext<RawTransfer>(STATE_KEY)
 }

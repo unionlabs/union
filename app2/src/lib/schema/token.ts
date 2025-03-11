@@ -2,7 +2,7 @@ import { Schema } from "effect"
 import { Hex } from "$lib/schema/hex"
 import { UniversalChainId } from "./chain.ts"
 import { ChannelId } from "./channel.ts"
-import {AddressEvmCanonical} from "$lib/schema/address.ts";
+import { AddressEvmCanonical } from "$lib/schema/address.ts"
 
 export const TokenRawDenom = Hex.pipe(Schema.brand("TokenRawDenom"))
 export type TokenRawDenom = typeof TokenRawDenom.Type

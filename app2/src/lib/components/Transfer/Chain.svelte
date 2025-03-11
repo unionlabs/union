@@ -1,19 +1,18 @@
 <script lang="ts">
-  import {Option} from "effect";
-  import {chains} from "$lib/stores/chains.svelte.ts";
-  import {cn} from "$lib/utils";
-  import {tokensStore} from "$lib/stores/tokens.svelte.ts";
-  import Label from "$lib/components/ui/Label.svelte";
-  import {fade, fly} from "svelte/transition";
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts";
+import { Option } from "effect"
+import { chains } from "$lib/stores/chains.svelte.ts"
+import { cn } from "$lib/utils"
+import { tokensStore } from "$lib/stores/tokens.svelte.ts"
+import Label from "$lib/components/ui/Label.svelte"
+import { fade, fly } from "svelte/transition"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 
-  type Props = {
-    type: "source" | "destination";
-  };
+type Props = {
+  type: "source" | "destination"
+}
 
-  let {type}: Props = $props();
-  let open = $state(false);
-
+let { type }: Props = $props()
+let open = $state(false)
 </script>
 
 {#if open}

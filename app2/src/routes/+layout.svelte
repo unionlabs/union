@@ -15,7 +15,7 @@ import { totalErrorCount } from "$lib/stores/app-errors.svelte"
 import Header from "$lib/components/layout/Header/index.svelte"
 import { page } from "$app/state"
 import { navigation } from "$lib/components/layout/Sidebar/navigation.ts"
-import {channelsQuery} from "$lib/queries/channels.svelte.ts";
+import { channelsQuery } from "$lib/queries/channels.svelte.ts"
 
 let { children } = $props()
 

@@ -26,7 +26,7 @@ export const chains = [
 ] as const
 
 export function getChainFromWagmi(chainId: number) {
-  return chains.find((chain) => chain.id === chainId);
+  return chains.find(chain => chain.id === chainId)
 }
 
 const WALLETCONNECT_PROJECT_ID = "49fe74ca5ded7142adefc69a7788d14a"

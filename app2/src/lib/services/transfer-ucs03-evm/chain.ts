@@ -16,5 +16,3 @@ export const switchChain = (chainId: ConfiguredChainId) =>
     yield* Effect.sleep("1.5 seconds")
     return res
   })
-
-

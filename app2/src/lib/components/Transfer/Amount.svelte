@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Input from "$lib/components/ui/Input.svelte";
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts";
+import Input from "$lib/components/ui/Input.svelte"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 </script>
 <Input id="amount"
        label="amount"
