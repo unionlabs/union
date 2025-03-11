@@ -4,23 +4,15 @@ import {
   transferListPageGtQuery,
   transferListPageLtQuery
 } from "$lib/queries/transfer-list.svelte"
-import { DateTime, Effect, Fiber, Option } from "effect"
+import { Effect, Fiber, Option } from "effect"
 import { onMount } from "svelte"
 import { transferList } from "$lib/stores/transfers.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import { chains } from "$lib/stores/chains.svelte"
-import { getChain } from "$lib/schema/chain"
-import ChainComponent from "$lib/components/model/ChainComponent.svelte"
-import Label from "$lib/components/ui/Label.svelte"
-import { flip } from "svelte/animate"
-import { fly } from "svelte/transition"
-import Button from "$lib/components/ui/Button.svelte"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
-import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
-import { page } from "$app/stores"
+import { page } from "$app/state"
 import { goto } from "$app/navigation"
 
 import { settingsStore } from "$lib/stores/settings.svelte"
@@ -30,7 +22,7 @@ import TransferListItemComponentSkeleton from "$lib/components/model/TransferLis
 let fiber: Fiber.Fiber<any, any>
 
 onMount(() => {
-  const pageParam = $page.url.searchParams.get("page")
+  const pageParam = page.url.searchParams.get("page")
 
   if (pageParam) {
     if (pageParam.startsWith("-")) {
@@ -87,7 +79,6 @@ const onNextPage = async () => {
 <Sections>
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferList.data) && Option.isSome(chains.data)}
-      {@const chainss = chains.data.value}
       {#if Option.isSome(transferList.error)}
         <ErrorComponent error={transferList.error.value}/>
       {/if}
