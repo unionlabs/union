@@ -1,4 +1,4 @@
-import {Effect} from "effect";
+import {Effect, Option} from "effect";
 import {parseUnits} from "viem";
 import {AmountParsingError} from "$lib/services/transfer-ucs03-evm/errors.ts";
 import type {Token} from "$lib/schema/token.ts";
@@ -25,10 +25,13 @@ export const parseAmountEffect = (amount: string, token: Token) =>
     })
   })
 
-export const getParsedAmountSafe = (amount: string, token: Token): string => {
+// Updated to return Option<bigint>
+export const getParsedAmountSafe = (amount: string, token: Token): Option.Option<bigint> => {
   const result = Effect.runSync(
     Effect.either(parseAmountEffect(amount, token))
   )
 
-  return result._tag === 'Right' ? result.right.toString() : BigInt(0).toString()
+  return result._tag === 'Right'
+    ? Option.some(BigInt(result.right))
+    : Option.none();
 }

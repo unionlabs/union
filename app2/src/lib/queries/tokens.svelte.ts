@@ -74,3 +74,13 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
     })
     return response
   })
+
+export const tokenWrappingQuery = graphql(/* GraphQL */ `
+    query QueryTokenWrapping($source_chain_id: String!, $base_token: String!, $destination_channel_id: Int!) {
+        v1_ibc_union_tokens(where: {_and: {chain: {chain_id: {_eq: $source_chain_id}}, denom: {_eq: $base_token}, wrapping: {_and: {index: {_eq: 0}, destination_channel_id: {_eq: $destination_channel_id}}}}}) {
+            wrapping {
+                unwrapped_address_hex
+            }
+        }
+    }
+`);

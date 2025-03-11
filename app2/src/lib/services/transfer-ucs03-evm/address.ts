@@ -1,8 +1,7 @@
-import {Effect} from 'effect'
+import {Effect, Option} from 'effect'
 import {AddressValidationError} from './errors'
 import {getAddress} from "viem";
 import {bech32AddressToHex} from "@unionlabs/client";
-
 
 export const deriveReceiverEffect = (input: string) =>
   Effect.gen(function* () {
@@ -37,10 +36,13 @@ export const deriveReceiverEffect = (input: string) =>
     }
   })
 
-export const getDerivedReceiverSafe = (input: string): string | null => {
+// Updated to return Option<string> instead of Option<Hex>
+export const getDerivedReceiverSafe = (input: string): Option.Option<string> => {
   const result = Effect.runSync(
     Effect.either(deriveReceiverEffect(input))
   )
 
-  return result._tag === 'Right' ? result.right : null
+  return result._tag === 'Right'
+    ? Option.some(result.right)
+    : Option.none();
 }

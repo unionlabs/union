@@ -74,3 +74,21 @@ export const EVMWethToken = AddressEvmCanonical.pipe(
       "WETH token must be a valid EVM canonical address (e.g., 0x followed by 40 hex chars)"
   })
 )
+
+export const QuoteData = Schema.Union(
+  Schema.Struct({
+    quote_token: Schema.String,
+    type: Schema.Literal("UNWRAPPED", "NEW_WRAPPED")
+  }),
+  Schema.Struct({
+    type: Schema.Literal("NO_QUOTE_AVAILABLE")
+  }),
+  Schema.Struct({
+    type: Schema.Literal("QUOTE_LOADING")
+  })
+)
+
+export const WethTokenData = Schema.Union(
+  Schema.Struct({ wethQuoteToken: Schema.String }),
+  Schema.Struct({ type: Schema.Literal("NO_WETH_QUOTE") })
+)
