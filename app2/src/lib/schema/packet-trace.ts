@@ -1,5 +1,5 @@
 import { Schema } from "effect"
-import { ChainId, UniversalChainId } from "$lib/schema/chain"
+import { UniversalChainId } from "$lib/schema/chain"
 import { Hex } from "$lib/schema/hex"
 
 export class PacketTrace extends Schema.Class<PacketTrace>("PacketTrace")({
