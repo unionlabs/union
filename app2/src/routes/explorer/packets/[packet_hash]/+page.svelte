@@ -266,9 +266,15 @@ const goBack = () => {
         {/if}
       </div>
       
-      <div class="p-4">
-        <Label>Timeout Height</Label>
-        <div class="text-sm">{packetDetails.data.value.timeout_height}</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+        <div>
+          <Label>Timeout Height</Label>
+          <div class="text-sm">{packetDetails.data.value.timeout_height}</div>
+        </div>
+        <div>
+          <Label>Timeout Timestamp</Label>
+          <div class="text-sm">{packetDetails.data.value.timeout_timestamp}</div>
+        </div>
       </div>
       
       <div class="p-4">
