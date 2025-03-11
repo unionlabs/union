@@ -1,51 +1,49 @@
 <script lang="ts">
-import Label from "$lib/components/ui/Label.svelte"
-import { Option } from "effect"
-import { tokensStore } from "$lib/stores/tokens.svelte.ts"
-import Input from "$lib/components/ui/Input.svelte"
-import { fade, fly } from "svelte/transition"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+  import Label from "$lib/components/ui/Label.svelte"
+  import {Option} from "effect"
+  import {tokensStore} from "$lib/stores/tokens.svelte.ts"
+  import Input from "$lib/components/ui/Input.svelte"
+  import {fade, fly} from "svelte/transition"
+  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
 
-let open = $state(false)
-let searchQuery = $state("")
+  let open = $state(false)
+  let searchQuery = $state("")
 
-function ensureTokensForChain() {
-  // Fix: Check if sourceChain is Some before accessing it
-  if (Option.isNone(transfer.sourceChain)) return
+  function ensureTokensForChain() {
+    if (Option.isNone(transfer.sourceChain)) return;
 
-  const chainId = transfer.sourceChain.value.universal_chain_id
-  if (!chainId) return
+    const chainId = transfer.sourceChain.value.universal_chain_id;
+    if (!chainId) return;
 
-  const tokenData = tokensStore.getData(chainId)
-  if (Option.isNone(tokenData)) {
-    tokensStore.fetchTokens(chainId)
+    const tokenData = tokensStore.getData(chainId);
+    if (Option.isNone(tokenData)) {
+      tokensStore.fetchTokens(chainId);
+    }
   }
-}
 
-$effect(() => {
-  // Fix: Check using Option.isSome instead of direct boolean check
-  if (Option.isSome(transfer.sourceChain)) {
-    ensureTokensForChain()
-  }
-})
+  $effect(() => {
+    if (Option.isSome(transfer.sourceChain)) {
+      ensureTokensForChain()
+    }
+  })
 
-const filteredTokens = $derived.by(() => {
-  const query = searchQuery.toLowerCase()
-  return transfer.baseTokens.filter(
-    token =>
-      token.denom.toLowerCase().includes(query) ||
-      (token.representations[0]?.name?.toLowerCase() || "").includes(query)
-  )
-})
+  const filteredTokens = $derived.by(() => {
+    const query = searchQuery.toLowerCase();
+    return Option.getOrElse(transfer.baseTokens, () => []).filter(
+      (token) =>
+        token.denom.toLowerCase().includes(query) ||
+        (token.representations[0]?.name?.toLowerCase() || "").includes(query)
+    );
+  });
 </script>
 
 {#if open}
   <div
-          transition:fade="{{ duration: 500 }}"
+          transition:fade={{ duration: 500 }}
           class="absolute top-0 left-0 w-full h-full z-30 flex items-center justify-center bg-zinc-900"
   >
     <div
-            transition:fly="{{ y: 50, duration: 500, opacity: 0, delay: 100 }}"
+            transition:fly={{ y: 50, duration: 500, opacity: 0, delay: 100 }}
             class="w-full h-full rounded-lg p-4 shadow-lg flex flex-col"
     >
       <!-- Search Bar -->
@@ -105,18 +103,26 @@ const filteredTokens = $derived.by(() => {
   >
     {#if transfer.raw.asset && Option.isNone(transfer.baseToken)}
       <span class="flex items-center justify-center">
-        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-             viewBox="0 0 24 24">
+        <svg
+                class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+        >
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
         </svg>
         Loading...
       </span>
     {:else}
-      {Option.isSome(transfer.baseToken)
-        ? (transfer.baseToken.value.representations[0]?.name ?? transfer.baseToken.value.denom)
-        : (transfer.raw.asset || "Select asset")}
+      {Option.match(transfer.baseToken, {
+        onNone: () => transfer.raw.asset || "Select asset",
+        onSome: (token) => token.representations[0]?.name ?? token.denom
+      })}
     {/if}
   </button>
 </div>

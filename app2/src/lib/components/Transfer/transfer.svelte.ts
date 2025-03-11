@@ -37,23 +37,27 @@ export class Transfer {
     return Option.fromNullable(foundChain)
   })
 
-  baseTokens = $derived.by<ReadonlyArray<Token>>(() => {
+  baseTokens = $derived.by<Option.Option<ReadonlyArray<Token>>>(() => {
     const tokensOption = Option.isSome(this.sourceChain)
       ? tokensStore.getData(this.sourceChain.value.universal_chain_id)
-      : Option.none()
+      : Option.none();
 
-    return Option.isSome(tokensOption) && tokensOption.value.length > 0 ? tokensOption.value : []
-  })
+    return Option.map(tokensOption, (tokens) =>
+      tokens.length > 0 ? tokens : []
+    );
+  });
 
   baseToken = $derived.by<Option.Option<Token>>(() => {
-    const token = this.baseTokens.find((t: Token) => t.denom === this.raw.asset)
-    return Option.fromNullable(token)
-  })
+    return Option.flatMap(this.baseTokens, (tokens) => {
+      const token = tokens.find((t: Token) => t.denom === this.raw.asset);
+      return Option.fromNullable(token);
+    });
+  });
 
   parsedAmount = $derived.by<Option.Option<bigint>>(() => {
-    if (!Option.isSome(this.baseToken)) return Option.none()
-    return getParsedAmountSafe(this.raw.amount.toString(), this.baseToken.value)
-  })
+    if (!Option.isSome(this.baseToken)) return Option.none();
+    return getParsedAmountSafe(this.raw.amount.toString(), this.baseToken.value);
+  });
 
   derivedReceiver = $derived.by<Option.Option<string>>(() => {
     return getDerivedReceiverSafe(this.raw.receiver)
@@ -98,18 +102,18 @@ export class Transfer {
   wethQuoteToken = $state<Option.Option<typeof WethTokenData.Type>>(Option.none())
 
   getQuoteToken = async () => {
-    const denomOpt = Option.flatMap(this.baseToken, token => Option.fromNullable(token.denom))
+    const denomOpt = Option.flatMap(this.baseToken, token => Option.fromNullable(token.denom));
     if (
       Option.isNone(this.sourceChain) ||
       Option.isNone(this.destinationChain) ||
       Option.isNone(denomOpt) ||
       Option.isNone(this.channel)
     ) {
-      this.quoteToken = Option.some({ type: "QUOTE_MISSING_ARGUMENTS" })
-      return null
+      this.quoteToken = Option.some({ type: "QUOTE_MISSING_ARGUMENTS" });
+      return null;
     }
 
-    this.quoteToken = Option.some({ type: "QUOTE_LOADING" })
+    this.quoteToken = Option.some({ type: "QUOTE_LOADING" });
 
     const result = await Effect.runPromise(
       getQuoteTokenEffect(
@@ -118,11 +122,11 @@ export class Transfer {
         this.channel.value,
         this.destinationChain.value
       )
-    )
+    );
 
-    this.quoteToken = Option.some(result)
-    return result
-  }
+    this.quoteToken = Option.some(result);
+    return result;
+  };
 
   getWethQuoteToken = async () => {
     if (
@@ -186,10 +190,8 @@ export class Transfer {
       : { isValid: false, args: this.args }
   })
 
-  // Simple derived property for isValid
   isValid = $derived(this.transferResult.isValid)
 
-  // Clean submit method with proper type checking
   submit = async () => {
     if (Option.isNone(chains.data) || Option.isNone(this.sourceChain)) return
     this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value)
