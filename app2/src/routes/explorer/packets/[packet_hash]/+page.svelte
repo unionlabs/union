@@ -32,21 +32,17 @@ onMount(() => {
 })
 
 const sourceChain = $derived(
-  Option.flatMap(
-    Option.flatMap(packetDetails.data, data =>
-      Option.flatMap(chains.data, chainsData =>
-        getChain(chainsData, data.source_universal_chain_id.split(".")[1])
-      )
+  Option.flatMap(packetDetails.data, data =>
+    Option.flatMap(chains.data, chainsData =>
+      getChain(chainsData, data.source_universal_chain_id.split(".")[1])
     )
   )
 )
 
 const destinationChain = $derived(
-  Option.flatMap(
-    Option.flatMap(packetDetails.data, data =>
-      Option.flatMap(chains.data, chainsData =>
-        getChain(chainsData, data.destination_universal_chain_id.split(".")[1])
-      )
+  Option.flatMap(packetDetails.data, data =>
+    Option.flatMap(chains.data, chainsData =>
+      getChain(chainsData, data.destination_universal_chain_id.split(".")[1])
     )
   )
 )
@@ -62,8 +58,8 @@ const goBack = () => {
       <ErrorComponent error={packetDetails.error.value} />
     </Card>
   {:else if Option.isSome(packetDetails.data)}
-    <Card>
-      <SectionTitle>Packet Details</SectionTitle>
+    <Card divided>
+      <SectionTitle class="p-4">Packet Details</SectionTitle>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
         <div>
@@ -128,10 +124,7 @@ const goBack = () => {
           </div>
         {/if}
       </div>
-    </Card>
-    
-    <Card>
-      <SectionTitle>Transaction Details</SectionTitle>
+      <SectionTitle class="p-4">Transaction Details</SectionTitle>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
         {#if Option.isSome(Option.fromNullable(packetDetails.data.value.packet_send_transaction_hash))}
@@ -162,24 +155,21 @@ const goBack = () => {
           </div>
         {/if}
       </div>
-    </Card>
-    
-    <Card>
-      <SectionTitle>Packet Data</SectionTitle>
+      <SectionTitle class="p-4">Packet Data</SectionTitle>
       
       <div class="p-4">
         <pre class="bg-zinc-900 p-4 rounded overflow-auto text-xs">{JSON.stringify(packetDetails.data.value.data, null, 2)}</pre>
       </div>
       
       {#if Option.isSome(Option.fromNullable(packetDetails.data.value.decoded))}
-        <SectionTitle>Decoded Data</SectionTitle>
+        <SectionTitle class="p-4">Decoded Data</SectionTitle>
         <div class="p-4">
           <pre class="bg-zinc-900 p-4 rounded overflow-auto text-xs">{JSON.stringify(packetDetails.data.value.decoded, null, 2)}</pre>
         </div>
       {/if}
       
       {#if Option.isSome(Option.fromNullable(packetDetails.data.value.acknowledgement))}
-        <SectionTitle>Acknowledgement</SectionTitle>
+        <SectionTitle class="p-4">Acknowledgement</SectionTitle>
         <div class="p-4">
           <pre class="bg-zinc-900 p-4 rounded overflow-auto text-xs">{JSON.stringify(packetDetails.data.value.acknowledgement, null, 2)}</pre>
         </div>
