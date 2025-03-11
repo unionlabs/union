@@ -134,7 +134,12 @@ export class Transfer {
     }).pipe(
       Effect.catchTag("GetQuoteError", error =>
         Effect.sync(() => {
-          setQuoteToken(Option.some({ type: "QUOTE_ERROR", error: String(error.cause) } as const))
+          setQuoteToken(
+            Option.some({
+              type: "QUOTE_ERROR",
+              cause: error.cause
+            } as const)
+          )
           return null
         })
       ),
@@ -178,7 +183,7 @@ export class Transfer {
           setWethQuoteToken(
             Option.some({
               type: "WETH_ERROR",
-              error: error.cause
+              cause: error.cause
             } as const)
           )
           return null
