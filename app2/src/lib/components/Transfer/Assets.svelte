@@ -1,40 +1,40 @@
 <script lang="ts">
-  import Label from "$lib/components/ui/Label.svelte"
-  import {Option} from "effect"
-  import {tokensStore} from "$lib/stores/tokens.svelte.ts"
-  import Input from "$lib/components/ui/Input.svelte"
-  import {fade, fly} from "svelte/transition"
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
+import Label from "$lib/components/ui/Label.svelte"
+import { Option } from "effect"
+import { tokensStore } from "$lib/stores/tokens.svelte.ts"
+import Input from "$lib/components/ui/Input.svelte"
+import { fade, fly } from "svelte/transition"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 
-  let open = $state(false)
-  let searchQuery = $state("")
+let open = $state(false)
+let searchQuery = $state("")
 
-  function ensureTokensForChain() {
-    if (Option.isNone(transfer.sourceChain)) return;
+function ensureTokensForChain() {
+  if (Option.isNone(transfer.sourceChain)) return
 
-    const chainId = transfer.sourceChain.value.universal_chain_id;
-    if (!chainId) return;
+  const chainId = transfer.sourceChain.value.universal_chain_id
+  if (!chainId) return
 
-    const tokenData = tokensStore.getData(chainId);
-    if (Option.isNone(tokenData)) {
-      tokensStore.fetchTokens(chainId);
-    }
+  const tokenData = tokensStore.getData(chainId)
+  if (Option.isNone(tokenData)) {
+    tokensStore.fetchTokens(chainId)
   }
+}
 
-  $effect(() => {
-    if (Option.isSome(transfer.sourceChain)) {
-      ensureTokensForChain()
-    }
-  })
+$effect(() => {
+  if (Option.isSome(transfer.sourceChain)) {
+    ensureTokensForChain()
+  }
+})
 
-  const filteredTokens = $derived.by(() => {
-    const query = searchQuery.toLowerCase();
-    return Option.getOrElse(transfer.baseTokens, () => []).filter(
-      (token) =>
-        token.denom.toLowerCase().includes(query) ||
-        (token.representations[0]?.name?.toLowerCase() || "").includes(query)
-    );
-  });
+const filteredTokens = $derived.by(() => {
+  const query = searchQuery.toLowerCase()
+  return Option.getOrElse(transfer.baseTokens, () => []).filter(
+    token =>
+      token.denom.toLowerCase().includes(query) ||
+      (token.representations[0]?.name?.toLowerCase() || "").includes(query)
+  )
+})
 </script>
 
 {#if open}
