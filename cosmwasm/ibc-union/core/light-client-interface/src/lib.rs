@@ -7,8 +7,8 @@ use cosmwasm_std::{
 };
 use cw_storage_plus::{Item, Map};
 use ibc_union_msg::lightclient::{
-    MisbehaviourResponse, QueryMsg, Status, VerifyClientMessageUpdate, VerifyCreationResponse,
-    VerifyCreationResponseEvent,
+    MisbehaviourResponse, QueryMsg, Status, StorageWrites, UpdateStateResponse,
+    VerifyCreationResponse, VerifyCreationResponseEvent,
 };
 use msg::InitMsg;
 use state::IBC_HOST;
@@ -21,6 +21,8 @@ use unionlabs_cosmwasm_upgradable::UpgradeError;
 
 pub mod msg;
 pub mod state;
+
+pub const CLIENT_STORAGE_PREFIX: &str = "client/";
 
 // These are only used for `key` calculation. We don't want this crate to depend on `ibc-union`.
 pub const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
@@ -42,6 +44,8 @@ pub enum DecodeError<T: IbcClient> {
     ConsensusState(DecodeErrorOf<EthAbi, T::ConsensusState>),
     #[error("unable to decode storage proof")]
     StorageProof(DecodeErrorOf<T::Encoding, T::StorageProof>),
+    #[error("unable to decode raw storage ({0})")]
+    RawStorage(Bytes),
 }
 
 #[derive(macros::Debug, thiserror::Error)]
@@ -108,6 +112,18 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
         )
     }
 
+    pub fn read_self_storage<V: Decode<T::Encoding>>(
+        &self,
+        key: &[u8],
+    ) -> Result<V, IbcClientError<T>> {
+        read_storage(
+            self.deps.querier.into_empty(),
+            &self.ibc_host,
+            self.client_id,
+            key,
+        )
+    }
+
     pub fn read_client_state<Client: IbcClient>(
         &self,
         client_id: u32,
@@ -170,6 +186,77 @@ fn client_impl<T: IbcClient>(
     Ok(addr)
 }
 
+pub struct StateUpdate<T: IbcClient> {
+    pub height: u64,
+    pub client_state: Option<T::ClientState>,
+    pub consensus_state: T::ConsensusState,
+    pub storage_writes: StorageWrites,
+}
+
+impl<T: IbcClient> StateUpdate<T> {
+    pub fn new(height: u64, consensus_state: T::ConsensusState) -> Self {
+        StateUpdate {
+            height,
+            consensus_state,
+            client_state: None,
+            storage_writes: Default::default(),
+        }
+    }
+
+    pub fn overwrite_client_state(mut self, client_state: T::ClientState) -> Self {
+        self.client_state = Some(client_state);
+        self
+    }
+
+    pub fn add_storage_write<V: Encode<T::Encoding>>(mut self, key: Bytes, value: V) -> Self {
+        self.storage_writes.insert(key, value.encode().into());
+        self
+    }
+}
+
+/// Client creation output type
+pub struct ClientCreationResult<T: IbcClient> {
+    /// The client state that is going to be stored by IBC. If set to `None`, IBC will store the
+    /// client state given by the creator as is
+    pub client_state: Option<T::ClientState>,
+    /// Custom events that will be emitted by IBC.
+    pub events: Vec<VerifyCreationResponseEvent>,
+    /// Arbitrary storage saves to the client's corresponding storage. These are accessible to the
+    /// client at any time.
+    pub storage_writes: StorageWrites,
+}
+
+impl<T: IbcClient> ClientCreationResult<T> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn add_event(mut self, event: VerifyCreationResponseEvent) -> Self {
+        self.events.push(event);
+        self
+    }
+
+    pub fn add_storage_write<V: Encode<T::Encoding>>(mut self, key: Bytes, value: V) -> Self {
+        self.storage_writes.insert(key, value.encode().into());
+        self
+    }
+
+    pub fn overwrite_client_state(mut self, client_state: T::ClientState) -> Self {
+        self.client_state = Some(client_state);
+        self
+    }
+}
+
+impl<T: IbcClient> Default for ClientCreationResult<T> {
+    fn default() -> Self {
+        Self {
+            client_state: None,
+            events: Vec::new(),
+            storage_writes: Default::default(),
+        }
+    }
+}
+
 pub trait IbcClient: Sized {
     type Error: core::error::Error + Into<IbcClientError<Self>>;
     type CustomQuery: cosmwasm_std::CustomQuery;
@@ -220,7 +307,7 @@ pub trait IbcClient: Sized {
     fn verify_creation(
         client_state: &Self::ClientState,
         consensus_state: &Self::ConsensusState,
-    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<Self>>;
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>>;
 
     /// Verify `header` against the trusted state (`client_state` and `consensus_state`)
     /// and return `(updated height, updated client state, updated consensus state)`
@@ -228,7 +315,7 @@ pub trait IbcClient: Sized {
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
         caller: Addr,
-    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>>;
+    ) -> Result<StateUpdate<Self>, IbcClientError<Self>>;
 
     fn misbehaviour(
         ctx: IbcClientCtx<Self>,
@@ -285,12 +372,16 @@ pub fn query<T: IbcClient>(
             let consensus_state = T::ConsensusState::decode(&consensus_state)
                 .map_err(|e| IbcClientError::Decode(DecodeError::ConsensusState(e)))?;
 
-            let events = T::verify_creation(&client_state, &consensus_state)?;
+            let client_creation = T::verify_creation(&client_state, &consensus_state)?;
 
             let response = VerifyCreationResponse {
                 latest_height: T::get_latest_height(&client_state),
                 counterparty_chain_id: T::get_counterparty_chain_id(&client_state),
-                events,
+                client_state_bytes: client_creation
+                    .client_state
+                    .map(|cs| cs.encode_as::<T::Encoding>().into()),
+                storage_writes: client_creation.storage_writes,
+                events: client_creation.events,
             };
 
             to_json_binary(&response).map_err(Into::into)
@@ -335,23 +426,29 @@ pub fn query<T: IbcClient>(
 
             to_json_binary(&()).map_err(Into::into)
         }
-        QueryMsg::VerifyClientMessage { client_id, caller } => {
+        QueryMsg::UpdateState { client_id, caller } => {
             let ibc_host = IBC_HOST.load(deps.storage)?;
             let message = QUERY_STORE.query(&deps.querier, ibc_host.clone())?;
             let header =
                 T::Header::decode_as::<T::Encoding>(&message).map_err(DecodeError::Header)?;
 
-            let (height, client_state, consensus_state) = T::verify_header(
+            let StateUpdate {
+                height,
+                client_state,
+                consensus_state,
+                storage_writes,
+            } = T::verify_header(
                 IbcClientCtx::new(client_id, ibc_host, deps, env),
                 header,
                 Addr::unchecked(caller),
             )?;
 
             to_json_binary(
-                &(VerifyClientMessageUpdate {
+                &(UpdateStateResponse {
                     height,
-                    consensus_state: consensus_state.encode().into(),
-                    client_state: client_state.encode_as::<T::Encoding>().into(),
+                    consensus_state_bytes: consensus_state.encode().into(),
+                    client_state_bytes: client_state.map(|cs| cs.encode_as::<T::Encoding>().into()),
+                    storage_writes,
                 }),
             )
             .map_err(Into::into)
@@ -420,4 +517,30 @@ pub fn read_consensus_state<T: IbcClient>(
 
     T::ConsensusState::decode(&consensus_state)
         .map_err(|e| IbcClientError::Decode(DecodeError::ConsensusState(e)))
+}
+
+fn read_storage<V: Decode<T::Encoding>, T: IbcClient>(
+    querier: QuerierWrapper,
+    ibc_host: &Addr,
+    client_id: u32,
+    key: &[u8],
+) -> Result<V, IbcClientError<T>> {
+    let value = querier
+        .query_wasm_raw(
+            ibc_host,
+            [
+                CLIENT_STORAGE_PREFIX.as_bytes(),
+                &client_id.to_le_bytes(),
+                key,
+            ]
+            .concat(),
+        )?
+        .ok_or_else(|| {
+            IbcClientError::Std(StdError::generic_err(format!(
+                "unable to read the storage of client {client_id} with key {key:?}"
+            )))
+        })?;
+
+    V::decode_as::<T::Encoding>(&value)
+        .map_err(|_| IbcClientError::Decode(DecodeError::RawStorage(Bytes::new(value))))
 }

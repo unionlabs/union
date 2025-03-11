@@ -101,4 +101,6 @@ pub enum Error {
     FinalizedSlotIsGenesis,
     #[error("client errored during signature verification ({0})")]
     ClientSignatureVerification(String),
+    #[error("invalid verification capability")]
+    InvalidVerificationCapability,
 }

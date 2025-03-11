@@ -1,6 +1,8 @@
 use cometbls_light_client::client::CometblsLightClient;
 use cosmwasm_std::Empty;
-use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
+use ibc_union_light_client::{
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use ibc_union_spec::path::ConsensusStatePath;
 use movement_light_client_types::ConsensusState as L2ConsensusState;
@@ -105,19 +107,21 @@ impl IbcClient for StateLensIcs23SmtLightClient {
     fn verify_creation(
         client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<Self>> {
-        Ok(Some(vec![VerifyCreationResponseEvent::CreateLensClient {
-            l1_client_id: client_state.l1_client_id,
-            l2_client_id: client_state.l2_client_id,
-            l2_chain_id: client_state.l2_chain_id.clone(),
-        }]))
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>> {
+        Ok(
+            ClientCreationResult::new().add_event(VerifyCreationResponseEvent::CreateLensClient {
+                l1_client_id: client_state.l1_client_id,
+                l2_client_id: client_state.l2_client_id,
+                l2_chain_id: client_state.l2_chain_id.clone(),
+            }),
+        )
     }
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
+    ) -> Result<StateUpdate<Self>, ibc_union_light_client::IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 
         let storage_proof = MerkleProof::decode_as::<Bincode>(&header.l2_consensus_state_proof)
@@ -140,16 +144,20 @@ impl IbcClient for StateLensIcs23SmtLightClient {
         let l2_consensus_state = L2ConsensusState::decode_as::<EthAbi>(&header.l2_consensus_state)
             .map_err(|_| Error::L2ConsensusStateDecode(header.l2_consensus_state))?;
 
+        let mut state_update = StateUpdate::new(
+            header.l2_height.height(),
+            ConsensusState {
+                timestamp: l2_consensus_state.timestamp,
+                state_root: l2_consensus_state.state_root,
+            },
+        );
+
         if client_state.l2_latest_height < header.l2_height.height() {
             client_state.l2_latest_height = header.l2_height.height();
-        }
-
-        let consensus_state = ConsensusState {
-            timestamp: l2_consensus_state.timestamp,
-            state_root: l2_consensus_state.state_root,
+            state_update = state_update.overwrite_client_state(client_state);
         };
 
-        Ok((header.l2_height.height(), client_state, consensus_state))
+        Ok(state_update)
     }
 
     fn misbehaviour(

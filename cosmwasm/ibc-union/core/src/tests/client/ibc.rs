@@ -3,9 +3,7 @@ use cosmwasm_std::{
     to_json_binary, Addr, Event,
 };
 use ibc_union_msg::{
-    lightclient::{
-        QueryMsg as LightClientQueryMsg, VerifyClientMessageUpdate, VerifyCreationResponse,
-    },
+    lightclient::{QueryMsg as LightClientQueryMsg, UpdateStateResponse, VerifyCreationResponse},
     msg::{ExecuteMsg, InitMsg, MsgUpdateClient},
 };
 
@@ -65,7 +63,9 @@ fn create_client_ok() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
-                events: None,
+                events: vec![],
+                storage_writes: Default::default(),
+                client_state_bytes: None,
             }),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -84,7 +84,9 @@ fn create_client_commitments_saved() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
-                events: None,
+                events: vec![],
+                storage_writes: Default::default(),
+                client_state_bytes: None,
             }),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -141,15 +143,16 @@ fn update_client_ok() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
-                events: None,
+                events: vec![],
+                storage_writes: Default::default(),
+                client_state_bytes: None,
             }),
-            LightClientQueryMsg::VerifyClientMessage { .. } => {
-                to_json_binary(&VerifyClientMessageUpdate {
-                    height: 2,
-                    consensus_state: vec![3, 2, 1].into(),
-                    client_state: vec![3, 2, 1].into(),
-                })
-            }
+            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&UpdateStateResponse {
+                height: 2,
+                consensus_state_bytes: vec![3, 2, 1].into(),
+                client_state_bytes: Some(vec![3, 2, 1].into()),
+                storage_writes: Default::default(),
+            }),
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -193,10 +196,12 @@ fn update_client_ko() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
-                events: None,
+                events: vec![],
+                storage_writes: Default::default(),
+                client_state_bytes: None,
             }),
-            LightClientQueryMsg::VerifyClientMessage { .. } => to_json_binary(&0),
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
+            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&0),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -239,15 +244,16 @@ fn update_client_commitments_saved() {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
                 latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
-                events: None,
+                events: vec![],
+                storage_writes: Default::default(),
+                client_state_bytes: None,
             }),
-            LightClientQueryMsg::VerifyClientMessage { .. } => {
-                to_json_binary(&VerifyClientMessageUpdate {
-                    height: 2,
-                    consensus_state: vec![3, 2, 1].into(),
-                    client_state: vec![3, 2, 1].into(),
-                })
-            }
+            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&UpdateStateResponse {
+                height: 2,
+                consensus_state_bytes: vec![3, 2, 1].into(),
+                client_state_bytes: Some(vec![3, 2, 1].into()),
+                storage_writes: Default::default(),
+            }),
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
             msg => panic!("should not be called: {:?}", msg),
         }));

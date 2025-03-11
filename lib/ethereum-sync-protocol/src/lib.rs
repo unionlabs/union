@@ -39,8 +39,13 @@ pub const GENESIS_SLOT: Slot = Slot::new(0);
 pub const DST_POP_G2: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
 pub trait BlsVerify {
-    fn fast_aggregate_verify<'pk>(
+    /// Whether to provide non-signers or signers to [`aggregate_verify_signature`]
+    const INVERSE: bool;
+
+    /// Aggregate the public keys and verify the signature
+    fn aggregate_verify_signature<'pk>(
         &self,
+        aggregate_public_key: &'pk H384,
         public_keys: impl IntoIterator<Item = &'pk H384>,
         msg: Vec<u8>,
         signature: H768,
@@ -214,13 +219,26 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
         next_sync_committee.ok_or(Error::ExpectedNextSyncCommittee)?
     };
 
-    // It's not mandatory for all of the members of the sync committee to participate. So we are extracting the
-    // public keys of the ones who participated.
-    let participant_pubkeys = BytesBitIterator::new(&sync_aggregate.sync_committee_bits)
-        .zip(sync_committee.pubkeys.iter())
-        .filter_map(|(included, pubkey)| if included { Some(pubkey) } else { None })
-        .collect::<Vec<_>>();
+    verify_signature::<C, V>(
+        chain_id,
+        update,
+        genesis_validators_root,
+        sync_committee,
+        bls_verifier,
+    )?;
 
+    // It's not mandatory for all of the members of the sync committee to participate. So we are extracting the
+    // public keys of the ones who did not participate.
+    Ok(())
+}
+
+pub fn verify_signature<C: ChainSpec, V: BlsVerify>(
+    chain_id: u64,
+    update: &ethereum_sync_protocol_types::LightClientUpdate,
+    genesis_validators_root: H256,
+    sync_committee: &SyncCommittee,
+    bls_verifier: V,
+) -> Result<(), Error> {
     let fork_version_slot = Slot::new(std::cmp::max(update.signature_slot.get(), 1) - 1);
     let fork_version =
         compute_fork_version(chain_id, compute_epoch_at_slot::<C>(fork_version_slot));
@@ -235,10 +253,22 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
     );
     let signing_root = compute_signing_root(&update.attested_header.beacon, domain);
 
-    bls_verifier.fast_aggregate_verify(
-        participant_pubkeys,
+    let participant_pubkeys = BytesBitIterator::new(&update.sync_aggregate.sync_committee_bits)
+        .zip(sync_committee.pubkeys.iter());
+
+    bls_verifier.aggregate_verify_signature(
+        &sync_committee.aggregate_pubkey,
+        participant_pubkeys
+            .filter_map(|(included, pubkey)| {
+                if (V::INVERSE && included) || (!V::INVERSE && !included) {
+                    None
+                } else {
+                    Some(pubkey)
+                }
+            })
+            .collect::<Vec<_>>(),
         signing_root.as_ref().to_owned(),
-        sync_aggregate.sync_committee_signature,
+        update.sync_aggregate.sync_committee_signature,
     )?;
 
     Ok(())

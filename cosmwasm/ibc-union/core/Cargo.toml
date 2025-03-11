@@ -19,6 +19,7 @@ library = []
 
 [dependencies]
 alloy                         = { workspace = true, features = ["sol-types"] }
+bincode                       = { workspace = true, features = ["alloc", "derive"], optional = true }
 cosmwasm-schema               = { workspace = true }
 cosmwasm-std                  = { workspace = true, features = ["abort"] }
 cw-storage-plus               = { workspace = true }

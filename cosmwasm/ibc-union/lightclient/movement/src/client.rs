@@ -1,6 +1,8 @@
 use cosmwasm_std::Empty;
-use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
-use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
+use ibc_union_light_client::{
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
+use ibc_union_msg::lightclient::Status;
 use movement_light_client_types::{
     client_state::ClientState, consensus_state::ConsensusState, header::Header,
 };
@@ -94,15 +96,15 @@ impl IbcClient for MovementLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<MovementLightClient>> {
-        Ok(None)
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<MovementLightClient>> {
+        Ok(ClientCreationResult::new())
     }
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
         caller: cosmwasm_std::Addr,
-    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
+    ) -> Result<StateUpdate<Self>, ibc_union_light_client::IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         // Check if caller is whitelisted
         if !client_state
@@ -181,7 +183,7 @@ impl IbcClient for MovementLightClient {
 fn update_state(
     mut client_state: ClientState,
     header: Header,
-) -> Result<(u64, ClientState, ConsensusState), Error> {
+) -> Result<StateUpdate<MovementLightClient>, Error> {
     let TransactionInfo::V0(tx_info) = header.tx_proof.transaction_info;
 
     let consensus_state = ConsensusState {
@@ -194,11 +196,14 @@ fn update_state(
         state_proof_hash: H256::default(), // TODO(aeryz): im not sure if we need this
     };
 
+    let state_update = StateUpdate::new(header.new_height, consensus_state);
+
     if header.new_height > client_state.latest_block_num {
         client_state.latest_block_num = header.new_height;
+        Ok(state_update.overwrite_client_state(client_state))
+    } else {
+        Ok(state_update)
     }
-
-    Ok((header.new_height, client_state, consensus_state))
 }
 
 // #[cfg(feature = "union-movement")]

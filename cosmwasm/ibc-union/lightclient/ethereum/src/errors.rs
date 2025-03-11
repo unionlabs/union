@@ -61,6 +61,9 @@ pub enum Error {
 
     #[error(transparent)]
     VerificationError(#[from] VerificationError),
+
+    #[error("the initial sync committee must be provided during client creation")]
+    NoInitialSyncCommittee,
 }
 
 impl From<Error> for StdError {

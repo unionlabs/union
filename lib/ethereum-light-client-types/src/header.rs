@@ -38,10 +38,6 @@ mod tests {
         Header {
             trusted_height: Height::new(123),
             consensus_update: LightClientUpdate::EpochChange(Box::new(EpochChangeUpdate {
-                sync_committee: SyncCommittee {
-                    pubkeys: vec![H384::new([0xAA; 48])],
-                    aggregate_pubkey: H384::new([0xAA; 48]),
-                },
                 next_sync_committee: SyncCommittee {
                     pubkeys: vec![H384::new([0xAA; 48])],
                     aggregate_pubkey: H384::new([0xAA; 48]),

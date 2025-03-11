@@ -2,8 +2,10 @@ use arbitrum_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::Empty;
 use ethereum_light_client::client::EthereumLightClient;
 use ethereum_light_client_types::StorageProof;
-use ibc_union_light_client::{IbcClient, IbcClientCtx, IbcClientError};
-use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
+use ibc_union_light_client::{
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
+use ibc_union_msg::lightclient::Status;
 use unionlabs::encoding::Bincode;
 
 use crate::errors::Error;
@@ -63,7 +65,7 @@ impl IbcClient for ArbitrumLightClient {
         ctx: IbcClientCtx<Self>,
         header: Self::Header,
         _caller: cosmwasm_std::Addr,
-    ) -> Result<(u64, Self::ClientState, Self::ConsensusState), IbcClientError<Self>> {
+    ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
         let l1_consensus_state = ctx
             .read_consensus_state::<EthereumLightClient>(
@@ -74,17 +76,20 @@ impl IbcClient for ArbitrumLightClient {
         arbitrum_verifier::verify_header(&client_state, &header, l1_consensus_state.state_root)
             .map_err(Error::HeaderVerify)?;
 
-        if client_state.l1_latest_slot < header.l1_height.height() {
-            client_state.l1_latest_slot = header.l1_height.height();
-        }
-
         let consensus_state = ConsensusState {
             ibc_storage_root: header.l2_ibc_account_proof.storage_root,
             // must be nanos
             timestamp: 1_000_000_000 * header.l2_header.timestamp,
         };
 
-        Ok((header.l1_height.height(), client_state, consensus_state))
+        let state_update = StateUpdate::new(header.l1_height.height(), consensus_state);
+
+        if client_state.l1_latest_slot < header.l1_height.height() {
+            client_state.l1_latest_slot = header.l1_height.height();
+            Ok(state_update.overwrite_client_state(client_state))
+        } else {
+            Ok(state_update)
+        }
     }
 
     fn misbehaviour(
@@ -107,8 +112,8 @@ impl IbcClient for ArbitrumLightClient {
     fn verify_creation(
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<Option<Vec<VerifyCreationResponseEvent>>, IbcClientError<ArbitrumLightClient>> {
-        Ok(None)
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<ArbitrumLightClient>> {
+        Ok(ClientCreationResult::new())
     }
 
     fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {

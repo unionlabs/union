@@ -5,8 +5,10 @@ use alloy::{
     rpc::types::BlockTransactionsKind,
 };
 use beacon_api::client::BeaconApiClient;
-use beacon_api_types::{chain_spec::PresetBaseKind, slot::Slot};
-use ethereum_light_client_types::{client_state::ClientState, ClientStateV1, ConsensusState};
+use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, slot::Slot};
+use ethereum_light_client_types::{
+    client_state::InitialSyncCommittee, ClientState, ClientStateV1, ConsensusState,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -17,7 +19,7 @@ use serde_json::Value;
 use tracing::{debug, instrument, trace};
 use unionlabs::{
     ibc::core::client::height::Height,
-    primitives::{H160, H256, H384},
+    primitives::{H160, H256},
     ErrorReporter,
 };
 use voyager_message::{
@@ -173,73 +175,9 @@ impl ClientBootstrapModuleServer for Module {
 
         let spec = self.beacon_api_client.spec().await.unwrap().data;
 
-        Ok(serde_json::to_value(ClientState::V1(ClientStateV1 {
-            chain_id: self
-                .chain_id
-                .as_str()
-                .parse()
-                .expect("self.chain_id is a valid u256"),
-            chain_spec: spec.preset_base,
-            genesis_validators_root: genesis.genesis_validators_root,
-            genesis_time: genesis.genesis_time,
-            latest_height: height.height(),
-            frozen_height: Height::new(0),
-            ibc_contract_address: self.ibc_handler_address,
-        }))
-        .expect("infallible"))
-    }
-
-    /// The consensus state on this chain at the specified `Height`.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
-    async fn self_consensus_state(
-        &self,
-        _: &Extensions,
-        height: Height,
-        config: Value,
-    ) -> RpcResult<Value> {
-        ensure_null(config)?;
-
         let beacon_slot = self
             .beacon_slot_of_execution_block_number(height.height())
             .await?;
-
-        let trusted_header = self
-            .beacon_api_client
-            .header(beacon_api::client::BlockId::Slot(beacon_slot))
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching beacon header: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
-            .response
-            .into_inner();
-
-        let (bootstrap_header, bootstrap_current_sync_committee_aggregate_pubkey) = self
-            .beacon_api_client
-            .bootstrap(trusted_header.root)
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching beacon bootstrap: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
-            .fold::<(ethereum_sync_protocol_types::LightClientHeader, H384)>(
-                |l| match l {},
-                |_| todo!("altair not supported"),
-                |_| todo!("bellatrix not supported"),
-                |l| (l.header.into(), l.current_sync_committee.aggregate_pubkey),
-                |l| (l.header.into(), l.current_sync_committee.aggregate_pubkey),
-                |l| (l.header.into(), l.current_sync_committee.aggregate_pubkey),
-            );
-
-        let spec = self.beacon_api_client.spec().await.unwrap().data;
-
-        assert_eq!(bootstrap_header.execution.block_number, height.height());
 
         let light_client_update = {
             let current_period = beacon_slot.get().div(spec.period());
@@ -281,6 +219,110 @@ impl ClientBootstrapModuleServer for Module {
                 )
         };
 
+        let trusted_header = self
+            .beacon_api_client
+            .header(beacon_api::client::BlockId::Slot(beacon_slot))
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching beacon header: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            .response
+            .into_inner();
+
+        let current_sync_committee = self
+            .beacon_api_client
+            .bootstrap(trusted_header.root)
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching beacon bootstrap: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            .fold::<SyncCommittee>(
+                |l| match l {},
+                |_| todo!("altair not supported"),
+                |_| todo!("bellatrix not supported"),
+                |l| l.current_sync_committee,
+                |l| l.current_sync_committee,
+                |l| l.current_sync_committee,
+            );
+
+        Ok(serde_json::to_value(ClientState::V1(ClientStateV1 {
+            chain_id: self
+                .chain_id
+                .as_str()
+                .parse()
+                .expect("self.chain_id is a valid u256"),
+            chain_spec: spec.preset_base,
+            genesis_validators_root: genesis.genesis_validators_root,
+            genesis_time: genesis.genesis_time,
+            latest_height: height.height(),
+            frozen_height: Height::new(0),
+            ibc_contract_address: self.ibc_handler_address,
+            initial_sync_committee: Some(InitialSyncCommittee {
+                current_sync_committee,
+                next_sync_committee: light_client_update.next_sync_committee.unwrap(),
+            }),
+        }))
+        .expect("infallible"))
+    }
+
+    /// The consensus state on this chain at the specified `Height`.
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
+    async fn self_consensus_state(
+        &self,
+        _: &Extensions,
+        height: Height,
+        config: Value,
+    ) -> RpcResult<Value> {
+        ensure_null(config)?;
+
+        let beacon_slot = self
+            .beacon_slot_of_execution_block_number(height.height())
+            .await?;
+
+        let trusted_header = self
+            .beacon_api_client
+            .header(beacon_api::client::BlockId::Slot(beacon_slot))
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching beacon header: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            .response
+            .into_inner();
+
+        let bootstrap_header = self
+            .beacon_api_client
+            .bootstrap(trusted_header.root)
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching beacon bootstrap: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            .fold::<ethereum_sync_protocol_types::LightClientHeader>(
+                |l| match l {},
+                |_| todo!("altair not supported"),
+                |_| todo!("bellatrix not supported"),
+                |l| l.header.into(),
+                |l| l.header.into(),
+                |l| l.header.into(),
+            );
+
+        assert_eq!(bootstrap_header.execution.block_number, height.height());
+
         // Normalize to nanos in order to be compliant with cosmos
         let timestamp = bootstrap_header.execution.timestamp * 1_000_000_000;
 
@@ -297,12 +339,6 @@ impl ClientBootstrapModuleServer for Module {
                 .0
                 .into(),
             timestamp,
-            current_sync_committee: bootstrap_current_sync_committee_aggregate_pubkey,
-            // TODO(aeryz): can this be None?
-            next_sync_committee: light_client_update
-                .next_sync_committee
-                .unwrap()
-                .aggregate_pubkey,
         }))
     }
 }
