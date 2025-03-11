@@ -14,9 +14,9 @@ const { children, class: className = "", divided = false, ...rest }: Props = $pr
 const classes = cn(
   // Base styles
   "rounded border shadow-sm",
-  "dark:border-zinc-700 dark:bg-zinc-900",
+  "dark:border-zinc-800 bg-zinc-925",
   // Conditional padding and dividers
-  divided ? "p-0 divide-y divide-zinc-800" : "p-4",
+  divided ? "p-0 divide-y divide-zinc-900" : "p-4",
   // Additional classes passed as props
   className
 )
