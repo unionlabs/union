@@ -33,7 +33,7 @@ const BaseTransferFields = {
 const EVMTransferSchema = Schema.Struct({
   ...BaseTransferFields,
   sourceRpcType: Schema.Literal("evm"),
-  wethToken: EVMWethToken,
+  wethQuoteToken: EVMWethToken,
   receiver: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )

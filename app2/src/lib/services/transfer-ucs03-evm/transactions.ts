@@ -39,7 +39,7 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
             transfer.timeoutHeight,
             transfer.timeoutTimestamp,
             salt,
-            transfer.wethToken
+            transfer.wethQuoteToken
           ]
         })
       },

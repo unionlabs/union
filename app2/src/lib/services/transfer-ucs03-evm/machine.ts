@@ -41,7 +41,6 @@ export async function nextState(
     ApprovalSubmit: ({ state }) => {
       return ApprovalSubmitState.$match(state, {
         InProgress: async () => {
-          console.log(params)
           const exit = await Effect.runPromiseExit(approveTransfer(chain, params))
           if (exit._tag === "Failure") {
             return TransferSubmission.ApprovalSubmit({
