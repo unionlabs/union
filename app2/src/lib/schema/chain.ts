@@ -25,7 +25,6 @@ export class ChainFeatures extends Schema.Class<ChainFeatures>("ChainFeatures")(
 }) {}
 
 export class ChainReference extends Schema.Class<Chain>("ChainReference")({
-  chain_id: ChainId,
   universal_chain_id: UniversalChainId
 }) {}
 
@@ -132,8 +131,10 @@ export class Chain extends Schema.Class<Chain>("Chain")({
 }
 
 export const Chains = Schema.Array(Chain)
+export type Chains = typeof Chains.Type
 
 export const getChain = (
   chains: typeof Chains.Type,
-  chainId: typeof ChainId.Type
-): Option.Option<Chain> => Option.fromNullable(chains.find(chain => chain.chain_id === chainId))
+  universalChainId: UniversalChainId
+): Option.Option<Chain> =>
+  Option.fromNullable(chains.find(chain => chain.universal_chain_id === universalChainId))

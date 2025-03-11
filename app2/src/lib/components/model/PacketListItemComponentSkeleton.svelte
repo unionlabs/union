@@ -2,37 +2,17 @@
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 </script>
 
-<div class="flex flex-col md:flex-row gap-4 p-4 border-b border-zinc-800">
-  <div class="flex flex-col gap-2 flex-1">
-    <div class="flex items-center gap-2">
-      <div class="text-xs text-zinc-500">From:</div>
-      <Skeleton class="h-6 w-32" />
+<div class="flex justify-between gap-8 px-4 py-3 h-16 items-center border-b border-zinc-800">
+  <div>
+    <div>
+      <Skeleton class="h-5 w-64" />
     </div>
-    <div class="flex items-center gap-2">
-      <div class="text-xs text-zinc-500">To:</div>
-      <Skeleton class="h-6 w-32" />
-    </div>
-  </div>
-
-  <div class="flex flex-col gap-2 flex-1">
-    <div class="flex items-center gap-2">
-      <div class="text-xs text-zinc-500">Status:</div>
-      <Skeleton class="h-6 w-24" />
-    </div>
-    <div class="flex items-center gap-2">
-      <div class="text-xs text-zinc-500">Channel:</div>
-      <Skeleton class="h-6 w-24" />
+    <div class="flex items-center gap-1 mt-1">
+      <Skeleton class="h-4 w-24" />
+      <Skeleton class="h-4 w-5" />
+      <Skeleton class="h-4 w-24" />
     </div>
   </div>
-
-  <div class="flex flex-col gap-2 flex-1">
-    <div class="flex items-center gap-2">
-      <div class="text-xs text-zinc-500">Sent:</div>
-      <Skeleton class="h-6 w-32" />
-    </div>
-    <div class="flex items-center gap-2">
-      <div class="text-xs text-zinc-500">Received:</div>
-      <Skeleton class="h-6 w-32" />
-    </div>
-  </div>
+  <Skeleton class="h-5 w-24" />
+  <Skeleton class="h-5 w-32" />
 </div>

@@ -33,16 +33,14 @@ onMount(() => {
 
 const sourceChain = $derived(
   Option.flatMap(packetDetails.data, data =>
-    Option.flatMap(chains.data, chainsData =>
-      getChain(chainsData, data.source_universal_chain_id.split(".")[1])
-    )
+    Option.flatMap(chains.data, chainsData => getChain(chainsData, data.source_universal_chain_id))
   )
 )
 
 const destinationChain = $derived(
   Option.flatMap(packetDetails.data, data =>
     Option.flatMap(chains.data, chainsData =>
-      getChain(chainsData, data.destination_universal_chain_id.split(".")[1])
+      getChain(chainsData, data.destination_universal_chain_id)
     )
   )
 )

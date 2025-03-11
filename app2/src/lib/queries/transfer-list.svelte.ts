@@ -26,6 +26,7 @@ export let transferListLatestQuery = (limit = LIMIT) =>
     variables: { limit },
     refetchInterval: "1 second",
     writeData: data => {
+      console.log(data)
       transferList.data = data.pipe(Option.map(d => d.v2_transfers))
     },
     writeError: error => {

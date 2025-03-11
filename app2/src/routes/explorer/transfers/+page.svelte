@@ -82,10 +82,10 @@ const onNextPage = async () => {
 
 <Sections>
   <Card class="overflow-auto" divided>
+    {#if Option.isSome(transferList.error)}
+      <ErrorComponent error={transferList.error.value}/>
+    {/if}
     {#if Option.isSome(transferList.data) && Option.isSome(chains.data)}
-      {#if Option.isSome(transferList.error)}
-        <ErrorComponent error={transferList.error.value}/>
-      {/if}
       {#each transferList.data.value as transfer(transfer.sort_order)}
         <TransferListItemComponent {transfer} />
       {:else}
