@@ -267,6 +267,7 @@
 
                   configSymLinkCommands = pkgs.lib.concatMapStrings (l: ''
 
+                    pwd
                     rm ./home/config/${l.name}
                     ln -s ${l.path} ./home/config/${l.name}
 
