@@ -270,28 +270,15 @@ fn timeout_packet(
         }
         .key();
 
-        if let Some(parent_packet) =
-            IN_FLIGHT_PACKET.may_load(deps.storage, commitment_key.into_bytes().into())?
+        if IN_FLIGHT_PACKET
+            .may_load(deps.storage, commitment_key.into_bytes().into())?
+            .is_some()
         {
-            // Forward the timeout to the parent packet
-            let config = CONFIG.load(deps.storage)?;
+            // Erase the parent packet
             IN_FLIGHT_PACKET.remove(deps.storage, commitment_key.into_bytes().into());
 
-            // Write a failure acknowledgement to the parent packet
-            return Ok(Response::new().add_message(wasm_execute(
-                &config.ibc_host,
-                &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
-                    channel_id: parent_packet.destination_channel_id,
-                    packet: parent_packet,
-                    acknowledgement: Ack {
-                        tag: TAG_ACK_FAILURE,
-                        inner_ack: Default::default(),
-                    }
-                    .abi_encode_params()
-                    .into(),
-                }),
-                vec![],
-            )?));
+            // Don't write any acknowledgement, the IBC stack will prevent replay and the parent will timeout.
+            return Ok(Response::new());
         }
     }
 

@@ -1475,15 +1475,6 @@ contract UCS03Zkgm is
         if (isInFlightPacket(packetHash)) {
             IBCPacket memory parent = inFlightPacket[packetHash];
             if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
-                ibcHandler.writeAcknowledgement(
-                    parent,
-                    ZkgmLib.encodeAck(
-                        Ack({
-                            tag: ZkgmLib.ACK_FAILURE,
-                            innerAck: ZkgmLib.ACK_EMPTY
-                        })
-                    )
-                );
                 delete inFlightPacket[packetHash];
                 return;
             }
