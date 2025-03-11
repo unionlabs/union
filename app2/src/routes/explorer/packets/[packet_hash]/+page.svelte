@@ -142,31 +142,31 @@ const goBack = () => {
       </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-        {#if Option.isSome(Option.fromNullable(packetDetails.data.value.packet_send_transaction_hash))}
+        {#if Option.isSome(packetDetails.data.value.packet_send_transaction_hash)}
           <div>
             <Label>Send Transaction Hash</Label>
-            <div class="text-sm break-all">{packetDetails.data.value.packet_send_transaction_hash}</div>
+            <div class="text-sm break-all">{packetDetails.data.value.packet_send_transaction_hash.value}</div>
           </div>
         {/if}
         
-        {#if Option.isSome(Option.fromNullable(packetDetails.data.value.packet_recv_transaction_hash))}
+        {#if Option.isSome(packetDetails.data.value.packet_recv_transaction_hash)}
           <div>
             <Label>Receive Transaction Hash</Label>
-            <div class="text-sm break-all">{packetDetails.data.value.packet_recv_transaction_hash}</div>
+            <div class="text-sm break-all">{packetDetails.data.value.packet_recv_transaction_hash.value}</div>
           </div>
         {/if}
         
-        {#if Option.isSome(Option.fromNullable(packetDetails.data.value.packet_ack_transaction_hash))}
+        {#if Option.isSome(packetDetails.data.value.packet_ack_transaction_hash)}
           <div>
             <Label>Ack Transaction Hash</Label>
-            <div class="text-sm break-all">{packetDetails.data.value.packet_ack_transaction_hash}</div>
+            <div class="text-sm break-all">{packetDetails.data.value.packet_ack_transaction_hash.value}</div>
           </div>
         {/if}
         
-        {#if Option.isSome(Option.fromNullable(packetDetails.data.value.write_ack_transaction_hash))}
+        {#if Option.isSome(packetDetails.data.value.write_ack_transaction_hash)}
           <div>
             <Label>Write Ack Transaction Hash</Label>
-            <div class="text-sm break-all">{packetDetails.data.value.write_ack_transaction_hash}</div>
+            <div class="text-sm break-all">{packetDetails.data.value.write_ack_transaction_hash.value}</div>
           </div>
         {/if}
       </div>
@@ -183,10 +183,10 @@ const goBack = () => {
         </div>
       {/if}
       
-      {#if Option.isSome(Option.fromNullable(packetDetails.data.value.acknowledgement))}
+      {#if Option.isSome(packetDetails.data.value.acknowledgement)}
         <div class="p-4">
           <Label>Acknowledgement</Label>
-          <pre class="overflow-auto text-xs mt-2">{JSON.stringify(packetDetails.data.value.acknowledgement, null, 2)}</pre>
+          <pre class="overflow-auto text-xs mt-2">{JSON.stringify(packetDetails.data.value.acknowledgement.value, null, 2)}</pre>
         </div>
       {/if}
     </Card>
