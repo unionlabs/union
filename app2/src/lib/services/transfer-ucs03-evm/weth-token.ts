@@ -5,6 +5,7 @@ import type { Channel } from "$lib/schema/channel.ts"
 import { getQuoteToken } from "./quote-token.ts"
 import { getPublicClient } from "$lib/services/evm/clients.ts"
 import type { Chain } from "$lib/schema/chain.ts"
+import { GetWethQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 
 export const getWethQuoteToken = (
   sourceChain: Chain,
@@ -25,15 +26,19 @@ export const getWethQuoteToken = (
         }) as Promise<Hex>,
       catch: error => {
         console.error("Failed to get WETH address:", error)
-        return new Error("Failed to get WETH address from zkgm contract", { cause: error })
+        return new GetWethQuoteError({
+          cause: `Failed to get WETH address from zkgm contract: ${error}`
+        })
       }
     })
 
     return yield* getQuoteToken(sourceChain, wethAddress, channel, destinationChain).pipe(
       Effect.map(result => ({ wethQuoteToken: result.quote_token })),
-      Effect.catchAll(error => {
-        console.log("Error getting WETH quote token:", error)
-        return Effect.succeed({ type: "NO_WETH_QUOTE" as const })
-      })
+      Effect.mapError(
+        error =>
+          new GetWethQuoteError({
+            cause: `Failed to get WETH quote token: ${error instanceof Error ? error.message : String(error)}`
+          })
+      )
     )
   })

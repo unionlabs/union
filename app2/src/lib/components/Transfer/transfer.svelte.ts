@@ -100,7 +100,7 @@ export class Transfer {
   wethQuoteToken = $state<Option.Option<typeof WethTokenData.Type>>(Option.none())
 
   getQuoteToken = async () => {
-    const denomOpt = Option.flatMap(this.baseToken, token => Option.fromNullable(token.denom))
+    const denomOpt = Option.flatMap(this.baseToken, t => Option.fromNullable(t.denom))
 
     if (
       Option.isNone(this.sourceChain) ||
@@ -108,14 +108,14 @@ export class Transfer {
       Option.isNone(denomOpt) ||
       Option.isNone(this.channel)
     ) {
-      this.quoteToken = Option.some({ type: "QUOTE_MISSING_ARGUMENTS" })
+      this.quoteToken = Option.some({ type: "QUOTE_MISSING_ARGUMENTS" } as const)
       return null
     }
 
-    this.quoteToken = Option.some({ type: "QUOTE_LOADING" })
+    this.quoteToken = Option.some({ type: "QUOTE_LOADING" } as const)
 
     const sourceChainValue = this.sourceChain.value
-    const denomValue = denomOpt.value
+    const denomValue = denomOpt.value as `0x${string}`
     const channelValue = this.channel.value
     const destinationChainValue = this.destinationChain.value
     const setQuoteToken = (value: Option.Option<typeof QuoteData.Type>) => {
@@ -132,14 +132,9 @@ export class Transfer {
       setQuoteToken(Option.some(result))
       return result
     }).pipe(
-      Effect.catchAll(error =>
+      Effect.catchTag("GetQuoteError", error =>
         Effect.sync(() => {
-          setQuoteToken(
-            Option.some({
-              type: "QUOTE_ERROR",
-              error: error.message
-            })
-          )
+          setQuoteToken(Option.some({ type: "QUOTE_ERROR", error: String(error.cause) } as const))
           return null
         })
       ),
@@ -169,7 +164,7 @@ export class Transfer {
     }
 
     return Effect.gen(function* () {
-      const result: typeof WethTokenData.Type = yield* getWethQuoteTokenEffect(
+      const result = yield* getWethQuoteTokenEffect(
         sourceChainValue,
         ucs03addressValue,
         channelValue,
@@ -178,13 +173,13 @@ export class Transfer {
       setWethQuoteToken(Option.some(result))
       return result
     }).pipe(
-      Effect.catchAll(error =>
+      Effect.catchTag("GetWethQuoteError", error =>
         Effect.sync(() => {
           setWethQuoteToken(
             Option.some({
               type: "WETH_ERROR",
-              error: error.message
-            })
+              error: error.cause
+            } as const)
           )
           return null
         })

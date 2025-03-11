@@ -10,6 +10,7 @@ import { getChainFromWagmi } from "$lib/wallet/evm"
 import { getCosmWasmClient } from "$lib/services/cosmos/clients"
 import { type CosmosChainId, cosmosRpcs } from "$lib/services/cosmos/rpc.ts"
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
+import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 
 export const getQuoteToken = (
   sourceChain: Chain,
@@ -26,7 +27,7 @@ export const getQuoteToken = (
           source_chain_id: sourceChain.chain_id
         }),
       catch: error => {
-        return new Error("Failed to get quote token from GraphQL", { cause: error })
+        return new GetQuoteError({ cause: `Failed to get quote token from GraphQL: ${error}` })
       }
     })
 
@@ -47,7 +48,8 @@ export const getQuoteToken = (
               token: base_token
             }
           }),
-        catch: error => new Error("Failed to predict wrapped token (Cosmos)", { cause: error })
+        catch: error =>
+          new GetQuoteError({ cause: `Failed to predict quote token (Cosmos): ${error}` })
       }).pipe(Effect.map(res => res.wrapped_token as Hex))
 
       return { type: "NEW_WRAPPED" as const, quote_token: predictedQuoteToken }
@@ -67,11 +69,14 @@ export const getQuoteToken = (
             functionName: "predictWrappedToken",
             args: [0, channel.destination_channel_id, base_token]
           }) as Promise<[Address, string]>,
-        catch: error => new Error("Failed to predict token (EVM)", { cause: error })
+        catch: error =>
+          new GetQuoteError({ cause: `Failed to predict quote token (EVM): ${error}` })
       }).pipe(Effect.map(([address]) => address))
 
       return { type: "NEW_WRAPPED" as const, quote_token: predictedQuoteToken }
     }
 
-    return yield* Effect.fail(new Error(`${destinationChain.rpc_type} not supported`))
+    return yield* Effect.fail(
+      new GetQuoteError({ cause: `${destinationChain.rpc_type} not supported` })
+    )
   })
