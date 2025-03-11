@@ -86,7 +86,7 @@ impl IbcClient for ArbitrumLightClient {
 
         if client_state.l1_latest_slot < header.l1_height.height() {
             client_state.l1_latest_slot = header.l1_height.height();
-            Ok(state_update.set_client_state(client_state))
+            Ok(state_update.overwrite_client_state(client_state))
         } else {
             Ok(state_update)
         }

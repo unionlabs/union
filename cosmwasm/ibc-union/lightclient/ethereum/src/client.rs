@@ -134,7 +134,7 @@ impl IbcClient for EthereumLightClient {
         // Set the client state so that it overwrites the one that is passed.
         // Also save the current and next sync committees with the corresponding epoch numbers.
         Ok(ClientCreation::empty()
-            .set_client_state(ClientState::V1(client_state))
+            .overwrite_client_state(ClientState::V1(client_state))
             .add_storage_write(
                 sync_committee_store_key(current_sync_period),
                 InverseSyncCommittee::take_inverse(&initial_sync_committee.current_sync_committee),
@@ -347,7 +347,7 @@ fn update_state<C: ChainSpec>(
 
     let mut state_update = StateUpdate::new(updated_height, consensus_state);
     if client_state.latest_height == consensus_update.finalized_header.execution.block_number {
-        state_update = state_update.set_client_state(ClientState::V1(client_state));
+        state_update = state_update.overwrite_client_state(ClientState::V1(client_state));
     }
 
     if let LightClientUpdate::EpochChange(update) = &mut header.consensus_update {

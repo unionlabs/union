@@ -200,7 +200,7 @@ fn update_state(
 
     if header.new_height > client_state.latest_block_num {
         client_state.latest_block_num = header.new_height;
-        Ok(state_update.set_client_state(client_state))
+        Ok(state_update.overwrite_client_state(client_state))
     } else {
         Ok(state_update)
     }

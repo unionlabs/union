@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use unionlabs_primitives::Bytes;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -24,7 +26,7 @@ pub enum VerifyCreationResponseEvent {
     },
 }
 
-pub type StorageWrites = Vec<(Bytes, Bytes)>;
+pub type StorageWrites = BTreeMap<Bytes, Bytes>;
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]

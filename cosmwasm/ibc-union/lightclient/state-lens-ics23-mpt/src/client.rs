@@ -154,25 +154,21 @@ impl IbcClient for StateLensIcs23MptLightClient {
             client_state.extra.storage_root_offset as usize,
         );
 
-        let client_state = if client_state.l2_latest_height < header.l2_height.height() {
+        let mut state_update = StateUpdate::new(
+            header.l2_height.height(),
+            ConsensusState {
+                timestamp: l2_timestamp,
+                state_root: l2_state_root,
+                storage_root: l2_storage_root,
+            },
+        );
+
+        if client_state.l2_latest_height < header.l2_height.height() {
             client_state.l2_latest_height = header.l2_height.height();
-            Some(client_state)
-        } else {
-            None
-        };
+            state_update = state_update.overwrite_client_state(client_state)
+        }
 
-        let consensus_state = ConsensusState {
-            timestamp: l2_timestamp,
-            state_root: l2_state_root,
-            storage_root: l2_storage_root,
-        };
-
-        Ok(StateUpdate {
-            height: header.l2_height.height(),
-            client_state,
-            consensus_state,
-            storage_writes: vec![],
-        })
+        Ok(state_update)
     }
 
     fn misbehaviour(

@@ -125,7 +125,7 @@ impl IbcClient for EthermintLightClient {
                 .map_err(Error::from)?;
                 let state_update = StateUpdate::new(height, consensus_state);
                 if let Some(tendermint_client_state) = tendermint_client_state {
-                    Ok(state_update.set_client_state(ClientState {
+                    Ok(state_update.overwrite_client_state(ClientState {
                         tendermint_client_state,
                         ..client_state
                     }))

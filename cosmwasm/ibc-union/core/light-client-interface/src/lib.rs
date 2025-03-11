@@ -199,17 +199,17 @@ impl<T: IbcClient> StateUpdate<T> {
             height,
             consensus_state,
             client_state: None,
-            storage_writes: vec![],
+            storage_writes: Default::default(),
         }
     }
 
-    pub fn set_client_state(mut self, client_state: T::ClientState) -> Self {
+    pub fn overwrite_client_state(mut self, client_state: T::ClientState) -> Self {
         self.client_state = Some(client_state);
         self
     }
 
     pub fn add_storage_write<V: Encode<T::Encoding>>(mut self, key: Bytes, value: V) -> Self {
-        self.storage_writes.push((key, value.encode().into()));
+        self.storage_writes.insert(key, value.encode().into());
         self
     }
 }
@@ -231,7 +231,7 @@ impl<T: IbcClient> ClientCreation<T> {
         Self {
             client_state: None,
             events: Vec::new(),
-            storage_writes: Vec::new(),
+            storage_writes: Default::default(),
         }
     }
 
@@ -241,11 +241,11 @@ impl<T: IbcClient> ClientCreation<T> {
     }
 
     pub fn add_storage_write<V: Encode<T::Encoding>>(mut self, key: Bytes, value: V) -> Self {
-        self.storage_writes.push((key, value.encode().into()));
+        self.storage_writes.insert(key, value.encode().into());
         self
     }
 
-    pub fn set_client_state(mut self, client_state: T::ClientState) -> Self {
+    pub fn overwrite_client_state(mut self, client_state: T::ClientState) -> Self {
         self.client_state = Some(client_state);
         self
     }

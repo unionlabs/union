@@ -144,24 +144,20 @@ impl IbcClient for StateLensIcs23SmtLightClient {
         let l2_consensus_state = L2ConsensusState::decode_as::<EthAbi>(&header.l2_consensus_state)
             .map_err(|_| Error::L2ConsensusStateDecode(header.l2_consensus_state))?;
 
-        let client_state = if client_state.l2_latest_height < header.l2_height.height() {
+        let mut state_update = StateUpdate::new(
+            header.l2_height.height(),
+            ConsensusState {
+                timestamp: l2_consensus_state.timestamp,
+                state_root: l2_consensus_state.state_root,
+            },
+        );
+
+        if client_state.l2_latest_height < header.l2_height.height() {
             client_state.l2_latest_height = header.l2_height.height();
-            Some(client_state)
-        } else {
-            None
+            state_update = state_update.overwrite_client_state(client_state);
         };
 
-        let consensus_state = ConsensusState {
-            timestamp: l2_consensus_state.timestamp,
-            state_root: l2_consensus_state.state_root,
-        };
-
-        Ok(StateUpdate {
-            height: header.l2_height.height(),
-            client_state,
-            consensus_state,
-            storage_writes: vec![],
-        })
+        Ok(state_update)
     }
 
     fn misbehaviour(

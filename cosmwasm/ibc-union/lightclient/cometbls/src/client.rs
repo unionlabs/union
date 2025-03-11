@@ -290,7 +290,7 @@ fn update_state<T: ZkpVerifier>(
 
     if untrusted_height > client_state.latest_height {
         client_state.latest_height = untrusted_height;
-        Ok(state_update.set_client_state(client_state))
+        Ok(state_update.overwrite_client_state(client_state))
     } else {
         Ok(state_update)
     }
