@@ -16,4 +16,3 @@ export class Channel extends Schema.Class<Channel>("Channel")({
 }) {}
 
 export const Channels = Schema.Array(Channel)
-
