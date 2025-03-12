@@ -27,7 +27,7 @@ pub const EXECUTING_PACKET: Item<Packet> = Item::new("executing_packet");
 
 /// Flag to indicate that the currently executing packet is a batch.
 /// This is used to determine how to handle acknowledgements in the reply handler.
-pub const EXECUTING_PACKET_IS_BATCH: Item<()> = Item::new("executing_packet_is_batch");
+pub const EXECUTING_PACKET_IS_BATCH: Item<usize> = Item::new("executing_packet_is_batch");
 
 /// Temporarily stores the acknowledgement from packet execution.
 /// This is used to retrieve the acknowledgement in the reply handler.

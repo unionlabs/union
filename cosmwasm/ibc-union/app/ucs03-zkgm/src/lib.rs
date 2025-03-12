@@ -99,4 +99,6 @@ pub enum ContractError {
     InvalidForwardInstruction,
     #[error("invalid multiplex sender")]
     InvalidMultiplexSender,
+    #[error("async acknowledgements are not allowed in batches as they are atomic")]
+    BatchMustBeSync,
 }
