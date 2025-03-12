@@ -14,11 +14,13 @@ const { isOpen, onClose }: Props = $props()
 let tempPageLimit = $state(settingsStore.pageLimit)
 let tempShowQuoteTokens = $state(settingsStore.showQuoteTokens)
 let tempShowZeroBalances = $state(uiStore.showZeroBalances)
+let tempShowDeveloperPages = $state(uiStore.showDeveloperPages)
 
 function handleSave() {
   settingsStore.pageLimit = tempPageLimit
   settingsStore.showQuoteTokens = tempShowQuoteTokens
   uiStore.showZeroBalances = tempShowZeroBalances
+  uiStore.showDeveloperPages = tempShowDeveloperPages
   onClose()
 }
 </script>
@@ -60,6 +62,17 @@ function handleSave() {
           class="form-checkbox"
         />
         <span class="text-sm font-medium">Show zero balances</span>
+      </label>
+    </div>
+
+    <div class="space-y-2">
+      <label class="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          bind:checked={tempShowDeveloperPages}
+          class="form-checkbox"
+        />
+        <span class="text-sm font-medium">Show developer pages</span>
       </label>
     </div>
 

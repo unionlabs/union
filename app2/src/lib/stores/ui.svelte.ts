@@ -4,6 +4,7 @@ class UiStore {
   settingsModalOpen: boolean = $state(false)
   errorsModalOpen: boolean = $state(false)
   showZeroBalances: boolean = $state(false)
+  showDeveloperPages: boolean = $state(false)
 
   private closeAllModals() {
     this.walletModalOpen = false
