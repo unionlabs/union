@@ -1964,8 +1964,7 @@ pub fn pop_channel_from_path(path: U256) -> (U256, u32) {
     // Find the highest non-zero 32-bit chunk (leftmost)
     let highest_index = (256 - path.leading_zeros() - 1) / 32;
     // Extract the channel ID from the highest non-zero slot
-    let channel_id =
-        u32::try_from((path >> (highest_index * 32)) & U256::from(u32::MAX)).expect("impossible");
+    let channel_id = get_channel_from_path(path, highest_index);
     // Clear that slot in the path
     let mask = !(U256::from(u32::MAX) << (highest_index * 32));
     let base_path = path & mask;
@@ -1983,19 +1982,27 @@ pub fn update_channel_path(path: U256, next_channel_id: u32) -> Result<U256, Con
                 next_hop_index,
             });
         }
-        Ok((U256::from(next_channel_id) << (32 * next_hop_index)) | path)
+        Ok(make_path_from_channel(next_channel_id, next_hop_index) | path)
     }
 }
 
+pub fn get_channel_from_path(path: U256, index: usize) -> u32 {
+    u32::try_from((path >> (32 * index)) & U256::from(u32::MAX)).expect("impossible")
+}
+
+pub fn make_path_from_channel(channel_id: u32, index: usize) -> U256 {
+    U256::from(channel_id) << (32 * index)
+}
+
 pub fn reverse_channel_path(path: U256) -> U256 {
-    U256::from(u32::try_from(path & U256::from(u32::MAX)).expect("impossible")) << 224
-        | U256::from(u32::try_from((path >> 32) & U256::from(u32::MAX)).expect("impossible")) << 192
-        | U256::from(u32::try_from((path >> 64) & U256::from(u32::MAX)).expect("impossible")) << 160
-        | U256::from(u32::try_from((path >> 96) & U256::from(u32::MAX)).expect("impossible")) << 128
-        | U256::from(u32::try_from((path >> 128) & U256::from(u32::MAX)).expect("impossible")) << 96
-        | U256::from(u32::try_from((path >> 160) & U256::from(u32::MAX)).expect("impossible")) << 64
-        | U256::from(u32::try_from((path >> 192) & U256::from(u32::MAX)).expect("impossible")) << 32
-        | U256::from(u32::try_from((path >> 224) & U256::from(u32::MAX)).expect("impossible"))
+    make_path_from_channel(get_channel_from_path(path, 0), 7)
+        | make_path_from_channel(get_channel_from_path(path, 1), 6)
+        | make_path_from_channel(get_channel_from_path(path, 2), 5)
+        | make_path_from_channel(get_channel_from_path(path, 3), 4)
+        | make_path_from_channel(get_channel_from_path(path, 4), 3)
+        | make_path_from_channel(get_channel_from_path(path, 5), 2)
+        | make_path_from_channel(get_channel_from_path(path, 6), 1)
+        | make_path_from_channel(get_channel_from_path(path, 7), 0)
 }
 
 pub fn tint_forward_salt(salt: H256) -> H256 {
