@@ -5,7 +5,7 @@ import type {
   AddressCosmosCanonical,
   AddressCanonicalBytes
 } from "$lib/schema/address"
-import type { RpcType } from "$lib/schema/chain.ts"
+import type { Chain } from "$lib/schema/chain"
 
 class WalletsStore {
   evmAddress: Option.Option<typeof AddressEvmCanonical.Type> = $state(Option.none())
@@ -28,17 +28,14 @@ class WalletsStore {
     return addresses
   }
 
-  getAddressForChain(rpcType: typeof RpcType.Type): Option.Option<AddressCanonicalBytes> {
-    switch (rpcType) {
-      case "evm":
-        return Option.map(this.evmAddress, addr => addr as AddressCanonicalBytes)
-      case "cosmos":
-        return Option.map(this.cosmosAddress, addr => addr as AddressCanonicalBytes)
-      case "aptos":
-        return Option.map(this.aptosAddress, addr => addr as AddressCanonicalBytes)
-      default:
-        return Option.none()
-    }
+  getAddressForChain(chain: Chain): Option.Option<AddressCanonicalBytes> {
+    return chain.rpc_type === "cosmos"
+      ? this.cosmosAddress
+      : chain.rpc_type === "evm"
+        ? this.evmAddress
+        : chain.rpc_type === "aptos"
+          ? this.aptosAddress
+          : Option.none()
   }
 }
 
