@@ -34,7 +34,7 @@ export const PacketList = Schema.Array(PacketListItem)
 export class PacketDetails extends Schema.Class<PacketDetails>("PacketDetails")({
   packet_hash: PacketHash,
   channel_version: ChannelVersion,
-  data: Schema.Any,
+  data: Hex,
   destination_chain_id: ChainId,
   destination_channel_id: ChannelId,
   destination_client_id: ClientId,

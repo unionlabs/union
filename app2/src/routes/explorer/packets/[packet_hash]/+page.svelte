@@ -18,6 +18,7 @@ import { page } from "$app/state"
 import { goto } from "$app/navigation"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import { fromHex } from "viem"
+import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 
 onMount(() => {
   const packetHash = page.params.packet_hash
@@ -281,17 +282,18 @@ const goBack = () => {
       
       <div class="p-4">
         <Label>Packet Data</Label>
-        <pre class="overflow-auto text-xs mt-2">{JSON.stringify(packetDetails.data.value.data, null, 2)}</pre>
-      </div>
-      
-      <div class="p-4">
-        <Label>Decoded Data</Label>
         {#if Option.isSome(packetDetails.data.value.decoded)}
           <pre class="overflow-auto text-xs mt-2">{JSON.stringify(packetDetails.data.value.decoded.value, null, 2)}</pre>
         {:else}
           <div class=" text-zinc-500 mt-2">No data decoding available for this packet</div>
         {/if}
       </div>
+
+      <div class="p-4">
+        <Label>Raw Packet Data</Label>
+        <LongMonoWord class="mt-2">{packetDetails.data.value.data}</LongMonoWord>
+      </div>
+      
       
       {#if Option.isSome(packetDetails.data.value.acknowledgement)}
         <div class="p-4">
