@@ -19,6 +19,7 @@ import { goto } from "$app/navigation"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import { fromHex } from "viem"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import TransactionComponent from "$lib/components/model/TransactionComponent.svelte"
 
 onMount(() => {
   const packetHash = page.params.packet_hash
@@ -96,7 +97,7 @@ const goBack = () => {
             </div>
             <div class="col-span-5">
               <Label>Port</Label>
-              <div class="text-sm font-mono break-all">{fromHex(packetDetails.data.value.source_port_id, "string")}</div>
+              <LongMonoWord>{fromHex(packetDetails.data.value.source_port_id, "string")}</LongMonoWord>
             </div>
           </div>
         </div>
@@ -124,7 +125,7 @@ const goBack = () => {
             </div>
             <div class="col-span-5">
               <Label>Port</Label>
-              <div class="text-sm font-mono break-all">{fromHex(packetDetails.data.value.destination_port_id, "string")}</div>
+              <LongMonoWord>{fromHex(packetDetails.data.value.destination_port_id, "string")}</LongMonoWord>
             </div>
           </div>
         </div>
@@ -181,10 +182,13 @@ const goBack = () => {
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
         <!-- Send information -->
-        {#if Option.isSome(packetDetails.data.value.packet_send_transaction_hash)}
+        {#if Option.isSome(packetDetails.data.value.packet_send_transaction_hash) && Option.isSome(sourceChain)}
           <div>
             <Label>Send Transaction Hash</Label>
-            <div class=" break-all">{packetDetails.data.value.packet_send_transaction_hash.value}</div>
+            <TransactionComponent 
+              hash={packetDetails.data.value.packet_send_transaction_hash.value} 
+              chain={sourceChain.value} 
+            />
           </div>
         {/if}
         
@@ -203,10 +207,13 @@ const goBack = () => {
         {/if}
         
         <!-- Receive information -->
-        {#if Option.isSome(packetDetails.data.value.packet_recv_transaction_hash)}
+        {#if Option.isSome(packetDetails.data.value.packet_recv_transaction_hash) && Option.isSome(destinationChain)}
           <div>
             <Label>Receive Transaction Hash</Label>
-            <div class=" break-all">{packetDetails.data.value.packet_recv_transaction_hash.value}</div>
+            <TransactionComponent 
+              hash={packetDetails.data.value.packet_recv_transaction_hash.value} 
+              chain={destinationChain.value} 
+            />
           </div>
         {/if}
         
@@ -225,10 +232,13 @@ const goBack = () => {
         {/if}
         
         <!-- Ack information -->
-        {#if Option.isSome(packetDetails.data.value.packet_ack_transaction_hash)}
+        {#if Option.isSome(packetDetails.data.value.packet_ack_transaction_hash) && Option.isSome(destinationChain)}
           <div>
             <Label>Ack Transaction Hash</Label>
-            <div class=" break-all">{packetDetails.data.value.packet_ack_transaction_hash.value}</div>
+            <TransactionComponent 
+              hash={packetDetails.data.value.packet_ack_transaction_hash.value} 
+              chain={destinationChain.value} 
+            />
           </div>
         {/if}
         
@@ -247,10 +257,13 @@ const goBack = () => {
         {/if}
         
         <!-- Write Ack information -->
-        {#if Option.isSome(packetDetails.data.value.write_ack_transaction_hash)}
+        {#if Option.isSome(packetDetails.data.value.write_ack_transaction_hash) && Option.isSome(sourceChain)}
           <div>
             <Label>Write Ack Transaction Hash</Label>
-            <div class=" break-all">{packetDetails.data.value.write_ack_transaction_hash.value}</div>
+            <TransactionComponent 
+              hash={packetDetails.data.value.write_ack_transaction_hash.value} 
+              chain={sourceChain.value} 
+            />
           </div>
         {/if}
         
@@ -283,7 +296,7 @@ const goBack = () => {
       <div class="p-4">
         <Label>Packet Data</Label>
         {#if Option.isSome(packetDetails.data.value.decoded)}
-          <pre class="overflow-auto text-xs mt-2">{JSON.stringify(packetDetails.data.value.decoded.value, null, 2)}</pre>
+          <pre class="overflow-auto text-sm mt-2">{JSON.stringify(packetDetails.data.value.decoded.value, null, 2)}</pre>
         {:else}
           <div class=" text-zinc-500 mt-2">No data decoding available for this packet</div>
         {/if}

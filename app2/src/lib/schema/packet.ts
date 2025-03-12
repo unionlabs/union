@@ -1,6 +1,7 @@
 import { Schema } from "effect"
 import { SortOrder } from "$lib/schema/sort-order"
 import { Hex } from "$lib/schema/hex"
+import { TransactionHash } from "$lib/schema/transaction"
 import { ChainId, UniversalChainId } from "$lib/schema/chain"
 import { ChannelId, ChannelVersion } from "$lib/schema/channel"
 import { ConnectionId } from "$lib/schema/connection"
@@ -45,17 +46,17 @@ export class PacketDetails extends Schema.Class<PacketDetails>("PacketDetails")(
   packet_ack_height: Schema.OptionFromNullOr(Height),
   packet_ack_maker: Schema.OptionFromNullOr(Hex),
   packet_ack_timestamp: Schema.OptionFromNullOr(Schema.DateTimeUtc),
-  packet_ack_transaction_hash: Schema.OptionFromNullOr(Hex),
+  packet_ack_transaction_hash: Schema.OptionFromNullOr(TransactionHash),
   packet_recv_block_hash: Schema.OptionFromNullOr(Hex),
   packet_recv_height: Schema.OptionFromNullOr(Height),
   packet_recv_maker: Schema.OptionFromNullOr(Hex),
   packet_recv_maker_msg: Schema.OptionFromNullOr(Schema.String),
   packet_recv_timestamp: Schema.OptionFromNullOr(Schema.DateTimeUtc),
-  packet_recv_transaction_hash: Schema.OptionFromNullOr(Hex),
+  packet_recv_transaction_hash: Schema.OptionFromNullOr(TransactionHash),
   packet_send_block_hash: Schema.OptionFromNullOr(Hex),
   packet_send_height: Schema.OptionFromNullOr(Height),
   packet_send_timestamp: Schema.DateTimeUtc,
-  packet_send_transaction_hash: Schema.OptionFromNullOr(Hex),
+  packet_send_transaction_hash: Schema.OptionFromNullOr(TransactionHash),
   sort_order: SortOrder,
   source_channel_id: ChannelId,
   source_client_id: ClientId,
@@ -68,7 +69,7 @@ export class PacketDetails extends Schema.Class<PacketDetails>("PacketDetails")(
   write_ack_block_hash: Schema.OptionFromNullOr(Hex),
   write_ack_height: Schema.OptionFromNullOr(Schema.Number),
   write_ack_timestamp: Schema.OptionFromNullOr(Schema.DateTimeUtc),
-  write_ack_transaction_hash: Schema.OptionFromNullOr(Hex),
+  write_ack_transaction_hash: Schema.OptionFromNullOr(TransactionHash),
   decoded: Schema.OptionFromNullOr(Schema.Any),
   decoded_flattened: Schema.OptionFromNullOr(Schema.Array(Schema.Any)),
   acknowledgement: Schema.OptionFromNullOr(Schema.Any)

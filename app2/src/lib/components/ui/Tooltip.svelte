@@ -58,7 +58,7 @@ function onTriggerEnter(e: MouseEvent) {
     if (isHoveringTrigger) {
       isVisible = true
     }
-  }, 1000)
+  }, 750)
 }
 
 function onTriggerLeave() {
