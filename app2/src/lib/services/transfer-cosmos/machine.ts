@@ -1,5 +1,4 @@
 import {
-  ApprovalReceiptState,
   ApprovalSubmitState,
   SwitchChainState,
   TransferReceiptState,
@@ -9,7 +8,7 @@ import {
 import { Effect } from "effect"
 import { switchChain } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
-import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
+import { approveTransfer } from "./approval"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 
@@ -57,25 +56,6 @@ export async function nextState(
             return TransferSubmission.ApprovalSubmit({ state: ApprovalSubmitState.InProgress() })
           }
           return TransferSubmission.TransferSubmit({ state: TransferSubmitState.InProgress() })
-        }
-      })
-    },
-
-    ApprovalReceipt: ({ state }) => {
-      return ApprovalReceiptState.$match(state, {
-        InProgress: async ({ hash }) => {
-          const exit = await Effect.runPromiseExit(waitForApprovalReceipt(chain, hash))
-          return TransferSubmission.ApprovalReceipt({
-            state: ApprovalReceiptState.Complete({ exit })
-          })
-        },
-        Complete: ({ exit }) => {
-          if (exit._tag === "Failure") {
-            return TransferSubmission.ApprovalSubmit({ state: ApprovalSubmitState.InProgress() })
-          }
-          return TransferSubmission.TransferSubmit({
-            state: TransferSubmitState.InProgress()
-          })
         }
       })
     },

@@ -1,58 +1,61 @@
 import { Effect } from "effect"
-import type { Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType } from "viem"
-import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
-import { getPublicClient, getWalletClient } from "../evm/clients.ts"
-import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
-import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
-import { generateSalt } from "./salt.ts"
 import type { Chain } from "$lib/schema/chain.ts"
-import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
+import { CosmWasmError } from "$lib/services/transfer-cosmos/errors.ts"
+import { executeCosmWasmInstructions } from "$lib/services/transfer-cosmos/execute.ts"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import type {ValidTransfer} from "$lib/schema/transfer-args.ts";
+import {isValidBech32ContractAddress} from "@unionlabs/client";
+import {generateSalt} from "$lib/services/transfer-cosmos/salt.ts"; // Importing the provided salt generator
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
-    if (transfer.sourceRpcType !== "evm") {
-      return yield* Effect.fail(new Error("Only EVM transfers are supported"))
+    const { connectedWallet } = cosmosStore
+
+    if (!connectedWallet) {
+      throw new CosmWasmError({
+        cause: "No wallet connected"
+      })
     }
 
-    const walletClient = yield* getWalletClient(chain)
-    const account = yield* Effect.flatMap(getAccount, account =>
-      account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
-    )
+    const {
+      baseAmount,
+      baseToken,
+      quoteAmount,
+      quoteToken,
+      receiver,
+      sourceChannelId,
+      ucs03address
+    } = transfer
+
+    if (!ucs03address) {
+      throw new CosmWasmError({
+        cause: "Missing UCS03 contract address"
+      })
+    }
+
     const salt = yield* generateSalt
 
-    return yield* Effect.tryPromise({
-      try: () => {
-        return walletClient.writeContract({
-          account: account.address as `0x${string}`,
-          abi: ucs03ZkgmAbi,
-          chain: transfer.sourceChain,
-          functionName: "transferV2",
-          address: transfer.ucs03address,
-          value: BigInt(0.0080085 * 10 ** 18),
-          args: [
-            transfer.sourceChannelId,
-            transfer.receiver,
-            transfer.baseToken,
-            transfer.baseAmount,
-            transfer.quoteToken,
-            transfer.quoteAmount,
-            transfer.timeoutHeight,
-            transfer.timeoutTimestamp,
-            salt,
-            transfer.wethQuoteToken
-          ]
-        })
+    const instructions = [{
+      contractAddress: ucs03address,
+      msg: {
+        transfer: {
+          channel_id: sourceChannelId,
+          receiver: receiver,
+          base_token: baseToken,
+          base_amount: baseAmount,
+          quote_token: quoteToken,
+          quote_amount: quoteAmount,
+          timeout_height: 1000000000,
+          timeout_timestamp: 0,
+          salt
+        }
       },
-      catch: err => new WriteContractError({ cause: err as WriteContractErrorType })
-    })
-  })
+      // If we are sending a CW20 (which is a valid bech32 address), then we do not need to attach native funds
+      funds: isValidBech32ContractAddress(baseToken)
+        ? []
+        : [{ amount: baseAmount.toString(), denom: baseToken }]
+    }]
 
-export const waitForTransferReceipt = (chain: Chain, hash: Hash) =>
-  Effect.gen(function* () {
-    const publicClient = yield* getPublicClient(chain)
-    return yield* Effect.tryPromise({
-      try: () => publicClient.waitForTransactionReceipt({ hash }),
-      catch: err =>
-        new WaitForTransactionReceiptError({ cause: err as WaitForTransactionReceiptErrorType })
-    })
+    // Use the executeCosmWasmInstructions function to execute the transfer
+    return yield* executeCosmWasmInstructions(chain, connectedWallet, instructions)
   })

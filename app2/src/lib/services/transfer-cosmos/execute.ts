@@ -11,25 +11,25 @@ export const executeCosmWasmInstructions = (
   instructions: any
 ) =>
   Effect.gen(function* () {
-
+    // Get the client
     const client = yield* getCosmWasmClient(chain, connectedWallet)
 
     if (!client) {
-      yield* Effect.fail(new CosmWasmError({
+      throw new CosmWasmError({
         cause: "Client CosmWasm is undefined",
-      }))
-      return null as never
+      })
     }
 
+    // Get the offline signer
     const offlineSigner = yield* getCosmosOfflineSigner(chain, connectedWallet)
 
     if (!offlineSigner) {
-      yield* Effect.fail(new CosmWasmError({
+      throw new CosmWasmError({
         cause: "Offline signer is undefined",
-      }))
-      return null as never
+      })
     }
 
+    // Get accounts
     const accounts = yield* Effect.tryPromise({
       try: () => offlineSigner.getAccounts(),
       catch: err => new CosmWasmError({
@@ -38,20 +38,21 @@ export const executeCosmWasmInstructions = (
     })
 
     if (accounts.length === 0) {
-      yield* Effect.fail(new CosmWasmError({
+      throw new CosmWasmError({
         cause: "No accounts found",
-      }))
-      return null as never
+      })
     }
 
     const sender = accounts[0].address
 
+    // Format instructions
     const formattedInstructions = instructions.map(instr => ({
       contractAddress: instr.contractAddress,
       msg: instr.msg,
       funds: instr.funds || []
     }))
 
+    // Execute the transaction
     const result = yield* Effect.tryPromise({
       try: () => client.executeMultiple(
         sender,

@@ -15,7 +15,6 @@ export class CosmWasmError extends Data.TaggedError("CosmWasmError")<{
 export class GetChainInfoError extends Data.TaggedError("GetChainInfoError")<{
   cause: string
   chainId?: string
-  wallet?: string
 }> {}
 
 export class GasPriceError extends Data.TaggedError("GasPriceError")<{

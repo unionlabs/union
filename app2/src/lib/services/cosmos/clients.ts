@@ -14,22 +14,20 @@ export const getCosmWasmClient = (
 )  =>
   Effect.gen(function* () {
     if (!chain.rpcs) {
-      yield* Effect.fail(new CosmWasmError({
+      throw new CosmWasmError({
         cause: "No RPCs available for chain",
-      }))
-      return null as never
+      })
     }
 
     const offlineSigner = yield* Effect.mapError(
       getCosmosOfflineSigner(chain, connectedWallet),
       error => new CosmWasmError({
-        cause: error.cause || "Failed to get offline signer",
+        cause: String(error.cause) || "Failed to get offline signer",
       })
     )
 
     if (!offlineSigner) {
-      yield* Effect.fail(new CosmWasmError({ cause: "Offline signer is undefined" }))
-      return
+      throw new CosmWasmError({ cause: "Offline signer is undefined" })
     }
 
     // Get gas price

@@ -3,6 +3,7 @@
 import type { ChainInfo as KeplrChainInfo } from "@keplr-wallet/types"
 
 import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
+import {cosmosStore} from "$lib/wallet/cosmos/config.svelte.ts";
 
 //This exists according to docs
 interface LeapExtendedInfo extends LeapChainInfo {
@@ -468,9 +469,8 @@ const leapChainInfoMap: Record<string, LeapChainInfo> = {
 //Helper functions
 export function getCosmosChainInfo(
   chainId: string,
-  connectedWallet: string | undefined
 ): LeapChainInfo | KeplrChainInfo | null {
-  const chainInfoMap = connectedWallet === "leap" ? leapChainInfoMap : keplrChainInfoMap
+  const chainInfoMap = cosmosStore.connectedWallet === "leap" ? leapChainInfoMap : keplrChainInfoMap
   return chainInfoMap[chainId] || null
 }
 

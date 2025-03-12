@@ -23,12 +23,6 @@ export type ApprovalSubmitState = Data.TaggedEnum<{
 }>
 export const ApprovalSubmitState = Data.taggedEnum<ApprovalSubmitState>()
 
-export type ApprovalReceiptState = Data.TaggedEnum<{
-  InProgress: { readonly hash: Hash }
-  Complete: { exit: EffectToExit<ReturnType<typeof waitForApprovalReceipt>> }
-}>
-export const ApprovalReceiptState = Data.taggedEnum<ApprovalReceiptState>()
-
 export type TransferSubmitState = Data.TaggedEnum<{
   InProgress: {}
   Complete: { exit: EffectToExit<ReturnType<typeof submitTransfer>> }
@@ -41,21 +35,19 @@ export type TransferReceiptState = Data.TaggedEnum<{
 }>
 export const TransferReceiptState = Data.taggedEnum<TransferReceiptState>()
 
-export type EvmTransferSubmission = Data.TaggedEnum<{
+export type TransferSubmission = Data.TaggedEnum<{
   Filling: {}
   SwitchChain: { state: SwitchChainState }
   ApprovalSubmit: { state: ApprovalSubmitState }
-  ApprovalReceipt: { state: ApprovalReceiptState }
   TransferSubmit: { state: TransferSubmitState }
   TransferReceipt: { state: TransferReceiptState }
 }>
 
-export const TransferSubmission = Data.taggedEnum<EvmTransferSubmission>()
+export const TransferSubmission = Data.taggedEnum<TransferSubmission>()
 
 type StateWithExit =
   | { _tag: "SwitchChain"; state: SwitchChainState }
   | { _tag: "ApprovalSubmit"; state: ApprovalSubmitState }
-  | { _tag: "ApprovalReceipt"; state: ApprovalReceiptState }
   | { _tag: "TransferSubmit"; state: TransferSubmitState }
   | { _tag: "TransferReceipt"; state: TransferReceiptState }
 

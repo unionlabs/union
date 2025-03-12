@@ -1,8 +1,7 @@
+import { Effect } from "effect"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { CosmosWalletId } from "$lib/wallet/cosmos"
-import {executeCosmWasmInstructions} from "$lib/services/transfer-cosmos/execute.ts";
-import {Effect} from "effect";
-import {type CosmWasmError, OfflineSignerError} from "$lib/services/transfer-cosmos/errors.ts";
+import { executeCosmWasmInstructions } from "$lib/services/transfer-cosmos/execute.ts"
 
 export const approveTransfer = (
   chain: Chain,
@@ -12,8 +11,8 @@ export const approveTransfer = (
     amount: bigint;
     spender: string;
   }
-): Effect.Effect<string, CosmWasmError | OfflineSignerError, never> => {
-  const instructions = [{
+) =>
+  Effect.succeed([{
     contractAddress: params.contractAddress,
     msg: {
       increase_allowance: {
@@ -21,7 +20,8 @@ export const approveTransfer = (
         amount: params.amount.toString()
       }
     }
-  }];
-
-  return executeCosmWasmInstructions(chain, connectedWallet, instructions);
-}
+  }]).pipe(
+    Effect.flatMap(instructions =>
+      executeCosmWasmInstructions(chain, connectedWallet, instructions)
+    )
+  )

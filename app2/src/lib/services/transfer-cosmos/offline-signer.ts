@@ -1,34 +1,29 @@
-import { Effect } from "effect"
+import {Effect} from "effect"
 import { type CosmosWalletId } from "$lib/wallet/cosmos"
 import { OfflineSignerError } from "$lib/services/transfer-cosmos/errors.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { OfflineSigner } from "$lib/services/cosmos/types.ts"
+import {getCosmosWalletClient} from "$lib/services/cosmos/clients.ts";
 
-/**
- * Gets an offline signer for the given chain and wallet
- */
 export const getCosmosOfflineSigner = (chain: Chain, connectedWallet: CosmosWalletId) =>
   Effect.gen(function* () {
     if (!connectedWallet) {
-      yield* Effect.fail(new OfflineSignerError({ cause: "No wallet connected" }))
-      return
+      throw new OfflineSignerError({ cause: "No wallet connected" })
     }
 
     if (!chain?.chain_id) {
-      yield* Effect.fail(new OfflineSignerError({ cause: "Invalid chain: missing chain_id" }))
-      return
+      throw new OfflineSignerError({ cause: "Invalid chain: missing chain_id" })
     }
 
-    const wallet = window[connectedWallet]
+    const wallet = yield* getCosmosWalletClient()
+
     if (!wallet) {
-      yield* Effect.fail(new OfflineSignerError({ cause: `Wallet ${connectedWallet} not found in window object` }))
-      return
+      throw new OfflineSignerError({ cause: `Could not get wallet` })
     }
 
     const signerMethod = wallet.getOfflineSignerAuto
     if (!signerMethod) {
-      yield* Effect.fail(new OfflineSignerError({ cause: `Wallet ${connectedWallet} does not support getOfflineSignerAuto` }))
-      return
+      throw new OfflineSignerError({ cause: `Wallet ${connectedWallet} does not support getOfflineSignerAuto` })
     }
 
     return yield* Effect.tryPromise({
