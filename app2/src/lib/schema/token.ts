@@ -99,3 +99,22 @@ export const WethTokenData = Schema.Union(
   Schema.Struct({ type: Schema.Literal("WETH_MISSING_ARGUMENTS") }),
   Schema.Struct({ type: Schema.Literal("WETH_ERROR"), cause: Schema.String })
 )
+
+
+//Change to
+// export type QuoteData = Data.TaggedEnum<{
+//   UNWRAPPED: { quote_token: Schema.String }
+//   NEW_WRAPPED: { quote_token: Schema.String }
+//   NO_QUOTE_AVAILABLE: {}
+//   QUOTE_LOADING: {}
+//   QUOTE_MISSING_ARGUMENTS: {}
+//   QUOTE_ERROR: { cause: Schema.String }
+// }>
+//
+// export type WethTokenData = Data.TaggedEnum<{
+//   WETH_QUOTE: { wethQuoteToken: Schema.String }
+//   NO_WETH_QUOTE: {}
+//   WETH_LOADING: {}
+//   WETH_MISSING_ARGUMENTS: {}
+//   WETH_ERROR: { cause: Schema.String }
+// }>

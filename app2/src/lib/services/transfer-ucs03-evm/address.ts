@@ -1,6 +1,6 @@
 import { Effect, Option } from "effect"
 import { AddressValidationError } from "./errors.ts"
-import { getAddress } from "viem"
+import { getAddress, isHex } from "viem" // Add isHex to imports
 import { bech32AddressToHex } from "@unionlabs/client"
 
 export const deriveReceiverEffect = (input: string) =>
@@ -16,7 +16,7 @@ export const deriveReceiverEffect = (input: string) =>
       )
     }
 
-    if (trimmed.toLowerCase().startsWith("0x")) {
+    if (isHex(trimmed, { strict: true })) {
       return yield* Effect.try({
         try: () => getAddress(trimmed),
         catch: err =>
@@ -40,9 +40,7 @@ export const deriveReceiverEffect = (input: string) =>
     })
   })
 
-// Updated to return Option<string> instead of Option<Hex>
 export const getDerivedReceiverSafe = (input: string): Option.Option<string> => {
   const result = Effect.runSync(Effect.either(deriveReceiverEffect(input)))
-
   return result._tag === "Right" ? Option.some(result.right) : Option.none()
 }
