@@ -4,11 +4,12 @@ import {Effect} from "effect";
 import {CosmWasmError} from "$lib/services/transfer-cosmos/errors.ts";
 import {getCosmWasmClient} from "$lib/services/cosmos/clients.ts";
 import {getCosmosOfflineSigner} from "$lib/services/transfer-cosmos/offline-signer.ts";
+import type {ExecuteInstruction} from "@cosmjs/cosmwasm-stargate";
 
 export const executeCosmWasmInstructions = (
   chain: Chain,
   connectedWallet: CosmosWalletId,
-  instructions: any
+  instructions: Array<ExecuteInstruction>
 ) =>
   Effect.gen(function* () {
     // Get the client

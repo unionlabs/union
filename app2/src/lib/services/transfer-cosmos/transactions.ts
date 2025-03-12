@@ -5,7 +5,7 @@ import { executeCosmWasmInstructions } from "$lib/services/transfer-cosmos/execu
 import { cosmosStore } from "$lib/wallet/cosmos"
 import type {ValidTransfer} from "$lib/schema/transfer-args.ts";
 import {isValidBech32ContractAddress} from "@unionlabs/client";
-import {generateSalt} from "$lib/services/transfer-cosmos/salt.ts"; // Importing the provided salt generator
+import {generateSalt} from "$lib/services/transfer-ucs03-evm/salt.ts";
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {

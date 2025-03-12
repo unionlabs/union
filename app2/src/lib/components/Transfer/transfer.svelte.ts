@@ -9,7 +9,7 @@ import {
   isComplete,
   nextState,
   TransferSubmission
-} from "$lib/services/transfer-ucs03-evm"
+} from "$lib/services/transfer-cosmos"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { getChainFromWagmi } from "$lib/wallet/evm/index.ts"
 import { type Address, fromHex, type Hex } from "viem"

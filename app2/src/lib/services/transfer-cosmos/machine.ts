@@ -7,15 +7,17 @@ import {
 } from "./state.ts"
 import { Effect } from "effect"
 import { switchChain } from "./chain.ts"
-import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
+import { submitTransfer } from "./transactions.ts"
 import { approveTransfer } from "./approval"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
+import type {CosmosWalletId} from "$lib/wallet/cosmos";
 
 export async function nextState(
   ts: TransferSubmission,
   params: ValidTransfer["args"],
-  chain: Chain
+  chain: Chain,
+  connectedWallet: CosmosWalletId,
 ): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
     Filling: () => {
@@ -40,15 +42,15 @@ export async function nextState(
     ApprovalSubmit: ({ state }) => {
       return ApprovalSubmitState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(approveTransfer(chain, params))
+          const exit = await Effect.runPromiseExit(approveTransfer(chain, connectedWallet, params))
           if (exit._tag === "Failure") {
             return TransferSubmission.ApprovalSubmit({
-              state: ApprovalSubmitState.Complete({ exit })
+              state: ApprovalSubmitState.InProgress()
             })
           }
 
-          return TransferSubmission.ApprovalReceipt({
-            state: ApprovalReceiptState.InProgress({ hash: exit.value })
+          return TransferSubmission.TransferSubmit({
+            state: ApprovalSubmitState.Complete({exit})
           })
         },
         Complete: ({ exit }) => {
