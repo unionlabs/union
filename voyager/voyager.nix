@@ -82,6 +82,10 @@
           type = types.package;
           default = self.packages.${pkgs.system}.voyager;
         };
+        equivalent_chain_ids = mkOption {
+          type = types.listOf (types.listOf types.str);
+          default = [ ];
+        };
         modules =
           let
             moduleConfigType =
@@ -272,19 +276,16 @@
           configJson = pkgs.writeText "config.json" (
             builtins.toJSON (
               recursiveUpdate
-                (filterAttrsRecursive (_n: v: v != null) (
-                  filterAttrs (
-                    n: _v:
-                    builtins.elem n [
-                      "modules"
-                      "plugins"
-                      "voyager"
-                      "equivalent_chain_ids"
-                      "schema"
-                    ]
-                  ) cfg
-                ))
+                (filterAttrsRecursive (_n: v: v != null) {
+                  inherit (cfg)
+                    equivalent_chain_ids
+                    modules
+                    plugins
+                    voyager
+                    ;
+                })
                 {
+                  # required for the queue serde deserialization
                   voyager.queue.type = "pg-queue";
                 }
             )
