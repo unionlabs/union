@@ -1,64 +1,60 @@
 <script lang="ts">
-  import { Option } from "effect"
-  import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
-  import type { DailyTransfer } from "$lib/schema/statistics"
-  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-  import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
+import { Option } from "effect"
+import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
+import type { DailyTransfer } from "$lib/schema/statistics"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 
-  type Props = {
-    data: Option.Option<Array<DailyTransfer>>
-    error: Option.Option<FetchDecodeGraphqlError>
-    class?: string
-  }
+type Props = {
+  data: Option.Option<Array<DailyTransfer>>
+  error: Option.Option<FetchDecodeGraphqlError>
+  class?: string
+}
 
-  const { data, error, class: className = "" } = $props()
+const { data, error, class: className = "" } = $props()
 
-  // Format large numbers with commas (used for chart tooltips)
-  function formatNumber(num: string | number): string {
-    return Number(num).toLocaleString()
-  }
+// Format large numbers with commas (used for chart tooltips)
+function formatNumber(num: string | number): string {
+  return Number(num).toLocaleString()
+}
 
-  // Derived values for chart data
-  const reversedDailyTransfers = $derived(
-    Option.isSome(data) ? [...data.value].reverse() : []
+// Derived values for chart data
+const reversedDailyTransfers = $derived(Option.isSome(data) ? [...data.value].reverse() : [])
+
+const maxCount = $derived(Option.isSome(data) ? Math.max(...data.value.map(d => d.count)) : 0)
+
+// Calculate nice round numbers for y-axis labels
+const yLabels = $derived(() => {
+  if (maxCount <= 0) return [0, 0, 0, 0, 0]
+
+  // Find a nice round maximum that's at least as large as maxCount
+  const magnitude = 10 ** Math.floor(Math.log10(maxCount))
+  const roundedMax = Math.ceil(maxCount / magnitude) * magnitude
+
+  // Create evenly spaced labels
+  return [
+    0,
+    Math.round(roundedMax / 4),
+    Math.round(roundedMax / 2),
+    Math.round((roundedMax * 3) / 4),
+    roundedMax
+  ]
+})
+
+// Calculate bar heights as percentages
+const barHeights = $derived(
+  reversedDailyTransfers.map(day => ({
+    ...day,
+    heightPercent: maxCount > 0 ? Math.max((day.count / maxCount) * 100, 1) : 1
+  }))
+)
+
+// Get labels for x-axis (first, middle, last)
+const xAxisLabels = $derived(
+  reversedDailyTransfers.filter(
+    (_, i, arr) => i === 0 || i === Math.floor(arr.length / 2) || i === arr.length - 1
   )
-
-  const maxCount = $derived(
-    Option.isSome(data) ? Math.max(...data.value.map(d => d.count)) : 0
-  )
-
-  // Calculate nice round numbers for y-axis labels
-  const yLabels = $derived(() => {
-    if (maxCount <= 0) return [0, 0, 0, 0, 0]
-
-    // Find a nice round maximum that's at least as large as maxCount
-    const magnitude = 10 ** Math.floor(Math.log10(maxCount))
-    const roundedMax = Math.ceil(maxCount / magnitude) * magnitude
-
-    // Create evenly spaced labels
-    return [
-      0,
-      Math.round(roundedMax / 4),
-      Math.round(roundedMax / 2),
-      Math.round((roundedMax * 3) / 4),
-      roundedMax
-    ]
-  })
-
-  // Calculate bar heights as percentages
-  const barHeights = $derived(
-    reversedDailyTransfers.map(day => ({
-      ...day,
-      heightPercent: maxCount > 0 ? Math.max((day.count / maxCount) * 100, 1) : 1
-    }))
-  )
-
-  // Get labels for x-axis (first, middle, last)
-  const xAxisLabels = $derived(
-    reversedDailyTransfers.filter(
-      (_, i, arr) => i === 0 || i === Math.floor(arr.length / 2) || i === arr.length - 1
-    )
-  )
+)
 </script>
 
 {#if Option.isSome(data) && maxCount > 0}
