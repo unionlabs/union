@@ -20,11 +20,9 @@ const displayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address))
 
 <Tooltip>
   {#snippet trigger()}
-    <div class={cn("font-mono", className)} {...rest}>
-      <LongMonoWord>
-        {displayAddress}
-      </LongMonoWord>
-    </div>
+    <LongMonoWord class={className} {...rest}>
+      {displayAddress}
+    </LongMonoWord>
   {/snippet}
 
   {#snippet content()}
