@@ -19,14 +19,12 @@ const getExplorerUrl = () => {
   if (chain.explorers.length === 0) {
     return null
   }
-  
+
   // Use the first explorer by default
   const explorer = chain.explorers[0]
   // Replace {hash} placeholder if it exists, otherwise append the hash
   const blockUrl = explorer.block_url.toString()
-  return blockUrl.includes("{hash}") 
-    ? blockUrl.replace("{hash}", hash)
-    : `${blockUrl}${hash}`
+  return blockUrl.includes("{hash}") ? blockUrl.replace("{hash}", hash) : `${blockUrl}${hash}`
 }
 
 const explorerUrl = $derived(getExplorerUrl())
