@@ -1,44 +1,57 @@
-import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import {CosmWasmClient, SigningCosmWasmClient} from "@cosmjs/cosmwasm-stargate"
 import { Effect } from "effect"
 import {cosmosStore, type CosmosWalletId} from "$lib/wallet/cosmos";
 import type {CosmosWallet} from "$lib/services/cosmos/types.ts";
 import type {Chain} from "$lib/schema/chain.ts";
 import {getCosmosOfflineSigner} from "$lib/services/transfer-cosmos/offline-signer.ts";
-import {GasPrice, SigningStargateClient} from "@cosmjs/stargate";
-import {StargateClientError} from "$lib/services/transfer-cosmos";
+import {GasPrice} from "@cosmjs/stargate";
 import {getGasPriceForChain} from "$lib/services/cosmos/chain-info";
+import {CosmWasmError} from "$lib/services/transfer-cosmos";
 
-export const getCosmosClient = (
+export const getCosmWasmClient = (
   chain: Chain,
   connectedWallet: CosmosWalletId
-) =>
+)  =>
   Effect.gen(function* () {
     if (!chain.rpcs) {
-      yield* Effect.fail(new StargateClientError({ cause: "No rpcs" }))
-      return
+      yield* Effect.fail(new CosmWasmError({
+        cause: "No RPCs available for chain",
+      }))
+      return null as never
     }
 
-    const offlineSigner = yield* getCosmosOfflineSigner(chain, connectedWallet)
-
-    if (!offlineSigner) {
-      yield* Effect.fail(new StargateClientError({ cause: "Offline signer is undefined" }))
-      return
-    }
-
-    const gasPriceInfo = yield* Effect.mapError(
-      getGasPriceForChain(chain, connectedWallet),
-      error => new StargateClientError({ cause: `Failed to get gas price: ${error.cause}` })
+    const offlineSigner = yield* Effect.mapError(
+      getCosmosOfflineSigner(chain, connectedWallet),
+      error => new CosmWasmError({
+        cause: error.cause || "Failed to get offline signer",
+      })
     )
 
+    if (!offlineSigner) {
+      yield* Effect.fail(new CosmWasmError({ cause: "Offline signer is undefined" }))
+      return
+    }
+
+    // Get gas price
+    const gasPriceInfo = yield* Effect.mapError(
+      getGasPriceForChain(chain, connectedWallet),
+      error => new CosmWasmError({
+        cause: `Failed to get gas price: ${error.cause}`,
+      })
+    )
+
+    // Create a proper GasPrice object
     const gasPrice = GasPrice.fromString(`${gasPriceInfo.amount}${gasPriceInfo.denom}`)
 
     return yield* Effect.tryPromise({
-      try: () => SigningStargateClient.connectWithSigner(
+      try: () => SigningCosmWasmClient.connectWithSigner(
         chain.getRpcUrl('rpc').toString(),
         offlineSigner,
         { gasPrice }
       ),
-      catch: err => new StargateClientError({ cause: String(err) })
+      catch: err => new CosmWasmError({
+        cause: String(err),
+      })
     })
   })
 
