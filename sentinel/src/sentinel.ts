@@ -26,11 +26,15 @@ import consola from "consola"
 import { type Address, fallback, http, fromHex, toHex } from "viem"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { privateKeyToAccount } from "viem/accounts"
+import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
+
 import {
   type ChainId,
   type CosmosChainId,
   createUnionClient,
   type EvmChainId,
+  AptosChainId,
+  bech32AddressToHex,
   hexToBytes,
   getRecommendedChannels,
   getChannelInfo,
@@ -60,6 +64,7 @@ interface TransferConfig {
   privateKey: string
   sourceChainIdEVM: EvmChainId
   sourceChainIdCosmos: CosmosChainId
+  sourceChainIdAptos: AptosChainId
   destinationChainId: ChainId
   rpcs: Array<string>
   gasPriceDenom: string
@@ -293,36 +298,54 @@ export async function checkPackets(
 }
 
 /**
- * Perform an EVM cross-chain transfer or estimate the gas for it.
- * Adapt the logic as needed to match your chain IDs / workflow.
+ * Perform a cross-chain transfer (Cosmos, EVM, or Aptos).
+ * 
+ * If Aptos logic is not yet implemented, you can leave that section as a placeholder.
  */
 async function doTransfer(task: TransferConfig) {
   if (!task.enabled) {
     consola.info("Transfer task is disabled. Skipping.")
     return
   }
-  const isCosmosChain = Boolean(task.sourceChainIdCosmos)
-  const chainType = isCosmosChain ? "Cosmos" : "EVM"
+
+  // Decide which chain type we’re dealing with
+  let chainType: "Cosmos" | "EVM" | "Aptos"
+  let sourceChainId: ChainId
+
+  if (task.sourceChainIdCosmos) {
+    chainType = "Cosmos"
+    sourceChainId = task.sourceChainIdCosmos
+  } else if (task.sourceChainIdAptos) {
+    chainType = "Aptos"
+    sourceChainId = task.sourceChainIdAptos
+  } else {
+    chainType = "EVM"
+    sourceChainId = task.sourceChainIdEVM
+  }
+
+  // Random amount in [min, max]
   const random_amount = getRandomArbitrary(task.amount_range[0], task.amount_range[1])
+
   try {
     consola.info(
-      "\n[%s] Starting transfer for chainId=%s to chain=%s",
-      chainType,
-      isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
-      task.destinationChainId
+      `\n[${chainType}] Starting transfer for chainId=${sourceChainId} to chain=${task.destinationChainId}`
     )
 
+    // Prepare accounts for each chain type
+    // (These can remain unused if not relevant yet.)
     const evmAccount = privateKeyToAccount(`0x${task.privateKey.replace(/^0x/, "")}`)
     const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
       Uint8Array.from(hexToBytes(task.privateKey)),
       task.cosmosAccountType
     )
+    const aptosPrivKey = new Ed25519PrivateKey(task.privateKey)
+    const aptosAccount = Account.fromPrivateKey({ privateKey: aptosPrivKey })
 
+    // Build transport from user-specified RPCs
     const transports = task.rpcs.map(rpc => http(rpc))
-    const sourceChainId = isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM
 
+    // Fetch recommended channels & find the route
     const channels = await getRecommendedChannels()
-
     const channel = getChannelInfo(sourceChainId, task.destinationChainId, channels)
     if (channel === null) {
       consola.error(
@@ -334,109 +357,117 @@ async function doTransfer(task: TransferConfig) {
       return
     }
 
+    // Convert denomAddress to hex if needed
     let taskDenomAddr = task.denomAddress
     if (!taskDenomAddr.startsWith("0x")) {
       taskDenomAddr = toHex(taskDenomAddr)
     }
+
+    // Get a quote token from Union. (This is required for bridging logic.)
     const quoteToken = await getQuoteToken(sourceChainId, taskDenomAddr, channel)
-
-    // consola.info(
-    //   "quoteToken: ",
-    //   quoteToken,
-    //   " chainId: ",
-    //   sourceChainId,
-    //   " denomAddr: ",
-    //   task.denomAddress,
-    //   " channel: ",
-    //   channel
-    // )
-
     if (quoteToken.isErr()) {
-      consola.info("could not get quote token")
+      consola.info("Could not get quote token")
       consola.error(quoteToken.error)
       return
     }
-
     if ((quoteToken.value.type as string) === "NO_QUOTE_AVAILABLE") {
-      consola.info("No quote token available")
+      consola.info("No quote token available; cannot proceed.")
       return
     }
 
-    // consola.info("quote token", quoteToken.value)
+    // Construct a generic payload. Adjust as needed per chain type.
+    // Usually the fields (receiver, sourceChannelId, etc.) change slightly for Cosmos/EVM.
+    // Below is an example of how you might differentiate.
+    let txPayload: any
+    if (chainType === "Cosmos") {
+      txPayload = {
+        baseToken: task.denomAddress,
+        baseAmount: random_amount,
+        quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
+        quoteAmount: random_amount,
+        receiver: task.receiverAddress,  // cosmos -> EVM => receiver in hex
+        sourceChannelId: channel.source_channel_id,
+        ucs03address: fromHex(`0x${channel.source_port_id}`, "string") as `0x${string}`
+      }
+      if(task.destinationChainId === "250" ) {
+        console.info("destinationChainId is Aptos")
+        // txPayload.receiver = bech32AddressToHex({ address: task.receiverAddress })
+      } else {
+        txPayload.receiver = toHex(task.receiverAddress)
+        console.info("destinationChainId is not Aptos")
+      }
+    } else if (chainType === "Aptos") {
+      txPayload = {
+        baseToken: task.denomAddress,
+        baseAmount: random_amount,
+        quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
+        quoteAmount: random_amount,
+        receiver: bech32AddressToHex({ address: task.receiverAddress }),      
+        sourceChannelId: channel.source_channel_id,
+        ucs03address: `0x${channel.source_port_id}` as `0x${string}`
+      }
+    } else {
+      // EVM
+      txPayload = {
+        baseToken: task.denomAddress,
+        baseAmount: random_amount,
+        quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
+        quoteAmount: random_amount,
+        receiver: task.receiverAddress,
+        sourceChannelId: channel.source_channel_id,
+        ucs03address: `0x${channel.source_port_id}` as `0x${string}`
+      }
+    }
 
-    const txPayload = isCosmosChain
-      ? {
-          baseToken: task.denomAddress,
-          baseAmount: BigInt(random_amount),
-          quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
-          quoteAmount: BigInt(random_amount),
-          receiver: toHex(task.receiverAddress),
-          sourceChannelId: channel.source_channel_id,
-          ucs03address: fromHex(`0x${channel.source_port_id}`, "string") as `0x${string}`
-        }
-      : {
-          baseToken: task.denomAddress,
-          baseAmount: BigInt(random_amount),
-          quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
-          quoteAmount: BigInt(random_amount),
-          receiver: task.receiverAddress,
-          sourceChannelId: channel.source_channel_id,
-          ucs03address: `0x${channel.source_port_id}` as `0x${string}`
-        }
+    console.info("txPayload:", txPayload)
+
+    // Now create the union client specific to each chain type
     let unionClient: any
-    if (isCosmosChain) {
+    if (chainType === "Cosmos") {
       unionClient = createUnionClient({
         account: cosmosAccount,
         chainId: task.sourceChainIdCosmos,
         gasPrice: { amount: "0.025", denom: task.gasPriceDenom },
         transport: transports[0]
       })
+    } else if (chainType === "Aptos") {
+      // Placeholder: fill in your Aptos client creation logic
+      unionClient = createUnionClient({
+        account: aptosAccount,
+        chainId: task.sourceChainIdAptos,
+        transport: transports[0] 
+      })
     } else {
+      // EVM
       unionClient = createUnionClient({
         account: evmAccount,
         chainId: task.sourceChainIdEVM,
         transport: fallback(transports)
       })
-      // no need to approve for EVM, already approved all holesky & sepolia it will be waste
-      // of time.
-
-      // const approveResponse = await unionClient.approveErc20(txPayload)
-      // consola.info("approve response: ", approveResponse)
-      // if (approveResponse.isErr()) {
-      //   consola.error(approveResponse.error)
-      //   return
-      // }
     }
 
+    // Actually send the transfer
     const transferResp = await unionClient.transferAsset(txPayload)
     if (transferResp.isErr()) {
       consola.error(
-        "[%s] [%s->%s] Transfer error:",
-        chainType,
-        isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
-        task.destinationChainId,
+        `[${chainType}] [${sourceChainId}->${task.destinationChainId}] Transfer error:`,
         transferResp.error
       )
       return
     }
     consola.info(
-      "[%s] [%s->%s] Transfer success:",
-      chainType,
-      isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
-      task.destinationChainId,
+      `[${chainType}] [${sourceChainId}->${task.destinationChainId}] Transfer success:`,
       transferResp.value
     )
+
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     consola.error(
-      "[%s] [%s->%s] Transfer exception: %s",
-      isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
-      task.destinationChainId,
-      chainType,
-      msg
+      `[${chainType}] [${sourceChainId}->${task.destinationChainId}] Transfer exception: ${msg}`
     )
   }
 }
+
 
 /**
  * This loop runs your IBC checks on the interval specified by `config.cycleIntervalMs`.
@@ -485,7 +516,7 @@ async function runIbcChecksForever(config: ConfigFile) {
  */
 async function runTransfersForever(config: ConfigFile) {
   const transfers: Array<TransferConfig> = config.transfers ?? []
-  const TEN_MINUTES_MS = 10 * 60 * 1000
+  const TEN_MINUTES_MS = 10 * 60 * 300
 
   while (true) {
     if (transfers.length > 0) {
@@ -497,7 +528,7 @@ async function runTransfersForever(config: ConfigFile) {
       consola.info("No transfers configured. Skipping transfer step.")
     }
 
-    consola.info(`Transfers done (or skipped). Sleeping 10 minutes...`)
+    consola.info(`Transfers done (or skipped). Sleeping 3 minutes...`)
     await new Promise(resolve => setTimeout(resolve, TEN_MINUTES_MS))
   }
 }
