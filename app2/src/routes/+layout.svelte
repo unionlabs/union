@@ -13,6 +13,10 @@ import ErrorsModal from "$lib/components/ErrorsModal.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import { totalErrorCount } from "$lib/stores/app-errors.svelte"
 import Header from "$lib/components/layout/Header/index.svelte"
+import { page } from "$app/state"
+import { navigation } from "$lib/components/layout/Sidebar/navigation.ts"
+import { channelsQuery } from "$lib/queries/channels.svelte.ts"
+import { runExample } from "$lib/utils/convert-display.ts"
 
 let { children } = $props()
 
@@ -26,8 +30,14 @@ BigInt["prototype"].toJSON = function () {
 }
 
 onMount(() => {
-  const fiber = Effect.runFork(chainsQuery(ENV()))
-  return () => Effect.runPromise(Fiber.interrupt(fiber))
+  runExample()
+  const chainsFiber = Effect.runFork(chainsQuery(ENV()))
+  const channelsFiber = Effect.runFork(channelsQuery())
+
+  return () => {
+    Effect.runPromise(Fiber.interrupt(chainsFiber))
+    Effect.runPromise(Fiber.interrupt(channelsFiber))
+  }
 })
 
 $effect(() => {

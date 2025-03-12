@@ -7,11 +7,11 @@ import {
 } from "viem"
 import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
 import { getPublicClient, getWalletClient } from "../evm/clients.ts"
-import type { Ucs03TransferEvm } from "$lib/services/transfer-ucs03-evm/machine"
 import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
 import type { Chain } from "$lib/schema/chain.ts"
+import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 
-export const approveTransfer = (chain: Chain, transactionArgs: Ucs03TransferEvm) =>
+export const approveTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
     const walletClient = yield* getWalletClient(chain)
 
@@ -19,14 +19,19 @@ export const approveTransfer = (chain: Chain, transactionArgs: Ucs03TransferEvm)
       account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
     )
 
+    console.log({
+      address: transfer.baseToken,
+      args: [transfer.ucs03address, transfer.baseAmount]
+    })
+
     const hash = yield* Effect.tryPromise({
       try: () =>
         walletClient.writeContract({
           account: account.address as `0x${string}`,
           abi: erc20Abi,
           functionName: "approve",
-          address: transactionArgs.baseToken,
-          args: [transactionArgs.ucs03address, transactionArgs.baseAmount]
+          address: transfer.baseToken,
+          args: [transfer.ucs03address, transfer.baseAmount]
         }),
       catch: err => new WriteContractError({ cause: err as WriteContractErrorType })
     })

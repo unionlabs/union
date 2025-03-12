@@ -1,4 +1,5 @@
 import { debounce } from "$lib/utils"
+import { getContext, setContext } from "svelte"
 
 /**
  * Type definition for form fields managed by this store
@@ -21,7 +22,7 @@ export type FormFields = {
  * - Dependency management between fields (resetting related fields)
  * - URL parameter parsing on initialization
  */
-export class RawIntentsStoreSvelte {
+export class RawTransferSvelte {
   // Reactive state fields using Svelte 5 $state syntax
   source: string = $state("")
   destination: string = $state("")
@@ -30,8 +31,6 @@ export class RawIntentsStoreSvelte {
   amount: string = $state("")
 
   constructor() {
-    console.log("[RawIntents] Initializing store")
-
     // Initialize values from URL parameters if they exist
     this.initFromUrlParams()
   }
@@ -41,14 +40,11 @@ export class RawIntentsStoreSvelte {
    * This allows for bookmarking or sharing URLs with pre-filled form data
    */
   initFromUrlParams = () => {
-    console.log("[RawIntents] Checking for URL parameters")
     const url = new URL(window.location.href)
     const searchParams = url.searchParams
 
     // Check if we have any parameters to initialize from
     if ([...searchParams.entries()].length > 0) {
-      console.log("[RawIntents] Found URL parameters:", Object.fromEntries(searchParams.entries()))
-
       // Load values from URL parameters if they exist
       const initialValues: Partial<FormFields> = {}
 
@@ -56,7 +52,6 @@ export class RawIntentsStoreSvelte {
       ;(Object.keys(this.cleanState({})) as Array<keyof FormFields>).forEach(field => {
         const paramValue = searchParams.get(field)
         if (paramValue) {
-          console.log(`[RawIntents] Loading parameter ${field}:`, paramValue)
           initialValues[field] = paramValue
         }
       })
@@ -64,7 +59,6 @@ export class RawIntentsStoreSvelte {
       // Set the values without updating URL (to avoid circular updates)
       this.setWithoutUrlUpdate(initialValues)
     } else {
-      console.log("[RawIntents] No URL parameters found, starting with empty state")
       // If no parameters, clear URL (in case of fragment identifiers or other cruft)
       this.clearUrlParameters()
     }
@@ -75,7 +69,6 @@ export class RawIntentsStoreSvelte {
    * Preserves the rest of the URL (path, hash, etc.)
    */
   clearUrlParameters = () => {
-    console.log("[RawIntents] Clearing URL parameters")
     const url = new URL(window.location.href)
     url.search = ""
     history.replaceState({}, "", url.toString())
@@ -98,8 +91,6 @@ export class RawIntentsStoreSvelte {
    * @param value Partial state object with fields to update
    */
   setWithoutUrlUpdate = (value: Partial<FormFields>) => {
-    console.log("[RawIntents] Setting values without URL update:", value)
-
     // Create a new cleaned state with updated values
     const newParams = this.cleanState({
       source: this.source,
@@ -124,7 +115,6 @@ export class RawIntentsStoreSvelte {
    * Only includes non-empty values in URL parameters
    */
   debouncedUpdateUrl = debounce((params: FormFields) => {
-    console.log("[RawIntents] Updating URL with params:", params)
     const url = new URL(window.location.href)
 
     // Clear existing parameters
@@ -138,7 +128,6 @@ export class RawIntentsStoreSvelte {
     })
 
     history.replaceState({}, "", url.toString())
-    console.log("[RawIntents] New URL:", url.toString())
   }, 300)
 
   /**
@@ -147,8 +136,6 @@ export class RawIntentsStoreSvelte {
    * @param value Partial state object with fields to update
    */
   set = (value: Partial<FormFields>) => {
-    console.log("[RawIntents] Setting multiple fields:", value)
-
     // Create a new cleaned state with updated values
     const newParams = this.cleanState({
       source: this.source,
@@ -183,8 +170,6 @@ export class RawIntentsStoreSvelte {
     const value =
       valueOrEvent instanceof Event ? (valueOrEvent.target as HTMLInputElement).value : valueOrEvent
 
-    console.log(`[RawIntents] Updating field ${field}:`, value)
-
     // Start with current state
     const currentState = {
       source: this.source,
@@ -206,7 +191,6 @@ export class RawIntentsStoreSvelte {
 
     const fieldsToReset = resetMapping[field]
     if (fieldsToReset) {
-      console.log(`[RawIntents] Resetting dependent fields:`, fieldsToReset)
       fieldsToReset.forEach(resetField => {
         updatedState[resetField] = ""
       })
@@ -225,4 +209,22 @@ export class RawIntentsStoreSvelte {
     // Debounced URL update
     this.debouncedUpdateUrl(newParams)
   }
+}
+
+const STATE_KEY = Symbol("RAW_TRANSFER")
+
+export interface RawTransfer {
+  rawTransfer: RawTransferSvelte
+}
+
+export function createRawTransferState() {
+  const state: RawTransfer = {
+    rawTransfer: new RawTransferSvelte()
+  }
+  setContext(STATE_KEY, state)
+  return state
+}
+
+export function getRawTransferState(): RawTransfer {
+  return getContext<RawTransfer>(STATE_KEY)
 }

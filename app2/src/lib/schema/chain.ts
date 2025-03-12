@@ -1,7 +1,11 @@
 import { VIEM_CHAINS } from "$lib/constants/viem-chains"
 import { Data, Effect, Option, Schema } from "effect"
 import type { Chain as ViemChain } from "viem"
-import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
+import type {
+  AddressCanonicalBytes,
+  AddressCosmosCanonical,
+  AddressCosmosDisplay
+} from "./address.ts"
 import { bech32, bytes } from "@scure/base"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))

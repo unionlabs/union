@@ -2,6 +2,7 @@ import { Schema } from "effect"
 import { Hex } from "$lib/schema/hex"
 import { UniversalChainId } from "./chain.ts"
 import { ChannelId } from "./channel.ts"
+import { AddressEvmCanonical } from "$lib/schema/address.ts"
 
 export const TokenRawDenom = Hex.pipe(Schema.brand("TokenRawDenom"))
 export type TokenRawDenom = typeof TokenRawDenom.Type
@@ -66,3 +67,53 @@ export type Tokens = typeof Tokens.Type
 
 export const RawTokenBalance = Schema.Option(TokenRawAmount).pipe(Schema.brand("RawTokenBalance"))
 export type RawTokenBalance = typeof RawTokenBalance.Type
+
+export const EVMWethToken = AddressEvmCanonical.pipe(
+  Schema.annotations({
+    message: () =>
+      "WETH token must be a valid EVM canonical address (e.g., 0x followed by 40 hex chars)"
+  })
+)
+
+export const QuoteData = Schema.Union(
+  Schema.Struct({
+    quote_token: Schema.String,
+    type: Schema.Literal("UNWRAPPED", "NEW_WRAPPED")
+  }),
+  Schema.Struct({
+    type: Schema.Literal("NO_QUOTE_AVAILABLE")
+  }),
+  Schema.Struct({
+    type: Schema.Literal("QUOTE_LOADING")
+  }),
+  Schema.Struct({
+    type: Schema.Literal("QUOTE_MISSING_ARGUMENTS")
+  }),
+  Schema.Struct({ type: Schema.Literal("QUOTE_ERROR"), cause: Schema.String })
+)
+
+export const WethTokenData = Schema.Union(
+  Schema.Struct({ wethQuoteToken: Schema.String }),
+  Schema.Struct({ type: Schema.Literal("NO_WETH_QUOTE") }),
+  Schema.Struct({ type: Schema.Literal("WETH_LOADING") }),
+  Schema.Struct({ type: Schema.Literal("WETH_MISSING_ARGUMENTS") }),
+  Schema.Struct({ type: Schema.Literal("WETH_ERROR"), cause: Schema.String })
+)
+
+//Change to
+// export type QuoteData = Data.TaggedEnum<{
+//   UNWRAPPED: { quote_token: Schema.String }
+//   NEW_WRAPPED: { quote_token: Schema.String }
+//   NO_QUOTE_AVAILABLE: {}
+//   QUOTE_LOADING: {}
+//   QUOTE_MISSING_ARGUMENTS: {}
+//   QUOTE_ERROR: { cause: Schema.String }
+// }>
+//
+// export type WethTokenData = Data.TaggedEnum<{
+//   WETH_QUOTE: { wethQuoteToken: Schema.String }
+//   NO_WETH_QUOTE: {}
+//   WETH_LOADING: {}
+//   WETH_MISSING_ARGUMENTS: {}
+//   WETH_ERROR: { cause: Schema.String }
+// }>

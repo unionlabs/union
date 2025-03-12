@@ -38,4 +38,29 @@ export class ConnectorClientError extends Data.TaggedError("ConnectorClientError
   cause: GetConnectorClientErrorType
 }> {}
 
-export type SubmitTransferError = SendTransactionError | CreateWalletClientError
+export class AddressValidationError extends Data.TaggedError("AddressValidationError")<{
+  input: string
+  cause?: unknown | undefined
+}> {}
+
+export class AmountParsingError extends Data.TaggedError("AmountParsingError")<{
+  input: string
+  decimals: number
+  cause?: unknown | undefined
+}> {}
+
+export class ChannelValidationError extends Data.TaggedError("ChannelValidationError")<{
+  source_chain_id: string
+  destination_chain_id: string
+  cause?: unknown | undefined
+}> {}
+
+export class GetQuoteError extends Data.TaggedError("GetQuoteError")<{
+  cause: string
+}> {}
+
+export class GetWethQuoteError extends Data.TaggedError("GetWethQuoteError")<{
+  cause: string
+}> {}
+
+export type SubmitTransferError = WriteContractError | CreateWalletClientError
