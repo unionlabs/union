@@ -1,7 +1,7 @@
 import { Schema } from "effect"
-import {PortId} from "$lib/schema/port.ts";
-import {ChainId} from "$lib/schema/chain.ts";
-import {ConnectionId} from "$lib/schema/connection.ts";
+import { PortId } from "$lib/schema/port.ts"
+import { ChainId } from "$lib/schema/chain.ts"
+import { ConnectionId } from "$lib/schema/connection.ts"
 
 export const ChannelId = Schema.Int.pipe(Schema.brand("ChannelId"))
 

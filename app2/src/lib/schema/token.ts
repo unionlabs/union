@@ -100,7 +100,6 @@ export const WethTokenData = Schema.Union(
   Schema.Struct({ type: Schema.Literal("WETH_ERROR"), cause: Schema.String })
 )
 
-
 //Change to
 // export type QuoteData = Data.TaggedEnum<{
 //   UNWRAPPED: { quote_token: Schema.String }

@@ -8,7 +8,6 @@ import { GRAQPHQL_URL } from "@unionlabs/client"
 import type { Chain } from "$lib/schema/chain.ts"
 import { getChainFromWagmi } from "$lib/wallet/evm"
 import { getCosmWasmClient } from "$lib/services/cosmos/clients"
-import { type CosmosChainId, cosmosRpcs } from "$lib/services/cosmos/rpc.ts"
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 
@@ -23,7 +22,7 @@ export const getQuoteToken = (
       try: () =>
         request(GRAQPHQL_URL, tokenWrappingQuery, {
           base_token,
-          destination_channel_id: channel.source_channel_id, // Convert to Int
+          destination_channel_id: channel.source_channel_id,
           source_chain_id: sourceChain.chain_id
         }),
       catch: error => {
@@ -37,8 +36,11 @@ export const getQuoteToken = (
     }
 
     if (destinationChain.rpc_type === "cosmos") {
-      const rpc = cosmosRpcs[channel.destination_chain_id as CosmosChainId]
-      const client = yield* getCosmWasmClient(rpc)
+      const rpc = yield* destinationChain
+        .requireRpcUrl("rpc")
+        .pipe(Effect.mapError(err => new GetQuoteError({ cause: err.message })))
+
+      const client = yield* getCosmWasmClient(rpc.toString())
       const predictedQuoteToken = yield* Effect.tryPromise({
         try: () =>
           client.queryContractSmart(fromHex(channel.destination_port_id, "string"), {
@@ -56,10 +58,13 @@ export const getQuoteToken = (
     }
 
     if (destinationChain.rpc_type === "evm") {
-      const rpc = "https://rpc.testnet-9.union.build"
+      const rpc = yield* destinationChain
+        .requireRpcUrl("rpc")
+        .pipe(Effect.mapError(err => new GetQuoteError({ cause: err.message })))
+
       const client = createPublicClient({
         chain: getChainFromWagmi(Number.parseInt(channel.destination_chain_id)),
-        transport: http(rpc)
+        transport: http(rpc.toString())
       })
       const predictedQuoteToken = yield* Effect.tryPromise({
         try: () =>
