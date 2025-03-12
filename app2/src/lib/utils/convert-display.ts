@@ -80,7 +80,7 @@ export const isValidCanonicalForChain = (
     if (!displayAddress || displayAddress.length === 0) {
       return false
     }
-    
+
     const validateEvmAddress = (): boolean => {
       return pipe(
         Effect.try({
