@@ -7,6 +7,7 @@ import ChainComponent from "./ChainComponent.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import { goto } from "$app/navigation"
 import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
+import LongMonoWord from "../ui/LongMonoWord.svelte"
 
 type Props = {
   packet: PacketListItem
@@ -36,9 +37,9 @@ const handleClick = () => {
     onclick={handleClick}
   >
     <div>
-      <div class="font-mono">
+      <LongMonoWord>
         {packet.packet_hash}
-      </div>
+      </LongMonoWord>
       <div class="flex items-center gap-1 text-zinc-400 text-sm">
         {#if Option.isSome(sourceChain)}
           <ChainComponent chain={sourceChain.value} />

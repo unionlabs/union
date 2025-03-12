@@ -1,23 +1,21 @@
 <script lang="ts">
 import type { HTMLAttributes } from "svelte/elements"
 import type { Chain } from "$lib/schema/chain"
-import type { AddressCanonicalBytes } from "$lib/schema/address"
+import type { Height } from "$lib/schema/height"
 import { cn } from "$lib/utils"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
-import { Effect, Option } from "effect"
+import { Option } from "effect"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
-  address: AddressCanonicalBytes
+  height: Height
   chain: Chain
   class?: string
 }
 
-const { address, chain, class: className = "", ...rest }: Props = $props()
+const { height, chain, class: className = "", ...rest }: Props = $props()
 
-const displayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address)))
-
-// Find the explorer URL for this address
+// Find the explorer URL for this block height
 const getExplorerUrl = () => {
   if (chain.explorers.length === 0) {
     return null
@@ -25,11 +23,11 @@ const getExplorerUrl = () => {
 
   // Use the first explorer by default
   const explorer = chain.explorers[0]
-  // Replace {address} placeholder if it exists, otherwise append the address
-  const addressUrl = explorer.address_url.toString()
-  return addressUrl.includes("{address}")
-    ? addressUrl.replace("{address}", displayAddress)
-    : `${addressUrl}${displayAddress}`
+  // Replace {block} placeholder if it exists, otherwise append the height
+  const blockUrl = explorer.block_url.toString()
+  return blockUrl.includes("{block}")
+    ? blockUrl.replace("{block}", height.toString())
+    : `${blockUrl}${height}`
 }
 
 const explorerUrl = $derived(getExplorerUrl())
@@ -39,14 +37,14 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
 <Tooltip>
   {#snippet trigger()}
     <LongMonoWord class={className} {...rest}>
-      {displayAddress}
+      {height}
     </LongMonoWord>
   {/snippet}
 
   {#snippet content()}
     <div class="text-sm flex flex-col gap-4 text-neutral-400">
       <section class="flex justify-between items-center">
-        <h2 class="text-white font-bold text-lg">Address Details</h2>
+        <h2 class="text-white font-bold text-lg">Block Details</h2>
         <div class="bg-sky-400 text-black font-bold rounded px-1">
           {chain.rpc_type.toUpperCase()}
         </div>
@@ -59,19 +57,10 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
       </section>
 
       <section>
-        <h3 class="text-white">Formats</h3>
-        <div>
-          <span class="text-white">Display:</span>
-          <LongMonoWord class="inline">
-            {displayAddress}
-          </LongMonoWord>
-        </div>
-        <div>
-          <span class="text-white">Canonical:</span>
-          <LongMonoWord class="inline">
-            {address}
-          </LongMonoWord>
-        </div>
+        <h3 class="text-white">Block Height</h3>
+        <LongMonoWord>
+          {height}
+        </LongMonoWord>
       </section>
 
       {#if explorerUrl}
