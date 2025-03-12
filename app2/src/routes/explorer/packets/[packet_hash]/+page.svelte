@@ -21,6 +21,7 @@ import { fromHex } from "viem"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import TransactionComponent from "$lib/components/model/TransactionComponent.svelte"
 import HeightComponent from "$lib/components/model/HeightComponent.svelte"
+import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
 
 onMount(() => {
   const packetHash = page.params.packet_hash
@@ -203,10 +204,13 @@ const goBack = () => {
           </div>
         {/if}
         
-        {#if Option.isSome(packetDetails.data.value.packet_send_block_hash)}
+        {#if Option.isSome(packetDetails.data.value.packet_send_block_hash) && Option.isSome(sourceChain)}
           <div>
             <Label>Send Block Hash</Label>
-            <div class=" break-all">{packetDetails.data.value.packet_send_block_hash.value}</div>
+            <BlockHashComponent 
+              hash={packetDetails.data.value.packet_send_block_hash.value} 
+              chain={sourceChain.value} 
+            />
           </div>
         {/if}
         
@@ -231,10 +235,13 @@ const goBack = () => {
           </div>
         {/if}
         
-        {#if Option.isSome(packetDetails.data.value.packet_recv_block_hash)}
+        {#if Option.isSome(packetDetails.data.value.packet_recv_block_hash) && Option.isSome(destinationChain)}
           <div>
             <Label>Receive Block Hash</Label>
-            <div class=" break-all">{packetDetails.data.value.packet_recv_block_hash.value}</div>
+            <BlockHashComponent 
+              hash={packetDetails.data.value.packet_recv_block_hash.value} 
+              chain={destinationChain.value} 
+            />
           </div>
         {/if}
         
@@ -259,10 +266,13 @@ const goBack = () => {
           </div>
         {/if}
         
-        {#if Option.isSome(packetDetails.data.value.packet_ack_block_hash)}
+        {#if Option.isSome(packetDetails.data.value.packet_ack_block_hash) && Option.isSome(destinationChain)}
           <div>
             <Label>Ack Block Hash</Label>
-            <div class=" break-all">{packetDetails.data.value.packet_ack_block_hash.value}</div>
+            <BlockHashComponent 
+              hash={packetDetails.data.value.packet_ack_block_hash.value} 
+              chain={destinationChain.value} 
+            />
           </div>
         {/if}
         
@@ -287,10 +297,13 @@ const goBack = () => {
           </div>
         {/if}
         
-        {#if Option.isSome(packetDetails.data.value.write_ack_block_hash)}
+        {#if Option.isSome(packetDetails.data.value.write_ack_block_hash) && Option.isSome(sourceChain)}
           <div>
             <Label>Write Ack Block Hash</Label>
-            <div class=" break-all">{packetDetails.data.value.write_ack_block_hash.value}</div>
+            <BlockHashComponent 
+              hash={packetDetails.data.value.write_ack_block_hash.value} 
+              chain={sourceChain.value} 
+            />
           </div>
         {/if}
       </div>
