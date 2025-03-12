@@ -1,28 +1,50 @@
 import { Effect } from "effect"
-import {cosmosStore, getCosmosOfflineSigner as getSigner} from "$lib/wallet/cosmos";
-import {OfflineSignerError} from "$lib/services/transfer-cosmos/errors.ts";
+import { type CosmosWalletId } from "$lib/wallet/cosmos"
+import { OfflineSignerError } from "$lib/services/transfer-cosmos/errors.ts"
+import type { Chain } from "$lib/schema/chain.ts"
+import type { OfflineSigner } from "$lib/services/cosmos/types.ts"
 
-export const getCosmosOfflineSigner = ({ chainId}: {
-  connectedWallet: string
-  chainId: string
-}) =>
-  Effect.tryPromise({
-    try: async () => {
+/**
+ * Gets an offline signer for the given chain and wallet
+ */
+export const getCosmosOfflineSigner = (chain: Chain, connectedWallet: CosmosWalletId) =>
+  Effect.gen(function* () {
+    if (!connectedWallet) {
+      yield* Effect.fail(new OfflineSignerError({ cause: "No wallet connected" }))
+      return
+    }
 
-      const { connectedWallet } = cosmosStore
+    if (!chain?.chain_id) {
+      yield* Effect.fail(new OfflineSignerError({ cause: "Invalid chain: missing chain_id" }))
+      return
+    }
 
-      if (!connectedWallet) {
-        throw new OfflineSignerError({cause: "No wallet connected"})
-      }
+    const wallet = window[connectedWallet]
+    if (!wallet) {
+      yield* Effect.fail(new OfflineSignerError({ cause: `Wallet ${connectedWallet} not found in window object` }))
+      return
+    }
 
-      if (!chainId) {
-        throw new OfflineSignerError({cause: "Chain ID is required"})
-      }
+    const signerMethod = wallet.getOfflineSignerAuto
+    if (!signerMethod) {
+      yield* Effect.fail(new OfflineSignerError({ cause: `Wallet ${connectedWallet} does not support getOfflineSignerAuto` }))
+      return
+    }
 
-      return await getSigner({
-        connectedWallet,
-        chainId
-      })
-    },
-    catch: (err) => new OfflineSignerError({ cause: String(err) })
+    return yield* Effect.tryPromise({
+      try: async () => {
+        const signerResult = signerMethod.call(wallet, chain.chain_id, {
+          disableBalanceCheck: false
+        })
+
+        const signer = await signerResult
+
+        if (!signer) {
+          throw new Error(`Failed to get offline signer for ${connectedWallet}`)
+        }
+
+        return signer as unknown as OfflineSigner
+      },
+      catch: (err) => new OfflineSignerError({ cause: String(err) })
+    })
   })
