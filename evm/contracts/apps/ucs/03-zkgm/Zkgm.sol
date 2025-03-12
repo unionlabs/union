@@ -425,10 +425,10 @@ library ZkgmLib {
 
     function encodeMultiplexCalldata(
         uint256 path,
-        bytes calldata contractAddress,
+        bytes calldata sender,
         bytes calldata contractCalldata
     ) internal pure returns (bytes memory) {
-        return abi.encode(path, contractAddress, contractCalldata);
+        return abi.encode(path, sender, contractCalldata);
     }
 }
 
@@ -1475,15 +1475,6 @@ contract UCS03Zkgm is
         if (isInFlightPacket(packetHash)) {
             IBCPacket memory parent = inFlightPacket[packetHash];
             if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
-                ibcHandler.writeAcknowledgement(
-                    parent,
-                    ZkgmLib.encodeAck(
-                        Ack({
-                            tag: ZkgmLib.ACK_FAILURE,
-                            innerAck: ZkgmLib.ACK_EMPTY
-                        })
-                    )
-                );
                 delete inFlightPacket[packetHash];
                 return;
             }

@@ -2,9 +2,12 @@ pub mod com;
 pub mod contract;
 pub mod msg;
 mod state;
-use alloy::primitives::ruint::ParseError;
+#[cfg(test)]
+mod tests;
+use alloy::primitives::{ruint::ParseError, U256};
 use cosmwasm_std::StdError;
 use thiserror::Error;
+use unionlabs::primitives::Bytes;
 use unionlabs_cosmwasm_upgradable::UpgradeError;
 
 #[derive(Error, Debug, PartialEq)]
@@ -69,4 +72,31 @@ pub enum ContractError {
     ContractCreationEventNotFound,
     #[error("{0:?}")]
     InvalidPath(ParseError),
+    #[error("forward previousDestinationChannelId mismatch, actual: {actual}, expted: {expected}")]
+    InvalidForwardDestinationChannelId { actual: u32, expected: u32 },
+    #[error("forward (sent) packet is missing from the reply")]
+    ForwardedPacketMissingInReply,
+    #[error("could not deserialize sent packet on reply, data: {sent_packet_data}")]
+    CouldNotDeserializeSentPacket {
+        error: serde_json_wasm::de::Error,
+        sent_packet_data: Bytes,
+    },
+    #[error("asynchronous multiplexing is not supported")]
+    AsyncMultiplexUnsupported,
+    #[error("channel path is full and can't be updated, too many hops? path: {path}, next_hop_index: {next_hop_index}")]
+    ChannelPathIsFull { path: U256, next_hop_index: usize },
+    #[error("invalid asset origin path")]
+    InvalidAssetOrigin,
+    #[error("invalid asset name")]
+    InvalidAssetName,
+    #[error("invalid asset symbol")]
+    InvalidAssetSymbol,
+    #[error("invalid asset decimals")]
+    InvalidAssetDecimals,
+    #[error("invalid batch instruction")]
+    InvalidBatchInstruction,
+    #[error("invalid forward instruction")]
+    InvalidForwardInstruction,
+    #[error("invalid multiplex sender")]
+    InvalidMultiplexSender,
 }
