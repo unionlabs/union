@@ -17,6 +17,10 @@ import { chains } from "$lib/stores/chains.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import { getChain } from "$lib/schema/chain"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
+import PacketComponent from "$lib/components/model/PacketComponent.svelte"
+import { packetDetailsQuery } from "$lib/queries/packet-details.svelte"
+import { packetDetails } from "$lib/stores/packets.svelte"
 
 // Store for the transfer details
 import { transferDetails } from "$lib/stores/transfer-details.svelte"
@@ -27,10 +31,15 @@ const packetHash = $page.params.packet_hash
 
 onMount(() => {
   fiber = Effect.runFork(transferByPacketHashQuery(packetHash))
+  packetDetails.runEffect(packetDetailsQuery(packetHash))
+
   return async () => {
     await Effect.runPromise(Fiber.interrupt(fiber))
     transferDetails.data = Option.none()
     transferDetails.error = Option.none()
+
+    // Clean up packet details
+    packetDetails.interruptFiber()
   }
 })
 </script>
@@ -137,7 +146,7 @@ onMount(() => {
                 <div class="relative flex items-start gap-4 ml-6">
                   <!-- Timeline dot -->
                   <div class="absolute z-20 -left-[1.5rem]">
-                    <div class="h-4 w-4 rounded-full bg-zinc-300 dark:bg-zinc-600 ring-4 ring-white dark:ring-zinc-900" />
+                    <div class="h-4 w-4 rounded-full bg-zinc-300 dark:bg-zinc-600 ring-4 ring-white dark:ring-zinc-900" ></div>
                   </div>
                   
                   <!-- Content -->
@@ -206,5 +215,13 @@ onMount(() => {
         </div>
       </div>
     {/if}
+  </Card>
+  
+  <!-- Packet Details Card -->
+  <Card divided>
+    <div class="p-4">
+      Packet Details
+    </div>
+    <PacketComponent/>
   </Card>
 </Sections>

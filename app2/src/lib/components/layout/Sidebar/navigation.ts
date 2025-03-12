@@ -29,29 +29,9 @@ export const navigation: Array<NavSection> = [
         icon: SharpTransferIcon
       },
       {
-        path: "/transfer/native",
-        title: "Transfer Native",
-        icon: SharpTransferIcon
-      },
-      {
         path: "/transfers",
         title: "Your Transfers",
         icon: SharpListIcon
-      },
-      {
-        path: "/dashboard",
-        title: "Dashboard",
-        icon: SharpDashboardIcon
-      },
-      {
-        path: "/stake",
-        title: "Stake with Escher",
-        icon: SharpStakeIcon
-      },
-      {
-        path: "/balances",
-        title: "Your Balances",
-        icon: OutlineControlPointDuplicate
       }
     ]
   },
@@ -82,6 +62,31 @@ export const navigation: Array<NavSection> = [
         path: "/explorer/clients",
         title: "Clients",
         icon: SharpClientsIcon
+      }
+    ]
+  },
+  {
+    title: "Developer",
+    items: [
+      {
+        path: "/transfer/native",
+        title: "Transfer Native",
+        icon: SharpTransferIcon
+      },
+      {
+        path: "/dashboard",
+        title: "Dashboard",
+        icon: SharpDashboardIcon
+      },
+      {
+        path: "/stake",
+        title: "Stake with Escher",
+        icon: SharpStakeIcon
+      },
+      {
+        path: "/balances",
+        title: "Your Balances",
+        icon: OutlineControlPointDuplicate
       },
       {
         path: "/explorer/tokens",

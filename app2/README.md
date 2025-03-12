@@ -14,10 +14,6 @@ To create a production version of your app:
 nix build .#app2 -L
 ```
 
-## Component naming conventions
-
-We use hyphenated components
-
 ## Resource Naming Conventions
 
 Imagine you have a resource `Block` that you fetch from the api, want to store globally, and have a component that displays it nicely. The naming would be as follows:

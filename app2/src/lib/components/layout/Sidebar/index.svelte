@@ -83,31 +83,33 @@ onMount(() => {
     <img class="h-10" src="/images/union-logo.svg" alt="Union" />
   </div>
   <div class="flex flex-col justify-between flex-1">
-  {#each navigation as section}
-    <section class="border-zinc-900 p-6">
-      {#if section.title}
-        <h2 class="font-bold text-sm -mt-8.5 mb-2.5 text-center uppercase text-zinc-600">{section.title}</h2>
-      {/if}
-      <ul class="flex flex-col gap-1">
-        {#each section.items as item}
-          <li>
-            <a 
-              href={item.path} 
-              data-path={item.path}
-              class={cn(
-                "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-                isCurrentPath(item.path) ? "" : "dark:hover:bg-zinc-900"
-              )}
-            >
-              <item.icon 
-                class="size-5 text-zinc-500" 
-              />
-              {item.title}
-            </a>
-          </li>
-        {/each}
-      </ul>
-    </section>
+  {#each navigation as section, i}
+    {#if section.title !== "Developer" || uiStore.showDeveloperPages}
+      <section class="border-zinc-900 p-6">
+        {#if section.title}
+          <h2 class="font-bold text-sm -mt-8.5 mb-2.5 text-center uppercase text-zinc-600">{section.title}</h2>
+        {/if}
+        <ul class="flex flex-col gap-1">
+          {#each section.items as item}
+            <li>
+              <a 
+                href={item.path} 
+                data-path={item.path}
+                class={cn(
+                  "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+                  isCurrentPath(item.path) ? "" : "dark:hover:bg-zinc-900"
+                )}
+              >
+                <item.icon 
+                  class="size-5 text-zinc-500" 
+                />
+                {item.title}
+              </a>
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
   {/each}
   </div>
 
