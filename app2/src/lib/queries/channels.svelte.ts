@@ -10,7 +10,7 @@ export const channelsQuery = () =>
     schema: Schema.Struct({ v1_ibc_union_channel_recommendations: Channels }),
     document: graphql(`
       query Ucs03Channels @cached(ttl: 60) {
-          v1_ibc_union_channel_recommendations(where: {_and: [{version: {_eq: "ucs03-zkgm-0"}}, {destination_chain_id: {_neq: "11155111"}}, {destination_chain_id: {_neq: "17000"}}]}) {
+          v1_ibc_union_channel_recommendations(where: {_and: [{version: {_eq: "ucs03-zkgm-0"}}]}) {
               source_port_id
               source_chain_id
               source_channel_id
