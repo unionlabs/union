@@ -22,12 +22,12 @@ const getExplorerUrl = () => {
   if (chain.explorers.length === 0) {
     return null
   }
-  
+
   // Use the first explorer by default
   const explorer = chain.explorers[0]
   // Replace {address} placeholder if it exists, otherwise append the address
   const addressUrl = explorer.address_url.toString()
-  return addressUrl.includes("{address}") 
+  return addressUrl.includes("{address}")
     ? addressUrl.replace("{address}", displayAddress)
     : `${addressUrl}${displayAddress}`
 }

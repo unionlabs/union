@@ -20,12 +20,12 @@ const getExplorerUrl = () => {
   if (chain.explorers.length === 0) {
     return null
   }
-  
+
   // Use the first explorer by default
   const explorer = chain.explorers[0]
   // Replace {block} placeholder if it exists, otherwise append the height
   const blockUrl = explorer.block_url.toString()
-  return blockUrl.includes("{block}") 
+  return blockUrl.includes("{block}")
     ? blockUrl.replace("{block}", height.toString())
     : `${blockUrl}${height}`
 }

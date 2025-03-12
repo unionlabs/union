@@ -1,5 +1,5 @@
 import { Schema } from "effect"
-import { Hex } from "./hex"
+import { Hex } from "./hex.ts"
 
 /**
  * A branded type for transaction hashes
