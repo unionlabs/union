@@ -25,6 +25,38 @@ onMount(() => {
 function formatNumber(num: string | number): string {
   return Number(num).toLocaleString()
 }
+
+// Derived values for chart data
+const reversedDailyTransfers = $derived(
+  Option.isSome(dailyTransfers.data) ? [...dailyTransfers.data.value].reverse() : []
+)
+
+const maxCount = $derived(
+  Option.isSome(dailyTransfers.data) ? Math.max(...dailyTransfers.data.value.map(d => d.count)) : 0
+)
+
+const yLabels = $derived([
+  0,
+  Math.round(maxCount / 4),
+  Math.round(maxCount / 2),
+  Math.round((maxCount * 3) / 4),
+  maxCount
+])
+
+// Calculate bar heights as percentages
+const barHeights = $derived(
+  reversedDailyTransfers.map(day => ({
+    ...day,
+    heightPercent: Math.max((day.count / maxCount) * 100, 1)
+  }))
+)
+
+// Get labels for x-axis (first, middle, last)
+const xAxisLabels = $derived(
+  reversedDailyTransfers.filter(
+    (_, i, arr) => i === 0 || i === Math.floor(arr.length / 2) || i === arr.length - 1
+  )
+)
 </script>
 
 <Sections>
@@ -58,32 +90,56 @@ function formatNumber(num: string | number): string {
     {#if Option.isSome(dailyTransfers.data)}
       <div class="overflow-x-auto">
         <!-- Chart container -->
-        <div class="h-64 min-w-[600px]">
-          <div class="flex h-full items-end">
-            {#each [...dailyTransfers.data.value].reverse() as day, i}
-              {@const maxCount = Math.max(...dailyTransfers.data.value.map(d => d.count))}
-              {@const height = (day.count / maxCount) * 100}
-              
-              <div class="flex flex-col items-center flex-1 group">
-                <div class="relative w-full px-1">
-                  <div 
-                    class="w-full bg-blue-500 dark:bg-blue-600 rounded-t transition-all duration-300 group-hover:bg-blue-600 dark:group-hover:bg-blue-500"
-                    style="height: {Math.max(height, 1)}%"
-                  >
-                    <div class="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-zinc-800 dark:bg-zinc-700 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {formatNumber(day.count)} transfers on <DateTimeComponent value={day.day} showSeconds={false} />
+        <div class="h-64 relative" style="min-height: 16rem;">
+          <!-- Y-axis labels -->
+          <div class="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between text-xs text-zinc-500 dark:text-zinc-400 pr-2">
+            {#each yLabels as label, i}
+              <div class="text-right" style="transform: translateY({i === 0 ? '100%' : i === yLabels.length - 1 ? '0' : 'none'})">
+                {formatNumber(label)}
+              </div>
+            {/each}
+          </div>
+          
+          <!-- Grid lines -->
+          <div class="absolute left-12 right-0 top-0 bottom-0 flex flex-col justify-between">
+            {#each Array(5) as _, i}
+              <div class="border-t border-zinc-200 dark:border-zinc-700 w-full h-0"></div>
+            {/each}
+          </div>
+          
+          <!-- Bars -->
+          <div class="absolute left-12 right-0 top-0 bottom-0 pt-1 pb-6">
+            <div class="flex h-full items-end" style="min-height: 12rem;">
+              {#each barHeights as day, i}
+                <div class="flex flex-col items-center flex-1 group size-full">
+                  <div class="relative w-full px-1 size-full">
+                    <div 
+                      class="w-full bg-blue-500 dark:bg-blue-400 rounded-t transition-all duration-300 group-hover:bg-blue-600 dark:group-hover:bg-blue-300"
+                      style="height: {day.heightPercent}%; min-height: 1px;"
+                    >
+                      <div class="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-zinc-800 dark:bg-zinc-700 text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                        {formatNumber(day.count)} transfers on <DateTimeComponent value={day.day} showSeconds={false} />
+                      </div>
                     </div>
                   </div>
                 </div>
-                {#if i % 5 === 0 || i === dailyTransfers.data.value.length - 1}
-                  <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-2 rotate-45 origin-left">
-                    <DateTimeComponent value={day.day} showTime={false} />
-                  </div>
-                {/if}
+              {/each}
+            </div>
+          </div>
+          
+          <!-- X-axis labels -->
+          <div class="absolute left-12 right-0 bottom-0 flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
+            {#each xAxisLabels as day}
+              <div class="text-center px-2 whitespace-nowrap">
+                <DateTimeComponent value={day.day} showTime={false} />
               </div>
             {/each}
           </div>
         </div>
+      </div>
+      
+      <div class="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        Showing the last 30 days of transfer activity. View the table below for complete data.
       </div>
     {:else if Option.isSome(dailyTransfers.error)}
       <ErrorComponent error={dailyTransfers.error.value} />
