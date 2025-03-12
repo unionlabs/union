@@ -4,6 +4,7 @@ import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import type { DailyTransfer } from "$lib/schema/statistics"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
+import { onMount } from "svelte"
 
 type Props = {
   data: Option.Option<Array<DailyTransfer>>
@@ -74,8 +75,8 @@ const xAxisLabels = $derived(
           <div class="flex flex-col flex-1 group size-full justify-end hover:opacity-100">
             <div class="w-full size-full flex items-end">
               <div 
-                class="relative w-full bg-white rounded-t transition-all duration-300 bar"
-                style="height: {day.heightPercent}%; min-height: 1px;"
+                class="relative w-full bg-white rounded-t bar animate-bar"
+                style="--final-height: {day.heightPercent}%; --delay: {i * 50}ms; min-height: 1px;"
               >
                 <div class="absolute pointer-events-none bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-zinc-950 border-zinc-900 border text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                   <div>{formatNumber(day.count)}</div> <DateTimeComponent value={day.day} showTime={false} />
@@ -101,5 +102,21 @@ const xAxisLabels = $derived(
   
   :global(.chart-container .flex-1:hover) {
     opacity: 1 !important;
+  }
+
+  /* Bar animation */
+  .animate-bar {
+    height: 0;
+    animation: grow-bar 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: var(--delay, 0ms);
+  }
+
+  @keyframes grow-bar {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--final-height, 0%);
+    }
   }
 </style>
