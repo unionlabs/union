@@ -22,7 +22,7 @@ declare global {
     // }
   }
 
-  interface Window extends AptosWindow, KeplrWindow, LeapWindow, Browser, GoogleRecaptcha {
+  interface Window extends AptosWindow, KeplrWindow, LeapWindow, Browser {
     EventEmitter: typeof EventEmitter
   }
 
