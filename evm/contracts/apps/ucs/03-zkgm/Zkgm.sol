@@ -91,6 +91,9 @@ library ZkgmLib {
 
     bytes public constant ACK_ERR_ONLYMAKER = hex"DEADC0DE";
 
+    bytes32 public constant ACK_ERR_ONLYMAKER_HASH =
+        keccak256(ACK_ERR_ONLYMAKER);
+
     uint256 public constant FILL_TYPE_PROTOCOL = 0xB0CAD0;
     uint256 public constant FILL_TYPE_MARKETMAKER = 0xD1CEC45E;
 
@@ -109,7 +112,7 @@ library ZkgmLib {
     bytes32 public constant IBC_VERSION = keccak256(bytes(IBC_VERSION_STR));
 
     error ErrUnsupportedVersion();
-    error ErrUnimplemented();
+    error ErrAsyncMultiplexUnsupported();
     error ErrBatchMustBeSync();
     error ErrUnknownOpcode();
     error ErrInfiniteGame();
@@ -849,7 +852,7 @@ contract UCS03Zkgm is
             // received entirely as it is only fillable by a market maker.
             if (
                 EfficientHashLib.hash(acknowledgement)
-                    == EfficientHashLib.hash(ZkgmLib.ACK_ERR_ONLYMAKER)
+                    == ZkgmLib.ACK_ERR_ONLYMAKER_HASH
             ) {
                 revert ZkgmLib.ErrOnlyMaker();
             }
@@ -974,8 +977,15 @@ contract UCS03Zkgm is
                 path,
                 instruction
             );
+            // We should have the guarantee that the acks are non empty because
+            // the only instructions allowed in a batch are multiplex and
+            // fungibleAssetOrder which returns non-empty acks only.
             if (acks[i].length == 0) {
                 revert ZkgmLib.ErrBatchMustBeSync();
+            } else if (
+                EfficientHashLib.hash(acks[i]) == ZkgmLib.ACK_ERR_ONLYMAKER_HASH
+            ) {
+                return acks[i];
             }
         }
         return ZkgmLib.encodeBatchAck(BatchAck({acknowledgements: acks}));
@@ -1070,16 +1080,7 @@ contract UCS03Zkgm is
             bytes memory acknowledgement = IIBCModuleRecv(contractAddress)
                 .onRecvPacket(multiplexIbcPacket, relayer, relayerMsg);
             if (acknowledgement.length == 0) {
-                /* TODO: store the packet to handle async acks on
-                   multiplexing, we need to have a mapping from (receiver,
-                   virtualPacket) => ibcPacket. Then the receiver will be the
-                   only one able to acknowledge a virtual packet, resulting in
-                   the origin ibc packet to be acknowledged itself.
-
-                   NOTE: if we do that we will be forced to handle non-atomic
-                   batches... avoid at all cost?
-                 */
-                revert ZkgmLib.ErrUnimplemented();
+                revert ZkgmLib.ErrAsyncMultiplexUnsupported();
             }
             return acknowledgement;
         }

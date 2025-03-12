@@ -1035,7 +1035,7 @@ fn execute_batch(
     path: U256,
     batch: Batch,
 ) -> Result<Response, ContractError> {
-    EXECUTING_PACKET_IS_BATCH.save(deps.storage, &())?;
+    EXECUTING_PACKET_IS_BATCH.save(deps.storage, &batch.instructions.len())?;
     let mut response = Response::new();
     for (i, instruction) in batch.instructions.into_iter().enumerate() {
         let sub_response = execute_internal(
@@ -1280,47 +1280,66 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
             match reply.result {
                 SubMsgResult::Ok(_) => {
                     // If the execution succedeed one of the acks is guaranteed to exist.
-                    let execution_ack = if EXECUTING_PACKET_IS_BATCH.load(deps.storage).is_ok() {
-                        let acknowledgement = EXECUTION_ACK.load(deps.storage)?;
-                        EXECUTION_ACK.remove(deps.storage);
-                        acknowledgement
-                    } else {
-                        let acknowledgements = BATCH_EXECUTION_ACKS.load(deps.storage)?;
-                        BATCH_EXECUTION_ACKS.remove(deps.storage);
-                        BatchAck {
-                            acknowledgements: acknowledgements
-                                .into_iter()
-                                .map(Into::into)
-                                .collect::<Vec<_>>(),
-                        }
-                        .abi_encode_params()
-                        .into()
-                    };
-                    match execution_ack {
-                        // Specific value when the execution must be replayed by a MM. No
-                        // side effects were executed. We break the TX for MMs to be able to
-                        // replay the packet.
-                        ack if ack.as_ref() == ACK_ERR_ONLY_MAKER => Err(ContractError::OnlyMaker),
-                        ack if !ack.is_empty() => {
-                            let zkgm_ack = Ack {
-                                tag: TAG_ACK_SUCCESS,
-                                inner_ack: Vec::from(ack).into(),
+                    let execution_ack = (|| -> Result<Bytes, ContractError> {
+                        match EXECUTING_PACKET_IS_BATCH.may_load(deps.storage)? {
+                            Some(expected_acks) => {
+                                let acks = BATCH_EXECUTION_ACKS.load(deps.storage)?;
+                                BATCH_EXECUTION_ACKS.remove(deps.storage);
+                                // Ensure all acknowledgements has been written
+                                // This is guaranteed because allowed
+                                // instructions are always yielding an ack in
+                                // this case (multiplex/fungibleAssetOrder). We keep this assertion for future upgrades.
+                                if acks.len() != expected_acks {
+                                    return Err(ContractError::BatchMustBeSync);
+                                }
+                                for ack in &acks {
+                                    if ack.is_empty() {
+                                        // This be guaranteed as well.
+                                        return Err(ContractError::BatchMustBeSync);
+                                    } else if ack == ACK_ERR_ONLY_MAKER {
+                                        // Ensure we don't ask for a revert (onlyMaker).
+                                        return Err(ContractError::OnlyMaker);
+                                    }
+                                }
+                                Ok(BatchAck {
+                                    acknowledgements: acks
+                                        .into_iter()
+                                        .map(Into::into)
+                                        .collect::<Vec<_>>(),
+                                }
+                                .abi_encode_params()
+                                .into())
                             }
-                            .abi_encode_params();
-                            Ok(Response::new().add_message(wasm_execute(
-                                &ibc_host,
-                                &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
-                                    MsgWriteAcknowledgement {
-                                        channel_id: packet.destination_channel_id,
-                                        packet,
-                                        acknowledgement: zkgm_ack.into(),
-                                    },
-                                ),
-                                vec![],
-                            )?))
+                            None => {
+                                let ack = EXECUTION_ACK.load(deps.storage)?;
+                                EXECUTION_ACK.remove(deps.storage);
+                                if ack == ACK_ERR_ONLY_MAKER {
+                                    return Err(ContractError::OnlyMaker);
+                                }
+                                Ok(ack)
+                            }
                         }
+                    })()?;
+                    if !execution_ack.is_empty() {
+                        let zkgm_ack = Ack {
+                            tag: TAG_ACK_SUCCESS,
+                            inner_ack: Vec::from(execution_ack).into(),
+                        }
+                        .abi_encode_params();
+                        Ok(Response::new().add_message(wasm_execute(
+                            &ibc_host,
+                            &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
+                                MsgWriteAcknowledgement {
+                                    channel_id: packet.destination_channel_id,
+                                    packet,
+                                    acknowledgement: zkgm_ack.into(),
+                                },
+                            ),
+                            vec![],
+                        )?))
+                    } else {
                         // Async acknowledgement, we don't write anything
-                        _ => Ok(Response::new()),
+                        Ok(Response::new())
                     }
                 }
                 // Something went horribly wrong.
