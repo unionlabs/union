@@ -54,18 +54,18 @@ const PRIVATE_KEY = cliArgs.values["private-key"]
 const WRAPPED_MUNO_DENOM = "0x188b41399546602e35658962477fdf72bd52443474a899d9d48636e8bc299c2c"
 const AMOUNT = 1n
 const SOURCE_CHAIN_ID = "250"
-const DESTINATION_CHAIN_ID = "union-testnet-9"
+const DESTINATION_CHAIN_ID = "stride-internal-1"
 
-// const RECEIVER = bech32AddressToHex({ address: "bbn14vcpe0yt8xdzaapm8yy6tm26sf45rdgu4u2ka9" })
+// const RECEIVER = bech32AddressToHex({ address: "stride1rvctj3eax3pj68pfrxkn92fpzqhymwlgdkd03d" })
 const RECEIVER =
-  "756E696F6E31786434787A356E346371657638643378657270666A656367706565706C34667834323263676A"
+  "73747269646531727663746A3365617833706A3638706672786B6E393266707A7168796D776C67646B64303364"
 /* 
 --------------------------------------------------------
 -------------- HOW TO CALCULATE RECEIVER :-------------- 
 --------------------------------------------------------
 
-~/dev/union (movement_integration) ✗) $ printf "%s" union1xd4xz5n4cqev8d3xerpfjecgpeepl4fx422cgj  | xxd -p -u -c 10000
-756E696F6E31786434787A356E346371657638643378657270666A656367706565706C34667834323263676A
+(env) ~/dev/union (movement-integration) ✗) $ printf "%s" stride1rvctj3eax3pj68pfrxkn92fpzqhymwlgdkd03d | xxd -p -u -c 10000                    
+73747269646531727663746A3365617833706A3638706672786B6E393266707A7168796D776C67646B64303364
 */
 
 const channels = await getRecommendedChannels()
@@ -76,18 +76,18 @@ console.info("channel_info", channel_info)
 
 if (channel_info === null) {
   consola.info("no channel found")
-  process.exit(1)
-  // channel_info = {
-  //   source_chain_id: SOURCE_CHAIN_ID,
-  //   source_port_id: "80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
-  //   source_channel_id: 1,
-  //   source_connection_id: 1,
-  //   destination_chain_id: DESTINATION_CHAIN_ID,
-  //   destination_port_id:
-  //     "756e696f6e3178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c32343763717a3636396565",
-  //   destination_channel_id: 18,
-  //   destination_connection_id: 23
-  // }
+  // process.exit(1)
+  channel_info = {
+    source_chain_id: SOURCE_CHAIN_ID,
+    source_port_id: "80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
+    source_channel_id: 4,
+    source_connection_id: 333333333,
+    destination_chain_id: DESTINATION_CHAIN_ID,
+    destination_port_id:
+      "7374726964653178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c3234376371333570727573",
+    destination_channel_id: 5,
+    destination_connection_id: 333333333
+  }
 }
 
 consola.info("channel", channel_info)
