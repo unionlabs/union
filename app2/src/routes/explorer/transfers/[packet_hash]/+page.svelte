@@ -146,7 +146,7 @@ onMount(() => {
                 <div class="relative flex items-start gap-4 ml-6">
                   <!-- Timeline dot -->
                   <div class="absolute z-20 -left-[1.5rem]">
-                    <div class="h-4 w-4 rounded-full bg-zinc-300 dark:bg-zinc-600 ring-4 ring-white dark:ring-zinc-900" />
+                    <div class="h-4 w-4 rounded-full bg-zinc-300 dark:bg-zinc-600 ring-4 ring-white dark:ring-zinc-900" ></div>
                   </div>
                   
                   <!-- Content -->

@@ -32,8 +32,11 @@
 ## UI Components
 
 - All UI components must accept a `class` prop for styling customization
+
 - Use the `cn()` utility for combining class names
+
 - Example pattern:
+
   ```svelte
   type Props = HTMLAttributes<HTMLDivElement> & {
     children: Snippet
@@ -47,6 +50,8 @@
     className
   )
   ```
+
+- Do not create self-closing div tags `<div />`, instead do `<div></div>`
 
 ## Svelte 5 Syntax
 
