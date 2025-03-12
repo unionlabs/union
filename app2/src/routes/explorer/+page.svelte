@@ -111,13 +111,13 @@ const xAxisLabels = $derived(
           <div class="absolute left-0 right-0 top-0 bottom-0 pt-1 px-4">
             <div class="flex h-full gap-[1px] sm:gap-[2px] md:gap-1 items-end" style="min-height: 12rem;">
               {#each barHeights as day, i}
-                <div class="flex flex-col flex-1 group size-full justify-end">
+                <div class="flex flex-col flex-1 group size-full justify-end hover:opacity-100">
                   <div class="w-full size-full flex items-end">
                     <div 
-                      class="relative w-full bg-white  rounded-t transition-all duration-300 bar"
+                      class="relative w-full bg-white rounded-t transition-all duration-300 bar"
                       style="height: {day.heightPercent}%; min-height: 1px;"
                     >
-                      <div class="absolute pointer-events-none bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-zinc-800 dark:bg-zinc-700 text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                      <div class="absolute pointer-events-none bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-zinc-950 border-zinc-900 border text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                         <div>{formatNumber(day.count)}</div> <DateTimeComponent value={day.day} showTime={false} />
                       </div>
                     </div>
@@ -139,11 +139,11 @@ const xAxisLabels = $derived(
 
 <style>
   /* Style for chart bars - make non-hovered bars darker when any bar is hovered */
-  :global(.chart-container:hover .bar) {
+  :global(.chart-container:hover .flex-1) {
     opacity: 0.3;
   }
   
-  :global(.chart-container .bar:hover) {
+  :global(.chart-container .flex-1:hover) {
     opacity: 1 !important;
   }
 </style>
