@@ -1,7 +1,11 @@
+
 <script lang="ts">
 import { page } from "$app/state"
 import { navigation } from "../Sidebar/navigation.ts"
 import { Option } from "effect"
+import { fade, fly, slide } from "svelte/transition"
+import { quintOut } from "svelte/easing"
+import { flip } from "svelte/animate"
 
 const toTitleCase = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1)
@@ -10,60 +14,56 @@ const toTitleCase = (str: string): string => {
 type Crumb = {
   title: string
   path: string
+  id: string
 }
 
-// Get current page info
-const currentPageInfo = $derived(
-  Option.fromNullable(
-    navigation.find(section => section.items.find(s => s.path === page.url.pathname))
-  ).pipe(
-    Option.flatMap(s => Option.fromNullable(s.items.find(i => i.path === page.url.pathname))),
-    Option.getOrElse(() => ({ title: page.url.pathname, path: page.url.pathname }))
-  )
-)
+// Store the current breadcrumbs
+let currentBreadcrumbs = $state<Array<Crumb>>([])
 
-// Build breadcrumb path
-const breadcrumbs = $derived(
-  ((): Array<Crumb> => {
-    const parts = page.url.pathname.split("/").filter(Boolean)
-    const crumbs: Array<Crumb> = []
+// Update breadcrumbs when the page changes
+$effect(() => {
+  const parts = page.url.pathname.split("/").filter(Boolean)
+  const newCrumbs: Array<Crumb> = []
 
-    // Add home
-    // crumbs.push({ title: "Home", path: "/" })
+  // Build path progressively
+  let currentPath = ""
+  for (const part of parts) {
+    currentPath += `/${part}`
 
-    // Build path progressively
-    let currentPath = ""
-    for (const part of parts) {
-      currentPath += `/${part}`
+    // Try to find matching navigation item for nice labels
+    const matchingItem = navigation
+      .flatMap(section => section.items)
+      .find(item => item.path === currentPath)
 
-      // Try to find matching navigation item for nice labels
-      const matchingItem = navigation
-        .flatMap(section => section.items)
-        .find(item => item.path === currentPath)
+    newCrumbs.push({
+      title: matchingItem?.title || toTitleCase(part),
+      path: currentPath,
+      id: currentPath // Unique ID for animation keying
+    })
+  }
 
-      crumbs.push({
-        title: matchingItem?.title || toTitleCase(part),
-        path: currentPath
-      })
-    }
-
-    return crumbs
-  })()
-)
+  // Replace the breadcrumbs array
+  currentBreadcrumbs = newCrumbs
+})
 </script>
 
-<nav class="flex items-center gap-2 text-zinc-400">
-  {#each breadcrumbs as crumb, i}
-    {#if i < breadcrumbs.length - 1}
-      <a 
-        href={crumb.path}
-        class="hover:text-zinc-100 transition-colors"
-      >
-        {crumb.title}
-      </a>
-      <span class="text-zinc-600">/</span>
-    {:else}
-      <span class="text-zinc-100">{crumb.title}</span>
-    {/if}
+<nav class="flex items-center gap-2 text-zinc-400 h-8 overflow-hidden">
+  {#each currentBreadcrumbs as crumb, i (crumb.id)}
+    <div animate:flip={{ duration: 400 }} class="flex items-center last:text-white">
+        <a 
+          href={crumb.path}
+          class="hover:text-zinc-100 transition-colors transition-delay-100"
+          in:fly={{ x: -30, duration: 200, delay: i * 100, easing: quintOut }}
+          out:fly={{ x: 30, duration: 100 }}
+        >
+          {crumb.title}
+        </a>
+        <span 
+          class="text-zinc-600 ml-2"
+          in:fade={{ duration: 200, delay: i * 200 }}
+          out:fade={{ duration: 150 }}
+        >/</span>
+    </div>
   {/each}
 </nav>
+
