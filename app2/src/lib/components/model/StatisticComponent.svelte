@@ -38,5 +38,5 @@ function formatNumber(num: number): string {
 
 <Card class="transition-all hover:shadow-lg {className}">
   <Label>{formatStatName(statistic.name)}</Label>
-  <p class="text-2xl font-bold mt-2">{formatNumber(statistic.value)}</p>
+  <p class="text-2xl font-bold mt-1">{formatNumber(statistic.value)}</p>
 </Card>

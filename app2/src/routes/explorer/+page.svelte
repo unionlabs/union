@@ -35,13 +35,23 @@ const maxCount = $derived(
   Option.isSome(dailyTransfers.data) ? Math.max(...dailyTransfers.data.value.map(d => d.count)) : 0
 )
 
-const yLabels = $derived([
-  0,
-  Math.round(maxCount / 4),
-  Math.round(maxCount / 2),
-  Math.round((maxCount * 3) / 4),
-  maxCount
-])
+// Calculate nice round numbers for y-axis labels
+const yLabels = $derived(() => {
+  if (maxCount <= 0) return [0, 0, 0, 0, 0]
+
+  // Find a nice round maximum that's at least as large as maxCount
+  const magnitude = 10 ** Math.floor(Math.log10(maxCount))
+  const roundedMax = Math.ceil(maxCount / magnitude) * magnitude
+
+  // Create evenly spaced labels
+  return [
+    0,
+    Math.round(roundedMax / 4),
+    Math.round(roundedMax / 2),
+    Math.round((roundedMax * 3) / 4),
+    roundedMax
+  ]
+})
 
 // Calculate bar heights as percentages
 const barHeights = $derived(
@@ -61,7 +71,7 @@ const xAxisLabels = $derived(
 
 <Sections>
   <!-- Statistics Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     {#if Option.isSome(statistics.data)}
       {#each statistics.data.value as stat}
         <StatisticComponent statistic={stat} />
@@ -81,39 +91,30 @@ const xAxisLabels = $derived(
   </div>
   
   <!-- Daily Transfers Chart -->
-  <Card>
-    <div class="mb-6">
-      <h2 class="text-xl font-bold">Daily Transfers</h2>
+  <Card divided>
+    <div class="p-4 gap-4">
+      <h2 class="text-2xl font-bold mb-1">Daily Transfers</h2>
       <Label>Last 30 days of transfer activity</Label>
     </div>
     
     {#if Option.isSome(dailyTransfers.data)}
         <!-- Chart container -->
         <div class="h-80 relative">
-          <!-- Y-axis labels -->
-          <div class="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between text-xs text-zinc-500 dark:text-zinc-400 pr-2">
-            {#each yLabels.slice().reverse() as label, i}
-              <div class="text-right" style="transform: translateY({i === yLabels.length - 1 ? '100%' : i === 0 ? '0' : 'none'})">
-                {formatNumber(label)}
-              </div>
-            {/each}
-          </div>
-          
           <!-- Grid lines -->
-          <div class="absolute left-12 right-0 top-0 bottom-0 flex flex-col justify-between">
+          <div class="absolute left-0 right-0 top-0 bottom-0 flex flex-col justify-between">
             {#each Array(5) as _, i}
-              <div class="border-t border-zinc-200 dark:border-zinc-700 w-full h-0"></div>
+              <div class="border-t first:border-0 border-zinc-200 dark:border-zinc-900 w-full h-0"></div>
             {/each}
           </div>
           
           <!-- Bars -->
-          <div class="absolute left-12 right-0 top-0 bottom-0 pt-1 pb-6">
-            <div class="flex h-full items-end" style="min-height: 12rem;">
+          <div class="absolute left-0 right-0 top-0 bottom-0 pt-1">
+            <div class="flex h-full gap-1 items-end" style="min-height: 12rem;">
               {#each barHeights as day, i}
                 <div class="flex flex-col flex-1 group size-full justify-end">
-                  <div class=" w-full px-1 size-full flex items-end">
+                  <div class=" w-full size-full flex items-end">
                     <div 
-                      class="relative w-full bg-blue-500 dark:bg-blue-400 rounded-t transition-all duration-300 group-hover:bg-blue-600 dark:group-hover:bg-blue-300"
+                      class="relative w-full bg-white rounded-t transition-all duration-300 group-hover:bg-blue-600 dark:group-hover:bg-blue-300"
                       style="height: {day.heightPercent}%; min-height: 1px;"
                     >
                       <div class="absolute pointer-events-none bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-zinc-800 dark:bg-zinc-700 text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
@@ -126,14 +127,6 @@ const xAxisLabels = $derived(
             </div>
           </div>
           
-          <!-- X-axis labels -->
-          <div class="absolute left-12 right-0 bottom-0 flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
-            {#each xAxisLabels as day}
-              <div class="text-center px-2 whitespace-nowrap">
-                <DateTimeComponent value={day.day} showTime={false} />
-              </div>
-            {/each}
-          </div>
         </div>
     {:else if Option.isSome(dailyTransfers.error)}
       <ErrorComponent error={dailyTransfers.error.value} />
