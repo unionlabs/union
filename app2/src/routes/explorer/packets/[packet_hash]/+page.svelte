@@ -69,10 +69,12 @@ const goBack = () => {
           <Label>Channel Version</Label>
           <div class="text-sm">{packetDetails.data.value.channel_version}</div>
         </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
         <div>
           <div class="grid grid-cols-5 gap-y-2">
             <div class="col-span-2">
-              <Label>Chain</Label>
+              <Label>Source Chain</Label>
               {#if Option.isSome(sourceChain)}
                 <ChainComponent chain={sourceChain.value} />
               {:else}
@@ -100,7 +102,7 @@ const goBack = () => {
         <div>
           <div class="grid grid-cols-5 gap-y-2">
             <div class="col-span-2">
-              <Label>Chain</Label>
+              <Label>Destination Chain</Label>
               {#if Option.isSome(destinationChain)}
                 <ChainComponent chain={destinationChain.value} />
               {:else}
@@ -125,6 +127,8 @@ const goBack = () => {
             </div>
           </div>
         </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
         <div>
           <Label>Send Timestamp</Label>
           <DateTimeComponent value={packetDetails.data.value.packet_send_timestamp} />
