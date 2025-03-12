@@ -199,7 +199,7 @@ let stargazeBalance = createQuery(
       </p>
       <Button
         class={cn(
-          "bg-[rgb(60,0,29)] text-[#ffffff] dark:bg-[rgb(60,0,29)] dark:text-[#ffffff]",
+          "bg-[#99f0cf] text-[#010001] dark:bg-[#99f0cf] dark:text-[#010001]",
           "disabled:opacity-100 disabled:bg-black/20 rounded-md focus:ring-0 focus-visible:ring-0",
         )}
         on:click={() => stargazeFaucetState.set({ kind: "IDLE" })}
