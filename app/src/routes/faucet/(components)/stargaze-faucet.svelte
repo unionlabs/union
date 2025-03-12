@@ -1,167 +1,173 @@
 <script lang="ts">
-import { URLS } from "$lib/constants"
-import request from "graphql-request"
-import { cn } from "$lib/utilities/shadcn.ts"
-import { Label } from "$lib/components/ui/label"
-import { createQuery } from "@tanstack/svelte-query"
-import Truncate from "$lib/components/truncate.svelte"
-import * as Card from "$lib/components/ui/card/index.ts"
-import { Input } from "$lib/components/ui/input/index.ts"
-import { Button } from "$lib/components/ui/button/index.ts"
-import SpinnerSVG from "$lib/components/spinner-svg.svelte"
-import { cosmosStore } from "$/lib/wallet/cosmos/config.ts"
-import { derived, writable, type Writable } from "svelte/store"
-import { getCosmosChainBalances } from "$lib/queries/balance/cosmos"
-import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts"
-import { bech32ToBech32Address, isValidBech32Address } from "@unionlabs/client"
-import type { AwaitedReturnType, DiscriminatedUnion } from "$lib/utilities/types.ts"
-import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts"
-import { Turnstile } from "svelte-turnstile"
+  import { URLS } from "$lib/constants";
+  import request from "graphql-request";
+  import { cn } from "$lib/utilities/shadcn.ts";
+  import { Label } from "$lib/components/ui/label";
+  import { createQuery } from "@tanstack/svelte-query";
+  import Truncate from "$lib/components/truncate.svelte";
+  import * as Card from "$lib/components/ui/card/index.ts";
+  import { Input } from "$lib/components/ui/input/index.ts";
+  import { Button } from "$lib/components/ui/button/index.ts";
+  import SpinnerSVG from "$lib/components/spinner-svg.svelte";
+  import { cosmosStore } from "$/lib/wallet/cosmos/config.ts";
+  import { derived, writable, type Writable } from "svelte/store";
+  import { getCosmosChainBalances } from "$lib/queries/balance/cosmos";
+  import { createCosmosSdkAddressRegex } from "$lib/utilities/address.ts";
+  import {
+    bech32ToBech32Address,
+    isValidBech32Address,
+  } from "@unionlabs/client";
+  import type {
+    AwaitedReturnType,
+    DiscriminatedUnion,
+  } from "$lib/utilities/types.ts";
+  import { faucetUnoMutation2 } from "$lib/graphql/queries/faucet.ts";
+  import { Turnstile } from "svelte-turnstile";
 
-type DydxFaucetState = DiscriminatedUnion<
-  "kind",
-  {
-    IDLE: {}
-    VERIFYING: {}
-    VERIFIED: {}
-    SUBMITTING: { captchaToken: string }
-    RESULT_OK: { message: string }
-    RESULT_ERR: { error: string }
-    VERIFICATION_FAILED: { error: string }
-  }
->
-
-let stargazeAddress = derived(cosmosStore, $cosmosStore =>
-  $cosmosStore.address
-    ? bech32ToBech32Address({
-        address: $cosmosStore.address,
-        toPrefix: "stars"
-      })
-    : ""
-)
-
-let stargazeFaucetState: Writable<DydxFaucetState> = writable({
-  kind: "IDLE"
-})
-let turnstileToken = ""
-let resetTurnstile: () => void
-let showTurnstile = false
-
-const verifyWithTurnstile = () => {
-  if ($stargazeFaucetState.kind === "IDLE") {
-    showTurnstile = true
-    stargazeFaucetState.set({ kind: "VERIFYING" })
-    resetTurnstile?.()
-  }
-}
-
-const requestStarsFromFaucet = async () => {
-  console.info("stargazeAddress: ", $stargazeAddress)
-
-  if ($stargazeFaucetState.kind === "VERIFIED") {
-    stargazeFaucetState.set({
-      kind: "SUBMITTING",
-      captchaToken: turnstileToken
-    })
-  }
-
-  if ($stargazeFaucetState.kind === "SUBMITTING") {
-    try {
-      const result = await request(URLS().GRAPHQL, faucetUnoMutation2, {
-        chainId: "elgafar-1",
-        denom: "ustars",
-        address: $stargazeAddress,
-        captchaToken: $stargazeFaucetState.captchaToken
-      })
-
-      if (!result.send) {
-        stargazeFaucetState.set({
-          kind: "RESULT_ERR",
-          error: "Empty faucet response"
-        })
-        turnstileToken = ""
-        showTurnstile = false
-        return
-      }
-
-      if (result.send.startsWith("ERROR")) {
-        console.error(result.send)
-        stargazeFaucetState.set({
-          kind: "RESULT_ERR",
-          error: result.send.endsWith("ratelimited")
-            ? "You already got USTARS from the faucet today. Try again in 24 hours."
-            : "Error from faucet"
-        })
-        turnstileToken = ""
-        showTurnstile = false
-        return
-      }
-
-      stargazeFaucetState.set({
-        kind: "RESULT_OK",
-        message: result.send
-      })
-      turnstileToken = ""
-      showTurnstile = false
-    } catch (error) {
-      console.error(error)
-      stargazeFaucetState.set({
-        kind: "RESULT_ERR",
-        error: `Faucet error: ${error}`
-      })
-      turnstileToken = ""
-      showTurnstile = false
+  type DydxFaucetState = DiscriminatedUnion<
+    "kind",
+    {
+      IDLE: {};
+      VERIFYING: {};
+      VERIFIED: {};
+      SUBMITTING: { captchaToken: string };
+      RESULT_OK: { message: string };
+      RESULT_ERR: { error: string };
+      VERIFICATION_FAILED: { error: string };
     }
-  }
-}
+  >;
 
-const resetVerification = () => {
-  if ($stargazeFaucetState.kind === "VERIFICATION_FAILED") {
-    turnstileToken = ""
-    showTurnstile = false
-    stargazeFaucetState.set({ kind: "IDLE" })
-  }
-}
+  let stargazeAddress = derived(cosmosStore, ($cosmosStore) =>
+    $cosmosStore.address
+      ? bech32ToBech32Address({
+          address: $cosmosStore.address,
+          toPrefix: "stars",
+        })
+      : "",
+  );
 
-const handleTurnstileCallback = (
-  e: CustomEvent<{ token: string; preClearanceObtained: boolean }>
-) => {
-  turnstileToken = e.detail.token
-  if ($stargazeFaucetState.kind === "VERIFYING") {
-    stargazeFaucetState.set({ kind: "VERIFIED" })
-  }
-}
+  let stargazeFaucetState: Writable<DydxFaucetState> = writable({
+    kind: "IDLE",
+  });
+  let turnstileToken = "";
+  let resetTurnstile: () => void;
+  let showTurnstile = false;
 
-const handleTurnstileError = (e: CustomEvent<{ code: string }>) => {
-  if ($stargazeFaucetState.kind === "VERIFYING") {
-    stargazeFaucetState.set({
-      kind: "VERIFICATION_FAILED",
-      error: `Verification error: ${e.detail.code}`
-    })
-  }
-}
+  const verifyWithTurnstile = () => {
+    if ($stargazeFaucetState.kind === "IDLE") {
+      showTurnstile = true;
+      stargazeFaucetState.set({ kind: "VERIFYING" });
+      resetTurnstile?.();
+    }
+  };
 
-let stargazeBalance = createQuery(
-  derived(stargazeAddress, $stargazeAddress => ({
-    queryKey: ["stargaze-balance", $stargazeAddress],
-    enabled: $stargazeAddress?.indexOf("stars") === 0,
-    refetchInterval: () => ($stargazeAddress?.indexOf("stars") === 0 ? 5_000 : false),
-    queryFn: async () =>
-      await getCosmosChainBalances({
-        walletAddress: `${$stargazeAddress}`,
-        url: "https://stargaze-testnet-api.polkachu.com"
-      }),
-    select: (data: AwaitedReturnType<typeof getCosmosChainBalances>) =>
-      data?.find(balance => balance?.symbol === "ustars")
-  }))
-)
+  const requestStarsFromFaucet = async () => {
+    console.info("stargazeAddress: ", $stargazeAddress);
+
+    if ($stargazeFaucetState.kind === "VERIFIED") {
+      stargazeFaucetState.set({
+        kind: "SUBMITTING",
+        captchaToken: turnstileToken,
+      });
+    }
+
+    if ($stargazeFaucetState.kind === "SUBMITTING") {
+      try {
+        const result = await request(URLS().GRAPHQL, faucetUnoMutation2, {
+          chainId: "elgafar-1",
+          denom: "ustars",
+          address: $stargazeAddress,
+          captchaToken: $stargazeFaucetState.captchaToken,
+        });
+
+        if (!result.send) {
+          stargazeFaucetState.set({
+            kind: "RESULT_ERR",
+            error: "Empty faucet response",
+          });
+          turnstileToken = "";
+          showTurnstile = false;
+          return;
+        }
+
+        if (result.send.startsWith("ERROR")) {
+          console.error(result.send);
+          stargazeFaucetState.set({
+            kind: "RESULT_ERR",
+            error: result.send.endsWith("ratelimited")
+              ? "You already got USTARS from the faucet today. Try again in 24 hours."
+              : "Error from faucet",
+          });
+          turnstileToken = "";
+          showTurnstile = false;
+          return;
+        }
+
+        stargazeFaucetState.set({
+          kind: "RESULT_OK",
+          message: result.send,
+        });
+        turnstileToken = "";
+        showTurnstile = false;
+      } catch (error) {
+        console.error(error);
+        stargazeFaucetState.set({
+          kind: "RESULT_ERR",
+          error: `Faucet error: ${error}`,
+        });
+        turnstileToken = "";
+        showTurnstile = false;
+      }
+    }
+  };
+
+  const resetVerification = () => {
+    if ($stargazeFaucetState.kind === "VERIFICATION_FAILED") {
+      turnstileToken = "";
+      showTurnstile = false;
+      stargazeFaucetState.set({ kind: "IDLE" });
+    }
+  };
+
+  const handleTurnstileCallback = (
+    e: CustomEvent<{ token: string; preClearanceObtained: boolean }>,
+  ) => {
+    turnstileToken = e.detail.token;
+    if ($stargazeFaucetState.kind === "VERIFYING") {
+      stargazeFaucetState.set({ kind: "VERIFIED" });
+    }
+  };
+
+  const handleTurnstileError = (e: CustomEvent<{ code: string }>) => {
+    if ($stargazeFaucetState.kind === "VERIFYING") {
+      stargazeFaucetState.set({
+        kind: "VERIFICATION_FAILED",
+        error: `Verification error: ${e.detail.code}`,
+      });
+    }
+  };
+
+  let stargazeBalance = createQuery(
+    derived(stargazeAddress, ($stargazeAddress) => ({
+      queryKey: ["stargaze-balance", $stargazeAddress],
+      enabled: $stargazeAddress?.indexOf("stars") === 0,
+      refetchInterval: () =>
+        $stargazeAddress?.indexOf("stars") === 0 ? 5_000 : false,
+      queryFn: async () =>
+        await getCosmosChainBalances({
+          walletAddress: `${$stargazeAddress}`,
+          url: "https://stargaze-testnet-api.polkachu.com",
+        }),
+      select: (data: AwaitedReturnType<typeof getCosmosChainBalances>) =>
+        data?.find((balance) => balance?.symbol === "ustars"),
+    })),
+  );
 </script>
 
 <!-- stargaze faucet -->
 <Card.Root
   class={cn(
     "w-full max-w-lg rounded-lg font-sans",
-    "bg-[url('/images/backgrounds/stride-background.png')]",
     "bg-[#181825] text-[#99f0cf] dark:bg-[#2D2D44]/50 dark:text-[#99f0cf]",
   )}
 >
