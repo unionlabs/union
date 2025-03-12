@@ -16,6 +16,24 @@ type Props = HTMLAttributes<HTMLDivElement> & {
 const { address, chain, class: className = "", ...rest }: Props = $props()
 
 const displayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address)))
+
+// Find the explorer URL for this address
+const getExplorerUrl = () => {
+  if (chain.explorers.length === 0) {
+    return null
+  }
+  
+  // Use the first explorer by default
+  const explorer = chain.explorers[0]
+  // Replace {address} placeholder if it exists, otherwise append the address
+  const addressUrl = explorer.address_url.toString()
+  return addressUrl.includes("{address}") 
+    ? addressUrl.replace("{address}", displayAddress)
+    : `${addressUrl}${displayAddress}`
+}
+
+const explorerUrl = $derived(getExplorerUrl())
+const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].display_name : null)
 </script>
 
 <Tooltip>
@@ -55,6 +73,22 @@ const displayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address))
           </LongMonoWord>
         </div>
       </section>
+
+      {#if explorerUrl}
+        <section>
+          <h3 class="text-white">Explorer</h3>
+          <div>
+            <a 
+              href={explorerUrl} 
+              class="text-sky-400 hover:text-sky-300 underline" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              View on {explorerName || "Explorer"}
+            </a>
+          </div>
+        </section>
+      {/if}
     </div>
   {/snippet}
 </Tooltip>
