@@ -88,13 +88,12 @@ const xAxisLabels = $derived(
     </div>
     
     {#if Option.isSome(dailyTransfers.data)}
-      <div class="overflow-x-auto">
         <!-- Chart container -->
-        <div class="h-64 relative" style="min-height: 16rem;">
+        <div class="h-80 relative">
           <!-- Y-axis labels -->
           <div class="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between text-xs text-zinc-500 dark:text-zinc-400 pr-2">
-            {#each yLabels as label, i}
-              <div class="text-right" style="transform: translateY({i === 0 ? '100%' : i === yLabels.length - 1 ? '0' : 'none'})">
+            {#each yLabels.slice().reverse() as label, i}
+              <div class="text-right" style="transform: translateY({i === yLabels.length - 1 ? '100%' : i === 0 ? '0' : 'none'})">
                 {formatNumber(label)}
               </div>
             {/each}
@@ -111,13 +110,13 @@ const xAxisLabels = $derived(
           <div class="absolute left-12 right-0 top-0 bottom-0 pt-1 pb-6">
             <div class="flex h-full items-end" style="min-height: 12rem;">
               {#each barHeights as day, i}
-                <div class="flex flex-col items-center flex-1 group size-full">
-                  <div class="relative w-full px-1 size-full">
+                <div class="flex flex-col flex-1 group size-full justify-end">
+                  <div class=" w-full px-1 size-full flex items-end">
                     <div 
-                      class="w-full bg-blue-500 dark:bg-blue-400 rounded-t transition-all duration-300 group-hover:bg-blue-600 dark:group-hover:bg-blue-300"
+                      class="relative w-full bg-blue-500 dark:bg-blue-400 rounded-t transition-all duration-300 group-hover:bg-blue-600 dark:group-hover:bg-blue-300"
                       style="height: {day.heightPercent}%; min-height: 1px;"
                     >
-                      <div class="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-zinc-800 dark:bg-zinc-700 text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                      <div class="absolute pointer-events-none bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-zinc-800 dark:bg-zinc-700 text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                         {formatNumber(day.count)} transfers on <DateTimeComponent value={day.day} showSeconds={false} />
                       </div>
                     </div>
@@ -136,11 +135,6 @@ const xAxisLabels = $derived(
             {/each}
           </div>
         </div>
-      </div>
-      
-      <div class="mt-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
-        Showing the last 30 days of transfer activity. View the table below for complete data.
-      </div>
     {:else if Option.isSome(dailyTransfers.error)}
       <ErrorComponent error={dailyTransfers.error.value} />
     {:else}
@@ -148,31 +142,4 @@ const xAxisLabels = $derived(
     {/if}
   </Card>
   
-  <!-- Data Table -->
-  {#if Option.isSome(dailyTransfers.data)}
-    <Card class="overflow-hidden p-0">
-      <table class="min-w-full divide-y divide-zinc-200 dark:divide-zinc-700">
-        <thead class="bg-zinc-50 dark:bg-zinc-900">
-          <tr>
-            <th class="px-6 py-3 text-left">
-              <Label>Date</Label>
-            </th>
-            <th class="px-6 py-3 text-left">
-              <Label>Transfer Count</Label>
-            </th>
-          </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-zinc-800 divide-y divide-zinc-200 dark:divide-zinc-700">
-          {#each dailyTransfers.data.value as day}
-            <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">
-                <DateTimeComponent value={day.day} showTime={false} />
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">{formatNumber(day.count)}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </Card>
-  {/if}
 </Sections>
