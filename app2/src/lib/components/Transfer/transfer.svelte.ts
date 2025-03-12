@@ -25,41 +25,39 @@ export class Transfer {
   raw = new RawTransferSvelte()
   state = $state<TransferSubmission>(TransferSubmission.Filling())
 
-  sourceChain = $derived.by<Option.Option<Chain>>(() => {
-    if (!Option.isSome(chains.data)) return Option.none()
-    const foundChain = chains.data.value.find(chain => chain.chain_id === this.raw.source)
-    return Option.fromNullable(foundChain)
-  })
+  sourceChain = $derived(
+    chains.data.pipe(
+      Option.flatMap(cs =>
+        Option.fromNullable(cs.find(chain => chain.chain_id === this.raw.source))
+      )
+    )
+  )
 
-  destinationChain = $derived.by<Option.Option<Chain>>(() => {
-    if (!Option.isSome(chains.data)) return Option.none()
-    const foundChain = chains.data.value.find(chain => chain.chain_id === this.raw.destination)
-    return Option.fromNullable(foundChain)
-  })
+  destinationChain = $derived(
+    chains.data.pipe(
+      Option.flatMap(cs =>
+        Option.fromNullable(cs.find(chain => chain.chain_id === this.raw.destination))
+      )
+    )
+  )
 
-  baseTokens = $derived.by<Option.Option<ReadonlyArray<Token>>>(() => {
-    const tokensOption = Option.isSome(this.sourceChain)
-      ? tokensStore.getData(this.sourceChain.value.universal_chain_id)
-      : Option.none()
+  baseTokens = $derived(
+    this.sourceChain.pipe(Option.flatMap(sc => tokensStore.getData(sc.universal_chain_id)))
+  )
 
-    return Option.map(tokensOption, tokens => (tokens.length > 0 ? tokens : []))
-  })
+  baseToken = $derived(
+    this.baseTokens.pipe(
+      Option.flatMap(tokens =>
+        Option.fromNullable(tokens.find((t: Token) => t.denom === this.raw.asset))
+      )
+    )
+  )
 
-  baseToken = $derived.by<Option.Option<Token>>(() => {
-    return Option.flatMap(this.baseTokens, tokens => {
-      const token = tokens.find((t: Token) => t.denom === this.raw.asset)
-      return Option.fromNullable(token)
-    })
-  })
+  parsedAmount = $derived(
+    this.baseToken.pipe(Option.flatMap(bt => getParsedAmountSafe(this.raw.amount, bt)))
+  )
 
-  parsedAmount = $derived.by<Option.Option<bigint>>(() => {
-    if (!Option.isSome(this.baseToken)) return Option.none()
-    return getParsedAmountSafe(this.raw.amount.toString(), this.baseToken.value)
-  })
-
-  derivedReceiver = $derived.by<Option.Option<string>>(() => {
-    return getDerivedReceiverSafe(this.raw.receiver)
-  })
+  derivedReceiver = $derived(getDerivedReceiverSafe(this.raw.receiver))
 
   channel = $derived.by<Option.Option<Channel>>(() => {
     if (
