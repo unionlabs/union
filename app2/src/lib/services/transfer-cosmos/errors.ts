@@ -8,7 +8,7 @@ export class OfflineSignerError extends Data.TaggedError("OfflineSignerError")<{
   cause: string
 }> {}
 
-export class StargateClientError extends Data.TaggedError("StargateClientError")<{
+export class CosmWasmError extends Data.TaggedError("CosmWasmError")<{
   cause: string
 }> {}
 
