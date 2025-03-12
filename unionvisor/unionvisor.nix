@@ -266,6 +266,9 @@
                   ];
 
                   configSymLinkCommands = pkgs.lib.concatMapStrings (l: ''
+                    export UNIONVISOR_BUNDLE = ${cfg.bundle}
+                    export UNIONVISOR_ROOT = ${cfg.root}
+                    export HOME = ${cfg.home}
 
                     pwd
                     rm ./home/config/${l.name}
