@@ -92,7 +92,7 @@ const xAxisLabels = $derived(
   
   <!-- Daily Transfers Chart -->
   <Card divided>
-    <div class="p-4 gap-4">
+    <div class="p-4 gap-4 -mb-14 border-b-0">
       <h2 class="text-2xl font-bold mb-1">Daily Transfers</h2>
       <Label>Last 30 days of transfer activity</Label>
     </div>
@@ -108,8 +108,8 @@ const xAxisLabels = $derived(
           </div>
           
           <!-- Bars -->
-          <div class="absolute left-0 right-0 top-0 bottom-0 pt-1">
-            <div class="flex h-full gap-1 items-end" style="min-height: 12rem;">
+          <div class="absolute left-0 right-0 top-0 bottom-0 pt-1 px-4">
+            <div class="flex h-full gap-[1px] sm:gap-[2px] md:gap-1 items-end" style="min-height: 12rem;">
               {#each barHeights as day, i}
                 <div class="flex flex-col flex-1 group size-full justify-end">
                   <div class=" w-full size-full flex items-end">
@@ -118,7 +118,7 @@ const xAxisLabels = $derived(
                       style="height: {day.heightPercent}%; min-height: 1px;"
                     >
                       <div class="absolute pointer-events-none bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-zinc-800 dark:bg-zinc-700 text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                        {formatNumber(day.count)} transfers on <DateTimeComponent value={day.day} showSeconds={false} />
+                        {formatNumber(day.count)} on <DateTimeComponent value={day.day} showTime={false} />
                       </div>
                     </div>
                   </div>
