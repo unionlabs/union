@@ -16,9 +16,10 @@ pub const TOKEN_MINTER: Item<Addr> = Item::new("token_minter");
 /// should be unwrapped when sent back to its origin chain.
 pub const TOKEN_ORIGIN: Map<String, Uint256> = Map::new("token_origin");
 
-/// Tracks the balance of tokens escrowed for each channel and denom combination.
+/// Tracks the balance of tokens escrowed for each (channel, path, denom) combination.
 /// This is used to ensure we don't unescrow more tokens than were originally escrowed.
-pub const CHANNEL_BALANCE: Map<(u32, String), Uint256> = Map::new("channel_balance");
+/// The path is used to track tokens across multiple hops, matching the Solidity implementation.
+pub const CHANNEL_BALANCE: Map<(u32, Vec<u8>, String), Uint256> = Map::new("channel_balance_v2");
 
 /// Temporarily stores the packet being executed to prevent reentrancy attacks.
 /// This is cleared after execution is complete.

@@ -6,7 +6,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Binary,
     CodeInfoResponse, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QueryRequest, Reply,
-    Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256, Uint64, WasmMsg,
+    Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
@@ -168,13 +168,6 @@ pub fn execute(
                 ),
             }
         }
-        ExecuteMsg::InternalBatchExecute { msgs } => {
-            if info.sender != env.contract.address {
-                Err(ContractError::OnlySelf)
-            } else {
-                Ok(Response::default().add_messages(msgs))
-            }
-        }
         ExecuteMsg::InternalExecutePacket {
             packet,
             relayer,
@@ -231,9 +224,26 @@ pub fn execute(
             timeout_timestamp,
             salt,
         ),
+        ExecuteMsg::Send {
+            channel_id,
+            timeout_height,
+            timeout_timestamp,
+            salt,
+            instruction,
+        } => send(
+            deps,
+            info,
+            channel_id,
+            timeout_height,
+            timeout_timestamp,
+            salt,
+            Instruction::abi_decode_params(&instruction, true)?,
+        ),
     }
 }
 
+/// Enforces that the IBC protocol version matches the expected version.
+/// Checks both local and counterparty versions if provided.
 fn enforce_version(version: &str, counterparty_version: Option<&str>) -> Result<(), ContractError> {
     if version != PROTOCOL_VERSION {
         return Err(ContractError::InvalidIbcVersion {
@@ -250,6 +260,8 @@ fn enforce_version(version: &str, counterparty_version: Option<&str>) -> Result<
     Ok(())
 }
 
+/// Handles IBC packet timeouts by either processing forwarded packet timeouts or
+/// executing timeout logic for normal packets.
 fn timeout_packet(
     deps: DepsMut,
     env: Env,
@@ -297,6 +309,8 @@ fn timeout_packet(
 }
 
 #[allow(clippy::too_many_arguments)]
+/// Handles the internal timeout logic for a packet.
+/// Processes timeouts based on instruction type and executes appropriate refund/cleanup actions.
 fn timeout_internal(
     mut deps: DepsMut,
     env: Env,
@@ -315,7 +329,7 @@ fn timeout_internal(
                 });
             }
             let order = decode_fungible_asset(&instruction)?;
-            refund(deps, packet.source_channel_id, order)
+            refund(deps, path, packet.source_channel_id, order)
         }
         OP_BATCH => {
             if instruction.version > INSTR_VERSION_0 {
@@ -403,6 +417,8 @@ fn timeout_multiplex(
     }
 }
 
+/// Handles IBC packet acknowledgements by either forwarding them for forwarded packets
+/// or processing them for normal packets.
 fn acknowledge_packet(
     deps: DepsMut,
     env: Env,
@@ -461,6 +477,10 @@ fn acknowledge_packet(
 }
 
 #[allow(clippy::too_many_arguments)]
+/// Handles the internal acknowledgement logic for a packet.
+/// Processes acknowledgements based on instruction type and success status.
+/// For successful acknowledgements, executes the appropriate success handlers.
+/// For failed acknowledgements, executes refund/cleanup actions.
 fn acknowledge_internal(
     mut deps: DepsMut,
     env: Env,
@@ -543,6 +563,7 @@ fn acknowledge_internal(
 
 fn refund(
     deps: DepsMut,
+    path: U256,
     source_channel: u32,
     order: FungibleAssetOrder,
 ) -> Result<Response, ContractError> {
@@ -559,27 +580,39 @@ fn refund(
     let base_denom =
         String::from_utf8(base_token.to_vec()).map_err(|_| ContractError::InvalidBaseToken)?;
     let mut messages = Vec::<CosmosMsg>::new();
-    // TODO: handle forward path
-    if order.base_token_path == source_channel.try_into().unwrap() {
-        messages.push(make_wasm_msg(
-            WrappedTokenMsg::MintTokens {
-                denom: base_denom,
-                amount: base_amount.into(),
-                mint_to_address: sender.into_string(),
-            },
-            minter,
-            vec![],
-        )?);
-    } else {
-        messages.push(make_wasm_msg(
-            LocalTokenMsg::Unescrow {
-                denom: base_denom,
-                recipient: sender.into_string(),
-                amount: base_amount.into(),
-            },
-            minter,
-            vec![],
-        )?);
+
+    if base_amount > 0 {
+        if !order.base_token_path.is_zero() {
+            // If the token is from a different chain (wrapped token), mint it back
+            messages.push(make_wasm_msg(
+                WrappedTokenMsg::MintTokens {
+                    denom: base_denom,
+                    amount: base_amount.into(),
+                    mint_to_address: sender.into_string(),
+                },
+                minter,
+                vec![],
+            )?);
+        } else {
+            // If the token is native to this chain, unescrow it and decrease the channel balance
+            decrease_channel_balance(
+                deps,
+                source_channel,
+                path,
+                base_denom.clone(),
+                base_amount.into(),
+            )?;
+
+            messages.push(make_wasm_msg(
+                LocalTokenMsg::Unescrow {
+                    denom: base_denom,
+                    recipient: sender.into_string(),
+                    amount: base_amount.into(),
+                },
+                minter,
+                vec![],
+            )?);
+        }
     }
     Ok(Response::new().add_messages(messages))
 }
@@ -592,7 +625,7 @@ fn acknowledge_fungible_asset_order(
     packet: Packet,
     _relayer: Addr,
     _salt: H256,
-    _path: U256,
+    path: U256,
     order: FungibleAssetOrder,
     order_ack: Option<FungibleAssetOrderAck>,
 ) -> Result<Response, ContractError> {
@@ -618,8 +651,9 @@ fn acknowledge_fungible_asset_order(
                     let base_denom = order.base_token;
                     let base_denom = String::from_utf8(base_denom.to_vec())
                         .map_err(|_| ContractError::InvalidBaseToken)?;
-                    // TODO: handle forward path
-                    if order.base_token_path == packet.source_channel_id.try_into().unwrap() {
+
+                    if !order.base_token_path.is_zero() {
+                        // If the token is from a different chain (wrapped token), mint it
                         messages.push(make_wasm_msg(
                             WrappedTokenMsg::MintTokens {
                                 denom: base_denom,
@@ -630,6 +664,15 @@ fn acknowledge_fungible_asset_order(
                             vec![],
                         )?);
                     } else {
+                        // If the token is native to this chain, decrease the channel balance and unescrow
+                        decrease_channel_balance(
+                            deps,
+                            packet.source_channel_id,
+                            path,
+                            base_denom.clone(),
+                            base_amount.into(),
+                        )?;
+
                         messages.push(make_wasm_msg(
                             LocalTokenMsg::Unescrow {
                                 denom: base_denom,
@@ -646,7 +689,7 @@ fn acknowledge_fungible_asset_order(
             Ok(Response::new().add_messages(messages))
         }
         // Transfer failed, refund
-        None => refund(deps, packet.source_channel_id, order),
+        None => refund(deps, path, packet.source_channel_id, order),
     }
 }
 
@@ -672,12 +715,8 @@ fn acknowledge_multiplex(
         let multiplex_packet = Packet {
             source_channel_id: packet.source_channel_id,
             destination_channel_id: packet.destination_channel_id,
-            data: encode_multiplex_calldata(
-                path,
-                multiplex.sender,
-                multiplex.contract_calldata.clone(),
-            )
-            .into(),
+            data: encode_multiplex_calldata(path, multiplex.sender, multiplex.contract_calldata)
+                .into(),
             timeout_height: packet.timeout_height,
             timeout_timestamp: packet.timeout_timestamp,
         };
@@ -698,6 +737,9 @@ fn acknowledge_multiplex(
     }
 }
 
+/// Executes an IBC packet by decoding and processing its contents.
+/// This is the main entry point for packet execution that routes to specific execute functions
+/// based on the instruction type.
 fn execute_packet(
     mut deps: DepsMut,
     env: Env,
@@ -721,6 +763,12 @@ fn execute_packet(
 }
 
 #[allow(clippy::too_many_arguments)]
+/// Executes the internal logic for a packet based on its instruction type.
+/// This is the core execution function that handles different instruction types:
+/// - Fungible asset orders (transfers)
+/// - Batch operations
+/// - Multiplex operations
+/// - Forward operations
 fn execute_internal(
     deps: DepsMut,
     env: Env,
@@ -805,14 +853,14 @@ fn execute_internal(
     }
 }
 
-fn query_predict_wrapped_token(
+fn predict_wrapped_token(
     deps: Deps,
     minter: &Addr,
     path: U256,
     channel: u32,
     token: Bytes,
-) -> StdResult<String> {
-    Ok(deps
+) -> StdResult<(String, Bytes)> {
+    let wrapped_token = deps
         .querier
         .query::<ucs03_zkgm_token_minter_api::PredictWrappedTokenResponse>(&QueryRequest::Wasm(
             cosmwasm_std::WasmQuery::Smart {
@@ -826,7 +874,10 @@ fn query_predict_wrapped_token(
                 )?,
             },
         ))?
-        .wrapped_token)
+        .wrapped_token;
+
+    // Return both the string and bytes representation
+    Ok((wrapped_token.clone(), wrapped_token.as_bytes().into()))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -872,9 +923,9 @@ fn execute_forward(
 
     let config = CONFIG.load(deps.storage)?;
     let next_path = update_channel_path(
-        update_channel_path(path, previous_destination_channel_id),
+        update_channel_path(path, previous_destination_channel_id)?,
         next_source_channel_id,
-    );
+    )?;
 
     let next_packet = MsgSendPacket {
         source_channel: next_source_channel_id,
@@ -929,12 +980,8 @@ fn execute_multiplex(
         let multiplex_packet = Packet {
             source_channel_id: packet.source_channel_id,
             destination_channel_id: packet.destination_channel_id,
-            data: encode_multiplex_calldata(
-                path,
-                multiplex.sender.clone(),
-                multiplex.contract_calldata.clone(),
-            )
-            .into(),
+            data: encode_multiplex_calldata(path, multiplex.sender, multiplex.contract_calldata)
+                .into(),
             timeout_height: packet.timeout_height,
             timeout_timestamp: packet.timeout_timestamp,
         };
@@ -1022,43 +1069,52 @@ fn execute_fungible_asset_order(
     path: U256,
     order: FungibleAssetOrder,
 ) -> Result<Response, ContractError> {
-    if order.quote_amount > order.base_amount {
-        return Ok(Response::new().add_message(wasm_execute(
-            env.contract.address,
-            &ExecuteMsg::InternalWriteAck {
-                ack: ACK_ERR_ONLY_MAKER.into(),
-            },
-            vec![],
-        )?));
-    }
-
+    // Get the token minter contract
     let minter = TOKEN_MINTER.load(deps.storage)?;
-    let wrapped_denom = query_predict_wrapped_token(
+
+    // Predict the wrapped token denom based on path, destination channel, and base token
+    let (wrapped_denom, _) = predict_wrapped_token(
         deps.as_ref(),
         &minter,
         path,
         packet.destination_channel_id,
         Vec::from(order.base_token.clone()).into(),
     )?;
-    let quote_amount =
-        u128::try_from(order.quote_amount).map_err(|_| ContractError::AmountOverflow)?;
-    let fee_amount = order.base_amount - order.quote_amount;
-    let fee_amount = u128::try_from(fee_amount).map_err(|_| ContractError::AmountOverflow)?;
+
+    // Convert quote token to string for comparison
+    let quote_token_str = String::from_utf8(Vec::from(order.quote_token.clone()))
+        .map_err(|_| ContractError::InvalidQuoteToken)?;
+
+    // Validate the receiver address
     let receiver = deps
         .api
         .addr_validate(
             str::from_utf8(order.receiver.as_ref()).map_err(|_| ContractError::InvalidReceiver)?,
         )
         .map_err(|_| ContractError::UnableToValidateReceiver)?;
+
+    // Calculate amounts and fee
+    let base_amount =
+        u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
+    let quote_amount =
+        u128::try_from(order.quote_amount).map_err(|_| ContractError::AmountOverflow)?;
+    let base_covers_quote = base_amount >= quote_amount;
+    let fee_amount = base_amount.saturating_sub(quote_amount);
+
     let mut messages = Vec::<SubMsg>::new();
-    if order.quote_token.as_ref() == wrapped_denom.as_bytes() {
-        // TODO: handle forwarding path
+
+    // Protocol Fill - If the quote token matches the wrapped version of the base token and base amount >= quote amount
+    if quote_token_str == wrapped_denom && base_covers_quote {
+        // For new assets: Deploy wrapped token contract and mint quote amount to receiver
         if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_denom.clone()) {
+            // Create the wrapped token if it doesn't exist
             HASH_TO_FOREIGN_TOKEN.save(
                 deps.storage,
                 wrapped_denom.clone(),
                 &Vec::from(order.base_token.clone()).into(),
             )?;
+
+            // Create the token with metadata
             messages.push(SubMsg::new(make_wasm_msg(
                 WrappedTokenMsg::CreateDenom {
                     subdenom: wrapped_denom.clone(),
@@ -1074,21 +1130,31 @@ fn execute_fungible_asset_order(
                 &minter,
                 vec![],
             )?));
+
+            // Save the token origin for future unwrapping
             TOKEN_ORIGIN.save(
                 deps.storage,
                 wrapped_denom.clone(),
-                &Uint256::from_u128(packet.destination_channel_id as _),
+                &Uint256::from_be_bytes(
+                    update_channel_path(path, packet.destination_channel_id)?.to_be_bytes(),
+                ),
             )?;
-        };
-        messages.push(SubMsg::new(make_wasm_msg(
-            WrappedTokenMsg::MintTokens {
-                denom: wrapped_denom.clone(),
-                amount: quote_amount.into(),
-                mint_to_address: receiver.into_string(),
-            },
-            &minter,
-            vec![],
-        )?));
+        }
+
+        // Mint the quote amount to the receiver
+        if quote_amount > 0 {
+            messages.push(SubMsg::new(make_wasm_msg(
+                WrappedTokenMsg::MintTokens {
+                    denom: wrapped_denom.clone(),
+                    amount: quote_amount.into(),
+                    mint_to_address: receiver.into_string(),
+                },
+                &minter,
+                vec![],
+            )?));
+        }
+
+        // Mint any fee to the relayer
         if fee_amount > 0 {
             messages.push(SubMsg::new(make_wasm_msg(
                 WrappedTokenMsg::MintTokens {
@@ -1100,40 +1166,47 @@ fn execute_fungible_asset_order(
                 vec![],
             )?));
         }
-    } else if order.base_token_path == U256::from(packet.source_channel_id) {
-        let quote_token = String::from_utf8(Vec::from(order.quote_token))
-            .map_err(|_| ContractError::InvalidQuoteToken)?;
-        CHANNEL_BALANCE.update(
-            deps.storage,
-            (packet.destination_channel_id, quote_token.clone()),
-            |balance| match balance {
-                Some(value) => value
-                    .checked_sub(quote_amount.into())
-                    .map_err(|_| ContractError::InvalidChannelBalance),
-                None => Err(ContractError::InvalidChannelBalance),
-            },
+    }
+    // Unwrapping - For returning assets: Unwrap base token and transfer quote amount to receiver
+    else if order.base_token_path != U256::ZERO && base_covers_quote {
+        // Decrease the outstanding balance for this channel and path
+        decrease_channel_balance(
+            deps,
+            packet.destination_channel_id,
+            reverse_channel_path(path),
+            quote_token_str.clone(),
+            base_amount.into(),
         )?;
-        messages.push(SubMsg::new(make_wasm_msg(
-            LocalTokenMsg::Unescrow {
-                denom: quote_token.clone(),
-                recipient: receiver.into_string(),
-                amount: quote_amount.into(),
-            },
-            &minter,
-            vec![],
-        )?));
-        if fee_amount > 0 {
+
+        // Transfer the quote amount to the receiver
+        if quote_amount > 0 {
             messages.push(SubMsg::new(make_wasm_msg(
                 LocalTokenMsg::Unescrow {
-                    denom: quote_token.clone(),
-                    recipient: relayer.into_string(),
+                    denom: quote_token_str.clone(),
+                    recipient: receiver.into_string(),
                     amount: quote_amount.into(),
                 },
-                minter,
+                &minter,
                 vec![],
             )?));
         }
-    } else {
+
+        // Transfer any fee to the relayer
+        if fee_amount > 0 {
+            messages.push(SubMsg::new(make_wasm_msg(
+                LocalTokenMsg::Unescrow {
+                    denom: quote_token_str,
+                    recipient: relayer.into_string(),
+                    amount: fee_amount.into(),
+                },
+                &minter,
+                vec![],
+            )?));
+        }
+    }
+    // Market Maker Fill - Any party can fill the order by providing the quote token
+    else {
+        // Return a special acknowledgement that indicates this order needs a market maker
         return Ok(Response::new().add_message(wasm_execute(
             env.contract.address,
             &ExecuteMsg::InternalWriteAck {
@@ -1141,7 +1214,9 @@ fn execute_fungible_asset_order(
             },
             vec![],
         )?));
-    };
+    }
+
+    // Return success acknowledgement with protocol fill type
     Ok(Response::new()
         .add_submessages(messages)
         .add_message(wasm_execute(
@@ -1339,9 +1414,285 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
     }
 }
 
+/// Verifies that an instruction is valid before execution.
+/// This is the main entry point for instruction validation that routes to specific verify functions
+/// based on the instruction opcode.
+pub fn verify_internal(
+    deps: Deps,
+    info: MessageInfo,
+    channel_id: u32,
+    path: U256,
+    instruction: &Instruction,
+    response: &mut Response,
+) -> Result<(), ContractError> {
+    match instruction.opcode {
+        OP_FUNGIBLE_ASSET_ORDER => {
+            if instruction.version != INSTR_VERSION_1 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
+            let order = decode_fungible_asset(instruction)?;
+            verify_fungible_asset_order(deps, info, channel_id, path, &order, response)
+        }
+        OP_BATCH => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
+            let batch = Batch::abi_decode_params(&instruction.operand, true)?;
+            verify_batch(deps, info, channel_id, path, &batch, response)
+        }
+        OP_FORWARD => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
+            let forward = Forward::abi_decode_params(&instruction.operand, true)?;
+            verify_forward(deps, info, channel_id, &forward, response)
+        }
+        OP_MULTIPLEX => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
+            let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
+            verify_multiplex(&multiplex, info.sender, response)
+        }
+        _ => Err(ContractError::UnknownOpcode {
+            opcode: instruction.opcode,
+        }),
+    }
+}
+
+/// Verifies a fungible asset order instruction.
+/// Checks token metadata matches and validates unwrapping conditions by comparing
+/// the token origin path with the current path and channel.
+fn verify_fungible_asset_order(
+    deps: Deps,
+    info: MessageInfo,
+    channel_id: u32,
+    path: U256,
+    order: &FungibleAssetOrder,
+    response: &mut Response,
+) -> Result<(), ContractError> {
+    // Validate and get base token address
+    let base_token_str =
+        str::from_utf8(&order.base_token).map_err(|_| ContractError::InvalidBaseToken)?;
+
+    // Query token metadata from the minter
+    let minter = TOKEN_MINTER.load(deps.storage)?;
+    let metadata = deps.querier.query::<MetadataResponse>(&QueryRequest::Wasm(
+        cosmwasm_std::WasmQuery::Smart {
+            contract_addr: minter.to_string(),
+            msg: to_json_binary(&ucs03_zkgm_token_minter_api::QueryMsg::Metadata {
+                denom: base_token_str.to_string(),
+            })?,
+        },
+    ))?;
+
+    // Verify metadata matches
+    if metadata.name != order.base_token_name {
+        return Err(ContractError::InvalidAssetName);
+    }
+    if metadata.symbol != order.base_token_symbol {
+        return Err(ContractError::InvalidAssetSymbol);
+    }
+    if metadata.decimals != order.base_token_decimals {
+        return Err(ContractError::InvalidAssetDecimals);
+    }
+
+    // Get the origin path for the base token
+    let origin = TOKEN_ORIGIN.may_load(deps.storage, base_token_str.to_string())?;
+
+    // Compute the wrapped token from the destination to source
+    let (wrapped_token, _) = predict_wrapped_token(
+        deps,
+        &minter,
+        path,
+        channel_id,
+        order.quote_token.to_vec().into(),
+    )?;
+
+    // Check if base token matches predicted wrapper
+    let is_unwrapping = base_token_str == wrapped_token;
+
+    // Get the intermediate path and destination channel from origin
+    let (intermediate_path, destination_channel_id) = if let Some(origin) = origin {
+        let origin_u256 = U256::from_be_bytes(origin.to_be_bytes());
+        pop_channel_from_path(origin_u256)
+    } else {
+        (U256::ZERO, 0)
+    };
+
+    // Check if we're taking same path starting from same channel using wrapped asset
+    let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_path);
+    let is_sending_back_to_same_channel = destination_channel_id == channel_id;
+
+    if is_inverse_intermediate_path && is_sending_back_to_same_channel && is_unwrapping {
+        // Verify the origin path matches what's in the order
+        if let Some(origin) = origin {
+            let origin_u256 = U256::from_be_bytes(origin.to_be_bytes());
+            if origin_u256 != order.base_token_path {
+                return Err(ContractError::InvalidAssetOrigin);
+            }
+            // Burn tokens as we are going to unescrow on the counterparty
+            *response = response.clone().add_message(make_wasm_msg(
+                WrappedTokenMsg::BurnTokens {
+                    denom: base_token_str.to_string(),
+                    amount: Uint256::from_be_bytes(order.base_amount.to_be_bytes())
+                        .try_into()
+                        .map_err(|_| ContractError::AmountOverflow)?,
+                    burn_from_address: minter.to_string(),
+                    sender: info.sender,
+                },
+                &minter,
+                info.funds,
+            )?);
+        } else {
+            return Err(ContractError::InvalidAssetOrigin);
+        }
+    } else if !order.base_token_path.is_zero() {
+        return Err(ContractError::InvalidAssetOrigin);
+    } else {
+        // Escrow tokens as the counterparty will mint them
+        *response = response.clone().add_message(make_wasm_msg(
+            LocalTokenMsg::Escrow {
+                from: info.sender.to_string(),
+                denom: base_token_str.to_string(),
+                recipient: minter.to_string(),
+                amount: Uint256::from_be_bytes(order.base_amount.to_be_bytes())
+                    .try_into()
+                    .map_err(|_| ContractError::AmountOverflow)?,
+            },
+            &minter,
+            info.funds,
+        )?);
+    }
+
+    Ok(())
+}
+
+/// Verifies a batch instruction by checking each sub-instruction is allowed and valid.
+/// Only certain instruction types are allowed in batches to prevent complex nested operations.
+fn verify_batch(
+    deps: Deps,
+    info: MessageInfo,
+    channel_id: u32,
+    path: U256,
+    batch: &Batch,
+    response: &mut Response,
+) -> Result<(), ContractError> {
+    for instruction in &batch.instructions {
+        if !is_allowed_batch_instruction(instruction.opcode) {
+            return Err(ContractError::InvalidBatchInstruction);
+        }
+        verify_internal(deps, info.clone(), channel_id, path, instruction, response)?;
+    }
+    Ok(())
+}
+
+/// Verifies a forward instruction by checking the sub-instruction is allowed and valid.
+/// Forward instructions can contain batch, multiplex or fungible asset orders.
+pub fn verify_forward(
+    deps: Deps,
+    info: MessageInfo,
+    channel_id: u32,
+    forward: &Forward,
+    response: &mut Response,
+) -> Result<(), ContractError> {
+    if !is_allowed_forward_instruction(forward.instruction.opcode) {
+        return Err(ContractError::InvalidForwardInstruction);
+    }
+
+    // Verify the sub-instruction
+    verify_internal(
+        deps,
+        info,
+        channel_id,
+        forward.path,
+        &forward.instruction,
+        response,
+    )?;
+
+    Ok(())
+}
+
+/// Verifies a multiplex instruction by checking the sender matches the transaction sender.
+/// This prevents unauthorized parties from impersonating others in multiplex operations.
+pub fn verify_multiplex(
+    multiplex: &Multiplex,
+    sender: Addr,
+    _response: &mut Response,
+) -> Result<(), ContractError> {
+    // Verify the sender matches msg.sender
+    let multiplex_sender =
+        str::from_utf8(&multiplex.sender).map_err(|_| ContractError::InvalidSender)?;
+    if multiplex_sender != sender.as_str() {
+        return Err(ContractError::InvalidMultiplexSender);
+    }
+    Ok(())
+}
+
+/// Checks if an opcode is allowed in a batch instruction
+fn is_allowed_batch_instruction(opcode: u8) -> bool {
+    opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
+}
+
+/// Checks if an opcode is allowed in a forward instruction
+fn is_allowed_forward_instruction(opcode: u8) -> bool {
+    opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER || opcode == OP_BATCH
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn send(
+    deps: DepsMut,
+    info: MessageInfo,
+    channel_id: u32,
+    timeout_height: u64,
+    timeout_timestamp: u64,
+    salt: H256,
+    instruction: Instruction,
+) -> Result<Response, ContractError> {
+    let mut response = Response::new();
+    // Verify the instruction
+    verify_internal(
+        deps.as_ref(),
+        info.clone(),
+        channel_id,
+        U256::ZERO,
+        &instruction,
+        &mut response,
+    )?;
+
+    // Hash the salt with the sender to prevent collision between users.
+    let hashed_salt = keccak256((info.sender.as_bytes(), salt).abi_encode());
+
+    let config = CONFIG.load(deps.storage)?;
+    Ok(response.add_message(wasm_execute(
+        &config.ibc_host,
+        &ibc_union_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
+            source_channel: channel_id,
+            timeout_height,
+            timeout_timestamp,
+            data: ZkgmPacket {
+                salt: hashed_salt.into(),
+                path: U256::ZERO,
+                instruction,
+            }
+            .abi_encode_params()
+            .into(),
+        }),
+        vec![],
+    )?))
+}
+
 #[allow(clippy::too_many_arguments)]
 fn transfer(
-    deps: DepsMut,
+    mut deps: DepsMut,
     _: Env,
     info: MessageInfo,
     channel_id: u32,
@@ -1356,9 +1707,6 @@ fn transfer(
 ) -> Result<Response, ContractError> {
     // NOTE(aeryz): We don't check whether the funds are provided here. We check it in the
     // minter because cw20 token minter doesn't require funds to be given in the native form.
-    if base_amount.is_zero() {
-        return Err(ContractError::InvalidAmount);
-    }
     let minter = TOKEN_MINTER.load(deps.storage)?;
     // If the origin exists, the preimage exists
     let unwrapped_asset = HASH_TO_FOREIGN_TOKEN.may_load(deps.storage, base_token.clone())?;
@@ -1401,14 +1749,14 @@ fn transfer(
                 )?,
                 ESCROW_REPLY_ID,
             ));
-            CHANNEL_BALANCE.update(deps.storage, (channel_id, base_token.clone()), |balance| {
-                match balance {
-                    Some(value) => value
-                        .checked_add(base_amount.into())
-                        .map_err(|_| ContractError::InvalidChannelBalance),
-                    None => Ok(base_amount.into()),
-                }
-            })?;
+            // Use path = 0 for local tokens, matching Solidity implementation
+            increase_channel_balance(
+                deps.branch(),
+                channel_id,
+                U256::ZERO,
+                base_token.clone(),
+                base_amount.into(),
+            )?;
         }
     };
     let MetadataResponse {
@@ -1513,6 +1861,9 @@ pub fn migrate(
     )
 }
 
+/// Creates a WasmMsg for interacting with the token minter contract.
+/// This is a helper function to construct properly formatted wasm messages
+/// for token minting, burning, and other token operations.
 fn make_wasm_msg(
     msg: impl Into<ucs03_zkgm_token_minter_api::ExecuteMsg>,
     minter: impl Into<String>,
@@ -1531,7 +1882,7 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
             token,
         } => {
             let minter = TOKEN_MINTER.load(deps.storage)?;
-            let token = query_predict_wrapped_token(
+            let (token, _) = predict_wrapped_token(
                 deps,
                 &minter,
                 path.parse().map_err(ContractError::InvalidPath)?,
@@ -1545,51 +1896,119 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
     }
 }
 
-fn derive_batch_salt(index: U256, salt: H256) -> H256 {
+/// Increases the outstanding balance for a (channel, path, token) combination.
+/// This is used when escrowing tokens to track how many tokens can be unescrowed later.
+/// The balance is used to prevent double-spending and ensure token conservation across chains.
+fn increase_channel_balance(
+    deps: DepsMut,
+    channel_id: u32,
+    path: U256,
+    base_token: String,
+    base_amount: Uint256,
+) -> Result<(), ContractError> {
+    CHANNEL_BALANCE.update(
+        deps.storage,
+        (channel_id, path.to_be_bytes::<32>().to_vec(), base_token),
+        |balance| match balance {
+            Some(value) => value
+                .checked_add(base_amount)
+                .map_err(|_| ContractError::InvalidChannelBalance),
+            None => Ok(base_amount),
+        },
+    )?;
+    Ok(())
+}
+
+/// Decrease the outstanding balance of a (channel, path, token) combination.
+/// This is used when unwrapping tokens to ensure we don't unescrow more tokens than were originally escrowed.
+fn decrease_channel_balance(
+    deps: DepsMut,
+    channel_id: u32,
+    path: U256,
+    token: String,
+    amount: Uint256,
+) -> Result<(), ContractError> {
+    CHANNEL_BALANCE.update(
+        deps.storage,
+        (channel_id, path.to_be_bytes::<32>().to_vec(), token),
+        |balance| match balance {
+            Some(value) => value
+                .checked_sub(amount)
+                .map_err(|_| ContractError::InvalidChannelBalance),
+            None => Err(ContractError::InvalidChannelBalance),
+        },
+    )?;
+    Ok(())
+}
+
+pub fn derive_batch_salt(index: U256, salt: H256) -> H256 {
     keccak256((index, salt.get()).abi_encode())
 }
 
-fn dequeue_channel_from_path(path: U256) -> (U256, u32) {
+pub fn dequeue_channel_from_path(path: U256) -> (U256, u32) {
     if path == U256::ZERO {
         (U256::ZERO, 0)
     } else {
         (
             path >> 32,
-            u32::try_from(
-                Uint64::try_from(Uint256::from_be_bytes(
-                    (path & U256::from(u32::MAX)).to_be_bytes(),
-                ))
-                .expect("impossible")
-                .u64(),
-            )
-            .expect("impossible"),
+            u32::try_from(path & U256::from(u32::MAX)).expect("impossible"),
         )
     }
 }
 
-fn update_channel_path(path: U256, next_channel_id: u32) -> U256 {
+/// Extract the last channel from a path and return the base path without it
+pub fn pop_channel_from_path(path: U256) -> (U256, u32) {
     if path == U256::ZERO {
-        U256::from(next_channel_id)
+        return (U256::ZERO, 0);
+    }
+    // Find the highest non-zero 32-bit chunk (leftmost)
+    let highest_index = (256 - path.leading_zeros() - 1) / 32;
+    // Extract the channel ID from the highest non-zero slot
+    let channel_id =
+        u32::try_from((path >> (highest_index * 32)) & U256::from(u32::MAX)).expect("impossible");
+    // Clear that slot in the path
+    let mask = !(U256::from(u32::MAX) << (highest_index * 32));
+    let base_path = path & mask;
+    (base_path, channel_id)
+}
+
+pub fn update_channel_path(path: U256, next_channel_id: u32) -> Result<U256, ContractError> {
+    if path == U256::ZERO {
+        Ok(U256::from(next_channel_id))
     } else {
-        let next_hop_index = path.leading_zeros() / 32 + 1;
+        let next_hop_index = (256 - path.leading_zeros()) / 32 + 1;
         if next_hop_index > 7 {
-            panic!("invalid hops"); // This matches the solidity revert
+            return Err(ContractError::ChannelPathIsFull {
+                path,
+                next_hop_index,
+            });
         }
-        (U256::from(next_channel_id) << (32 * next_hop_index)) | path
+        Ok((U256::from(next_channel_id) << (32 * next_hop_index)) | path)
     }
 }
 
-fn tint_forward_salt(salt: H256) -> H256 {
+pub fn reverse_channel_path(path: U256) -> U256 {
+    U256::from(u32::try_from(path & U256::from(u32::MAX)).expect("impossible")) << 224
+        | U256::from(u32::try_from((path >> 32) & U256::from(u32::MAX)).expect("impossible")) << 192
+        | U256::from(u32::try_from((path >> 64) & U256::from(u32::MAX)).expect("impossible")) << 160
+        | U256::from(u32::try_from((path >> 96) & U256::from(u32::MAX)).expect("impossible")) << 128
+        | U256::from(u32::try_from((path >> 128) & U256::from(u32::MAX)).expect("impossible")) << 96
+        | U256::from(u32::try_from((path >> 160) & U256::from(u32::MAX)).expect("impossible")) << 64
+        | U256::from(u32::try_from((path >> 192) & U256::from(u32::MAX)).expect("impossible")) << 32
+        | U256::from(u32::try_from((path >> 224) & U256::from(u32::MAX)).expect("impossible"))
+}
+
+pub fn tint_forward_salt(salt: H256) -> H256 {
     (FORWARD_SALT_MAGIC | (U256::from_be_bytes(*salt.get()) & !FORWARD_SALT_MAGIC))
         .to_be_bytes()
         .into()
 }
 
-fn is_salt_forward_tinted(salt: H256) -> bool {
+pub fn is_salt_forward_tinted(salt: H256) -> bool {
     (U256::from_be_bytes(*salt.get()) & FORWARD_SALT_MAGIC) == FORWARD_SALT_MAGIC
 }
 
-fn derive_forward_salt(salt: H256) -> H256 {
+pub fn derive_forward_salt(salt: H256) -> H256 {
     tint_forward_salt(keccak256(salt.abi_encode()))
 }
 
@@ -1598,5 +2017,5 @@ pub fn encode_multiplex_calldata(
     sender: alloy::primitives::Bytes,
     contract_calldata: alloy::primitives::Bytes,
 ) -> Vec<u8> {
-    alloy::sol_types::SolValue::abi_encode(&(path, sender, contract_calldata))
+    (path, sender, contract_calldata).abi_encode()
 }

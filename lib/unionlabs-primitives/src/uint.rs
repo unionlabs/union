@@ -3,7 +3,7 @@
 use core::{
     fmt::{self, Display},
     iter::Sum,
-    ops::{Add, AddAssign, Div, Rem},
+    ops::{Add, AddAssign, BitAnd, Div, Rem},
     str::FromStr,
 };
 
@@ -159,6 +159,18 @@ impl From<u32> for U256 {
 impl From<u64> for U256 {
     fn from(value: u64) -> Self {
         Self(primitive_types::U256::from(value))
+    }
+}
+
+impl TryFrom<U256> for u32 {
+    type Error = ();
+
+    fn try_from(value: U256) -> Result<Self, Self::Error> {
+        if value > U256::from(u32::MAX) {
+            Err(())
+        } else {
+            Ok(value.0.as_u32())
+        }
     }
 }
 
@@ -377,6 +389,14 @@ impl Div for U256 {
 
     fn div(self, rhs: Self) -> Self::Output {
         Self(self.0 / rhs.0)
+    }
+}
+
+impl BitAnd for U256 {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
     }
 }
 

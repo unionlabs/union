@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, CosmosMsg, Uint128, Uint256};
+use cosmwasm_std::{Addr, Uint128, Uint256};
 use ibc_union_spec::types::Packet;
 use unionlabs::primitives::{Bytes, H256};
 
@@ -37,7 +37,9 @@ pub enum TokenMinterInitMsg {
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    // Public messages
+    /// Transfer tokens across chains with optional quote token and amount.
+    /// Used for basic token transfers where the receiver gets quote_amount of quote_token
+    /// in exchange for base_amount of base_token.
     Transfer {
         channel_id: u32,
         receiver: Bytes,
@@ -49,20 +51,29 @@ pub enum ExecuteMsg {
         timeout_timestamp: u64,
         salt: H256,
     },
-    IbcUnionMsg(ibc_union_msg::module::IbcUnionMsg),
-
-    // Internal privileged messages
-    InternalBatchExecute {
-        msgs: Vec<CosmosMsg>,
+    /// Send a custom instruction across chains.
+    /// Allows sending any zkgm instruction (forward, multiplex, batch, etc)
+    /// with custom timeout and salt parameters.
+    Send {
+        channel_id: u32,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        salt: H256,
+        instruction: Bytes,
     },
+    /// Handle IBC module messages from the IBC host.
+    /// Used by the IBC host to notify the contract of IBC events.
+    IbcUnionMsg(ibc_union_msg::module::IbcUnionMsg),
+    /// Execute an Zkgm packet.
+    /// Can only be called by the contract itself during packet handling.
     InternalExecutePacket {
         packet: Packet,
         relayer: Addr,
         relayer_msg: Bytes,
     },
-    InternalWriteAck {
-        ack: Bytes,
-    },
+    /// Write an acknowledgement for an Zkgm packet.
+    /// Can only be called by the contract itself after packet execution.
+    InternalWriteAck { ack: Bytes },
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
