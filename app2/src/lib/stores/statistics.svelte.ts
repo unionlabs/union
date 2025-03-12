@@ -15,11 +15,6 @@ class StatisticsStore {
     return fiber
   }
 
-  async clearFiber() {
-    await this.interruptFiber()
-    this.fiber = Option.none()
-  }
-
   async interruptFiber() {
     if (Option.isSome(this.fiber)) {
       await Effect.runPromise(Fiber.interrupt(this.fiber.value))
@@ -39,11 +34,6 @@ class DailyTransfersStore {
     const fiber = Effect.runFork(effect)
     this.fiber = Option.some(fiber)
     return fiber
-  }
-
-  async clearFiber() {
-    await this.interruptFiber()
-    this.fiber = Option.none()
   }
 
   async interruptFiber() {
