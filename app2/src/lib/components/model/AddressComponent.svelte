@@ -4,7 +4,7 @@ import type { Chain } from "$lib/schema/chain"
 import type { AddressCanonicalBytes } from "$lib/schema/address"
 import { cn } from "$lib/utils"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import Truncate from "$lib/components/ui/Truncate.svelte"
+import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import { Effect, Option } from "effect"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
@@ -21,7 +21,9 @@ const displayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address))
 <Tooltip>
   {#snippet trigger()}
     <div class={cn("font-mono", className)} {...rest}>
-      <Truncate value={displayAddress} maxLength={12} showCopy={false}/>
+      <LongMonoWord>
+        {displayAddress}
+      </LongMonoWord>
     </div>
   {/snippet}
 
@@ -44,11 +46,15 @@ const displayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address))
         <h3 class="text-white">Formats</h3>
         <div>
           <span class="text-white">Display:</span>
-          <span class="font-mono">{displayAddress}</span>
+          <LongMonoWord class="inline">
+            {displayAddress}
+          </LongMonoWord>
         </div>
         <div>
           <span class="text-white">Canonical:</span>
-          <span class="font-mono">{address}</span>
+          <LongMonoWord class="inline">
+            {address}
+          </LongMonoWord>
         </div>
       </section>
     </div>
