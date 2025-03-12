@@ -67,7 +67,7 @@ export class PacketDetails extends Schema.Class<PacketDetails>("PacketDetails")(
   timeout_height: Height,
   timeout_timestamp: Schema.String,
   write_ack_block_hash: Schema.OptionFromNullOr(Hex),
-  write_ack_height: Schema.OptionFromNullOr(Schema.Number),
+  write_ack_height: Schema.OptionFromNullOr(Height),
   write_ack_timestamp: Schema.OptionFromNullOr(Schema.DateTimeUtc),
   write_ack_transaction_hash: Schema.OptionFromNullOr(TransactionHash),
   decoded: Schema.OptionFromNullOr(Schema.Any),
