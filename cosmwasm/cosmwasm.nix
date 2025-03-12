@@ -495,6 +495,10 @@
         crateDirFromRoot = "cosmwasm/ibc-union/app/ucs03-zkgm";
       };
 
+      ucs03-zkgm-native = crane.buildWorkspaceMember {
+        crateDirFromRoot = "cosmwasm/ibc-union/app/ucs03-zkgm";
+      };
+
       cw20-base = crane.buildWasmContract {
         crateDirFromRoot = "cosmwasm/cw20-base";
       };
@@ -573,6 +577,7 @@
         };
     in
     {
+      inherit (ucs03-zkgm-native) checks;
       packages =
         {
           inherit
