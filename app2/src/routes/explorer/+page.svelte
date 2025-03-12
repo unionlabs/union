@@ -6,6 +6,8 @@ import { cn } from "$lib/utils"
 import { onMount } from "svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Label from "$lib/components/ui/Label.svelte"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import Sections from "$lib/components/ui/Sections.svelte"
 
 onMount(() => {
   statistics.runEffect(statisticsQuery)
@@ -28,9 +30,9 @@ function formatDate(dateStr: string): string {
 }
 </script>
 
-<div class="container mx-auto px-4 py-8">
+<Sections>
   <!-- Statistics Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     {#if Option.isSome(statistics.data)}
       {#each statistics.data.value as stat}
         <Card class="transition-all hover:shadow-lg">
@@ -39,11 +41,11 @@ function formatDate(dateStr: string): string {
         </Card>
       {/each}
     {:else if Option.isSome(statistics.error)}
-      <Card class="col-span-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
-        <p>Error loading statistics: {statistics.error.value.message}</p>
-      </Card>
+      <div class="col-span-full">
+        <ErrorComponent error={statistics.error.value} />
+      </div>
     {:else}
-      {#each Array(4) as _}
+      {#each Array(2) as _}
         <Card class="animate-pulse">
           <div class="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4 mb-4"></div>
           <div class="h-8 bg-zinc-200 dark:bg-zinc-700 rounded w-1/2"></div>
@@ -53,7 +55,7 @@ function formatDate(dateStr: string): string {
   </div>
   
   <!-- Daily Transfers Chart -->
-  <Card class="mb-12">
+  <Card>
     <div class="mb-6">
       <h2 class="text-xl font-bold">Daily Transfers</h2>
       <Label>Last 30 days of transfer activity</Label>
@@ -90,9 +92,7 @@ function formatDate(dateStr: string): string {
         </div>
       </div>
     {:else if Option.isSome(dailyTransfers.error)}
-      <div class="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg">
-        <p>Error loading daily transfers: {dailyTransfers.error.value.message}</p>
-      </div>
+      <ErrorComponent error={dailyTransfers.error.value} />
     {:else}
       <div class="h-64 animate-pulse bg-zinc-200 dark:bg-zinc-700 rounded"></div>
     {/if}
@@ -123,4 +123,4 @@ function formatDate(dateStr: string): string {
       </table>
     </Card>
   {/if}
-</div>
+</Sections>
