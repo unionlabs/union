@@ -9,10 +9,16 @@ import SharpClientsIcon from "$lib/components/icons/SharpClientsIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
 import type { Component } from "svelte"
 
+export interface NavSubItem {
+  path: string
+  title: string
+}
+
 export interface NavItem {
   path: string
   title: string
   icon: Component
+  subroutes?: Array<NavSubItem>
 }
 
 export interface NavSection {
@@ -41,32 +47,29 @@ export const navigation: Array<NavSection> = [
       {
         path: "/explorer",
         title: "Explorer",
-        icon: SharpListIcon
-      },
-      {
-        path: "/explorer/transfers",
-        title: "Transfers",
-        icon: SharpListIcon
-      },
-      {
-        path: "/explorer/packets",
-        title: "Packets",
-        icon: SharpPacketsIcon
-      },
-      {
-        path: "/explorer/connections",
-        title: "Connections",
-        icon: SharpConnectionsIcon
-      },
-      {
-        path: "/explorer/channels",
-        title: "Channels",
-        icon: SharpChannelsIcon
-      },
-      {
-        path: "/explorer/clients",
-        title: "Clients",
-        icon: SharpClientsIcon
+        icon: SharpListIcon,
+        subroutes: [
+          {
+            path: "/explorer/transfers",
+            title: "Transfers"
+          },
+          {
+            path: "/explorer/packets",
+            title: "Packets"
+          },
+          {
+            path: "/explorer/connections",
+            title: "Connections"
+          },
+          {
+            path: "/explorer/channels",
+            title: "Channels"
+          },
+          {
+            path: "/explorer/clients",
+            title: "Clients"
+          }
+        ]
       }
     ]
   },
