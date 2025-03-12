@@ -25,6 +25,7 @@ use serde::{Deserialize, Serialize};
 pub use typenum;
 
 use crate::{
+    encoding::{Decode, Encode},
     errors::{ExpectedLength, InvalidLength},
     validated::Validated,
 };
@@ -44,6 +45,9 @@ pub mod ibc;
 
 /// Defines types that wrap the cosmos specification, matching the proto module structure.
 pub mod cosmos;
+
+/// Defines types that wrap the cosmwasm specification, matching the proto module structure.
+pub mod cosmwasm;
 
 /// Various ethereum types. Types that have an IBC counterpart are defined in [`ibc`].
 pub mod ethereum;
@@ -100,6 +104,10 @@ pub enum TryFromProtoBytesError<E> {
 
 pub trait TypeUrl {
     fn type_url() -> String;
+}
+
+pub trait Msg: Clone + Encode<encoding::Proto> + TypeUrl {
+    type Response: Decode<encoding::Proto, Error: core::error::Error> + TypeUrl;
 }
 
 #[cfg(feature = "ethabi")]

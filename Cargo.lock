@@ -3659,6 +3659,7 @@ dependencies = [
  "cometbft-rpc",
  "cosmos-client",
  "cosmwasm-std 2.1.4",
+ "futures",
  "hex-literal",
  "ibc-union-light-client",
  "ibc-union-msg",

@@ -26,8 +26,10 @@ pub enum TokenMinterInitMsg {
         /// The code id of [`cw20-base`] to use for cw20 tokens. This will be threaded to the `cw20-token-minter` by `ucs03-zkgm`.
         ///
         /// [`cw20-base`]: https://github.com/CosmWasm/cw-plus/blob/main/packages/cw20/README.md#base
+        // TODO: Should be NonZeroU64
         cw20_base_code_id: u64,
         /// The code id of the dummy contract in order to get a contract address that does not depend on the code hash of `cw20_base`
+        // TODO: Should be NonZeroU64
         dummy_code_id: u64,
     },
     /// Instantiate `ucs03-zkgm` with a native tokenfactory minter implementation.

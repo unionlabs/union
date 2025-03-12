@@ -113,8 +113,11 @@ macro_rules! impl_ethabi_via_try_from_into {
 #[cfg(feature = "proto")]
 #[macro_export]
 macro_rules! impl_proto_via_try_from_into {
-    ($T:ty => $Proto:ty) => {
-        impl $crate::encoding::Decode<$crate::encoding::Proto> for $T {
+    ($({ for($($P:ident)+) $(where encode($($encode:tt)*) decode($($decode:tt)*))? })? $T:ty => $Proto:ty) => {
+        impl $(<$($P)+>)?
+            $crate::encoding::Decode<$crate::encoding::Proto>
+            for $T $($(where $($decode)*)?)?
+        {
             type Error = $crate::TryFromProtoBytesError<<$T as TryFrom<$Proto>>::Error>;
 
             fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
@@ -128,13 +131,13 @@ macro_rules! impl_proto_via_try_from_into {
             }
         }
 
-        impl $crate::encoding::Encode<$crate::encoding::Proto> for $T {
+        impl $(<$($P)+>)? $crate::encoding::Encode<$crate::encoding::Proto> for $T $($(where $($encode)*)?)? {
             fn encode(self) -> Vec<u8> {
                 $crate::prost::Message::encode_to_vec(&Into::<$Proto>::into(self))
             }
         }
 
-        impl $crate::TypeUrl for $T {
+        impl $(<$($P)+>)? $crate::TypeUrl for $T {
             fn type_url() -> String {
                 <$Proto as $crate::prost::Name>::type_url()
             }

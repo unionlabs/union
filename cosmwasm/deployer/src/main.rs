@@ -1,4 +1,6 @@
-use std::{collections::BTreeMap, ops::Deref, path::PathBuf};
+#![feature(async_closure)]
+
+use std::{collections::BTreeMap, num::NonZeroU64, ops::Deref, path::PathBuf};
 
 use anyhow::{bail, Context, Result};
 use bip32::secp256k1::ecdsa::SigningKey;
@@ -11,17 +13,9 @@ use cosmos_client::{
     TxClient,
 };
 use cosmwasm_std::Addr;
+use futures::{future::OptionFuture, stream::FuturesOrdered, TryStreamExt};
 use hex_literal::hex;
-use protos::{
-    cosmos::bank::v1beta1::{MsgSend, MsgSendResponse},
-    cosmwasm::wasm::v1::{
-        AccessConfig, AccessType, MsgExecuteContract, MsgExecuteContractResponse,
-        MsgInstantiateContract2, MsgInstantiateContract2Response, MsgMigrateContract,
-        MsgMigrateContractResponse, MsgStoreCode, MsgStoreCodeResponse, MsgUpdateInstantiateConfig,
-        MsgUpdateInstantiateConfigResponse, QuerySmartContractStateRequest,
-        QuerySmartContractStateResponse,
-    },
-};
+use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use rand_chacha::{
     rand_core::{block::BlockRng, SeedableRng},
     ChaChaCore,
@@ -34,7 +28,15 @@ use tracing_subscriber::EnvFilter;
 use ucs03_zkgm::msg::TokenMinterInitMsg;
 use unionlabs::{
     bech32::Bech32,
-    cosmos::{base::coin::Coin, tx::fee::Fee},
+    cosmos::{bank::msg_send::MsgSend, base::coin::Coin, tx::fee::Fee},
+    cosmwasm::wasm::{
+        access_config::AccessConfig, msg_execute_contract::MsgExecuteContract,
+        msg_instantiate_contract2::MsgInstantiateContract2,
+        msg_migrate_contract::MsgMigrateContract, msg_store_code::MsgStoreCode,
+        msg_update_admin::MsgUpdateAdmin,
+        msg_update_instantiate_config::MsgUpdateInstantiateConfig,
+    },
+    google::protobuf::any::Any,
     primitives::{Bytes, H256},
     signer::CosmosSigner,
 };
@@ -92,6 +94,18 @@ enum App {
         private_key: H256,
         #[arg(long)]
         bech32_prefix: String,
+    },
+    MigrateAdmin {
+        #[arg(long)]
+        private_key: H256,
+        #[arg(long)]
+        addresses: PathBuf,
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long)]
+        new_admin: Bech32<Bytes>,
+        #[command(flatten)]
+        gas_config: GasConfigArgs,
     },
     #[command(subcommand)]
     Tx(TxCmd),
@@ -199,8 +213,8 @@ pub enum TokenMinterConfig {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 struct ContractAddresses {
-    core: String,
-    lightclient: BTreeMap<String, String>,
+    core: Bech32<H256>,
+    lightclient: BTreeMap<String, Bech32<H256>>,
     app: AppAddresses,
 }
 
@@ -208,9 +222,9 @@ struct ContractAddresses {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 struct AppAddresses {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    ucs00: Option<String>,
+    ucs00: Option<Bech32<H256>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    ucs03: Option<String>,
+    ucs03: Option<Bech32<H256>>,
 }
 
 async fn do_main() -> Result<()> {
@@ -227,52 +241,9 @@ async fn do_main() -> Result<()> {
             apps,
             output,
         } => {
-            let core = instantiate2_address(deployer.clone(), sha2(BYTECODE_BASE_BYTECODE), CORE)
-                .unwrap()
-                .to_string();
+            let addresses = calculate_contract_addresses(deployer, lightclient, apps)?;
 
-            let lightclient = lightclient
-                .into_iter()
-                .map(|salt| {
-                    (
-                        salt.clone(),
-                        instantiate2_address(
-                            deployer.clone(),
-                            sha2(BYTECODE_BASE_BYTECODE),
-                            &format!("{LIGHTCLIENT}/{salt}"),
-                        )
-                        .unwrap()
-                        .to_string(),
-                    )
-                })
-                .collect();
-
-            let mut app = AppAddresses::default();
-
-            if apps.ucs00 {
-                todo!()
-            }
-
-            if apps.ucs03 {
-                app.ucs03 = Some(
-                    instantiate2_address(
-                        deployer,
-                        sha2(BYTECODE_BASE_BYTECODE),
-                        &format!("{APP}/{UCS03}"),
-                    )
-                    .unwrap()
-                    .to_string(),
-                );
-            }
-
-            write_output(
-                output,
-                ContractAddresses {
-                    core,
-                    lightclient,
-                    app,
-                },
-            )?;
+            write_output(output, addresses)?;
         }
         App::DeployFull {
             rpc_url,
@@ -292,7 +263,7 @@ async fn do_main() -> Result<()> {
                 .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), BYTECODE_BASE)
                 .await?;
 
-            let bytecode_base_contract = ctx.contract_info(bytecode_base_address.clone()).await?;
+            let bytecode_base_contract = ctx.contract_info(&bytecode_base_address).await?;
 
             let bytecode_base_code_id = match bytecode_base_contract {
                 Some(_) => ctx
@@ -302,29 +273,27 @@ async fn do_main() -> Result<()> {
                 // contract does not exist on chain
                 None => {
                     let (_, response) = ctx
-                        .tx::<_, MsgStoreCodeResponse>(
+                        .tx(
                             MsgStoreCode {
-                                sender: ctx.wallet().address().to_string(),
-                                wasm_byte_code: BYTECODE_BASE_BYTECODE.to_vec(),
-                                instantiate_permission: Some(AccessConfig {
-                                    permission: AccessType::Everybody.into(),
-                                    addresses: vec![],
-                                }), // ..Default::default()
+                                sender: ctx.wallet().address().map_data(Into::into),
+                                wasm_byte_code: BYTECODE_BASE_BYTECODE.into(),
+                                instantiate_permission: Some(AccessConfig::Everybody),
                             },
                             "",
                         )
                         .await
                         .context("store code")?;
 
-                    ctx.tx::<_, MsgInstantiateContract2Response>(
+                    ctx.tx(
                         MsgInstantiateContract2 {
-                            sender: ctx.wallet().address().to_string(),
-                            admin: ctx.wallet().address().to_string(),
+                            sender: ctx.wallet().address().map_data(Into::into),
+                            admin: ctx.wallet().address().map_data(Into::into),
                             code_id: response.code_id,
                             label: BYTECODE_BASE.to_string(),
-                            msg: b"{}".to_vec(),
-                            salt: BYTECODE_BASE.as_bytes().to_vec(),
-                            ..Default::default()
+                            msg: b"{}".into(),
+                            salt: BYTECODE_BASE.as_bytes().into(),
+                            funds: vec![],
+                            fix_msg: false,
                         },
                         "",
                     )
@@ -361,7 +330,7 @@ async fn do_main() -> Result<()> {
                         std::fs::read(path)?,
                         bytecode_base_code_id,
                         ibc_union_light_client::msg::InitMsg {
-                            ibc_host: Addr::unchecked(core_address.clone()),
+                            ibc_host: Addr::unchecked(core_address.to_string()),
                         },
                         format!("{LIGHTCLIENT}/{client_type}"),
                     )
@@ -373,7 +342,7 @@ async fn do_main() -> Result<()> {
                     .grpc_abci_query::<_, QuerySmartContractStateResponse>(
                         "/cosmwasm.wasm.v1.Query/SmartContractState",
                         &QuerySmartContractStateRequest {
-                            address: core_address.clone(),
+                            address: core_address.to_string(),
                             query_data: serde_json::to_vec(
                                 &ibc_union_msg::query::QueryMsg::GetRegisteredClientType {
                                     client_type: client_type.clone(),
@@ -388,24 +357,26 @@ async fn do_main() -> Result<()> {
 
                 if let Some(addr) = response
                     .value
-                    .map(|value| serde_json::from_slice::<Addr>(&value.data).unwrap())
+                    .map(|value| serde_json::from_slice::<Bech32<H256>>(&value.data))
+                    .transpose()?
                 {
-                    assert_eq!(addr.to_string(), address);
+                    assert_eq!(addr, address);
                     info!("client {client_type} has already been registered");
                 } else {
-                    ctx.tx::<_, MsgExecuteContractResponse>(
+                    ctx.tx(
                         MsgExecuteContract {
-                            sender: ctx.wallet().address().to_string(),
+                            sender: ctx.wallet().address().map_data(Into::into),
                             contract: core_address.clone(),
                             msg: serde_json::to_vec(
                                 &ibc_union_msg::msg::ExecuteMsg::RegisterClient(
                                     ibc_union_msg::msg::MsgRegisterClient {
                                         client_type: client_type.clone(),
-                                        client_address: address.clone(),
+                                        client_address: address.to_string(),
                                     },
                                 ),
                             )
-                            .unwrap(),
+                            .unwrap()
+                            .into(),
                             funds: vec![],
                         },
                         "",
@@ -436,10 +407,11 @@ async fn do_main() -> Result<()> {
 
                 if let ContractDeployState::None | ContractDeployState::Instantiated = state {
                     let (tx_hash, response) = ctx
-                        .tx::<_, MsgStoreCodeResponse>(
+                        .tx(
                             MsgStoreCode {
-                                sender: ctx.wallet().address().to_string(),
-                                wasm_byte_code: std::fs::read(ucs03_config.token_minter_path)?,
+                                sender: ctx.wallet().address().map_data(Into::into),
+                                wasm_byte_code: std::fs::read(ucs03_config.token_minter_path)?
+                                    .into(),
                                 instantiate_permission: None,
                             },
                             "",
@@ -454,14 +426,17 @@ async fn do_main() -> Result<()> {
                     // on permissioned cosmwasm, we must specify that this code can be instantiated by the ucs03 contract
                     if permissioned {
                         let (tx_hash, _) = ctx
-                            .tx::<_, MsgUpdateInstantiateConfigResponse>(
+                            .tx(
                                 MsgUpdateInstantiateConfig {
-                                    sender: ctx.wallet().address().to_string(),
+                                    sender: ctx.wallet().address().map_data(Into::into),
                                     code_id: minter_code_id,
-                                    new_instantiate_permission: Some(AccessConfig {
-                                        permission: AccessType::AnyOfAddresses.into(),
-                                        addresses: vec![ucs03_address.clone()],
-                                    }),
+                                    new_instantiate_permission: Some(
+                                        AccessConfig::AnyOfAddresses {
+                                            addresses: vec![ucs03_address
+                                                .clone()
+                                                .map_data(Into::into)],
+                                        },
+                                    ),
                                 },
                                 "",
                             )
@@ -473,14 +448,14 @@ async fn do_main() -> Result<()> {
                         // the bytecode base code id must be instantiable by ucs03
                         ctx.update_bytecode_base_instantiate_permissions(
                             bytecode_base_code_id,
-                            &ucs03_address,
+                            ucs03_address.clone(),
                         )
                         .await?;
                     }
 
                     let token_minter_address = instantiate2_address(
-                        ucs03_address.parse::<Bech32<Bytes>>().unwrap(),
-                        response.checksum.try_into().unwrap(),
+                        ucs03_address.clone(),
+                        response.checksum,
                         &ucs03_zkgm::contract::minter_salt(),
                     )
                     .unwrap();
@@ -488,10 +463,10 @@ async fn do_main() -> Result<()> {
                     let minter_init_msg = match ucs03_config.token_minter_config {
                         TokenMinterConfig::Cw20 { cw20_base } => {
                             let (tx_hash, response) = ctx
-                                .tx::<_, MsgStoreCodeResponse>(
+                                .tx(
                                     MsgStoreCode {
-                                        sender: ctx.wallet().address().to_string(),
-                                        wasm_byte_code: std::fs::read(cw20_base)?,
+                                        sender: ctx.wallet().address().map_data(Into::into),
+                                        wasm_byte_code: std::fs::read(cw20_base)?.into(),
                                         instantiate_permission: None,
                                     },
                                     "",
@@ -506,14 +481,18 @@ async fn do_main() -> Result<()> {
                             // on permissioned cosmwasm, we must specify that this code can be instantiated by the token minter
                             if permissioned {
                                 let (tx_hash, _) = ctx
-                                    .tx::<_, MsgUpdateInstantiateConfigResponse>(
+                                    .tx(
                                         MsgUpdateInstantiateConfig {
-                                            sender: ctx.wallet().address().to_string(),
+                                            sender: ctx.wallet().address().map_data(Into::into),
                                             code_id,
-                                            new_instantiate_permission: Some(AccessConfig {
-                                                permission: AccessType::AnyOfAddresses.into(),
-                                                addresses: vec![token_minter_address.clone()],
-                                            }),
+                                            new_instantiate_permission: Some(
+                                                AccessConfig::AnyOfAddresses {
+                                                    addresses: vec![token_minter_address
+                                                        .clone()
+                                                        .map_data(Into::into)
+                                                        .clone()],
+                                                },
+                                            ),
                                         },
                                         "",
                                     )
@@ -525,14 +504,14 @@ async fn do_main() -> Result<()> {
                                 // the bytecode-base code must also be instantiable by the token minter
                                 ctx.update_bytecode_base_instantiate_permissions(
                                     bytecode_base_code_id,
-                                    &token_minter_address,
+                                    token_minter_address,
                                 )
                                 .await?;
                             }
 
                             TokenMinterInitMsg::Cw20 {
-                                cw20_base_code_id: code_id,
-                                dummy_code_id: bytecode_base_code_id,
+                                cw20_base_code_id: code_id.get(),
+                                dummy_code_id: bytecode_base_code_id.get(),
                             }
                         }
                         TokenMinterConfig::Native => TokenMinterInitMsg::Native,
@@ -544,8 +523,8 @@ async fn do_main() -> Result<()> {
                         ucs03_zkgm::msg::InitMsg {
                             config: ucs03_zkgm::msg::Config {
                                 admin: Addr::unchecked(ctx.wallet().address().to_string()),
-                                ibc_host: Addr::unchecked(core_address.clone()),
-                                token_minter_code_id: minter_code_id,
+                                ibc_host: Addr::unchecked(core_address.to_string()),
+                                token_minter_code_id: minter_code_id.into(),
                             },
                             minter_init_msg,
                         },
@@ -648,7 +627,7 @@ async fn do_main() -> Result<()> {
             let ctx = Deployer::new(rpc_url, private_key, gas_config).await?;
 
             let contract_info = ctx
-                .contract_info(address.to_string())
+                .contract_info(&address)
                 .await?
                 .with_context(|| format!("contract {address} does not exist"))?;
 
@@ -662,11 +641,11 @@ async fn do_main() -> Result<()> {
             }
 
             let (tx_hash, store_code_response) = ctx
-                .tx::<_, MsgStoreCodeResponse>(
+                .tx(
                     MsgStoreCode {
-                        sender: ctx.wallet().address().to_string(),
-                        wasm_byte_code: new_bytecode,
-                        ..Default::default()
+                        sender: ctx.wallet().address().map_data(Into::into),
+                        wasm_byte_code: new_bytecode.into(),
+                        instantiate_permission: None,
                     },
                     "",
                 )
@@ -680,12 +659,12 @@ async fn do_main() -> Result<()> {
             );
 
             let (tx_hash, _migrate_response) = ctx
-                .tx::<_, MsgMigrateContractResponse>(
+                .tx(
                     MsgMigrateContract {
-                        sender: ctx.wallet().address().to_string(),
-                        contract: address.to_string(),
+                        sender: ctx.wallet().address().map_data(Into::into),
+                        contract: address,
                         code_id: store_code_response.code_id,
-                        msg: json!({ "migrate": {} }).to_string().into_bytes(),
+                        msg: json!({ "migrate": {} }).to_string().into_bytes().into(),
                     },
                     "",
                 )
@@ -701,6 +680,81 @@ async fn do_main() -> Result<()> {
             "{}",
             CosmosSigner::from_raw(*private_key.get(), bech32_prefix).unwrap(),
         ),
+        App::MigrateAdmin {
+            private_key,
+            addresses,
+            rpc_url,
+            new_admin,
+            gas_config,
+        } => {
+            let addresses = serde_json::from_slice::<ContractAddresses>(
+                &std::fs::read(addresses).context("reading addresses path")?,
+            )?;
+
+            let ctx = Deployer::new(rpc_url, private_key, gas_config).await?;
+
+            let check_contract = async |salt, address| {
+                let Some(core_info) = ctx.contract_info(&address).await? else {
+                    return Ok(None);
+                };
+
+                if core_info.admin == new_admin.to_string() {
+                    info!("{salt} already migrated to admin {new_admin}");
+                    Ok(None)
+                } else if core_info.admin != ctx.wallet().address().to_string() {
+                    bail!(
+                        "the admin of {salt} is not {}, found {}",
+                        ctx.wallet().address(),
+                        core_info.admin
+                    );
+                } else {
+                    Ok(Some(address))
+                }
+            };
+
+            let mut messages = [check_contract(CORE.to_owned(), addresses.core).await?]
+                .into_iter()
+                // not sure why i have to collect here but whatever
+                .chain(
+                    addresses
+                        .lightclient
+                        .into_iter()
+                        .map(|(client_type, address)| {
+                            check_contract(format!("{LIGHTCLIENT}/{client_type}"), address)
+                        })
+                        .collect::<FuturesOrdered<_>>()
+                        .try_collect::<Vec<_>>()
+                        .await?,
+                )
+                // .chain(check_contract(addresses.app.ucs00))
+                .chain(
+                    OptionFuture::from(
+                        addresses
+                            .app
+                            .ucs03
+                            .map(|address| check_contract(format!("{APP}/{UCS03}"), address)),
+                    )
+                    .await
+                    .transpose()?,
+                )
+                .flatten()
+                .map(|contract| {
+                    Any(MsgUpdateAdmin {
+                        sender: ctx.wallet().address().map_data(Into::into),
+                        new_admin: new_admin.clone(),
+                        contract,
+                    })
+                })
+                .peekable();
+
+            if messages.peek().is_none() {
+                info!("all contracts already migrated");
+            } else {
+                let (tx_hash, _) = ctx.broadcast_tx_commit(messages, "", true).await?;
+
+                info!(%tx_hash, "admin migrated to {new_admin}");
+            }
+        }
         App::Tx(tx_cmd) => match tx_cmd {
             TxCmd::CreateSigners {
                 rpc_url,
@@ -777,15 +831,14 @@ async fn do_main() -> Result<()> {
                         info!("funding signer {signer}");
 
                         funder
-                            .tx::<_, MsgSendResponse>(
+                            .tx(
                                 MsgSend {
-                                    from_address: funder.wallet().address().to_string(),
-                                    to_address: signer.to_string(),
+                                    from_address: funder.wallet().address().map_data(Into::into),
+                                    to_address: signer.address().map_data(Into::into),
                                     amount: vec![Coin {
                                         denom: gas_config.gas_denom.clone(),
                                         amount,
-                                    }
-                                    .into()],
+                                    }],
                                 },
                                 "",
                             )
@@ -801,15 +854,14 @@ async fn do_main() -> Result<()> {
                         .await?;
 
                         signer
-                            .tx::<_, MsgSendResponse>(
+                            .tx(
                                 MsgSend {
-                                    from_address: signer.wallet().address().to_string(),
-                                    to_address: signer.wallet().address().to_string(),
+                                    from_address: signer.wallet().address().map_data(Into::into),
+                                    to_address: signer.wallet().address().map_data(Into::into),
                                     amount: vec![Coin {
                                         denom: gas_config.gas_denom.clone(),
                                         amount: 1,
-                                    }
-                                    .into()],
+                                    }],
                                 },
                                 "",
                             )
@@ -830,6 +882,48 @@ async fn do_main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn calculate_contract_addresses(
+    deployer: Bech32,
+    lightclient: Vec<String>,
+    apps: AppFlags,
+) -> Result<ContractAddresses> {
+    let core = instantiate2_address(deployer.clone(), sha2(BYTECODE_BASE_BYTECODE), CORE)?;
+
+    let lightclient = lightclient
+        .into_iter()
+        .map(|salt| {
+            Result::Ok((
+                salt.clone(),
+                instantiate2_address(
+                    deployer.clone(),
+                    sha2(BYTECODE_BASE_BYTECODE),
+                    &format!("{LIGHTCLIENT}/{salt}"),
+                )?,
+            ))
+        })
+        .collect::<Result<_>>()?;
+
+    let mut app = AppAddresses::default();
+
+    if apps.ucs00 {
+        todo!()
+    }
+
+    if apps.ucs03 {
+        app.ucs03 = Some(instantiate2_address(
+            deployer,
+            sha2(BYTECODE_BASE_BYTECODE),
+            &format!("{APP}/{UCS03}"),
+        )?);
+    }
+
+    Ok(ContractAddresses {
+        core,
+        lightclient,
+        app,
+    })
 }
 
 fn write_output(path: Option<PathBuf>, data: impl Serialize) -> Result<()> {
@@ -945,14 +1039,16 @@ impl Deployer {
 
     async fn contract_info(
         &self,
-        address: String,
+        address: &Bech32<H256>,
     ) -> Result<Option<protos::cosmwasm::wasm::v1::ContractInfo>> {
         let result = self
             .rpc()
             .client()
             .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryContractInfoResponse>(
                 "/cosmwasm.wasm.v1.Query/ContractInfo",
-                &(protos::cosmwasm::wasm::v1::QueryContractInfoRequest { address }),
+                &(protos::cosmwasm::wasm::v1::QueryContractInfoRequest {
+                    address: address.to_string(),
+                }),
                 None,
                 false,
             )
@@ -992,7 +1088,10 @@ impl Deployer {
         }
     }
 
-    async fn instantiate_code_id_of_contract(&self, address: String) -> Result<Option<u64>> {
+    async fn instantiate_code_id_of_contract(
+        &self,
+        address: Bech32<H256>,
+    ) -> Result<Option<NonZeroU64>> {
         let result = self.contract_history(address).await?;
 
         match result {
@@ -1008,7 +1107,9 @@ impl Deployer {
                     )
                 }
 
-                Ok(Some(contract_code_history_entry.code_id))
+                Ok(Some(
+                    contract_code_history_entry.code_id.try_into().unwrap(),
+                ))
             }
             Err(err) => {
                 // if err.error_code.get() == 6 && err.codespace == "sdk" {
@@ -1022,7 +1123,7 @@ impl Deployer {
 
     async fn contract_history(
         &self,
-        address: String,
+        address: Bech32<H256>,
     ) -> Result<
         Result<
             Option<protos::cosmwasm::wasm::v1::QueryContractHistoryResponse>,
@@ -1035,7 +1136,7 @@ impl Deployer {
             .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryContractHistoryResponse>(
                 "/cosmwasm.wasm.v1.Query/ContractHistory",
                 &protos::cosmwasm::wasm::v1::QueryContractHistoryRequest {
-                    address,
+                    address: address.to_string(),
                     ..Default::default()
                 },
                 None,
@@ -1045,7 +1146,7 @@ impl Deployer {
             .into_result())
     }
 
-    async fn instantiate2_address(&self, checksum: H256, salt: &str) -> Result<String> {
+    async fn instantiate2_address(&self, checksum: H256, salt: &str) -> Result<Bech32<H256>> {
         let bech32 = self.wallet().address();
 
         let addr = cosmwasm_std::instantiate2_address(
@@ -1054,17 +1155,20 @@ impl Deployer {
             salt.as_bytes(),
         )?;
 
-        Ok(Bech32::new(bech32.hrp(), &*addr).to_string())
+        Ok(Bech32::new(
+            bech32.hrp().to_owned(),
+            addr.as_slice().try_into().unwrap(),
+        ))
     }
 
     #[instrument(skip_all, fields(%salt))]
     async fn deploy_and_initiate(
         &self,
         wasm_byte_code: Vec<u8>,
-        bytecode_base_code_id: u64,
+        bytecode_base_code_id: NonZeroU64,
         msg: impl Serialize,
         salt: String,
-    ) -> Result<String, anyhow::Error> {
+    ) -> Result<Bech32<H256>> {
         let address = self
             .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), &salt)
             .await?;
@@ -1075,15 +1179,16 @@ impl Deployer {
             // only need to instantiate if the contract has not yet been instantiated with the base code
             ContractDeployState::None => {
                 let (_, instantiate2_response) = self
-                    .tx::<_, MsgInstantiateContract2Response>(
+                    .tx(
                         MsgInstantiateContract2 {
-                            sender: self.wallet().address().to_string(),
-                            admin: self.wallet().address().to_string(),
+                            sender: self.wallet().address().map_data(Into::into),
+                            admin: self.wallet().address().map_data(Into::into),
                             code_id: bytecode_base_code_id,
                             label: salt.clone(),
-                            msg: json!({}).to_string().into_bytes(),
-                            salt: salt.into_bytes(),
-                            ..Default::default()
+                            msg: json!({}).to_string().into_bytes().into(),
+                            salt: salt.into_bytes().into(),
+                            funds: vec![],
+                            fix_msg: false,
                         },
                         "",
                     )
@@ -1098,11 +1203,11 @@ impl Deployer {
         }
 
         let (tx_hash, store_code_response) = self
-            .tx::<_, MsgStoreCodeResponse>(
+            .tx(
                 MsgStoreCode {
-                    sender: self.wallet().address().to_string(),
-                    wasm_byte_code,
-                    ..Default::default()
+                    sender: self.wallet().address().map_data(Into::into),
+                    wasm_byte_code: wasm_byte_code.into(),
+                    instantiate_permission: None,
                 },
                 "",
             )
@@ -1115,12 +1220,12 @@ impl Deployer {
         );
 
         let (_, _migrate_response) = self
-            .tx::<_, MsgMigrateContractResponse>(
+            .tx(
                 MsgMigrateContract {
-                    sender: self.wallet().address().to_string(),
+                    sender: self.wallet().address().map_data(Into::into),
                     contract: address.clone(),
                     code_id: store_code_response.code_id,
-                    msg: json!({ "init": msg }).to_string().into_bytes(),
+                    msg: json!({ "init": msg }).to_string().into_bytes().into(),
                 },
                 "",
             )
@@ -1132,8 +1237,8 @@ impl Deployer {
         Ok(address)
     }
 
-    async fn contract_deploy_state(&self, address: String) -> Result<ContractDeployState> {
-        match self.contract_info(address.clone()).await? {
+    async fn contract_deploy_state(&self, address: Bech32<H256>) -> Result<ContractDeployState> {
+        match self.contract_info(&address).await? {
             Some(_) => {
                 let contract_history = self.contract_history(address.clone()).await??.unwrap();
                 match contract_history.entries.len().cmp(&1) {
@@ -1157,8 +1262,8 @@ impl Deployer {
     #[instrument(skip_all, fields(bytecode_base_code_id, address))]
     async fn update_bytecode_base_instantiate_permissions(
         &self,
-        bytecode_base_code_id: u64,
-        address: &str,
+        bytecode_base_code_id: NonZeroU64,
+        address: Bech32<H256>,
     ) -> Result<()> {
         let bytecode_base_code_info = self
             .rpc()
@@ -1166,7 +1271,7 @@ impl Deployer {
             .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryCodeResponse>(
                 "/cosmwasm.wasm.v1.Query/Code",
                 &protos::cosmwasm::wasm::v1::QueryCodeRequest {
-                    code_id: bytecode_base_code_id,
+                    code_id: bytecode_base_code_id.get(),
                 },
                 None,
                 false,
@@ -1190,15 +1295,14 @@ impl Deployer {
             .unwrap()
             .addresses
             .iter()
-            .any(|a| a == address)
+            .any(|a| a == &address.to_string())
         {
             let (tx_hash, _) = self
-                .tx::<_, MsgUpdateInstantiateConfigResponse>(
+                .tx(
                     MsgUpdateInstantiateConfig {
-                        sender: self.wallet().address().to_string(),
+                        sender: self.wallet().address().map_data(Into::into),
                         code_id: bytecode_base_code_id,
-                        new_instantiate_permission: Some(AccessConfig {
-                            permission: AccessType::AnyOfAddresses.into(),
+                        new_instantiate_permission: Some(AccessConfig::AnyOfAddresses {
                             addresses: bytecode_base_code_info
                                 .code_info
                                 .unwrap()
@@ -1206,7 +1310,8 @@ impl Deployer {
                                 .unwrap()
                                 .addresses
                                 .into_iter()
-                                .chain([address.to_owned()])
+                                .map(|a| a.parse().unwrap())
+                                .chain([address.clone().map_data(Into::into)])
                                 .collect(),
                         }),
                     },
@@ -1234,12 +1339,15 @@ fn instantiate2_address(
     address: Bech32<impl AsRef<[u8]>>,
     checksum: H256,
     salt: &str,
-) -> Result<String> {
+) -> Result<Bech32<H256>> {
     let addr = cosmwasm_std::instantiate2_address(
         checksum.get(),
         &address.data().as_ref().into(),
         salt.as_bytes(),
     )?;
 
-    Ok(Bech32::new(address.hrp(), &*addr).to_string())
+    Ok(Bech32::new(
+        address.hrp().to_owned(),
+        addr.as_slice().try_into().unwrap(),
+    ))
 }

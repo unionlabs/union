@@ -19,9 +19,13 @@
         '';
       };
 
-      cosmwasm-deployer = crane.buildWorkspaceMember {
-        crateDirFromRoot = "cosmwasm/deployer";
-      };
+      inherit
+        ((crane.buildWorkspaceMember {
+          crateDirFromRoot = "cosmwasm/deployer";
+        }).packages
+        )
+        cosmwasm-deployer
+        ;
 
       networks = [
         {
@@ -31,14 +35,14 @@
           private_key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
           gas_config = {
             gas_denom = "muno";
-            gas_multiplier = "1.1";
-            gas_price = "1.0";
+            gas_multiplier = "1.5";
+            gas_price = "1.5";
             max_gas = 10000000;
           };
           ucs03_type = "cw20";
           bech32_prefix = "union";
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            # ucs03 = ucs03-configs.cw20;
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [ ];
@@ -287,7 +291,7 @@
         }:
         pkgs.writeShellApplication {
           name = "${name}-deploy-full";
-          runtimeInputs = [ cosmwasm-deployer.packages.cosmwasm-deployer ];
+          runtimeInputs = [ cosmwasm-deployer ];
           text = ''
             RUST_LOG=info \
               cosmwasm-deployer \
@@ -299,6 +303,44 @@
               --max-gas ${toString gas_config.max_gas} \
               --contracts ${chain-deployments-json args} \
               ${if permissioned then "--permissioned " else ""} \
+              --rpc-url ${rpc_url}
+          '';
+        };
+
+      # migrate the admin to the multisig address
+      finalize-deployment =
+        {
+          name,
+          rpc_url,
+          gas_config,
+          private_key,
+          multisig_address,
+          bech32_prefix,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "${name}-deploy-full";
+          runtimeInputs = [
+            ibc-union-contract-addresses
+            cosmwasm-deployer
+          ];
+          text = ''
+            DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
+            ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
+
+            echo "$DEPLOYER"
+            echo "$ADDRESSES"
+
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              migrate-admin \
+              --private-key ${private_key} \
+              --gas-price ${toString gas_config.gas_price} \
+              --gas-denom ${toString gas_config.gas_denom} \
+              --gas-multiplier ${toString gas_config.gas_multiplier} \
+              --max-gas ${toString gas_config.max_gas} \
+              --new-admin ${multisig_address} \
+              --addresses <(echo "$ADDRESSES") \
               --rpc-url ${rpc_url}
           '';
         };
@@ -343,7 +385,7 @@
                 inherit name;
                 runtimeInputs = [
                   ibc-union-contract-addresses
-                  cosmwasm-deployer.packages.cosmwasm-deployer
+                  cosmwasm-deployer
                 ];
                 text = ''
                   DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
@@ -380,7 +422,7 @@
                 inherit name;
                 runtimeInputs = [
                   ibc-union-contract-addresses
-                  cosmwasm-deployer.packages.cosmwasm-deployer
+                  cosmwasm-deployer
                 ];
                 text = ''
                   DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
@@ -417,7 +459,7 @@
               inherit name;
               runtimeInputs = [
                 ibc-union-contract-addresses
-                cosmwasm-deployer.packages.cosmwasm-deployer
+                cosmwasm-deployer
               ];
               text = ''
                 DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
@@ -442,7 +484,7 @@
 
       ibc-union-contract-addresses = pkgs.writeShellApplication {
         name = "ibc-union-contract-addresses";
-        runtimeInputs = [ cosmwasm-deployer.packages.cosmwasm-deployer ];
+        runtimeInputs = [ cosmwasm-deployer ];
         text = ''
           cosmwasm-deployer \
             addresses \
@@ -524,7 +566,7 @@
         pkgs.writeShellApplication {
           name = "${name}-deployments-json-entry";
           runtimeInputs = [
-            cosmwasm-deployer.packages.cosmwasm-deployer
+            cosmwasm-deployer
             pkgs.jq
             ibc-union-contract-addresses
           ];
@@ -584,6 +626,7 @@
             bytecode-base
             cw721-base
             ucs03-zkgm
+            cosmwasm-deployer
             # native-token-minter
             cw20-token-minter
             ibc-union
@@ -612,11 +655,16 @@
                   value = deployments-json-entry args;
                 }) networks
               ))
+              // (builtins.listToAttrs (
+                map (args: {
+                  name = "finalize-deployment-${args.name}";
+                  value = finalize-deployment args;
+                }) (builtins.filter (network: network ? multisig_address) networks)
+              ))
             )
             // (builtins.foldl' (a: b: a // b) { } (map chain-migration-scripts networks))
             // derivation { name = "cosmwasm-scripts"; };
         }
-        // cosmwasm-deployer.packages
         //
           # all light clients
           (builtins.listToAttrs (
