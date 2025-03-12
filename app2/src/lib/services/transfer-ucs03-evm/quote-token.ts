@@ -7,7 +7,7 @@ import { request } from "graphql-request"
 import { GRAQPHQL_URL } from "@unionlabs/client"
 import type { Chain } from "$lib/schema/chain.ts"
 import { getChainFromWagmi } from "$lib/wallet/evm"
-import { getCosmWasmClient } from "$lib/services/cosmos/clients"
+import { getCosmosPublicClient } from "$lib/services/cosmos/clients.ts"
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 
@@ -40,7 +40,7 @@ export const getQuoteToken = (
         .requireRpcUrl("rpc")
         .pipe(Effect.mapError(err => new GetQuoteError({ cause: err.message })))
 
-      const client = yield* getCosmWasmClient(rpc.toString())
+      const client = yield* getCosmosPublicClient(rpc.toString())
       const predictedQuoteToken = yield* Effect.tryPromise({
         try: () =>
           client.queryContractSmart(fromHex(channel.destination_port_id, "string"), {

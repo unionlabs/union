@@ -1,13 +1,13 @@
 import { Effect } from "effect"
 import { SwitchChainError } from "./errors.ts"
-import { getWalletClient } from "$lib/services/cosmos/clients.ts"
+import { getCosmosWalletClient } from "$lib/services/cosmos/clients.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 
 export const switchChain = (chain: Chain) =>
   Effect.gen(function* () {
-    const wallet = yield* getWalletClient()
+    const wallet = yield* getCosmosWalletClient()
 
     if (!wallet) {
       yield* Effect.fail(new SwitchChainError({ cause: "Wallet client is undefined" }))

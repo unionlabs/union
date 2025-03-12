@@ -244,21 +244,3 @@ class CosmosStore {
 }
 
 export const cosmosStore = new CosmosStore()
-
-export const getCosmosOfflineSigner = ({
-  chainId,
-  connectedWallet
-}: {
-  chainId: string
-  connectedWallet: CosmosWalletId
-}): Promise<OfflineSigner> => {
-  const signer = window[connectedWallet]?.getOfflineSignerAuto(chainId, {
-    disableBalanceCheck: false
-  })
-
-  if (!signer) {
-    return Promise.reject(new Error(`Failed to get offline signer for ${connectedWallet}`))
-  }
-
-  return signer
-}
