@@ -172,7 +172,7 @@ let stargazeBalance = createQuery(
           rel="noopener noreferrer"
           href="https://www.stargaze.zone/"
         >
-          <img src="/images/logo/stargaze-logo.svg" alt="" class="w-18" />
+          <img src="/images/logo/stargaze-logo.svg" alt="" class="w-10" />
         </a>
         Stargaze Faucet
       </p>
@@ -329,9 +329,16 @@ let stargazeBalance = createQuery(
             </Button>
             <p class="text-xs text-red-500">{$stargazeFaucetState.error}</p>
           {/if}
-          <p class="text-xs">
-            Funds for the USTARS faucet are provided separately and
-            <span> and protected by Cloudflare Turnstile.</span>
+              <p class="text-[10px]">
+                This faucet is protected by Cloudflare Turnstile. Funds provided by 
+  <a
+                class="text-[#13ffa4]"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://www.stargaze.zone/"
+        >
+        stargaze.zone.
+        </a>
           </p>
         </div>
       </form>
