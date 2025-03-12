@@ -298,7 +298,14 @@ const goBack = () => {
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
         <div>
           <Label>Timeout Height</Label>
-          <div class="">{packetDetails.data.value.timeout_height}</div>
+          {#if Option.isSome(sourceChain)}
+            <HeightComponent 
+              height={packetDetails.data.value.timeout_height} 
+              chain={sourceChain.value} 
+            />
+          {:else}
+            <div class="">{packetDetails.data.value.timeout_height}</div>
+          {/if}
         </div>
         <div>
           <Label>Timeout Timestamp</Label>
