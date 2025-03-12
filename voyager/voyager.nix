@@ -271,7 +271,7 @@
         let
           configJson = pkgs.writeText "config.json" (
             builtins.toJSON (
-              recursiveUpdate (filterAttrsRecursive (_n: v: v != null) cfg) {
+              recursiveUpdate (builtins.removeAttrs (filterAttrsRecursive (_n: v: v != null) cfg) [ "enable" ]) {
                 voyager.queue.type = "pg-queue";
               }
             )
