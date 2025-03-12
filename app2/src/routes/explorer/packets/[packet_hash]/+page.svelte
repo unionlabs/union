@@ -70,62 +70,60 @@ const goBack = () => {
           <div class="text-sm">{packetDetails.data.value.channel_version}</div>
         </div>
         <div>
-          <Label>Source Chain</Label>
-          {#if Option.isSome(sourceChain)}
-            <ChainComponent chain={sourceChain.value} />
-          {:else}
-            <div class="text-sm">{packetDetails.data.value.source_universal_chain_id}</div>
-          {/if}
+          <div class="grid grid-cols-5 gap-y-2">
+            <div class="col-span-2">
+              <Label>Chain</Label>
+              {#if Option.isSome(sourceChain)}
+                <ChainComponent chain={sourceChain.value} />
+              {:else}
+                <div class="text-sm">{packetDetails.data.value.source_universal_chain_id}</div>
+              {/if}
+            </div>
+            <div>
+              <Label>Client</Label>
+              <div class="text-sm">{packetDetails.data.value.source_client_id}</div>
+            </div>
+            <div>
+              <Label>Connection</Label>
+              <div class="text-sm">{packetDetails.data.value.source_connection_id}</div>
+            </div>
+            <div>
+              <Label>Channel</Label>
+              <div class="text-sm">{packetDetails.data.value.source_channel_id}</div>
+            </div>
+            <div class="col-span-5">
+              <Label>Port</Label>
+              <div class="text-sm font-mono break-all">{fromHex(packetDetails.data.value.source_port_id, "string")}</div>
+            </div>
+          </div>
         </div>
-        
         <div>
-          <Label>Destination Chain</Label>
-          {#if Option.isSome(destinationChain)}
-            <ChainComponent chain={destinationChain.value} />
-          {:else}
-            <div class="text-sm">{packetDetails.data.value.destination_universal_chain_id}</div>
-          {/if}
-        </div>
-        
-        <div>
-          <Label>Source Client ID</Label>
-          <div class="text-sm">{packetDetails.data.value.source_client_id}</div>
-        </div>
-        
-        <div>
-          <Label>Destination Client ID</Label>
-          <div class="text-sm">{packetDetails.data.value.destination_client_id}</div>
-        </div>
-        
-        <div>
-          <Label>Source Connection ID</Label>
-          <div class="text-sm">{packetDetails.data.value.source_connection_id}</div>
-        </div>
-        
-        <div>
-          <Label>Destination Connection ID</Label>
-          <div class="text-sm">{packetDetails.data.value.destination_connection_id}</div>
-        </div>
-        
-        
-        <div>
-          <Label>Source Channel ID</Label>
-          <div class="text-sm">{packetDetails.data.value.source_channel_id}</div>
-        </div>
-        
-        <div>
-          <Label>Destination Channel ID</Label>
-          <div class="text-sm">{packetDetails.data.value.destination_channel_id}</div>
-        </div>
-        
-        <div>
-          <Label>Source Port ID</Label>
-          <div class="text-sm font-mono break-all">{fromHex(packetDetails.data.value.source_port_id, "string")}</div>
-        </div>
-        
-        <div>
-          <Label>Destination Port ID</Label>
-          <div class="text-sm font-mono break-all">{fromHex(packetDetails.data.value.destination_port_id, "string")}</div>
+          <div class="grid grid-cols-5 gap-y-2">
+            <div class="col-span-2">
+              <Label>Chain</Label>
+              {#if Option.isSome(destinationChain)}
+                <ChainComponent chain={destinationChain.value} />
+              {:else}
+                <div class="text-sm">{packetDetails.data.value.destination_universal_chain_id}</div>
+              {/if}
+            </div>
+            <div>
+              <Label>Client</Label>
+              <div class="text-sm">{packetDetails.data.value.destination_client_id}</div>
+            </div>
+            <div>
+              <Label>Connection</Label>
+              <div class="text-sm">{packetDetails.data.value.destination_connection_id}</div>
+            </div>
+            <div>
+              <Label>Channel</Label>
+              <div class="text-sm">{packetDetails.data.value.destination_channel_id}</div>
+            </div>
+            <div class="col-span-5">
+              <Label>Port</Label>
+              <div class="text-sm font-mono break-all">{fromHex(packetDetails.data.value.destination_port_id, "string")}</div>
+            </div>
+          </div>
         </div>
         <div>
           <Label>Send Timestamp</Label>
