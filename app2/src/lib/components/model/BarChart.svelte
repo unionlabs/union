@@ -90,8 +90,6 @@ const xAxisLabels = $derived(
   </div>
 {:else if Option.isSome(error)}
   <ErrorComponent error={error.value} />
-{:else}
-  <div class="h-64 animate-pulse bg-zinc-200 dark:bg-zinc-700 rounded"></div>
 {/if}
 
 <style>

@@ -36,7 +36,7 @@ function formatNumber(num: number): string {
 }
 </script>
 
-<Card class="transition-all hover:shadow-lg {className}">
+<Card class="h-22 transition-all hover:shadow-lg {className}">
   <Label>{formatStatName(statistic.name)}</Label>
   <p class="text-2xl font-bold mt-1">{formatNumber(statistic.value)}</p>
 </Card>

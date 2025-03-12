@@ -34,9 +34,8 @@ onMount(() => {
       </div>
     {:else}
       {#each Array(2) as _}
-        <Card class="animate-pulse">
-          <div class="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4 mb-4"></div>
-          <div class="h-8 bg-zinc-200 dark:bg-zinc-700 rounded w-1/2"></div>
+        <Card class="h-22 animate-pulse">
+          <div></div>
         </Card>
       {/each}
     {/if}
