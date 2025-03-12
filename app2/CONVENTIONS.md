@@ -29,6 +29,11 @@
 - never use `mx-auto` to style. use flexbox instead.
 - If you want to apply a gap between components, use `flex gap-*`, rather than `space-x-*`
 
+## Use of existing components
+
+- Don't create your own cards, intead, use the `components/ui/Card.svelte`
+- When creating a label, use `components/ui/Label.svelte`
+
 ## UI Components
 
 - All UI components must accept a `class` prop for styling customization

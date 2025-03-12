@@ -4,6 +4,8 @@ import { statisticsQuery, dailyTransfersQuery } from "$lib/queries/statistics.sv
 import { Option } from "effect"
 import { cn } from "$lib/utils"
 import { onMount } from "svelte"
+import Card from "$lib/components/ui/Card.svelte"
+import Label from "$lib/components/ui/Label.svelte"
 
 onMount(() => {
   statistics.runEffect(statisticsQuery)
@@ -31,28 +33,31 @@ function formatDate(dateStr: string): string {
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
     {#if Option.isSome(statistics.data)}
       {#each statistics.data.value as stat}
-        <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-6 transition-all hover:shadow-lg">
-          <h3 class="text-zinc-500 dark:text-zinc-400 text-sm font-medium mb-2">{stat.name}</h3>
-          <p class="text-2xl font-bold">{formatNumber(stat.value)}</p>
-        </div>
+        <Card class="transition-all hover:shadow-lg">
+          <Label>{stat.name}</Label>
+          <p class="text-2xl font-bold mt-2">{formatNumber(stat.value)}</p>
+        </Card>
       {/each}
     {:else if Option.isSome(statistics.error)}
-      <div class="col-span-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg">
+      <Card class="col-span-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
         <p>Error loading statistics: {statistics.error.value.message}</p>
-      </div>
+      </Card>
     {:else}
       {#each Array(4) as _}
-        <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-6 animate-pulse">
+        <Card class="animate-pulse">
           <div class="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4 mb-4"></div>
           <div class="h-8 bg-zinc-200 dark:bg-zinc-700 rounded w-1/2"></div>
-        </div>
+        </Card>
       {/each}
     {/if}
   </div>
   
   <!-- Daily Transfers Chart -->
-  <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-md p-6 mb-12">
-    <h2 class="text-xl font-bold mb-6">Daily Transfers</h2>
+  <Card class="mb-12">
+    <div class="mb-6">
+      <h2 class="text-xl font-bold">Daily Transfers</h2>
+      <Label>Last 30 days of transfer activity</Label>
+    </div>
     
     {#if Option.isSome(dailyTransfers.data)}
       <div class="overflow-x-auto">
@@ -91,16 +96,20 @@ function formatDate(dateStr: string): string {
     {:else}
       <div class="h-64 animate-pulse bg-zinc-200 dark:bg-zinc-700 rounded"></div>
     {/if}
-  </div>
+  </Card>
   
   <!-- Data Table -->
   {#if Option.isSome(dailyTransfers.data)}
-    <div class="bg-white dark:bg-zinc-800 rounded-lg shadow-md overflow-hidden">
+    <Card class="overflow-hidden p-0">
       <table class="min-w-full divide-y divide-zinc-200 dark:divide-zinc-700">
         <thead class="bg-zinc-50 dark:bg-zinc-900">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Date</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Transfer Count</th>
+            <th class="px-6 py-3 text-left">
+              <Label>Date</Label>
+            </th>
+            <th class="px-6 py-3 text-left">
+              <Label>Transfer Count</Label>
+            </th>
           </tr>
         </thead>
         <tbody class="bg-white dark:bg-zinc-800 divide-y divide-zinc-200 dark:divide-zinc-700">
@@ -112,6 +121,6 @@ function formatDate(dateStr: string): string {
           {/each}
         </tbody>
       </table>
-    </div>
+    </Card>
   {/if}
 </div>
