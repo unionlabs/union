@@ -19,7 +19,6 @@ import type { Channel } from "$lib/schema/channel.ts"
 import { TransferSchema } from "$lib/schema/transfer-args.ts"
 import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/quote-token.ts"
 import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/weth-token.ts"
-import type { Chain } from "$lib/schema/chain.ts"
 
 export class Transfer {
   raw = new RawTransferSvelte()
@@ -89,7 +88,7 @@ export class Transfer {
     const hexAddress: Hex =
       this.sourceChain.value.rpc_type === "cosmos"
         ? (fromHex(`0x${this.channel.value.source_port_id}`, "string") as Hex)
-        : (`0x${this.channel.value.source_port_id}` as Hex)
+        : (this.channel.value.source_port_id as Hex)
 
     return Option.some(hexAddress)
   })
@@ -132,6 +131,7 @@ export class Transfer {
     }).pipe(
       Effect.catchTag("GetQuoteError", error =>
         Effect.sync(() => {
+          console.error(error)
           setQuoteToken(
             Option.some({
               type: "QUOTE_ERROR",
@@ -178,6 +178,7 @@ export class Transfer {
     }).pipe(
       Effect.catchTag("GetWethQuoteError", error =>
         Effect.sync(() => {
+          console.error(error)
           setWethQuoteToken(
             Option.some({
               type: "WETH_ERROR",

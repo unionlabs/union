@@ -8,20 +8,20 @@ export const getChannelInfoEffect = (
   channels: typeof Channels.Type
 ): Effect.Effect<typeof Channel.Type, ChannelValidationError> =>
   Effect.gen(function* () {
-    const rawChannel = channels.find(
+    const channel = channels.find(
       chan =>
         chan.source_chain_id === source_chain_id &&
         chan.destination_chain_id === destination_chain_id
     )
 
     if (
-      !rawChannel ||
-      rawChannel.source_connection_id === null ||
-      rawChannel.source_channel_id === null ||
-      !rawChannel.source_port_id ||
-      rawChannel.destination_connection_id === null ||
-      rawChannel.destination_channel_id === null ||
-      !rawChannel.destination_port_id
+      !channel ||
+      channel.source_connection_id === null ||
+      channel.source_channel_id === null ||
+      !channel.source_port_id ||
+      channel.destination_connection_id === null ||
+      channel.destination_channel_id === null ||
+      !channel.destination_port_id
     ) {
       return yield* Effect.fail(
         new ChannelValidationError({
@@ -32,41 +32,18 @@ export const getChannelInfoEffect = (
       )
     }
 
-    return yield* Effect.try({
-      try: () => {
-        let source_port_id = String(rawChannel.source_port_id)
-        if (source_port_id.length < 4) {
-          throw new Error("source_port_id is too short")
-        }
-        source_port_id = source_port_id.slice(2)
-
-        let destination_port_id = String(rawChannel.destination_port_id)
-        if (destination_port_id.length < 4) {
-          throw new Error("destination_port_id is too short")
-        }
-        destination_port_id = destination_port_id.slice(2)
-
-        return new Channel({
-          source_chain_id,
-          source_connection_id: rawChannel.source_connection_id,
-          source_channel_id: rawChannel.source_channel_id,
-          source_port_id,
-          destination_chain_id,
-          destination_connection_id: rawChannel.destination_connection_id,
-          destination_channel_id: rawChannel.destination_channel_id,
-          destination_port_id
-        })
-      },
-      catch: err =>
-        new ChannelValidationError({
-          source_chain_id,
-          destination_chain_id,
-          cause: err
-        })
+    return new Channel({
+      source_chain_id,
+      source_connection_id: channel.source_connection_id,
+      source_channel_id: channel.source_channel_id,
+      source_port_id: channel.source_port_id,
+      destination_chain_id,
+      destination_connection_id: channel.destination_connection_id,
+      destination_channel_id: channel.destination_channel_id,
+      destination_port_id: channel.destination_port_id
     })
   })
 
-// Safe synchronous wrapper function (similar to getDerivedReceiverSafe in your example)
 export const getChannelInfoSafe = (
   source_chain_id: string,
   destination_chain_id: string,

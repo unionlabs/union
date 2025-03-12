@@ -41,7 +41,7 @@ export const getQuoteToken = (
       const client = yield* getCosmWasmClient(rpc)
       const predictedQuoteToken = yield* Effect.tryPromise({
         try: () =>
-          client.queryContractSmart(fromHex(`0x${channel.destination_port_id}`, "string"), {
+          client.queryContractSmart(fromHex(channel.destination_port_id, "string"), {
             predict_wrapped_token: {
               path: "0",
               channel: channel.destination_channel_id,
