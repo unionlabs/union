@@ -35,6 +35,7 @@
 - When creating a label, use `components/ui/Label.svelte`
 - When creating skeletons, use `components/ui/Skeleton.svelte`
 - When displaying an error somewhere, use `components/model/ErrorComponent.svelte`
+- When displaying dates or times somewhere, use `components/ui/DateTimeComponent.svelte`
 
 ## UI Components
 

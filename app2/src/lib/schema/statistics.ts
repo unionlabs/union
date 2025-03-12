@@ -13,7 +13,7 @@ export type Statistics = Schema.Schema.Type<typeof Statistics>
 
 // Schema for daily transfers data
 export const DailyTransfer = Schema.Struct({
-  day: Schema.String,
+  day: Schema.DateTimeUtc,
   count: Schema.Number
 })
 

@@ -1,13 +1,14 @@
 <script lang="ts">
 import { statistics, dailyTransfers } from "$lib/stores/statistics.svelte"
 import { statisticsQuery, dailyTransfersQuery } from "$lib/queries/statistics.svelte"
-import { Option } from "effect"
+import { Option, DateTime } from "effect"
 import { cn } from "$lib/utils"
 import { onMount } from "svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
+import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 
 onMount(() => {
   statistics.runEffect(statisticsQuery)
@@ -22,11 +23,6 @@ onMount(() => {
 // Format large numbers with commas
 function formatNumber(num: string | number): string {
   return Number(num).toLocaleString()
-}
-
-// Format date strings
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString()
 }
 </script>
 
@@ -77,13 +73,13 @@ function formatDate(dateStr: string): string {
                     style="height: {Math.max(height, 1)}%"
                   >
                     <div class="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-zinc-800 dark:bg-zinc-700 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {formatNumber(day.count)} transfers on {formatDate(day.day)}
+                      {formatNumber(day.count)} transfers on <DateTimeComponent value={day.day} showSeconds={false} />
                     </div>
                   </div>
                 </div>
                 {#if i % 5 === 0 || i === dailyTransfers.data.value.length - 1}
                   <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-2 rotate-45 origin-left">
-                    {formatDate(day.day)}
+                    <DateTimeComponent value={day.day} showTime={false} />
                   </div>
                 {/if}
               </div>
@@ -115,7 +111,9 @@ function formatDate(dateStr: string): string {
         <tbody class="bg-white dark:bg-zinc-800 divide-y divide-zinc-200 dark:divide-zinc-700">
           {#each dailyTransfers.data.value as day}
             <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">{formatDate(day.day)}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">
+                <DateTimeComponent value={day.day} showTime={false} />
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">{formatNumber(day.count)}</td>
             </tr>
           {/each}
