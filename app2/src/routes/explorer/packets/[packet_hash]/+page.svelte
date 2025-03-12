@@ -20,6 +20,7 @@ import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import { fromHex } from "viem"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import TransactionComponent from "$lib/components/model/TransactionComponent.svelte"
+import HeightComponent from "$lib/components/model/HeightComponent.svelte"
 
 onMount(() => {
   const packetHash = page.params.packet_hash
@@ -192,10 +193,13 @@ const goBack = () => {
           </div>
         {/if}
         
-        {#if Option.isSome(packetDetails.data.value.packet_send_height)}
+        {#if Option.isSome(packetDetails.data.value.packet_send_height) && Option.isSome(sourceChain)}
           <div>
             <Label>Send Height</Label>
-            <div class="">{packetDetails.data.value.packet_send_height.value}</div>
+            <HeightComponent 
+              height={packetDetails.data.value.packet_send_height.value} 
+              chain={sourceChain.value} 
+            />
           </div>
         {/if}
         
@@ -217,10 +221,13 @@ const goBack = () => {
           </div>
         {/if}
         
-        {#if Option.isSome(packetDetails.data.value.packet_recv_height)}
+        {#if Option.isSome(packetDetails.data.value.packet_recv_height) && Option.isSome(destinationChain)}
           <div>
             <Label>Receive Height</Label>
-            <div class="">{packetDetails.data.value.packet_recv_height.value}</div>
+            <HeightComponent 
+              height={packetDetails.data.value.packet_recv_height.value} 
+              chain={destinationChain.value} 
+            />
           </div>
         {/if}
         
@@ -242,10 +249,13 @@ const goBack = () => {
           </div>
         {/if}
         
-        {#if Option.isSome(packetDetails.data.value.packet_ack_height)}
+        {#if Option.isSome(packetDetails.data.value.packet_ack_height) && Option.isSome(destinationChain)}
           <div>
             <Label>Ack Height</Label>
-            <div class="">{packetDetails.data.value.packet_ack_height.value}</div>
+            <HeightComponent 
+              height={packetDetails.data.value.packet_ack_height.value} 
+              chain={destinationChain.value} 
+            />
           </div>
         {/if}
         
@@ -267,10 +277,13 @@ const goBack = () => {
           </div>
         {/if}
         
-        {#if Option.isSome(packetDetails.data.value.write_ack_height)}
+        {#if Option.isSome(packetDetails.data.value.write_ack_height) && Option.isSome(sourceChain)}
           <div>
             <Label>Write Ack Height</Label>
-            <div class="">{packetDetails.data.value.write_ack_height.value}</div>
+            <HeightComponent 
+              height={packetDetails.data.value.write_ack_height.value} 
+              chain={sourceChain.value} 
+            />
           </div>
         {/if}
         
