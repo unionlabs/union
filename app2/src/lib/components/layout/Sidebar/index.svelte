@@ -82,7 +82,7 @@ onMount(() => {
   <div class="px-6 flex items-center border-b-1 h-16 border-zinc-900">
     <img class="h-10" src="/images/union-logo.svg" alt="Union" />
   </div>
-  <div class="flex flex-col justify-between flex-1">
+  <div class="flex flex-col flex-1">
   {#each navigation as section, i}
     {#if section.title !== "Developer" || uiStore.showDeveloperPages}
       <section class="border-zinc-900 p-6">

@@ -42,7 +42,6 @@ export const navigation: Array<NavSection> = [
     ]
   },
   {
-    title: "Explorer",
     items: [
       {
         path: "/explorer",
