@@ -9,6 +9,7 @@ import Label from "$lib/components/ui/Label.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
+import StatisticComponent from "$lib/components/model/StatisticComponent.svelte"
 
 onMount(() => {
   statistics.runEffect(statisticsQuery)
@@ -20,7 +21,7 @@ onMount(() => {
   }
 })
 
-// Format large numbers with commas
+// Format large numbers with commas (used for chart tooltips)
 function formatNumber(num: string | number): string {
   return Number(num).toLocaleString()
 }
@@ -31,10 +32,7 @@ function formatNumber(num: string | number): string {
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     {#if Option.isSome(statistics.data)}
       {#each statistics.data.value as stat}
-        <Card class="transition-all hover:shadow-lg">
-          <Label>{stat.name}</Label>
-          <p class="text-2xl font-bold mt-2">{formatNumber(stat.value)}</p>
-        </Card>
+        <StatisticComponent statistic={stat} />
       {/each}
     {:else if Option.isSome(statistics.error)}
       <div class="col-span-full">
