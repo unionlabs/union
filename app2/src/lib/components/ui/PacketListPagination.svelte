@@ -19,7 +19,7 @@ const { data, onLive, onPrevPage, onNextPage }: Props = $props()
   <div class="rounded shadow flex">
     <button
       onclick={onPrevPage}
-      class="cursor-pointer border-l border-t border-b bg-zinc-700 border-zinc-600 h-90 w-10 rounded-tl rounded-bl"
+      class="cursor-pointer border-l border-t border-b bg-zinc-700 border-zinc-600 h-9 w-10 rounded-tl rounded-bl"
     >
       ←
     </button>
