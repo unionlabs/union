@@ -10,6 +10,7 @@ import { getChainFromWagmi } from "$lib/wallet/evm"
 import { getCosmosPublicClient } from "$lib/services/cosmos/clients.ts"
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
+import { Aptos, AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
 
 export const getQuoteToken = (
   sourceChain: Chain,
@@ -34,6 +35,12 @@ export const getQuoteToken = (
     if (quote_token) {
       return { type: "UNWRAPPED" as const, quote_token }
     }
+
+    console.info("Getting quote token!")
+    console.info("channel.destination_port_id: ", channel.destination_port_id)
+    console.info("channel.destination_chain_id: ", channel.destination_chain_id)
+    console.info("sourceChain: ", sourceChain)
+    console.info("base_token: ", base_token)
 
     if (destinationChain.rpc_type === "cosmos") {
       const rpc = yield* destinationChain
@@ -80,6 +87,44 @@ export const getQuoteToken = (
 
       return { type: "NEW_WRAPPED" as const, quote_token: predictedQuoteToken }
     }
+
+    if (destinationChain.rpc_type === "aptos") {
+      let network: Network;
+      let rpcUrl: string;
+      if (channel.destination_chain_id === "250") {
+        network = Network.TESTNET;
+        rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1";
+      } else {
+        return yield* Effect.fail(new GetQuoteError({ cause: `Unsupported Aptos network: ${channel.destination_chain_id}` }));
+      }
+    
+      const config = new AptosConfig({ network, fullnode: rpcUrl });
+      const aptosClient = new Aptos(config);
+    
+      const output = yield* Effect.tryPromise({
+        try: () =>
+          aptosClient.view({
+            payload: {
+              function: `${channel.destination_port_id}::ibc_app::predict_wrapped_token`,
+              typeArguments: [],
+              functionArguments: [
+                0, // path
+                channel.destination_channel_id, // channel
+                MoveVector.U8(base_token)
+              ]
+            }
+          }),
+        catch: error =>
+          new GetQuoteError({ cause: `Failed to predict quote token (Aptos): ${error}` })
+      });
+    
+      const wrappedAddressHex = output[0]?.toString();
+      if (!wrappedAddressHex) {
+        return yield* Effect.fail(new GetQuoteError({ cause: "Failed to get wrapped address from Aptos" }));
+      }
+      return { type: "NEW_WRAPPED" as const, quote_token: wrappedAddressHex };
+    }
+    
 
     return yield* Effect.fail(
       new GetQuoteError({ cause: `${destinationChain.rpc_type} not supported` })
