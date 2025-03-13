@@ -7,9 +7,16 @@ type Props = HTMLAttributes<HTMLTimeElement> & {
   value: DateTime.DateTime
   class?: string
   showSeconds?: boolean
+  showTime?: boolean
 }
 
-const { value, class: className = "", showSeconds = true, ...rest }: Props = $props()
+const {
+  value,
+  class: className = "",
+  showSeconds = true,
+  showTime = true,
+  ...rest
+}: Props = $props()
 
 const classes = cn("text-zinc-400", className)
 
@@ -35,13 +42,15 @@ const formatDate = (value: DateTime.DateTime) =>
     const compareDate = DateTime.startOf(zonedValue, "day")
 
     if (DateTime.Equivalence(compareDate, today)) {
-      return `Today ${DateTime.formatIntl(zonedValue, timeFormat)}`
+      return showTime ? `Today ${DateTime.formatIntl(zonedValue, timeFormat)}` : "Today"
     }
     if (DateTime.Equivalence(compareDate, yesterday)) {
-      return `Yesterday ${DateTime.formatIntl(zonedValue, timeFormat)}`
+      return showTime ? `Yesterday ${DateTime.formatIntl(zonedValue, timeFormat)}` : "Yesterday"
     }
 
-    return `${DateTime.formatIntl(zonedValue, dateFormat)} ${DateTime.formatIntl(zonedValue, timeFormat)}`
+    return showTime
+      ? `${DateTime.formatIntl(zonedValue, dateFormat)} ${DateTime.formatIntl(zonedValue, timeFormat)}`
+      : `${DateTime.formatIntl(zonedValue, dateFormat)}`
   }).pipe(DateTime.withCurrentZoneLocal)
 
 const formattedDate = $derived(Effect.runSyncExit(formatDate(value)))

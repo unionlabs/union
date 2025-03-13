@@ -2,17 +2,20 @@ import SharpTransferIcon from "$lib/components/icons/SharpTransferIcon.svelte"
 import SharpListIcon from "$lib/components/icons/SharpListIcon.svelte"
 import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
 import SharpStakeIcon from "$lib/components/icons/SharpStakeIcon.svelte"
-import SharpPacketsIcon from "$lib/components/icons/SharpPacketsIcon.svelte"
-import SharpConnectionsIcon from "$lib/components/icons/SharpConnectionsIcon.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
-import SharpClientsIcon from "$lib/components/icons/SharpClientsIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
 import type { Component } from "svelte"
+
+export interface NavSubItem {
+  path: string
+  title: string
+}
 
 export interface NavItem {
   path: string
   title: string
   icon: Component
+  subroutes?: Array<NavSubItem>
 }
 
 export interface NavSection {
@@ -36,32 +39,33 @@ export const navigation: Array<NavSection> = [
     ]
   },
   {
-    title: "Explorer",
     items: [
       {
-        path: "/explorer/transfers",
-        title: "Transfers",
-        icon: SharpListIcon
-      },
-      {
-        path: "/explorer/packets",
-        title: "Packets",
-        icon: SharpPacketsIcon
-      },
-      {
-        path: "/explorer/connections",
-        title: "Connections",
-        icon: SharpConnectionsIcon
-      },
-      {
-        path: "/explorer/channels",
-        title: "Channels",
-        icon: SharpChannelsIcon
-      },
-      {
-        path: "/explorer/clients",
-        title: "Clients",
-        icon: SharpClientsIcon
+        path: "/explorer",
+        title: "Explorer",
+        icon: SharpChannelsIcon,
+        subroutes: [
+          {
+            path: "/explorer/transfers",
+            title: "Transfers"
+          },
+          {
+            path: "/explorer/packets",
+            title: "Packets"
+          },
+          {
+            path: "/explorer/connections",
+            title: "Connections"
+          },
+          {
+            path: "/explorer/channels",
+            title: "Channels"
+          },
+          {
+            path: "/explorer/clients",
+            title: "Clients"
+          }
+        ]
       }
     ]
   },

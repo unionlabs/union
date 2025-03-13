@@ -27,7 +27,7 @@ const classes = cn(
   // Variants
   variant === "primary" && [
     "bg-sky-600 border-sky-600 border text-white hover:bg-sky-700",
-    "dark:bg-sky-700 dark:hover:bg-sky-800",
+    "dark:bg-white dark:border-zinc-100 dark:hover:bg-zinc-100 dark:text-black font-bold",
     "focus-visible:ring-sky-500"
   ],
   variant === "secondary" && [
@@ -41,7 +41,7 @@ const classes = cn(
   ],
 
   // Height and padding
-  "h-10 px-4 py-2",
+  "h-9 px-4 py-2",
 
   // Additional classes passed as props
   className

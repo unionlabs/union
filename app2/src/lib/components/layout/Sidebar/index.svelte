@@ -82,7 +82,7 @@ onMount(() => {
   <div class="px-6 flex items-center border-b-1 h-16 border-zinc-900">
     <img class="h-10" src="/images/union-logo.svg" alt="Union" />
   </div>
-  <div class="flex flex-col justify-between flex-1">
+  <div class="flex flex-col flex-1">
   {#each navigation as section, i}
     {#if section.title !== "Developer" || uiStore.showDeveloperPages}
       <section class="border-zinc-900 p-6">
@@ -105,6 +105,25 @@ onMount(() => {
                 />
                 {item.title}
               </a>
+              
+              {#if item.subroutes && item.subroutes.length > 0}
+                <ul class="flex flex-col border-zinc-800 gap-1 pt-2 border-l-1 ml-5 pl-2">
+                  {#each item.subroutes as subroute, index}
+                    <li>
+                      <a 
+                        href={subroute.path} 
+                        data-path={subroute.path}
+                        class={cn(
+                          "relative flex items-center gap-2 px-3 py-1 rounded-lg transition-colors",
+                          isCurrentPath(subroute.path) ? "" : "dark:hover:bg-zinc-900"
+                        )}
+                      >
+                        {subroute.title}
+                      </a>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
             </li>
           {/each}
         </ul>
