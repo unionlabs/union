@@ -7,10 +7,10 @@ import { request } from "graphql-request"
 import { GRAQPHQL_URL } from "@unionlabs/client"
 import type { Chain } from "$lib/schema/chain.ts"
 import { getChainFromWagmi } from "$lib/wallet/evm"
-import { getCosmosPublicClient } from "$lib/services/cosmos/clients.ts"
+import { getCosmWasmClient } from "$lib/services/cosmos/clients"
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
-import { Aptos, AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
+import { Aptos, AptosConfig, Network, Deserializer, MoveVector } from "@aptos-labs/ts-sdk"
 
 export const getQuoteToken = (
   sourceChain: Chain,
@@ -36,18 +36,12 @@ export const getQuoteToken = (
       return { type: "UNWRAPPED" as const, quote_token }
     }
 
-    console.info("Getting quote token!")
-    console.info("channel.destination_port_id: ", channel.destination_port_id)
-    console.info("channel.destination_chain_id: ", channel.destination_chain_id)
-    console.info("sourceChain: ", sourceChain)
-    console.info("base_token: ", base_token)
-
     if (destinationChain.rpc_type === "cosmos") {
       const rpc = yield* destinationChain
         .requireRpcUrl("rpc")
         .pipe(Effect.mapError(err => new GetQuoteError({ cause: err.message })))
 
-      const client = yield* getCosmosPublicClient(rpc.toString())
+      const client = yield* getCosmWasmClient(rpc.toString())
       const predictedQuoteToken = yield* Effect.tryPromise({
         try: () =>
           client.queryContractSmart(fromHex(channel.destination_port_id, "string"), {
@@ -89,7 +83,6 @@ export const getQuoteToken = (
     }
 
     if (destinationChain.rpc_type === "aptos") {
-      console.info("destinationChain is aptos")
       let network: Network;
       let rpcUrl: string;
 
@@ -110,7 +103,8 @@ export const getQuoteToken = (
       // :5173/transfer?source=union-testnet-9&destination=250&asset=0x6d756e6f:1 Access to XMLHttpRequest at 'https://rpc.250.movement.chain.kitchen/v1/accounts/0x80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84/module/ibc_app' from origin 'http://localhost:5173' has been blocked by CORS policy: Request header field x-aptos-typescript-sdk-origin-method is not allowed by Access-Control-Allow-Headers in preflight response.
       const config = new AptosConfig({ network, fullnode: rpcUrl });
       const aptosClient = new Aptos(config);
-
+      
+      
       const output = yield* Effect.tryPromise({
         try: () =>
           aptosClient.view({
@@ -120,8 +114,8 @@ export const getQuoteToken = (
               functionArguments: [
                 0, // path
                 channel.destination_channel_id,
-                MoveVector.U8(base_token)
-              ]
+                MoveVector.U8(base_token)              
+            ]
             }
           }),
         catch: error =>

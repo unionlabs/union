@@ -16,6 +16,7 @@
     "test": "npm run test:unit -- --run"
   },
   "devDependencies": {
+    "@aptos-labs/ts-sdk": "1.34.0",
     "@cosmjs/amino": "^0.33.0",
     "@cosmjs/cosmwasm-stargate": "0.33.0",
     "@cosmjs/proto-signing": "^0.33.0",
