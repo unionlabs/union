@@ -31,7 +31,7 @@
 
 ## Use of existing components
 
-- Don't create your own cards, intead, use the `components/ui/Card.svelte`
+- Don't create your own cards, instead, use the `components/ui/Card.svelte`
 - When creating a label, use `components/ui/Label.svelte`
 - When creating skeletons, use `components/ui/Skeleton.svelte`
 - When displaying an error somewhere, use `components/model/ErrorComponent.svelte`

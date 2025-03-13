@@ -2,6 +2,7 @@
 import Card from "$lib/components/ui/Card.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import type { StatisticItem } from "$lib/schema/statistics"
+import NumberFlow from "@number-flow/svelte"
 
 type Props = {
   statistic: StatisticItem
@@ -29,14 +30,11 @@ function formatStatName(name: string): string {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ")
 }
-
-// Format large numbers with commas
-function formatNumber(num: number): string {
-  return num.toLocaleString()
-}
 </script>
 
 <Card class="h-22 transition-all hover:shadow-lg {className}">
   <Label>{formatStatName(statistic.name)}</Label>
-  <p class="text-2xl font-bold mt-1">{formatNumber(statistic.value)}</p>
+  <p class="text-2xl font-bold mt-1">
+    <NumberFlow value={statistic.value} />
+  </p>
 </Card>
