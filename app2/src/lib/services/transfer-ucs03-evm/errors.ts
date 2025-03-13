@@ -38,11 +38,6 @@ export class ConnectorClientError extends Data.TaggedError("ConnectorClientError
   cause: GetConnectorClientErrorType
 }> {}
 
-export class AddressValidationError extends Data.TaggedError("AddressValidationError")<{
-  input: string
-  cause?: unknown | undefined
-}> {}
-
 export class AmountParsingError extends Data.TaggedError("AmountParsingError")<{
   input: string
   decimals: number

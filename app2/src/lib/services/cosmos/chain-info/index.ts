@@ -2,7 +2,7 @@ import { Effect } from "effect"
 import type { ChainInfo as KeplrChainInfo, FeeCurrency } from "@keplr-wallet/types"
 import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
 import type { Chain } from "$lib/schema/chain.ts"
-import { GasPriceError, GetChainInfoError } from "$lib/services/transfer-cosmos"
+import { GasPriceError, GetChainInfoError } from "$lib/services/transfer-ucs03-cosmos"
 import { keplrChainInfoMap, leapChainInfoMap } from "$lib/services/cosmos/chain-info/configs"
 import type { CosmosWalletId } from "$lib/wallet/cosmos"
 

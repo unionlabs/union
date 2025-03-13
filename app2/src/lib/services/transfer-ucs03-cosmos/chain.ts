@@ -9,16 +9,18 @@ export const switchChain = (chain: Chain) =>
     const wallet = yield* getCosmosWalletClient()
 
     if (!wallet) {
-      throw new SwitchChainError({ cause: "Wallet client is undefined" })
+      return Effect.fail(new SwitchChainError({ cause: "Wallet client is undefined" }))
     }
 
     if (!chain.chain_id) {
-      throw new SwitchChainError({ cause: "Invalid chain ID" })
+      return Effect.fail(new SwitchChainError({ cause: "Invalid chain ID" }))
     }
 
     const chainInfo = getCosmosChainInfo(chain.chain_id)
     if (!chainInfo) {
-      throw new SwitchChainError({ cause: `Chain info not found for ${chain.chain_id}` })
+      return Effect.fail(
+        new SwitchChainError({ cause: `Chain info not found for ${chain.chain_id}` })
+      )
     }
 
     yield* Effect.tryPromise({

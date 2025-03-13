@@ -6,7 +6,7 @@ import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
-import { generateSalt } from "$lib/services/shared/salt.ts"
+import { generateSalt } from "$lib/services/shared"
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {

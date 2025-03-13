@@ -1,7 +1,7 @@
 import { Effect, Option } from "effect"
-import { AddressValidationError } from "./errors.ts"
 import { getAddress, isHex } from "viem"
 import { bech32AddressToHex } from "@unionlabs/client"
+import { AddressValidationError } from "$lib/services/shared"
 
 export const deriveReceiverEffect = (input: string) =>
   Effect.gen(function* () {

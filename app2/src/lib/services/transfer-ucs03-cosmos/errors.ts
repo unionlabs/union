@@ -21,8 +21,3 @@ export class GasPriceError extends Data.TaggedError("GasPriceError")<{
   cause: string
   chainId?: string
 }> {}
-
-export class AddressValidationError extends Data.TaggedError("AddressValidationError")<{
-  input: string
-  cause?: unknown | undefined
-}> {}

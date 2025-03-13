@@ -3,10 +3,10 @@ import { Effect, Option } from "effect"
 import { cosmosStore, type CosmosWalletId } from "$lib/wallet/cosmos"
 import type { CosmosWallet } from "$lib/services/cosmos/types.ts"
 import type { Chain } from "$lib/schema/chain.ts"
-import { getCosmosOfflineSigner } from "$lib/services/transfer-cosmos/offline-signer.ts"
+import { getCosmosOfflineSigner } from "$lib/services/transfer-ucs03-cosmos/offline-signer.ts"
 import { GasPrice } from "@cosmjs/stargate"
 import { getGasPriceForChain } from "$lib/services/cosmos/chain-info"
-import { CosmWasmError } from "$lib/services/transfer-cosmos"
+import { CosmWasmError } from "$lib/services/transfer-ucs03-cosmos"
 
 export const getCosmWasmClient = (chain: Chain, connectedWallet: CosmosWalletId) =>
   Effect.gen(function* () {

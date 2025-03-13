@@ -7,7 +7,7 @@ import {
   isComplete as isCosmosComplete,
   nextState as cosmosNextState,
   TransferSubmission as CosmosTransferSubmission
-} from "$lib/services/transfer-cosmos"
+} from "$lib/services/transfer-ucs03-cosmos"
 import {
   hasFailedExit as hasEvmFailedExit,
   isComplete as isEvmComplete,
@@ -20,30 +20,56 @@ import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import type { Channel } from "$lib/schema/channel.ts"
 import { TransferSchema } from "$lib/schema/transfer-args.ts"
-import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/shared/quote-token.ts"
-import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/shared/weth-token.ts"
+import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/shared"
+import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/shared"
 import { cosmosStore } from "$lib/wallet/cosmos"
-import { getParsedAmountSafe } from "$lib/services/shared/amount.ts"
-import { getDerivedReceiverSafe } from "$lib/services/shared/address.ts"
+import { getParsedAmountSafe } from "$lib/services/shared"
+import { getDerivedReceiverSafe } from "$lib/services/shared"
 
-type TransferSubmission = CosmosTransferSubmission | EvmTransferSubmission | null
+export interface TransferState {
+  readonly _tag: string
+}
+
+export interface EmptyState extends TransferState {
+  readonly _tag: "Empty"
+}
+
+export interface EVMState extends TransferState {
+  readonly _tag: "EVM"
+  readonly state: EvmTransferSubmission
+}
+
+export interface CosmosState extends TransferState {
+  readonly _tag: "Cosmos"
+  readonly state: CosmosTransferSubmission
+}
+
+export type TransferStateUnion = EmptyState | EVMState | CosmosState
+
+export const TransferState = {
+  Empty: (): EmptyState => ({ _tag: "Empty" }),
+  EVM: (state: EvmTransferSubmission): EVMState => ({ _tag: "EVM", state }),
+  Cosmos: (state: CosmosTransferSubmission): CosmosState => ({ _tag: "Cosmos", state })
+}
 
 export class Transfer {
   raw = new RawTransferSvelte()
-  _stateOverride = $state<TransferSubmission>(null)
-  state = $derived.by<TransferSubmission>(() => {
+  _stateOverride = $state<TransferStateUnion | null>(null)
+
+  state = $derived.by<TransferStateUnion>(() => {
     if (this._stateOverride !== null) {
       return this._stateOverride
     }
+
     if (Option.isSome(this.sourceChain)) {
       const sourceChainValue = this.sourceChain.value
       if (sourceChainValue.rpc_type === "evm") {
-        return EvmTransferSubmission.Filling()
+        return TransferState.EVM(EvmTransferSubmission.Filling())
       }
-      return CosmosTransferSubmission.Filling()
+      return TransferState.Cosmos(CosmosTransferSubmission.Filling())
     }
 
-    return null
+    return TransferState.Empty()
   })
 
   sourceChain = $derived(
@@ -262,36 +288,52 @@ export class Transfer {
 
     const sourceChainValue = this.sourceChain.value
 
-    // Get current state
-    let currentState = this.state
-
     if (sourceChainValue.rpc_type === "evm") {
-      currentState = await evmNextState(currentState, this.transferResult.args, sourceChainValue)
-      this._stateOverride = currentState // Update the override
+      const evmState =
+        this.state._tag === "EVM" ? this.state.state : EvmTransferSubmission.Filling()
 
-      while (currentState !== null && !hasEvmFailedExit(currentState)) {
-        currentState = await evmNextState(currentState, this.transferResult.args, sourceChainValue)
-        this._stateOverride = currentState // Update the override
-        if (currentState !== null && isEvmComplete(currentState)) break
+      const newState = await evmNextState(evmState, this.transferResult.args, sourceChainValue)
+      this._stateOverride = newState !== null ? TransferState.EVM(newState) : TransferState.Empty()
+
+      let currentEvmState = newState
+      while (currentEvmState !== null && !hasEvmFailedExit(currentEvmState)) {
+        const nextEvmState = await evmNextState(
+          currentEvmState,
+          this.transferResult.args,
+          sourceChainValue
+        )
+        this._stateOverride =
+          nextEvmState !== null ? TransferState.EVM(nextEvmState) : TransferState.Empty()
+
+        currentEvmState = nextEvmState
+        if (currentEvmState !== null && isEvmComplete(currentEvmState)) break
       }
     } else {
-      currentState = await cosmosNextState(
-        currentState,
+      const cosmosState =
+        this.state._tag === "Cosmos" ? this.state.state : CosmosTransferSubmission.Filling()
+
+      const newState = await cosmosNextState(
+        cosmosState,
         this.transferResult.args,
         sourceChainValue,
         cosmosStore.connectedWallet
       )
-      this._stateOverride = currentState // Update the override
+      this._stateOverride =
+        newState !== null ? TransferState.Cosmos(newState) : TransferState.Empty()
 
-      while (currentState !== null && !hasCosmosFailedExit(currentState)) {
-        currentState = await cosmosNextState(
-          currentState,
+      let currentCosmosState = newState
+      while (currentCosmosState !== null && !hasCosmosFailedExit(currentCosmosState)) {
+        const nextCosmosState = await cosmosNextState(
+          currentCosmosState,
           this.transferResult.args,
           sourceChainValue,
           cosmosStore.connectedWallet
         )
-        this._stateOverride = currentState // Update the override
-        if (currentState !== null && isCosmosComplete(currentState)) break
+        this._stateOverride =
+          nextCosmosState !== null ? TransferState.Cosmos(nextCosmosState) : TransferState.Empty()
+
+        currentCosmosState = nextCosmosState
+        if (currentCosmosState !== null && isCosmosComplete(currentCosmosState)) break
       }
     }
   }
