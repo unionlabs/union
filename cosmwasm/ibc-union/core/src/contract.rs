@@ -4,8 +4,8 @@ use alloy::sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdResult,
+    to_json_binary, wasm_execute, Addr, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo,
+    Response, StdResult,
 };
 use cw_storage_plus::Item;
 use ibc_union_msg::{
@@ -26,8 +26,9 @@ use ibc_union_msg::{
 };
 use ibc_union_spec::{
     path::{
-        BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
-        ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
+        commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
+        ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
+        IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
     },
     types::{Channel, ChannelState, Connection, ConnectionState, Packet},
 };
@@ -79,6 +80,7 @@ pub mod events {
         pub const TIMEOUT: &str = "packet_timeout";
         pub const BATCH_SEND: &str = "batch_send";
         pub const BATCH_ACKS: &str = "batch_acks";
+        pub const WRITE_ACK: &str = "write_ack";
     }
     pub mod attribute {
         pub const CLIENT_ID: &str = "client_id";
@@ -86,7 +88,12 @@ pub mod events {
         pub const CHANNEL_ID: &str = "channel_id";
         pub const COUNTERPARTY_CHANNEL_ID: &str = "counterparty_channel_id";
         pub const COUNTERPARTY_HEIGHT: &str = "counterparty_height";
-        pub const PACKET: &str = "packet";
+        pub const PACKET_HASH: &str = "packet_hash";
+        pub const PACKET_SOURCE_CHANNEL_ID: &str = "packet_source_channel_id";
+        pub const PACKET_DESTINATION_CHANNEL_ID: &str = "packet_destination_channel_id";
+        pub const PACKET_DATA: &str = "packet_data";
+        pub const PACKET_TIMEOUT_HEIGHT: &str = "packet_timeout_height";
+        pub const PACKET_TIMEOUT_TIMESTAMP: &str = "packet_timeout_timestamp";
         pub const PACKETS: &str = "packets";
         pub const ACKS: &str = "acks";
         pub const MAKER: &str = "maker";
@@ -101,6 +108,39 @@ pub mod events {
         pub const COUNTERPARTY_PORT_ID: &str = "counterparty_port_id";
         pub const VERSION: &str = "version";
     }
+}
+
+#[must_use]
+fn packet_to_attrs(packet: &Packet) -> [Attribute; 5] {
+    [
+        (
+            events::attribute::PACKET_SOURCE_CHANNEL_ID,
+            packet.source_channel_id.to_string(),
+        ),
+        (
+            events::attribute::PACKET_DESTINATION_CHANNEL_ID,
+            packet.destination_channel_id.to_string(),
+        ),
+        (events::attribute::PACKET_DATA, packet.data.to_string()),
+        (
+            events::attribute::PACKET_TIMEOUT_HEIGHT,
+            packet.timeout_height.to_string(),
+        ),
+        (
+            events::attribute::PACKET_TIMEOUT_TIMESTAMP,
+            packet.timeout_timestamp.to_string(),
+        ),
+    ]
+    .map(Into::into)
+}
+
+#[must_use]
+fn packet_to_attr_hash(packet: &Packet) -> Attribute {
+    (
+        events::attribute::PACKET_HASH,
+        commit_packets(&[packet.clone()]).to_string(),
+    )
+        .into()
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -373,20 +413,10 @@ pub fn execute(
             timeout_timestamp,
             data.into_vec(),
         ),
-        ExecuteMsg::BatchSend(MsgBatchSend {
-            source_channel,
-            packets,
-        }) => batch_send(deps, source_channel, packets),
-        ExecuteMsg::BatchAcks(MsgBatchAcks {
-            source_channel,
-            packets,
-            acks,
-        }) => batch_acks(
-            deps,
-            source_channel,
-            packets,
-            acks.into_iter().map(Into::into).collect(),
-        ),
+        ExecuteMsg::BatchSend(MsgBatchSend { packets }) => batch_send(deps, packets),
+        ExecuteMsg::BatchAcks(MsgBatchAcks { packets, acks }) => {
+            batch_acks(deps, packets, acks.into_iter().map(Into::into).collect())
+        }
         ExecuteMsg::MigrateState(MsgMigrateState {
             client_id,
             client_state,
@@ -430,7 +460,7 @@ fn migrate_state(
         deps.branch(),
         &ClientStatePath { client_id }.key(),
         &commit(client_state),
-    )?;
+    );
 
     CLIENT_CONSENSUS_STATES.update(deps.storage, (client_id, height), |s| {
         let _ = s.ok_or(ContractError::CannotMigrateWithNoConsensusState { client_id, height })?;
@@ -441,7 +471,7 @@ fn migrate_state(
         deps.branch(),
         &ConsensusStatePath { client_id, height }.key(),
         &commit(consensus_state),
-    )?;
+    );
 
     Ok(Response::new())
 }
@@ -477,16 +507,19 @@ pub(crate) fn init(
     Ok((Response::default(), None))
 }
 
-fn batch_send(deps: DepsMut, source_channel: u32, packets: Vec<Packet>) -> ContractResult {
+fn batch_send(deps: DepsMut, packets: Vec<Packet>) -> ContractResult {
     if packets.len() < 2 {
         return Err(ContractError::NotEnoughPackets);
     }
-    for packet in &packets {
-        let commitment_key = BatchPacketsPath {
-            channel_id: source_channel,
-            batch_hash: commit_packet(packet),
+    let channel_id = packets[0].source_channel_id;
+    let serialized_packets =
+        serde_json::to_string(&packets).expect("packet serialization is infallible; qed;");
+    let batch_commitment_key = BatchPacketsPath::from_packets(&packets).key();
+    for packet in packets {
+        if packet.source_channel_id != channel_id {
+            return Err(ContractError::BatchSameChannelOnly);
         }
-        .key();
+        let commitment_key = BatchPacketsPath::from_packets(&[packet]).key();
         let commitment = deps
             .storage
             .get(commitment_key.as_ref())
@@ -495,49 +528,37 @@ fn batch_send(deps: DepsMut, source_channel: u32, packets: Vec<Packet>) -> Contr
             return Err(ContractError::PacketCommitmentNotFound);
         }
     }
-    store_commit(
-        deps,
-        &BatchPacketsPath {
-            channel_id: source_channel,
-            batch_hash: commit_packets(&packets),
-        }
-        .key(),
-        &COMMITMENT_MAGIC,
-    )?;
+    store_commit(deps, &batch_commitment_key, &COMMITMENT_MAGIC);
     Ok(
         Response::new().add_event(Event::new(events::packet::BATCH_SEND).add_attributes([
-            (events::attribute::CHANNEL_ID, source_channel.to_string()),
-            (
-                events::attribute::PACKETS,
-                serde_json::to_string(&packets).expect("packet serialization is infallible; qed;"),
-            ),
+            (events::attribute::CHANNEL_ID, channel_id.to_string()),
+            (events::attribute::PACKETS, serialized_packets),
         ])),
     )
 }
 
-fn batch_acks(
-    deps: DepsMut,
-    source_channel: u32,
-    packets: Vec<Packet>,
-    acks: Vec<Bytes>,
-) -> ContractResult {
+fn batch_acks(deps: DepsMut, packets: Vec<Packet>, acks: Vec<Bytes>) -> ContractResult {
     if packets.len() < 2 {
         return Err(ContractError::NotEnoughPackets);
     }
-    for (packet, ack) in packets.iter().zip(acks.iter()) {
-        let commitment_key = BatchReceiptsPath {
-            channel_id: source_channel,
-            batch_hash: commit_packet(packet),
+    let channel_id = packets[0].destination_channel_id;
+    let batch_commitment_key = BatchReceiptsPath::from_packets(&packets).key();
+    let serialized_packets =
+        serde_json::to_string(&packets).expect("packet serialization is infallible; qed;");
+    let serialized_acks =
+        serde_json::to_string(&acks).expect("bytes serialization is infallible; qed;");
+    for (packet, ack) in packets.into_iter().zip(acks.iter()) {
+        if packet.destination_channel_id != channel_id {
+            return Err(ContractError::BatchSameChannelOnly);
         }
-        .key();
-        let commitment = deps.storage.get(commitment_key.as_ref());
+        let commitment_key = BatchReceiptsPath::from_packets(&[packet]).key();
+        let commitment = read_commit(deps.as_ref(), &commitment_key);
         match commitment {
             Some(acknowledgement) => {
                 let expected_ack = commit_ack(ack);
-
-                if acknowledgement == COMMITMENT_MAGIC.as_ref() {
+                if acknowledgement == COMMITMENT_MAGIC {
                     return Err(ContractError::AcknowledgementIsEmpty);
-                } else if acknowledgement != expected_ack.as_ref() {
+                } else if acknowledgement != expected_ack {
                     return Err(ContractError::AcknowledgementMismatch {
                         found: acknowledgement.into(),
                         expected: expected_ack.into(),
@@ -547,26 +568,12 @@ fn batch_acks(
             None => return Err(ContractError::PacketCommitmentNotFound),
         }
     }
-    store_commit(
-        deps,
-        &BatchReceiptsPath {
-            channel_id: source_channel,
-            batch_hash: commit_packets(&packets),
-        }
-        .key(),
-        &commit_acks(&acks),
-    )?;
+    store_commit(deps, &batch_commitment_key, &commit_acks(&acks));
     Ok(
         Response::new().add_event(Event::new(events::packet::BATCH_ACKS).add_attributes([
-            (events::attribute::CHANNEL_ID, source_channel.to_string()),
-            (
-                events::attribute::PACKETS,
-                serde_json::to_string(&packets).expect("packet serialization is infallible; qed;"),
-            ),
-            (
-                events::attribute::ACKS,
-                serde_json::to_string(&acks).expect("bytes serialization is infallible; qed;"),
-            ),
+            (events::attribute::CHANNEL_ID, channel_id.to_string()),
+            (events::attribute::PACKETS, serialized_packets),
+            (events::attribute::ACKS, serialized_acks),
         ])),
     )
 }
@@ -579,7 +586,6 @@ fn timeout_packet(
     relayer: Addr,
 ) -> ContractResult {
     let source_channel = packet.source_channel_id;
-    let destination_channel = packet.destination_channel_id;
     let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
@@ -589,11 +595,7 @@ fn timeout_packet(
         return Err(ContractError::TimeoutProofTimestampNotFound);
     }
 
-    let commitment_key = BatchReceiptsPath {
-        channel_id: destination_channel,
-        batch_hash: commit_packet(&packet),
-    }
-    .key();
+    let commitment_key = BatchReceiptsPath::from_packets(&[packet.clone()]).key();
 
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
     query_light_client::<()>(
@@ -606,7 +608,7 @@ fn timeout_packet(
             path: commitment_key.into_bytes(),
         },
     )?;
-    mark_packet_as_acknowledged(deps.branch(), source_channel, &packet)?;
+    mark_packet_as_acknowledged(deps.branch(), &packet)?;
 
     if packet.timeout_timestamp == 0 && packet.timeout_height == 0 {
         return Err(ContractError::TimeoutMustBeSet);
@@ -622,13 +624,11 @@ fn timeout_packet(
 
     let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
     Ok(Response::new()
-        .add_event(Event::new(events::packet::TIMEOUT).add_attributes([
-            (
-                events::attribute::PACKET,
-                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
-            ),
-            (events::attribute::MAKER, relayer.to_string()),
-        ]))
+        .add_event(
+            Event::new(events::packet::TIMEOUT)
+                .add_attributes([packet_to_attr_hash(&packet)])
+                .add_attributes([(events::attribute::MAKER, relayer.to_string())]),
+        )
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnTimeoutPacket {
@@ -650,21 +650,12 @@ fn acknowledge_packet(
     let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
 
     let source_channel = first.source_channel_id;
-    let destination_channel = first.destination_channel_id;
 
     let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
-    let (batch_hash, commitment_value) = match packets.len() {
-        1 => (commit_packet(first), commit_ack(&acknowledgements[0])),
-        _ => (commit_packets(&packets), commit_acks(&acknowledgements)),
-    };
-
-    let commitment_key = BatchReceiptsPath {
-        channel_id: destination_channel,
-        batch_hash,
-    }
-    .key();
+    let commitment_key = BatchReceiptsPath::from_packets(&packets).key();
+    let commitment_value = commit_acks(&acknowledgements);
 
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
     query_light_client::<()>(
@@ -683,15 +674,15 @@ fn acknowledge_packet(
     let mut events = Vec::with_capacity(packets.len());
     let mut messages = Vec::with_capacity(packets.len());
     for (packet, ack) in packets.into_iter().zip(acknowledgements) {
-        mark_packet_as_acknowledged(deps.branch(), source_channel, &packet)?;
-        events.push(Event::new(events::packet::ACK).add_attributes([
-            (
-                events::attribute::PACKET,
-                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
-            ),
-            (events::attribute::ACKNOWLEDGEMENT, hex::encode(&ack)),
-            (events::attribute::MAKER, relayer.clone().to_string()),
-        ]));
+        mark_packet_as_acknowledged(deps.branch(), &packet)?;
+        events.push(
+            Event::new(events::packet::ACK)
+                .add_attributes([packet_to_attr_hash(&packet)])
+                .add_attributes([
+                    (events::attribute::ACKNOWLEDGEMENT, hex::encode(&ack)),
+                    (events::attribute::MAKER, relayer.clone().to_string()),
+                ]),
+        );
         messages.push(wasm_execute(
             port_id.clone(),
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnAcknowledgementPacket {
@@ -706,16 +697,8 @@ fn acknowledge_packet(
     Ok(Response::new().add_events(events).add_messages(messages))
 }
 
-fn mark_packet_as_acknowledged(
-    deps: DepsMut,
-    source_channel: u32,
-    packet: &Packet,
-) -> Result<(), ContractError> {
-    let commitment_key = BatchPacketsPath {
-        channel_id: source_channel,
-        batch_hash: commit_packet(packet),
-    }
-    .key();
+fn mark_packet_as_acknowledged(deps: DepsMut, packet: &Packet) -> Result<(), ContractError> {
+    let commitment_key = BatchPacketsPath::from_packets(&[packet.clone()]).key();
     let commitment = deps
         .storage
         .get(commitment_key.as_ref())
@@ -726,16 +709,8 @@ fn mark_packet_as_acknowledged(
     if commitment != COMMITMENT_MAGIC.as_ref() {
         return Err(ContractError::PacketCommitmentNotFound);
     }
-    store_commit(deps, &commitment_key, &COMMITMENT_MAGIC_ACK)?;
+    store_commit(deps, &commitment_key, &COMMITMENT_MAGIC_ACK);
     Ok(())
-}
-
-fn commit_packet(packet: &Packet) -> H256 {
-    commit(packet.abi_encode())
-}
-
-fn commit_packets(packets: &[Packet]) -> H256 {
-    commit(packets.abi_encode())
 }
 
 fn register_client(
@@ -791,7 +766,7 @@ fn create_client(
         deps.branch(),
         &ClientStatePath { client_id }.key(),
         &commit(client_state_bytes),
-    )?;
+    );
     store_commit(
         deps.branch(),
         &ConsensusStatePath {
@@ -800,7 +775,7 @@ fn create_client(
         }
         .key(),
         &commit(consensus_state_bytes),
-    )?;
+    );
 
     for (k, v) in verify_creation_response.storage_writes {
         store_client_data(deps.branch(), client_id, k, v);
@@ -874,7 +849,7 @@ fn update_client(
             deps.branch(),
             &ClientStatePath { client_id }.key(),
             &commit(&client_state_bytes),
-        )?;
+        );
         CLIENT_STATES.save(
             deps.storage,
             client_id,
@@ -890,7 +865,7 @@ fn update_client(
         }
         .key(),
         &commit(&update.consensus_state_bytes),
-    )?;
+    );
 
     CLIENT_CONSENSUS_STATES.save(
         deps.storage,
@@ -1447,7 +1422,7 @@ fn channel_close_confirm(
         deps.branch(),
         &ChannelPath { channel_id }.key(),
         &commit(channel.abi_encode()),
-    )?;
+    );
     Ok(Response::new()
         .add_event(Event::new(events::channel::CLOSE_CONFIRM).add_attributes([
             (events::attribute::PORT_ID, port_id.to_string()),
@@ -1483,22 +1458,13 @@ fn process_receive(
     intent: bool,
 ) -> Result<Response, ContractError> {
     let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
-    let source_channel = first.source_channel_id;
     let destination_channel = first.destination_channel_id;
 
     let channel = ensure_channel_state(deps.as_ref(), destination_channel)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
     if !intent {
-        let proof_commitment_key = BatchPacketsPath {
-            channel_id: source_channel,
-            batch_hash: match packets.len() {
-                1 => commit_packet(first),
-                _ => commit_packets(&packets),
-            },
-        }
-        .key();
-
+        let proof_commitment_key = BatchPacketsPath::from_packets(&packets).key();
         let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
         query_light_client::<()>(
             deps.as_ref(),
@@ -1532,24 +1498,16 @@ fn process_receive(
             });
         }
 
-        let commitment_key = BatchReceiptsPath {
-            channel_id: destination_channel,
-            batch_hash: commit_packet(&packet),
-        }
-        .key();
-
+        let commitment_key = BatchReceiptsPath::from_packets(&[packet.clone()]).key();
         if !set_packet_receive(deps.branch(), commitment_key) {
             if intent {
                 events.push(
-                    Event::new(events::packet::INTENT_RECV).add_attributes([
-                        (
-                            events::attribute::PACKET,
-                            serde_json::to_string(&packet)
-                                .expect("packet serialization is infallible; qed;"),
-                        ),
-                        (events::attribute::MAKER, relayer.clone()),
-                        (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
-                    ]),
+                    Event::new(events::packet::INTENT_RECV)
+                        .add_attributes([packet_to_attr_hash(&packet)])
+                        .add_attributes([
+                            (events::attribute::MAKER, relayer.clone()),
+                            (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
+                        ]),
                 );
 
                 messages.push(wasm_execute(
@@ -1563,15 +1521,12 @@ fn process_receive(
                 )?);
             } else {
                 events.push(
-                    Event::new(events::packet::RECV).add_attributes([
-                        (
-                            events::attribute::PACKET,
-                            serde_json::to_string(&packet)
-                                .expect("packet serialization is infallible; qed;"),
-                        ),
-                        (events::attribute::MAKER, relayer.clone()),
-                        (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
-                    ]),
+                    Event::new(events::packet::RECV)
+                        .add_attributes([packet_to_attr_hash(&packet)])
+                        .add_attributes([
+                            (events::attribute::MAKER, relayer.clone()),
+                            (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
+                        ]),
                 );
 
                 messages.push(wasm_execute(
@@ -1611,40 +1566,34 @@ fn write_acknowledgement(
         });
     }
 
-    let commitment_key = BatchReceiptsPath {
-        channel_id,
-        batch_hash: commit_packet(&packet),
-    }
-    .key();
+    let commitment_key = BatchReceiptsPath::from_packets(&[packet.clone()]).key();
 
     // the receipt must present, but ack shouldn't
-    match deps.storage.get(commitment_key.as_ref()) {
+    match read_commit(deps.as_ref(), &commitment_key) {
         Some(commitment) => {
-            if commitment != COMMITMENT_MAGIC.into_bytes().into_vec() {
+            if commitment != COMMITMENT_MAGIC {
                 return Err(ContractError::AlreadyAcknowledged);
             }
         }
         None => return Err(ContractError::PacketNotReceived),
     }
 
+    let acknowledgement_serialized = hex::encode(&acknowledgement);
+
     store_commit(
         deps.branch(),
         &commitment_key,
-        &commit_ack(&acknowledgement.clone().into()),
-    )?;
+        &commit_ack(&acknowledgement.into()),
+    );
 
-    Ok(
-        Response::new().add_event(Event::new("write_ack").add_attributes([
-            (
-                events::attribute::PACKET,
-                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
-            ),
-            (
+    Ok(Response::new().add_event(
+        Event::new(events::packet::WRITE_ACK)
+            .add_attributes([packet_to_attr_hash(&packet)])
+            .add_attributes([(
                 events::attribute::ACKNOWLEDGEMENT,
-                hex::encode(acknowledgement),
-            ),
-        ])),
-    )
+                acknowledgement_serialized,
+            )]),
+    ))
 }
 
 fn send_packet(
@@ -1677,24 +1626,27 @@ fn send_packet(
         timeout_timestamp,
     };
 
-    let commitment_key = BatchPacketsPath {
-        channel_id: source_channel_id,
-        batch_hash: commit_packet(&packet),
-    }
-    .key();
+    let serialized_packet =
+        serde_json::to_string(&packet).expect("packet serialization is infallible; qed;");
 
-    if deps.storage.get(commitment_key.as_ref()).is_some() {
+    let packet_attrs = packet_to_attrs(&packet);
+    let packet_attr_hash = packet_to_attr_hash(&packet);
+
+    let commitment_key = BatchPacketsPath::from_packets(&[packet]).key();
+
+    if read_commit(deps.as_ref(), &commitment_key).is_some() {
         return Err(ContractError::PacketCommitmentAlreadyExist);
     }
 
-    store_commit(deps.branch(), &commitment_key, &COMMITMENT_MAGIC)?;
+    store_commit(deps.branch(), &commitment_key, &COMMITMENT_MAGIC);
 
     Ok(Response::new()
-        .add_event(Event::new(events::packet::SEND).add_attribute(
-            events::attribute::PACKET,
-            serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
-        ))
-        .set_data(to_json_binary(&packet)?))
+        .add_event(
+            Event::new(events::packet::SEND)
+                .add_attributes([packet_attr_hash])
+                .add_attributes(packet_attrs),
+        )
+        .set_data(serialized_packet.as_bytes()))
 }
 
 fn increment(deps: DepsMut, item: Item<u32>) -> Result<u32, ContractError> {
@@ -1724,10 +1676,10 @@ fn commit(bytes: impl AsRef<[u8]>) -> H256 {
 }
 
 fn commit_ack(ack: &Bytes) -> H256 {
-    merge_ack(commit(ack))
+    commit_acks(&[ack.clone()])
 }
 
-fn commit_acks(acks: &Vec<Bytes>) -> H256 {
+fn commit_acks(acks: &[Bytes]) -> H256 {
     merge_ack(commit(acks.abi_encode()))
 }
 
@@ -1736,13 +1688,14 @@ fn merge_ack(mut ack: H256) -> H256 {
     ack
 }
 
-fn store_commit(deps: DepsMut, key: &H256, value: &H256) -> Result<(), ContractError> {
-    deps.storage.set(key.as_ref(), value.as_ref());
-    Ok(())
+fn store_commit(deps: DepsMut, key: &H256, value: &H256) {
+    let canonical_path = [&IBC_UNION_COSMWASM_COMMITMENT_PREFIX, key.as_ref()].concat();
+    deps.storage.set(&canonical_path, value.as_ref());
 }
 
 fn read_commit(deps: Deps, key: &H256) -> Option<H256> {
-    deps.storage.get(key.as_ref()).map(|bz| {
+    let canonical_path = [&IBC_UNION_COSMWASM_COMMITMENT_PREFIX, key.as_ref()].concat();
+    deps.storage.get(&canonical_path).map(|bz| {
         bz.try_into()
             .expect("H256 is the only value ever written to this storage; qed;")
     })
@@ -1758,7 +1711,7 @@ fn save_connection(
         deps,
         &ConnectionPath { connection_id }.key(),
         &commit(connection.abi_encode_params()),
-    )?;
+    );
     Ok(())
 }
 
@@ -1800,7 +1753,7 @@ fn save_channel(deps: DepsMut, channel_id: u32, channel: &Channel) -> Result<(),
         deps,
         &ChannelPath { channel_id }.key(),
         &commit(channel.abi_encode()),
-    )?;
+    );
     Ok(())
 }
 
@@ -1829,11 +1782,10 @@ fn ensure_channel_state(deps: Deps, channel_id: u32) -> Result<Channel, Contract
 }
 
 fn set_packet_receive(deps: DepsMut, commitment_key: H256) -> bool {
-    if deps.storage.get(commitment_key.as_ref()).is_some() {
+    if read_commit(deps.as_ref(), &commitment_key).is_some() {
         true
     } else {
-        deps.storage
-            .set(commitment_key.as_ref(), COMMITMENT_MAGIC.as_ref());
+        store_commit(deps, &commitment_key, &COMMITMENT_MAGIC);
         false
     }
 }
@@ -1903,32 +1855,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractErr
             let connection = CONNECTIONS.load(deps.storage, connection_id)?;
             Ok(to_json_binary(&connection)?)
         }
-        QueryMsg::GetBatchPackets {
-            channel_id,
-            batch_hash,
-        } => {
-            let commit = read_commit(
-                deps,
-                &BatchPacketsPath {
-                    channel_id,
-                    batch_hash,
-                }
-                .key(),
-            );
+        QueryMsg::GetBatchPackets { batch_hash } => {
+            let commit = read_commit(deps, &BatchPacketsPath { batch_hash }.key());
             Ok(to_json_binary(&commit)?)
         }
-        QueryMsg::GetBatchReceipts {
-            channel_id,
-            batch_hash,
-        } => {
-            let commit = read_commit(
-                deps,
-                &BatchReceiptsPath {
-                    channel_id,
-                    batch_hash,
-                }
-                .key(),
-            );
+        QueryMsg::GetBatchReceipts { batch_hash } => {
+            let commit = read_commit(deps, &BatchReceiptsPath { batch_hash }.key());
             Ok(to_json_binary(&commit)?)
         }
     }

@@ -1575,10 +1575,7 @@ impl Module {
                     .maybe_query_ibc_state(
                         self.chain_id.clone(),
                         QueryHeight::Latest,
-                        ibc_union_spec::path::BatchPacketsPath::from_packets(
-                            packet.source_channel_id,
-                            &[&packet],
-                        ),
+                        ibc_union_spec::path::BatchPacketsPath::from_packets(&[packet.clone()]),
                     )
                     .await?;
 

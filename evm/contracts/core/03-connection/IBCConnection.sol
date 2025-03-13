@@ -7,23 +7,25 @@ import "../03-connection/IIBCConnection.sol";
 
 library IBCConnectionLib {
     event ConnectionOpenInit(
-        uint32 connectionId, uint32 clientId, uint32 counterpartyClientId
+        uint32 indexed connectionId,
+        uint32 indexed clientId,
+        uint32 counterpartyClientId
     );
     event ConnectionOpenTry(
-        uint32 connectionId,
-        uint32 clientId,
+        uint32 indexed connectionId,
+        uint32 indexed clientId,
         uint32 counterpartyClientId,
         uint32 counterpartyConnectionId
     );
     event ConnectionOpenAck(
-        uint32 connectionId,
-        uint32 clientId,
+        uint32 indexed connectionId,
+        uint32 indexed clientId,
         uint32 counterpartyClientId,
         uint32 counterpartyConnectionId
     );
     event ConnectionOpenConfirm(
-        uint32 connectionId,
-        uint32 clientId,
+        uint32 indexed connectionId,
+        uint32 indexed clientId,
         uint32 counterpartyClientId,
         uint32 counterpartyConnectionId
     );

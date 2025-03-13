@@ -6,7 +6,6 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use alloy::sol_types::SolValue;
 use either::Either;
 use futures::{stream::FuturesOrdered, StreamExt};
 use ibc_classic_spec::IbcClassic;
@@ -24,7 +23,6 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace, warn};
 use unionlabs::{
-    ethereum::keccak256,
     ibc::core::{
         client::height::Height,
         commitment::merkle_prefix::MerklePrefix,
@@ -772,10 +770,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::path::BatchPacketsPath {
-                        channel_id: event.packet.source_channel.channel_id,
-                        batch_hash: keccak256(packet.abi_encode()),
-                    },
+                    ibc_union_spec::path::BatchPacketsPath::from_packets(&[packet.clone().into()]),
                 )
                 .await?;
 
@@ -816,10 +811,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::path::BatchReceiptsPath {
-                        channel_id: event.packet.destination_channel.channel_id,
-                        batch_hash: keccak256(packet.abi_encode()),
-                    },
+                    ibc_union_spec::path::BatchReceiptsPath::from_packets(&[packet.clone().into()]),
                 )
                 .await?;
 

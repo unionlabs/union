@@ -33,12 +33,6 @@ struct ConsensusState {
 }
 
 library StateLensIcs23SmtLib {
-    uint256 public constant EVM_IBC_COMMITMENT_SLOT = 0;
-
-    event CreateLensClient(
-        uint32 clientId, uint32 l1ClientId, uint32 l2ClientId, string l2ChainId
-    );
-
     error ErrNotIBC();
     error ErrTrustedConsensusStateNotFound();
     error ErrClientFrozen();
@@ -152,7 +146,7 @@ contract StateLensIcs23SmtClient is
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
 
-        emit StateLensIcs23SmtLib.CreateLensClient(
+        emit CreateLensClient(
             clientId,
             clientState.l1ClientId,
             clientState.l2ClientId,
@@ -303,6 +297,14 @@ contract StateLensIcs23SmtClient is
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
 
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {

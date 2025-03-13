@@ -111,7 +111,7 @@ contract IBCPacketTests is Test {
         assertEq(
             handler.commitments(
                 IBCCommitment.batchPacketsCommitmentKey(
-                    channelId, IBCPacketLib.commitPacketMemory(packet)
+                    IBCPacketLib.commitPacket(packet)
                 )
             ),
             IBCPacketLib.COMMITMENT_MAGIC
@@ -248,10 +248,13 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketRecv(
-                msg_.packets[i], msg_.relayer, msg_.relayerMsgs[i]
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                msg_.relayer,
+                msg_.relayerMsgs[i]
             );
             emit IBCPacketLib.WriteAck(
-                msg_.packets[i], TestModuleLib.ACKNOWLEDGEMENT
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                TestModuleLib.ACKNOWLEDGEMENT
             );
         }
         vm.resumeGasMetering();
@@ -338,11 +341,10 @@ contract IBCPacketTests is Test {
             assertEq(
                 handler.commitments(
                     IBCCommitment.batchReceiptsCommitmentKey(
-                        channelId,
-                        IBCPacketLib.commitPacketMemory(msg_.packets[i])
+                        IBCPacketLib.commitPacket(msg_.packets[i])
                     )
                 ),
-                IBCPacketLib.commitAckMemory(TestModuleLib.ACKNOWLEDGEMENT)
+                IBCPacketLib.commitAck(TestModuleLib.ACKNOWLEDGEMENT)
             );
         }
     }
@@ -362,8 +364,7 @@ contract IBCPacketTests is Test {
             assertEq(
                 handler.commitments(
                     IBCCommitment.batchReceiptsCommitmentKey(
-                        channelId,
-                        IBCPacketLib.commitPacketMemory(msg_.packets[i])
+                        IBCPacketLib.commitPacket(msg_.packets[i])
                     )
                 ),
                 IBCPacketLib.COMMITMENT_MAGIC
@@ -465,10 +466,13 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.IntentPacketRecv(
-                msg_.packets[i], msg_.marketMaker, msg_.marketMakerMsgs[i]
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                msg_.marketMaker,
+                msg_.marketMakerMsgs[i]
             );
             emit IBCPacketLib.WriteAck(
-                msg_.packets[i], TestModuleLib.ACKNOWLEDGEMENT
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                TestModuleLib.ACKNOWLEDGEMENT
             );
         }
         vm.resumeGasMetering();
@@ -489,11 +493,10 @@ contract IBCPacketTests is Test {
             assertEq(
                 handler.commitments(
                     IBCCommitment.batchReceiptsCommitmentKey(
-                        channelId,
-                        IBCPacketLib.commitPacketMemory(msg_.packets[i])
+                        IBCPacketLib.commitPacket(msg_.packets[i])
                     )
                 ),
-                IBCPacketLib.commitAckMemory(TestModuleLib.ACKNOWLEDGEMENT)
+                IBCPacketLib.commitAck(TestModuleLib.ACKNOWLEDGEMENT)
             );
         }
     }
@@ -576,7 +579,9 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketAck(
-                msg_.packets[i], abi.encodePacked(i), msg_.relayer
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                abi.encodePacked(i),
+                msg_.relayer
             );
         }
         vm.resumeGasMetering();
@@ -686,8 +691,7 @@ contract IBCPacketTests is Test {
             assertEq(
                 handler.commitments(
                     IBCCommitment.batchPacketsCommitmentKey(
-                        channelId,
-                        IBCPacketLib.commitPacketMemory(msg_.packets[i])
+                        IBCPacketLib.commitPacket(msg_.packets[i])
                     )
                 ),
                 IBCPacketLib.COMMITMENT_MAGIC_ACK
@@ -748,7 +752,9 @@ contract IBCPacketTests is Test {
         lightClient.pushValidNonMembership();
         lightClient.setLatestTimestamp(uint64(timestamp) + k);
         vm.expectEmit();
-        emit IBCPacketLib.PacketTimeout(msg_.packet, msg_.relayer);
+        emit IBCPacketLib.PacketTimeout(
+            IBCPacketLib.commitPacket(msg_.packet), msg_.relayer
+        );
         vm.resumeGasMetering();
         handler.timeoutPacket(msg_);
         vm.pauseGasMetering();
@@ -767,7 +773,7 @@ contract IBCPacketTests is Test {
         assertEq(
             handler.commitments(
                 IBCCommitment.batchPacketsCommitmentKey(
-                    channelId, IBCPacketLib.commitPacketMemory(msg_.packet)
+                    IBCPacketLib.commitPacket(msg_.packet)
                 )
             ),
             IBCPacketLib.COMMITMENT_MAGIC_ACK
@@ -832,7 +838,9 @@ contract IBCPacketTests is Test {
         lightClient.setLatestHeight(uint64(height) + k);
         msg_.proofHeight = uint64(height) + k;
         vm.expectEmit();
-        emit IBCPacketLib.PacketTimeout(msg_.packet, msg_.relayer);
+        emit IBCPacketLib.PacketTimeout(
+            IBCPacketLib.commitPacket(msg_.packet), msg_.relayer
+        );
         vm.resumeGasMetering();
         handler.timeoutPacket(msg_);
         vm.pauseGasMetering();
@@ -850,7 +858,7 @@ contract IBCPacketTests is Test {
         assertEq(
             handler.commitments(
                 IBCCommitment.batchPacketsCommitmentKey(
-                    channelId, IBCPacketLib.commitPacketMemory(msg_.packet)
+                    IBCPacketLib.commitPacket(msg_.packet)
                 )
             ),
             IBCPacketLib.COMMITMENT_MAGIC_ACK
@@ -912,14 +920,18 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketRecv(
-                msg_.packets[i], msg_.relayer, msg_.relayerMsgs[i]
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                msg_.relayer,
+                msg_.relayerMsgs[i]
             );
         }
         handler.recvPacket(msg_);
         for (uint8 i = 0; i < nbPackets; i++) {
             bytes memory ack = abi.encodePacked(i);
             vm.expectEmit();
-            emit IBCPacketLib.WriteAck(msg_.packets[i], ack);
+            emit IBCPacketLib.WriteAck(
+                IBCPacketLib.commitPacket(msg_.packets[i]), ack
+            );
             vm.prank(address(module));
             vm.resumeGasMetering();
             handler.writeAcknowledgement(msg_.packets[i], ack);
@@ -951,7 +963,9 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketRecv(
-                msg_.packets[i], msg_.relayer, msg_.relayerMsgs[i]
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                msg_.relayer,
+                msg_.relayerMsgs[i]
             );
         }
         handler.recvPacket(msg_);
@@ -1004,11 +1018,10 @@ contract IBCPacketTests is Test {
             assertEq(
                 handler.commitments(
                     IBCCommitment.batchReceiptsCommitmentKey(
-                        channelId,
-                        IBCPacketLib.commitPacketMemory(msg_.packets[i])
+                        IBCPacketLib.commitPacket(msg_.packets[i])
                     )
                 ),
-                IBCPacketLib.commitAckMemory(abi.encodePacked(i))
+                IBCPacketLib.commitAck(abi.encodePacked(i))
             );
         }
     }
@@ -1038,9 +1051,7 @@ contract IBCPacketTests is Test {
             packets[i] = packet;
         }
         vm.resumeGasMetering();
-        handler.batchSend(
-            IBCMsgs.MsgBatchSend({sourceChannelId: channelId, packets: packets})
-        );
+        handler.batchSend(IBCMsgs.MsgBatchSend({packets: packets}));
         vm.pauseGasMetering();
         return packets;
     }
@@ -1111,7 +1122,7 @@ contract IBCPacketTests is Test {
         assertEq(
             handler.commitments(
                 IBCCommitment.batchPacketsCommitmentKey(
-                    channelId, IBCPacketLib.commitPacketsMemory(packets)
+                    IBCPacketLib.commitPacketsMemory(packets)
                 )
             ),
             IBCPacketLib.COMMITMENT_MAGIC
@@ -1146,9 +1157,7 @@ contract IBCPacketTests is Test {
         packets[0].data = abi.encodePacked(packets[0].data, hex"C0DE");
         vm.resumeGasMetering();
         vm.expectRevert(IBCErrors.ErrPacketCommitmentNotFound.selector);
-        handler.batchSend(
-            IBCMsgs.MsgBatchSend({sourceChannelId: channelId, packets: packets})
-        );
+        handler.batchSend(IBCMsgs.MsgBatchSend({packets: packets}));
     }
 
     function test_batchAcks_afterRecvPacket_ok(
@@ -1171,11 +1180,7 @@ contract IBCPacketTests is Test {
         }
         vm.resumeGasMetering();
         handler.batchAcks(
-            IBCMsgs.MsgBatchAcks({
-                sourceChannelId: channelId,
-                packets: msg_.packets,
-                acks: acks
-            })
+            IBCMsgs.MsgBatchAcks({packets: msg_.packets, acks: acks})
         );
         vm.pauseGasMetering();
         return (msg_, acks);
@@ -1257,7 +1262,7 @@ contract IBCPacketTests is Test {
         assertEq(
             handler.commitments(
                 IBCCommitment.batchReceiptsCommitmentKey(
-                    channelId, IBCPacketLib.commitPacketsMemory(msg_.packets)
+                    IBCPacketLib.commitPacketsMemory(msg_.packets)
                 )
             ),
             IBCPacketLib.commitAcksMemory(acks)
@@ -1281,11 +1286,7 @@ contract IBCPacketTests is Test {
         }
         vm.expectRevert(IBCErrors.ErrAcknowledgementIsEmpty.selector);
         handler.batchAcks(
-            IBCMsgs.MsgBatchAcks({
-                sourceChannelId: channelId,
-                packets: msg_.packets,
-                acks: acks
-            })
+            IBCMsgs.MsgBatchAcks({packets: msg_.packets, acks: acks})
         );
     }
 
@@ -1310,11 +1311,7 @@ contract IBCPacketTests is Test {
         msg_.packets[0].data = abi.encodePacked(msg_.packets[0].data, hex"1337");
         vm.expectRevert(IBCErrors.ErrAcknowledgementIsEmpty.selector);
         handler.batchAcks(
-            IBCMsgs.MsgBatchAcks({
-                sourceChannelId: channelId,
-                packets: msg_.packets,
-                acks: acks
-            })
+            IBCMsgs.MsgBatchAcks({packets: msg_.packets, acks: acks})
         );
     }
 
@@ -1332,11 +1329,7 @@ contract IBCPacketTests is Test {
         bytes[] memory acks = new bytes[](nbPackets);
         vm.expectRevert(IBCErrors.ErrAcknowledgementIsEmpty.selector);
         handler.batchAcks(
-            IBCMsgs.MsgBatchAcks({
-                sourceChannelId: channelId,
-                packets: msg_.packets,
-                acks: acks
-            })
+            IBCMsgs.MsgBatchAcks({packets: msg_.packets, acks: acks})
         );
     }
 }

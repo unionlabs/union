@@ -269,18 +269,12 @@ fn timeout_packet(
     packet: Packet,
     relayer: Addr,
 ) -> Result<Response, ContractError> {
+    let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
     // Check if this is an in-flight packet (forwarded packet)
-    let packet_hash = keccak256(packet.abi_encode());
-    let is_forward_tinted = is_salt_forward_tinted(packet_hash);
-
-    if is_forward_tinted {
+    if is_forwarded_packet(zkgm_packet.salt.0.into()) {
         // This is a forwarded packet timeout
         // Find the parent packet that initiated the forward
-        let commitment_key = BatchPacketsPath {
-            channel_id: packet.source_channel_id,
-            batch_hash: packet_hash,
-        }
-        .key();
+        let commitment_key = BatchPacketsPath::from_packets(&[packet.clone()]).key();
 
         if IN_FLIGHT_PACKET
             .may_load(deps.storage, commitment_key.into_bytes().into())?
@@ -293,9 +287,6 @@ fn timeout_packet(
             return Ok(Response::new());
         }
     }
-
-    // Normal packet timeout
-    let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
     timeout_internal(
         deps,
         env,
@@ -427,18 +418,12 @@ fn acknowledge_packet(
     relayer: Addr,
     ack: Bytes,
 ) -> Result<Response, ContractError> {
+    let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
     // Check if this is an in-flight packet (forwarded packet)
-    let packet_hash = keccak256(packet.abi_encode());
-    let is_forward_tinted = is_salt_forward_tinted(packet_hash);
-
-    if is_forward_tinted {
+    if is_forwarded_packet(zkgm_packet.salt.0.into()) {
         // This is a forwarded packet acknowledgement
         // Find the parent packet that initiated the forward
-        let commitment_key = BatchPacketsPath {
-            channel_id: packet.source_channel_id,
-            batch_hash: packet_hash,
-        }
-        .key();
+        let commitment_key = BatchPacketsPath::from_packets(&[packet.clone()]).key();
 
         if let Some(parent_packet) =
             IN_FLIGHT_PACKET.may_load(deps.storage, commitment_key.into_bytes().into())?
@@ -458,9 +443,6 @@ fn acknowledge_packet(
             )?));
         }
     }
-
-    // Normal packet acknowledgement
-    let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
     let ack = Ack::abi_decode_params(&ack, true)?;
     acknowledge_internal(
         deps,
@@ -1382,11 +1364,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                     #[allow(deprecated)]
                     sent_packet_data: Vec::from(reply_data.data.unwrap_or_default()).into(),
                 })?;
-                let commitment_key = BatchPacketsPath {
-                    channel_id: sent_packet.source_channel_id,
-                    batch_hash: keccak256(sent_packet.abi_encode()),
-                }
-                .key();
+                let commitment_key = BatchPacketsPath::from_packets(&[sent_packet.clone()]).key();
                 IN_FLIGHT_PACKET.save(
                     deps.storage,
                     commitment_key.into_bytes().into(),
@@ -2030,7 +2008,7 @@ pub fn tint_forward_salt(salt: H256) -> H256 {
         .into()
 }
 
-pub fn is_salt_forward_tinted(salt: H256) -> bool {
+pub fn is_forwarded_packet(salt: H256) -> bool {
     (U256::from_be_bytes(*salt.get()) & FORWARD_SALT_MAGIC) == FORWARD_SALT_MAGIC
 }
 

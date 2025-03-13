@@ -107,7 +107,7 @@ contract TestIBCHandler is IIBCModulePacket {
             timeoutHeight: timeoutHeight,
             timeoutTimestamp: timeoutTimestamp
         });
-        acks[IBCPacketLib.commitPacketMemory(packet)] = hex"01";
+        acks[IBCPacketLib.commitPacket(packet)] = hex"01";
         emit OnSendPacket(packet);
         return packet;
     }
@@ -116,7 +116,7 @@ contract TestIBCHandler is IIBCModulePacket {
         IBCPacket calldata packet,
         bytes memory acknowledgement
     ) external override {
-        bytes32 commitmentKey = IBCPacketLib.commitPacketMemory(packet);
+        bytes32 commitmentKey = IBCPacketLib.commitPacket(packet);
         if (!acks[commitmentKey].eq(hex"01")) {
             revert ErrUnknownPacket();
         }
@@ -2242,7 +2242,7 @@ contract ZkgmTests is Test {
     function test_tintForwardSalt_ok(
         bytes32 salt
     ) public {
-        assertFalse(ZkgmLib.isSaltForwardTinted(salt));
-        assertTrue(ZkgmLib.isSaltForwardTinted(ZkgmLib.tintForwardSalt(salt)));
+        assertFalse(ZkgmLib.isForwardedPacket(salt));
+        assertTrue(ZkgmLib.isForwardedPacket(ZkgmLib.tintForwardSalt(salt)));
     }
 }

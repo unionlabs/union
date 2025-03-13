@@ -12,8 +12,8 @@ pub enum QueryMsg {
     GetConnection { connection_id: u32 },
     GetChannel { channel_id: u32 },
     GetChannels { contract: String },
-    GetBatchPackets { channel_id: u32, batch_hash: H256 },
-    GetBatchReceipts { channel_id: u32, batch_hash: H256 },
+    GetBatchPackets { batch_hash: H256 },
+    GetBatchReceipts { batch_hash: H256 },
     GetClientImpl { client_id: u32 },
     GetRegisteredClientType { client_type: String },
 }

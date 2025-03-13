@@ -18,6 +18,7 @@ import "solady/utils/EfficientHashLib.sol";
 import "../../Base.sol";
 import "../../../core/04-channel/IBCPacket.sol";
 import "../../../core/05-port/IIBCModule.sol";
+import "../../../core/24-host/IBCCommitment.sol";
 
 import "./IEurekaModule.sol";
 import "./IZkgmERC20.sol";
@@ -407,7 +408,7 @@ library ZkgmLib {
         return FORWARD_SALT_MAGIC | (salt & ~FORWARD_SALT_MAGIC);
     }
 
-    function isSaltForwardTinted(
+    function isForwardedPacket(
         bytes32 salt
     ) internal pure returns (bool) {
         return (salt & FORWARD_SALT_MAGIC) == FORWARD_SALT_MAGIC;
@@ -662,7 +663,7 @@ contract UCS03Zkgm is
         uint64 timeoutTimestamp,
         bytes32 salt,
         Instruction calldata instruction
-    ) public {
+    ) public whenNotPaused {
         verifyInternal(channelId, 0, instruction);
         ibcHandler.sendPacket(
             channelId,
@@ -837,7 +838,7 @@ contract UCS03Zkgm is
         IBCPacket calldata packet,
         address relayer,
         bytes calldata relayerMsg
-    ) external virtual override onlyIBC returns (bytes memory) {
+    ) external virtual override onlyIBC whenNotPaused returns (bytes memory) {
         (bool success, bytes memory returnData) = address(this).call(
             abi.encodeCall(this.execute, (packet, relayer, relayerMsg))
         );
@@ -1044,8 +1045,10 @@ contract UCS03Zkgm is
             )
         );
         // Guaranteed to be unique by the above sendPacket
-        bytes32 packetHash = IBCPacketLib.commitPacketMemory(sentPacket);
-        inFlightPacket[packetHash] = ibcPacket;
+        bytes32 commitmentKey = IBCCommitment.batchPacketsCommitmentKey(
+            IBCPacketLib.commitPacket(sentPacket)
+        );
+        inFlightPacket[commitmentKey] = ibcPacket;
         return ZkgmLib.ACK_EMPTY;
     }
 
@@ -1238,27 +1241,20 @@ contract UCS03Zkgm is
         }
     }
 
-    function isInFlightPacket(
-        bytes32 packetHash
-    ) internal pure returns (bool) {
-        return ZkgmLib.isSaltForwardTinted(packetHash);
-    }
-
     function onAcknowledgementPacket(
         IBCPacket calldata ibcPacket,
         bytes calldata ack,
         address relayer
-    ) external virtual override onlyIBC {
-        bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
-        if (isInFlightPacket(packetHash)) {
+    ) external virtual override onlyIBC whenNotPaused {
+        ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
+        if (ZkgmLib.isForwardedPacket(zkgmPacket.salt)) {
+            bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
             IBCPacket memory parent = inFlightPacket[packetHash];
             if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
                 ibcHandler.writeAcknowledgement(parent, ack);
-                delete inFlightPacket[packetHash];
                 return;
             }
         }
-        ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
         Ack calldata zkgmAck = ZkgmLib.decodeAck(ack);
         acknowledgeInternal(
             ibcPacket,
@@ -1471,16 +1467,15 @@ contract UCS03Zkgm is
     function onTimeoutPacket(
         IBCPacket calldata ibcPacket,
         address relayer
-    ) external virtual override onlyIBC {
-        bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
-        if (isInFlightPacket(packetHash)) {
+    ) external virtual override onlyIBC whenNotPaused {
+        ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
+        if (ZkgmLib.isForwardedPacket(zkgmPacket.salt)) {
+            bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
             IBCPacket memory parent = inFlightPacket[packetHash];
             if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
-                delete inFlightPacket[packetHash];
                 return;
             }
         }
-        ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
         timeoutInternal(
             ibcPacket, relayer, zkgmPacket.path, zkgmPacket.instruction
         );

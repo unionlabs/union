@@ -36,12 +36,6 @@ struct ConsensusState {
 }
 
 library StateLensIcs23MptLib {
-    uint256 public constant EVM_IBC_COMMITMENT_SLOT = 0;
-
-    event CreateLensClient(
-        uint32 clientId, uint32 l1ClientId, uint32 l2ClientId, string l2ChainId
-    );
-
     error ErrNotIBC();
     error ErrTrustedConsensusStateNotFound();
     error ErrClientFrozen();
@@ -148,7 +142,7 @@ contract StateLensIcs23MptClient is
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
 
-        emit StateLensIcs23MptLib.CreateLensClient(
+        emit CreateLensClient(
             clientId,
             clientState.l1ClientId,
             clientState.l2ClientId,
@@ -172,7 +166,13 @@ contract StateLensIcs23MptClient is
     function updateClient(
         uint32 clientId,
         bytes calldata clientMessageBytes
-    ) external override onlyIBC returns (ConsensusStateUpdate memory) {
+    )
+        external
+        override
+        onlyIBC
+        whenNotPaused
+        returns (ConsensusStateUpdate memory)
+    {
         Header calldata header;
         assembly {
             header := clientMessageBytes.offset
@@ -235,7 +235,7 @@ contract StateLensIcs23MptClient is
     function misbehaviour(
         uint32 clientId,
         bytes calldata clientMessageBytes
-    ) external override onlyIBC {
+    ) external override onlyIBC whenNotPaused {
         revert StateLensIcs23MptLib.ErrUnsupported();
     }
 
@@ -245,13 +245,13 @@ contract StateLensIcs23MptClient is
         bytes calldata proof,
         bytes calldata path,
         bytes calldata value
-    ) external virtual returns (bool) {
+    ) external virtual whenNotPaused returns (bool) {
         if (isFrozenImpl(clientId)) {
             revert StateLensIcs23MptLib.ErrClientFrozen();
         }
         bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
         bytes32 slot = keccak256(
-            abi.encodePacked(path, StateLensIcs23MptLib.EVM_IBC_COMMITMENT_SLOT)
+            abi.encodePacked(path, IBCStoreLib.IBC_UNION_EVM_COMMITMENT_SLOT)
         );
         (bool exists, bytes calldata provenValue) = MPTVerifier.verifyTrieValue(
             proof, keccak256(abi.encodePacked(slot)), storageRoot
@@ -266,13 +266,13 @@ contract StateLensIcs23MptClient is
         uint64 height,
         bytes calldata proof,
         bytes calldata path
-    ) external virtual returns (bool) {
+    ) external virtual whenNotPaused returns (bool) {
         if (isFrozenImpl(clientId)) {
             revert StateLensIcs23MptLib.ErrClientFrozen();
         }
         bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
         bytes32 slot = keccak256(
-            abi.encodePacked(path, StateLensIcs23MptLib.EVM_IBC_COMMITMENT_SLOT)
+            abi.encodePacked(path, IBCStoreLib.IBC_UNION_EVM_COMMITMENT_SLOT)
         );
         (bool exists,) = MPTVerifier.verifyTrieValue(
             proof, keccak256(abi.encodePacked(slot)), storageRoot
@@ -308,7 +308,7 @@ contract StateLensIcs23MptClient is
 
     function isFrozen(
         uint32 clientId
-    ) external view virtual returns (bool) {
+    ) external view virtual whenNotPaused returns (bool) {
         return isFrozenImpl(clientId);
     }
 
@@ -322,6 +322,14 @@ contract StateLensIcs23MptClient is
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
 
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {

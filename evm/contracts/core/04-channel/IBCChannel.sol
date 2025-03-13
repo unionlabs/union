@@ -11,43 +11,43 @@ import "../../lib/Hex.sol";
 
 library IBCChannelLib {
     event ChannelOpenInit(
-        address portId,
-        uint32 channelId,
+        address indexed portId,
+        uint32 indexed channelId,
         bytes counterpartyPortId,
         uint32 connectionId,
-        string version
+        string indexed version
     );
     event ChannelOpenTry(
-        address portId,
-        uint32 channelId,
+        address indexed portId,
+        uint32 indexed channelId,
         bytes counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId,
-        string counterpartyVersion
+        string indexed counterpartyVersion
     );
     event ChannelOpenAck(
-        address portId,
-        uint32 channelId,
+        address indexed portId,
+        uint32 indexed channelId,
         bytes counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId
     );
     event ChannelOpenConfirm(
-        address portId,
-        uint32 channelId,
+        address indexed portId,
+        uint32 indexed channelId,
         bytes counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId
     );
     event ChannelCloseInit(
-        address portId,
-        uint32 channelId,
+        address indexed portId,
+        uint32 indexed channelId,
         bytes counterpartyPortId,
         uint32 counterpartyChannelId
     );
     event ChannelCloseConfirm(
-        address portId,
-        uint32 channelId,
+        address indexed portId,
+        uint32 indexed channelId,
         bytes counterpartyPortId,
         uint32 counterpartyChannelId
     );
