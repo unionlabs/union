@@ -60,7 +60,7 @@ const xAxisLabels = $derived(
 
 {#if Option.isSome(data) && maxCount > 0}
   <!-- Chart container -->
-  <div class="h-80 relative chart-container {className}">
+  <div class="h-full relative chart-container {className}">
     <!-- Grid lines -->
     <div class="absolute left-0 right-0 top-0 bottom-0 flex flex-col justify-between">
       {#each Array(5) as _, i}
@@ -69,8 +69,8 @@ const xAxisLabels = $derived(
     </div>
     
     <!-- Bars -->
-    <div class="absolute left-0 right-0 top-0 bottom-0 pt-1 px-4">
-      <div class="flex h-full gap-[1px] sm:gap-[2px] md:gap-1 items-end" style="min-height: 12rem;">
+    <div class="absolute left-0 right-0 top-0 bottom-0 pt-1 px-4 pt-4">
+      <div class="flex h-full gap-[1px] sm:gap-[2px] md:gap-1 items-end">
         {#each barHeights as day, i}
           <div class="flex flex-col flex-1 group size-full justify-end hover:opacity-100">
             <div class="w-full size-full flex items-end">

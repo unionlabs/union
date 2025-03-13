@@ -1,5 +1,5 @@
 <script lang="ts">
-import { page } from "$app/stores"
+import { page } from "$app/state"
 import { onMount } from "svelte"
 import { DateTime, Effect, Fiber, Option } from "effect"
 import { transferByPacketHashQuery } from "$lib/queries/transfer-by-hash.svelte"
@@ -27,7 +27,7 @@ import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import SharpRightArrowIcon from "$lib/components/icons/SharpRightArrowIcon.svelte"
 
 let fiber: Fiber.Fiber<any, any>
-const packetHash = $page.params.packet_hash
+const packetHash = page.params.packet_hash
 
 onMount(() => {
   fiber = Effect.runFork(transferByPacketHashQuery(packetHash))
@@ -45,7 +45,7 @@ onMount(() => {
 </script>
 
 <Sections>
-  <Card class="overflow-auto p-6" divided>
+  <Card class="overflow-auto p-6 transition-size" divided>
     {#if Option.isSome(transferDetails.error)}
       <ErrorComponent error={transferDetails.error.value} />
     {:else if Option.isSome(transferDetails.data) && Option.isSome(chains.data)}
@@ -183,36 +183,6 @@ onMount(() => {
             </div>
           </div>
         {/if}
-      </div>
-    {:else}
-      <div class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {#each Array(6) as _}
-            <Skeleton class="h-10" />
-          {/each}
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {#each Array(2) as _}
-            <Skeleton class="h-16" />
-          {/each}
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {#each Array(4) as _}
-            <Skeleton class="h-10" />
-          {/each}
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {#each Array(3) as _}
-            <Skeleton class="h-10" />
-          {/each}
-        </div>
-
-        <div>
-          <Skeleton class="h-40" />
-        </div>
       </div>
     {/if}
   </Card>

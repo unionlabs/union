@@ -42,8 +42,8 @@ onMount(() => {
   </div>
   
   <!-- Daily Transfers Chart -->
-  <Card divided>
-    <div class="p-4 gap-4 -mb-14 border-b-0">
+  <Card class="h-80 relative" divided>
+    <div class="p-4 gap-4 absolute top-0 left-0 border-b-0">
       <h2 class="text-2xl font-bold mb-1">Daily Transfers</h2>
       <Label>Last 30 days of transfer activity</Label>
     </div>
