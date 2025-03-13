@@ -20,6 +20,8 @@ pub struct Config {
     pub tx_search_max_page_size: Option<u8>,
     #[serde(default)]
     pub finalizer: FinalizerConfig,
+    #[serde(default)]
+    pub testnet: bool,
 }
 
 impl Config {
@@ -35,6 +37,7 @@ impl Config {
                 tx_search_max_page_size: self
                     .tx_search_max_page_size
                     .unwrap_or(DEFAULT_TRANSACTIONS_MAX_PAGE_SIZE),
+                testnet: self.testnet,
             },
         ))
     }
