@@ -204,6 +204,8 @@ export class Transfer {
       return null
     }
 
+    if(this.sourceChain.value.rpc_type !== "evm") return
+
     this.wethQuoteToken = Option.some({ type: "WETH_LOADING" } as const)
 
     const sourceChainValue = this.sourceChain.value
@@ -233,7 +235,7 @@ export class Transfer {
               cause: error.cause
             } as const)
           )
-          return null
+          return
         })
       ),
       Effect.runPromise
