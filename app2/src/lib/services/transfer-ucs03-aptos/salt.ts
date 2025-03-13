@@ -1,4 +1,4 @@
-import { type Hex, toHex } from "viem"
+import { toHex } from "viem"
 import { Effect } from "effect"
 
 /**

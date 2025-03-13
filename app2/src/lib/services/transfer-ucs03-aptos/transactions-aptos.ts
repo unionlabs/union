@@ -1,13 +1,11 @@
 import { Effect } from "effect"
 import type { Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType } from "viem"
 import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
-import { getPublicClient, getWalletClient } from "../aptos/clients.ts"
+import { getPublicClient } from "../aptos/clients.ts"
 import { getAccount } from "$lib/services/transfer-ucs03-aptos/account.ts"
-import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import { generateSalt } from "./salt.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
-import { Aptos, Network, AptosConfig, AccountAddress, MoveVector } from "@aptos-labs/ts-sdk"
 
 export const submitTransferAptos = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
@@ -18,7 +16,7 @@ export const submitTransferAptos = (chain: Chain, transfer: ValidTransfer["args"
       account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
     )
     const salt = yield* generateSalt
-    
+
     const walletPayload = {
       function: `${transfer.ucs03address}::ibc_app::transfer`,
       type_arguments: [],
@@ -48,21 +46,24 @@ export const waitForTransferReceiptAptos = (chain: Chain, hash: Hash) =>
     const publicClient = yield* getPublicClient(chain)
     console.info("waitForTransferReceiptAptos hash: ", hash)
     return yield* Effect.tryPromise({
-      try: () => publicClient.waitForTransaction({ transactionHash: hash, options: { checkSuccess: false } }),
+      try: () =>
+        publicClient.waitForTransaction({
+          transactionHash: hash,
+          options: { checkSuccess: false }
+        }),
       catch: err =>
         new WaitForTransactionReceiptError({ cause: err as WaitForTransactionReceiptErrorType })
     })
   })
 
-  function hexToAscii(hexString: string): string {
-    // Remove the "0x" prefix if present.
-    if (hexString.startsWith("0x") || hexString.startsWith("0X")) {
-      hexString = hexString.slice(2);
-    }
-    let ascii = "";
-    for (let i = 0; i < hexString.length; i += 2) {
-      ascii += String.fromCharCode(parseInt(hexString.substr(i, 2), 16));
-    }
-    return ascii;
+function hexToAscii(hexString: string): string {
+  // Remove the "0x" prefix if present.
+  if (hexString.startsWith("0x") || hexString.startsWith("0X")) {
+    hexString = hexString.slice(2)
   }
-
+  let ascii = ""
+  for (let i = 0; i < hexString.length; i += 2) {
+    ascii += String.fromCharCode(Number.parseInt(hexString.substr(i, 2), 16))
+  }
+  return ascii
+}

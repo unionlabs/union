@@ -90,8 +90,8 @@ export const getQuoteToken = (
 
     if (destinationChain.rpc_type === "aptos") {
       console.info("destinationChain is aptos")
-      let network: Network;
-      let rpcUrl: string;
+      let network: Network
+      let rpcUrl: string
 
       const rpc = yield* destinationChain
         .requireRpcUrl("rpc")
@@ -99,17 +99,19 @@ export const getQuoteToken = (
 
       console.info("rpc: ", rpc.origin)
       if (channel.destination_chain_id === "250") {
-        network = Network.TESTNET;
-        rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1";
+        network = Network.TESTNET
+        rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1"
       } else {
-        return yield* Effect.fail(new GetQuoteError({ cause: `Unsupported Aptos network: ${channel.destination_chain_id}` }));
+        return yield* Effect.fail(
+          new GetQuoteError({ cause: `Unsupported Aptos network: ${channel.destination_chain_id}` })
+        )
       }
-    
+
       // const config = new AptosConfig({ network, fullnode: rpc.origin+"/v1" }); //TODO: rpc.origin is coming without "/v1" at the end, discuss this later
       //And also this rpc.origin returns:
       // :5173/transfer?source=union-testnet-9&destination=250&asset=0x6d756e6f:1 Access to XMLHttpRequest at 'https://rpc.250.movement.chain.kitchen/v1/accounts/0x80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84/module/ibc_app' from origin 'http://localhost:5173' has been blocked by CORS policy: Request header field x-aptos-typescript-sdk-origin-method is not allowed by Access-Control-Allow-Headers in preflight response.
-      const config = new AptosConfig({ network, fullnode: rpcUrl });
-      const aptosClient = new Aptos(config);
+      const config = new AptosConfig({ network, fullnode: rpcUrl })
+      const aptosClient = new Aptos(config)
 
       const output = yield* Effect.tryPromise({
         try: () =>
@@ -126,15 +128,16 @@ export const getQuoteToken = (
           }),
         catch: error =>
           new GetQuoteError({ cause: `Failed to predict quote token (Aptos): ${error}` })
-      });
-    
-      const wrappedAddressHex = output[0]?.toString();
+      })
+
+      const wrappedAddressHex = output[0]?.toString()
       if (!wrappedAddressHex) {
-        return yield* Effect.fail(new GetQuoteError({ cause: "Failed to get wrapped address from Aptos" }));
+        return yield* Effect.fail(
+          new GetQuoteError({ cause: "Failed to get wrapped address from Aptos" })
+        )
       }
-      return { type: "NEW_WRAPPED" as const, quote_token: wrappedAddressHex };
+      return { type: "NEW_WRAPPED" as const, quote_token: wrappedAddressHex }
     }
-    
 
     return yield* Effect.fail(
       new GetQuoteError({ cause: `${destinationChain.rpc_type} not supported` })

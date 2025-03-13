@@ -6,7 +6,7 @@ import type { SwitchChainErrorType } from "viem"
 
 export const switchChainAptos = (chainId: ConfiguredChainId) =>
   Effect.gen(function* () {
-    console.info("switching chain", chainId) 
+    console.info("switching chain", chainId)
     // TODO: Find a way to switch chain in aptos.
     const res = yield* Effect.tryPromise({
       try: () => wagmiSwitchChain(wagmiConfig, { chainId }),

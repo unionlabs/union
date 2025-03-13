@@ -49,14 +49,18 @@ export async function nextStateAptos(
       return TransferSubmitState.$match(state, {
         InProgress: async () => {
           const exit = await Effect.runPromiseExit(submitTransferAptos(chain, params))
-          return TransferSubmission.TransferSubmit({ state: TransferSubmitState.Complete({ exit }) })
+          return TransferSubmission.TransferSubmit({
+            state: TransferSubmitState.Complete({ exit })
+          })
         },
         Complete: ({ exit }) => {
           if (exit._tag === "Failure") {
             return TransferSubmission.TransferSubmit({ state: TransferSubmitState.InProgress() })
           }
           // After successful submission, move to waiting for receipt.
-          return TransferSubmission.TransferReceipt({ state: TransferReceiptState.InProgress({ hash: exit.value.hash }) })
+          return TransferSubmission.TransferReceipt({
+            state: TransferReceiptState.InProgress({ hash: exit.value.hash })
+          })
         }
       })
     },
@@ -66,10 +70,14 @@ export async function nextStateAptos(
       return TransferReceiptState.$match(state, {
         InProgress: async ({ hash }) => {
           const exit = await Effect.runPromiseExit(waitForTransferReceiptAptos(chain, hash))
-          return TransferSubmission.TransferReceipt({ state: TransferReceiptState.Complete({ exit }) })
+          return TransferSubmission.TransferReceipt({
+            state: TransferReceiptState.Complete({ exit })
+          })
         },
         Complete: ({ exit }) => {
-          return TransferSubmission.TransferReceipt({ state: TransferReceiptState.Complete({ exit }) })
+          return TransferSubmission.TransferReceipt({
+            state: TransferReceiptState.Complete({ exit })
+          })
         }
       })
     }
