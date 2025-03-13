@@ -29,4 +29,4 @@ unionlabs          = { workspace = true, features = ["rlp"] }
 alloy       = { workspace = true, features = ["rpc-types"] }
 hex-literal = { workspace = true }
 lazy_static = "1.4.0"
-serde_json = { workspace = true }
+serde_json  = { workspace = true }

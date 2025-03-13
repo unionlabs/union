@@ -349,11 +349,8 @@ fn update_state<C: ChainSpec>(
         consensus_state.state_root = consensus_update.finalized_header.execution.state_root;
         consensus_state.storage_root = header.ibc_account_proof.storage_root;
 
-        // Normalize to nanoseconds to be ibc-go compliant
-        consensus_state.timestamp = compute_timestamp_at_slot::<C>(
-            client_state.genesis_time,
-            consensus_update.finalized_header.beacon.slot,
-        ) * 1_000_000_000;
+        consensus_state.timestamp =
+            consensus_update.finalized_header.execution.timestamp * 1_000_000_000;
 
         if client_state.latest_height < consensus_update.finalized_header.execution.block_number {
             client_state.latest_height = consensus_update.finalized_header.execution.block_number;

@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn verify_storage_absence_fails_when_altered_root() {
-        let mut storage_hash = VALID_ABSENCE_PROOF.storage_hash.0.clone();
+        let mut storage_hash = VALID_ABSENCE_PROOF.storage_hash.0;
         storage_hash[0] ^= 0xFF;
 
         assert!(matches!(
@@ -210,7 +210,7 @@ mod tests {
     }
 
     #[test]
-    fn verify_storage_verication_works() {
+    fn verify_storage_verification_works() {
         assert_eq!(
             verify_storage_proof(
                 H256::new(VALID_STORAGE_PROOF.storage_hash.0),
@@ -241,7 +241,7 @@ mod tests {
 
     #[test]
     fn verify_storage_verification_fails_when_altered_root() {
-        let mut storage_hash = VALID_STORAGE_PROOF.storage_hash.0.clone();
+        let mut storage_hash = VALID_STORAGE_PROOF.storage_hash.0;
         storage_hash[0] ^= 0xFF;
 
         assert!(matches!(
