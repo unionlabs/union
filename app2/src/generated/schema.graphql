@@ -1634,6 +1634,96 @@ type query_root {
   ): [v2_packet_type!]!
 
   """
+  execute function "v2.stats_count" which returns "v2.stats_type"
+  """
+  v2_stats_count(
+    """distinct select on columns"""
+    distinct_on: [v2_stats_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_type_bool_exp
+  ): [v2_stats_type!]!
+
+  """
+  execute function "v2.stats_packets_chain" which returns "v2.stats_packets_chain_type"
+  """
+  v2_stats_packets_chain(
+    """
+    input parameters for function "v2_stats_packets_chain"
+    """
+    args: v2_stats_packets_chain_args
+
+    """distinct select on columns"""
+    distinct_on: [v2_stats_packets_chain_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_packets_chain_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_packets_chain_type_bool_exp
+  ): [v2_stats_packets_chain_type!]!
+
+  """
+  fetch data from the table: "v2.stats_packets_chain_type"
+  """
+  v2_stats_packets_chain_type(
+    """distinct select on columns"""
+    distinct_on: [v2_stats_packets_chain_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_packets_chain_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_packets_chain_type_bool_exp
+  ): [v2_stats_packets_chain_type!]!
+
+  """
+  execute function "v2.stats_packets_daily_count" which returns "v2.stats_daily_count_type"
+  """
+  v2_stats_packets_daily_count(
+    """
+    input parameters for function "v2_stats_packets_daily_count"
+    """
+    args: v2_stats_packets_daily_count_args
+
+    """distinct select on columns"""
+    distinct_on: [v2_stats_daily_count_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_daily_count_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_daily_count_type_bool_exp
+  ): [v2_stats_daily_count_type!]!
+
+  """
   execute function "v2.stats_transfers_address" which returns "v2.stats_transfers_address_type"
   """
   v2_stats_transfers_address(
@@ -1659,11 +1749,16 @@ type query_root {
   ): [v2_stats_transfers_address_type!]!
 
   """
-  execute function "v2.stats_transfers_global" which returns "v2.stats_transfers_global_type"
+  execute function "v2.stats_transfers_chain" which returns "v2.stats_transfers_chain_type"
   """
-  v2_stats_transfers_global(
+  v2_stats_transfers_chain(
+    """
+    input parameters for function "v2_stats_transfers_chain"
+    """
+    args: v2_stats_transfers_chain_args
+
     """distinct select on columns"""
-    distinct_on: [v2_stats_transfers_global_type_select_column!]
+    distinct_on: [v2_stats_transfers_chain_type_select_column!]
 
     """limit the number of rows returned"""
     limit: Int
@@ -1672,11 +1767,81 @@ type query_root {
     offset: Int
 
     """sort the rows by one or more columns"""
-    order_by: [v2_stats_transfers_global_type_order_by!]
+    order_by: [v2_stats_transfers_chain_type_order_by!]
 
     """filter the rows returned"""
-    where: v2_stats_transfers_global_type_bool_exp
-  ): [v2_stats_transfers_global_type!]!
+    where: v2_stats_transfers_chain_type_bool_exp
+  ): [v2_stats_transfers_chain_type!]!
+
+  """
+  fetch data from the table: "v2.stats_transfers_chain_type"
+  """
+  v2_stats_transfers_chain_type(
+    """distinct select on columns"""
+    distinct_on: [v2_stats_transfers_chain_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_transfers_chain_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_transfers_chain_type_bool_exp
+  ): [v2_stats_transfers_chain_type!]!
+
+  """
+  execute function "v2.stats_transfers_daily_count" which returns "v2.stats_daily_count_type"
+  """
+  v2_stats_transfers_daily_count(
+    """
+    input parameters for function "v2_stats_transfers_daily_count"
+    """
+    args: v2_stats_transfers_daily_count_args
+
+    """distinct select on columns"""
+    distinct_on: [v2_stats_daily_count_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_daily_count_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_daily_count_type_bool_exp
+  ): [v2_stats_daily_count_type!]!
+
+  """
+  execute function "v2.tokens" which returns "v2.token_meta"
+  """
+  v2_tokens(
+    """
+    input parameters for function "v2_tokens"
+    """
+    args: v2_tokens_args
+
+    """distinct select on columns"""
+    distinct_on: [v2_token_meta_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_token_meta_order_by!]
+
+    """filter the rows returned"""
+    where: v2_token_meta_bool_exp
+  ): [v2_token_meta!]!
 
   """
   execute function "v2.transfers" which returns "v2.transfer_type"
@@ -3364,6 +3529,110 @@ type subscription_root {
   ): [v2_packet_type!]!
 
   """
+  execute function "v2.stats_count" which returns "v2.stats_type"
+  """
+  v2_stats_count(
+    """distinct select on columns"""
+    distinct_on: [v2_stats_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_type_bool_exp
+  ): [v2_stats_type!]!
+
+  """
+  execute function "v2.stats_packets_chain" which returns "v2.stats_packets_chain_type"
+  """
+  v2_stats_packets_chain(
+    """
+    input parameters for function "v2_stats_packets_chain"
+    """
+    args: v2_stats_packets_chain_args
+
+    """distinct select on columns"""
+    distinct_on: [v2_stats_packets_chain_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_packets_chain_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_packets_chain_type_bool_exp
+  ): [v2_stats_packets_chain_type!]!
+
+  """
+  fetch data from the table: "v2.stats_packets_chain_type"
+  """
+  v2_stats_packets_chain_type(
+    """distinct select on columns"""
+    distinct_on: [v2_stats_packets_chain_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_packets_chain_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_packets_chain_type_bool_exp
+  ): [v2_stats_packets_chain_type!]!
+
+  """
+  fetch data from the table in a streaming manner: "v2.stats_packets_chain_type"
+  """
+  v2_stats_packets_chain_type_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v2_stats_packets_chain_type_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v2_stats_packets_chain_type_bool_exp
+  ): [v2_stats_packets_chain_type!]!
+
+  """
+  execute function "v2.stats_packets_daily_count" which returns "v2.stats_daily_count_type"
+  """
+  v2_stats_packets_daily_count(
+    """
+    input parameters for function "v2_stats_packets_daily_count"
+    """
+    args: v2_stats_packets_daily_count_args
+
+    """distinct select on columns"""
+    distinct_on: [v2_stats_daily_count_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_daily_count_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_daily_count_type_bool_exp
+  ): [v2_stats_daily_count_type!]!
+
+  """
   execute function "v2.stats_transfers_address" which returns "v2.stats_transfers_address_type"
   """
   v2_stats_transfers_address(
@@ -3389,11 +3658,16 @@ type subscription_root {
   ): [v2_stats_transfers_address_type!]!
 
   """
-  execute function "v2.stats_transfers_global" which returns "v2.stats_transfers_global_type"
+  execute function "v2.stats_transfers_chain" which returns "v2.stats_transfers_chain_type"
   """
-  v2_stats_transfers_global(
+  v2_stats_transfers_chain(
+    """
+    input parameters for function "v2_stats_transfers_chain"
+    """
+    args: v2_stats_transfers_chain_args
+
     """distinct select on columns"""
-    distinct_on: [v2_stats_transfers_global_type_select_column!]
+    distinct_on: [v2_stats_transfers_chain_type_select_column!]
 
     """limit the number of rows returned"""
     limit: Int
@@ -3402,11 +3676,95 @@ type subscription_root {
     offset: Int
 
     """sort the rows by one or more columns"""
-    order_by: [v2_stats_transfers_global_type_order_by!]
+    order_by: [v2_stats_transfers_chain_type_order_by!]
 
     """filter the rows returned"""
-    where: v2_stats_transfers_global_type_bool_exp
-  ): [v2_stats_transfers_global_type!]!
+    where: v2_stats_transfers_chain_type_bool_exp
+  ): [v2_stats_transfers_chain_type!]!
+
+  """
+  fetch data from the table: "v2.stats_transfers_chain_type"
+  """
+  v2_stats_transfers_chain_type(
+    """distinct select on columns"""
+    distinct_on: [v2_stats_transfers_chain_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_transfers_chain_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_transfers_chain_type_bool_exp
+  ): [v2_stats_transfers_chain_type!]!
+
+  """
+  fetch data from the table in a streaming manner: "v2.stats_transfers_chain_type"
+  """
+  v2_stats_transfers_chain_type_stream(
+    """maximum number of rows returned in a single batch"""
+    batch_size: Int!
+
+    """cursor to stream the results returned by the query"""
+    cursor: [v2_stats_transfers_chain_type_stream_cursor_input]!
+
+    """filter the rows returned"""
+    where: v2_stats_transfers_chain_type_bool_exp
+  ): [v2_stats_transfers_chain_type!]!
+
+  """
+  execute function "v2.stats_transfers_daily_count" which returns "v2.stats_daily_count_type"
+  """
+  v2_stats_transfers_daily_count(
+    """
+    input parameters for function "v2_stats_transfers_daily_count"
+    """
+    args: v2_stats_transfers_daily_count_args
+
+    """distinct select on columns"""
+    distinct_on: [v2_stats_daily_count_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_stats_daily_count_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_stats_daily_count_type_bool_exp
+  ): [v2_stats_daily_count_type!]!
+
+  """
+  execute function "v2.tokens" which returns "v2.token_meta"
+  """
+  v2_tokens(
+    """
+    input parameters for function "v2_tokens"
+    """
+    args: v2_tokens_args
+
+    """distinct select on columns"""
+    distinct_on: [v2_token_meta_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_token_meta_order_by!]
+
+    """filter the rows returned"""
+    where: v2_token_meta_bool_exp
+  ): [v2_token_meta!]!
 
   """
   execute function "v2.transfers" which returns "v2.transfer_type"
@@ -8853,21 +9211,6 @@ type v2_chain_type {
     where: v2_rpcs_bool_exp
   ): [v2_rpcs!]!
   testnet: Boolean
-
-  """An array relationship"""
-  tokens(
-    """limit the number of rows returned"""
-    limit: Int
-
-    """skip the first n rows. Use only with order_by"""
-    offset: Int
-
-    """sort the rows by one or more columns"""
-    order_by: [v2_token_meta_order_by!]
-
-    """filter the rows returned"""
-    where: v2_token_meta_bool_exp
-  ): [v2_token_meta!]!
   universal_chain_id: String
 }
 
@@ -8887,7 +9230,6 @@ input v2_chain_type_bool_exp {
   rpc_type: String_comparison_exp
   rpcs: v2_rpcs_bool_exp
   testnet: Boolean_comparison_exp
-  tokens: v2_token_meta_bool_exp
   universal_chain_id: String_comparison_exp
 }
 
@@ -8902,7 +9244,6 @@ input v2_chain_type_order_by {
   rpc_type: order_by
   rpcs_aggregate: v2_rpcs_aggregate_order_by
   testnet: order_by
-  tokens_aggregate: v2_token_meta_aggregate_order_by
   universal_chain_id: order_by
 }
 
@@ -8936,6 +9277,7 @@ input v2_chains_args {
   p_comparison: comparison
   p_limit: Int
   p_sort_order: String
+  p_universal_chain_id: String
 }
 
 """
@@ -9299,12 +9641,9 @@ enum v2_explorers_select_column {
 columns and relationships of "v2.packet_type"
 """
 type v2_packet_type {
-  acknowledgement: bytea
+  acknowledgement: String
   channel_version: String
-  data(
-    """JSON select path"""
-    path: String
-  ): jsonb
+  data: String
   decoded(
     """JSON select path"""
     path: String
@@ -9323,19 +9662,19 @@ type v2_packet_type {
   destination_port_id: String
   destination_universal_chain_id: String
   packet_ack_block_hash: String
-  packet_ack_height: bigint
+  packet_ack_height: String
   packet_ack_maker: String
   packet_ack_timestamp: timestamptz
   packet_ack_transaction_hash: String
   packet_hash: String
   packet_recv_block_hash: String
-  packet_recv_height: bigint
+  packet_recv_height: String
   packet_recv_maker: String
   packet_recv_maker_msg: String
   packet_recv_timestamp: timestamptz
   packet_recv_transaction_hash: String
   packet_send_block_hash: String
-  packet_send_height: bigint
+  packet_send_height: String
   packet_send_timestamp: timestamptz
   packet_send_transaction_hash: String
   sort_order: String
@@ -9371,7 +9710,7 @@ type v2_packet_type {
     where: v2_traces_type_bool_exp
   ): [v2_traces_type!]
   write_ack_block_hash: String
-  write_ack_height: bigint
+  write_ack_height: String
   write_ack_timestamp: timestamptz
   write_ack_transaction_hash: String
 }
@@ -9383,9 +9722,9 @@ input v2_packet_type_bool_exp {
   _and: [v2_packet_type_bool_exp!]
   _not: v2_packet_type_bool_exp
   _or: [v2_packet_type_bool_exp!]
-  acknowledgement: bytea_comparison_exp
+  acknowledgement: String_comparison_exp
   channel_version: String_comparison_exp
-  data: jsonb_comparison_exp
+  data: String_comparison_exp
   decoded: jsonb_comparison_exp
   decoded_flattened: jsonb_comparison_exp
   destination_chain: v2_chains_view_bool_exp
@@ -9396,19 +9735,19 @@ input v2_packet_type_bool_exp {
   destination_port_id: String_comparison_exp
   destination_universal_chain_id: String_comparison_exp
   packet_ack_block_hash: String_comparison_exp
-  packet_ack_height: bigint_comparison_exp
+  packet_ack_height: String_comparison_exp
   packet_ack_maker: String_comparison_exp
   packet_ack_timestamp: timestamptz_comparison_exp
   packet_ack_transaction_hash: String_comparison_exp
   packet_hash: String_comparison_exp
   packet_recv_block_hash: String_comparison_exp
-  packet_recv_height: bigint_comparison_exp
+  packet_recv_height: String_comparison_exp
   packet_recv_maker: String_comparison_exp
   packet_recv_maker_msg: String_comparison_exp
   packet_recv_timestamp: timestamptz_comparison_exp
   packet_recv_transaction_hash: String_comparison_exp
   packet_send_block_hash: String_comparison_exp
-  packet_send_height: bigint_comparison_exp
+  packet_send_height: String_comparison_exp
   packet_send_timestamp: timestamptz_comparison_exp
   packet_send_transaction_hash: String_comparison_exp
   sort_order: String_comparison_exp
@@ -9423,7 +9762,7 @@ input v2_packet_type_bool_exp {
   timeout_timestamp: String_comparison_exp
   traces: v2_traces_type_bool_exp
   write_ack_block_hash: String_comparison_exp
-  write_ack_height: bigint_comparison_exp
+  write_ack_height: String_comparison_exp
   write_ack_timestamp: timestamptz_comparison_exp
   write_ack_transaction_hash: String_comparison_exp
 }
@@ -9606,6 +9945,7 @@ input v2_packets_args {
   p_limit: Int
   p_packet_hash: String
   p_sort_order: String
+  p_source_universal_chain_id: String
   p_transaction_hash: String
 }
 
@@ -9670,8 +10010,126 @@ enum v2_rpcs_select_column {
   url
 }
 
+"""
+columns and relationships of "v2.stats_daily_count_type"
+"""
+type v2_stats_daily_count_type {
+  count: String
+  day_date: date
+}
+
+"""
+Boolean expression to filter rows from the table "v2.stats_daily_count_type". All fields are combined with a logical 'AND'.
+"""
+input v2_stats_daily_count_type_bool_exp {
+  _and: [v2_stats_daily_count_type_bool_exp!]
+  _not: v2_stats_daily_count_type_bool_exp
+  _or: [v2_stats_daily_count_type_bool_exp!]
+  count: String_comparison_exp
+  day_date: date_comparison_exp
+}
+
+"""Ordering options when selecting data from "v2.stats_daily_count_type"."""
+input v2_stats_daily_count_type_order_by {
+  count: order_by
+  day_date: order_by
+}
+
+"""
+select columns of table "v2.stats_daily_count_type"
+"""
+enum v2_stats_daily_count_type_select_column {
+  """column name"""
+  count
+
+  """column name"""
+  day_date
+}
+
+input v2_stats_packets_chain_args {
+  p_days_back: Int
+  p_destination_universal_chain_id: String
+  p_source_universal_chain_id: String
+}
+
+"""
+columns and relationships of "v2.stats_packets_chain_type"
+"""
+type v2_stats_packets_chain_type {
+  day_date: date
+  destination_universal_chain_id: String
+  source_universal_chain_id: String
+  total_packets: Int
+}
+
+"""
+Boolean expression to filter rows from the table "v2.stats_packets_chain_type". All fields are combined with a logical 'AND'.
+"""
+input v2_stats_packets_chain_type_bool_exp {
+  _and: [v2_stats_packets_chain_type_bool_exp!]
+  _not: v2_stats_packets_chain_type_bool_exp
+  _or: [v2_stats_packets_chain_type_bool_exp!]
+  day_date: date_comparison_exp
+  destination_universal_chain_id: String_comparison_exp
+  source_universal_chain_id: String_comparison_exp
+  total_packets: Int_comparison_exp
+}
+
+"""
+Ordering options when selecting data from "v2.stats_packets_chain_type".
+"""
+input v2_stats_packets_chain_type_order_by {
+  day_date: order_by
+  destination_universal_chain_id: order_by
+  source_universal_chain_id: order_by
+  total_packets: order_by
+}
+
+"""
+select columns of table "v2.stats_packets_chain_type"
+"""
+enum v2_stats_packets_chain_type_select_column {
+  """column name"""
+  day_date
+
+  """column name"""
+  destination_universal_chain_id
+
+  """column name"""
+  source_universal_chain_id
+
+  """column name"""
+  total_packets
+}
+
+"""
+Streaming cursor of the table "v2_stats_packets_chain_type"
+"""
+input v2_stats_packets_chain_type_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v2_stats_packets_chain_type_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v2_stats_packets_chain_type_stream_cursor_value_input {
+  day_date: date
+  destination_universal_chain_id: String
+  source_universal_chain_id: String
+  total_packets: Int
+}
+
+input v2_stats_packets_daily_count_args {
+  p_days_back: Int
+}
+
 input v2_stats_transfers_address_args {
   p_addresses_canonical: jsonb
+  p_days_back: Int
+  p_destination_universal_chain_id: String
+  p_source_universal_chain_id: String
 }
 
 """
@@ -9681,7 +10139,9 @@ type v2_stats_transfers_address_type {
   addresses_with_same_rank: Int
   canonical_address: String
   day_date: date
+  destination_universal_chain_id: String
   rank: Int
+  source_universal_chain_id: String
   total_ranks: Int
   transfer_count: Int
 }
@@ -9696,7 +10156,9 @@ input v2_stats_transfers_address_type_bool_exp {
   addresses_with_same_rank: Int_comparison_exp
   canonical_address: String_comparison_exp
   day_date: date_comparison_exp
+  destination_universal_chain_id: String_comparison_exp
   rank: Int_comparison_exp
+  source_universal_chain_id: String_comparison_exp
   total_ranks: Int_comparison_exp
   transfer_count: Int_comparison_exp
 }
@@ -9708,7 +10170,9 @@ input v2_stats_transfers_address_type_order_by {
   addresses_with_same_rank: order_by
   canonical_address: order_by
   day_date: order_by
+  destination_universal_chain_id: order_by
   rank: order_by
+  source_universal_chain_id: order_by
   total_ranks: order_by
   transfer_count: order_by
 }
@@ -9727,7 +10191,13 @@ enum v2_stats_transfers_address_type_select_column {
   day_date
 
   """column name"""
+  destination_universal_chain_id
+
+  """column name"""
   rank
+
+  """column name"""
+  source_universal_chain_id
 
   """column name"""
   total_ranks
@@ -9736,60 +10206,127 @@ enum v2_stats_transfers_address_type_select_column {
   transfer_count
 }
 
+input v2_stats_transfers_chain_args {
+  p_days_back: Int
+  p_destination_universal_chain_id: String
+  p_source_universal_chain_id: String
+}
+
 """
-columns and relationships of "v2.stats_transfers_global_type"
+columns and relationships of "v2.stats_transfers_chain_type"
 """
-type v2_stats_transfers_global_type {
-  avg_transfers_per_address: numeric
+type v2_stats_transfers_chain_type {
   day_date: date
-  total_orders: bigint
-  unique_addresses: Int
+  destination_universal_chain_id: String
+  source_universal_chain_id: String
+  total_transfers: Int
 }
 
 """
-Boolean expression to filter rows from the table "v2.stats_transfers_global_type". All fields are combined with a logical 'AND'.
+Boolean expression to filter rows from the table "v2.stats_transfers_chain_type". All fields are combined with a logical 'AND'.
 """
-input v2_stats_transfers_global_type_bool_exp {
-  _and: [v2_stats_transfers_global_type_bool_exp!]
-  _not: v2_stats_transfers_global_type_bool_exp
-  _or: [v2_stats_transfers_global_type_bool_exp!]
-  avg_transfers_per_address: numeric_comparison_exp
+input v2_stats_transfers_chain_type_bool_exp {
+  _and: [v2_stats_transfers_chain_type_bool_exp!]
+  _not: v2_stats_transfers_chain_type_bool_exp
+  _or: [v2_stats_transfers_chain_type_bool_exp!]
   day_date: date_comparison_exp
-  total_orders: bigint_comparison_exp
-  unique_addresses: Int_comparison_exp
+  destination_universal_chain_id: String_comparison_exp
+  source_universal_chain_id: String_comparison_exp
+  total_transfers: Int_comparison_exp
 }
 
 """
-Ordering options when selecting data from "v2.stats_transfers_global_type".
+Ordering options when selecting data from "v2.stats_transfers_chain_type".
 """
-input v2_stats_transfers_global_type_order_by {
-  avg_transfers_per_address: order_by
+input v2_stats_transfers_chain_type_order_by {
   day_date: order_by
-  total_orders: order_by
-  unique_addresses: order_by
+  destination_universal_chain_id: order_by
+  source_universal_chain_id: order_by
+  total_transfers: order_by
 }
 
 """
-select columns of table "v2.stats_transfers_global_type"
+select columns of table "v2.stats_transfers_chain_type"
 """
-enum v2_stats_transfers_global_type_select_column {
-  """column name"""
-  avg_transfers_per_address
-
+enum v2_stats_transfers_chain_type_select_column {
   """column name"""
   day_date
 
   """column name"""
-  total_orders
+  destination_universal_chain_id
 
   """column name"""
-  unique_addresses
+  source_universal_chain_id
+
+  """column name"""
+  total_transfers
+}
+
+"""
+Streaming cursor of the table "v2_stats_transfers_chain_type"
+"""
+input v2_stats_transfers_chain_type_stream_cursor_input {
+  """Stream column input with initial value"""
+  initial_value: v2_stats_transfers_chain_type_stream_cursor_value_input!
+
+  """cursor ordering"""
+  ordering: cursor_ordering
+}
+
+"""Initial value of the column from where the streaming should start"""
+input v2_stats_transfers_chain_type_stream_cursor_value_input {
+  day_date: date
+  destination_universal_chain_id: String
+  source_universal_chain_id: String
+  total_transfers: Int
+}
+
+input v2_stats_transfers_daily_count_args {
+  p_days_back: Int
+}
+
+"""
+columns and relationships of "v2.stats_type"
+"""
+type v2_stats_type {
+  name: String
+  value: String
+}
+
+"""
+Boolean expression to filter rows from the table "v2.stats_type". All fields are combined with a logical 'AND'.
+"""
+input v2_stats_type_bool_exp {
+  _and: [v2_stats_type_bool_exp!]
+  _not: v2_stats_type_bool_exp
+  _or: [v2_stats_type_bool_exp!]
+  name: String_comparison_exp
+  value: String_comparison_exp
+}
+
+"""Ordering options when selecting data from "v2.stats_type"."""
+input v2_stats_type_order_by {
+  name: order_by
+  value: order_by
+}
+
+"""
+select columns of table "v2.stats_type"
+"""
+enum v2_stats_type_select_column {
+  """column name"""
+  name
+
+  """column name"""
+  value
 }
 
 """
 columns and relationships of "v2.token_meta"
 """
 type v2_token_meta {
+  rank: Int
+
   """An array relationship"""
   representations(
     """distinct select on columns"""
@@ -9828,25 +10365,20 @@ type v2_token_meta {
 }
 
 """
-order by aggregate values of table "v2.token_meta"
-"""
-input v2_token_meta_aggregate_order_by {
-  count: order_by
-}
-
-"""
 Boolean expression to filter rows from the table "v2.token_meta". All fields are combined with a logical 'AND'.
 """
 input v2_token_meta_bool_exp {
   _and: [v2_token_meta_bool_exp!]
   _not: v2_token_meta_bool_exp
   _or: [v2_token_meta_bool_exp!]
+  rank: Int_comparison_exp
   representations: v2_token_meta_representations_bool_exp
   wrapping: v2_token_meta_wrapping_bool_exp
 }
 
 """Ordering options when selecting data from "v2.token_meta"."""
 input v2_token_meta_order_by {
+  rank: order_by
   representations_aggregate: v2_token_meta_representations_aggregate_order_by
   wrapping_aggregate: v2_token_meta_wrapping_aggregate_order_by
 }
@@ -10416,6 +10948,14 @@ input v2_token_meta_representations_variance_order_by {
 }
 
 """
+select columns of table "v2.token_meta"
+"""
+enum v2_token_meta_select_column {
+  """column name"""
+  rank
+}
+
+"""
 columns and relationships of "v2.token_meta_sources"
 """
 type v2_token_meta_sources {
@@ -10447,6 +10987,8 @@ input v2_token_meta_sources_order_by {
 columns and relationships of "v2.token_meta_wrapping"
 """
 type v2_token_meta_wrapping {
+  destination_channel_id: Int
+
   """An object relationship"""
   unwrapped_chain: v2_chains_view
   unwrapped_token: String
@@ -10460,9 +11002,24 @@ type v2_token_meta_wrapping {
 order by aggregate values of table "v2.token_meta_wrapping"
 """
 input v2_token_meta_wrapping_aggregate_order_by {
+  avg: v2_token_meta_wrapping_avg_order_by
   count: order_by
   max: v2_token_meta_wrapping_max_order_by
   min: v2_token_meta_wrapping_min_order_by
+  stddev: v2_token_meta_wrapping_stddev_order_by
+  stddev_pop: v2_token_meta_wrapping_stddev_pop_order_by
+  stddev_samp: v2_token_meta_wrapping_stddev_samp_order_by
+  sum: v2_token_meta_wrapping_sum_order_by
+  var_pop: v2_token_meta_wrapping_var_pop_order_by
+  var_samp: v2_token_meta_wrapping_var_samp_order_by
+  variance: v2_token_meta_wrapping_variance_order_by
+}
+
+"""
+order by avg() on columns of table "v2.token_meta_wrapping"
+"""
+input v2_token_meta_wrapping_avg_order_by {
+  destination_channel_id: order_by
 }
 
 """
@@ -10472,6 +11029,7 @@ input v2_token_meta_wrapping_bool_exp {
   _and: [v2_token_meta_wrapping_bool_exp!]
   _not: v2_token_meta_wrapping_bool_exp
   _or: [v2_token_meta_wrapping_bool_exp!]
+  destination_channel_id: Int_comparison_exp
   unwrapped_chain: v2_chains_view_bool_exp
   unwrapped_token: String_comparison_exp
   wrapped_chain: v2_chains_view_bool_exp
@@ -10482,6 +11040,7 @@ input v2_token_meta_wrapping_bool_exp {
 order by max() on columns of table "v2.token_meta_wrapping"
 """
 input v2_token_meta_wrapping_max_order_by {
+  destination_channel_id: order_by
   unwrapped_token: order_by
   wrapper: order_by
 }
@@ -10490,12 +11049,14 @@ input v2_token_meta_wrapping_max_order_by {
 order by min() on columns of table "v2.token_meta_wrapping"
 """
 input v2_token_meta_wrapping_min_order_by {
+  destination_channel_id: order_by
   unwrapped_token: order_by
   wrapper: order_by
 }
 
 """Ordering options when selecting data from "v2.token_meta_wrapping"."""
 input v2_token_meta_wrapping_order_by {
+  destination_channel_id: order_by
   unwrapped_chain: v2_chains_view_order_by
   unwrapped_token: order_by
   wrapped_chain: v2_chains_view_order_by
@@ -10507,10 +11068,66 @@ select columns of table "v2.token_meta_wrapping"
 """
 enum v2_token_meta_wrapping_select_column {
   """column name"""
+  destination_channel_id
+
+  """column name"""
   unwrapped_token
 
   """column name"""
   wrapper
+}
+
+"""
+order by stddev() on columns of table "v2.token_meta_wrapping"
+"""
+input v2_token_meta_wrapping_stddev_order_by {
+  destination_channel_id: order_by
+}
+
+"""
+order by stddev_pop() on columns of table "v2.token_meta_wrapping"
+"""
+input v2_token_meta_wrapping_stddev_pop_order_by {
+  destination_channel_id: order_by
+}
+
+"""
+order by stddev_samp() on columns of table "v2.token_meta_wrapping"
+"""
+input v2_token_meta_wrapping_stddev_samp_order_by {
+  destination_channel_id: order_by
+}
+
+"""
+order by sum() on columns of table "v2.token_meta_wrapping"
+"""
+input v2_token_meta_wrapping_sum_order_by {
+  destination_channel_id: order_by
+}
+
+"""
+order by var_pop() on columns of table "v2.token_meta_wrapping"
+"""
+input v2_token_meta_wrapping_var_pop_order_by {
+  destination_channel_id: order_by
+}
+
+"""
+order by var_samp() on columns of table "v2.token_meta_wrapping"
+"""
+input v2_token_meta_wrapping_var_samp_order_by {
+  destination_channel_id: order_by
+}
+
+"""
+order by variance() on columns of table "v2.token_meta_wrapping"
+"""
+input v2_token_meta_wrapping_variance_order_by {
+  destination_channel_id: order_by
+}
+
+input v2_tokens_args {
+  p_universal_chain_id: String
 }
 
 """
@@ -10521,36 +11138,21 @@ type v2_traces_type {
 
   """An object relationship"""
   chain: v2_chains_view
-  event_index: bigint
-  height: bigint
+  event_index: String
+  height: String
   timestamp: timestamptz
   transaction_hash: String
   type: String
+  universal_chain_id: String
 }
 
 """
 order by aggregate values of table "v2.traces_type"
 """
 input v2_traces_type_aggregate_order_by {
-  avg: v2_traces_type_avg_order_by
   count: order_by
   max: v2_traces_type_max_order_by
   min: v2_traces_type_min_order_by
-  stddev: v2_traces_type_stddev_order_by
-  stddev_pop: v2_traces_type_stddev_pop_order_by
-  stddev_samp: v2_traces_type_stddev_samp_order_by
-  sum: v2_traces_type_sum_order_by
-  var_pop: v2_traces_type_var_pop_order_by
-  var_samp: v2_traces_type_var_samp_order_by
-  variance: v2_traces_type_variance_order_by
-}
-
-"""
-order by avg() on columns of table "v2.traces_type"
-"""
-input v2_traces_type_avg_order_by {
-  event_index: order_by
-  height: order_by
 }
 
 """
@@ -10562,11 +11164,12 @@ input v2_traces_type_bool_exp {
   _or: [v2_traces_type_bool_exp!]
   block_hash: String_comparison_exp
   chain: v2_chains_view_bool_exp
-  event_index: bigint_comparison_exp
-  height: bigint_comparison_exp
+  event_index: String_comparison_exp
+  height: String_comparison_exp
   timestamp: timestamptz_comparison_exp
   transaction_hash: String_comparison_exp
   type: String_comparison_exp
+  universal_chain_id: String_comparison_exp
 }
 
 """
@@ -10579,6 +11182,7 @@ input v2_traces_type_max_order_by {
   timestamp: order_by
   transaction_hash: order_by
   type: order_by
+  universal_chain_id: order_by
 }
 
 """
@@ -10591,6 +11195,7 @@ input v2_traces_type_min_order_by {
   timestamp: order_by
   transaction_hash: order_by
   type: order_by
+  universal_chain_id: order_by
 }
 
 """Ordering options when selecting data from "v2.traces_type"."""
@@ -10602,6 +11207,7 @@ input v2_traces_type_order_by {
   timestamp: order_by
   transaction_hash: order_by
   type: order_by
+  universal_chain_id: order_by
 }
 
 """
@@ -10625,62 +11231,9 @@ enum v2_traces_type_select_column {
 
   """column name"""
   type
-}
 
-"""
-order by stddev() on columns of table "v2.traces_type"
-"""
-input v2_traces_type_stddev_order_by {
-  event_index: order_by
-  height: order_by
-}
-
-"""
-order by stddev_pop() on columns of table "v2.traces_type"
-"""
-input v2_traces_type_stddev_pop_order_by {
-  event_index: order_by
-  height: order_by
-}
-
-"""
-order by stddev_samp() on columns of table "v2.traces_type"
-"""
-input v2_traces_type_stddev_samp_order_by {
-  event_index: order_by
-  height: order_by
-}
-
-"""
-order by sum() on columns of table "v2.traces_type"
-"""
-input v2_traces_type_sum_order_by {
-  event_index: order_by
-  height: order_by
-}
-
-"""
-order by var_pop() on columns of table "v2.traces_type"
-"""
-input v2_traces_type_var_pop_order_by {
-  event_index: order_by
-  height: order_by
-}
-
-"""
-order by var_samp() on columns of table "v2.traces_type"
-"""
-input v2_traces_type_var_samp_order_by {
-  event_index: order_by
-  height: order_by
-}
-
-"""
-order by variance() on columns of table "v2.traces_type"
-"""
-input v2_traces_type_variance_order_by {
-  event_index: order_by
-  height: order_by
+  """column name"""
+  universal_chain_id
 }
 
 """
@@ -10935,6 +11488,7 @@ input v2_transfers_args {
   p_limit: Int
   p_packet_hash: String
   p_sort_order: String
+  p_source_universal_chain_id: String
   p_transaction_hash: String
   p_transfer_index: Int
 }

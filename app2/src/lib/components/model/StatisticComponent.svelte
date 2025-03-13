@@ -11,7 +11,7 @@ type Props = {
 }
 
 const { statistic, class: className = "" }: Props = $props()
-let displayValue = $state(10000000)
+let displayValue = $state(1000000)
 let isFirstLoad = $state(true)
 
 // Update displayValue whenever statistic.value changes

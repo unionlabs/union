@@ -46,29 +46,11 @@ const displayCount = $derived(() =>
 )
 const displayDate = $derived(() =>
   Option.isSome(hoveredDay)
-    ? hoveredDay.value.day
+    ? hoveredDay.value.day_date
     : Option.isSome(highestDay)
-      ? highestDay.value.day
+      ? highestDay.value.day_date
       : ""
 )
-
-// Calculate nice round numbers for y-axis labels
-const yLabels = $derived(() => {
-  if (maxCount <= 0) return [0, 0, 0, 0, 0]
-
-  // Find a nice round maximum that's at least as large as maxCount
-  const magnitude = 10 ** Math.floor(Math.log10(maxCount))
-  const roundedMax = Math.ceil(maxCount / magnitude) * magnitude
-
-  // Create evenly spaced labels
-  return [
-    0,
-    Math.round(roundedMax / 4),
-    Math.round(roundedMax / 2),
-    Math.round((roundedMax * 3) / 4),
-    roundedMax
-  ]
-})
 
 // Calculate bar heights as percentages
 const barHeights = $derived(
@@ -76,13 +58,6 @@ const barHeights = $derived(
     ...day,
     heightPercent: maxCount > 0 ? Math.max((day.count / maxCount) * 100, 1) : 1
   }))
-)
-
-// Get labels for x-axis (first, middle, last)
-const xAxisLabels = $derived(
-  reversedDailyTransfers.filter(
-    (_, i, arr) => i === 0 || i === Math.floor(arr.length / 2) || i === arr.length - 1
-  )
 )
 </script>
 
