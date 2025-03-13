@@ -5,9 +5,9 @@ import "forge-std/Test.sol";
 import "../core/IBCHandler.sol";
 import "../core/Relay.sol";
 import "../../../contracts/clients/CometblsClient.sol";
-import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "solady/utils/LibString.sol";
-import "@openzeppelin/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "solidity-stringutils/strings.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 

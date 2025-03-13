@@ -1,6 +1,6 @@
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "./IERC721Denom.sol";
 
 contract ERC721Denom is ERC721URIStorage, IERC721Denom {

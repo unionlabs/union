@@ -3,8 +3,8 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import "../../../contracts/apps/ucs/02-nft/NFT.sol";
-import "@openzeppelin/token/ERC721/ERC721.sol";
-import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MockIBCHandler {
     function sendPacket(

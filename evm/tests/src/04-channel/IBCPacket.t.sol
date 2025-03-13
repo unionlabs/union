@@ -6,7 +6,7 @@ import "../core/IBCHandler.sol";
 import "../core/LightClient.sol";
 import "../core/Module.sol";
 
-import "@openzeppelin/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract IBCPacketTests is Test {
     string public constant CLIENT_TYPE = "zkgm";

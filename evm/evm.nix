@@ -26,38 +26,38 @@ _: {
       solady = pkgs.fetchFromGitHub {
         owner = "vectorized";
         repo = "solady";
-        rev = "v0.0.292";
-        hash = "sha256-74No9at4wi0K0bgfjRUYMfvtg2NmWA7yY2MnM1jFAY0=";
+        rev = "v0.1.12";
+        hash = "sha256-XsIXs3lj5gddBzswNFY1DhnlhUQx+ITf6lvBPSkMY7c=";
       };
       forge-std = pkgs.fetchFromGitHub {
         owner = "foundry-rs";
         repo = "forge-std";
-        rev = "v1.9.3";
-        hash = "sha256-v9aFV4TQqbYPNBSRt4QLZMD85fIXTtBQ8rGYPRw2qmE=";
+        rev = "v1.9.6";
+        hash = "sha256-4y1Hf0Te2oJxwKBOgVBEHZeKYt7hs+wTgdIO+rItj0E=";
         fetchSubmodules = true;
       };
       openzeppelin = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-contracts";
-        rev = "v5.0.2";
+        rev = "v5.2.0";
         hash = "sha256-Ln721yNPzbtn36/meSmaszF6iCsJUP7iG35Je5x8x1Q=";
       };
       openzeppelin-upgradeable = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-contracts-upgradeable";
-        rev = "v5.0.2";
-        hash = "sha256-/TCv1EF3HPldTsXKThuc3L2DmlyodiduSMwYymR5idM=";
+        rev = "v5.2.0";
+        hash = "sha256-AKPTlbGkIPK7yYQJH9cEdvHSF5ZM5hFWmaxtEkMhoxQ=";
       };
       openzeppelin-foundry-upgrades = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-foundry-upgrades";
-        rev = "v0.2.1";
-        hash = "sha256-tQ6J5X/kpsGqHfapkDkaS2apbjL+I63vgQEk1vQI/c0=";
+        rev = "v0.4.0";
+        hash = "sha256-e9hnHibo0HXr+shOS6tNEOTu65DyCpwP0DjPRznqMxU=";
       };
       libraries = pkgs.linkFarm "evm-libraries" [
         {
           name = "solidity-stringutils";
-          path = "${solidity-stringutils}/src";
+          path = "${solidity-stringutils}";
         }
         {
           name = "solidity-bytes-utils";
@@ -73,11 +73,11 @@ _: {
         }
         {
           name = "@openzeppelin";
-          path = "${openzeppelin}/contracts";
+          path = "${openzeppelin}";
         }
         {
           name = "@openzeppelin-upgradeable";
-          path = "${openzeppelin-upgradeable}/contracts";
+          path = "${openzeppelin-upgradeable}";
         }
         {
           name = "@openzeppelin-foundry-upgradeable";
@@ -94,23 +94,6 @@ _: {
         installPhase = ''
           mkdir -p $out
           cp -rL $src/* $out
-        '';
-        fixupPhase = ''
-          substituteInPlace $out/@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
-
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/Utils.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
-
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
         '';
       };
       evmSources = pkgs.stdenv.mkDerivation {

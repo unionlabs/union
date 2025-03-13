@@ -1,6 +1,6 @@
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 interface IERC721Denom is IERC721 {
     function mint(

@@ -1,14 +1,14 @@
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
-import "@openzeppelin/token/ERC20/ERC20.sol";
-import "@openzeppelin/token/ERC20/IERC20.sol";
-import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/utils/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "solady/utils/LibString.sol";
 
