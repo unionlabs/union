@@ -26,7 +26,7 @@ const classes = cn(
 <div
   class={classes}
   {...rest}
-  in:scale={{ duration: 300, opacity: 0}}
+  in:scale={{ duration: 400, opacity: 0}}
 >
   {@render children()}
 </div>
