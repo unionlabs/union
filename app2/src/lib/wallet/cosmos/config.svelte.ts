@@ -1,4 +1,4 @@
-import { type OfflineSigner, bech32AddressToHex } from "@unionlabs/client"
+import { bech32AddressToHex } from "@unionlabs/client"
 import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { Effect, Option } from "effect"

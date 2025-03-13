@@ -31,7 +31,7 @@ export const approveTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =
           abi: erc20Abi,
           functionName: "approve",
           address: transfer.baseToken,
-          args: [transfer.ucs03address, transfer.baseAmount]
+          args: [transfer.ucs03address as `0x${string}`, transfer.baseAmount]
         }),
       catch: err => new WriteContractError({ cause: err as WriteContractErrorType })
     })

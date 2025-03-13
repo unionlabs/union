@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import {bech32} from "@scure/base";
+import { bech32 } from "@scure/base"
 
 export function cn(...inputs: Array<ClassValue>) {
   return twMerge(clsx(inputs))

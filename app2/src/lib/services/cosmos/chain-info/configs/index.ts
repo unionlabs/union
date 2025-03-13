@@ -1,9 +1,13 @@
 import {
-  babylonKeplrChaininfo, babylonLeapChaininfo,
-  elgafarKeplrChainInfo, elgafarLeapChainInfo,
-  strideKeplrChainInfo, strideLeapChainInfo,
-  unionKeplrChainInfo, unionLeapChainInfo
-} from "$lib/wallet/cosmos/chain-info.ts";
+  babylonKeplrChaininfo,
+  babylonLeapChaininfo,
+  elgafarKeplrChainInfo,
+  elgafarLeapChainInfo,
+  strideKeplrChainInfo,
+  strideLeapChainInfo,
+  unionKeplrChainInfo,
+  unionLeapChainInfo
+} from "$lib/wallet/cosmos/chain-info.ts"
 import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
 import type { ChainInfo as KeplrChainInfo } from "@keplr-wallet/types"
 
@@ -16,7 +20,6 @@ interface LeapExtendedInfo extends LeapChainInfo {
   }
   image: string
 }
-
 
 export const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
   "union-testnet-9": unionKeplrChainInfo,

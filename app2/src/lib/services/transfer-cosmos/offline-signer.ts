@@ -1,9 +1,9 @@
-import {Effect} from "effect"
-import { type CosmosWalletId } from "$lib/wallet/cosmos"
+import { Effect } from "effect"
+import type { CosmosWalletId } from "$lib/wallet/cosmos"
 import { OfflineSignerError } from "$lib/services/transfer-cosmos/errors.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { OfflineSigner } from "$lib/services/cosmos/types.ts"
-import {getCosmosWalletClient} from "$lib/services/cosmos/clients.ts";
+import { getCosmosWalletClient } from "$lib/services/cosmos/clients.ts"
 
 export const getCosmosOfflineSigner = (chain: Chain, connectedWallet: CosmosWalletId) =>
   Effect.gen(function* () {
@@ -23,7 +23,9 @@ export const getCosmosOfflineSigner = (chain: Chain, connectedWallet: CosmosWall
 
     const signerMethod = wallet.getOfflineSignerAuto
     if (!signerMethod) {
-      throw new OfflineSignerError({ cause: `Wallet ${connectedWallet} does not support getOfflineSignerAuto` })
+      throw new OfflineSignerError({
+        cause: `Wallet ${connectedWallet} does not support getOfflineSignerAuto`
+      })
     }
 
     return yield* Effect.tryPromise({
@@ -40,6 +42,6 @@ export const getCosmosOfflineSigner = (chain: Chain, connectedWallet: CosmosWall
 
         return signer as unknown as OfflineSigner
       },
-      catch: (err) => new OfflineSignerError({ cause: String(err) })
+      catch: err => new OfflineSignerError({ cause: String(err) })
     })
   })

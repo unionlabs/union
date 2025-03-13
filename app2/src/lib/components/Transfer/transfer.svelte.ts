@@ -3,55 +3,44 @@ import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
 import type { QuoteData, Token, WethTokenData } from "$lib/schema/token.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import {
-  getDerivedReceiverSafe as getCosmosReceiverSafe,
-  getParsedAmountSafe as getCosmosParsedAmountSafe,
   hasFailedExit as hasCosmosFailedExit,
   isComplete as isCosmosComplete,
   nextState as cosmosNextState,
   TransferSubmission as CosmosTransferSubmission
 } from "$lib/services/transfer-cosmos"
 import {
-  getDerivedReceiverSafe as getEvmReceiverSafe,
-  getParsedAmountSafe as getEvmParsedAmountSafe,
   hasFailedExit as hasEvmFailedExit,
   isComplete as isEvmComplete,
   nextState as evmNextState,
   TransferSubmission as EvmTransferSubmission
 } from "$lib/services/transfer-ucs03-evm"
 import { chains } from "$lib/stores/chains.svelte.ts"
-import {type Address, fromHex, type Hex} from "viem"
+import { type Address, fromHex, type Hex } from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import type { Channel } from "$lib/schema/channel.ts"
 import { TransferSchema } from "$lib/schema/transfer-args.ts"
-import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/quote-token.ts"
-import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/weth-token.ts"
-import {cosmosStore} from "$lib/wallet/cosmos";
+import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/shared/quote-token.ts"
+import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/shared/weth-token.ts"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import { getParsedAmountSafe } from "$lib/services/shared/amount.ts"
+import { getDerivedReceiverSafe } from "$lib/services/shared/address.ts"
 
-// Create a union type for the possible states
-type TransferSubmission = CosmosTransferSubmission | EvmTransferSubmission | null;
+type TransferSubmission = CosmosTransferSubmission | EvmTransferSubmission | null
 
 export class Transfer {
   raw = new RawTransferSvelte()
-
-  // Add a backing store for state that can be updated manually
   _stateOverride = $state<TransferSubmission>(null)
-
-  // Derive the state based on sourceChain if no override exists
   state = $derived.by<TransferSubmission>(() => {
-    // If there's a manual override, use that
     if (this._stateOverride !== null) {
       return this._stateOverride
     }
-
-    // Otherwise compute the default state based on the chain
     if (Option.isSome(this.sourceChain)) {
       const sourceChainValue = this.sourceChain.value
       if (sourceChainValue.rpc_type === "evm") {
         return EvmTransferSubmission.Filling()
-      } else {
-        return CosmosTransferSubmission.Filling()
       }
+      return CosmosTransferSubmission.Filling()
     }
 
     return null
@@ -86,31 +75,10 @@ export class Transfer {
   )
 
   parsedAmount = $derived(
-    this.baseToken.pipe(
-      Option.flatMap(bt => {
-        // Use the appropriate function based on the source chain type
-        if (Option.isNone(this.sourceChain)) {
-          return Option.none()
-        }
-
-        const sourceChainValue = this.sourceChain.value
-
-        if (sourceChainValue.rpc_type === "evm") {
-          return getEvmParsedAmountSafe(this.raw.amount, bt)
-        } else {
-          return getCosmosParsedAmountSafe(this.raw.amount, bt)
-        }
-      })
-    )
+    this.baseToken.pipe(Option.flatMap(bt => getParsedAmountSafe(this.raw.amount, bt)))
   )
 
-  derivedReceiver = $derived(
-    Option.isSome(this.sourceChain)
-      ? this.sourceChain.value.rpc_type === "evm"
-        ? getEvmReceiverSafe(this.raw.receiver)
-        : getCosmosReceiverSafe(this.raw.receiver)
-      : Option.none()
-  )
+  derivedReceiver = $derived(getDerivedReceiverSafe(this.raw.receiver))
 
   channel = $derived.by<Option.Option<Channel>>(() => {
     if (
@@ -258,7 +226,11 @@ export class Transfer {
     const wethQuoteTokenValue = Option.getOrNull(this.wethQuoteToken)
 
     return {
-      sourceChain: !sourceChainValue ? null : (sourceChainValue.rpc_type === "evm" ? sourceChainValue.toViemChain() : sourceChainValue),
+      sourceChain: sourceChainValue
+        ? sourceChainValue.rpc_type === "evm"
+          ? sourceChainValue.toViemChain()
+          : sourceChainValue
+        : null,
       sourceRpcType: sourceChainValue?.rpc_type,
       destinationRpcType: destinationChainValue?.rpc_type,
       sourceChannelId: channelValue?.source_channel_id,
@@ -303,11 +275,21 @@ export class Transfer {
         if (currentState !== null && isEvmComplete(currentState)) break
       }
     } else {
-      currentState = await cosmosNextState(currentState, this.transferResult.args, sourceChainValue, cosmosStore.connectedWallet)
+      currentState = await cosmosNextState(
+        currentState,
+        this.transferResult.args,
+        sourceChainValue,
+        cosmosStore.connectedWallet
+      )
       this._stateOverride = currentState // Update the override
 
       while (currentState !== null && !hasCosmosFailedExit(currentState)) {
-        currentState = await cosmosNextState(currentState, this.transferResult.args, sourceChainValue, cosmosStore.connectedWallet)
+        currentState = await cosmosNextState(
+          currentState,
+          this.transferResult.args,
+          sourceChainValue,
+          cosmosStore.connectedWallet
+        )
         this._stateOverride = currentState // Update the override
         if (currentState !== null && isCosmosComplete(currentState)) break
       }

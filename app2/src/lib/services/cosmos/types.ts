@@ -1,7 +1,6 @@
-
 //Move into schema?
 
-export type CosmosWallet = Window['keplr'] | Window['leap']
+export type CosmosWallet = Window["keplr"] | Window["leap"]
 
 export interface StdSignature {
   readonly pub_key: {
@@ -69,40 +68,40 @@ export interface AccountData {
 /** Offline signer is the account for a Cosmos chain. */
 export type OfflineSigner =
   | {
-  /** getAccounts returns the list of accounts available on this signer. */
-  readonly getAccounts: () => Promise<ReadonlyArray<AccountData>>
-  readonly signDirect: (
-    signerAddress: string,
-    signDoc: SignDoc
-  ) => Promise<{
-    /**
-     * The sign doc that was signed.
-     * This may be different from the input signDoc when the signer modifies it as part of the signing process.
-     */
-    readonly signed: SignDoc
-    readonly signature: StdSignature
-  }>
-}
+      /** getAccounts returns the list of accounts available on this signer. */
+      readonly getAccounts: () => Promise<ReadonlyArray<AccountData>>
+      readonly signDirect: (
+        signerAddress: string,
+        signDoc: SignDoc
+      ) => Promise<{
+        /**
+         * The sign doc that was signed.
+         * This may be different from the input signDoc when the signer modifies it as part of the signing process.
+         */
+        readonly signed: SignDoc
+        readonly signature: StdSignature
+      }>
+    }
   | {
-  readonly getAccounts: () => Promise<ReadonlyArray<AccountData>>
-  /**
-   * Request signature from whichever key corresponds to provided bech32-encoded address. Rejects if not enabled.
-   *
-   * The signer implementation may offer the user the ability to override parts of the signDoc. It must
-   * return the doc that was signed in the response.
-   *
-   * @param signerAddress The address of the account that should sign the transaction
-   * @param signDoc The content that should be signed
-   */
-  readonly signAmino: (
-    signerAddress: string,
-    signDoc: StdSignDoc
-  ) => Promise<{
-    /**
-     * The sign doc that was signed.
-     * This may be different from the input signDoc when the signer modifies it as part of the signing process.
-     */
-    readonly signed: StdSignDoc
-    readonly signature: StdSignature
-  }>
-}
+      readonly getAccounts: () => Promise<ReadonlyArray<AccountData>>
+      /**
+       * Request signature from whichever key corresponds to provided bech32-encoded address. Rejects if not enabled.
+       *
+       * The signer implementation may offer the user the ability to override parts of the signDoc. It must
+       * return the doc that was signed in the response.
+       *
+       * @param signerAddress The address of the account that should sign the transaction
+       * @param signDoc The content that should be signed
+       */
+      readonly signAmino: (
+        signerAddress: string,
+        signDoc: StdSignDoc
+      ) => Promise<{
+        /**
+         * The sign doc that was signed.
+         * This may be different from the input signDoc when the signer modifies it as part of the signing process.
+         */
+        readonly signed: StdSignDoc
+        readonly signature: StdSignature
+      }>
+    }
