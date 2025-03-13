@@ -73,8 +73,9 @@ onMount(() => {
       <div class="flex justify-between items-center">
         {#if displayDay !== undefined}
           <div>
-            <Label>{#if Option.isSome(hoveredDay)}<DateTimeComponent class="text-zinc-500" value={hoveredDay.value.day_date} showTime={false} />{:else}Daily Transfers{/if}</Label>
+            <Label>Transfers</Label>
             <div class="text-2xl font-bold mt-1">{displayDay.count.toLocaleString()}</div>
+            {#if Option.isSome(hoveredDay)}<Label class="mt-1"><DateTimeComponent class="text-zinc-500" value={hoveredDay.value.day_date} showTime={false} /></Label>{/if}
           </div>
         {/if}
       </div>
