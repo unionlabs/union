@@ -36,7 +36,7 @@ let isExpanded = $state(false)
           <ErrorComponent error={chains.error.value}/>
         </div>
       {/if}
-      {#each tokenErrors as { chainId, error }}
+      {#each tokenErrors() as { chainId, error }}
         <div>
           <Label class="mb-2">Token Info Fetcher for Chain {chainId}</Label>
           <ErrorComponent error={error}/>
