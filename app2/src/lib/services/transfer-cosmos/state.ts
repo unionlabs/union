@@ -50,7 +50,7 @@ export function hasFailedExit(state: StateWithExit | { _tag: "Filling" }): boole
 
 export function isComplete(state: StateWithExit | { _tag: "Filling" }): boolean {
   return (
-    state._tag === "TransferReceipt" &&
+    state._tag === "TransferSubmit" &&
     state.state._tag === "Complete" &&
     state.state.exit._tag === "Success"
   )

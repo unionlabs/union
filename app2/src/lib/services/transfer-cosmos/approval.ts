@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import {Effect} from "effect"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { CosmosWalletId } from "$lib/wallet/cosmos"
 import { executeCosmWasmInstructions } from "$lib/services/transfer-cosmos/execute.ts"
@@ -18,7 +18,9 @@ export const approveTransfer = (
 
     const isNative = !isValidBech32ContractAddress(decodedDenom)
 
-    if (isNative) return "native-token-no-approval-needed"
+    if (isNative) {
+      return yield* Effect.succeed("native-token-no-approval-needed")
+    }
 
     const instructions = [{
       contractAddress: decodedDenom,
@@ -30,7 +32,6 @@ export const approveTransfer = (
       }
     }]
 
-    // Execute the approval instructions
     return yield* executeCosmWasmInstructions(chain, connectedWallet, instructions)
   })
 }

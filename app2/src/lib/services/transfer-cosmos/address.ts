@@ -1,6 +1,6 @@
 import { Effect, Option } from "effect"
 import { AddressValidationError } from "./errors.ts"
-import { getAddress, isHex } from "viem" // Add isHex to imports
+import { getAddress, isHex } from "viem"
 import { bech32AddressToHex } from "@unionlabs/client"
 
 export const deriveReceiverEffect = (input: string) =>

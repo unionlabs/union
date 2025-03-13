@@ -26,7 +26,7 @@ export async function nextState(
     SwitchChain: ({ state }) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(switchChain(params.sourceChain.id))
+          const exit = await Effect.runPromiseExit(switchChain(params.sourceChain.value.id))
           return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
         },
         Complete: ({ exit }) => {

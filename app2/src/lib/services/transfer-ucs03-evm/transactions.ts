@@ -20,12 +20,33 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
     )
     const salt = yield* generateSalt
 
+    console.log({
+      account: account.address as `0x${string}`,
+      abi: ucs03ZkgmAbi,
+      chain: transfer.sourceChain.value,
+      functionName: "transferV2",
+      address: transfer.ucs03address,
+      value: BigInt(0.0080085 * 10 ** 18),
+      args: [
+        transfer.sourceChannelId,
+        transfer.receiver,
+        transfer.baseToken,
+        transfer.baseAmount,
+        transfer.quoteToken,
+        transfer.quoteAmount,
+        transfer.timeoutHeight,
+        transfer.timeoutTimestamp,
+        salt,
+        transfer.wethQuoteToken
+      ]
+    })
+
     return yield* Effect.tryPromise({
       try: () => {
         return walletClient.writeContract({
           account: account.address as `0x${string}`,
           abi: ucs03ZkgmAbi,
-          chain: transfer.sourceChain,
+          chain: transfer.sourceChain.value,
           functionName: "transferV2",
           address: transfer.ucs03address,
           value: BigInt(0.0080085 * 10 ** 18),

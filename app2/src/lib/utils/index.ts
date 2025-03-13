@@ -17,13 +17,6 @@ export function debounce<T extends (...args: Array<any>) => void>(
   }
 }
 
-/**
- * check if a string is a valid bech32 contract address
- * @example
- * ```ts
- * isValidBech32ContractAddress("union14hj2tavq8fpesdwxxcu44rty3hh90vhujrvcmstl4zr3txmfvw9sgf2v9u")
- * ```
- */
 export function isValidBech32ContractAddress(address: unknown) {
   if (typeof address !== "string") return false
   try {

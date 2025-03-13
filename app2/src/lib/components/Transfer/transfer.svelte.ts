@@ -3,15 +3,23 @@ import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
 import type { QuoteData, Token, WethTokenData } from "$lib/schema/token.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import {
-  getDerivedReceiverSafe,
-  getParsedAmountSafe,
-  hasFailedExit,
-  isComplete,
-  nextState,
-  TransferSubmission
+  getDerivedReceiverSafe as getCosmosReceiverSafe,
+  getParsedAmountSafe as getCosmosParsedAmountSafe,
+  hasFailedExit as hasCosmosFailedExit,
+  isComplete as isCosmosComplete,
+  nextState as cosmosNextState,
+  TransferSubmission as CosmosTransferSubmission
 } from "$lib/services/transfer-cosmos"
+import {
+  getDerivedReceiverSafe as getEvmReceiverSafe,
+  getParsedAmountSafe as getEvmParsedAmountSafe,
+  hasFailedExit as hasEvmFailedExit,
+  isComplete as isEvmComplete,
+  nextState as evmNextState,
+  TransferSubmission as EvmTransferSubmission
+} from "$lib/services/transfer-ucs03-evm"
 import { chains } from "$lib/stores/chains.svelte.ts"
-import {type Address, fromHex, type Hex, isHex} from "viem"
+import {type Address, fromHex, type Hex} from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import type { Channel } from "$lib/schema/channel.ts"
@@ -20,9 +28,34 @@ import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/transfer-ucs
 import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/weth-token.ts"
 import {cosmosStore} from "$lib/wallet/cosmos";
 
+// Create a union type for the possible states
+type TransferSubmission = CosmosTransferSubmission | EvmTransferSubmission | null;
+
 export class Transfer {
   raw = new RawTransferSvelte()
-  state = $state<TransferSubmission>(TransferSubmission.Filling())
+
+  // Add a backing store for state that can be updated manually
+  _stateOverride = $state<TransferSubmission>(null)
+
+  // Derive the state based on sourceChain if no override exists
+  state = $derived.by<TransferSubmission>(() => {
+    // If there's a manual override, use that
+    if (this._stateOverride !== null) {
+      return this._stateOverride
+    }
+
+    // Otherwise compute the default state based on the chain
+    if (Option.isSome(this.sourceChain)) {
+      const sourceChainValue = this.sourceChain.value
+      if (sourceChainValue.rpc_type === "evm") {
+        return EvmTransferSubmission.Filling()
+      } else {
+        return CosmosTransferSubmission.Filling()
+      }
+    }
+
+    return null
+  })
 
   sourceChain = $derived(
     chains.data.pipe(
@@ -46,31 +79,38 @@ export class Transfer {
 
   baseToken = $derived(
     this.baseTokens.pipe(
-      Option.flatMap(tokens => {
-        const token = tokens.find((t: Token) => t.denom === this.raw.asset)
-
-        if (!token) {
-          return Option.none()
-        }
-
-        if (token.rpcType === "cosmos") {
-          if (isHextoken.denom()) {
-            const formattedToken = { ...token }
-            formattedToken.denom = fromHex(token.denom, "string")
-            return Option.some(formattedToken)
-          }
-        }
-
-        return Option.some(token)
-      })
+      Option.flatMap(tokens =>
+        Option.fromNullable(tokens.find((t: Token) => t.denom === this.raw.asset))
+      )
     )
   )
 
   parsedAmount = $derived(
-    this.baseToken.pipe(Option.flatMap(bt => getParsedAmountSafe(this.raw.amount, bt)))
+    this.baseToken.pipe(
+      Option.flatMap(bt => {
+        // Use the appropriate function based on the source chain type
+        if (Option.isNone(this.sourceChain)) {
+          return Option.none()
+        }
+
+        const sourceChainValue = this.sourceChain.value
+
+        if (sourceChainValue.rpc_type === "evm") {
+          return getEvmParsedAmountSafe(this.raw.amount, bt)
+        } else {
+          return getCosmosParsedAmountSafe(this.raw.amount, bt)
+        }
+      })
+    )
   )
 
-  derivedReceiver = $derived(getDerivedReceiverSafe(this.raw.receiver))
+  derivedReceiver = $derived(
+    Option.isSome(this.sourceChain)
+      ? this.sourceChain.value.rpc_type === "evm"
+        ? getEvmReceiverSafe(this.raw.receiver)
+        : getCosmosReceiverSafe(this.raw.receiver)
+      : Option.none()
+  )
 
   channel = $derived.by<Option.Option<Channel>>(() => {
     if (
@@ -89,8 +129,6 @@ export class Transfer {
       )
     )
   })
-
-
 
   ucs03address = $derived.by<Option.Option<Address>>(() => {
     if (
@@ -249,10 +287,30 @@ export class Transfer {
   submit = async () => {
     if (Option.isNone(chains.data) || Option.isNone(this.sourceChain)) return
     console.log(this.transferResult.args)
-    this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value, cosmosStore.connectedWallet)
-    while (!hasFailedExit(this.state)) {
-      this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value, cosmosStore.connectedWallet)
-      if (isComplete(this.state)) break
+
+    const sourceChainValue = this.sourceChain.value
+
+    // Get current state
+    let currentState = this.state
+
+    if (sourceChainValue.rpc_type === "evm") {
+      currentState = await evmNextState(currentState, this.transferResult.args, sourceChainValue)
+      this._stateOverride = currentState // Update the override
+
+      while (currentState !== null && !hasEvmFailedExit(currentState)) {
+        currentState = await evmNextState(currentState, this.transferResult.args, sourceChainValue)
+        this._stateOverride = currentState // Update the override
+        if (currentState !== null && isEvmComplete(currentState)) break
+      }
+    } else {
+      currentState = await cosmosNextState(currentState, this.transferResult.args, sourceChainValue, cosmosStore.connectedWallet)
+      this._stateOverride = currentState // Update the override
+
+      while (currentState !== null && !hasCosmosFailedExit(currentState)) {
+        currentState = await cosmosNextState(currentState, this.transferResult.args, sourceChainValue, cosmosStore.connectedWallet)
+        this._stateOverride = currentState // Update the override
+        if (currentState !== null && isCosmosComplete(currentState)) break
+      }
     }
   }
 }

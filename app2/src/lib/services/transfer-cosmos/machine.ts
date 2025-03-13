@@ -4,12 +4,12 @@ import {
   TransferSubmission,
   TransferSubmitState
 } from "./state.ts"
-import { Effect } from "effect"
-import { switchChain } from "./chain.ts"
-import { submitTransfer } from "./transactions.ts"
-import { approveTransfer } from "./approval"
-import type { Chain } from "$lib/schema/chain.ts"
-import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
+import {Effect} from "effect"
+import {switchChain} from "./chain.ts"
+import {submitTransfer} from "./transactions.ts"
+import {approveTransfer} from "./approval"
+import type {Chain} from "$lib/schema/chain.ts"
+import type {ValidTransfer} from "$lib/schema/transfer-args.ts"
 import type {CosmosWalletId} from "$lib/wallet/cosmos";
 
 export async function nextState(
@@ -20,25 +20,26 @@ export async function nextState(
 ): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
     Filling: () => {
-      return TransferSubmission.SwitchChain({ state: SwitchChainState.InProgress() })
+      return TransferSubmission.SwitchChain({state: SwitchChainState.InProgress()})
     },
 
-    SwitchChain: ({ state }) => {
+    SwitchChain: ({state}) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
           const exit = await Effect.runPromiseExit(switchChain(chain))
-          return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
+          console.log(exit)
+          return TransferSubmission.SwitchChain({state: SwitchChainState.Complete({exit})})
         },
-        Complete: ({ exit }) => {
+        Complete: ({exit}) => {
           if (exit._tag === "Failure") {
-            return TransferSubmission.SwitchChain({ state: SwitchChainState.InProgress() })
+            return TransferSubmission.SwitchChain({state: SwitchChainState.InProgress()})
           }
-          return TransferSubmission.ApprovalSubmit({ state: ApprovalSubmitState.InProgress() })
+          return TransferSubmission.ApprovalSubmit({state: ApprovalSubmitState.InProgress()})
         }
       })
     },
 
-    ApprovalSubmit: ({ state }) => {
+    ApprovalSubmit: ({state}) => {
       return ApprovalSubmitState.$match(state, {
         InProgress: async () => {
           const exit = await Effect.runPromiseExit(approveTransfer(chain, connectedWallet, params))
@@ -54,31 +55,28 @@ export async function nextState(
             state: ApprovalSubmitState.Complete({exit})
           })
         },
-        Complete: ({ exit }) => {
+        Complete: ({exit}) => {
           if (exit._tag === "Failure") {
-            return TransferSubmission.ApprovalSubmit({ state: ApprovalSubmitState.InProgress() })
+            return TransferSubmission.ApprovalSubmit({state: ApprovalSubmitState.InProgress()})
           }
-          return TransferSubmission.TransferSubmit({ state: TransferSubmitState.InProgress() })
+          return TransferSubmission.TransferSubmit({state: TransferSubmitState.InProgress()})
         }
       })
     },
 
-    TransferSubmit: ({ state }) => {
+    TransferSubmit: ({state}) => {
       return TransferSubmitState.$match(state, {
         InProgress: async () => {
-          console.log('here11')
           const exit = await Effect.runPromiseExit(submitTransfer(chain, params))
           return TransferSubmission.TransferSubmit({
-            state: TransferSubmitState.Complete({ exit })
+            state: TransferSubmitState.Complete({exit})
           })
         },
-        Complete: ({ exit }) => {
+        Complete: ({exit}) => {
           if (exit._tag === "Failure") {
-            return TransferSubmission.TransferSubmit({ state: TransferSubmitState.InProgress() })
+            return TransferSubmission.TransferSubmit({state: TransferSubmitState.InProgress()})
           }
-          return TransferSubmission.TransferReceipt({
-            state: TransferReceiptState.InProgress({ hash: exit.value })
-          })
+          return TransferSubmission.Filling() // Or another appropriate state
         }
       })
     }
