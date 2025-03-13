@@ -9433,12 +9433,14 @@ input v2_channels_args {
   p_destination_port_id: String
   p_destination_universal_chain_id: String
   p_limit: Int
+  p_recommended: Boolean
   p_sort_order: String
   p_source_channel_id: Int
   p_source_client_id: Int
   p_source_connection_id: Int
   p_source_port_id: String
   p_source_universal_chain_id: String
+  p_version: String
 }
 
 """
@@ -10325,6 +10327,8 @@ enum v2_stats_type_select_column {
 columns and relationships of "v2.token_meta"
 """
 type v2_token_meta {
+  """An object relationship"""
+  chain: v2_chains_view
   denom: String
   rank: Int
 
@@ -10372,6 +10376,7 @@ input v2_token_meta_bool_exp {
   _and: [v2_token_meta_bool_exp!]
   _not: v2_token_meta_bool_exp
   _or: [v2_token_meta_bool_exp!]
+  chain: v2_chains_view_bool_exp
   denom: String_comparison_exp
   rank: Int_comparison_exp
   representations: v2_token_meta_representations_bool_exp
@@ -10380,6 +10385,7 @@ input v2_token_meta_bool_exp {
 
 """Ordering options when selecting data from "v2.token_meta"."""
 input v2_token_meta_order_by {
+  chain: v2_chains_view_order_by
   denom: order_by
   rank: order_by
   representations_aggregate: v2_token_meta_representations_aggregate_order_by
@@ -10908,6 +10914,7 @@ input v2_token_meta_wrapping_variance_order_by {
 }
 
 input v2_tokens_args {
+  p_denom: String
   p_universal_chain_id: String
 }
 
