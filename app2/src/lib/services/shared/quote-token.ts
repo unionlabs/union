@@ -36,12 +36,6 @@ export const getQuoteToken = (
       return { type: "UNWRAPPED" as const, quote_token }
     }
 
-    console.info("Getting quote token!")
-    console.info("channel.destination_port_id: ", channel.destination_port_id)
-    console.info("channel.destination_chain_id: ", channel.destination_chain_id)
-    console.info("sourceChain: ", sourceChain)
-    console.info("base_token: ", base_token)
-
     if (destinationChain.rpc_type === "cosmos") {
       const rpc = yield* destinationChain
         .requireRpcUrl("rpc")
