@@ -267,4 +267,3 @@ fn connection_key() {
     dbg!(ConnectionPath { connection_id: 4 }.key());
     dbg!(ConnectionPath { connection_id: 5 }.key());
 }
-

@@ -15,12 +15,16 @@ library IBCPacketLib {
         0x0200000000000000000000000000000000000000000000000000000000000000;
     bytes32 public constant COMMITMENT_NULL = bytes32(uint256(0));
 
-    event PacketSend(IBCPacket packet);
-    event PacketRecv(IBCPacket packet, address maker, bytes makerMsg);
-    event IntentPacketRecv(IBCPacket packet, address maker, bytes makerMsg);
-    event WriteAck(IBCPacket packet, bytes acknowledgement);
-    event PacketAck(IBCPacket packet, bytes acknowledgement, address maker);
-    event PacketTimeout(IBCPacket packet, address maker);
+    event PacketSend(bytes32 indexed packetHash, IBCPacket packet);
+    event PacketRecv(bytes32 indexed packetHash, address maker, bytes makerMsg);
+    event IntentPacketRecv(
+        bytes32 indexed packetHash, address maker, bytes makerMsg
+    );
+    event WriteAck(bytes32 indexed packetHash, bytes acknowledgement);
+    event PacketAck(
+        bytes32 indexed packetHash, bytes acknowledgement, address maker
+    );
+    event PacketTimeout(bytes32 indexed packetHash, address maker);
 
     function commitAcksMemory(
         bytes[] memory acks
@@ -163,15 +167,15 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             timeoutHeight: timeoutHeight,
             timeoutTimestamp: timeoutTimestamp
         });
-        bytes32 commitmentKey = IBCCommitment.batchPacketsCommitmentKey(
-            IBCPacketLib.commitPacket(packet)
-        );
+        bytes32 packetHash = IBCPacketLib.commitPacket(packet);
+        bytes32 commitmentKey =
+            IBCCommitment.batchPacketsCommitmentKey(packetHash);
         if (commitments[commitmentKey] != IBCPacketLib.COMMITMENT_NULL) {
             revert IBCErrors.ErrPacketAlreadyExist();
         }
         commitments[commitmentKey] = IBCPacketLib.COMMITMENT_MAGIC;
 
-        emit IBCPacketLib.PacketSend(packet);
+        emit IBCPacketLib.PacketSend(packetHash, packet);
 
         return packet;
     }
@@ -239,9 +243,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 revert IBCErrors.ErrTimestampTimeout();
             }
 
-            bytes32 commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
-                IBCPacketLib.commitPacket(packet)
-            );
+            bytes32 packetHash = IBCPacketLib.commitPacket(packet);
+            bytes32 commitmentKey =
+                IBCCommitment.batchReceiptsCommitmentKey(packetHash);
 
             if (!setPacketReceive(commitmentKey)) {
                 bytes memory acknowledgement;
@@ -249,15 +253,17 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 if (intent) {
                     acknowledgement =
                         module.onRecvIntentPacket(packet, maker, makerMsg);
-                    emit IBCPacketLib.IntentPacketRecv(packet, maker, makerMsg);
+                    emit IBCPacketLib.IntentPacketRecv(
+                        packetHash, maker, makerMsg
+                    );
                 } else {
                     acknowledgement =
                         module.onRecvPacket(packet, maker, makerMsg);
-                    emit IBCPacketLib.PacketRecv(packet, maker, makerMsg);
+                    emit IBCPacketLib.PacketRecv(packetHash, maker, makerMsg);
                 }
                 if (acknowledgement.length > 0) {
                     _writeAcknowledgement(commitmentKey, acknowledgement);
-                    emit IBCPacketLib.WriteAck(packet, acknowledgement);
+                    emit IBCPacketLib.WriteAck(packetHash, acknowledgement);
                 }
             }
         }
@@ -314,11 +320,11 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             revert IBCErrors.ErrUnauthorized();
         }
         ensureChannelState(packet.destinationChannelId);
-        bytes32 commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
-            IBCPacketLib.commitPacket(packet)
-        );
+        bytes32 packetHash = IBCPacketLib.commitPacket(packet);
+        bytes32 commitmentKey =
+            IBCCommitment.batchReceiptsCommitmentKey(packetHash);
         _writeAcknowledgement(commitmentKey, acknowledgement);
-        emit IBCPacketLib.WriteAck(packet, acknowledgement);
+        emit IBCPacketLib.WriteAck(packetHash, acknowledgement);
     }
 
     function acknowledgePacket(
@@ -354,7 +360,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             module.onAcknowledgementPacket(
                 packet, acknowledgement, msg_.relayer
             );
-            emit IBCPacketLib.PacketAck(packet, acknowledgement, msg_.relayer);
+            emit IBCPacketLib.PacketAck(
+                IBCPacketLib.commitPacket(packet), acknowledgement, msg_.relayer
+            );
         }
     }
 
@@ -371,9 +379,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         if (proofTimestamp == 0) {
             revert IBCErrors.ErrLatestTimestampNotFound();
         }
-        bytes32 commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
-            IBCPacketLib.commitPacket(packet)
-        );
+        bytes32 packetHash = IBCPacketLib.commitPacket(packet);
+        bytes32 commitmentKey =
+            IBCCommitment.batchReceiptsCommitmentKey(packetHash);
         if (
             !verifyAbsentCommitment(
                 clientId, msg_.proofHeight, msg_.proof, commitmentKey
@@ -397,7 +405,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             revert IBCErrors.ErrTimeoutHeightNotReached();
         }
         module.onTimeoutPacket(packet, msg_.relayer);
-        emit IBCPacketLib.PacketTimeout(packet, msg_.relayer);
+        emit IBCPacketLib.PacketTimeout(packetHash, msg_.relayer);
     }
 
     function verifyCommitment(

@@ -4,8 +4,8 @@ use alloy::sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdResult,
+    to_json_binary, wasm_execute, Addr, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo,
+    Response, StdResult,
 };
 use cw_storage_plus::Item;
 use ibc_union_msg::{
@@ -26,8 +26,9 @@ use ibc_union_msg::{
 };
 use ibc_union_spec::{
     path::{
-        BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
-        ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK, COSMWASM_COMMITMENT_PREFIX,
+        commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
+        ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
+        COSMWASM_COMMITMENT_PREFIX,
     },
     types::{Channel, ChannelState, Connection, ConnectionState, Packet},
 };
@@ -79,6 +80,7 @@ pub mod events {
         pub const TIMEOUT: &str = "packet_timeout";
         pub const BATCH_SEND: &str = "batch_send";
         pub const BATCH_ACKS: &str = "batch_acks";
+        pub const WRITE_ACK: &str = "write_ack";
     }
     pub mod attribute {
         pub const CLIENT_ID: &str = "client_id";
@@ -86,7 +88,12 @@ pub mod events {
         pub const CHANNEL_ID: &str = "channel_id";
         pub const COUNTERPARTY_CHANNEL_ID: &str = "counterparty_channel_id";
         pub const COUNTERPARTY_HEIGHT: &str = "counterparty_height";
-        pub const PACKET: &str = "packet";
+        pub const PACKET_HASH: &str = "packet_hash";
+        pub const PACKET_SOURCE_CHANNEL_ID: &str = "packet_source_channel_id";
+        pub const PACKET_DESTINATION_CHANNEL_ID: &str = "packet_destination_channel_id";
+        pub const PACKET_DATA: &str = "packet_data";
+        pub const PACKET_TIMEOUT_HEIGHT: &str = "packet_timeout_height";
+        pub const PACKET_TIMEOUT_TIMESTAMP: &str = "packet_timeout_timestamp";
         pub const PACKETS: &str = "packets";
         pub const ACKS: &str = "acks";
         pub const MAKER: &str = "maker";
@@ -101,6 +108,39 @@ pub mod events {
         pub const COUNTERPARTY_PORT_ID: &str = "counterparty_port_id";
         pub const VERSION: &str = "version";
     }
+}
+
+#[must_use]
+fn packet_to_attrs(packet: &Packet) -> [Attribute; 5] {
+    [
+        (
+            events::attribute::PACKET_SOURCE_CHANNEL_ID,
+            packet.source_channel_id.to_string(),
+        ),
+        (
+            events::attribute::PACKET_DESTINATION_CHANNEL_ID,
+            packet.destination_channel_id.to_string(),
+        ),
+        (events::attribute::PACKET_DATA, packet.data.to_string()),
+        (
+            events::attribute::PACKET_TIMEOUT_HEIGHT,
+            packet.timeout_height.to_string(),
+        ),
+        (
+            events::attribute::PACKET_TIMEOUT_TIMESTAMP,
+            packet.timeout_timestamp.to_string(),
+        ),
+    ]
+    .map(Into::into)
+}
+
+#[must_use]
+fn packet_to_attr_hash(packet: &Packet) -> Attribute {
+    (
+        events::attribute::PACKET_HASH,
+        commit_packets(&[packet.clone()]).to_string(),
+    )
+        .into()
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -584,13 +624,11 @@ fn timeout_packet(
 
     let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
     Ok(Response::new()
-        .add_event(Event::new(events::packet::TIMEOUT).add_attributes([
-            (
-                events::attribute::PACKET,
-                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
-            ),
-            (events::attribute::MAKER, relayer.to_string()),
-        ]))
+        .add_event(
+            Event::new(events::packet::TIMEOUT)
+                .add_attributes([packet_to_attr_hash(&packet)])
+                .add_attributes([(events::attribute::MAKER, relayer.to_string())]),
+        )
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnTimeoutPacket {
@@ -637,14 +675,14 @@ fn acknowledge_packet(
     let mut messages = Vec::with_capacity(packets.len());
     for (packet, ack) in packets.into_iter().zip(acknowledgements) {
         mark_packet_as_acknowledged(deps.branch(), &packet)?;
-        events.push(Event::new(events::packet::ACK).add_attributes([
-            (
-                events::attribute::PACKET,
-                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
-            ),
-            (events::attribute::ACKNOWLEDGEMENT, hex::encode(&ack)),
-            (events::attribute::MAKER, relayer.clone().to_string()),
-        ]));
+        events.push(
+            Event::new(events::packet::ACK)
+                .add_attributes([packet_to_attr_hash(&packet)])
+                .add_attributes([
+                    (events::attribute::ACKNOWLEDGEMENT, hex::encode(&ack)),
+                    (events::attribute::MAKER, relayer.clone().to_string()),
+                ]),
+        );
         messages.push(wasm_execute(
             port_id.clone(),
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnAcknowledgementPacket {
@@ -1464,15 +1502,12 @@ fn process_receive(
         if !set_packet_receive(deps.branch(), commitment_key) {
             if intent {
                 events.push(
-                    Event::new(events::packet::INTENT_RECV).add_attributes([
-                        (
-                            events::attribute::PACKET,
-                            serde_json::to_string(&packet)
-                                .expect("packet serialization is infallible; qed;"),
-                        ),
-                        (events::attribute::MAKER, relayer.clone()),
-                        (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
-                    ]),
+                    Event::new(events::packet::INTENT_RECV)
+                        .add_attributes([packet_to_attr_hash(&packet)])
+                        .add_attributes([
+                            (events::attribute::MAKER, relayer.clone()),
+                            (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
+                        ]),
                 );
 
                 messages.push(wasm_execute(
@@ -1486,15 +1521,12 @@ fn process_receive(
                 )?);
             } else {
                 events.push(
-                    Event::new(events::packet::RECV).add_attributes([
-                        (
-                            events::attribute::PACKET,
-                            serde_json::to_string(&packet)
-                                .expect("packet serialization is infallible; qed;"),
-                        ),
-                        (events::attribute::MAKER, relayer.clone()),
-                        (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
-                    ]),
+                    Event::new(events::packet::RECV)
+                        .add_attributes([packet_to_attr_hash(&packet)])
+                        .add_attributes([
+                            (events::attribute::MAKER, relayer.clone()),
+                            (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
+                        ]),
                 );
 
                 messages.push(wasm_execute(
@@ -1546,24 +1578,22 @@ fn write_acknowledgement(
         None => return Err(ContractError::PacketNotReceived),
     }
 
+    let acknowledgement_serialized = hex::encode(&acknowledgement);
+
     store_commit(
         deps.branch(),
         &commitment_key,
-        &commit_ack(&acknowledgement.clone().into()),
+        &commit_ack(&acknowledgement.into()),
     );
 
-    Ok(
-        Response::new().add_event(Event::new("write_ack").add_attributes([
-            (
-                events::attribute::PACKET,
-                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
-            ),
-            (
+    Ok(Response::new().add_event(
+        Event::new(events::packet::WRITE_ACK)
+            .add_attributes([packet_to_attr_hash(&packet)])
+            .add_attributes([(
                 events::attribute::ACKNOWLEDGEMENT,
-                hex::encode(acknowledgement),
-            ),
-        ])),
-    )
+                acknowledgement_serialized,
+            )]),
+    ))
 }
 
 fn send_packet(
@@ -1599,6 +1629,9 @@ fn send_packet(
     let serialized_packet =
         serde_json::to_string(&packet).expect("packet serialization is infallible; qed;");
 
+    let packet_attrs = packet_to_attrs(&packet);
+    let packet_attr_hash = packet_to_attr_hash(&packet);
+
     let commitment_key = BatchPacketsPath::from_packets(&[packet]).key();
 
     if read_commit(deps.as_ref(), &commitment_key).is_some() {
@@ -1610,7 +1643,8 @@ fn send_packet(
     Ok(Response::new()
         .add_event(
             Event::new(events::packet::SEND)
-                .add_attribute(events::attribute::PACKET, &serialized_packet),
+                .add_attributes([packet_attr_hash])
+                .add_attributes(packet_attrs),
         )
         .set_data(serialized_packet.as_bytes()))
 }

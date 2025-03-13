@@ -248,10 +248,13 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketRecv(
-                msg_.packets[i], msg_.relayer, msg_.relayerMsgs[i]
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                msg_.relayer,
+                msg_.relayerMsgs[i]
             );
             emit IBCPacketLib.WriteAck(
-                msg_.packets[i], TestModuleLib.ACKNOWLEDGEMENT
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                TestModuleLib.ACKNOWLEDGEMENT
             );
         }
         vm.resumeGasMetering();
@@ -463,10 +466,13 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.IntentPacketRecv(
-                msg_.packets[i], msg_.marketMaker, msg_.marketMakerMsgs[i]
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                msg_.marketMaker,
+                msg_.marketMakerMsgs[i]
             );
             emit IBCPacketLib.WriteAck(
-                msg_.packets[i], TestModuleLib.ACKNOWLEDGEMENT
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                TestModuleLib.ACKNOWLEDGEMENT
             );
         }
         vm.resumeGasMetering();
@@ -573,7 +579,9 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketAck(
-                msg_.packets[i], abi.encodePacked(i), msg_.relayer
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                abi.encodePacked(i),
+                msg_.relayer
             );
         }
         vm.resumeGasMetering();
@@ -744,7 +752,9 @@ contract IBCPacketTests is Test {
         lightClient.pushValidNonMembership();
         lightClient.setLatestTimestamp(uint64(timestamp) + k);
         vm.expectEmit();
-        emit IBCPacketLib.PacketTimeout(msg_.packet, msg_.relayer);
+        emit IBCPacketLib.PacketTimeout(
+            IBCPacketLib.commitPacket(msg_.packet), msg_.relayer
+        );
         vm.resumeGasMetering();
         handler.timeoutPacket(msg_);
         vm.pauseGasMetering();
@@ -828,7 +838,9 @@ contract IBCPacketTests is Test {
         lightClient.setLatestHeight(uint64(height) + k);
         msg_.proofHeight = uint64(height) + k;
         vm.expectEmit();
-        emit IBCPacketLib.PacketTimeout(msg_.packet, msg_.relayer);
+        emit IBCPacketLib.PacketTimeout(
+            IBCPacketLib.commitPacket(msg_.packet), msg_.relayer
+        );
         vm.resumeGasMetering();
         handler.timeoutPacket(msg_);
         vm.pauseGasMetering();
@@ -908,14 +920,18 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketRecv(
-                msg_.packets[i], msg_.relayer, msg_.relayerMsgs[i]
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                msg_.relayer,
+                msg_.relayerMsgs[i]
             );
         }
         handler.recvPacket(msg_);
         for (uint8 i = 0; i < nbPackets; i++) {
             bytes memory ack = abi.encodePacked(i);
             vm.expectEmit();
-            emit IBCPacketLib.WriteAck(msg_.packets[i], ack);
+            emit IBCPacketLib.WriteAck(
+                IBCPacketLib.commitPacket(msg_.packets[i]), ack
+            );
             vm.prank(address(module));
             vm.resumeGasMetering();
             handler.writeAcknowledgement(msg_.packets[i], ack);
@@ -947,7 +963,9 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketRecv(
-                msg_.packets[i], msg_.relayer, msg_.relayerMsgs[i]
+                IBCPacketLib.commitPacket(msg_.packets[i]),
+                msg_.relayer,
+                msg_.relayerMsgs[i]
             );
         }
         handler.recvPacket(msg_);
