@@ -8,7 +8,7 @@ contract TestIBCHandler is IBCHandler {
         IBCPacket calldata packet
     ) public {
         commitments[IBCCommitment.batchPacketsCommitmentKey(
-            channel, IBCPacketLib.commitPacket(packet)
+            IBCPacketLib.commitPacket(packet)
         )] = IBCPacketLib.COMMITMENT_MAGIC;
     }
 }

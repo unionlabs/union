@@ -274,11 +274,10 @@ impl Module {
         Ok(Some(channel))
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
     async fn query_batch_packets(
         &self,
         height: Height,
-        channel_id: u32,
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let execution_height = height.height();
@@ -286,14 +285,7 @@ impl Module {
         let ibc_handler = self.ibc_handler();
 
         let raw = ibc_handler
-            .commitments(
-                BatchPacketsPath {
-                    channel_id,
-                    batch_hash,
-                }
-                .key()
-                .into(),
-            )
+            .commitments(BatchPacketsPath { batch_hash }.key().into())
             .block(execution_height.into())
             .call()
             .await
@@ -313,11 +305,10 @@ impl Module {
         }
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height))]
     async fn query_batch_receipts(
         &self,
         height: Height,
-        channel_id: u32,
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let execution_height = height.height();
@@ -325,14 +316,7 @@ impl Module {
         let ibc_handler = self.ibc_handler();
 
         let raw = ibc_handler
-            .commitments(
-                BatchReceiptsPath {
-                    channel_id,
-                    batch_hash,
-                }
-                .key()
-                .into(),
-            )
+            .commitments(BatchReceiptsPath { batch_hash }.key().into())
             .block(execution_height.into())
             .call()
             .await
@@ -379,11 +363,11 @@ impl StateModuleServer<IbcUnion> for Module {
                 .await
                 .map(into_value),
             StorePath::BatchReceipts(path) => self
-                .query_batch_receipts(at, path.channel_id, path.batch_hash)
+                .query_batch_receipts(at, path.batch_hash)
                 .await
                 .map(into_value),
             StorePath::BatchPackets(path) => self
-                .query_batch_packets(at, path.channel_id, path.batch_hash)
+                .query_batch_packets(at, path.batch_hash)
                 .await
                 .map(into_value),
         }

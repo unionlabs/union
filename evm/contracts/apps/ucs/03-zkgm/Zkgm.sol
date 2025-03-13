@@ -407,7 +407,7 @@ library ZkgmLib {
         return FORWARD_SALT_MAGIC | (salt & ~FORWARD_SALT_MAGIC);
     }
 
-    function isSaltForwardTinted(
+    function isForwardedPacket(
         bytes32 salt
     ) internal pure returns (bool) {
         return (salt & FORWARD_SALT_MAGIC) == FORWARD_SALT_MAGIC;
@@ -1044,7 +1044,7 @@ contract UCS03Zkgm is
             )
         );
         // Guaranteed to be unique by the above sendPacket
-        bytes32 packetHash = IBCPacketLib.commitPacketMemory(sentPacket);
+        bytes32 packetHash = IBCPacketLib.commitPacket(sentPacket);
         inFlightPacket[packetHash] = ibcPacket;
         return ZkgmLib.ACK_EMPTY;
     }
@@ -1238,27 +1238,20 @@ contract UCS03Zkgm is
         }
     }
 
-    function isInFlightPacket(
-        bytes32 packetHash
-    ) internal pure returns (bool) {
-        return ZkgmLib.isSaltForwardTinted(packetHash);
-    }
-
     function onAcknowledgementPacket(
         IBCPacket calldata ibcPacket,
         bytes calldata ack,
         address relayer
     ) external virtual override onlyIBC {
-        bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
-        if (isInFlightPacket(packetHash)) {
+        ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
+        if (ZkgmLib.isForwardedPacket(zkgmPacket.salt)) {
+            bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
             IBCPacket memory parent = inFlightPacket[packetHash];
             if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
                 ibcHandler.writeAcknowledgement(parent, ack);
-                delete inFlightPacket[packetHash];
                 return;
             }
         }
-        ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
         Ack calldata zkgmAck = ZkgmLib.decodeAck(ack);
         acknowledgeInternal(
             ibcPacket,
@@ -1472,15 +1465,14 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer
     ) external virtual override onlyIBC {
-        bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
-        if (isInFlightPacket(packetHash)) {
+        ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
+        if (ZkgmLib.isForwardedPacket(zkgmPacket.salt)) {
+            bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
             IBCPacket memory parent = inFlightPacket[packetHash];
             if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
-                delete inFlightPacket[packetHash];
                 return;
             }
         }
-        ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
         timeoutInternal(
             ibcPacket, relayer, zkgmPacket.path, zkgmPacket.instruction
         );

@@ -10,7 +10,7 @@ mod tests {
     use crate::{
         com::{Instruction, Multiplex, FORWARD_SALT_MAGIC, INSTR_VERSION_0, OP_MULTIPLEX},
         contract::{
-            dequeue_channel_from_path, is_salt_forward_tinted, pop_channel_from_path,
+            dequeue_channel_from_path, is_forwarded_packet, pop_channel_from_path,
             reverse_channel_path, tint_forward_salt, update_channel_path, verify_internal,
             verify_multiplex,
         },
@@ -338,8 +338,8 @@ mod tests {
             0xCD, 0xEF, 0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56, 0x78,
             0x90, 0xAB, 0xCD, 0xEF,
         ]);
-        assert!(!is_salt_forward_tinted(salt));
-        assert!(is_salt_forward_tinted(tint_forward_salt(salt)));
+        assert!(!is_forwarded_packet(salt));
+        assert!(is_forwarded_packet(tint_forward_salt(salt)));
     }
 
     #[test]

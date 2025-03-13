@@ -262,22 +262,17 @@ impl Module {
         fields(
             chain_id = %self.chain_id,
             %height,
-            %channel_id,
             %batch_hash
         )
     )]
     async fn query_batch_packets(
         &self,
         height: Height,
-        channel_id: u32,
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
-                &ibc_union_msg::query::QueryMsg::GetBatchPackets {
-                    channel_id,
-                    batch_hash,
-                },
+                &ibc_union_msg::query::QueryMsg::GetBatchPackets { batch_hash },
                 Some(height),
             )
             .await?;
@@ -290,22 +285,17 @@ impl Module {
         fields(
             chain_id = %self.chain_id,
             %height,
-            %channel_id,
             %batch_hash
         )
     )]
     async fn query_batch_receipts(
         &self,
         height: Height,
-        channel_id: u32,
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
-                &ibc_union_msg::query::QueryMsg::GetBatchReceipts {
-                    channel_id,
-                    batch_hash,
-                },
+                &ibc_union_msg::query::QueryMsg::GetBatchReceipts { batch_hash },
                 Some(height),
             )
             .await?;
@@ -370,11 +360,11 @@ impl StateModuleServer<IbcUnion> for Module {
                 .await
                 .map(into_value),
             StorePath::BatchPackets(path) => self
-                .query_batch_packets(at, path.channel_id, path.batch_hash)
+                .query_batch_packets(at, path.batch_hash)
                 .await
                 .map(into_value),
             StorePath::BatchReceipts(path) => self
-                .query_batch_receipts(at, path.channel_id, path.batch_hash)
+                .query_batch_receipts(at, path.batch_hash)
                 .await
                 .map(into_value),
         }

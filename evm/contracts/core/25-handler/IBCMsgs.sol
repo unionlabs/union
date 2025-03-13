@@ -125,12 +125,10 @@ library IBCMsgs {
     }
 
     struct MsgBatchSend {
-        uint32 sourceChannelId;
         IBCPacket[] packets;
     }
 
     struct MsgBatchAcks {
-        uint32 sourceChannelId;
         IBCPacket[] packets;
         bytes[] acks;
     }

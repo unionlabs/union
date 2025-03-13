@@ -57,6 +57,7 @@ library IBCErrors {
     error ErrTimeoutHeightNotReached();
     error ErrTimeoutTimestampNotReached();
     error ErrNotEnoughPackets();
+    error ErrBatchSameChannelOnly();
     error ErrCommittedAckNotPresent();
     error ErrClientNotFound();
     error ErrModuleNotFound();

@@ -9,6 +9,8 @@ use voyager_core::IbcStorePathKey;
 use super::IbcUnion;
 use crate::types::{Channel, ChannelId, ClientId, Connection, ConnectionId, Packet};
 
+pub const COSMWASM_COMMITMENT_PREFIX: [u8; 1] = [0x00];
+
 /// 0x0100000000000000000000000000000000000000000000000000000000000000
 pub const COMMITMENT_MAGIC: H256 = {
     let mut bz = [0; 32];
@@ -184,21 +186,16 @@ impl IbcStorePathKey for ChannelPath {
     serde(rename_all = "snake_case", deny_unknown_fields)
 )]
 pub struct BatchReceiptsPath {
-    pub channel_id: ChannelId,
     pub batch_hash: H256,
 }
 
 impl BatchReceiptsPath {
     #[cfg(feature = "ethabi")]
     #[must_use]
-    pub fn from_packets(channel_id: ChannelId, packets: &[&Packet]) -> Self {
+    pub fn from_packets(packets: &[Packet]) -> Self {
         use alloy_sol_types::SolValue;
         Self {
-            channel_id,
-            batch_hash: match packets {
-                [packet] => keccak256(packet.abi_encode()),
-                packets => keccak256(packets.abi_encode()),
-            },
+            batch_hash: keccak256(packets.abi_encode()),
         }
     }
 
@@ -206,7 +203,6 @@ impl BatchReceiptsPath {
     pub fn key(&self) -> H256 {
         Keccak256::new()
             .chain_update(PACKET_ACKS.to_be_bytes())
-            .chain_update(U256::from(self.channel_id).to_be_bytes())
             .chain_update(self.batch_hash)
             .finalize()
             .into()
@@ -227,21 +223,16 @@ impl IbcStorePathKey for BatchReceiptsPath {
     serde(rename_all = "snake_case", deny_unknown_fields)
 )]
 pub struct BatchPacketsPath {
-    pub channel_id: ChannelId,
     pub batch_hash: H256,
 }
 
 impl BatchPacketsPath {
     #[cfg(feature = "ethabi")]
     #[must_use]
-    pub fn from_packets(channel_id: ChannelId, packets: &[&Packet]) -> Self {
+    pub fn from_packets(packets: &[Packet]) -> Self {
         use alloy_sol_types::SolValue;
         Self {
-            channel_id,
-            batch_hash: match packets {
-                [packet] => keccak256(packet.abi_encode()),
-                packets => keccak256(packets.abi_encode()),
-            },
+            batch_hash: keccak256(packets.abi_encode()),
         }
     }
 
@@ -249,7 +240,6 @@ impl BatchPacketsPath {
     pub fn key(&self) -> H256 {
         Keccak256::new()
             .chain_update(PACKETS.to_be_bytes())
-            .chain_update(U256::from(self.channel_id).to_be_bytes())
             .chain_update(self.batch_hash)
             .finalize()
             .into()

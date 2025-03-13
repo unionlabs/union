@@ -141,6 +141,11 @@ pub enum ContractError {
         ContractErrorKind::from(self)
     )]
     ClientNotActive { client_id: u32, status: Status },
+    #[error(
+        "{} a batch of packets can contains packets from the same channel only",
+        ContractErrorKind::from(self)
+    )]
+    BatchSameChannelOnly,
 }
 
 impl ContractErrorKind {

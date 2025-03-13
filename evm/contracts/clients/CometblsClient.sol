@@ -421,9 +421,12 @@ contract CometblsClient is
         return ICS23Verifier.verifyMembership(
             appHash,
             proof,
-            abi.encodePacked(IBCStoreLib.WASMD_MODULE_STORE_KEY),
+            IBCStoreLib.WASMD_MODULE_STORE_KEY,
             abi.encodePacked(
-                IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX, contractAddress, path
+                IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
+                contractAddress,
+                IBCStoreLib.COSMWASM_COMMITMENT_PREFIX,
+                path
             ),
             value
         );
@@ -443,9 +446,12 @@ contract CometblsClient is
         return ICS23Verifier.verifyNonMembership(
             appHash,
             proof,
-            abi.encodePacked(IBCStoreLib.WASMD_MODULE_STORE_KEY),
+            IBCStoreLib.WASMD_MODULE_STORE_KEY,
             abi.encodePacked(
-                IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX, contractAddress, path
+                IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
+                contractAddress,
+                IBCStoreLib.COSMWASM_COMMITMENT_PREFIX,
+                path
             )
         );
     }

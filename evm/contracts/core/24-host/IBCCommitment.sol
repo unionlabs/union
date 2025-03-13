@@ -34,17 +34,15 @@ library IBCCommitment {
     }
 
     function batchPacketsCommitmentPath(
-        uint32 channelId,
         bytes32 batchHash
     ) internal pure returns (bytes memory) {
-        return abi.encode(PACKETS, channelId, batchHash);
+        return abi.encode(PACKETS, batchHash);
     }
 
     function batchReceiptsCommitmentPath(
-        uint32 channelId,
         bytes32 batchHash
     ) internal pure returns (bytes memory) {
-        return abi.encode(PACKET_ACKS, channelId, batchHash);
+        return abi.encode(PACKET_ACKS, batchHash);
     }
 
     // Key generators for Commitment mapping
@@ -75,16 +73,14 @@ library IBCCommitment {
     }
 
     function batchPacketsCommitmentKey(
-        uint32 channelId,
         bytes32 batchHash
     ) internal pure returns (bytes32) {
-        return keccak256(batchPacketsCommitmentPath(channelId, batchHash));
+        return keccak256(batchPacketsCommitmentPath(batchHash));
     }
 
     function batchReceiptsCommitmentKey(
-        uint32 channelId,
         bytes32 batchHash
     ) internal pure returns (bytes32) {
-        return keccak256(batchReceiptsCommitmentPath(channelId, batchHash));
+        return keccak256(batchReceiptsCommitmentPath(batchHash));
     }
 }

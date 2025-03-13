@@ -202,14 +202,12 @@ pub struct MsgIntentPacketRecv {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgBatchSend {
-    pub source_channel: u32,
     pub packets: Vec<Packet>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgBatchAcks {
-    pub source_channel: u32,
     pub packets: Vec<Packet>,
     pub acks: Vec<Bytes>,
 }

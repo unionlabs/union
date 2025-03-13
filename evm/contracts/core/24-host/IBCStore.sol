@@ -5,8 +5,9 @@ import "../05-port/IIBCModule.sol";
 import "../Types.sol";
 
 library IBCStoreLib {
-    string public constant WASMD_MODULE_STORE_KEY = "wasm";
+    bytes public constant WASMD_MODULE_STORE_KEY = bytes("wasm");
     bytes1 public constant WASMD_CONTRACT_STORE_PREFIX = 0x03;
+    bytes1 public constant COSMWASM_COMMITMENT_PREFIX = 0x00;
 }
 
 abstract contract IBCStore {
