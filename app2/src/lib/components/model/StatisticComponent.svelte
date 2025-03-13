@@ -11,7 +11,7 @@ type Props = {
 }
 
 const { statistic, class: className = "" }: Props = $props()
-let displayValue = $state(0)
+let displayValue = $state(1000000)
 let isFirstLoad = $state(true)
 
 // Update displayValue whenever statistic.value changes
@@ -19,7 +19,7 @@ $effect(() => {
   if (isFirstLoad) {
     // On first load, animate from 0 to the value
     onMount(() => {
-      displayValue = 0
+      displayValue = 1000000
       setTimeout(() => {
         displayValue = statistic.value
         isFirstLoad = false

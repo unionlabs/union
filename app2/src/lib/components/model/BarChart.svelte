@@ -75,7 +75,7 @@ const xAxisLabels = $derived(
           <div class="flex flex-col flex-1 group size-full justify-end hover:opacity-100">
             <div class="w-full size-full flex items-end">
               <div 
-                class="relative w-full bg-white rounded-t bar animate-bar"
+                class="relative w-full bg-white  bar animate-bar"
                 style="--final-height: {day.heightPercent}%; --delay: {i * 50}ms; min-height: 1px;"
               >
                 <div class="absolute pointer-events-none bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-zinc-950 border-zinc-900 border text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
