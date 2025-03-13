@@ -16,15 +16,23 @@ library IBCPacketLib {
     bytes32 public constant COMMITMENT_NULL = bytes32(uint256(0));
 
     event PacketSend(bytes32 indexed packetHash, IBCPacket packet);
-    event PacketRecv(bytes32 indexed packetHash, address maker, bytes makerMsg);
+    event PacketRecv(
+        bytes32 indexed packetHash, address indexed maker, bytes makerMsg
+    );
     event IntentPacketRecv(
-        bytes32 indexed packetHash, address maker, bytes makerMsg
+        bytes32 indexed packetHash, address indexed maker, bytes makerMsg
     );
     event WriteAck(bytes32 indexed packetHash, bytes acknowledgement);
     event PacketAck(
-        bytes32 indexed packetHash, bytes acknowledgement, address maker
+        bytes32 indexed packetHash, bytes acknowledgement, address indexed maker
     );
-    event PacketTimeout(bytes32 indexed packetHash, address maker);
+    event PacketTimeout(bytes32 indexed packetHash, address indexed maker);
+    event BatchedPreviouslySent(
+        bytes32 indexed batchHash, bytes32 indexed packetHash
+    );
+    event BatchedPreviouslyAcked(
+        bytes32 indexed batchHash, bytes32 indexed packetHash
+    );
 
     function commitAcksMemory(
         bytes[] memory acks
@@ -90,6 +98,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             revert IBCErrors.ErrNotEnoughPackets();
         }
         uint32 channelId = msg_.packets[0].sourceChannelId;
+        bytes32 batchHash = IBCPacketLib.commitPackets(msg_.packets);
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = msg_.packets[i];
             if (i > 0) {
@@ -98,16 +107,17 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 }
             }
             // If the channel mismatch, the commitment will be zero
-            bytes32 commitment = commitments[IBCCommitment
-                .batchPacketsCommitmentKey(IBCPacketLib.commitPacket(packet))];
+            bytes32 packetHash = IBCPacketLib.commitPacket(packet);
+            bytes32 commitment =
+                commitments[IBCCommitment.batchPacketsCommitmentKey(packetHash)];
             // Every packet must have been previously sent to be batched
             if (commitment != IBCPacketLib.COMMITMENT_MAGIC) {
                 revert IBCErrors.ErrPacketCommitmentNotFound();
             }
+            emit IBCPacketLib.BatchedPreviouslySent(batchHash, packetHash);
         }
-        commitments[IBCCommitment.batchPacketsCommitmentKey(
-            IBCPacketLib.commitPackets(msg_.packets)
-        )] = IBCPacketLib.COMMITMENT_MAGIC;
+        commitments[IBCCommitment.batchPacketsCommitmentKey(batchHash)] =
+            IBCPacketLib.COMMITMENT_MAGIC;
     }
 
     function batchAcks(
@@ -119,6 +129,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             revert IBCErrors.ErrNotEnoughPackets();
         }
         uint32 channelId = msg_.packets[0].destinationChannelId;
+        bytes32 batchHash = IBCPacketLib.commitPackets(msg_.packets);
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = msg_.packets[i];
             if (i > 0) {
@@ -128,8 +139,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             }
             bytes calldata ack = msg_.acks[i];
             // If the channel mismatch, the commitment will be zero.
+            bytes32 packetHash = IBCPacketLib.commitPacket(packet);
             bytes32 commitment = commitments[IBCCommitment
-                .batchReceiptsCommitmentKey(IBCPacketLib.commitPacket(packet))];
+                .batchReceiptsCommitmentKey(packetHash)];
             // Can't batch an empty ack.
             if (
                 commitment == IBCPacketLib.COMMITMENT_NULL
@@ -141,6 +153,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             if (commitment != IBCPacketLib.commitAck(ack)) {
                 revert IBCErrors.ErrCommittedAckNotPresent();
             }
+            emit IBCPacketLib.BatchedPreviouslyAcked(batchHash, packetHash);
         }
         commitments[IBCCommitment.batchReceiptsCommitmentKey(
             IBCPacketLib.commitPackets(msg_.packets)

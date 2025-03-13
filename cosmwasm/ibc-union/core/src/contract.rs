@@ -91,11 +91,11 @@ pub mod events {
         pub const PACKET_DATA: &str = "packet_data";
         pub const PACKET_TIMEOUT_HEIGHT: &str = "packet_timeout_height";
         pub const PACKET_TIMEOUT_TIMESTAMP: &str = "packet_timeout_timestamp";
-        pub const PACKETS: &str = "packets";
-        pub const ACKS: &str = "acks";
+        pub const BATCH_HASH: &str = "batch_hash";
         pub const MAKER: &str = "maker";
         pub const MAKER_MSG: &str = "maker_msg";
         pub const ACKNOWLEDGEMENT: &str = "acknowledgement";
+        pub const ACKNOWLEDGEMENT_HASH: &str = "acknowledgement_hash";
         pub const CLIENT_TYPE: &str = "client_type";
         pub const CLIENT_ADDRESS: &str = "client_address";
         pub const COUNTERPARTY_CHAIN_ID: &str = "counterparty_chain_id";
@@ -520,10 +520,15 @@ fn batch_send(deps: DepsMut, packets: Vec<Packet>) -> ContractResult {
         return Err(ContractError::NotEnoughPackets);
     }
     let channel_id = packets[0].source_channel_id;
-    let serialized_packets =
-        serde_json_wasm::to_string(&packets).expect("packet serialization is infallible; qed;");
+    let batch_hash = commit_packets(&packets);
     let batch_commitment_key = BatchPacketsPath::from_packets(&packets).key();
+    let mut events = Vec::new();
     for packet in packets {
+        events.push(
+            Event::new(events::packet::BATCH_SEND)
+                .add_attributes([packet_to_attr_hash(&packet)])
+                .add_attribute(events::attribute::BATCH_HASH, batch_hash.to_string()),
+        );
         if packet.source_channel_id != channel_id {
             return Err(ContractError::BatchSameChannelOnly);
         }
@@ -537,12 +542,7 @@ fn batch_send(deps: DepsMut, packets: Vec<Packet>) -> ContractResult {
         }
     }
     store_commit(deps, &batch_commitment_key, &COMMITMENT_MAGIC);
-    Ok(
-        Response::new().add_event(Event::new(events::packet::BATCH_SEND).add_attributes([
-            (events::attribute::CHANNEL_ID, channel_id.to_string()),
-            (events::attribute::PACKETS, serialized_packets),
-        ])),
-    )
+    Ok(Response::new().add_events(events))
 }
 
 fn batch_acks(deps: DepsMut, packets: Vec<Packet>, acks: Vec<Bytes>) -> ContractResult {
@@ -550,26 +550,29 @@ fn batch_acks(deps: DepsMut, packets: Vec<Packet>, acks: Vec<Bytes>) -> Contract
         return Err(ContractError::NotEnoughPackets);
     }
     let channel_id = packets[0].destination_channel_id;
+    let batch_hash = commit_packets(&packets);
     let batch_commitment_key = BatchReceiptsPath::from_packets(&packets).key();
-    let serialized_packets =
-        serde_json_wasm::to_string(&packets).expect("packet serialization is infallible; qed;");
-    let serialized_acks =
-        serde_json_wasm::to_string(&acks).expect("bytes serialization is infallible; qed;");
+    let mut events = Vec::new();
     for (packet, ack) in packets.into_iter().zip(acks.iter()) {
+        events.push(
+            Event::new(events::packet::BATCH_ACKS)
+                .add_attributes([packet_to_attr_hash(&packet)])
+                .add_attribute(events::attribute::BATCH_HASH, batch_hash.to_string()),
+        );
         if packet.destination_channel_id != channel_id {
             return Err(ContractError::BatchSameChannelOnly);
         }
         let commitment_key = BatchReceiptsPath::from_packets(&[packet]).key();
         let commitment = read_commit(deps.as_ref(), &commitment_key);
         match commitment {
-            Some(acknowledgement) => {
-                let expected_ack = commit_ack(ack);
-                if acknowledgement == COMMITMENT_MAGIC {
+            Some(ack_commitment) => {
+                let ack_commitment_expected = commit_ack(ack);
+                if ack_commitment == COMMITMENT_MAGIC {
                     return Err(ContractError::AcknowledgementIsEmpty);
-                } else if acknowledgement != expected_ack {
+                } else if ack_commitment != ack_commitment_expected {
                     return Err(ContractError::AcknowledgementMismatch {
-                        found: acknowledgement.into(),
-                        expected: expected_ack.into(),
+                        found: ack_commitment.into(),
+                        expected: ack_commitment_expected.into(),
                     });
                 }
             }
@@ -577,13 +580,7 @@ fn batch_acks(deps: DepsMut, packets: Vec<Packet>, acks: Vec<Bytes>) -> Contract
         }
     }
     store_commit(deps, &batch_commitment_key, &commit_acks(&acks));
-    Ok(
-        Response::new().add_event(Event::new(events::packet::BATCH_ACKS).add_attributes([
-            (events::attribute::CHANNEL_ID, channel_id.to_string()),
-            (events::attribute::PACKETS, serialized_packets),
-            (events::attribute::ACKS, serialized_acks),
-        ])),
-    )
+    Ok(Response::new().add_events(events))
 }
 
 fn timeout_packet(
