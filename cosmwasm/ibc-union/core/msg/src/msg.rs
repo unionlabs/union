@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use ibc_union_spec::types::{Channel, Packet};
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
@@ -18,7 +16,6 @@ pub struct MsgRegisterClient {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    BOOTSTRAP(BTreeMap<Bytes, Bytes>),
     RegisterClient(MsgRegisterClient),
     CreateClient(MsgCreateClient),
     UpdateClient(MsgUpdateClient),

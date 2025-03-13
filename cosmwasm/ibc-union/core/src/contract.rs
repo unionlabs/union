@@ -148,13 +148,6 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::BOOTSTRAP(storage) => {
-            for (k, v) in storage {
-                deps.storage.set(&k, &v);
-            }
-
-            Ok(Response::default())
-        }
         ExecuteMsg::RegisterClient(MsgRegisterClient {
             client_type,
             client_address,
