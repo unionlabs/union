@@ -1,6 +1,6 @@
-import { Data, Effect, Option } from "effect"
+import { Data, Effect } from "effect"
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
-// import { someWalletLibraryOrBrowserObject } from "some-aptos-wallet-lib" 
+// import { someWalletLibraryOrBrowserObject } from "some-aptos-wallet-lib"
 import type { Chain } from "$lib/schema/chain"
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,16 +13,12 @@ export class NoAptosChainError extends Data.TaggedError("NoAptosChain")<{
 }> {}
 
 /** Thrown if creating a public Aptos client fails. */
-export class CreatePublicAptosClientError extends Data.TaggedError(
-  "CreatePublicAptosClientError"
-)<{
+export class CreatePublicAptosClientError extends Data.TaggedError("CreatePublicAptosClientError")<{
   cause: unknown
 }> {}
 
 /** Thrown if creating a wallet-based Aptos client fails. */
-export class CreateWalletAptosClientError extends Data.TaggedError(
-  "CreateWalletAptosClientError"
-)<{
+export class CreateWalletAptosClientError extends Data.TaggedError("CreateWalletAptosClientError")<{
   cause: unknown
 }> {}
 
@@ -39,11 +35,10 @@ export const getPublicClient = (chain: Chain) =>
         })
         return new Aptos(config)
       },
-      catch: (err) => new CreatePublicAptosClientError({ cause: err })
+      catch: err => new CreatePublicAptosClientError({ cause: err })
     })
     return aptosClient
   })
-
 
 export const getWalletClient = (chain: Chain) =>
   Effect.gen(function* () {
@@ -52,7 +47,7 @@ export const getWalletClient = (chain: Chain) =>
     }
 
     const aptosClient = yield* Effect.try({
-      try: () => {        
+      try: () => {
         const config = new AptosConfig({
           fullnode: "https://aptos.testnet.bardock.movementlabs.xyz/v1",
           network: Network.TESTNET
@@ -60,7 +55,7 @@ export const getWalletClient = (chain: Chain) =>
         const aptos = new Aptos(config)
         return aptos
       },
-      catch: (err) => new CreateWalletAptosClientError({ cause: err })
+      catch: err => new CreateWalletAptosClientError({ cause: err })
     })
 
     return aptosClient
