@@ -12,11 +12,7 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   const { connectedWallet } = cosmosStore
 
   if (!connectedWallet) {
-    return Effect.fail(
-      new CosmWasmError({
-        cause: "No wallet connected"
-      })
-    )
+    return Effect.fail(new CosmWasmError({ cause: "No wallet connected" }))
   }
 
   const {
@@ -30,11 +26,7 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   } = transfer
 
   if (!ucs03address) {
-    return Effect.fail(
-      new CosmWasmError({
-        cause: "Missing UCS03 contract address"
-      })
-    )
+    return Effect.fail(new CosmWasmError({ cause: "Missing UCS03 contract address" }))
   }
 
   const decodedDenom = isHex(baseToken) ? fromHex(baseToken, "string") : baseToken
@@ -65,7 +57,7 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
 
     return Effect.mapError(
       executeCosmWasmInstructions(chain, connectedWallet, instructions),
-      err => new CosmWasmError({ cause: String(err) })
+      err => err
     )
   })
 }
