@@ -10,9 +10,10 @@ type Props = {
   data: Option.Option<Array<DailyTransfer>>
   error: Option.Option<FetchDecodeGraphqlError>
   class?: string
+  onHoverChange?: (day: DailyTransfer | null) => void
 }
 
-const { data, error, class: className = "" } = $props()
+const { data, error, class: className = "", onHoverChange = () => {} }: Props = $props()
 
 // Format large numbers with commas (used for chart tooltips)
 function formatNumber(num: string | number): string {
@@ -23,6 +24,22 @@ function formatNumber(num: string | number): string {
 const reversedDailyTransfers = $derived(Option.isSome(data) ? [...data.value].reverse() : [])
 
 const maxCount = $derived(Option.isSome(data) ? Math.max(...data.value.map(d => d.count)) : 0)
+
+// Track the currently hovered day for display
+let hoveredDay = $state<DailyTransfer | null>(null)
+
+// Find the day with the highest count
+const highestDay = $derived.by(() => {
+  if (!Option.isSome(data) || data.value.length === 0) return null
+  return data.value.reduce(
+    (max, current) => (current.count > max.count ? current : max),
+    data.value[0]
+  )
+})
+
+// The count to display (either hovered day or highest day)
+const displayCount = $derived(() => hoveredDay?.count ?? highestDay?.count ?? 0)
+const displayDate = $derived(() => hoveredDay?.day ?? highestDay?.day ?? "")
 
 // Calculate nice round numbers for y-axis labels
 const yLabels = $derived(() => {
@@ -70,17 +87,30 @@ const xAxisLabels = $derived(
     
     <!-- Bars -->
     <div class="absolute left-0 right-0 top-0 bottom-0 pt-1 px-4 pt-4">
-      <div class="flex h-full gap-[1px] sm:gap-[2px] md:gap-1 items-end">
+      <div class="flex h-full items-end">
         {#each barHeights as day, i}
-          <div class="flex flex-col flex-1 group size-full justify-end hover:opacity-100">
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div 
+            class="flex pr-1 flex-col flex-1 group size-full justify-end hover:opacity-100"
+            onmouseenter={() => {
+              hoveredDay = day;
+              onHoverChange(day);
+            }}
+            onmouseleave={() => {
+              hoveredDay = null;
+              onHoverChange(null);
+            }}
+          >
             <div class="w-full size-full flex items-end">
               <div 
-                class="relative w-full bg-white  bar animate-bar"
+                class="relative w-full bg-white bar animate-bar"
                 style="--final-height: {day.heightPercent}%; --delay: {i * 50}ms; min-height: 1px;"
               >
+                <!-- uncomment for tooltip
                 <div class="absolute pointer-events-none bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-zinc-950 border-zinc-900 border text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                   <div>{formatNumber(day.count)}</div> <DateTimeComponent value={day.day} showTime={false} />
                 </div>
+                !-->
               </div>
             </div>
           </div>
