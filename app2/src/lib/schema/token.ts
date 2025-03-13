@@ -13,10 +13,6 @@ export type CosmosBankDenom = typeof CosmosBankDenom.Type
 export const TokenRawAmount = Schema.BigInt.pipe(Schema.brand("TokenRawAmount"))
 export type TokenRawAmount = typeof TokenRawAmount.Type
 
-export class TokenCw20 extends Schema.Class<TokenCw20>("TokenCw20")({
-  cw20_token_address: Schema.String
-}) {}
-
 export class TokenSource extends Schema.Class<TokenSource>("TokenSource")({
   name: Schema.String,
   logo_uri: Schema.OptionFromNullOr(Schema.String),
@@ -57,7 +53,6 @@ export class TokenWrapping extends Schema.Class<TokenWrapping>("TokenWrapping")(
 
 export class Token extends Schema.Class<Token>("Token")({
   denom: TokenRawDenom,
-  cw20: Schema.OptionFromNullOr(TokenCw20),
   representations: Schema.Array(TokenRepresentation),
   wrapping: Schema.Array(TokenWrapping)
 }) {}

@@ -101,14 +101,6 @@ const displayDenom = $derived(
             {/each}
           </section>
 
-          <section>
-            <h3 class="text-white">Denom</h3>
-            {#if Option.isSome(token.value.cw20)}
-              <div>{token.value.cw20.value.cw20_token_address}</div>
-            {/if}
-            <div>{token.value.denom}</div>
-          </section>
-
           {#each token.value.representations as rep}
             <section>
               <div>Name: {rep.name}</div>

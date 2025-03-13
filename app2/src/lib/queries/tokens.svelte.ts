@@ -12,11 +12,9 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
       schema: Schema.Struct({ v1_ibc_union_tokens: Schema.Array(Token) }),
       document: graphql(`
         query TokensForChain($universal_chain_id: String!) @cached(ttl: 60) {
-          v1_ibc_union_tokens(where: { chain: { universal_chain_id: { _eq: $universal_chain_id } } }) {
+          v2_tokens(args: { p_universal_chain_id: $universal_chain_id }) {
+            rank
             denom
-            cw20 {
-              cw20_token_address
-            }
             representations {
               name
               symbol
