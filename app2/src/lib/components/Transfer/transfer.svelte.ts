@@ -6,13 +6,21 @@ import {
   hasFailedExit as hasCosmosFailedExit,
   isComplete as isCosmosComplete,
   nextState as cosmosNextState,
-  TransferSubmission as CosmosTransferSubmission
+  TransferSubmission as CosmosTransferSubmission,
+  SwitchChainState,
+  ApprovalSubmitState,
+  TransferSubmitState
 } from "$lib/services/transfer-ucs03-cosmos"
 import {
   hasFailedExit as hasEvmFailedExit,
   isComplete as isEvmComplete,
   nextState as evmNextState,
-  TransferSubmission as EvmTransferSubmission
+  TransferSubmission as EvmTransferSubmission,
+  SwitchChainState as EvmSwitchChainState,
+  ApprovalSubmitState as EvmApprovalSubmitState,
+  ApprovalReceiptState,
+  TransferSubmitState as EvmTransferSubmitState,
+  TransferReceiptState
 } from "$lib/services/transfer-ucs03-evm"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { type Address, fromHex, type Hex } from "viem"
@@ -291,8 +299,45 @@ export class Transfer {
     const sourceChainValue = this.sourceChain.value
 
     if (sourceChainValue.rpc_type === "evm") {
-      const evmState =
-        this.state._tag === "EVM" ? this.state.state : EvmTransferSubmission.Filling()
+      let evmState: EvmTransferSubmission
+      if (this.state._tag === "EVM") {
+        // If failed, reset the failed step to InProgress
+        if (hasEvmFailedExit(this.state.state)) {
+          switch (this.state.state._tag) {
+            case "SwitchChain":
+              evmState = EvmTransferSubmission.SwitchChain({
+                state: EvmSwitchChainState.InProgress()
+              })
+              break
+            case "ApprovalSubmit":
+              evmState = EvmTransferSubmission.ApprovalSubmit({
+                state: EvmApprovalSubmitState.InProgress()
+              })
+              break
+            case "ApprovalReceipt":
+              evmState = EvmTransferSubmission.ApprovalReceipt({
+                state: ApprovalReceiptState.InProgress({ hash: this.state.state.state.hash })
+              })
+              break
+            case "TransferSubmit":
+              evmState = EvmTransferSubmission.TransferSubmit({
+                state: EvmTransferSubmitState.InProgress()
+              })
+              break
+            case "TransferReceipt":
+              evmState = EvmTransferSubmission.TransferReceipt({
+                state: TransferReceiptState.InProgress({ hash: this.state.state.state.hash })
+              })
+              break
+            default:
+              evmState = EvmTransferSubmission.Filling()
+          }
+        } else {
+          evmState = this.state.state
+        }
+      } else {
+        evmState = EvmTransferSubmission.Filling()
+      }
 
       const newState = await evmNextState(evmState, this.transferResult.args, sourceChainValue)
       this._stateOverride = newState !== null ? TransferState.EVM(newState) : TransferState.Empty()
@@ -311,8 +356,35 @@ export class Transfer {
         if (currentEvmState !== null && isEvmComplete(currentEvmState)) break
       }
     } else {
-      const cosmosState =
-        this.state._tag === "Cosmos" ? this.state.state : CosmosTransferSubmission.Filling()
+      let cosmosState: CosmosTransferSubmission
+      if (this.state._tag === "Cosmos") {
+        // If failed, reset the failed step to InProgress
+        if (hasCosmosFailedExit(this.state.state)) {
+          switch (this.state.state._tag) {
+            case "SwitchChain":
+              cosmosState = CosmosTransferSubmission.SwitchChain({
+                state: SwitchChainState.InProgress()
+              })
+              break
+            case "ApprovalSubmit":
+              cosmosState = CosmosTransferSubmission.ApprovalSubmit({
+                state: ApprovalSubmitState.InProgress()
+              })
+              break
+            case "TransferSubmit":
+              cosmosState = CosmosTransferSubmission.TransferSubmit({
+                state: TransferSubmitState.InProgress()
+              })
+              break
+            default:
+              cosmosState = CosmosTransferSubmission.Filling()
+          }
+        } else {
+          cosmosState = this.state.state
+        }
+      } else {
+        cosmosState = CosmosTransferSubmission.Filling()
+      }
 
       const newState = await cosmosNextState(
         cosmosState,
