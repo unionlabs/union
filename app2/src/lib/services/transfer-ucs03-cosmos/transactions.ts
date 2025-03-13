@@ -63,7 +63,6 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
       }
     ]
 
-    // Use the executeCosmWasmInstructions function to execute the transfer
     return Effect.mapError(
       executeCosmWasmInstructions(chain, connectedWallet, instructions),
       err => new CosmWasmError({ cause: String(err) })

@@ -204,7 +204,7 @@ export class Transfer {
       return null
     }
 
-    if(this.sourceChain.value.rpc_type !== "evm") return
+    if (this.sourceChain.value.rpc_type !== "evm") return
 
     this.wethQuoteToken = Option.some({ type: "WETH_LOADING" } as const)
 

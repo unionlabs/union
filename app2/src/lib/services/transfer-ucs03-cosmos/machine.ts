@@ -27,14 +27,20 @@ export async function nextState(
       return SwitchChainState.$match(state, {
         InProgress: async () => {
           const exit = await Effect.runPromiseExit(switchChain(chain))
-          console.log(exit)
-          return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
+          return TransferSubmission.SwitchChain({
+            state: SwitchChainState.Complete({ exit })
+          })
         },
         Complete: ({ exit }) => {
           if (exit._tag === "Failure") {
-            return TransferSubmission.SwitchChain({ state: SwitchChainState.InProgress() })
+            // Stay in SwitchChain with the error in the Complete state
+            return TransferSubmission.SwitchChain({
+              state: SwitchChainState.Complete({ exit })
+            })
           }
-          return TransferSubmission.ApprovalSubmit({ state: ApprovalSubmitState.InProgress() })
+          return TransferSubmission.ApprovalSubmit({
+            state: ApprovalSubmitState.InProgress()
+          })
         }
       })
     },
@@ -43,23 +49,20 @@ export async function nextState(
       return ApprovalSubmitState.$match(state, {
         InProgress: async () => {
           const exit = await Effect.runPromiseExit(approveTransfer(chain, connectedWallet, params))
-          console.log(exit)
-          if (exit._tag === "Failure") {
-            console.log("fail")
-            // return TransferSubmission.ApprovalSubmit({
-            //   state: ApprovalSubmitState.InProgress()
-            // })
-          }
-
           return TransferSubmission.ApprovalSubmit({
             state: ApprovalSubmitState.Complete({ exit })
           })
         },
         Complete: ({ exit }) => {
           if (exit._tag === "Failure") {
-            return TransferSubmission.ApprovalSubmit({ state: ApprovalSubmitState.InProgress() })
+            // Stay in ApprovalSubmit with the error in the Complete state
+            return TransferSubmission.ApprovalSubmit({
+              state: ApprovalSubmitState.Complete({ exit })
+            })
           }
-          return TransferSubmission.TransferSubmit({ state: TransferSubmitState.InProgress() })
+          return TransferSubmission.TransferSubmit({
+            state: TransferSubmitState.InProgress()
+          })
         }
       })
     },
@@ -74,9 +77,12 @@ export async function nextState(
         },
         Complete: ({ exit }) => {
           if (exit._tag === "Failure") {
-            return TransferSubmission.TransferSubmit({ state: TransferSubmitState.InProgress() })
+            // Stay in TransferSubmit with the error in the Complete state
+            return TransferSubmission.TransferSubmit({
+              state: TransferSubmitState.Complete({ exit })
+            })
           }
-          return TransferSubmission.Filling() // Or another appropriate state
+          return TransferSubmission.Filling()
         }
       })
     }

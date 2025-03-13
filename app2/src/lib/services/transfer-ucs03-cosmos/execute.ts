@@ -43,7 +43,6 @@ export const executeCosmWasmInstructions = (
     }
   }
 
-  // Main flow using flatMap to chain operations with consistent error handling
   return Effect.flatMap(
     Effect.mapError(
       getCosmWasmClient(chain, connectedWallet),
