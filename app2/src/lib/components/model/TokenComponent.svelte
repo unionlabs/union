@@ -90,9 +90,6 @@ const displayDenom = $derived(
             {#if token.value.representations.length > 0}
               <h2 class="text-white font-bold text-lg">{token.value.representations[0].symbol}</h2>
             {/if}
-            <div class="bg-sky-400 text-black font-bold rounded px-1">
-              {Option.isSome(token.value.cw20) ? "?" : "??"}
-            </div>
           </section>
           <section>
             {chain.universal_chain_id}

@@ -29,8 +29,7 @@ export class TokenSourceWrapping extends Schema.Class<TokenSourceWrapping>("Toke
 
 export class TokenSourceInfo extends Schema.Class<TokenSourceInfo>("TokenSourceInfo")({
   update_timestamp: Schema.DateTimeUtc,
-  source: TokenSource,
-  wrapping: Schema.Array(TokenSourceWrapping)
+  source: TokenSource
 }) {}
 
 export class TokenRepresentation extends Schema.Class<TokenRepresentation>("TokenRepresentation")({

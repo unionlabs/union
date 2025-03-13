@@ -10387,249 +10387,24 @@ input v2_token_meta_order_by {
 }
 
 """
-columns and relationships of "v2.token_meta_representation_source_wrapping"
-"""
-type v2_token_meta_representation_source_wrapping {
-  decimals: Int
-  destination_channel_id: Int
-  index: Int
-  internal_chain_id: Int
-  name: String
-  symbol: String
-  token: String
-
-  """An object relationship"""
-  unwrapped_chain: v2_chains_view
-  unwrapped_token: String
-
-  """An object relationship"""
-  wrapped_chain: v2_chains_view
-  wrapped_token: String
-  wrapper: String
-}
-
-"""
-order by aggregate values of table "v2.token_meta_representation_source_wrapping"
-"""
-input v2_token_meta_representation_source_wrapping_aggregate_order_by {
-  avg: v2_token_meta_representation_source_wrapping_avg_order_by
-  count: order_by
-  max: v2_token_meta_representation_source_wrapping_max_order_by
-  min: v2_token_meta_representation_source_wrapping_min_order_by
-  stddev: v2_token_meta_representation_source_wrapping_stddev_order_by
-  stddev_pop: v2_token_meta_representation_source_wrapping_stddev_pop_order_by
-  stddev_samp: v2_token_meta_representation_source_wrapping_stddev_samp_order_by
-  sum: v2_token_meta_representation_source_wrapping_sum_order_by
-  var_pop: v2_token_meta_representation_source_wrapping_var_pop_order_by
-  var_samp: v2_token_meta_representation_source_wrapping_var_samp_order_by
-  variance: v2_token_meta_representation_source_wrapping_variance_order_by
-}
-
-"""
-order by avg() on columns of table "v2.token_meta_representation_source_wrapping"
-"""
-input v2_token_meta_representation_source_wrapping_avg_order_by {
-  decimals: order_by
-  destination_channel_id: order_by
-  index: order_by
-  internal_chain_id: order_by
-}
-
-"""
-Boolean expression to filter rows from the table "v2.token_meta_representation_source_wrapping". All fields are combined with a logical 'AND'.
-"""
-input v2_token_meta_representation_source_wrapping_bool_exp {
-  _and: [v2_token_meta_representation_source_wrapping_bool_exp!]
-  _not: v2_token_meta_representation_source_wrapping_bool_exp
-  _or: [v2_token_meta_representation_source_wrapping_bool_exp!]
-  decimals: Int_comparison_exp
-  destination_channel_id: Int_comparison_exp
-  index: Int_comparison_exp
-  internal_chain_id: Int_comparison_exp
-  name: String_comparison_exp
-  symbol: String_comparison_exp
-  token: String_comparison_exp
-  unwrapped_chain: v2_chains_view_bool_exp
-  unwrapped_token: String_comparison_exp
-  wrapped_chain: v2_chains_view_bool_exp
-  wrapped_token: String_comparison_exp
-  wrapper: String_comparison_exp
-}
-
-"""
-order by max() on columns of table "v2.token_meta_representation_source_wrapping"
-"""
-input v2_token_meta_representation_source_wrapping_max_order_by {
-  decimals: order_by
-  destination_channel_id: order_by
-  index: order_by
-  internal_chain_id: order_by
-  name: order_by
-  symbol: order_by
-  token: order_by
-  unwrapped_token: order_by
-  wrapped_token: order_by
-  wrapper: order_by
-}
-
-"""
-order by min() on columns of table "v2.token_meta_representation_source_wrapping"
-"""
-input v2_token_meta_representation_source_wrapping_min_order_by {
-  decimals: order_by
-  destination_channel_id: order_by
-  index: order_by
-  internal_chain_id: order_by
-  name: order_by
-  symbol: order_by
-  token: order_by
-  unwrapped_token: order_by
-  wrapped_token: order_by
-  wrapper: order_by
-}
-
-"""
-Ordering options when selecting data from "v2.token_meta_representation_source_wrapping".
-"""
-input v2_token_meta_representation_source_wrapping_order_by {
-  decimals: order_by
-  destination_channel_id: order_by
-  index: order_by
-  internal_chain_id: order_by
-  name: order_by
-  symbol: order_by
-  token: order_by
-  unwrapped_chain: v2_chains_view_order_by
-  unwrapped_token: order_by
-  wrapped_chain: v2_chains_view_order_by
-  wrapped_token: order_by
-  wrapper: order_by
-}
-
-"""
-select columns of table "v2.token_meta_representation_source_wrapping"
-"""
-enum v2_token_meta_representation_source_wrapping_select_column {
-  """column name"""
-  decimals
-
-  """column name"""
-  destination_channel_id
-
-  """column name"""
-  index
-
-  """column name"""
-  internal_chain_id
-
-  """column name"""
-  name
-
-  """column name"""
-  symbol
-
-  """column name"""
-  token
-
-  """column name"""
-  unwrapped_token
-
-  """column name"""
-  wrapped_token
-
-  """column name"""
-  wrapper
-}
-
-"""
-order by stddev() on columns of table "v2.token_meta_representation_source_wrapping"
-"""
-input v2_token_meta_representation_source_wrapping_stddev_order_by {
-  decimals: order_by
-  destination_channel_id: order_by
-  index: order_by
-  internal_chain_id: order_by
-}
-
-"""
-order by stddev_pop() on columns of table "v2.token_meta_representation_source_wrapping"
-"""
-input v2_token_meta_representation_source_wrapping_stddev_pop_order_by {
-  decimals: order_by
-  destination_channel_id: order_by
-  index: order_by
-  internal_chain_id: order_by
-}
-
-"""
-order by stddev_samp() on columns of table "v2.token_meta_representation_source_wrapping"
-"""
-input v2_token_meta_representation_source_wrapping_stddev_samp_order_by {
-  decimals: order_by
-  destination_channel_id: order_by
-  index: order_by
-  internal_chain_id: order_by
-}
-
-"""
-order by sum() on columns of table "v2.token_meta_representation_source_wrapping"
-"""
-input v2_token_meta_representation_source_wrapping_sum_order_by {
-  decimals: order_by
-  destination_channel_id: order_by
-  index: order_by
-  internal_chain_id: order_by
-}
-
-"""
-order by var_pop() on columns of table "v2.token_meta_representation_source_wrapping"
-"""
-input v2_token_meta_representation_source_wrapping_var_pop_order_by {
-  decimals: order_by
-  destination_channel_id: order_by
-  index: order_by
-  internal_chain_id: order_by
-}
-
-"""
-order by var_samp() on columns of table "v2.token_meta_representation_source_wrapping"
-"""
-input v2_token_meta_representation_source_wrapping_var_samp_order_by {
-  decimals: order_by
-  destination_channel_id: order_by
-  index: order_by
-  internal_chain_id: order_by
-}
-
-"""
-order by variance() on columns of table "v2.token_meta_representation_source_wrapping"
-"""
-input v2_token_meta_representation_source_wrapping_variance_order_by {
-  decimals: order_by
-  destination_channel_id: order_by
-  index: order_by
-  internal_chain_id: order_by
-}
-
-"""
 columns and relationships of "v2.token_meta_representation_sources"
 """
 type v2_token_meta_representation_sources {
   """An object relationship"""
   chain: v2_chains_view
   decimals: Int
+  denom: String
   name: String
 
   """An object relationship"""
   source: v2_token_meta_sources
   symbol: String
-  token: String
   update_timestamp: timestamptz
 
   """An array relationship"""
   wrapping(
     """distinct select on columns"""
-    distinct_on: [v2_token_meta_representation_source_wrapping_select_column!]
+    distinct_on: [v2_token_meta_representation_sources_select_column!]
 
     """limit the number of rows returned"""
     limit: Int
@@ -10638,11 +10413,11 @@ type v2_token_meta_representation_sources {
     offset: Int
 
     """sort the rows by one or more columns"""
-    order_by: [v2_token_meta_representation_source_wrapping_order_by!]
+    order_by: [v2_token_meta_representation_sources_order_by!]
 
     """filter the rows returned"""
-    where: v2_token_meta_representation_source_wrapping_bool_exp
-  ): [v2_token_meta_representation_source_wrapping!]!
+    where: v2_token_meta_representation_sources_bool_exp
+  ): [v2_token_meta_representation_sources!]!
 }
 
 """
@@ -10678,12 +10453,12 @@ input v2_token_meta_representation_sources_bool_exp {
   _or: [v2_token_meta_representation_sources_bool_exp!]
   chain: v2_chains_view_bool_exp
   decimals: Int_comparison_exp
+  denom: String_comparison_exp
   name: String_comparison_exp
   source: v2_token_meta_sources_bool_exp
   symbol: String_comparison_exp
-  token: String_comparison_exp
   update_timestamp: timestamptz_comparison_exp
-  wrapping: v2_token_meta_representation_source_wrapping_bool_exp
+  wrapping: v2_token_meta_representation_sources_bool_exp
 }
 
 """
@@ -10691,9 +10466,9 @@ order by max() on columns of table "v2.token_meta_representation_sources"
 """
 input v2_token_meta_representation_sources_max_order_by {
   decimals: order_by
+  denom: order_by
   name: order_by
   symbol: order_by
-  token: order_by
   update_timestamp: order_by
 }
 
@@ -10702,9 +10477,9 @@ order by min() on columns of table "v2.token_meta_representation_sources"
 """
 input v2_token_meta_representation_sources_min_order_by {
   decimals: order_by
+  denom: order_by
   name: order_by
   symbol: order_by
-  token: order_by
   update_timestamp: order_by
 }
 
@@ -10714,12 +10489,12 @@ Ordering options when selecting data from "v2.token_meta_representation_sources"
 input v2_token_meta_representation_sources_order_by {
   chain: v2_chains_view_order_by
   decimals: order_by
+  denom: order_by
   name: order_by
   source: v2_token_meta_sources_order_by
   symbol: order_by
-  token: order_by
   update_timestamp: order_by
-  wrapping_aggregate: v2_token_meta_representation_source_wrapping_aggregate_order_by
+  wrapping_aggregate: v2_token_meta_representation_sources_aggregate_order_by
 }
 
 """
@@ -10730,13 +10505,13 @@ enum v2_token_meta_representation_sources_select_column {
   decimals
 
   """column name"""
+  denom
+
+  """column name"""
   name
 
   """column name"""
   symbol
-
-  """column name"""
-  token
 
   """column name"""
   update_timestamp
@@ -10997,7 +10772,7 @@ type v2_token_meta_wrapping {
 
   """An object relationship"""
   unwrapped_chain: v2_chains_view
-  unwrapped_token: String
+  unwrapped_denom: String
 
   """An object relationship"""
   wrapped_chain: v2_chains_view
@@ -11037,7 +10812,7 @@ input v2_token_meta_wrapping_bool_exp {
   _or: [v2_token_meta_wrapping_bool_exp!]
   destination_channel_id: Int_comparison_exp
   unwrapped_chain: v2_chains_view_bool_exp
-  unwrapped_token: String_comparison_exp
+  unwrapped_denom: String_comparison_exp
   wrapped_chain: v2_chains_view_bool_exp
   wrapper: String_comparison_exp
 }
@@ -11047,7 +10822,7 @@ order by max() on columns of table "v2.token_meta_wrapping"
 """
 input v2_token_meta_wrapping_max_order_by {
   destination_channel_id: order_by
-  unwrapped_token: order_by
+  unwrapped_denom: order_by
   wrapper: order_by
 }
 
@@ -11056,7 +10831,7 @@ order by min() on columns of table "v2.token_meta_wrapping"
 """
 input v2_token_meta_wrapping_min_order_by {
   destination_channel_id: order_by
-  unwrapped_token: order_by
+  unwrapped_denom: order_by
   wrapper: order_by
 }
 
@@ -11064,7 +10839,7 @@ input v2_token_meta_wrapping_min_order_by {
 input v2_token_meta_wrapping_order_by {
   destination_channel_id: order_by
   unwrapped_chain: v2_chains_view_order_by
-  unwrapped_token: order_by
+  unwrapped_denom: order_by
   wrapped_chain: v2_chains_view_order_by
   wrapper: order_by
 }
@@ -11077,7 +10852,7 @@ enum v2_token_meta_wrapping_select_column {
   destination_channel_id
 
   """column name"""
-  unwrapped_token
+  unwrapped_denom
 
   """column name"""
   wrapper

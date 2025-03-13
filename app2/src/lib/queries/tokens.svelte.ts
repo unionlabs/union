@@ -9,7 +9,7 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
   Effect.gen(function* () {
     yield* Effect.log(`zkgm starting token fetcher for ${universalChainId}`)
     const response = yield* createQueryGraphql({
-      schema: Schema.Struct({ v1_ibc_union_tokens: Schema.Array(Token) }),
+      schema: Schema.Struct({ v2_tokens: Schema.Array(Token) }),
       document: graphql(`
         query TokensForChain($universal_chain_id: String!) @cached(ttl: 60) {
           v2_tokens(args: { p_universal_chain_id: $universal_chain_id }) {
@@ -25,13 +25,6 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
                   name
                   logo_uri
                   source_uri
-                }
-                wrapping {
-                  destination_channel_id
-                  unwrapped_chain {
-                    universal_chain_id
-                  }
-                  unwrapped_denom
                 }
               }
             }
@@ -57,7 +50,7 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
           // Can be removed when this invalid denom is removed from hubble
           data.pipe(
             Option.map(d =>
-              d.v1_ibc_union_tokens.filter(
+              d.v2_tokens.filter(
                 token =>
                   token.denom !== TokenRawDenom.make("0x0000000000000000000000000000000000000000")
               )
