@@ -1,5 +1,5 @@
 import {CosmWasmClient, SigningCosmWasmClient} from "@cosmjs/cosmwasm-stargate"
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
 import {cosmosStore, type CosmosWalletId} from "$lib/wallet/cosmos";
 import type {CosmosWallet} from "$lib/services/cosmos/types.ts";
 import type {Chain} from "$lib/schema/chain.ts";
@@ -11,7 +11,7 @@ import {CosmWasmError} from "$lib/services/transfer-cosmos";
 export const getCosmWasmClient = (
   chain: Chain,
   connectedWallet: CosmosWalletId
-)  =>
+) =>
   Effect.gen(function* () {
     if (!chain.rpcs) {
       throw new CosmWasmError({
@@ -38,12 +38,18 @@ export const getCosmWasmClient = (
       })
     )
 
-    // Create a proper GasPrice object
     const gasPrice = GasPrice.fromString(`${gasPriceInfo.amount}${gasPriceInfo.denom}`)
+
+    const rpcUrl = chain.getRpcUrl('rpc')
+    if (Option.isNone(rpcUrl)) {
+      throw new CosmWasmError({
+        cause: "No RPC URL of type 'rpc' available for chain",
+      })
+    }
 
     return yield* Effect.tryPromise({
       try: () => SigningCosmWasmClient.connectWithSigner(
-        chain.getRpcUrl('rpc').toString(),
+        "https://rpc.union-testnet-9.union.chain.kitchen",
         offlineSigner,
         { gasPrice }
       ),

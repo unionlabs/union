@@ -1,7 +1,7 @@
 <script lang="ts">
 import Chain from "$lib/components/Transfer/Chain.svelte"
 import Card from "$lib/components/ui/Card.svelte"
-import { hasFailedExit, isComplete } from "$lib/services/transfer-ucs03-evm"
+import { hasFailedExit, isComplete } from "$lib/services/transfer-cosmos"
 import Button from "$lib/components/ui/Button.svelte"
 import Assets from "$lib/components/Transfer/Assets.svelte"
 import Amount from "$lib/components/Transfer/Amount.svelte"

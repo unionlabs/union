@@ -11,7 +11,6 @@ import {
   TransferSubmission
 } from "$lib/services/transfer-cosmos"
 import { chains } from "$lib/stores/chains.svelte.ts"
-import { getChainFromWagmi } from "$lib/wallet/evm/index.ts"
 import { type Address, fromHex, type Hex } from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
@@ -19,6 +18,7 @@ import type { Channel } from "$lib/schema/channel.ts"
 import { TransferSchema } from "$lib/schema/transfer-args.ts"
 import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/quote-token.ts"
 import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/weth-token.ts"
+import {cosmosStore} from "$lib/wallet/cosmos";
 
 export class Transfer {
   raw = new RawTransferSvelte()
@@ -76,6 +76,8 @@ export class Transfer {
     )
   })
 
+
+
   ucs03address = $derived.by<Option.Option<Address>>(() => {
     if (
       Option.isNone(this.sourceChain) ||
@@ -87,7 +89,7 @@ export class Transfer {
 
     const hexAddress: Hex =
       this.sourceChain.value.rpc_type === "cosmos"
-        ? (fromHex(`0x${this.channel.value.source_port_id}`, "string") as Hex)
+        ? (fromHex(<`0x${string}`>`${this.channel.value.source_port_id}`, "string") as Hex)
         : (this.channel.value.source_port_id as Hex)
 
     return Option.some(hexAddress)
@@ -204,7 +206,7 @@ export class Transfer {
     const wethQuoteTokenValue = Option.getOrNull(this.wethQuoteToken)
 
     return {
-      sourceChain: sourceChainValue ? getChainFromWagmi(Number(sourceChainValue.chain_id)) : null,
+      sourceChain: !sourceChainValue ? null : (sourceChainValue.rpc_type === "evm" ? sourceChainValue.toViemChain() : sourceChainValue),
       sourceRpcType: sourceChainValue?.rpc_type,
       destinationRpcType: destinationChainValue?.rpc_type,
       sourceChannelId: channelValue?.source_channel_id,
@@ -232,9 +234,10 @@ export class Transfer {
 
   submit = async () => {
     if (Option.isNone(chains.data) || Option.isNone(this.sourceChain)) return
-    this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value)
+    console.log(this.transferResult.args)
+    this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value, cosmosStore.connectedWallet)
     while (!hasFailedExit(this.state)) {
-      this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value)
+      this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value, cosmosStore.connectedWallet)
       if (isComplete(this.state)) break
     }
   }

@@ -27,7 +27,7 @@ export async function nextState(
     SwitchChain: ({ state }) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(switchChain(params.sourceChain.id))
+          const exit = await Effect.runPromiseExit(switchChain(chain))
           return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
         },
         Complete: ({ exit }) => {
@@ -43,6 +43,7 @@ export async function nextState(
       return ApprovalSubmitState.$match(state, {
         InProgress: async () => {
           const exit = await Effect.runPromiseExit(approveTransfer(chain, connectedWallet, params))
+          console.log(exit)
           if (exit._tag === "Failure") {
             return TransferSubmission.ApprovalSubmit({
               state: ApprovalSubmitState.InProgress()
