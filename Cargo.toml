@@ -194,6 +194,7 @@ members = [
   "cosmwasm/cw20-base",
   "lib/scroll-types",
   "lib/fork-schedules",
+  "lib/depolama",
 ]
 
 [workspace.package]
@@ -226,6 +227,8 @@ cosmos-client      = { path = "lib/cosmos-client", default-features = false }
 beacon-api       = { path = "lib/beacon-api", default-features = false }
 beacon-api-types = { path = "lib/beacon-api-types", default-features = false }
 fork-schedules   = { path = "lib/fork-schedules", default-features = false }
+
+depolama = { path = "lib/depolama", default-features = false }
 
 state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
 

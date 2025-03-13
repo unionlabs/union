@@ -1,4 +1,5 @@
 use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
+use depolama::StorageExt;
 use ibc_union_msg::{
     lightclient::VerifyCreationResponse,
     msg::{
@@ -9,7 +10,7 @@ use ibc_union_msg::{
 use ibc_union_spec::types::Connection;
 
 use super::*;
-use crate::contract::init;
+use crate::{contract::init, state::Connections};
 
 #[test]
 fn connection_open_init_ok() {
@@ -63,7 +64,7 @@ fn connection_open_init_commitment_saved() {
     connection_open_init(deps.as_mut()).expect("open connection init is ok");
 
     assert_eq!(
-        crate::state::CONNECTIONS.load(&deps.storage, 1).unwrap(),
+        deps.storage.read::<Connections>(&1).unwrap(),
         Connection {
             state: ConnectionState::Init,
             client_id: 1,
@@ -137,18 +138,17 @@ fn connection_open_try_client_not_found() {
         relayer: mock_addr(RELAYER).into_string(),
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ConnectionOpenTry(msg),
-    )
-    .is_err_and(|err| {
-        match err {
-            ContractError::Std(err) => matches!(err, StdError::NotFound { .. }),
-            _ => false,
-        }
-    }));
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ConnectionOpenTry(msg),
+        ),
+        Err(ContractError::Std(StdError::generic_err(
+            "key 0x00000001 not present"
+        )))
+    );
 }
 
 // #[test]
@@ -193,7 +193,7 @@ fn connection_open_try_commitment_saved() {
     .expect("connection open try is ok");
 
     assert_eq!(
-        crate::state::CONNECTIONS.load(&deps.storage, 1).unwrap(),
+        deps.storage.read::<Connections>(&1).unwrap(),
         Connection {
             state: ConnectionState::TryOpen,
             client_id: 1,
@@ -282,7 +282,7 @@ fn connection_open_ack_commitment_saved() {
     .expect("connection open ack is ok");
 
     assert_eq!(
-        crate::state::CONNECTIONS.load(&deps.storage, 1).unwrap(),
+        deps.storage.read::<Connections>(&1).unwrap(),
         Connection {
             state: ConnectionState::Open,
             client_id: 1,
@@ -356,7 +356,7 @@ fn connection_open_try_confirm_commitment_saved() {
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     assert_eq!(
-        crate::state::CONNECTIONS.load(&deps.storage, 1).unwrap(),
+        deps.storage.read::<Connections>(&1).unwrap(),
         Connection {
             state: ConnectionState::Open,
             client_id: 1,

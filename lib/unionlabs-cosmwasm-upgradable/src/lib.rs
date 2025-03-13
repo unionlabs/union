@@ -90,6 +90,8 @@ pub enum UpgradeError {
     AlreadyInitiated,
     #[error("attempted to migrate a contract that was not yet initiated")]
     NotInitiated,
+    #[error("unknown state version {0}")]
+    UnknownStateVersion(NonZeroU32),
     #[error("the state version must increase if it is modified, attempted to migrate from {current} to {new}")]
     StateVersionMustIncreaseIfModified {
         current: NonZeroU32,

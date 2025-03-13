@@ -110,7 +110,6 @@ impl<const BYTES: usize, E: Encoding> FixedBytes<BYTES, E> {
     }
 
     #[must_use]
-    // TODO: Make this return `Bytes`
     pub fn into_bytes(self) -> Bytes<E> {
         self.get().to_vec().into()
     }

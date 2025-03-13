@@ -3,32 +3,26 @@
 use core::fmt::Debug;
 
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, Binary, Deps, DepsMut, Env, QuerierWrapper, Response, StdError,
+    to_json_binary, Addr, Binary, Deps, DepsMut, Env, QuerierWrapper, Response, StdError,
 };
-use cw_storage_plus::{Item, Map};
+use depolama::{QuerierExt, StorageExt, Store};
+use ibc_union::state::{ClientConsensusStates, ClientImpls, ClientStates, ClientStore, QueryStore};
 use ibc_union_msg::lightclient::{
     MisbehaviourResponse, QueryMsg, Status, StorageWrites, UpdateStateResponse,
     VerifyCreationResponse, VerifyCreationResponseEvent,
 };
 use msg::InitMsg;
-use state::IBC_HOST;
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding, EthAbi},
-    primitives::{encoding::Base64, Bytes},
+    primitives::Bytes,
     ErrorReporter,
 };
 use unionlabs_cosmwasm_upgradable::UpgradeError;
 
+use crate::state::IbcHost;
+
 pub mod msg;
 pub mod state;
-
-pub const CLIENT_STORAGE_PREFIX: &str = "client/";
-
-// These are only used for `key` calculation. We don't want this crate to depend on `ibc-union`.
-pub const CLIENT_STATES: Map<u32, Binary> = Map::new("client_states");
-pub const CLIENT_CONSENSUS_STATES: Map<(u32, u64), Binary> = Map::new("client_consensus_states");
-const CLIENT_IMPLS: Map<u32, Addr> = Map::new("client_impls");
-const QUERY_STORE: Item<Binary> = Item::new("query_store");
 
 // TODO: Add #[source] to all variants
 #[derive(macros::Debug, thiserror::Error)]
@@ -112,16 +106,11 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
         )
     }
 
-    pub fn read_self_storage<V: Decode<T::Encoding>>(
-        &self,
-        key: &[u8],
-    ) -> Result<V, IbcClientError<T>> {
-        read_storage(
-            self.deps.querier.into_empty(),
-            &self.ibc_host,
-            self.client_id,
-            key,
-        )
+    pub fn read_self_storage<S: Store>(&self, key: S::Key) -> Result<S::Value, IbcClientError<T>> {
+        self.deps
+            .querier
+            .read::<ClientStore<S>>(&self.ibc_host, &(self.client_id, key))
+            .map_err(Into::into)
     }
 
     pub fn read_client_state<Client: IbcClient>(
@@ -173,15 +162,13 @@ fn client_impl<T: IbcClient>(
     ibc_host: &Addr,
     client_id: u32,
 ) -> Result<Addr, IbcClientError<T>> {
-    let addr = from_json::<Addr>(
-        querier
-            .query_wasm_raw(ibc_host.to_string(), CLIENT_IMPLS.key(client_id).to_vec())?
-            .ok_or_else(|| {
-                IbcClientError::Std(StdError::generic_err(format!(
-                    "unable to read client state of client {client_id}"
-                )))
-            })?,
-    )?;
+    let addr = querier
+        .read::<ClientImpls>(ibc_host, &client_id)
+        .map_err(|err| {
+            IbcClientError::Std(StdError::generic_err(format!(
+                "unable to read client state of client {client_id}: {err}"
+            )))
+        })?;
 
     Ok(addr)
 }
@@ -208,8 +195,9 @@ impl<T: IbcClient> StateUpdate<T> {
         self
     }
 
-    pub fn add_storage_write<V: Encode<T::Encoding>>(mut self, key: Bytes, value: V) -> Self {
-        self.storage_writes.insert(key, value.encode().into());
+    pub fn add_storage_write<S: Store>(mut self, key: S::Key, value: S::Value) -> Self {
+        self.storage_writes
+            .insert(depolama::raw_key::<S>(&key), S::encode_value(&value));
         self
     }
 }
@@ -327,7 +315,11 @@ pub fn init<T: IbcClient>(
     deps: DepsMut<T::CustomQuery>,
     msg: InitMsg,
 ) -> Result<Response, IbcClientError<T>> {
-    IBC_HOST.save(deps.storage, &msg.ibc_host)?;
+    // cosmwasm doesn't understand newtypes. the addr type in the message is not validated, so make sure we check it ourselves
+    let ibc_host = deps.api.addr_validate(msg.ibc_host.as_ref())?;
+
+    deps.storage.write_item::<IbcHost>(&ibc_host);
+
     Ok(Response::default())
 }
 
@@ -338,19 +330,19 @@ pub fn query<T: IbcClient>(
 ) -> Result<Binary, IbcClientError<T>> {
     match msg {
         QueryMsg::GetTimestamp { client_id, height } => {
-            let ibc_host = IBC_HOST.load(deps.storage)?;
+            let ibc_host = deps.storage.read_item::<IbcHost>()?;
             let consensus_state =
                 read_consensus_state::<T>(deps.querier.into_empty(), &ibc_host, client_id, height)?;
             to_json_binary(&T::get_timestamp(&consensus_state)).map_err(Into::into)
         }
         QueryMsg::GetLatestHeight { client_id } => {
-            let ibc_host = IBC_HOST.load(deps.storage)?;
+            let ibc_host = deps.storage.read_item::<IbcHost>()?;
             let client_state =
                 read_client_state::<T>(deps.querier.into_empty(), &ibc_host, client_id)?;
             to_json_binary(&T::get_latest_height(&client_state)).map_err(Into::into)
         }
         QueryMsg::GetStatus { client_id } => {
-            let ibc_host = IBC_HOST.load(deps.storage)?;
+            let ibc_host = deps.storage.read_item::<IbcHost>()?;
             let client_state =
                 read_client_state::<T>(deps.querier.into_empty(), &ibc_host, client_id)?;
             let status = T::status(
@@ -393,7 +385,7 @@ pub fn query<T: IbcClient>(
             path,
             value,
         } => {
-            let ibc_host = IBC_HOST.load(deps.storage)?;
+            let ibc_host = deps.storage.read_item::<IbcHost>()?;
             let storage_proof = T::StorageProof::decode_as::<T::Encoding>(&proof)
                 .map_err(DecodeError::StorageProof)?;
 
@@ -413,7 +405,7 @@ pub fn query<T: IbcClient>(
             proof,
             path,
         } => {
-            let ibc_host = IBC_HOST.load(deps.storage)?;
+            let ibc_host = deps.storage.read_item::<IbcHost>()?;
             let storage_proof = T::StorageProof::decode_as::<T::Encoding>(&proof)
                 .map_err(DecodeError::StorageProof)?;
 
@@ -427,8 +419,8 @@ pub fn query<T: IbcClient>(
             to_json_binary(&()).map_err(Into::into)
         }
         QueryMsg::UpdateState { client_id, caller } => {
-            let ibc_host = IBC_HOST.load(deps.storage)?;
-            let message = QUERY_STORE.query(&deps.querier, ibc_host.clone())?;
+            let ibc_host = deps.storage.read_item::<IbcHost>()?;
+            let message = deps.querier.read_item::<QueryStore>(&ibc_host)?;
             let header =
                 T::Header::decode_as::<T::Encoding>(&message).map_err(DecodeError::Header)?;
 
@@ -457,7 +449,7 @@ pub fn query<T: IbcClient>(
             let misbehaviour = T::Misbehaviour::decode_as::<T::Encoding>(&message)
                 .map_err(DecodeError::Misbehaviour)?;
 
-            let ibc_host = IBC_HOST.load(deps.storage)?;
+            let ibc_host = deps.storage.read_item::<IbcHost>()?;
             let client_state = T::misbehaviour(
                 IbcClientCtx::new(client_id, ibc_host, deps, env),
                 misbehaviour,
@@ -478,15 +470,13 @@ pub fn read_client_state<T: IbcClient>(
     ibc_host: &Addr,
     client_id: u32,
 ) -> Result<T::ClientState, IbcClientError<T>> {
-    let client_state = from_json::<Bytes<Base64>>(
-        querier
-            .query_wasm_raw(ibc_host.to_string(), CLIENT_STATES.key(client_id).to_vec())?
-            .ok_or_else(|| {
-                IbcClientError::Std(StdError::generic_err(format!(
-                    "unable to read client state of client {client_id}"
-                )))
-            })?,
-    )?;
+    let client_state = querier
+        .read::<ClientStates>(ibc_host, &client_id)
+        .map_err(|err| {
+            IbcClientError::Std(StdError::generic_err(format!(
+                "unable to read client state of client {client_id}: {err}"
+            )))
+        })?;
 
     T::ClientState::decode_as::<T::Encoding>(&client_state)
         .map_err(|e| IbcClientError::Decode(DecodeError::ClientState(e)))
@@ -498,49 +488,14 @@ pub fn read_consensus_state<T: IbcClient>(
     client_id: u32,
     height: u64,
 ) -> Result<T::ConsensusState, IbcClientError<T>> {
-    let consensus_state = from_json::<Bytes<Base64>>(
-        querier
-            .query_wasm_raw(
-                ibc_host.to_string(),
-                CLIENT_CONSENSUS_STATES.key((client_id, height)).to_vec()
-            )?
-            .ok_or_else(|| {
-                IbcClientError::Std(
-                    StdError::generic_err(
-                        format!(
-                            "unable to read consensus state of client {client_id} at trusted height {height}"
-                        )
-                    )
-                )
-            })?
-    )?;
-
-    T::ConsensusState::decode(&consensus_state)
-        .map_err(|e| IbcClientError::Decode(DecodeError::ConsensusState(e)))
-}
-
-fn read_storage<V: Decode<T::Encoding>, T: IbcClient>(
-    querier: QuerierWrapper,
-    ibc_host: &Addr,
-    client_id: u32,
-    key: &[u8],
-) -> Result<V, IbcClientError<T>> {
-    let value = querier
-        .query_wasm_raw(
-            ibc_host,
-            [
-                CLIENT_STORAGE_PREFIX.as_bytes(),
-                &client_id.to_le_bytes(),
-                key,
-            ]
-            .concat(),
-        )?
-        .ok_or_else(|| {
+    let consensus_state = querier
+        .read::<ClientConsensusStates>(ibc_host, &(client_id, height))
+        .map_err(|err| {
             IbcClientError::Std(StdError::generic_err(format!(
-                "unable to read the storage of client {client_id} with key {key:?}"
+                "unable to read consensus state of client {client_id} at trusted height {height}: {err}"
             )))
         })?;
 
-    V::decode_as::<T::Encoding>(&value)
-        .map_err(|_| IbcClientError::Decode(DecodeError::RawStorage(Bytes::new(value))))
+    T::ConsensusState::decode(&consensus_state)
+        .map_err(|e| IbcClientError::Decode(DecodeError::ConsensusState(e)))
 }

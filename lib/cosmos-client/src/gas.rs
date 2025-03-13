@@ -33,7 +33,7 @@ impl GasFillerT for GasConfig {
 
     async fn mk_fee(&self, gas: u64) -> Fee {
         // gas limit = provided gas * multiplier, clamped between min_gas and max_gas
-        let gas_limit = u128_saturating_mul_f64(gas.into(), self.gas_multiplier)
+        let gas_limit = dbg!(u128_saturating_mul_f64(gas.into(), self.gas_multiplier))
             .clamp(self.min_gas.into(), self.max_gas.into());
 
         let amount = u128_saturating_mul_f64(gas.into(), self.gas_price);

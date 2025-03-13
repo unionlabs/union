@@ -5,6 +5,7 @@ use unionlabs::{errors::UnknownEnumVariant, tuple::AsTuple};
 use crate::types::{ClientId, ConnectionId};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, AsTuple)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(
     feature = "serde",
@@ -36,6 +37,7 @@ pub struct Connection {
 // }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(
     feature = "serde",

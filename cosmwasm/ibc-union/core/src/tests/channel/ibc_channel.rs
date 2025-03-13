@@ -1,4 +1,5 @@
 use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
+use depolama::StorageExt;
 use ibc_union_msg::{
     lightclient::VerifyCreationResponse,
     msg::{
@@ -8,7 +9,10 @@ use ibc_union_msg::{
 use ibc_union_spec::types::Channel;
 
 use super::*;
-use crate::contract::init;
+use crate::{
+    contract::init,
+    state::{ChannelOwner, Channels},
+};
 
 const SENDER: &str = "unionsender";
 const RELAYER: &str = "unionrelayer";
@@ -76,7 +80,7 @@ fn channel_open_init_channel_claimed() {
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
 
     assert_eq!(
-        crate::state::CHANNEL_OWNER.load(&deps.storage, 1).unwrap(),
+        deps.storage.read::<ChannelOwner>(&1).unwrap(),
         mock_addr(SENDER)
     );
 }
@@ -105,7 +109,7 @@ fn channel_open_init_commitment_saved() {
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
 
     assert_eq!(
-        crate::state::CHANNELS.load(&deps.storage, 1).unwrap(),
+        deps.storage.read::<Channels>(&1).unwrap(),
         Channel {
             state: ChannelState::Init,
             connection_id: 1,
@@ -260,7 +264,7 @@ fn channel_open_try_channel_claimed() {
     .expect("channel open try is ok");
 
     assert_eq!(
-        crate::state::CHANNEL_OWNER.load(&deps.storage, 1).unwrap(),
+        deps.storage.read::<ChannelOwner>(&1).unwrap(),
         mock_addr(SENDER)
     );
 }
@@ -310,7 +314,7 @@ fn channel_open_try_commitment_saved() {
     .expect("channel open try is ok");
 
     assert_eq!(
-        crate::state::CHANNELS.load(&deps.storage, 1).unwrap(),
+        deps.storage.read::<Channels>(&1).unwrap(),
         Channel {
             state: ChannelState::TryOpen,
             connection_id: 1,
@@ -407,20 +411,17 @@ fn channel_open_ack_not_found() {
         relayer: mock_addr(RELAYER).to_string(),
     };
 
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenAck(msg)
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ChannelOpenAck(msg)
+        ),
+        Err(ContractError::Std(StdError::generic_err(
+            "key 0x00000001 not present"
+        )))
     )
-    .is_err_and(|err| {
-        match err {
-            ContractError::Std(err) => {
-                matches!(err, StdError::NotFound { .. })
-            }
-            _ => false,
-        }
-    }))
 }
 
 #[test]
@@ -478,7 +479,7 @@ fn channel_open_ack_commitment_saved() {
     .expect("channel open ack is ok");
 
     assert_eq!(
-        crate::state::CHANNELS.load(&deps.storage, 1).unwrap(),
+        deps.storage.read::<Channels>(&1).unwrap(),
         Channel {
             state: ChannelState::Open,
             connection_id: 1,
@@ -576,20 +577,18 @@ fn channel_open_confirm_not_found() {
         proof_height: 1,
         relayer: mock_addr(RELAYER).to_string(),
     };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::ChannelOpenConfirm(msg),
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&mock_addr(SENDER), &[]),
+            ExecuteMsg::ChannelOpenConfirm(msg),
+        ),
+        Err(ContractError::Std(StdError::generic_err(
+            "key 0x00000001 not present"
+        )))
     )
-    .is_err_and(|err| {
-        match err {
-            ContractError::Std(err) => {
-                matches!(err, StdError::NotFound { .. })
-            }
-            _ => false,
-        }
-    }))
 }
 
 #[test]
@@ -651,7 +650,7 @@ fn channel_open_confirm_commitment_saved() {
     .expect("channel open confirm is ok");
 
     assert_eq!(
-        crate::state::CHANNELS.load(&deps.storage, 1).unwrap(),
+        deps.storage.read::<Channels>(&1).unwrap(),
         Channel {
             state: ChannelState::Open,
             connection_id: 1,

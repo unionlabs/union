@@ -2,6 +2,7 @@ use cosmwasm_std::{
     testing::{message_info, mock_dependencies, mock_env},
     to_json_binary, Addr, Event,
 };
+use depolama::StorageExt;
 use ibc_union_msg::{
     lightclient::{QueryMsg as LightClientQueryMsg, UpdateStateResponse, VerifyCreationResponse},
     msg::{ExecuteMsg, InitMsg, MsgUpdateClient},
@@ -10,6 +11,7 @@ use ibc_union_msg::{
 use super::*;
 use crate::{
     contract::{events, execute, init},
+    state::{ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates, ClientTypes},
     ContractError,
 };
 
@@ -35,11 +37,10 @@ fn register_client_ok() {
         .any(|e| e == new_client_registered_event(CLIENT_TYPE, &mock_addr(CLIENT_ADDRESS))));
 
     assert_eq!(
-        crate::state::CLIENT_REGISTRY
-            .load(&deps.storage, CLIENT_TYPE)
-            .unwrap()
-            .as_str(),
-        mock_addr(CLIENT_ADDRESS).to_string()
+        deps.storage
+            .read::<ClientRegistry>(&CLIENT_TYPE.to_string())
+            .unwrap(),
+        mock_addr(CLIENT_ADDRESS)
     );
 }
 
@@ -107,27 +108,20 @@ fn create_client_commitments_saved() {
         .expect("client type string is u32");
 
     assert_eq!(
-        crate::state::CLIENT_TYPES
-            .load(&deps.storage, client_id)
-            .unwrap(),
+        deps.storage.read::<ClientTypes>(&client_id).unwrap(),
         CLIENT_TYPE
     );
     assert_eq!(
-        crate::state::CLIENT_IMPLS
-            .load(&deps.storage, client_id)
-            .unwrap()
-            .as_str(),
-        mock_addr(CLIENT_ADDRESS).to_string()
+        deps.storage.read::<ClientImpls>(&client_id).unwrap(),
+        mock_addr(CLIENT_ADDRESS)
     );
     assert_eq!(
-        crate::state::CLIENT_STATES
-            .load(&deps.storage, client_id)
-            .unwrap(),
+        deps.storage.read::<ClientStates>(&client_id).unwrap(),
         vec![1, 2, 3]
     );
     assert_eq!(
-        crate::state::CLIENT_CONSENSUS_STATES
-            .load(&deps.storage, (client_id, 1))
+        deps.storage
+            .read::<ClientConsensusStates>(&(client_id, 1))
             .unwrap(),
         vec![1, 2, 3]
     );
@@ -287,14 +281,12 @@ fn update_client_commitments_saved() {
     .expect("update client ok");
 
     assert_eq!(
-        crate::state::CLIENT_STATES
-            .load(&deps.storage, client_id)
-            .unwrap(),
+        deps.storage.read::<ClientStates>(&client_id).unwrap(),
         vec![3, 2, 1]
     );
     assert_eq!(
-        crate::state::CLIENT_CONSENSUS_STATES
-            .load(&deps.storage, (client_id, 2))
+        deps.storage
+            .read::<ClientConsensusStates>(&(client_id, 2))
             .unwrap(),
         vec![3, 2, 1]
     );

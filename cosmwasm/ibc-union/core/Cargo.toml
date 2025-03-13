@@ -19,17 +19,17 @@ library = []
 
 [dependencies]
 alloy                         = { workspace = true, features = ["sol-types"] }
-bincode                       = { workspace = true, features = ["alloc", "derive"], optional = true }
+bincode                       = { workspace = true, features = ["alloc", "derive"] }
 cosmwasm-schema               = { workspace = true }
-cosmwasm-std                  = { workspace = true, features = ["abort"] }
-cw-storage-plus               = { workspace = true }
+cosmwasm-std                  = { workspace = true, features = ["abort", "iterator"] }
+depolama                      = { workspace = true }
 ethabi                        = { workspace = true }
 hex                           = { workspace = true }
 ibc-union-msg                 = { workspace = true }
-ibc-union-spec                = { workspace = true, features = ["ethabi", "serde"] }
+ibc-union-spec                = { workspace = true, features = ["ethabi", "serde", "bincode"] }
 serde                         = { workspace = true, features = ["derive"] }
-serde_json                    = { workspace = true }
+serde-json-wasm               = "1.0"
 strum                         = { version = "0.26.3", features = ["derive"] }
 thiserror                     = { workspace = true }
-unionlabs                     = { workspace = true, features = ["ethabi"] }
+unionlabs                     = { workspace = true, features = ["ethabi", "bincode"] }
 unionlabs-cosmwasm-upgradable = { workspace = true }
