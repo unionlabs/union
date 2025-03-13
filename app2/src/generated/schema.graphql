@@ -10325,6 +10325,7 @@ enum v2_stats_type_select_column {
 columns and relationships of "v2.token_meta"
 """
 type v2_token_meta {
+  denom: String
   rank: Int
 
   """An array relationship"""
@@ -10371,6 +10372,7 @@ input v2_token_meta_bool_exp {
   _and: [v2_token_meta_bool_exp!]
   _not: v2_token_meta_bool_exp
   _or: [v2_token_meta_bool_exp!]
+  denom: String_comparison_exp
   rank: Int_comparison_exp
   representations: v2_token_meta_representations_bool_exp
   wrapping: v2_token_meta_wrapping_bool_exp
@@ -10378,6 +10380,7 @@ input v2_token_meta_bool_exp {
 
 """Ordering options when selecting data from "v2.token_meta"."""
 input v2_token_meta_order_by {
+  denom: order_by
   rank: order_by
   representations_aggregate: v2_token_meta_representations_aggregate_order_by
   wrapping_aggregate: v2_token_meta_wrapping_aggregate_order_by
@@ -10951,6 +10954,9 @@ input v2_token_meta_representations_variance_order_by {
 select columns of table "v2.token_meta"
 """
 enum v2_token_meta_select_column {
+  """column name"""
+  denom
+
   """column name"""
   rank
 }
