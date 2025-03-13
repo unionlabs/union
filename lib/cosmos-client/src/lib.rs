@@ -22,11 +22,12 @@ use unionlabs::{
             signing::sign_info::SignMode, tx::Tx, tx_body::TxBody, tx_raw::TxRaw,
         },
     },
-    encoding::{EncodeAs, Proto},
-    google::protobuf::any::{Any, TryFromAnyError},
+    cosmwasm::wasm::msg_update_instantiate_config::response::MsgUpdateInstantiateConfigResponse,
+    encoding::{Decode, EncodeAs, Proto},
+    google::protobuf::any::{Any, RawAny, TryFromAnyError},
     primitives::H256,
-    prost::{self, Message, Name},
-    ErrorReporter,
+    prost::{self, Message},
+    ErrorReporter, Msg, TypeUrl,
 };
 
 use crate::{gas::GasFillerT, rpc::RpcT, wallet::WalletT};
@@ -67,37 +68,32 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
             memo = %memo.as_ref()
         )
     )]
-    pub async fn tx<M: Message + Name, R: Message + Default + Name>(
+    pub async fn tx<M: Msg>(
         &self,
         msg: M,
         memo: impl AsRef<str>,
-    ) -> Result<(H256, R), TxError> {
-        let (tx_hash, result) = self
-            .broadcast_tx_commit(
-                [protos::google::protobuf::Any {
-                    type_url: M::type_url(),
-                    value: msg.encode_to_vec().into(),
-                }],
-                memo,
-            )
-            .await?;
+    ) -> Result<(H256, M::Response), TxError<M::Response>> {
+        let (tx_hash, result) = self.broadcast_tx_commit([Any(msg)], memo, false).await?;
 
-        let response = <abci::v1beta1::TxMsgData as Message>::decode(
+        let mut response = <abci::v1beta1::TxMsgData as Message>::decode(
             &*result.tx_result.data.unwrap_or_default(),
         )
         .map_err(TxError::TxMsgDataDecode)?;
 
-        if *response.msg_responses[0].type_url != R::type_url() {
-            return Err(TxError::IncorrectResponseTypeUrl {
-                expected: R::type_url(),
-                found: response.msg_responses[0].clone().type_url,
-            });
-        }
-
-        let response =
-            R::decode(&*response.msg_responses[0].value).map_err(TxError::TxMsgDataDecode)?;
-
-        Ok((tx_hash, response))
+        Ok((
+            tx_hash,
+            <Any<M::Response>>::try_from(
+                response
+                    .msg_responses
+                    .pop()
+                    .map(|any| protos::google::protobuf::Any {
+                        type_url: any.type_url,
+                        value: any.value,
+                    })
+                    .expect("must contain at least one msg response"),
+            )?
+            .0,
+        ))
     }
 
     /// - simulate tx
@@ -106,16 +102,29 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
     /// - return (tx_hash, gas_used)
     pub async fn broadcast_tx_commit(
         &self,
-        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
+        messages: impl IntoIterator<Item: Into<RawAny>> + Clone,
         memo: impl AsRef<str>,
+        simulate: bool,
     ) -> Result<(H256, TxResponse), BroadcastTxCommitError> {
         let account = self
             .account_info(self.wallet.address())
             .await?
             .unwrap_or_default();
 
-        let (tx_body, mut auth_info, simulation_gas_info) =
-            self.simulate_tx(messages, memo).await?;
+        let (tx_body, mut auth_info, simulation_gas_info) = if simulate {
+            self.simulate_tx(messages, memo).await?
+        } else {
+            let (tx_body, auth_info) = self.tx_info(messages, memo, &account).await;
+
+            (
+                tx_body,
+                auth_info,
+                GasInfo {
+                    gas_wanted: self.gas.max_gas().await,
+                    gas_used: self.gas.max_gas().await,
+                },
+            )
+        };
 
         info!(
             gas_used = %simulation_gas_info.gas_used,
@@ -222,7 +231,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
 
     pub async fn simulate_tx(
         &self,
-        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
+        messages: impl IntoIterator<Item: Into<RawAny>> + Clone,
         memo: impl AsRef<str>,
     ) -> Result<(TxBody, AuthInfo, GasInfo), SimulateTxError> {
         use protos::cosmos::tx;
@@ -232,30 +241,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
             .await?
             .unwrap_or_default();
 
-        let tx_body = TxBody {
-            // TODO: Use RawAny here
-            messages: messages.clone().into_iter().map(Into::into).collect(),
-            memo: memo.as_ref().to_owned(),
-            timeout_height: 0,
-            extension_options: vec![],
-            non_critical_extension_options: vec![],
-            unordered: false,
-            timeout_timestamp: None,
-        };
-
-        let auth_info = AuthInfo {
-            signer_infos: [SignerInfo {
-                public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
-                    key: self.wallet.public_key().into_encoding(),
-                })),
-                mode_info: ModeInfo::Single {
-                    mode: SignMode::Direct,
-                },
-                sequence: account.sequence,
-            }]
-            .to_vec(),
-            fee: self.gas.mk_fee(self.gas.max_gas().await).await,
-        };
+        let (tx_body, auth_info) = self.tx_info(messages, memo, &account).await;
 
         let simulation_signature = self.wallet.sign(
             &SignDoc {
@@ -293,6 +279,40 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
             auth_info,
             simulate_response.gas_info.unwrap_or_default().into(),
         ))
+    }
+
+    async fn tx_info(
+        &self,
+        messages: impl IntoIterator<Item: Into<RawAny>> + Clone,
+        memo: impl AsRef<str>,
+        account: &BaseAccount,
+    ) -> (TxBody, AuthInfo) {
+        let tx_body = TxBody {
+            // TODO: Use RawAny here
+            messages: messages.clone().into_iter().map(Into::into).collect(),
+            memo: memo.as_ref().to_owned(),
+            timeout_height: 0,
+            extension_options: vec![],
+            non_critical_extension_options: vec![],
+            unordered: false,
+            timeout_timestamp: None,
+        };
+
+        let auth_info = AuthInfo {
+            signer_infos: [SignerInfo {
+                public_key: Some(AnyPubKey::Secp256k1(Any(secp256k1::PubKey {
+                    key: self.wallet.public_key().into_encoding(),
+                }))),
+                mode_info: ModeInfo::Single {
+                    mode: SignMode::Direct,
+                },
+                sequence: account.sequence,
+            }]
+            .to_vec(),
+            fee: self.gas.mk_fee(self.gas.max_gas().await).await,
+        };
+
+        (tx_body, auth_info)
     }
 
     pub async fn account_info<T: Clone + AsRef<[u8]>>(
@@ -404,13 +424,18 @@ pub enum FetchAccountInfoError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum TxError {
+pub enum TxError<T: Decode<Proto, Error: core::error::Error> + TypeUrl> {
     #[error("error broadcasting transaction")]
     BroadcastTxCommit(#[from] BroadcastTxCommitError),
-    #[error("incorrect type url for msg response, expected {expected} but found {found}")]
-    IncorrectResponseTypeUrl { expected: String, found: String },
-    #[error("unable to decode msg response")]
-    ResponseDecode(#[source] prost::DecodeError),
     #[error("unable to tx response")]
-    TxMsgDataDecode(#[source] prost::DecodeError),
+    TxMsgDataDecode(#[from] prost::DecodeError),
+    #[error("unable to msg response")]
+    MsgResponseDecode(#[from] TryFromAnyError<T>),
 }
+
+// sanity check
+const _: () = {
+    fn t<E: core::error::Error>() {}
+
+    let _ = || t::<TxError<MsgUpdateInstantiateConfigResponse>>();
+};

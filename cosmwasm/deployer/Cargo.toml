@@ -12,12 +12,13 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-anyhow                        = "1.0.95"
+anyhow                        = { version = "1.0.95", features = ["std"] }
 bip32                         = { workspace = true }
 clap                          = { workspace = true, features = ["derive", "error-context", "help"] }
 cometbft-rpc                  = { workspace = true }
 cosmos-client                 = { workspace = true }
 cosmwasm-std                  = { workspace = true, features = ["std"] }
+futures                       = { workspace = true }
 hex-literal                   = { workspace = true }
 ibc-union-light-client        = { workspace = true }
 ibc-union-msg                 = { workspace = true }
@@ -33,5 +34,5 @@ tracing                       = { workspace = true }
 tracing-subscriber            = { workspace = true, features = ["env-filter", "fmt", "ansi"] }
 ucs03-zkgm                    = { workspace = true, features = ["library"] }
 ucs03-zkgm-token-minter-api   = { workspace = true }
-unionlabs                     = { workspace = true }
+unionlabs                     = { workspace = true, features = ["proto"] }
 unionlabs-cosmwasm-upgradable = { workspace = true }

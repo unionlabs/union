@@ -455,7 +455,7 @@ impl ChainClient {
 
         let (tx_hash, res) = self
             .cosmos_ctx
-            .broadcast_tx_commit([msg], self.chain.memo.clone())
+            .broadcast_tx_commit([msg], self.chain.memo.clone(), true)
             .await?;
 
         info!(

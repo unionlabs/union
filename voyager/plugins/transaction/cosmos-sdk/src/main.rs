@@ -217,6 +217,7 @@ impl Module {
                         .broadcast_tx_commit(
                             msgs.iter().map(move |x| x.1.clone()).collect::<Vec<_>>(),
                             memo,
+                            true,
                         )
                         .await
                     {

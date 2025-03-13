@@ -299,7 +299,7 @@ subset-of        = { path = "lib/subset-of", default-features = false }
 subset-of-derive = { path = "lib/subset-of-derive", default-features = false }
 
 token-factory-api    = { path = "cosmwasm/token-factory-api", default-features = false }
-unionlabs            = { path = "lib/unionlabs", default-features = false }
+unionlabs            = { path = "lib/unionlabs", default-features = false, features = ["proto"] } # TODO: Properly feature gate proto in unionlabs
 unionlabs-primitives = { path = "lib/unionlabs-primitives", default-features = false }
 zktrie               = { path = "lib/zktrie-rs", default-features = false }
 
