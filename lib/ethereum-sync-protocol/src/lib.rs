@@ -414,16 +414,17 @@ mod tests {
     const SEPOLIA_CHAIN_ID: u64 = 11155111;
 
     mod data_6553725 {
-        use std::cell::LazyCell;
+        use std::sync::LazyLock;
 
         use super::*;
 
-        pub const UPDATE: LazyCell<ethereum_sync_protocol_types::LightClientUpdate> =
-            LazyCell::new(|| {
-                serde_json::from_str(&include_str!("./test/light_client_update_6553725.json"))
+        pub static UPDATE: LazyLock<ethereum_sync_protocol_types::LightClientUpdate> =
+            LazyLock::new(|| {
+                serde_json::from_str(include_str!("./test/light_client_update_6553725.json"))
                     .unwrap()
             });
-        pub const SYNC_COMMITTEE: LazyCell<SyncCommittee> = LazyCell::new(|| {
+
+        pub static SYNC_COMMITTEE: LazyLock<SyncCommittee> = LazyLock::new(|| {
             serde_json::from_str(include_str!("./test/sync_committee_6553725.json")).unwrap()
         });
 
@@ -554,7 +555,7 @@ mod tests {
                     .unwrap();
 
                 assert_eq!(
-                    public_keys.into_iter().map(|x| *x).collect::<Vec<_>>(),
+                    public_keys.into_iter().copied().collect::<Vec<_>>(),
                     sync_aggregate
                         .sync_committee_bits
                         .iter()

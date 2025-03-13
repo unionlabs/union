@@ -121,19 +121,19 @@ mod tests {
     use super::*;
 
     mod data_7882953 {
-        use std::cell::LazyCell;
+        use std::sync::LazyLock;
 
         use alloy::rpc::types::EIP1186AccountProofResponse;
         use hex_literal::hex;
         use unionlabs::primitives::H256;
 
-        pub const VALID_ABSENCE_PROOF: LazyCell<EIP1186AccountProofResponse> =
-            LazyCell::new(|| {
+        pub static VALID_ABSENCE_PROOF: LazyLock<EIP1186AccountProofResponse> =
+            LazyLock::new(|| {
                 serde_json::from_str(include_str!("./test/valid_absence_proof_sepolia.json"))
                     .unwrap()
             });
-        pub const VALID_STORAGE_PROOF: LazyCell<EIP1186AccountProofResponse> =
-            LazyCell::new(|| {
+        pub static VALID_STORAGE_PROOF: LazyLock<EIP1186AccountProofResponse> =
+            LazyLock::new(|| {
                 serde_json::from_str(include_str!("./test/valid_storage_proof_sepolia.json"))
                     .unwrap()
             });

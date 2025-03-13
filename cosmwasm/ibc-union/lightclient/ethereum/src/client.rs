@@ -516,7 +516,7 @@ impl ValueCodec<InverseSyncCommittee> for SyncCommitteeStore {
 
 #[cfg(test)]
 mod tests {
-    use std::cell::LazyCell;
+    use std::sync::LazyLock;
 
     use beacon_api_types::altair::SyncCommittee;
     use cosmwasm_std::{
@@ -543,18 +543,18 @@ mod tests {
         "045c10398196b51905129fdbd1cbafdf0328877c575b9da41f15d7718f330d23"
     ));
 
-    const INITIAL_HEADER: LazyCell<beacon_api_types::phase0::BeaconBlockHeader> =
-        LazyCell::new(|| serde_json::from_str(include_str!("./test/header_7167008.json")).unwrap());
-    const CURRENT_SYNC_COMMITTEE: LazyCell<SyncCommittee> = LazyCell::new(|| {
+    static INITIAL_HEADER: LazyLock<beacon_api_types::phase0::BeaconBlockHeader> =
+        LazyLock::new(|| serde_json::from_str(include_str!("./test/header_7167008.json")).unwrap());
+    static CURRENT_SYNC_COMMITTEE: LazyLock<SyncCommittee> = LazyLock::new(|| {
         serde_json::from_str(include_str!("./test/current_sync_committee_7167008.json")).unwrap()
     });
-    const _NEXT_SYNC_COMMITTEE: LazyCell<SyncCommittee> = LazyCell::new(|| {
+    static _NEXT_SYNC_COMMITTEE: LazyLock<SyncCommittee> = LazyLock::new(|| {
         serde_json::from_str(include_str!("./test/next_sync_committee_7167008.json")).unwrap()
     });
-    const FINALITY_UPDATE: LazyCell<LightClientUpdateData> = LazyCell::new(|| {
+    static FINALITY_UPDATE: LazyLock<LightClientUpdateData> = LazyLock::new(|| {
         serde_json::from_str(include_str!("./test/finality_update_7167040.json")).unwrap()
     });
-    const FINALITY_UPDATE_ACCOUNT_PROOF: LazyCell<Vec<Bytes>> = LazyCell::new(|| {
+    static FINALITY_UPDATE_ACCOUNT_PROOF: LazyLock<Vec<Bytes>> = LazyLock::new(|| {
         serde_json::from_str(include_str!("./test/account_proof_7167040.json")).unwrap()
     });
 
