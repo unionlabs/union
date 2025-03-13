@@ -37,7 +37,11 @@ export const getCosmosOfflineSigner = (chain: Chain, connectedWallet: CosmosWall
         const signer = await signerResult
 
         if (!signer) {
-          throw new Error(`Failed to get offline signer for ${connectedWallet}`)
+          return Promise.reject(
+            new OfflineSignerError({
+              cause: `Failed to get offline signer for ${connectedWallet}`
+            })
+          )
         }
 
         return signer as unknown as OfflineSigner
