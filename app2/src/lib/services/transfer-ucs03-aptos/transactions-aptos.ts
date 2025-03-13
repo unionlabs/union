@@ -44,7 +44,6 @@ export const submitTransferAptos = (chain: Chain, transfer: ValidTransfer["args"
 export const waitForTransferReceiptAptos = (chain: Chain, hash: Hash) =>
   Effect.gen(function* () {
     const publicClient = yield* getPublicClient(chain)
-    console.info("waitForTransferReceiptAptos hash: ", hash)
     return yield* Effect.tryPromise({
       try: () =>
         publicClient.waitForTransaction({
