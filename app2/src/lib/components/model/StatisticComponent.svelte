@@ -3,6 +3,7 @@ import Card from "$lib/components/ui/Card.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import type { StatisticItem } from "$lib/schema/statistics"
 import NumberFlow from "@number-flow/svelte"
+import { onMount } from "svelte"
 
 type Props = {
   statistic: StatisticItem
@@ -10,6 +11,25 @@ type Props = {
 }
 
 const { statistic, class: className = "" }: Props = $props()
+let displayValue = $state(0)
+let isFirstLoad = $state(true)
+
+// Update displayValue whenever statistic.value changes
+$effect(() => {
+  if (isFirstLoad) {
+    // On first load, animate from 0 to the value
+    onMount(() => {
+      displayValue = 0
+      setTimeout(() => {
+        displayValue = statistic.value
+        isFirstLoad = false
+      }, 300) // Small delay to sync with card fade-in
+    })
+  } else {
+    // For subsequent updates, directly update the value
+    displayValue = statistic.value
+  }
+})
 
 // Mapping of statistic names to display names
 const displayNames: Record<string, string> = {
@@ -35,6 +55,6 @@ function formatStatName(name: string): string {
 <Card class="h-22 transition-all hover:shadow-lg {className}">
   <Label>{formatStatName(statistic.name)}</Label>
   <p class="text-2xl font-bold mt-1">
-    <NumberFlow value={statistic.value} />
+    <NumberFlow value={displayValue} transformTiming={{duration:1500, easing: 'ease-out'}} opacityTiming={{duration:1500, easing: 'ease-out'}} spinTiming={{duration:1500, easing: 'ease-out'}} />
   </p>
 </Card>
