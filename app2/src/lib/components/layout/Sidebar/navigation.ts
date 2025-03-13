@@ -1,5 +1,4 @@
 import SharpTransferIcon from "$lib/components/icons/SharpTransferIcon.svelte"
-import SharpListIcon from "$lib/components/icons/SharpListIcon.svelte"
 import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
 import SharpStakeIcon from "$lib/components/icons/SharpStakeIcon.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"

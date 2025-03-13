@@ -1,7 +1,7 @@
 import { Schema } from "effect"
 import { UniversalChainId } from "$lib/schema/chain"
 import { Hex } from "$lib/schema/hex"
-import { Height } from "./height"
+import { Height } from "./height.ts"
 
 export class PacketTrace extends Schema.Class<PacketTrace>("PacketTrace")({
   type: Schema.String,
