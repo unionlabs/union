@@ -6,7 +6,7 @@ pub mod error;
 pub mod utils;
 
 use beacon_api_types::{
-    altair::{self, SyncCommittee},
+    altair::{self, SyncAggregateSsz, SyncCommittee},
     chain_spec::ChainSpec,
     consts::{
         CURRENT_SYNC_COMMITTEE_GINDEX, CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA,
@@ -24,7 +24,6 @@ use typenum::Unsigned;
 use unionlabs::{
     ensure,
     primitives::{H256, H384, H768},
-    BytesBitIterator,
 };
 
 use crate::{
@@ -82,10 +81,9 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
     bls_verifier: V,
 ) -> Result<(), Error> {
     // verify that the sync committee has sufficient participants
-    let sync_aggregate = &update.sync_aggregate;
-    let set_bits = BytesBitIterator::new(&sync_aggregate.sync_committee_bits)
-        .filter(|included| *included)
-        .count();
+    let sync_aggregate: SyncAggregateSsz<C> = update.sync_aggregate.clone().try_into()?;
+
+    let set_bits = sync_aggregate.sync_committee_bits.num_set_bits();
     ensure(
         set_bits >= C::MIN_SYNC_COMMITTEE_PARTICIPANTS::USIZE,
         Error::InsufficientSyncCommitteeParticipants(set_bits),
@@ -222,6 +220,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
     verify_signature::<C, V>(
         chain_id,
         update,
+        sync_aggregate,
         genesis_validators_root,
         sync_committee,
         bls_verifier,
@@ -235,6 +234,7 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
 pub fn verify_signature<C: ChainSpec, V: BlsVerify>(
     chain_id: u64,
     update: &ethereum_sync_protocol_types::LightClientUpdate,
+    sync_aggregate: SyncAggregateSsz<C>,
     genesis_validators_root: H256,
     sync_committee: &SyncCommittee,
     bls_verifier: V,
@@ -253,7 +253,9 @@ pub fn verify_signature<C: ChainSpec, V: BlsVerify>(
     );
     let signing_root = compute_signing_root(&update.attested_header.beacon, domain);
 
-    let participant_pubkeys = BytesBitIterator::new(&update.sync_aggregate.sync_committee_bits)
+    let participant_pubkeys = sync_aggregate
+        .sync_committee_bits
+        .iter()
         .zip(sync_committee.pubkeys.iter());
 
     bls_verifier.aggregate_verify_signature(
@@ -393,9 +395,9 @@ mod tests {
 
     use super::*;
 
-    pub struct BlsVerifier;
+    pub struct AlwaysSuccessBlsVerifier;
 
-    impl BlsVerify for BlsVerifier {
+    impl BlsVerify for AlwaysSuccessBlsVerifier {
         const INVERSE: bool = false;
 
         fn aggregate_verify_signature<'pk>(
@@ -448,17 +450,27 @@ mod tests {
 
     #[test]
     fn validate_update_works() {
-        assert_eq!(update_6553725(&data_6553725::UPDATE, BlsVerifier), Ok(()));
+        assert_eq!(
+            update_6553725(&data_6553725::UPDATE, AlwaysSuccessBlsVerifier),
+            Ok(())
+        );
     }
 
     #[test]
     fn validate_update_fails_when_not_enough_participants() {
         let mut update = data_6553725::UPDATE.clone();
-        update.sync_aggregate.sync_committee_bits.clear();
+        update.sync_aggregate.sync_committee_bits = [0u8; 64].into();
 
         assert!(matches!(
-            update_6553725(&update, BlsVerifier),
+            update_6553725(&update, AlwaysSuccessBlsVerifier),
             Err(Error::InsufficientSyncCommitteeParticipants(..))
+        ));
+
+        let _ = update.sync_aggregate.sync_committee_bits.pop();
+
+        assert!(matches!(
+            update_6553725(&update, AlwaysSuccessBlsVerifier),
+            Err(Error::InvalidSyncCommitteeBits(..))
         ));
     }
 
@@ -471,7 +483,7 @@ mod tests {
         next_sync_committee.aggregate_pubkey = Default::default();
 
         assert!(matches!(
-            validate_light_client_update::<Mainnet, BlsVerifier>(
+            validate_light_client_update::<Mainnet, AlwaysSuccessBlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
                 Some(&data_6553725::SYNC_COMMITTEE),
@@ -479,7 +491,7 @@ mod tests {
                 Slot::new(6553726),
                 Slot::new(6553718),
                 data_6553725::GENESIS_VALIDATORS_ROOT,
-                BlsVerifier,
+                AlwaysSuccessBlsVerifier,
             ),
             Err(Error::InvalidMerkleBranch(..))
         ));
@@ -491,7 +503,7 @@ mod tests {
         update.finalized_header.beacon.slot = update.finalized_header.beacon.slot + Slot::new(1);
 
         assert!(matches!(
-            update_6553725(&update, BlsVerifier),
+            update_6553725(&update, AlwaysSuccessBlsVerifier),
             Err(Error::InvalidMerkleBranch(..))
         ));
     }
@@ -535,14 +547,17 @@ mod tests {
                     &data_6553725::SYNC_COMMITTEE.aggregate_pubkey
                 );
 
-                let sync_committee_bits = data_6553725::UPDATE
+                let sync_aggregate: SyncAggregateSsz<Mainnet> = data_6553725::UPDATE
                     .sync_aggregate
-                    .sync_committee_bits
-                    .clone();
+                    .clone()
+                    .try_into()
+                    .unwrap();
 
                 assert_eq!(
                     public_keys.into_iter().map(|x| *x).collect::<Vec<_>>(),
-                    BytesBitIterator::new(&sync_committee_bits)
+                    sync_aggregate
+                        .sync_committee_bits
+                        .iter()
                         .zip(data_6553725::SYNC_COMMITTEE.pubkeys.iter())
                         .filter(|(included, _)| *included)
                         .map(|(_, pubkey)| *pubkey)
@@ -569,20 +584,20 @@ mod tests {
         update.attested_header.beacon.slot = update.finalized_header.beacon.slot - Slot::new(1);
 
         assert!(matches!(
-            update_6553725(&update, BlsVerifier),
+            update_6553725(&update, AlwaysSuccessBlsVerifier),
             Err(Error::InvalidSlots { .. })
         ));
 
         // but it can be equal
         update.attested_header.beacon.slot = update.finalized_header.beacon.slot;
-        assert_eq!(update_6553725(&update, BlsVerifier), Ok(()));
+        assert_eq!(update_6553725(&update, AlwaysSuccessBlsVerifier), Ok(()));
 
         update.attested_header.beacon.slot = original_attested_slot;
         // signature slot always must be greater than the attested slot
         update.signature_slot = update.attested_header.beacon.slot;
 
         assert!(matches!(
-            update_6553725(&update, BlsVerifier),
+            update_6553725(&update, AlwaysSuccessBlsVerifier),
             Err(Error::InvalidSlots { .. })
         ));
     }
@@ -594,7 +609,7 @@ mod tests {
         update.signature_slot = update.signature_slot + Slot::new(1000000);
 
         assert!(matches!(
-            validate_light_client_update::<Mainnet, BlsVerifier>(
+            validate_light_client_update::<Mainnet, AlwaysSuccessBlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
                 Some(&data_6553725::SYNC_COMMITTEE),
@@ -602,13 +617,13 @@ mod tests {
                 update.signature_slot + Slot::new(1),
                 Slot::new(6553718),
                 data_6553725::GENESIS_VALIDATORS_ROOT,
-                BlsVerifier,
+                AlwaysSuccessBlsVerifier,
             ),
             Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist { .. })
         ));
 
         assert!(matches!(
-            validate_light_client_update::<Mainnet, BlsVerifier>(
+            validate_light_client_update::<Mainnet, AlwaysSuccessBlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
                 Some(&data_6553725::SYNC_COMMITTEE),
@@ -616,7 +631,7 @@ mod tests {
                 update.signature_slot + Slot::new(1),
                 Slot::new(6553718),
                 data_6553725::GENESIS_VALIDATORS_ROOT,
-                BlsVerifier,
+                AlwaysSuccessBlsVerifier,
             ),
             Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeExists { .. })
         ));
@@ -624,7 +639,7 @@ mod tests {
         // we allow signature slot to be in the trusted period + 1
         update.signature_slot = original_signature_slot + Slot::new(256 * 32);
         assert_eq!(
-            validate_light_client_update::<Mainnet, BlsVerifier>(
+            validate_light_client_update::<Mainnet, AlwaysSuccessBlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
                 Some(&data_6553725::SYNC_COMMITTEE),
@@ -632,7 +647,7 @@ mod tests {
                 update.signature_slot + Slot::new(1),
                 Slot::new(6553718),
                 data_6553725::GENESIS_VALIDATORS_ROOT,
-                BlsVerifier,
+                AlwaysSuccessBlsVerifier,
             ),
             Ok(())
         );
@@ -644,7 +659,7 @@ mod tests {
 
         // if the `update.attested.slot > finalized_slot`, then there must be no next sync committee given
         assert!(matches!(
-            validate_light_client_update::<Mainnet, BlsVerifier>(
+            validate_light_client_update::<Mainnet, AlwaysSuccessBlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
                 Some(&data_6553725::SYNC_COMMITTEE),
@@ -652,7 +667,7 @@ mod tests {
                 update.signature_slot + Slot::new(1),
                 update.attested_header.beacon.slot + Slot::new(100),
                 data_6553725::GENESIS_VALIDATORS_ROOT,
-                BlsVerifier,
+                AlwaysSuccessBlsVerifier,
             ),
             Err(Error::IrrelevantUpdate { .. })
         ));
@@ -661,7 +676,7 @@ mod tests {
 
         // if the `update.attested.slot > finalized_slot`, then there must be no next sync committee in the update
         assert!(matches!(
-            validate_light_client_update::<Mainnet, BlsVerifier>(
+            validate_light_client_update::<Mainnet, AlwaysSuccessBlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
                 Some(&data_6553725::SYNC_COMMITTEE),
@@ -669,7 +684,7 @@ mod tests {
                 update.signature_slot + Slot::new(1),
                 update.attested_header.beacon.slot + Slot::new(100),
                 data_6553725::GENESIS_VALIDATORS_ROOT,
-                BlsVerifier,
+                AlwaysSuccessBlsVerifier,
             ),
             Err(Error::IrrelevantUpdate { .. })
         ));

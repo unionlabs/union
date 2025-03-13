@@ -136,6 +136,7 @@ mod tests {
             ethereum_sync_protocol::verify_signature::<Mainnet, VerificationContext>(
                 11155111,
                 &update,
+                update.sync_aggregate.clone().try_into().unwrap(),
                 H256::new(hex_literal::hex!(
                     "d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078"
                 )),

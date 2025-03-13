@@ -1,4 +1,4 @@
-use beacon_api_types::slot::Slot;
+use beacon_api_types::{altair::sync_aggregate, slot::Slot};
 use unionlabs::primitives::{H256, H384, H768};
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
@@ -103,4 +103,6 @@ pub enum Error {
     ClientSignatureVerification(String),
     #[error("invalid verification capability")]
     InvalidVerificationCapability,
+    #[error(transparent)]
+    InvalidSyncCommitteeBits(#[from] sync_aggregate::ssz::Error),
 }
