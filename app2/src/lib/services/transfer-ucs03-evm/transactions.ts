@@ -4,9 +4,9 @@ import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
 import { getPublicClient, getWalletClient } from "../evm/clients.ts"
 import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
-import { generateSalt } from "./salt.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
+import { generateSalt } from "$lib/services/shared"
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
@@ -20,12 +20,33 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
     )
     const salt = yield* generateSalt
 
+    console.log({
+      account: account.address as `0x${string}`,
+      abi: ucs03ZkgmAbi,
+      chain: transfer.sourceChain.value,
+      functionName: "transferV2",
+      address: transfer.ucs03address,
+      value: BigInt(0.0080085 * 10 ** 18),
+      args: [
+        transfer.sourceChannelId,
+        transfer.receiver,
+        transfer.baseToken,
+        transfer.baseAmount,
+        transfer.quoteToken,
+        transfer.quoteAmount,
+        transfer.timeoutHeight,
+        transfer.timeoutTimestamp,
+        salt,
+        transfer.wethQuoteToken
+      ]
+    })
+
     return yield* Effect.tryPromise({
       try: () => {
         return walletClient.writeContract({
           account: account.address as `0x${string}`,
           abi: ucs03ZkgmAbi,
-          chain: transfer.sourceChain,
+          chain: transfer.sourceChain.value,
           functionName: "transferV2",
           address: transfer.ucs03address,
           value: BigInt(0.0080085 * 10 ** 18),

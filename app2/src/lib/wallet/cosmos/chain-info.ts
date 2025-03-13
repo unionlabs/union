@@ -3,6 +3,7 @@
 import type { ChainInfo as KeplrChainInfo } from "@keplr-wallet/types"
 
 import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
+import { cosmosStore } from "$lib/wallet/cosmos/config.svelte.ts"
 
 //This exists according to docs
 interface LeapExtendedInfo extends LeapChainInfo {
@@ -370,7 +371,12 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
       coinDenom: "STRD",
       coinMinimalDenom: "ustrd",
       coinDecimals: 6,
-      coinGeckoId: "stride"
+      coinGeckoId: "stride",
+      gasPriceStep: {
+        low: 0.0005,
+        average: 0.005,
+        high: 0.05
+      }
     },
     {
       coinDenom: "TIA",
@@ -379,11 +385,6 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
       coinGeckoId: "celestia"
     }
   ],
-  gasPriceStep: {
-    low: 0.0005,
-    average: 0.005,
-    high: 0.05
-  },
   stakeCurrency: {
     coinDenom: "STRD",
     coinMinimalDenom: "ustrd",
@@ -466,11 +467,8 @@ const leapChainInfoMap: Record<string, LeapChainInfo> = {
 }
 
 //Helper functions
-export function getCosmosChainInfo(
-  chainId: string,
-  connectedWallet: string | undefined
-): LeapChainInfo | KeplrChainInfo | null {
-  const chainInfoMap = connectedWallet === "leap" ? leapChainInfoMap : keplrChainInfoMap
+export function getCosmosChainInfo(chainId: string): LeapChainInfo | KeplrChainInfo | null {
+  const chainInfoMap = cosmosStore.connectedWallet === "leap" ? leapChainInfoMap : keplrChainInfoMap
   return chainInfoMap[chainId] || null
 }
 

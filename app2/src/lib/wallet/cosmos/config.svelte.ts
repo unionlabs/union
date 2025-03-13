@@ -1,4 +1,4 @@
-import { type OfflineSigner, bech32AddressToHex } from "@unionlabs/client"
+import { bech32AddressToHex } from "@unionlabs/client"
 import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { Effect, Option } from "effect"
@@ -244,21 +244,3 @@ class CosmosStore {
 }
 
 export const cosmosStore = new CosmosStore()
-
-export const getCosmosOfflineSigner = ({
-  chainId,
-  connectedWallet
-}: {
-  chainId: string
-  connectedWallet: CosmosWalletId
-}): Promise<OfflineSigner> => {
-  const signer = window[connectedWallet]?.getOfflineSignerAuto(chainId, {
-    disableBalanceCheck: false
-  })
-
-  if (!signer) {
-    return Promise.reject(new Error(`Failed to get offline signer for ${connectedWallet}`))
-  }
-
-  return signer
-}

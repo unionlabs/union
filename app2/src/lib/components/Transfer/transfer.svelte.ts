@@ -3,26 +3,82 @@ import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
 import type { QuoteData, Token, WethTokenData } from "$lib/schema/token.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import {
-  getDerivedReceiverSafe,
-  getParsedAmountSafe,
-  hasFailedExit,
-  isComplete,
-  nextState,
-  TransferSubmission
+  hasFailedExit as hasCosmosFailedExit,
+  isComplete as isCosmosComplete,
+  nextState as cosmosNextState,
+  TransferSubmission as CosmosTransferSubmission,
+  SwitchChainState,
+  ApprovalSubmitState,
+  TransferSubmitState
+} from "$lib/services/transfer-ucs03-cosmos"
+import {
+  hasFailedExit as hasEvmFailedExit,
+  isComplete as isEvmComplete,
+  nextState as evmNextState,
+  TransferSubmission as EvmTransferSubmission,
+  SwitchChainState as EvmSwitchChainState,
+  ApprovalSubmitState as EvmApprovalSubmitState,
+  ApprovalReceiptState,
+  TransferSubmitState as EvmTransferSubmitState,
+  TransferReceiptState
 } from "$lib/services/transfer-ucs03-evm"
 import { chains } from "$lib/stores/chains.svelte.ts"
-import { getChainFromWagmi } from "$lib/wallet/evm/index.ts"
 import { type Address, fromHex, type Hex } from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import type { Channel } from "$lib/schema/channel.ts"
 import { TransferSchema } from "$lib/schema/transfer-args.ts"
-import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/quote-token.ts"
-import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/transfer-ucs03-evm/weth-token.ts"
+import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/shared"
+import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/shared"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import { getParsedAmountSafe } from "$lib/services/shared"
+import { getDerivedReceiverSafe } from "$lib/services/shared"
+
+export interface TransferState {
+  readonly _tag: string
+}
+
+export interface EmptyState extends TransferState {
+  readonly _tag: "Empty"
+}
+
+export interface EVMState extends TransferState {
+  readonly _tag: "EVM"
+  readonly state: EvmTransferSubmission
+}
+
+export interface CosmosState extends TransferState {
+  readonly _tag: "Cosmos"
+  readonly state: CosmosTransferSubmission
+}
+
+export type TransferStateUnion = EmptyState | EVMState | CosmosState
+
+export const TransferState = {
+  Empty: (): EmptyState => ({ _tag: "Empty" }),
+  EVM: (state: EvmTransferSubmission): EVMState => ({ _tag: "EVM", state }),
+  Cosmos: (state: CosmosTransferSubmission): CosmosState => ({ _tag: "Cosmos", state })
+}
 
 export class Transfer {
   raw = new RawTransferSvelte()
-  state = $state<TransferSubmission>(TransferSubmission.Filling())
+  _stateOverride = $state<TransferStateUnion | null>(null)
+
+  state = $derived.by<TransferStateUnion>(() => {
+    if (this._stateOverride !== null) {
+      return this._stateOverride
+    }
+
+    if (Option.isSome(this.sourceChain)) {
+      const sourceChainValue = this.sourceChain.value
+      if (sourceChainValue.rpc_type === "evm") {
+        return TransferState.EVM(EvmTransferSubmission.Filling())
+      }
+      return TransferState.Cosmos(CosmosTransferSubmission.Filling())
+    }
+
+    return TransferState.Empty()
+  })
 
   sourceChain = $derived(
     chains.data.pipe(
@@ -87,7 +143,7 @@ export class Transfer {
 
     const hexAddress: Hex =
       this.sourceChain.value.rpc_type === "cosmos"
-        ? (fromHex(`0x${this.channel.value.source_port_id}`, "string") as Hex)
+        ? (fromHex(<`0x${string}`>`${this.channel.value.source_port_id}`, "string") as Hex)
         : (this.channel.value.source_port_id as Hex)
 
     return Option.some(hexAddress)
@@ -156,6 +212,8 @@ export class Transfer {
       return null
     }
 
+    if (this.sourceChain.value.rpc_type !== "evm") return
+
     this.wethQuoteToken = Option.some({ type: "WETH_LOADING" } as const)
 
     const sourceChainValue = this.sourceChain.value
@@ -185,7 +243,7 @@ export class Transfer {
               cause: error.cause
             } as const)
           )
-          return null
+          return
         })
       ),
       Effect.runPromise
@@ -204,7 +262,11 @@ export class Transfer {
     const wethQuoteTokenValue = Option.getOrNull(this.wethQuoteToken)
 
     return {
-      sourceChain: sourceChainValue ? getChainFromWagmi(Number(sourceChainValue.chain_id)) : null,
+      sourceChain: sourceChainValue
+        ? sourceChainValue.rpc_type === "evm"
+          ? sourceChainValue.toViemChain()
+          : sourceChainValue
+        : null,
       sourceRpcType: sourceChainValue?.rpc_type,
       destinationRpcType: destinationChainValue?.rpc_type,
       sourceChannelId: channelValue?.source_channel_id,
@@ -232,10 +294,121 @@ export class Transfer {
 
   submit = async () => {
     if (Option.isNone(chains.data) || Option.isNone(this.sourceChain)) return
-    this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value)
-    while (!hasFailedExit(this.state)) {
-      this.state = await nextState(this.state, this.transferResult.args, this.sourceChain.value)
-      if (isComplete(this.state)) break
+    console.log(this.transferResult.args)
+
+    const sourceChainValue = this.sourceChain.value
+
+    if (sourceChainValue.rpc_type === "evm") {
+      let evmState: EvmTransferSubmission
+      if (this.state._tag === "EVM") {
+        // If failed, reset the failed step to InProgress
+        if (hasEvmFailedExit(this.state.state)) {
+          switch (this.state.state._tag) {
+            case "SwitchChain":
+              evmState = EvmTransferSubmission.SwitchChain({
+                state: EvmSwitchChainState.InProgress()
+              })
+              break
+            case "ApprovalSubmit":
+              evmState = EvmTransferSubmission.ApprovalSubmit({
+                state: EvmApprovalSubmitState.InProgress()
+              })
+              break
+            case "ApprovalReceipt":
+              evmState = EvmTransferSubmission.ApprovalReceipt({
+                state: ApprovalReceiptState.InProgress({ hash: this.state.state.state.hash })
+              })
+              break
+            case "TransferSubmit":
+              evmState = EvmTransferSubmission.TransferSubmit({
+                state: EvmTransferSubmitState.InProgress()
+              })
+              break
+            case "TransferReceipt":
+              evmState = EvmTransferSubmission.TransferReceipt({
+                state: TransferReceiptState.InProgress({ hash: this.state.state.state.hash })
+              })
+              break
+            default:
+              evmState = EvmTransferSubmission.Filling()
+          }
+        } else {
+          evmState = this.state.state
+        }
+      } else {
+        evmState = EvmTransferSubmission.Filling()
+      }
+
+      const newState = await evmNextState(evmState, this.transferResult.args, sourceChainValue)
+      this._stateOverride = newState !== null ? TransferState.EVM(newState) : TransferState.Empty()
+
+      let currentEvmState = newState
+      while (currentEvmState !== null && !hasEvmFailedExit(currentEvmState)) {
+        const nextEvmState = await evmNextState(
+          currentEvmState,
+          this.transferResult.args,
+          sourceChainValue
+        )
+        this._stateOverride =
+          nextEvmState !== null ? TransferState.EVM(nextEvmState) : TransferState.Empty()
+
+        currentEvmState = nextEvmState
+        if (currentEvmState !== null && isEvmComplete(currentEvmState)) break
+      }
+    } else {
+      let cosmosState: CosmosTransferSubmission
+      if (this.state._tag === "Cosmos") {
+        // If failed, reset the failed step to InProgress
+        if (hasCosmosFailedExit(this.state.state)) {
+          switch (this.state.state._tag) {
+            case "SwitchChain":
+              cosmosState = CosmosTransferSubmission.SwitchChain({
+                state: SwitchChainState.InProgress()
+              })
+              break
+            case "ApprovalSubmit":
+              cosmosState = CosmosTransferSubmission.ApprovalSubmit({
+                state: ApprovalSubmitState.InProgress()
+              })
+              break
+            case "TransferSubmit":
+              cosmosState = CosmosTransferSubmission.TransferSubmit({
+                state: TransferSubmitState.InProgress()
+              })
+              break
+            default:
+              cosmosState = CosmosTransferSubmission.Filling()
+          }
+        } else {
+          cosmosState = this.state.state
+        }
+      } else {
+        cosmosState = CosmosTransferSubmission.Filling()
+      }
+
+      const newState = await cosmosNextState(
+        cosmosState,
+        this.transferResult.args,
+        sourceChainValue,
+        cosmosStore.connectedWallet
+      )
+      this._stateOverride =
+        newState !== null ? TransferState.Cosmos(newState) : TransferState.Empty()
+
+      let currentCosmosState = newState
+      while (currentCosmosState !== null && !hasCosmosFailedExit(currentCosmosState)) {
+        const nextCosmosState = await cosmosNextState(
+          currentCosmosState,
+          this.transferResult.args,
+          sourceChainValue,
+          cosmosStore.connectedWallet
+        )
+        this._stateOverride =
+          nextCosmosState !== null ? TransferState.Cosmos(nextCosmosState) : TransferState.Empty()
+
+        currentCosmosState = nextCosmosState
+        if (currentCosmosState !== null && isCosmosComplete(currentCosmosState)) break
+      }
     }
   }
 }
