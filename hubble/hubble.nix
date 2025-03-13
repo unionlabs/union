@@ -104,7 +104,7 @@
               options.testnet = mkOption {
                 type = types.nullOr types.bool;
                 default = null;
-                description = "Testnet (default false).";
+                description = "Testnet (default false)";
               };
               options.tx_search_max_page_size = mkOption {
                 type = types.int;
