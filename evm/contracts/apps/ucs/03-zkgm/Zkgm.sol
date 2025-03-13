@@ -18,6 +18,7 @@ import "solady/utils/EfficientHashLib.sol";
 import "../../Base.sol";
 import "../../../core/04-channel/IBCPacket.sol";
 import "../../../core/05-port/IIBCModule.sol";
+import "../../../core/24-host/IBCCommitment.sol";
 
 import "./IEurekaModule.sol";
 import "./IZkgmERC20.sol";
@@ -1044,8 +1045,10 @@ contract UCS03Zkgm is
             )
         );
         // Guaranteed to be unique by the above sendPacket
-        bytes32 packetHash = IBCPacketLib.commitPacket(sentPacket);
-        inFlightPacket[packetHash] = ibcPacket;
+        bytes32 commitmentKey = IBCCommitment.batchPacketsCommitmentKey(
+            IBCPacketLib.commitPacket(sentPacket)
+        );
+        inFlightPacket[commitmentKey] = ibcPacket;
         return ZkgmLib.ACK_EMPTY;
     }
 
