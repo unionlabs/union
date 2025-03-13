@@ -5,7 +5,7 @@ use core::{
 
 use crate::{
     encoding::{Encoding, HexPrefixed},
-    fixed_bytes::FixedBytesError,
+    fixed_bytes::{FixedBytes, FixedBytesError},
 };
 
 pub struct Bytes<E: Encoding = HexPrefixed> {
@@ -246,7 +246,7 @@ impl<E: Encoding> IntoIterator for Bytes<E> {
 }
 
 impl<EBytes: Encoding, EHash: Encoding, const BYTES: usize> TryFrom<Bytes<EBytes>>
-    for crate::fixed_bytes::FixedBytes<BYTES, EHash>
+    for FixedBytes<BYTES, EHash>
 {
     type Error = FixedBytesError;
 
@@ -319,11 +319,19 @@ impl<E: Encoding, const N: usize> From<[u8; N]> for Bytes<E> {
     }
 }
 
-impl<EBytes: Encoding, EHash: Encoding, const N: usize>
-    From<crate::fixed_bytes::FixedBytes<N, EHash>> for Bytes<EBytes>
+impl<EBytes: Encoding, EHash: Encoding, const N: usize> From<FixedBytes<N, EHash>>
+    for Bytes<EBytes>
 {
-    fn from(value: crate::fixed_bytes::FixedBytes<N, EHash>) -> Self {
+    fn from(value: FixedBytes<N, EHash>) -> Self {
         Self::new(value.get().as_slice().to_owned())
+    }
+}
+
+impl<EBytes: Encoding, EHash: Encoding, const N: usize> From<&FixedBytes<N, EHash>>
+    for Bytes<EBytes>
+{
+    fn from(value: &FixedBytes<N, EHash>) -> Self {
+        (*value).into()
     }
 }
 

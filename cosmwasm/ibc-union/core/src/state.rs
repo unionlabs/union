@@ -5,7 +5,7 @@ use depolama::{KeyCodec, Prefix, Store, ValueCodec};
 use ibc_union_spec::types::{Channel, Connection};
 use unionlabs::{
     encoding::{Bincode, DecodeAs, EncodeAs},
-    primitives::Bytes,
+    primitives::{Bytes, H256},
     ByteArrayExt,
 };
 
@@ -328,6 +328,33 @@ impl Store for NextChannelId {
     type Value = u32;
 }
 u32_value!(NextChannelId);
+
+pub enum Commitments {}
+impl Store for Commitments {
+    const PREFIX: Prefix = Prefix::new(b"");
+
+    type Key = H256;
+
+    type Value = H256;
+}
+impl KeyCodec<H256> for Commitments {
+    fn encode_key(key: &H256) -> Bytes {
+        key.into()
+    }
+
+    fn decode_key(raw: &Bytes) -> StdResult<H256> {
+        read_fixed_bytes(raw).map(H256::new)
+    }
+}
+impl ValueCodec<H256> for Commitments {
+    fn encode_value(value: &H256) -> Bytes {
+        value.into()
+    }
+
+    fn decode_value(raw: &Bytes) -> StdResult<H256> {
+        read_fixed_bytes(raw).map(H256::new)
+    }
+}
 
 fn read_fixed_bytes<const N: usize>(raw: &Bytes) -> StdResult<[u8; N]> {
     raw.try_into().map_err(|_| {

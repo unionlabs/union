@@ -28,7 +28,6 @@ use ibc_union_spec::{
     path::{
         commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
         ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
-        IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
     },
     types::{Channel, ChannelState, Connection, ConnectionState, Packet},
 };
@@ -42,8 +41,8 @@ use unionlabs_cosmwasm_upgradable::{UpgradeError, UpgradeMsg};
 use crate::{
     state::{
         ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
-        ClientStore, ClientTypes, Connections, ContractChannels, NextChannelId, NextClientId,
-        NextConnectionId, QueryStore,
+        ClientStore, ClientTypes, Commitments, Connections, ContractChannels, NextChannelId,
+        NextClientId, NextConnectionId, QueryStore,
     },
     ContractError,
 };
@@ -1691,16 +1690,13 @@ fn merge_ack(mut ack: H256) -> H256 {
 }
 
 fn store_commit(deps: DepsMut, key: &H256, value: &H256) {
-    let canonical_path = [&IBC_UNION_COSMWASM_COMMITMENT_PREFIX, key.as_ref()].concat();
-    deps.storage.set(&canonical_path, value.as_ref());
+    deps.storage.write::<Commitments>(key, value);
 }
 
 fn read_commit(deps: Deps, key: &H256) -> Option<H256> {
-    let canonical_path = [&IBC_UNION_COSMWASM_COMMITMENT_PREFIX, key.as_ref()].concat();
-    deps.storage.get(&canonical_path).map(|bz| {
-        bz.try_into()
-            .expect("H256 is the only value ever written to this storage; qed;")
-    })
+    deps.storage
+        .maybe_read::<Commitments>(key)
+        .expect("H256 is the only value ever written to this storage; qed;")
 }
 
 fn save_connection(
