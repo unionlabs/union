@@ -34,6 +34,13 @@ pub const CHANNELS: U256 = U256::from_limbs([3, 0, 0, 0]);
 pub const PACKETS: U256 = U256::from_limbs([4, 0, 0, 0]);
 pub const PACKET_ACKS: U256 = U256::from_limbs([5, 0, 0, 0]);
 
+#[cfg(feature = "ethabi")]
+#[must_use]
+pub fn commit_packets(packets: &[Packet]) -> H256 {
+    use alloy_sol_types::SolValue;
+    keccak256(packets.abi_encode())
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Enumorph)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(
@@ -193,9 +200,8 @@ impl BatchReceiptsPath {
     #[cfg(feature = "ethabi")]
     #[must_use]
     pub fn from_packets(packets: &[Packet]) -> Self {
-        use alloy_sol_types::SolValue;
         Self {
-            batch_hash: keccak256(packets.abi_encode()),
+            batch_hash: commit_packets(packets),
         }
     }
 
@@ -261,3 +267,4 @@ fn connection_key() {
     dbg!(ConnectionPath { connection_id: 4 }.key());
     dbg!(ConnectionPath { connection_id: 5 }.key());
 }
+
