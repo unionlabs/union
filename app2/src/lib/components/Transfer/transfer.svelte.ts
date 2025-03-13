@@ -22,6 +22,11 @@ import {
   TransferSubmitState as EvmTransferSubmitState,
   TransferReceiptState
 } from "$lib/services/transfer-ucs03-evm"
+import {
+  hasFailedExitAptos,
+  isCompleteAptos,
+  nextStateAptos,
+} from "$lib/services/transfer-ucs03-aptos"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { type Address, fromHex, type Hex } from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
