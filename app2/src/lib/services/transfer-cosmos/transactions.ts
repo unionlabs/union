@@ -3,9 +3,10 @@ import type { Chain } from "$lib/schema/chain.ts"
 import { CosmWasmError } from "$lib/services/transfer-cosmos/errors.ts"
 import { executeCosmWasmInstructions } from "$lib/services/transfer-cosmos/execute.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
-import type {ValidTransfer} from "$lib/schema/transfer-args.ts";
-import {isValidBech32ContractAddress} from "@unionlabs/client";
-import {generateSalt} from "$lib/services/transfer-ucs03-evm/salt.ts";
+import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
+import { generateSalt } from "$lib/services/transfer-ucs03-evm/salt.ts"
+import {fromHex, isHex} from "viem"
+import {isValidBech32ContractAddress} from "$lib/utils";
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
@@ -33,6 +34,17 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
       })
     }
 
+    // Decode the token denom
+    const decodedDenom = isHex(baseToken)
+      ? fromHex(baseToken, "string")
+      : baseToken
+
+    const isNative = !isValidBech32ContractAddress(decodedDenom)
+    const formattedBaseToken = decodedDenom
+    const funds = isNative
+      ? [{ amount: baseAmount.toString(), denom: decodedDenom }]
+      : []
+
     const salt = yield* generateSalt
 
     const instructions = [{
@@ -41,7 +53,7 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
         transfer: {
           channel_id: sourceChannelId,
           receiver: receiver,
-          base_token: baseToken,
+          base_token: formattedBaseToken,
           base_amount: baseAmount,
           quote_token: quoteToken,
           quote_amount: quoteAmount,
@@ -50,10 +62,7 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
           salt
         }
       },
-      // If we are sending a CW20 (which is a valid bech32 address), then we do not need to attach native funds
-      funds: isValidBech32ContractAddress(baseToken)
-        ? []
-        : [{ amount: baseAmount.toString(), denom: baseToken }]
+      funds
     }]
 
     // Use the executeCosmWasmInstructions function to execute the transfer

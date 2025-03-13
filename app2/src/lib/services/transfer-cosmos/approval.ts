@@ -2,25 +2,35 @@ import { Effect } from "effect"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { CosmosWalletId } from "$lib/wallet/cosmos"
 import { executeCosmWasmInstructions } from "$lib/services/transfer-cosmos/execute.ts"
-import type {ValidTransfer} from "$lib/schema/transfer-args.ts";
-import {fromHex} from "viem";
+import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
+import {fromHex, isHex} from "viem"
+import {isValidBech32ContractAddress} from "@unionlabs/client";
 
 export const approveTransfer = (
   chain: Chain,
   connectedWallet: CosmosWalletId,
   params: ValidTransfer["args"]
 ) => {
-  return Effect.succeed([{
-    contractAddress: fromHex(params.baseToken, "string"),
-    msg: {
-      increase_allowance: {
-        spender: params.ucs03address,
-        amount: params.baseAmount.toString()
+  return Effect.gen(function* () {
+    const decodedDenom = isHex(params.baseToken)
+      ? fromHex(params.baseToken, "string")
+      : params.baseToken
+
+    const isNative = !isValidBech32ContractAddress(decodedDenom)
+
+    if (isNative) return "native-token-no-approval-needed"
+
+    const instructions = [{
+      contractAddress: decodedDenom,
+      msg: {
+        increase_allowance: {
+          spender: params.ucs03address,
+          amount: params.baseAmount.toString()
+        }
       }
-    }
-  }]).pipe(
-    Effect.flatMap(instructions => {
-      return executeCosmWasmInstructions(chain, connectedWallet, instructions);
-    })
-  )
+    }]
+
+    // Execute the approval instructions
+    return yield* executeCosmWasmInstructions(chain, connectedWallet, instructions)
+  })
 }

@@ -11,7 +11,7 @@ import {
   TransferSubmission
 } from "$lib/services/transfer-cosmos"
 import { chains } from "$lib/stores/chains.svelte.ts"
-import { type Address, fromHex, type Hex } from "viem"
+import {type Address, fromHex, type Hex, isHex} from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import type { Channel } from "$lib/schema/channel.ts"
@@ -46,9 +46,23 @@ export class Transfer {
 
   baseToken = $derived(
     this.baseTokens.pipe(
-      Option.flatMap(tokens =>
-        Option.fromNullable(tokens.find((t: Token) => t.denom === this.raw.asset))
-      )
+      Option.flatMap(tokens => {
+        const token = tokens.find((t: Token) => t.denom === this.raw.asset)
+
+        if (!token) {
+          return Option.none()
+        }
+
+        if (token.rpcType === "cosmos") {
+          if (isHextoken.denom()) {
+            const formattedToken = { ...token }
+            formattedToken.denom = fromHex(token.denom, "string")
+            return Option.some(formattedToken)
+          }
+        }
+
+        return Option.some(token)
+      })
     )
   )
 

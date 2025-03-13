@@ -1,7 +1,6 @@
 import {
   ApprovalSubmitState,
   SwitchChainState,
-  TransferReceiptState,
   TransferSubmission,
   TransferSubmitState
 } from "./state.ts"
@@ -45,12 +44,13 @@ export async function nextState(
           const exit = await Effect.runPromiseExit(approveTransfer(chain, connectedWallet, params))
           console.log(exit)
           if (exit._tag === "Failure") {
-            return TransferSubmission.ApprovalSubmit({
-              state: ApprovalSubmitState.InProgress()
-            })
+            console.log('fail')
+            // return TransferSubmission.ApprovalSubmit({
+            //   state: ApprovalSubmitState.InProgress()
+            // })
           }
 
-          return TransferSubmission.TransferSubmit({
+          return TransferSubmission.ApprovalSubmit({
             state: ApprovalSubmitState.Complete({exit})
           })
         },
@@ -66,6 +66,7 @@ export async function nextState(
     TransferSubmit: ({ state }) => {
       return TransferSubmitState.$match(state, {
         InProgress: async () => {
+          console.log('here11')
           const exit = await Effect.runPromiseExit(submitTransfer(chain, params))
           return TransferSubmission.TransferSubmit({
             state: TransferSubmitState.Complete({ exit })
@@ -77,23 +78,6 @@ export async function nextState(
           }
           return TransferSubmission.TransferReceipt({
             state: TransferReceiptState.InProgress({ hash: exit.value })
-          })
-        }
-      })
-    },
-
-    TransferReceipt: ({ state }) => {
-      return TransferReceiptState.$match(state, {
-        InProgress: async ({ hash }) => {
-          const exit = await Effect.runPromiseExit(waitForTransferReceipt(chain, hash))
-          return TransferSubmission.TransferReceipt({
-            state: TransferReceiptState.Complete({ exit })
-          })
-        },
-        Complete: ({ exit }) => {
-          //TODO: there is no real next state here
-          return TransferSubmission.TransferReceipt({
-            state: TransferReceiptState.Complete({ exit })
           })
         }
       })

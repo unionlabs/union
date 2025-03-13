@@ -77,10 +77,44 @@ export const getGasPriceForChain = (
 ): Effect.Effect<{ amount: number; denom: string }, GetChainInfoError | GasPriceError, never> =>
   Effect.gen(function* () {
     const chainInfo = yield* getCosmosChainInfo(chain, connectedWallet)
+    console.log(chainInfo)
     const gasPriceStep = yield* getHighGasPriceStep(chainInfo)
+    console.log(gasPriceStep)
 
     return {
       amount: parseFloat(gasPriceStep.amount),
       denom: gasPriceStep.denom
     }
+  })
+
+export const isNativeToken = (
+  token: string,
+  chain: Chain,
+  connectedWallet: CosmosWalletId
+): Effect.Effect<boolean, GetChainInfoError, never> =>
+  Effect.gen(function* () {
+    const chainInfo = yield* getCosmosChainInfo(chain, connectedWallet)
+
+    if (Array.isArray(chainInfo.feeCurrencies)) {
+      for (const feeCurrency of chainInfo.feeCurrencies) {
+        if (
+          feeCurrency.coinDenom === token ||
+          feeCurrency.coinMinimalDenom === token
+        ) {
+          return true
+        }
+      }
+    }
+
+    if (chainInfo.stakeCurrency) {
+      if (
+        chainInfo.stakeCurrency.coinDenom === token ||
+        chainInfo.stakeCurrency.coinMinimalDenom === token
+      ) {
+        return true
+      }
+    }
+
+    // Not a native token
+    return false
   })

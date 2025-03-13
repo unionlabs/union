@@ -40,6 +40,7 @@ export const getCosmWasmClient = (
 
     const gasPrice = GasPrice.fromString(`${gasPriceInfo.amount}${gasPriceInfo.denom}`)
 
+
     const rpcUrl = chain.getRpcUrl('rpc')
     if (Option.isNone(rpcUrl)) {
       throw new CosmWasmError({
@@ -49,7 +50,7 @@ export const getCosmWasmClient = (
 
     return yield* Effect.tryPromise({
       try: () => SigningCosmWasmClient.connectWithSigner(
-        "https://rpc.union-testnet-9.union.chain.kitchen",
+        rpcUrl.value.toString(),
         offlineSigner,
         { gasPrice }
       ),

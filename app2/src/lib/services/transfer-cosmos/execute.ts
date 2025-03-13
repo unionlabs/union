@@ -32,7 +32,6 @@ export const executeCosmWasmInstructions = (
       });
     }
 
-    // Validate each instruction's contract address
     for (const instruction of instructions) {
       if (!instruction.contractAddress) {
         throw new CosmWasmError({
@@ -70,7 +69,6 @@ export const executeCosmWasmInstructions = (
       });
     }
 
-    // Get accounts
     const accounts = yield* Effect.tryPromise({
       try: () => offlineSigner.getAccounts(),
       catch: err => new CosmWasmError({

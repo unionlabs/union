@@ -371,7 +371,12 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
       coinDenom: "STRD",
       coinMinimalDenom: "ustrd",
       coinDecimals: 6,
-      coinGeckoId: "stride"
+      coinGeckoId: "stride",
+      gasPriceStep: {
+        low: 0.0005,
+        average: 0.005,
+        high: 0.05
+      },
     },
     {
       coinDenom: "TIA",
@@ -380,11 +385,6 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
       coinGeckoId: "celestia"
     }
   ],
-  gasPriceStep: {
-    low: 0.0005,
-    average: 0.005,
-    high: 0.05
-  },
   stakeCurrency: {
     coinDenom: "STRD",
     coinMinimalDenom: "ustrd",

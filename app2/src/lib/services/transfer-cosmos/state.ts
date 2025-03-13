@@ -1,11 +1,9 @@
 import { Data, type Exit, type Effect } from "effect"
-import type { Hash } from "viem"
-import type { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
+import type { submitTransfer } from "./transactions.ts"
 import type { switchChain } from "./chain.ts"
 import type {
   approveTransfer,
-  waitForApprovalReceipt
-} from "$lib/services/transfer-ucs03-evm/approval.ts"
+} from "$lib/services/transfer-cosmos/approval.ts"
 
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 
@@ -23,24 +21,19 @@ export type ApprovalSubmitState = Data.TaggedEnum<{
 }>
 export const ApprovalSubmitState = Data.taggedEnum<ApprovalSubmitState>()
 
+
 export type TransferSubmitState = Data.TaggedEnum<{
   InProgress: {}
   Complete: { exit: EffectToExit<ReturnType<typeof submitTransfer>> }
 }>
 export const TransferSubmitState = Data.taggedEnum<TransferSubmitState>()
 
-export type TransferReceiptState = Data.TaggedEnum<{
-  InProgress: { readonly hash: Hash }
-  Complete: { exit: EffectToExit<ReturnType<typeof waitForTransferReceipt>> }
-}>
-export const TransferReceiptState = Data.taggedEnum<TransferReceiptState>()
 
 export type TransferSubmission = Data.TaggedEnum<{
   Filling: {}
   SwitchChain: { state: SwitchChainState }
   ApprovalSubmit: { state: ApprovalSubmitState }
   TransferSubmit: { state: TransferSubmitState }
-  TransferReceipt: { state: TransferReceiptState }
 }>
 
 export const TransferSubmission = Data.taggedEnum<TransferSubmission>()
@@ -49,7 +42,6 @@ type StateWithExit =
   | { _tag: "SwitchChain"; state: SwitchChainState }
   | { _tag: "ApprovalSubmit"; state: ApprovalSubmitState }
   | { _tag: "TransferSubmit"; state: TransferSubmitState }
-  | { _tag: "TransferReceipt"; state: TransferReceiptState }
 
 export function hasFailedExit(state: StateWithExit | { _tag: "Filling" }): boolean {
   if (state._tag === "Filling") return false
