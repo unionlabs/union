@@ -29,12 +29,17 @@ export const navigation: Array<NavSection> = [
       {
         path: "/transfer",
         title: "Transfer",
-        icon: SharpTransferIcon
-      },
-      {
-        path: "/transfers",
-        title: "Your Transfers",
-        icon: SharpListIcon
+        icon: OutlineControlPointDuplicate,
+        subroutes: [
+          {
+            path: "/transfers",
+            title: "History"
+          },
+          {
+            path: "/faucet",
+            title: "Faucet"
+          }
+        ]
       }
     ]
   },
