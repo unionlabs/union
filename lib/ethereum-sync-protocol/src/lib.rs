@@ -390,7 +390,6 @@ pub fn next_sync_committee_gindex_at_slot<C: ChainSpec>(chain_id: u64, slot: Slo
 mod tests {
     use beacon_api_types::chain_spec::Mainnet;
     use hex_literal::hex;
-    use lazy_static::lazy_static;
 
     use super::*;
 
@@ -412,51 +411,60 @@ mod tests {
 
     const SEPOLIA_CHAIN_ID: u64 = 11155111;
 
-    lazy_static! {
-        pub static ref UPDATE_6553725: ethereum_sync_protocol_types::LightClientUpdate =
-            serde_json::from_str(&include_str!("./test/light_client_update_6553725.json")).unwrap();
-        pub static ref SYNC_COMMITTEE_6553725: SyncCommittee =
-            serde_json::from_str(include_str!("./test/sync_committee_6553725.json")).unwrap();
+    mod data_6553725 {
+        use std::cell::LazyCell;
+
+        use super::*;
+
+        pub const UPDATE: LazyCell<ethereum_sync_protocol_types::LightClientUpdate> =
+            LazyCell::new(|| {
+                serde_json::from_str(&include_str!("./test/light_client_update_6553725.json"))
+                    .unwrap()
+            });
+        pub const SYNC_COMMITTEE: LazyCell<SyncCommittee> = LazyCell::new(|| {
+            serde_json::from_str(include_str!("./test/sync_committee_6553725.json")).unwrap()
+        });
+
+        pub const GENESIS_VALIDATORS_ROOT: H256 = H256::new(hex!(
+            "d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078"
+        ));
     }
 
-    pub const GENESIS_VALIDATORS_ROOT_6553725: H256 = H256::new(hex!(
-        "d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078"
-    ));
-
-    fn update_6553725(
+    fn update_6553725<V: BlsVerify>(
         update: &ethereum_sync_protocol_types::LightClientUpdate,
+        bls_verifier: V,
     ) -> Result<(), Error> {
-        validate_light_client_update::<Mainnet, BlsVerifier>(
+        validate_light_client_update::<Mainnet, V>(
             SEPOLIA_CHAIN_ID,
             update,
-            Some(&SYNC_COMMITTEE_6553725),
+            Some(&data_6553725::SYNC_COMMITTEE),
             None,
             Slot::new(6553726),
             Slot::new(6553718),
-            GENESIS_VALIDATORS_ROOT_6553725,
-            BlsVerifier,
+            data_6553725::GENESIS_VALIDATORS_ROOT,
+            bls_verifier,
         )
     }
 
     #[test]
     fn validate_update_works() {
-        assert_eq!(update_6553725(&UPDATE_6553725), Ok(()));
+        assert_eq!(update_6553725(&data_6553725::UPDATE, BlsVerifier), Ok(()));
     }
 
     #[test]
-    fn validate_update_fails_when_sync_committee_is_wrong() {
-        let mut update = UPDATE_6553725.clone();
-        update.sync_aggregate.sync_committee_bits = Vec::new();
+    fn validate_update_fails_when_not_enough_participants() {
+        let mut update = data_6553725::UPDATE.clone();
+        update.sync_aggregate.sync_committee_bits.clear();
 
         assert!(matches!(
-            update_6553725(&update),
+            update_6553725(&update, BlsVerifier),
             Err(Error::InsufficientSyncCommitteeParticipants(..))
         ));
     }
 
     #[test]
     fn validate_update_fails_when_altered_next_sync_committee() {
-        let mut update = UPDATE_6553725.clone();
+        let mut update = data_6553725::UPDATE.clone();
         update.finalized_header.beacon.slot = update.finalized_header.beacon.slot + Slot::new(1);
 
         let mut next_sync_committee = update.next_sync_committee.as_ref().unwrap().clone();
@@ -466,11 +474,11 @@ mod tests {
             validate_light_client_update::<Mainnet, BlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
-                Some(&SYNC_COMMITTEE_6553725),
+                Some(&data_6553725::SYNC_COMMITTEE),
                 Some(&next_sync_committee),
                 Slot::new(6553726),
                 Slot::new(6553718),
-                GENESIS_VALIDATORS_ROOT_6553725,
+                data_6553725::GENESIS_VALIDATORS_ROOT,
                 BlsVerifier,
             ),
             Err(Error::InvalidMerkleBranch(..))
@@ -479,11 +487,11 @@ mod tests {
 
     #[test]
     fn validate_update_fails_when_altered_finalized_header() {
-        let mut update = UPDATE_6553725.clone();
+        let mut update = data_6553725::UPDATE.clone();
         update.finalized_header.beacon.slot = update.finalized_header.beacon.slot + Slot::new(1);
 
         assert!(matches!(
-            update_6553725(&update),
+            update_6553725(&update, BlsVerifier),
             Err(Error::InvalidMerkleBranch(..))
         ));
     }
@@ -492,9 +500,9 @@ mod tests {
     /// to fail.
     #[test]
     fn validate_update_signature_data_correct() {
-        pub struct BlsVerifier;
+        pub struct AssertDataCorrectVerifier;
 
-        impl BlsVerify for BlsVerifier {
+        impl BlsVerify for AssertDataCorrectVerifier {
             const INVERSE: bool = false;
 
             fn aggregate_verify_signature<'pk>(
@@ -505,7 +513,7 @@ mod tests {
                 signature: H768,
             ) -> Result<(), Error> {
                 let fork_version_slot =
-                    Slot::new(std::cmp::max(UPDATE_6553725.signature_slot.get(), 1) - 1);
+                    Slot::new(std::cmp::max(data_6553725::UPDATE.signature_slot.get(), 1) - 1);
                 let fork_version = compute_fork_version(
                     SEPOLIA_CHAIN_ID,
                     compute_epoch_at_slot::<Mainnet>(fork_version_slot),
@@ -514,25 +522,28 @@ mod tests {
                 let domain = compute_domain(
                     DomainType::SYNC_COMMITTEE,
                     Some(fork_version),
-                    Some(GENESIS_VALIDATORS_ROOT_6553725),
+                    Some(data_6553725::GENESIS_VALIDATORS_ROOT),
                     ForkSchedule::for_chain_id(SEPOLIA_CHAIN_ID)
                         .genesis()
                         .current_version,
                 );
                 let signing_root =
-                    compute_signing_root(&UPDATE_6553725.attested_header.beacon, domain);
-
-                let participant_pubkeys =
-                    BytesBitIterator::new(&UPDATE_6553725.sync_aggregate.sync_committee_bits)
-                        .zip(SYNC_COMMITTEE_6553725.pubkeys.iter());
+                    compute_signing_root(&data_6553725::UPDATE.attested_header.beacon, domain);
 
                 assert_eq!(
                     aggregate_public_key,
-                    &SYNC_COMMITTEE_6553725.aggregate_pubkey
+                    &data_6553725::SYNC_COMMITTEE.aggregate_pubkey
                 );
+
+                let sync_committee_bits = data_6553725::UPDATE
+                    .sync_aggregate
+                    .sync_committee_bits
+                    .clone();
+
                 assert_eq!(
                     public_keys.into_iter().map(|x| *x).collect::<Vec<_>>(),
-                    participant_pubkeys
+                    BytesBitIterator::new(&sync_committee_bits)
+                        .zip(data_6553725::SYNC_COMMITTEE.pubkeys.iter())
                         .filter(|(included, _)| *included)
                         .map(|(_, pubkey)| *pubkey)
                         .collect::<Vec<_>>()
@@ -540,45 +551,45 @@ mod tests {
                 assert_eq!(msg, signing_root.as_ref().to_vec());
                 assert_eq!(
                     signature,
-                    UPDATE_6553725.sync_aggregate.sync_committee_signature
+                    data_6553725::UPDATE.sync_aggregate.sync_committee_signature
                 );
                 Ok(())
             }
         }
 
-        update_6553725(&UPDATE_6553725).unwrap();
+        update_6553725(&data_6553725::UPDATE, AssertDataCorrectVerifier).unwrap();
     }
 
     #[test]
     fn validate_update_slot_ordering_checks() {
-        let mut update = UPDATE_6553725.clone();
+        let mut update = data_6553725::UPDATE.clone();
         let original_attested_slot = update.attested_header.beacon.slot;
 
         // attested header can't be smaller than the finalized
         update.attested_header.beacon.slot = update.finalized_header.beacon.slot - Slot::new(1);
 
         assert!(matches!(
-            update_6553725(&update),
+            update_6553725(&update, BlsVerifier),
             Err(Error::InvalidSlots { .. })
         ));
 
         // but it can be equal
         update.attested_header.beacon.slot = update.finalized_header.beacon.slot;
-        assert_eq!(update_6553725(&update), Ok(()));
+        assert_eq!(update_6553725(&update, BlsVerifier), Ok(()));
 
         update.attested_header.beacon.slot = original_attested_slot;
         // signature slot always must be greater than the attested slot
         update.signature_slot = update.attested_header.beacon.slot;
 
         assert!(matches!(
-            update_6553725(&update),
+            update_6553725(&update, BlsVerifier),
             Err(Error::InvalidSlots { .. })
         ));
     }
 
     #[test]
     fn validate_update_signature_period_checks() {
-        let mut update = UPDATE_6553725.clone();
+        let mut update = data_6553725::UPDATE.clone();
         let original_signature_slot = update.signature_slot;
         update.signature_slot = update.signature_slot + Slot::new(1000000);
 
@@ -586,11 +597,11 @@ mod tests {
             validate_light_client_update::<Mainnet, BlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
-                Some(&SYNC_COMMITTEE_6553725),
+                Some(&data_6553725::SYNC_COMMITTEE),
                 None,
                 update.signature_slot + Slot::new(1),
                 Slot::new(6553718),
-                GENESIS_VALIDATORS_ROOT_6553725,
+                data_6553725::GENESIS_VALIDATORS_ROOT,
                 BlsVerifier,
             ),
             Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist { .. })
@@ -600,11 +611,11 @@ mod tests {
             validate_light_client_update::<Mainnet, BlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
-                Some(&SYNC_COMMITTEE_6553725),
-                Some(&SYNC_COMMITTEE_6553725),
+                Some(&data_6553725::SYNC_COMMITTEE),
+                Some(&data_6553725::SYNC_COMMITTEE),
                 update.signature_slot + Slot::new(1),
                 Slot::new(6553718),
-                GENESIS_VALIDATORS_ROOT_6553725,
+                data_6553725::GENESIS_VALIDATORS_ROOT,
                 BlsVerifier,
             ),
             Err(Error::InvalidSignaturePeriodWhenNextSyncCommitteeExists { .. })
@@ -616,11 +627,11 @@ mod tests {
             validate_light_client_update::<Mainnet, BlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
-                Some(&SYNC_COMMITTEE_6553725),
+                Some(&data_6553725::SYNC_COMMITTEE),
                 update.next_sync_committee.as_ref(),
                 update.signature_slot + Slot::new(1),
                 Slot::new(6553718),
-                GENESIS_VALIDATORS_ROOT_6553725,
+                data_6553725::GENESIS_VALIDATORS_ROOT,
                 BlsVerifier,
             ),
             Ok(())
@@ -629,18 +640,18 @@ mod tests {
 
     #[test]
     fn validate_update_fails_irrelevant_update() {
-        let mut update = UPDATE_6553725.clone();
+        let mut update = data_6553725::UPDATE.clone();
 
         // if the `update.attested.slot > finalized_slot`, then there must be no next sync committee given
         assert!(matches!(
             validate_light_client_update::<Mainnet, BlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
-                Some(&SYNC_COMMITTEE_6553725),
+                Some(&data_6553725::SYNC_COMMITTEE),
                 update.next_sync_committee.as_ref(),
                 update.signature_slot + Slot::new(1),
                 update.attested_header.beacon.slot + Slot::new(100),
-                GENESIS_VALIDATORS_ROOT_6553725,
+                data_6553725::GENESIS_VALIDATORS_ROOT,
                 BlsVerifier,
             ),
             Err(Error::IrrelevantUpdate { .. })
@@ -653,11 +664,11 @@ mod tests {
             validate_light_client_update::<Mainnet, BlsVerifier>(
                 SEPOLIA_CHAIN_ID,
                 &update,
-                Some(&SYNC_COMMITTEE_6553725),
+                Some(&data_6553725::SYNC_COMMITTEE),
                 None,
                 update.signature_slot + Slot::new(1),
                 update.attested_header.beacon.slot + Slot::new(100),
-                GENESIS_VALIDATORS_ROOT_6553725,
+                data_6553725::GENESIS_VALIDATORS_ROOT,
                 BlsVerifier,
             ),
             Err(Error::IrrelevantUpdate { .. })

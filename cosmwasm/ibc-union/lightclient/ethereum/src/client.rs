@@ -11,7 +11,7 @@ use ethereum_light_client_types::{
 use ethereum_sync_protocol::{
     utils::{
         compute_epoch_at_slot, compute_slot_at_timestamp, compute_sync_committee_period_at_slot,
-        compute_timestamp_at_slot, validate_signature_supermajority,
+        validate_signature_supermajority,
     },
     validate_light_client_update,
 };
@@ -516,14 +516,16 @@ impl ValueCodec<InverseSyncCommittee> for SyncCommitteeStore {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::LazyCell;
+
     use beacon_api_types::altair::SyncCommittee;
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
         Addr, Timestamp,
     };
     use ethereum_light_client_types::{AccountProof, LightClientUpdateData, WithinEpochUpdate};
+    use ethereum_sync_protocol::utils::compute_timestamp_at_slot;
     use hex_literal::hex;
-    use lazy_static::lazy_static;
     use unionlabs::primitives::H160;
 
     use super::*;
@@ -541,19 +543,20 @@ mod tests {
         "045c10398196b51905129fdbd1cbafdf0328877c575b9da41f15d7718f330d23"
     ));
 
-    lazy_static! {
-        static ref INITIAL_HEADER: beacon_api_types::phase0::BeaconBlockHeader =
-            serde_json::from_str(include_str!("./test/header_7167008.json")).unwrap();
-        static ref CURRENT_SYNC_COMMITTEE: SyncCommittee =
-            serde_json::from_str(include_str!("./test/current_sync_committee_7167008.json"))
-                .unwrap();
-        static ref NEXT_SYNC_COMMITTEE: SyncCommittee =
-            serde_json::from_str(include_str!("./test/next_sync_committee_7167008.json")).unwrap();
-        static ref FINALITY_UPDATE: LightClientUpdateData =
-            serde_json::from_str(include_str!("./test/finality_update_7167040.json")).unwrap();
-        static ref FINALITY_UPDATE_ACCOUNT_PROOF: Vec<Bytes> =
-            serde_json::from_str(include_str!("./test/account_proof_7167040.json")).unwrap();
-    }
+    const INITIAL_HEADER: LazyCell<beacon_api_types::phase0::BeaconBlockHeader> =
+        LazyCell::new(|| serde_json::from_str(include_str!("./test/header_7167008.json")).unwrap());
+    const CURRENT_SYNC_COMMITTEE: LazyCell<SyncCommittee> = LazyCell::new(|| {
+        serde_json::from_str(include_str!("./test/current_sync_committee_7167008.json")).unwrap()
+    });
+    const _NEXT_SYNC_COMMITTEE: LazyCell<SyncCommittee> = LazyCell::new(|| {
+        serde_json::from_str(include_str!("./test/next_sync_committee_7167008.json")).unwrap()
+    });
+    const FINALITY_UPDATE: LazyCell<LightClientUpdateData> = LazyCell::new(|| {
+        serde_json::from_str(include_str!("./test/finality_update_7167040.json")).unwrap()
+    });
+    const FINALITY_UPDATE_ACCOUNT_PROOF: LazyCell<Vec<Bytes>> = LazyCell::new(|| {
+        serde_json::from_str(include_str!("./test/account_proof_7167040.json")).unwrap()
+    });
 
     fn initial_state() -> (ClientState, ConsensusState) {
         let client_state = ClientState::V1(ClientStateV1 {

@@ -28,5 +28,4 @@ unionlabs                    = { workspace = true }
 [dev-dependencies]
 ethereum-sync-protocol-types = { workspace = true, features = ["serde"] }
 hex-literal                  = { workspace = true }
-lazy_static                  = "1.4.0"
 serde_json                   = { workspace = true }
