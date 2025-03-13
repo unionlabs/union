@@ -36,12 +36,6 @@ struct ConsensusState {
 }
 
 library StateLensIcs23MptLib {
-    uint256 public constant EVM_IBC_COMMITMENT_SLOT = 0;
-
-    event CreateLensClient(
-        uint32 clientId, uint32 l1ClientId, uint32 l2ClientId, string l2ChainId
-    );
-
     error ErrNotIBC();
     error ErrTrustedConsensusStateNotFound();
     error ErrClientFrozen();
@@ -148,7 +142,7 @@ contract StateLensIcs23MptClient is
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
 
-        emit StateLensIcs23MptLib.CreateLensClient(
+        emit CreateLensClient(
             clientId,
             clientState.l1ClientId,
             clientState.l2ClientId,
@@ -257,7 +251,7 @@ contract StateLensIcs23MptClient is
         }
         bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
         bytes32 slot = keccak256(
-            abi.encodePacked(path, StateLensIcs23MptLib.EVM_IBC_COMMITMENT_SLOT)
+            abi.encodePacked(path, IBCStoreLib.IBC_UNION_EVM_COMMITMENT_SLOT)
         );
         (bool exists, bytes calldata provenValue) = MPTVerifier.verifyTrieValue(
             proof, keccak256(abi.encodePacked(slot)), storageRoot
@@ -278,7 +272,7 @@ contract StateLensIcs23MptClient is
         }
         bytes32 storageRoot = consensusStates[clientId][height].storageRoot;
         bytes32 slot = keccak256(
-            abi.encodePacked(path, StateLensIcs23MptLib.EVM_IBC_COMMITMENT_SLOT)
+            abi.encodePacked(path, IBCStoreLib.IBC_UNION_EVM_COMMITMENT_SLOT)
         );
         (bool exists,) = MPTVerifier.verifyTrieValue(
             proof, keccak256(abi.encodePacked(slot)), storageRoot

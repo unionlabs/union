@@ -431,7 +431,7 @@ contract CometblsClient is
             abi.encodePacked(
                 IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
                 contractAddress,
-                IBCStoreLib.COSMWASM_COMMITMENT_PREFIX,
+                IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
                 path
             ),
             value
@@ -456,7 +456,7 @@ contract CometblsClient is
             abi.encodePacked(
                 IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
                 contractAddress,
-                IBCStoreLib.COSMWASM_COMMITMENT_PREFIX,
+                IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
                 path
             )
         );

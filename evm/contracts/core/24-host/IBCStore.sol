@@ -7,7 +7,9 @@ import "../Types.sol";
 library IBCStoreLib {
     bytes public constant WASMD_MODULE_STORE_KEY = bytes("wasm");
     bytes1 public constant WASMD_CONTRACT_STORE_PREFIX = 0x03;
-    bytes1 public constant COSMWASM_COMMITMENT_PREFIX = 0x00;
+    bytes1 public constant IBC_UNION_COSMWASM_COMMITMENT_PREFIX = 0x00;
+
+    uint256 public constant IBC_UNION_EVM_COMMITMENT_SLOT = 0;
 }
 
 abstract contract IBCStore {

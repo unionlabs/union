@@ -28,7 +28,7 @@ use ibc_union_spec::{
     path::{
         commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
         ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
-        COSMWASM_COMMITMENT_PREFIX,
+        IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
     },
     types::{Channel, ChannelState, Connection, ConnectionState, Packet},
 };
@@ -1689,12 +1689,12 @@ fn merge_ack(mut ack: H256) -> H256 {
 }
 
 fn store_commit(deps: DepsMut, key: &H256, value: &H256) {
-    let canonical_path = [&COSMWASM_COMMITMENT_PREFIX, key.as_ref()].concat();
+    let canonical_path = [&IBC_UNION_COSMWASM_COMMITMENT_PREFIX, key.as_ref()].concat();
     deps.storage.set(&canonical_path, value.as_ref());
 }
 
 fn read_commit(deps: Deps, key: &H256) -> Option<H256> {
-    let canonical_path = [&COSMWASM_COMMITMENT_PREFIX, key.as_ref()].concat();
+    let canonical_path = [&IBC_UNION_COSMWASM_COMMITMENT_PREFIX, key.as_ref()].concat();
     deps.storage.get(&canonical_path).map(|bz| {
         bz.try_into()
             .expect("H256 is the only value ever written to this storage; qed;")

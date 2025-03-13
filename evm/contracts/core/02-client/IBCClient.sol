@@ -9,7 +9,9 @@ import "../02-client/IIBCClient.sol";
 library IBCClientLib {
     event RegisterClient(string indexed clientType, address clientAddress);
     event CreateClient(
-        string indexed clientType, uint32 indexed clientId, string counterpartyChainId
+        string indexed clientType,
+        uint32 indexed clientId,
+        string counterpartyChainId
     );
     event UpdateClient(uint32 indexed clientId, uint64 height);
     event Misbehaviour(uint32 indexed clientId);

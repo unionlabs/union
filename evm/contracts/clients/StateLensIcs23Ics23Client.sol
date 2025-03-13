@@ -47,10 +47,6 @@ library StateLensIcs23Ics23Lib {
     error ErrInvalidInitialConsensusState();
     error ErrInvalidMisbehaviour();
 
-    event CreateLensClient(
-        uint32 clientId, uint32 l1ClientId, uint32 l2ClientId, string l2ChainId
-    );
-
     function encode(
         ConsensusState memory consensusState
     ) internal pure returns (bytes memory) {
@@ -142,7 +138,7 @@ contract StateLensIcs23Ics23Client is
             height: block.number
         });
 
-        emit StateLensIcs23Ics23Lib.CreateLensClient(
+        emit CreateLensClient(
             clientId,
             clientState.l1ClientId,
             clientState.l2ClientId,
@@ -254,7 +250,7 @@ contract StateLensIcs23Ics23Client is
             abi.encodePacked(
                 IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
                 contractAddress,
-                IBCStoreLib.COSMWASM_COMMITMENT_PREFIX,
+                IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
                 path
             ),
             value
@@ -279,7 +275,7 @@ contract StateLensIcs23Ics23Client is
             abi.encodePacked(
                 IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
                 contractAddress,
-                IBCStoreLib.COSMWASM_COMMITMENT_PREFIX,
+                IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
                 path
             )
         );

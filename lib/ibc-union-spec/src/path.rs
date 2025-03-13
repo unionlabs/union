@@ -9,7 +9,7 @@ use voyager_core::IbcStorePathKey;
 use super::IbcUnion;
 use crate::types::{Channel, ChannelId, ClientId, Connection, ConnectionId, Packet};
 
-pub const COSMWASM_COMMITMENT_PREFIX: [u8; 1] = [0x00];
+pub const IBC_UNION_COSMWASM_COMMITMENT_PREFIX: [u8; 1] = [0x00];
 
 /// 0x0100000000000000000000000000000000000000000000000000000000000000
 pub const COMMITMENT_MAGIC: H256 = {

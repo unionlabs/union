@@ -8,6 +8,13 @@ struct ConsensusStateUpdate {
     uint64 height;
 }
 
+event CreateLensClient(
+    uint32 indexed clientId,
+    uint32 indexed l1ClientId,
+    uint32 indexed l2ClientId,
+    string l2ChainId
+);
+
 /**
  * @dev This defines an interface for Light Client contract can be integrated with ibc-solidity.
  * You can register the Light Client contract that implements this through `registerClient` on IBCHandler.
