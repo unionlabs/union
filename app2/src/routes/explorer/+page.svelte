@@ -13,19 +13,28 @@ import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import type { DailyTransfer } from "$lib/schema/statistics"
 
 // State for tracking the currently hovered day
-let hoveredDay = $state<DailyTransfer | null>(null)
+let hoveredDay = $state<Option.Option<DailyTransfer>>(Option.none())
 
 // Find the day with the highest count
 const highestDay = $derived.by(() => {
-  if (!Option.isSome(dailyTransfers.data) || dailyTransfers.data.value.length === 0) return null
-  return dailyTransfers.data.value.reduce(
-    (max, current) => (current.count > max.count ? current : max),
-    dailyTransfers.data.value[0]
+  if (!Option.isSome(dailyTransfers.data) || dailyTransfers.data.value.length === 0)
+    return Option.none()
+  return Option.some(
+    dailyTransfers.data.value.reduce(
+      (max, current) => (current.count > max.count ? current : max),
+      dailyTransfers.data.value[0]
+    )
   )
 })
 
 // The count to display (either hovered day or highest day)
-const displayDay = $derived(hoveredDay ?? highestDay)
+const displayDay = $derived(
+  Option.isSome(hoveredDay)
+    ? hoveredDay.value
+    : Option.isSome(highestDay)
+      ? highestDay.value
+      : undefined
+)
 
 onMount(() => {
   statistics.runEffect(statisticsQuery)
@@ -62,9 +71,9 @@ onMount(() => {
   <Card class="h-80 relative" divided>
     <div class="p-4 gap-4 absolute top-0 left-0 border-b-0 w-full z-10">
       <div class="flex justify-between items-center">
-        {#if displayDay}
+        {#if displayDay !== undefined}
           <div>
-            <Label>{#if hoveredDay}<DateTimeComponent class="text-zinc-500" value={hoveredDay.day} showTime={false} />{:else}Daily Transfers{/if}</Label>
+            <Label>{#if Option.isSome(hoveredDay)}<DateTimeComponent class="text-zinc-500" value={hoveredDay.value.day} showTime={false} />{:else}Daily Transfers{/if}</Label>
             <div class="text-2xl font-bold mt-1">{displayDay.count.toLocaleString()}</div>
           </div>
         {/if}

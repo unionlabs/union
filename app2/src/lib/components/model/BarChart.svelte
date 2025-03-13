@@ -7,10 +7,10 @@ import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { onMount } from "svelte"
 
 type Props = {
-  data: Option.Option<Array<DailyTransfer>>
+  data: Option.Option<ReadonlyArray<DailyTransfer>>
   error: Option.Option<FetchDecodeGraphqlError>
   class?: string
-  onHoverChange?: (day: DailyTransfer | null) => void
+  onHoverChange?: (day: Option.Option<DailyTransfer>) => void
 }
 
 const { data, error, class: className = "", onHoverChange = () => {} }: Props = $props()
@@ -26,20 +26,31 @@ const reversedDailyTransfers = $derived(Option.isSome(data) ? [...data.value].re
 const maxCount = $derived(Option.isSome(data) ? Math.max(...data.value.map(d => d.count)) : 0)
 
 // Track the currently hovered day for display
-let hoveredDay = $state<DailyTransfer | null>(null)
+let hoveredDay = $state<Option.Option<DailyTransfer>>(Option.none())
 
 // Find the day with the highest count
 const highestDay = $derived.by(() => {
-  if (!Option.isSome(data) || data.value.length === 0) return null
-  return data.value.reduce(
-    (max, current) => (current.count > max.count ? current : max),
-    data.value[0]
+  if (!Option.isSome(data) || data.value.length === 0) return Option.none()
+  return Option.some(
+    data.value.reduce((max, current) => (current.count > max.count ? current : max), data.value[0])
   )
 })
 
 // The count to display (either hovered day or highest day)
-const displayCount = $derived(() => hoveredDay?.count ?? highestDay?.count ?? 0)
-const displayDate = $derived(() => hoveredDay?.day ?? highestDay?.day ?? "")
+const displayCount = $derived(() =>
+  Option.isSome(hoveredDay)
+    ? hoveredDay.value.count
+    : Option.isSome(highestDay)
+      ? highestDay.value.count
+      : 0
+)
+const displayDate = $derived(() =>
+  Option.isSome(hoveredDay)
+    ? hoveredDay.value.day
+    : Option.isSome(highestDay)
+      ? highestDay.value.day
+      : ""
+)
 
 // Calculate nice round numbers for y-axis labels
 const yLabels = $derived(() => {
@@ -93,12 +104,12 @@ const xAxisLabels = $derived(
           <div 
             class="flex pr-1 flex-col flex-1 group size-full justify-end hover:opacity-100"
             onmouseenter={() => {
-              hoveredDay = day;
-              onHoverChange(day);
+              hoveredDay = Option.some(day);
+              onHoverChange(Option.some(day));
             }}
             onmouseleave={() => {
-              hoveredDay = null;
-              onHoverChange(null);
+              hoveredDay = Option.none();
+              onHoverChange(Option.none());
             }}
           >
             <div class="w-full size-full flex items-end">
