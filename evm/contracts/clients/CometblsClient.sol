@@ -255,7 +255,7 @@ contract CometblsClient is
     function misbehaviour(
         uint32 clientId,
         bytes calldata clientMessageBytes
-    ) external override onlyIBC {
+    ) external override onlyIBC whenNotPaused {
         Misbehaviour calldata m = clientMessageBytes.decodeMisbehaviour();
         ClientState storage clientState = clientStates[clientId];
         bool fraud =
@@ -373,7 +373,13 @@ contract CometblsClient is
     function updateClient(
         uint32 clientId,
         bytes calldata clientMessageBytes
-    ) external override onlyIBC returns (ConsensusStateUpdate memory) {
+    )
+        external
+        override
+        onlyIBC
+        whenNotPaused
+        returns (ConsensusStateUpdate memory)
+    {
         ClientState storage clientState = clientStates[clientId];
 
         if (clientState.frozenHeight > 0) {
@@ -412,7 +418,7 @@ contract CometblsClient is
         bytes calldata proof,
         bytes calldata path,
         bytes calldata value
-    ) external virtual returns (bool) {
+    ) external virtual whenNotPaused returns (bool) {
         if (isFrozenImpl(clientId)) {
             revert CometblsClientLib.ErrClientFrozen();
         }
@@ -437,7 +443,7 @@ contract CometblsClient is
         uint64 height,
         bytes calldata proof,
         bytes calldata path
-    ) external virtual returns (bool) {
+    ) external virtual whenNotPaused returns (bool) {
         if (isFrozenImpl(clientId)) {
             revert CometblsClientLib.ErrClientFrozen();
         }
@@ -484,7 +490,7 @@ contract CometblsClient is
 
     function isFrozen(
         uint32 clientId
-    ) external view virtual returns (bool) {
+    ) external view virtual whenNotPaused returns (bool) {
         return isFrozenImpl(clientId);
     }
 
@@ -580,6 +586,14 @@ contract CometblsClient is
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
 
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {

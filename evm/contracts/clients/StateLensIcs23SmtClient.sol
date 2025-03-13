@@ -304,6 +304,14 @@ contract StateLensIcs23SmtClient is
         address newImplementation
     ) internal override onlyOwner {}
 
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
+
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {
             revert StateLensIcs23SmtLib.ErrNotIBC();

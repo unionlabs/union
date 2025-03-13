@@ -172,7 +172,13 @@ contract StateLensIcs23MptClient is
     function updateClient(
         uint32 clientId,
         bytes calldata clientMessageBytes
-    ) external override onlyIBC returns (ConsensusStateUpdate memory) {
+    )
+        external
+        override
+        onlyIBC
+        whenNotPaused
+        returns (ConsensusStateUpdate memory)
+    {
         Header calldata header;
         assembly {
             header := clientMessageBytes.offset
@@ -235,7 +241,7 @@ contract StateLensIcs23MptClient is
     function misbehaviour(
         uint32 clientId,
         bytes calldata clientMessageBytes
-    ) external override onlyIBC {
+    ) external override onlyIBC whenNotPaused {
         revert StateLensIcs23MptLib.ErrUnsupported();
     }
 
@@ -245,7 +251,7 @@ contract StateLensIcs23MptClient is
         bytes calldata proof,
         bytes calldata path,
         bytes calldata value
-    ) external virtual returns (bool) {
+    ) external virtual whenNotPaused returns (bool) {
         if (isFrozenImpl(clientId)) {
             revert StateLensIcs23MptLib.ErrClientFrozen();
         }
@@ -266,7 +272,7 @@ contract StateLensIcs23MptClient is
         uint64 height,
         bytes calldata proof,
         bytes calldata path
-    ) external virtual returns (bool) {
+    ) external virtual whenNotPaused returns (bool) {
         if (isFrozenImpl(clientId)) {
             revert StateLensIcs23MptLib.ErrClientFrozen();
         }
@@ -308,7 +314,7 @@ contract StateLensIcs23MptClient is
 
     function isFrozen(
         uint32 clientId
-    ) external view virtual returns (bool) {
+    ) external view virtual whenNotPaused returns (bool) {
         return isFrozenImpl(clientId);
     }
 
@@ -322,6 +328,14 @@ contract StateLensIcs23MptClient is
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}
+
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
 
     function _onlyIBC() internal view {
         if (msg.sender != ibcHandler) {

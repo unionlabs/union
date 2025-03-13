@@ -663,7 +663,7 @@ contract UCS03Zkgm is
         uint64 timeoutTimestamp,
         bytes32 salt,
         Instruction calldata instruction
-    ) public {
+    ) public whenNotPaused {
         verifyInternal(channelId, 0, instruction);
         ibcHandler.sendPacket(
             channelId,
@@ -838,7 +838,7 @@ contract UCS03Zkgm is
         IBCPacket calldata packet,
         address relayer,
         bytes calldata relayerMsg
-    ) external virtual override onlyIBC returns (bytes memory) {
+    ) external virtual override onlyIBC whenNotPaused returns (bytes memory) {
         (bool success, bytes memory returnData) = address(this).call(
             abi.encodeCall(this.execute, (packet, relayer, relayerMsg))
         );
@@ -1245,7 +1245,7 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         bytes calldata ack,
         address relayer
-    ) external virtual override onlyIBC {
+    ) external virtual override onlyIBC whenNotPaused {
         ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
         if (ZkgmLib.isForwardedPacket(zkgmPacket.salt)) {
             bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
@@ -1467,7 +1467,7 @@ contract UCS03Zkgm is
     function onTimeoutPacket(
         IBCPacket calldata ibcPacket,
         address relayer
-    ) external virtual override onlyIBC {
+    ) external virtual override onlyIBC whenNotPaused {
         ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
         if (ZkgmLib.isForwardedPacket(zkgmPacket.salt)) {
             bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
