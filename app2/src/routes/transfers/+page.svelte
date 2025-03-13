@@ -100,17 +100,6 @@ const onNextPage = async () => {
 </script>
 
 <Sections>
-  <section>
-    <p class="flex gap-1 text-zinc-200">
-      {#if Option.isSome(transferCount.data)}
-        You made <span class="text-sky-400 font-bold">{transferCount.data.value.aggregate.count}</span> transfers so far.
-      {:else if  wallets.getCanonicalByteAddressList().length === 0}
-        Connect your wallet to see your transfers
-      {:else}
-        These are the transfers from your connected wallets
-      {/if}
-    </p>
-  </section>
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferListAddress.error)}
       <ErrorComponent error={transferListAddress.error.value}/>

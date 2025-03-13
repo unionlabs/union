@@ -7,12 +7,13 @@ import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { onMount } from "svelte"
 
 type Props = {
-  data: Option.Option<Array<DailyTransfer>>
+  data: Option.Option<ReadonlyArray<DailyTransfer>>
   error: Option.Option<FetchDecodeGraphqlError>
   class?: string
+  onHoverChange?: (day: Option.Option<DailyTransfer>) => void
 }
 
-const { data, error, class: className = "" } = $props()
+const { data, error, class: className = "", onHoverChange = () => {} }: Props = $props()
 
 // Format large numbers with commas (used for chart tooltips)
 function formatNumber(num: string | number): string {
@@ -24,23 +25,32 @@ const reversedDailyTransfers = $derived(Option.isSome(data) ? [...data.value].re
 
 const maxCount = $derived(Option.isSome(data) ? Math.max(...data.value.map(d => d.count)) : 0)
 
-// Calculate nice round numbers for y-axis labels
-const yLabels = $derived(() => {
-  if (maxCount <= 0) return [0, 0, 0, 0, 0]
+// Track the currently hovered day for display
+let hoveredDay = $state<Option.Option<DailyTransfer>>(Option.none())
 
-  // Find a nice round maximum that's at least as large as maxCount
-  const magnitude = 10 ** Math.floor(Math.log10(maxCount))
-  const roundedMax = Math.ceil(maxCount / magnitude) * magnitude
-
-  // Create evenly spaced labels
-  return [
-    0,
-    Math.round(roundedMax / 4),
-    Math.round(roundedMax / 2),
-    Math.round((roundedMax * 3) / 4),
-    roundedMax
-  ]
+// Find the day with the highest count
+const highestDay = $derived.by(() => {
+  if (!Option.isSome(data) || data.value.length === 0) return Option.none()
+  return Option.some(
+    data.value.reduce((max, current) => (current.count > max.count ? current : max), data.value[0])
+  )
 })
+
+// The count to display (either hovered day or highest day)
+const displayCount = $derived(() =>
+  Option.isSome(hoveredDay)
+    ? hoveredDay.value.count
+    : Option.isSome(highestDay)
+      ? highestDay.value.count
+      : 0
+)
+const displayDate = $derived(() =>
+  Option.isSome(hoveredDay)
+    ? hoveredDay.value.day_date
+    : Option.isSome(highestDay)
+      ? highestDay.value.day_date
+      : ""
+)
 
 // Calculate bar heights as percentages
 const barHeights = $derived(
@@ -48,13 +58,6 @@ const barHeights = $derived(
     ...day,
     heightPercent: maxCount > 0 ? Math.max((day.count / maxCount) * 100, 1) : 1
   }))
-)
-
-// Get labels for x-axis (first, middle, last)
-const xAxisLabels = $derived(
-  reversedDailyTransfers.filter(
-    (_, i, arr) => i === 0 || i === Math.floor(arr.length / 2) || i === arr.length - 1
-  )
 )
 </script>
 
@@ -70,17 +73,30 @@ const xAxisLabels = $derived(
     
     <!-- Bars -->
     <div class="absolute left-0 right-0 top-0 bottom-0 pt-1 px-4 pt-4">
-      <div class="flex h-full gap-[1px] sm:gap-[2px] md:gap-1 items-end">
+      <div class="flex h-full items-end">
         {#each barHeights as day, i}
-          <div class="flex flex-col flex-1 group size-full justify-end hover:opacity-100">
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div 
+            class="flex pr-1 flex-col flex-1 group size-full justify-end hover:opacity-100"
+            onmouseenter={() => {
+              hoveredDay = Option.some(day);
+              onHoverChange(Option.some(day));
+            }}
+            onmouseleave={() => {
+              hoveredDay = Option.none();
+              onHoverChange(Option.none());
+            }}
+          >
             <div class="w-full size-full flex items-end">
               <div 
-                class="relative w-full bg-white rounded-t bar animate-bar"
+                class="relative w-full bg-white bar animate-bar"
                 style="--final-height: {day.heightPercent}%; --delay: {i * 50}ms; min-height: 1px;"
               >
+                <!-- uncomment for tooltip
                 <div class="absolute pointer-events-none bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-zinc-950 border-zinc-900 border text-white dark:text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                   <div>{formatNumber(day.count)}</div> <DateTimeComponent value={day.day} showTime={false} />
                 </div>
+                !-->
               </div>
             </div>
           </div>

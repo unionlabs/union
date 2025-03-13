@@ -26,7 +26,7 @@ const classes = cn(
 <div
   class={classes}
   {...rest}
-  in:fade={{delay:200}}
+  in:fade={{delay:100}}
 >
   {@render children()}
 </div>
