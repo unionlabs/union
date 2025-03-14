@@ -15,17 +15,17 @@ tab_width                    = 4
 wrap_comments                = false
 
 [profile.default.optimizer_details]
-cse = true
 constantOptimizer = true
-yul = true
+cse               = true
+yul               = true
 
 [profile.default]
+ast            = true
 fs_permissions = [{ access = "read", path = "./" }, { access = "write", path = "contracts.json" }]
-gas_reports = ["*"]
-via_ir = true
-ast = true
-optimizer = true
+gas_reports    = ["*"]
+optimizer      = true
 optimizer_runs = 1_000
-solc_version = "0.8.27"
-src = "evm/scripts"
-test = "evm/tests/src"
+solc_version   = "0.8.27"
+src            = "evm/scripts"
+test           = "evm/tests/src"
+via_ir         = true

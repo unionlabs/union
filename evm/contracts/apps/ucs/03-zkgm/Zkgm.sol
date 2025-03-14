@@ -902,12 +902,7 @@ contract UCS03Zkgm is
             }
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            return executeFungibleAssetOrder(
-                ibcPacket,
-                relayer,
-                path,
-                order
-            );
+            return executeFungibleAssetOrder(ibcPacket, relayer, path, order);
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
