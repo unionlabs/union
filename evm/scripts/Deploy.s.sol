@@ -235,8 +235,7 @@ abstract contract UnionScript is UnionBase {
 
     function deployUCS03(
         IBCHandler handler,
-        address owner,
-        address weth
+        address owner
     ) internal returns (UCS03Zkgm) {
         return UCS03Zkgm(
             deploy(
@@ -244,8 +243,7 @@ abstract contract UnionScript is UnionBase {
                 abi.encode(
                     address(new UCS03Zkgm()),
                     abi.encodeCall(
-                        UCS03Zkgm.initialize,
-                        (IIBCModulePacket(handler), owner, IWETH(weth))
+                        UCS03Zkgm.initialize, (IIBCModulePacket(handler), owner)
                     )
                 )
             )
@@ -396,7 +394,6 @@ contract DeployUCS03 is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        address wethAddress = vm.envAddress("WETH_ADDRESS");
 
         address owner = vm.addr(privateKey);
 
@@ -404,7 +401,7 @@ contract DeployUCS03 is UnionScript {
 
         vm.startBroadcast(privateKey);
 
-        UCS03Zkgm zkgm = deployUCS03(IBCHandler(handler), owner, wethAddress);
+        UCS03Zkgm zkgm = deployUCS03(IBCHandler(handler), owner);
 
         vm.stopBroadcast();
 
@@ -824,8 +821,7 @@ contract GetDeployed is Script {
             abi.encode(
                 implOf(ucs03),
                 abi.encodeCall(
-                    UCS03Zkgm.initialize,
-                    (IIBCModulePacket(handler), sender, UCS03Zkgm(ucs03).weth())
+                    UCS03Zkgm.initialize, (IIBCModulePacket(handler), sender)
                 )
             )
         );
@@ -964,9 +960,7 @@ contract DryUpgradeUCS03 is Script {
 
         address newImplementation = address(new UCS03Zkgm());
         vm.prank(owner);
-        UCS03Zkgm(ucs03).upgradeToAndCall(
-            newImplementation, abi.encodeCall(UCS03Zkgm.setWeth, (weth))
-        );
+        UCS03Zkgm(ucs03).upgradeToAndCall(newImplementation, new bytes(0));
     }
 }
 
@@ -1001,9 +995,7 @@ contract UpgradeUCS03 is Script {
 
         vm.startBroadcast(privateKey);
         address newImplementation = address(new UCS03Zkgm());
-        UCS03Zkgm(ucs03).upgradeToAndCall(
-            newImplementation, abi.encodeCall(UCS03Zkgm.setWeth, (weth))
-        );
+        UCS03Zkgm(ucs03).upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }
 }
