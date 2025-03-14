@@ -84,7 +84,7 @@ _: {
           path = "${openzeppelin-foundry-upgrades}/src";
         }
       ];
-      evmLibs = pkgs.stdenv.mkDerivation {
+      evm-libs = pkgs.stdenv.mkDerivation {
         name = "evm-libs-src";
         phases = [
           "installPhase"
@@ -102,7 +102,7 @@ _: {
           "installPhase"
           "fixupPhase"
         ];
-        src = evmLibs;
+        src = evm-libs;
         installPhase = ''
           mkdir -p $out/libs
           cp -rL $src/* $out/libs
@@ -508,6 +508,8 @@ _: {
           }
         );
 
+        inherit evm-libs;
+
         evm-contracts = mkCi (system == "x86_64-linux") (
           pkgs.stdenv.mkDerivation {
             name = "evm-contracts";
@@ -618,7 +620,7 @@ _: {
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
+            FOUNDRY_LIBS=["${evm-libs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
           '';
         };
 
