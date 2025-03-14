@@ -6,7 +6,7 @@ import {
 } from "./state.ts"
 import { Effect } from "effect"
 import { switchChainAptos } from "./chain.ts"
-import { submitTransferAptos, waitForTransferReceiptAptos } from "./transactions-aptos.ts"
+import { submitTransfer, waitForTransferReceipt } from "./transactions-aptos.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 
@@ -15,7 +15,7 @@ import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
  * It goes from Filling -> SwitchChain -> TransferSubmit -> TransferReceipt.
  * No approval steps are required.
  */
-export async function nextStateAptos(
+export async function nextState(
   ts: TransferSubmission,
   params: ValidTransfer["args"],
   chain: Chain
@@ -48,7 +48,7 @@ export async function nextStateAptos(
     TransferSubmit: ({ state }) => {
       return TransferSubmitState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(submitTransferAptos(chain, params))
+          const exit = await Effect.runPromiseExit(submitTransfer(chain, params))
           return TransferSubmission.TransferSubmit({
             state: TransferSubmitState.Complete({ exit })
           })
@@ -69,7 +69,7 @@ export async function nextStateAptos(
     TransferReceipt: ({ state }) => {
       return TransferReceiptState.$match(state, {
         InProgress: async ({ hash }) => {
-          const exit = await Effect.runPromiseExit(waitForTransferReceiptAptos(chain, hash))
+          const exit = await Effect.runPromiseExit(waitForTransferReceipt(chain, hash))
           return TransferSubmission.TransferReceipt({
             state: TransferReceiptState.Complete({ exit })
           })

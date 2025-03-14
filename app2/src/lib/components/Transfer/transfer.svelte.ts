@@ -20,12 +20,15 @@ import {
   ApprovalSubmitState as EvmApprovalSubmitState,
   ApprovalReceiptState,
   TransferSubmitState as EvmTransferSubmitState,
-  TransferReceiptState
+  TransferReceiptState as EvmTransferReceiptState
 } from "$lib/services/transfer-ucs03-evm"
 import {
-  hasFailedExitAptos,
-  isCompleteAptos,
-  nextStateAptos
+  hasFailedExit as hasAptosFailedExit,
+  isComplete as isAptosComplete,
+  nextState as aptosNextState,
+  TransferSubmission as AptosTransferSubmission,
+  SwitchChainState as AptosSwitchChainState,
+  TransferReceiptState as AptosTransferReceiptState
 } from "$lib/services/transfer-ucs03-aptos"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { type Address, fromHex, type Hex } from "viem"
@@ -57,11 +60,17 @@ export interface CosmosState extends TransferState {
   readonly state: CosmosTransferSubmission
 }
 
-export type TransferStateUnion = EmptyState | EVMState | CosmosState
+export interface AptosState extends TransferState {
+  readonly _tag: "Aptos"
+  readonly state: AptosTransferSubmission
+}
+
+export type TransferStateUnion = EmptyState | EVMState | CosmosState | AptosState
 
 export const TransferState = {
   Empty: (): EmptyState => ({ _tag: "Empty" }),
   EVM: (state: EvmTransferSubmission): EVMState => ({ _tag: "EVM", state }),
+  Aptos: (state: AptosTransferSubmission): AptosState => ({ _tag: "Aptos", state }),
   Cosmos: (state: CosmosTransferSubmission): CosmosState => ({ _tag: "Cosmos", state })
 }
 
@@ -78,6 +87,8 @@ export class Transfer {
       const sourceChainValue = this.sourceChain.value
       if (sourceChainValue.rpc_type === "evm") {
         return TransferState.EVM(EvmTransferSubmission.Filling())
+      } else if(sourceChainValue.rpc_type === "aptos") {
+        return TransferState.Aptos(AptosTransferSubmission.Filling())
       }
       return TransferState.Cosmos(CosmosTransferSubmission.Filling())
     }
@@ -331,7 +342,7 @@ export class Transfer {
               break
             case "TransferReceipt":
               evmState = EvmTransferSubmission.TransferReceipt({
-                state: TransferReceiptState.InProgress({ hash: this.state.state.state.hash })
+                state: EvmTransferReceiptState.InProgress({ hash: this.state.state.state.hash })
               })
               break
             default:
@@ -347,6 +358,7 @@ export class Transfer {
       const newState = await evmNextState(evmState, this.transferResult.args, sourceChainValue)
       this._stateOverride = newState !== null ? TransferState.EVM(newState) : TransferState.Empty()
 
+      console.info("evmState: ", evmState)
       let currentEvmState = newState
       while (currentEvmState !== null && !hasEvmFailedExit(currentEvmState)) {
         const nextEvmState = await evmNextState(
@@ -360,7 +372,7 @@ export class Transfer {
         currentEvmState = nextEvmState
         if (currentEvmState !== null && isEvmComplete(currentEvmState)) break
       }
-    } else {
+    } else if(sourceChainValue.rpc_type === "cosmos") {
       let cosmosState: CosmosTransferSubmission
       if (this.state._tag === "Cosmos") {
         // If failed, reset the failed step to InProgress
@@ -413,6 +425,58 @@ export class Transfer {
 
         currentCosmosState = nextCosmosState
         if (currentCosmosState !== null && isCosmosComplete(currentCosmosState)) break
+      }
+    } else if (sourceChainValue.rpc_type === "aptos") {
+      console.info("sourceChain is aptos")
+      console.info("this.state._tag is: ", this.state._tag)
+      let aptosState: AptosTransferSubmission
+      if (this.state._tag === "Aptos") {
+          console.info("state._tag is aptos")
+        // If failed, reset the failed step to InProgress
+        if (hasAptosFailedExit(this.state.state)) {
+          switch (this.state.state._tag) {
+            case "SwitchChain":
+              aptosState = AptosTransferSubmission.SwitchChain({
+                state: EvmSwitchChainState.InProgress()
+              })
+              break
+            case "TransferSubmit":
+              aptosState = AptosTransferSubmission.TransferSubmit({
+                state: AptosTransferSubmitState.InProgress()
+              })
+              break
+            case "TransferReceipt":
+              aptosState = AptosTransferSubmission.TransferReceipt({
+                state: AptosTransferReceiptState.InProgress({ hash: this.state.state.state.hash })
+              })
+              break
+            default:
+              aptosState = AptosTransferSubmission.Filling()
+          }
+        } else {
+          aptosState = this.state.state
+        }
+      } else {
+        aptosState = AptosTransferSubmission.Filling()
+      }
+
+      console.info("aptosState: ", aptosState)
+
+      const newState = await aptosNextState(aptosState, this.transferResult.args, sourceChainValue)
+      this._stateOverride = newState !== null ? TransferState.Aptos(newState) : TransferState.Empty()
+
+      let currentaptosState = newState
+      while (currentaptosState !== null && !hasAptosFailedExit(currentaptosState)) {
+        const nextaptosState = await aptosNextState(
+          currentaptosState,
+          this.transferResult.args,
+          sourceChainValue
+        )
+        this._stateOverride =
+          nextaptosState !== null ? TransferState.Aptos(nextaptosState) : TransferState.Empty()
+
+        currentaptosState = nextaptosState
+        if (currentaptosState !== null && isAptosComplete(currentaptosState)) break
       }
     }
   }
