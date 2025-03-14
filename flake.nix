@@ -199,7 +199,10 @@
         ./site/site.nix
         # ./lib/near/near.nix
         ./typescript-sdk/typescript-sdk.nix
+        ./cosmwasm/ibc-union/lightclient/ethereum/default.nix
         ./lib/cometbls-groth16-verifier/default.nix
+        ./lib/ethereum-sync-protocol/default.nix
+        ./lib/evm-storage-verifier/default.nix
         ./lib/linea-verifier/default.nix
         ./lib/linea-zktrie/default.nix
         ./cosmwasm/cosmwasm.nix

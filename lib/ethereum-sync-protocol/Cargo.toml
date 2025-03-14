@@ -26,5 +26,6 @@ typenum                      = { workspace = true, features = ["const-generics",
 unionlabs                    = { workspace = true }
 
 [dev-dependencies]
-hex-literal = { workspace = true }
-serde_json  = { workspace = true }
+ethereum-sync-protocol-types = { workspace = true, features = ["serde"] }
+hex-literal                  = { workspace = true }
+serde_json                   = { workspace = true }

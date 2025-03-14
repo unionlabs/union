@@ -42,7 +42,6 @@ base64                       = { workspace = true }
 beacon-api                   = { workspace = true }
 ethereum-sync-protocol-types = { workspace = true }
 hex-literal                  = { workspace = true }
-lazy_static                  = "1.4.0"
 protos                       = { workspace = true, features = ["proto_full", "std"] }
 serde-utils                  = { workspace = true }
 serde_json                   = { workspace = true }
