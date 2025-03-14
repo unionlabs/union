@@ -1,0 +1,31 @@
+{
+  "name": "@unionlabs/sdk",
+  "version": "1.0.7",
+  "type": "module",
+  "license": "MIT",
+  "author": "@unionlabs",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test-watch": "vitest"
+  },
+  "exports": {
+    ".": "./dist/src/index.js",
+    "./evm": "./dist/src/evm/index.js",
+    "./evm/abi": "./dist/src/evm/abi/index.js"
+  },
+  "files": [
+    "package.json",
+    "README.md",
+    "src/**/*.ts",
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map"
+  ],
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8",
+    "biome": "^0.3.3"
+  }
+}

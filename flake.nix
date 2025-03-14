@@ -197,6 +197,7 @@
         ./docs/openapi.nix
         ./ceremony/ceremony.nix
         ./site/site.nix
+        ./ts-sdk/ts-sdk.nix
         # ./lib/near/near.nix
         ./typescript-sdk/typescript-sdk.nix
         ./cosmwasm/ibc-union/lightclient/ethereum/default.nix
