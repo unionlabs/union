@@ -18,6 +18,11 @@ _: {
           src = ./.;
 
           npmDepsHash = "sha256-dFrd5jFaLjE3w9gXUdCx94/Nb3fi5RdxVKwGP6RdKAE=";
+          
+          doCheck = true;
+          checkPhase = ''
+            npm run test
+          '';
         };
 
       };
