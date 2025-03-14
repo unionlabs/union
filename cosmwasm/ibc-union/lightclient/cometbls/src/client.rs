@@ -23,6 +23,10 @@ use crate::{
     zkp_verifier::ZkpVerifier,
 };
 
+pub const WASMD_MODULE_STORE_KEY: &[u8] = b"wasm";
+pub const WASMD_CONTRACT_STORE_PREFIX: u8 = 0x03;
+pub const IBC_UNION_COSMWASM_COMMITMENT_PREFIX: u8 = 0x00;
+
 pub struct CometblsLightClient<T: ZkpVerifier = ()>(PhantomData<T>);
 
 impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
@@ -56,11 +60,12 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
             &SDK_SPECS,
             &consensus_state.app_hash,
             &[
-                b"wasm".to_vec(),
-                0x3u8
+                WASMD_MODULE_STORE_KEY.into(),
+                WASMD_CONTRACT_STORE_PREFIX
                     .to_le_bytes()
                     .into_iter()
                     .chain(client_state.contract_address)
+                    .chain(vec![IBC_UNION_COSMWASM_COMMITMENT_PREFIX])
                     .chain(key)
                     .collect::<Vec<_>>(),
             ],
@@ -75,13 +80,22 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
     ) -> Result<(), IbcClientError<Self>> {
+        let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;
         Ok(ics23::ibc_api::verify_non_membership(
             &storage_proof,
             &SDK_SPECS,
             &consensus_state.app_hash,
-            // FIXME: concat(contract, key) right?
-            &[b"wasm".to_vec(), key],
+            &[
+                WASMD_MODULE_STORE_KEY.into(),
+                WASMD_CONTRACT_STORE_PREFIX
+                    .to_le_bytes()
+                    .into_iter()
+                    .chain(client_state.contract_address)
+                    .chain(vec![IBC_UNION_COSMWASM_COMMITMENT_PREFIX])
+                    .chain(key)
+                    .collect::<Vec<_>>(),
+            ],
         )
         .map_err(Into::<Error>::into)?)
     }
