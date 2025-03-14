@@ -57,8 +57,8 @@ function getError(state: TransferStateUnion): string | null {
   switch (state._tag) {
     case "Empty":
       return null
-      case "EVM":
-      case "Aptos":
+    case "EVM":
+    case "Aptos":
     case "Cosmos": {
       const innerState = state.state
       if (innerState._tag === "Filling") return null
@@ -82,8 +82,8 @@ function getStepName(state: TransferStateUnion): string | null {
   switch (state._tag) {
     case "Empty":
       return null
-      case "EVM":
-      case "Aptos":
+    case "EVM":
+    case "Aptos":
     case "Cosmos":
       return state.state._tag
   }

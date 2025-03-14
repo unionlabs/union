@@ -1,7 +1,6 @@
 import { Data, type Exit, type Effect } from "effect"
 import type { Hash } from "viem"
 import type { submitTransfer, waitForTransferReceipt } from "./transactions-aptos.ts"
-import type { switchChainA } from "./chain.ts"
 
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 
