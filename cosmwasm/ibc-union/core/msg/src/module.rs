@@ -1,38 +1,38 @@
-use ibc_union_spec::types::Packet;
+use ibc_union_spec::{ChannelId, ConnectionId, Packet};
 use unionlabs_primitives::Bytes;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum IbcUnionMsg {
     OnChannelOpenInit {
-        connection_id: u32,
-        channel_id: u32,
+        connection_id: ConnectionId,
+        channel_id: ChannelId,
         version: String,
         relayer: String,
     },
     OnChannelOpenTry {
-        connection_id: u32,
-        channel_id: u32,
+        connection_id: ConnectionId,
+        channel_id: ChannelId,
         version: String,
         counterparty_version: String,
         relayer: String,
     },
     OnChannelOpenAck {
-        channel_id: u32,
-        counterparty_channel_id: u32,
+        channel_id: ChannelId,
+        counterparty_channel_id: ChannelId,
         counterparty_version: String,
         relayer: String,
     },
     OnChannelOpenConfirm {
-        channel_id: u32,
+        channel_id: ChannelId,
         relayer: String,
     },
     OnChannelCloseInit {
-        channel_id: u32,
+        channel_id: ChannelId,
         relayer: String,
     },
     OnChannelCloseConfirm {
-        channel_id: u32,
+        channel_id: ChannelId,
         relayer: String,
     },
     OnIntentRecvPacket {

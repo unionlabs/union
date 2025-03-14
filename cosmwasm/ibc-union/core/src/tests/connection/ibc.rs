@@ -7,7 +7,7 @@ use ibc_union_msg::{
         MsgConnectionOpenTry,
     },
 };
-use ibc_union_spec::types::Connection;
+use ibc_union_spec::Connection;
 
 use super::*;
 use crate::{contract::init, state::Connections};
@@ -31,8 +31,8 @@ fn connection_open_init_ok() {
     create_client(deps.as_mut()).expect("create client ok");
 
     let msg = MsgConnectionOpenInit {
-        client_id: 1,
-        counterparty_client_id: 2,
+        client_id: ClientId!(1),
+        counterparty_client_id: ClientId!(2),
         relayer: mock_addr(RELAYER).into_string(),
     };
     assert!(execute(
@@ -64,12 +64,12 @@ fn connection_open_init_commitment_saved() {
     connection_open_init(deps.as_mut()).expect("open connection init is ok");
 
     assert_eq!(
-        deps.storage.read::<Connections>(&1).unwrap(),
+        deps.storage.read::<Connections>(&ConnectionId!(1)).unwrap(),
         Connection {
             state: ConnectionState::Init,
-            client_id: 1,
-            counterparty_client_id: 2,
-            counterparty_connection_id: 0
+            client_id: ClientId!(1),
+            counterparty_client_id: ClientId!(2),
+            counterparty_connection_id: None
         }
     );
 }
@@ -94,9 +94,9 @@ fn connection_open_try_ok() {
     create_client(deps.as_mut()).expect("create client ok");
 
     let msg = MsgConnectionOpenTry {
-        counterparty_client_id: 2,
-        counterparty_connection_id: 1,
-        client_id: 1,
+        counterparty_client_id: ClientId!(2),
+        counterparty_connection_id: ConnectionId!(1),
+        client_id: ClientId!(1),
         proof_init: vec![1, 2, 3].into(),
         proof_height: 1,
         relayer: mock_addr(RELAYER).into_string(),
@@ -130,9 +130,9 @@ fn connection_open_try_client_not_found() {
     register_client(deps.as_mut()).expect("register client ok");
 
     let msg = MsgConnectionOpenTry {
-        counterparty_client_id: 2,
-        counterparty_connection_id: 1,
-        client_id: 1,
+        counterparty_client_id: ClientId!(2),
+        counterparty_connection_id: ConnectionId!(1),
+        client_id: ClientId!(1),
         proof_init: vec![1, 2, 3].into(),
         proof_height: 1,
         relayer: mock_addr(RELAYER).into_string(),
@@ -176,9 +176,9 @@ fn connection_open_try_commitment_saved() {
     create_client(deps.as_mut()).expect("create client ok");
 
     let msg = MsgConnectionOpenTry {
-        counterparty_client_id: 2,
-        counterparty_connection_id: 1,
-        client_id: 1,
+        counterparty_client_id: ClientId!(2),
+        counterparty_connection_id: ConnectionId!(1),
+        client_id: ClientId!(1),
         proof_init: vec![1, 2, 3].into(),
         proof_height: 1,
         relayer: mock_addr(RELAYER).into_string(),
@@ -193,12 +193,12 @@ fn connection_open_try_commitment_saved() {
     .expect("connection open try is ok");
 
     assert_eq!(
-        deps.storage.read::<Connections>(&1).unwrap(),
+        deps.storage.read::<Connections>(&ConnectionId!(1)).unwrap(),
         Connection {
             state: ConnectionState::TryOpen,
-            client_id: 1,
-            counterparty_client_id: 2,
-            counterparty_connection_id: 1
+            client_id: ClientId!(1),
+            counterparty_client_id: ClientId!(2),
+            counterparty_connection_id: Some(ConnectionId!(1))
         }
     );
 }
@@ -224,19 +224,19 @@ fn connection_open_ack_ok() {
     connection_open_init(deps.as_mut()).expect("connection open init is ok");
 
     let msg = MsgConnectionOpenAck {
-        connection_id: 1,
-        counterparty_connection_id: 1,
+        connection_id: ConnectionId!(1),
+        counterparty_connection_id: ConnectionId!(1),
         proof_try: vec![1, 2, 3].into(),
         proof_height: 1,
         relayer: mock_addr(RELAYER).into_string(),
     };
 
-    assert!(dbg!(execute(
+    assert!(execute(
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ConnectionOpenAck(msg),
-    ))
+    )
     .is_ok())
 }
 
@@ -266,8 +266,8 @@ fn connection_open_ack_commitment_saved() {
     connection_open_init(deps.as_mut()).expect("connection open init is ok");
 
     let msg = MsgConnectionOpenAck {
-        connection_id: 1,
-        counterparty_connection_id: 1,
+        connection_id: ConnectionId!(1),
+        counterparty_connection_id: ConnectionId!(1),
         proof_try: vec![1, 2, 3].into(),
         proof_height: 1,
         relayer: mock_addr(RELAYER).into_string(),
@@ -282,12 +282,12 @@ fn connection_open_ack_commitment_saved() {
     .expect("connection open ack is ok");
 
     assert_eq!(
-        deps.storage.read::<Connections>(&1).unwrap(),
+        deps.storage.read::<Connections>(&ConnectionId!(1)).unwrap(),
         Connection {
             state: ConnectionState::Open,
-            client_id: 1,
-            counterparty_client_id: 2,
-            counterparty_connection_id: 1
+            client_id: ClientId!(1),
+            counterparty_client_id: ClientId!(2),
+            counterparty_connection_id: Some(ConnectionId!(1))
         }
     );
 }
@@ -313,7 +313,7 @@ fn connection_open_confirm_ok() {
     connection_open_try(deps.as_mut()).expect("connection open try is ok");
 
     let msg = MsgConnectionOpenConfirm {
-        connection_id: 1,
+        connection_id: ConnectionId!(1),
         proof_ack: vec![1, 2, 3].into(),
         proof_height: 1,
         relayer: mock_addr(RELAYER).into_string(),
@@ -356,12 +356,12 @@ fn connection_open_try_confirm_commitment_saved() {
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     assert_eq!(
-        deps.storage.read::<Connections>(&1).unwrap(),
+        deps.storage.read::<Connections>(&ConnectionId!(1)).unwrap(),
         Connection {
             state: ConnectionState::Open,
-            client_id: 1,
-            counterparty_client_id: 2,
-            counterparty_connection_id: 1
+            client_id: ClientId!(1),
+            counterparty_client_id: ClientId!(2),
+            counterparty_connection_id: Some(ConnectionId!(1))
         }
     );
 }

@@ -17,6 +17,7 @@ cosmwasm-std                  = { workspace = true }
 depolama                      = { workspace = true }
 ibc-union                     = { workspace = true, features = ["library"] }
 ibc-union-msg                 = { workspace = true }
+ibc-union-spec                = { workspace = true }
 macros                        = { workspace = true }
 schemars                      = { workspace = true }
 serde                         = { workspace = true }

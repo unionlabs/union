@@ -6,8 +6,10 @@ use unionlabs::{
 };
 use voyager_core::IbcStorePathKey;
 
-use super::IbcUnion;
-use crate::types::{Channel, ChannelId, ClientId, Connection, ConnectionId, Packet};
+use crate::{
+    types::{ChannelId, ClientId, ConnectionId},
+    Channel, Connection, IbcUnion, Packet,
+};
 
 pub const IBC_UNION_COSMWASM_COMMITMENT_PREFIX: [u8; 1] = [0x00];
 
@@ -87,7 +89,7 @@ impl ClientStatePath {
     pub fn key(&self) -> H256 {
         Keccak256::new()
             .chain_update(CLIENT_STATE.to_be_bytes())
-            .chain_update(U256::from(self.client_id).to_be_bytes())
+            .chain_update(U256::from(self.client_id.get()).to_be_bytes())
             .finalize()
             .into()
     }
@@ -116,7 +118,7 @@ impl ConsensusStatePath {
     pub fn key(&self) -> H256 {
         Keccak256::new()
             .chain_update(CONSENSUS_STATE.to_be_bytes())
-            .chain_update(U256::from(self.client_id).to_be_bytes())
+            .chain_update(U256::from(self.client_id.get()).to_be_bytes())
             .chain_update(U256::from(self.height).to_be_bytes())
             .finalize()
             .into()
@@ -145,7 +147,7 @@ impl ConnectionPath {
     pub fn key(&self) -> H256 {
         Keccak256::new()
             .chain_update(CONNECTIONS.to_be_bytes())
-            .chain_update(U256::from(self.connection_id).to_be_bytes())
+            .chain_update(U256::from(self.connection_id.get()).to_be_bytes())
             .finalize()
             .into()
     }
@@ -173,7 +175,7 @@ impl ChannelPath {
     pub fn key(&self) -> H256 {
         Keccak256::new()
             .chain_update(CHANNELS.to_be_bytes())
-            .chain_update(U256::from(self.channel_id).to_be_bytes())
+            .chain_update(U256::from(self.channel_id.get()).to_be_bytes())
             .finalize()
             .into()
     }
@@ -256,14 +258,4 @@ impl IbcStorePathKey for BatchPacketsPath {
     type Spec = IbcUnion;
 
     type Value = H256;
-}
-
-#[test]
-fn connection_key() {
-    dbg!(ConnectionPath { connection_id: 3 }.key());
-    dbg!(ConnectionPath { connection_id: 1 }.key());
-    dbg!(ConnectionPath { connection_id: 2 }.key());
-    dbg!(ConnectionPath { connection_id: 3 }.key());
-    dbg!(ConnectionPath { connection_id: 4 }.key());
-    dbg!(ConnectionPath { connection_id: 5 }.key());
 }

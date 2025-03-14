@@ -5,8 +5,14 @@ pub mod datagram;
 pub mod event;
 pub mod path;
 
-pub mod types;
+pub(crate) mod types;
 
+pub use crate::types::{
+    channel::{Channel, ChannelState},
+    connection::{Connection, ConnectionState},
+    packet::Packet,
+    ChannelId, ClientId, ConnectionId,
+};
 use crate::{
     datagram::{Datagram, MsgUpdateClient},
     event::FullEvent,
@@ -19,7 +25,7 @@ pub enum IbcUnion {}
 impl IbcSpec for IbcUnion {
     const ID: IbcSpecId = IbcSpecId::new_static(IbcSpecId::UNION);
 
-    type ClientId = u32;
+    type ClientId = ClientId;
 
     type StorePath = StorePath;
 
@@ -114,7 +120,7 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
             data.connection.state = ?e.connection.state,
             data.connection.client_id = %e.connection.client_id,
             data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
-            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.connection.counterparty_connection_id = e.connection.counterparty_connection_id.map(|id|id.get()),
             data.version = %e.version,
             "event"
         ),
@@ -128,7 +134,7 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
             data.connection.state = ?e.connection.state,
             data.connection.client_id = %e.connection.client_id,
             data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
-            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.connection.counterparty_connection_id = e.connection.counterparty_connection_id.map(|id|id.get()),
             data.version = %e.version,
             "event"
         ),
@@ -142,7 +148,7 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
             data.connection.state = ?e.connection.state,
             data.connection.client_id = %e.connection.client_id,
             data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
-            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.connection.counterparty_connection_id = e.connection.counterparty_connection_id.map(|id|id.get()),
             data.version = %e.version,
             "event"
         ),
@@ -156,7 +162,7 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
             data.connection.state = ?e.connection.state,
             data.connection.client_id = %e.connection.client_id,
             data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
-            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.connection.counterparty_connection_id = e.connection.counterparty_connection_id.map(|id|id.get()),
             data.version = %e.version,
             "event"
         ),

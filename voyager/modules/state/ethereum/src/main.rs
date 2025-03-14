@@ -11,8 +11,7 @@ use ibc_solidity::{
 };
 use ibc_union_spec::{
     path::{BatchPacketsPath, BatchReceiptsPath, StorePath},
-    types::{Channel, Connection},
-    IbcUnion,
+    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -121,14 +120,16 @@ impl Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]
-    async fn query_client_state(&self, height: Height, client_id: u32) -> RpcResult<Bytes> {
+    async fn query_client_state(&self, height: Height, client_id: ClientId) -> RpcResult<Bytes> {
         let execution_height = height.height();
 
-        let client_address = self.client_address(client_id, execution_height).await?;
+        let client_address = self
+            .client_address(client_id.raw(), execution_height)
+            .await?;
 
         let light_client = ILightClient::new(client_address, self.provider.clone());
         let client_state = light_client
-            .getClientState(client_id)
+            .getClientState(client_id.raw())
             .block(execution_height.into())
             .call()
             .await
@@ -152,17 +153,19 @@ impl Module {
     async fn query_consensus_state(
         &self,
         height: Height,
-        client_id: u32,
+        client_id: ClientId,
         trusted_height: u64,
     ) -> RpcResult<Bytes> {
         let execution_height = height.height();
 
-        let client_address = self.client_address(client_id, execution_height).await?;
+        let client_address = self
+            .client_address(client_id.raw(), execution_height)
+            .await?;
 
         let light_client = ILightClient::new(client_address, self.provider.clone());
 
         let consensus_state = light_client
-            .getConsensusState(client_id, trusted_height)
+            .getConsensusState(client_id.raw(), trusted_height)
             .block(execution_height.into())
             .call()
             .await
@@ -183,7 +186,7 @@ impl Module {
     async fn query_connection(
         &self,
         height: Height,
-        connection_id: u32,
+        connection_id: ConnectionId,
     ) -> RpcResult<Option<Connection>> {
         let execution_height = height.height();
 
@@ -195,9 +198,11 @@ impl Module {
                 from: None,
                 to: Some(alloy::primitives::Address::from(self.ibc_handler_address).into()),
                 input: TransactionInput::new(
-                    Ibc::connectionsCall { _0: connection_id }
-                        .abi_encode()
-                        .into(),
+                    Ibc::connectionsCall {
+                        _0: connection_id.raw(),
+                    }
+                    .abi_encode()
+                    .into(),
                 ),
                 ..Default::default()
             })
@@ -223,7 +228,11 @@ impl Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
-    async fn query_channel(&self, height: Height, channel_id: u32) -> RpcResult<Option<Channel>> {
+    async fn query_channel(
+        &self,
+        height: Height,
+        channel_id: ChannelId,
+    ) -> RpcResult<Option<Channel>> {
         let execution_height = height.height();
 
         let ibc_handler = self.ibc_handler();
@@ -249,7 +258,11 @@ impl Module {
                 from: None,
                 to: Some(alloy::primitives::Address::from(self.ibc_handler_address).into()),
                 input: TransactionInput::new(
-                    Ibc::channelsCall { _0: channel_id }.abi_encode().into(),
+                    Ibc::channelsCall {
+                        _0: channel_id.raw(),
+                    }
+                    .abi_encode()
+                    .into(),
                 ),
                 ..Default::default()
             })
@@ -374,10 +387,10 @@ impl StateModuleServer<IbcUnion> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn client_info(&self, _: &Extensions, client_id: u32) -> RpcResult<ClientInfo> {
+    async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
         let ibc_handler = self.ibc_handler();
         let client_type = ibc_handler
-            .clientTypes(client_id)
+            .clientTypes(client_id.raw())
             .call()
             .await
             .map_err(|e| {

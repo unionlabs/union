@@ -540,7 +540,7 @@ fn process_msgs<'a>(
                     msg,
                     ibc_handler
                         .updateClient(ibc_solidity::MsgUpdateClient {
-                            client_id: data.client_id,
+                            client_id: data.client_id.raw(),
                             client_message: data.client_message.into(),
                             relayer: relayer.into(),
                         })
@@ -550,8 +550,8 @@ fn process_msgs<'a>(
                     msg,
                     ibc_handler
                         .connectionOpenInit(ibc_solidity::MsgConnectionOpenInit {
-                            client_id: data.client_id,
-                            counterparty_client_id: data.counterparty_client_id,
+                            client_id: data.client_id.raw(),
+                            counterparty_client_id: data.counterparty_client_id.raw(),
                             relayer: relayer.into(),
                         })
                         .clear_decoder(),
@@ -560,9 +560,9 @@ fn process_msgs<'a>(
                     msg,
                     ibc_handler
                         .connectionOpenTry(ibc_solidity::MsgConnectionOpenTry {
-                            counterparty_client_id: data.counterparty_client_id,
-                            counterparty_connection_id: data.counterparty_connection_id,
-                            client_id: data.client_id,
+                            counterparty_client_id: data.counterparty_client_id.raw(),
+                            counterparty_connection_id: data.counterparty_connection_id.raw(),
+                            client_id: data.client_id.raw(),
                             proof_init: data.proof_init.into(),
                             proof_height: data.proof_height,
                             relayer: relayer.into(),
@@ -573,8 +573,8 @@ fn process_msgs<'a>(
                     msg,
                     ibc_handler
                         .connectionOpenAck(ibc_solidity::MsgConnectionOpenAck {
-                            connection_id: data.connection_id,
-                            counterparty_connection_id: data.counterparty_connection_id,
+                            connection_id: data.connection_id.raw(),
+                            counterparty_connection_id: data.counterparty_connection_id.raw(),
                             proof_height: data.proof_height,
                             proof_try: data.proof_try.into(),
                             relayer: relayer.into(),
@@ -585,7 +585,7 @@ fn process_msgs<'a>(
                     msg,
                     ibc_handler
                         .connectionOpenConfirm(ibc_solidity::MsgConnectionOpenConfirm {
-                            connection_id: data.connection_id,
+                            connection_id: data.connection_id.raw(),
                             proof_ack: data.proof_ack.into(),
                             proof_height: data.proof_height,
                             relayer: relayer.into(),
@@ -599,7 +599,7 @@ fn process_msgs<'a>(
                             port_id: data.port_id.try_into().unwrap(),
                             relayer: relayer.into(),
                             counterparty_port_id: data.counterparty_port_id.into(),
-                            connection_id: data.connection_id,
+                            connection_id: data.connection_id.raw(),
                             version: data.version,
                         })
                         .clear_decoder(),
@@ -621,9 +621,9 @@ fn process_msgs<'a>(
                     msg,
                     ibc_handler
                         .channelOpenAck(ibc_solidity::MsgChannelOpenAck {
-                            channel_id: data.channel_id,
+                            channel_id: data.channel_id.raw(),
                             counterparty_version: data.counterparty_version,
-                            counterparty_channel_id: data.counterparty_channel_id,
+                            counterparty_channel_id: data.counterparty_channel_id.raw(),
                             proof_try: data.proof_try.into(),
                             proof_height: data.proof_height,
                             relayer: relayer.into(),
@@ -634,7 +634,7 @@ fn process_msgs<'a>(
                     msg,
                     ibc_handler
                         .channelOpenConfirm(ibc_solidity::MsgChannelOpenConfirm {
-                            channel_id: data.channel_id,
+                            channel_id: data.channel_id.raw(),
                             proof_ack: data.proof_ack.into(),
                             proof_height: data.proof_height,
                             relayer: relayer.into(),

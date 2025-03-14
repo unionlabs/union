@@ -3,7 +3,7 @@ use std::{collections::VecDeque, fmt::Debug};
 use call::FetchUpdateAfterL1Update;
 use ibc_union_spec::{
     path::{ClientStatePath, ConsensusStatePath},
-    IbcUnion,
+    ClientId, IbcUnion,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -110,7 +110,7 @@ impl Module {
         voyager_client: &VoyagerClient,
         chain_id: ChainId,
         counterparty_chain_id: ChainId,
-        client_id: u32,
+        client_id: ClientId,
         update_from: Height,
         update_to: Height,
     ) -> RpcResult<Op<VoyagerMessage>> {
@@ -163,8 +163,8 @@ impl Module {
 
         info!(
             l2_chain_id = state_lens_client_state.l2_chain_id,
-            l1_client_id = state_lens_client_state.l1_client_id,
-            l2_client_id = state_lens_client_state.l2_client_id,
+            l1_client_id = state_lens_client_state.l1_client_id.raw(),
+            l2_client_id = state_lens_client_state.l2_client_id.raw(),
             l2_latest_height = state_lens_client_state.l2_latest_height,
             "state lens client state"
         );
