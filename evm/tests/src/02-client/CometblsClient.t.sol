@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import "../core/IBCHandler.sol";
-import "../core/Relay.sol";
 import "../../../contracts/clients/CometblsClient.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "solady/utils/LibString.sol";
@@ -60,7 +59,10 @@ contract CometblsClientTest is Test {
         assertEq(cometblsClient.owner(), admin);
     }
 
-    function test_createClient_success() public {
+    function test_createClient_success(
+        address caller,
+        address relayer
+    ) public {
         uint32 clientId = 1;
 
         // Encode the client state
@@ -84,7 +86,7 @@ contract CometblsClientTest is Test {
 
         vm.prank(ibcHandler); // Simulate call from the IBC handler
         cometblsClient.createClient(
-            clientId, clientStateBytes, consensusStateBytes
+            caller, clientId, clientStateBytes, consensusStateBytes, relayer
         );
 
         // Verify the client state was stored
@@ -106,6 +108,8 @@ contract CometblsClientTest is Test {
     }
 
     function misbehaviour_common(
+        address caller,
+        address relayer,
         uint256 vm_warp,
         uint64 trustingPeriod,
         uint64 maxClockDrift
@@ -135,20 +139,25 @@ contract CometblsClientTest is Test {
 
         vm.prank(ibcHandler);
         cometblsClient.createClient(
-            clientId, clientStateBytes, consensusStateBytes
+            caller, clientId, clientStateBytes, consensusStateBytes, relayer
         );
         vm.stopPrank();
         clientState.latestHeight = 100;
         clientStateBytes = abi.encode(clientState);
         vm.prank(ibcHandler);
         cometblsClient.createClient(
-            clientId, clientStateBytes, consensusStateBytes
+            caller, clientId, clientStateBytes, consensusStateBytes, relayer
         );
         vm.stopPrank();
     }
 
-    function test_misbehaviour_freezesClient() public {
-        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
+    function test_misbehaviour_freezesClient(
+        address caller,
+        address relayer
+    ) public {
+        misbehaviour_common(
+            caller, relayer, 1000000, 8640000000000000000, 8640000000000000000
+        );
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -179,7 +188,9 @@ contract CometblsClientTest is Test {
         });
 
         vm.prank(ibcHandler);
-        cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
+        cometblsClient.misbehaviour(
+            caller, clientId, abi.encode(headerA, headerB), relayer
+        );
         vm.stopPrank();
 
         // Verify the client is frozen
@@ -189,8 +200,13 @@ contract CometblsClientTest is Test {
         assertEq(frozenState.frozenHeight, 1, "Client was not frozen");
     }
 
-    function test_misbehaviour_freezesClient_fraud() public {
-        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
+    function test_misbehaviour_freezesClient_fraud(
+        address caller,
+        address relayer
+    ) public {
+        misbehaviour_common(
+            caller, relayer, 1000000, 8640000000000000000, 8640000000000000000
+        );
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -226,12 +242,19 @@ contract CometblsClientTest is Test {
                 CometblsClientLib.ErrInvalidMisbehaviour.selector
             )
         );
-        cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
+        cometblsClient.misbehaviour(
+            caller, clientId, abi.encode(headerA, headerB), relayer
+        );
         vm.stopPrank();
     }
 
-    function test_misbehaviour_freezesClient_fraud_different_hash() public {
-        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
+    function test_misbehaviour_freezesClient_fraud_different_hash(
+        address caller,
+        address relayer
+    ) public {
+        misbehaviour_common(
+            caller, relayer, 1000000, 8640000000000000000, 8640000000000000000
+        );
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -267,12 +290,19 @@ contract CometblsClientTest is Test {
                 CometblsClientLib.ErrInvalidMisbehaviour.selector
             )
         );
-        cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
+        cometblsClient.misbehaviour(
+            caller, clientId, abi.encode(headerA, headerB), relayer
+        );
         vm.stopPrank();
     }
 
-    function test_misbehaviour_freezesClient_headers_seq() public {
-        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
+    function test_misbehaviour_freezesClient_headers_seq(
+        address caller,
+        address relayer
+    ) public {
+        misbehaviour_common(
+            caller, relayer, 1000000, 8640000000000000000, 8640000000000000000
+        );
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -308,18 +338,19 @@ contract CometblsClientTest is Test {
                 CometblsClientLib.ErrInvalidMisbehaviourHeadersSequence.selector
             )
         );
-        cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
+        cometblsClient.misbehaviour(
+            caller, clientId, abi.encode(headerA, headerB), relayer
+        );
         vm.stopPrank();
     }
 
-    // function test_misbehaviour_freezesClient_ErrInvalidInitialConsensusState() public {
-    //     vm.expectRevert(abi.encodeWithSelector(CometblsClientLib.ErrInvalidInitialConsensusState.selector));
-    //     misbehaviour_common(0);
-    // }
-
     function test_misbehaviour_freezesClient_ErrInvalidMisbehaviourHeadersSequence(
+        address caller,
+        address relayer
     ) public {
-        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
+        misbehaviour_common(
+            caller, relayer, 1000000, 8640000000000000000, 8640000000000000000
+        );
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -355,13 +386,19 @@ contract CometblsClientTest is Test {
                 CometblsClientLib.ErrInvalidMisbehaviourHeadersSequence.selector
             )
         );
-        cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
+        cometblsClient.misbehaviour(
+            caller, clientId, abi.encode(headerA, headerB), relayer
+        );
         vm.stopPrank();
     }
 
     function test_misbehaviour_freezesClient_ErrUntrustedHeightLTETrustedHeight(
+        address caller,
+        address relayer
     ) public {
-        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
+        misbehaviour_common(
+            caller, relayer, 1000000, 8640000000000000000, 8640000000000000000
+        );
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -397,13 +434,17 @@ contract CometblsClientTest is Test {
                 CometblsClientLib.ErrUntrustedHeightLTETrustedHeight.selector
             )
         );
-        cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
+        cometblsClient.misbehaviour(
+            caller, clientId, abi.encode(headerA, headerB), relayer
+        );
         vm.stopPrank();
     }
 
     function test_misbehaviour_freezesClient_ErrUntrustedTimestampLTETrustedTimestamp(
+        address caller,
+        address relayer
     ) public {
-        misbehaviour_common(1000000000000000, 0, 0);
+        misbehaviour_common(caller, relayer, 1000000000000000, 0, 0);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -441,12 +482,17 @@ contract CometblsClientTest is Test {
                     .selector
             )
         );
-        cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
+        cometblsClient.misbehaviour(
+            caller, clientId, abi.encode(headerA, headerB), relayer
+        );
         vm.stopPrank();
     }
 
-    function test_misbehaviour_freezesClient_ErrHeaderExpired() public {
-        misbehaviour_common(1000000000000000, 0, 0);
+    function test_misbehaviour_freezesClient_ErrHeaderExpired(
+        address caller,
+        address relayer
+    ) public {
+        misbehaviour_common(caller, relayer, 1000000000000000, 0, 0);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -480,14 +526,17 @@ contract CometblsClientTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(CometblsClientLib.ErrHeaderExpired.selector)
         );
-        cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
+        cometblsClient.misbehaviour(
+            caller, clientId, abi.encode(headerA, headerB), relayer
+        );
         vm.stopPrank();
     }
 
-    function test_misbehaviour_freezesClient_ErrMaxClockDriftExceeded()
-        public
-    {
-        misbehaviour_common(1000000, 8640000000000000000, 0);
+    function test_misbehaviour_freezesClient_ErrMaxClockDriftExceeded(
+        address caller,
+        address relayer
+    ) public {
+        misbehaviour_common(caller, relayer, 1000000, 8640000000000000000, 0);
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -523,14 +572,19 @@ contract CometblsClientTest is Test {
                 CometblsClientLib.ErrMaxClockDriftExceeded.selector
             )
         );
-        cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
+        cometblsClient.misbehaviour(
+            caller, clientId, abi.encode(headerA, headerB), relayer
+        );
         vm.stopPrank();
     }
 
-    function test_misbehaviour_freezesClient_ErrInvalidUntrustedValidatorsHash()
-        public
-    {
-        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
+    function test_misbehaviour_freezesClient_ErrInvalidUntrustedValidatorsHash(
+        address caller,
+        address relayer
+    ) public {
+        misbehaviour_common(
+            caller, relayer, 1000000, 8640000000000000000, 8640000000000000000
+        );
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -566,12 +620,19 @@ contract CometblsClientTest is Test {
                 CometblsClientLib.ErrInvalidUntrustedValidatorsHash.selector
             )
         );
-        cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
+        cometblsClient.misbehaviour(
+            caller, clientId, abi.encode(headerA, headerB), relayer
+        );
         vm.stopPrank();
     }
 
-    function test_misbehaviour_freezesClient_ErrInvalidZKP() public {
-        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
+    function test_misbehaviour_freezesClient_ErrInvalidZKP(
+        address caller,
+        address relayer
+    ) public {
+        misbehaviour_common(
+            caller, relayer, 1000000, 8640000000000000000, 8640000000000000000
+        );
         uint32 clientId = 1;
 
         // Mock headers for misbehavior
@@ -606,7 +667,9 @@ contract CometblsClientTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(CometblsClientLib.ErrInvalidZKP.selector)
         );
-        cometblsClient.misbehaviour(clientId, abi.encode(headerA, headerB));
+        cometblsClient.misbehaviour(
+            caller, clientId, abi.encode(headerA, headerB), relayer
+        );
         vm.stopPrank();
     }
 
@@ -645,8 +708,13 @@ contract CometblsClientTest is Test {
         return keccak256(encodeMemory(clientState));
     }
 
-    function test_updateClient_success() public {
-        misbehaviour_common(1000000, 8640000000000000000, 8640000000000000000);
+    function test_updateClient_success(
+        address caller,
+        address relayer
+    ) public {
+        misbehaviour_common(
+            caller, relayer, 1000000, 8640000000000000000, 8640000000000000000
+        );
         uint32 clientId = 1;
 
         ClientState memory clientState = ClientState({
@@ -673,8 +741,9 @@ contract CometblsClientTest is Test {
 
         // Step 4: Update the client
         vm.prank(ibcHandler);
-        ConsensusStateUpdate memory update =
-            cometblsClient.updateClient(clientId, clientMessageBytes);
+        ConsensusStateUpdate memory update = cometblsClient.updateClient(
+            caller, clientId, clientMessageBytes, relayer
+        );
 
         // Step 5: Verify the updates
         // Ensure the latest height is updated

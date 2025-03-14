@@ -423,6 +423,14 @@ library ZkgmLib {
     ) internal pure returns (bytes memory) {
         return abi.encode(path, sender, contractCalldata);
     }
+
+    function encodeMultiplexCalldataMemory(
+        uint256 path,
+        bytes memory sender,
+        bytes memory contractCalldata
+    ) internal pure returns (bytes memory) {
+        return abi.encode(path, sender, contractCalldata);
+    }
 }
 
 contract UCS03Zkgm is
@@ -636,12 +644,13 @@ contract UCS03Zkgm is
     }
 
     function onRecvPacket(
+        address caller,
         IBCPacket calldata packet,
         address relayer,
         bytes calldata relayerMsg
     ) external virtual override onlyIBC whenNotPaused returns (bytes memory) {
         (bool success, bytes memory returnData) = address(this).call(
-            abi.encodeCall(this.execute, (packet, relayer, relayerMsg))
+            abi.encodeCall(this.execute, (caller, packet, relayer, relayerMsg))
         );
         if (success) {
             bytes memory acknowledgement = abi.decode(returnData, (bytes));
@@ -670,6 +679,7 @@ contract UCS03Zkgm is
     }
 
     function execute(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes calldata relayerMsg
@@ -680,6 +690,7 @@ contract UCS03Zkgm is
         }
         ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
         return executeInternal(
+            caller,
             ibcPacket,
             relayer,
             relayerMsg,
@@ -690,6 +701,7 @@ contract UCS03Zkgm is
     }
 
     function executeInternal(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes calldata relayerMsg,
@@ -709,6 +721,7 @@ contract UCS03Zkgm is
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             return executeBatch(
+                caller,
                 ibcPacket,
                 relayer,
                 relayerMsg,
@@ -734,6 +747,7 @@ contract UCS03Zkgm is
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             return executeMultiplex(
+                caller,
                 ibcPacket,
                 relayer,
                 relayerMsg,
@@ -747,6 +761,7 @@ contract UCS03Zkgm is
     }
 
     function executeBatch(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes calldata relayerMsg,
@@ -759,6 +774,7 @@ contract UCS03Zkgm is
         for (uint256 i = 0; i < l; i++) {
             Instruction calldata instruction = batch.instructions[i];
             acks[i] = executeInternal(
+                caller,
                 ibcPacket,
                 relayer,
                 relayerMsg,
@@ -841,6 +857,7 @@ contract UCS03Zkgm is
     }
 
     function executeMultiplex(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes calldata relayerMsg,
@@ -851,11 +868,14 @@ contract UCS03Zkgm is
         address contractAddress = address(bytes20(multiplex.contractAddress));
         if (!multiplex.eureka) {
             IEurekaModule(contractAddress).onZkgm(
+                caller,
                 path,
                 ibcPacket.sourceChannelId,
                 ibcPacket.destinationChannelId,
                 multiplex.sender,
-                multiplex.contractCalldata
+                multiplex.contractCalldata,
+                relayer,
+                relayerMsg
             );
             return abi.encode(ZkgmLib.ACK_SUCCESS);
         } else {
@@ -869,7 +889,7 @@ contract UCS03Zkgm is
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
             });
             bytes memory acknowledgement = IIBCModuleRecv(contractAddress)
-                .onRecvPacket(multiplexIbcPacket, relayer, relayerMsg);
+                .onRecvPacket(caller, multiplexIbcPacket, relayer, relayerMsg);
             if (acknowledgement.length == 0) {
                 revert ZkgmLib.ErrAsyncMultiplexUnsupported();
             }
@@ -1022,6 +1042,7 @@ contract UCS03Zkgm is
     }
 
     function onAcknowledgementPacket(
+        address caller,
         IBCPacket calldata ibcPacket,
         bytes calldata ack,
         address relayer
@@ -1037,6 +1058,7 @@ contract UCS03Zkgm is
         }
         Ack calldata zkgmAck = ZkgmLib.decodeAck(ack);
         acknowledgeInternal(
+            caller,
             ibcPacket,
             relayer,
             zkgmPacket.path,
@@ -1048,6 +1070,7 @@ contract UCS03Zkgm is
     }
 
     function acknowledgeInternal(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
@@ -1079,6 +1102,7 @@ contract UCS03Zkgm is
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             acknowledgeBatch(
+                caller,
                 ibcPacket,
                 relayer,
                 path,
@@ -1092,6 +1116,7 @@ contract UCS03Zkgm is
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             acknowledgeForward(
+                caller,
                 ibcPacket,
                 relayer,
                 salt,
@@ -1104,6 +1129,7 @@ contract UCS03Zkgm is
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             acknowledgeMultiplex(
+                caller,
                 ibcPacket,
                 relayer,
                 path,
@@ -1118,6 +1144,7 @@ contract UCS03Zkgm is
     }
 
     function acknowledgeBatch(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
@@ -1137,6 +1164,7 @@ contract UCS03Zkgm is
                 syscallAck = batchAck.acknowledgements[i];
             }
             acknowledgeInternal(
+                caller,
                 ibcPacket,
                 relayer,
                 path,
@@ -1149,6 +1177,7 @@ contract UCS03Zkgm is
     }
 
     function acknowledgeForward(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes32 salt,
@@ -1157,6 +1186,7 @@ contract UCS03Zkgm is
         bytes calldata ack
     ) internal {
         acknowledgeInternal(
+            caller,
             ibcPacket,
             relayer,
             forward.path,
@@ -1168,6 +1198,7 @@ contract UCS03Zkgm is
     }
 
     function acknowledgeMultiplex(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
@@ -1187,7 +1218,7 @@ contract UCS03Zkgm is
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
             });
             IIBCModule(address(bytes20(multiplex.sender)))
-                .onAcknowledgementPacket(multiplexIbcPacket, ack, relayer);
+                .onAcknowledgementPacket(caller, multiplexIbcPacket, ack, relayer);
         }
     }
 
@@ -1245,6 +1276,7 @@ contract UCS03Zkgm is
     }
 
     function onTimeoutPacket(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer
     ) external virtual override onlyIBC whenNotPaused {
@@ -1257,11 +1289,12 @@ contract UCS03Zkgm is
             }
         }
         timeoutInternal(
-            ibcPacket, relayer, zkgmPacket.path, zkgmPacket.instruction
+            caller, ibcPacket, relayer, zkgmPacket.path, zkgmPacket.instruction
         );
     }
 
     function timeoutInternal(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
@@ -1286,6 +1319,7 @@ contract UCS03Zkgm is
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             timeoutBatch(
+                caller,
                 ibcPacket,
                 relayer,
                 path,
@@ -1296,13 +1330,17 @@ contract UCS03Zkgm is
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             timeoutForward(
-                ibcPacket, relayer, ZkgmLib.decodeForward(instruction.operand)
+                caller,
+                ibcPacket,
+                relayer,
+                ZkgmLib.decodeForward(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             timeoutMultiplex(
+                caller,
                 ibcPacket,
                 relayer,
                 path,
@@ -1314,6 +1352,7 @@ contract UCS03Zkgm is
     }
 
     function timeoutBatch(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
@@ -1321,19 +1360,25 @@ contract UCS03Zkgm is
     ) internal {
         uint256 l = batch.instructions.length;
         for (uint256 i = 0; i < l; i++) {
-            timeoutInternal(ibcPacket, relayer, path, batch.instructions[i]);
+            timeoutInternal(
+                caller, ibcPacket, relayer, path, batch.instructions[i]
+            );
         }
     }
 
     function timeoutForward(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         Forward calldata forward
     ) internal {
-        timeoutInternal(ibcPacket, relayer, forward.path, forward.instruction);
+        timeoutInternal(
+            caller, ibcPacket, relayer, forward.path, forward.instruction
+        );
     }
 
     function timeoutMultiplex(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
@@ -1350,7 +1395,7 @@ contract UCS03Zkgm is
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
             });
             IIBCModule(address(bytes20(multiplex.sender))).onTimeoutPacket(
-                multiplexIbcPacket, relayer
+                caller, multiplexIbcPacket, relayer
             );
         }
     }
@@ -1394,6 +1439,7 @@ contract UCS03Zkgm is
     }
 
     function onChanOpenInit(
+        address,
         uint32,
         uint32,
         string calldata version,
@@ -1405,6 +1451,7 @@ contract UCS03Zkgm is
     }
 
     function onChanOpenTry(
+        address,
         uint32,
         uint32,
         uint32,
@@ -1424,6 +1471,7 @@ contract UCS03Zkgm is
     }
 
     function onChanOpenAck(
+        address,
         uint32 channelId,
         uint32,
         string calldata,
@@ -1431,11 +1479,13 @@ contract UCS03Zkgm is
     ) external virtual override onlyIBC {}
 
     function onChanOpenConfirm(
+        address,
         uint32 channelId,
         address
     ) external virtual override onlyIBC {}
 
     function onChanCloseInit(
+        address,
         uint32,
         address
     ) external virtual override onlyIBC {
@@ -1443,6 +1493,7 @@ contract UCS03Zkgm is
     }
 
     function onChanCloseConfirm(
+        address,
         uint32,
         address
     ) external virtual override onlyIBC {

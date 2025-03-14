@@ -50,7 +50,11 @@ abstract contract IBCClient is IBCStore, IIBCClient {
         clientImpls[clientId] = clientImpl;
         (ConsensusStateUpdate memory update, string memory counterpartyChainId)
         = ILightClient(clientImpl).createClient(
-            clientId, msg_.clientStateBytes, msg_.consensusStateBytes
+            msg.sender,
+            clientId,
+            msg_.clientStateBytes,
+            msg_.consensusStateBytes,
+            msg_.relayer
         );
         commitments[IBCCommitment.clientStateCommitmentKey(clientId)] =
             update.clientStateCommitment;
@@ -70,7 +74,9 @@ abstract contract IBCClient is IBCStore, IIBCClient {
         IBCMsgs.MsgUpdateClient calldata msg_
     ) external override {
         ConsensusStateUpdate memory update = getClientInternal(msg_.clientId)
-            .updateClient(msg_.clientId, msg_.clientMessage);
+            .updateClient(
+            msg.sender, msg_.clientId, msg_.clientMessage, msg_.relayer
+        );
         commitments[IBCCommitment.clientStateCommitmentKey(msg_.clientId)] =
             update.clientStateCommitment;
         commitments[IBCCommitment.consensusStateCommitmentKey(
@@ -86,7 +92,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
         IBCMsgs.MsgMisbehaviour calldata msg_
     ) external override {
         getClientInternal(msg_.clientId).misbehaviour(
-            msg_.clientId, msg_.clientMessage
+            msg.sender, msg_.clientId, msg_.clientMessage, msg_.relayer
         );
         emit IBCClientLib.Misbehaviour(msg_.clientId);
     }

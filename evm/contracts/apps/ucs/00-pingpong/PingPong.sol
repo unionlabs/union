@@ -59,7 +59,6 @@ contract PingPong is
     using PingPongLib for *;
 
     IIBCPacket private ibcHandler;
-    uint32 private _gap0;
     uint64 private timeout;
     address private zkgmProtocol;
 
@@ -98,6 +97,7 @@ contract PingPong is
     }
 
     function onRecvPacket(
+        address,
         IBCPacket calldata packet,
         address,
         bytes calldata
@@ -126,6 +126,7 @@ contract PingPong is
     }
 
     function onAcknowledgementPacket(
+        address,
         IBCPacket calldata,
         bytes calldata acknowledgement,
         address
@@ -145,17 +146,19 @@ contract PingPong is
     }
 
     function onTimeoutPacket(
+        address,
         IBCPacket calldata,
         address
     ) external virtual override onlyIBC {
         /*
-            Similarly to the onAcknowledgementPacket function, this indicates a failure to deliver the packet in expected time.
-            A sophisticated protocol would revert the action done before sending this packet.
+          Similarly to the onAcknowledgementPacket function, this indicates a failure to deliver the packet in expected time.
+          A sophisticated protocol would revert the action done before sending this packet.
         */
         emit PingPongLib.TimedOut();
     }
 
     function onChanOpenInit(
+        address,
         uint32,
         uint32,
         string calldata,
@@ -163,6 +166,7 @@ contract PingPong is
     ) external virtual override onlyIBC {}
 
     function onChanOpenTry(
+        address,
         uint32,
         uint32,
         uint32,
@@ -172,6 +176,7 @@ contract PingPong is
     ) external virtual override onlyIBC {}
 
     function onChanOpenAck(
+        address,
         uint32 channelId,
         uint32,
         string calldata,
@@ -179,11 +184,13 @@ contract PingPong is
     ) external virtual override onlyIBC {}
 
     function onChanOpenConfirm(
+        address,
         uint32 channelId,
         address
     ) external virtual override onlyIBC {}
 
     function onChanCloseInit(
+        address,
         uint32,
         address
     ) external virtual override onlyIBC {
@@ -192,6 +199,7 @@ contract PingPong is
     }
 
     function onChanCloseConfirm(
+        address,
         uint32,
         address
     ) external virtual override onlyIBC {
@@ -210,11 +218,14 @@ contract PingPong is
     }
 
     function onZkgm(
+        address caller,
         uint256 path,
         uint32 sourceChannelId,
         uint32 destinationChannelId,
         bytes calldata sender,
-        bytes calldata message
+        bytes calldata message,
+        address relayer,
+        bytes calldata relayerMsg
     ) public {
         if (msg.sender != zkgmProtocol) {
             revert PingPongLib.ErrOnlyZKGM();

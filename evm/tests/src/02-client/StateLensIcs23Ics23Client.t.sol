@@ -2,7 +2,6 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import "../core/IBCHandler.sol";
-import "../core/Relay.sol";
 import "../../../contracts/clients/StateLensIcs23Ics23Client.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "solady/utils/LibString.sol";
@@ -15,19 +14,21 @@ contract MockLightClient is ILightClient {
     bool globalVerifyMembership = true;
 
     function verifyMembership(
-        uint32 clientId,
-        uint64 height,
-        bytes calldata proof,
-        bytes calldata path,
-        bytes calldata value
+        uint32,
+        uint64,
+        bytes calldata,
+        bytes calldata,
+        bytes calldata
     ) public view override returns (bool) {
         return globalVerifyMembership;
     }
 
     function createClient(
-        uint32 clientId,
-        bytes calldata clientStateBytes,
-        bytes calldata consensusStateBytes
+        address,
+        uint32,
+        bytes calldata,
+        bytes calldata,
+        address
     )
         external
         returns (
@@ -46,27 +47,29 @@ contract MockLightClient is ILightClient {
     }
 
     function getClientState(
-        uint32 clientId
+        uint32
     ) external view returns (bytes memory) {
         return abi.encodePacked("test");
     }
 
     function getTimestampAtHeight(
-        uint32 clientId,
-        uint64 height
+        uint32,
+        uint64
     ) external view returns (uint64) {
         return 0;
     }
 
     function getLatestHeight(
-        uint32 clientId
+        uint32
     ) external view returns (uint64 height) {
         return 0;
     }
 
     function updateClient(
-        uint32 clientId,
-        bytes calldata clientMessageBytes
+        address,
+        uint32,
+        bytes calldata,
+        address
     ) external returns (ConsensusStateUpdate memory update) {
         return ConsensusStateUpdate({
             clientStateCommitment: bytes32(0),
@@ -76,23 +79,23 @@ contract MockLightClient is ILightClient {
     }
 
     function verifyNonMembership(
-        uint32 clientId,
-        uint64 height,
-        bytes calldata proof,
-        bytes calldata path
+        uint32,
+        uint64,
+        bytes calldata,
+        bytes calldata
     ) external pure override returns (bool) {
         return true;
     }
 
     function getConsensusState(
-        uint32 clientId,
-        uint64 height
+        uint32,
+        uint64
     ) external view returns (bytes memory) {
         return abi.encodePacked(uint64(0), keccak256("app"));
     }
 
     function isFrozen(
-        uint32 clientId
+        uint32
     ) external view returns (bool) {
         return isFrozenVar;
     }
@@ -109,10 +112,7 @@ contract MockLightClient is ILightClient {
         globalVerifyMembership = verify_membership;
     }
 
-    function misbehaviour(
-        uint32 clientId,
-        bytes calldata clientMessageBytes
-    ) external {}
+    function misbehaviour(address, uint32, bytes calldata, address) external {}
 }
 
 contract MockIbcStore {
@@ -160,7 +160,10 @@ contract StateLensIcs23Ics23ClientTest is Test {
         assertEq(client.owner(), admin);
     }
 
-    function test_createClient_success() public {
+    function test_createClient_success(
+        address caller,
+        address relayer
+    ) public {
         uint32 clientId = 1;
 
         // Encode the client state
@@ -189,7 +192,9 @@ contract StateLensIcs23Ics23ClientTest is Test {
             abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(ibcHandler); // Simulate call from the IBC handler
-        client.createClient(clientId, clientStateBytes, consensusStateBytes);
+        client.createClient(
+            caller, clientId, clientStateBytes, consensusStateBytes, relayer
+        );
 
         // Verify client state
         bytes memory storedClientState = client.getClientState(clientId);
@@ -217,7 +222,10 @@ contract StateLensIcs23Ics23ClientTest is Test {
         );
     }
 
-    function test_createClient_ErrInvalidInitialConsensusState() public {
+    function test_createClient_ErrInvalidInitialConsensusState(
+        address caller,
+        address relayer
+    ) public {
         uint32 clientId = 1;
 
         // Encode the client state
@@ -252,10 +260,15 @@ contract StateLensIcs23Ics23ClientTest is Test {
             )
         );
 
-        client.createClient(clientId, clientStateBytes, consensusStateBytes);
+        client.createClient(
+            caller, clientId, clientStateBytes, consensusStateBytes, relayer
+        );
     }
 
-    function test_updateClient_success() public {
+    function test_updateClient_success(
+        address caller,
+        address relayer
+    ) public {
         uint32 clientId = 1;
 
         // Mock the initial client and consensus states
@@ -282,7 +295,9 @@ contract StateLensIcs23Ics23ClientTest is Test {
             abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(address(ibcHandler));
-        client.createClient(clientId, clientStateBytes, consensusStateBytes);
+        client.createClient(
+            caller, clientId, clientStateBytes, consensusStateBytes, relayer
+        );
 
         // Prepare update client message
         Header memory header = Header({
@@ -308,7 +323,7 @@ contract StateLensIcs23Ics23ClientTest is Test {
         // Update client
         vm.prank(address(ibcHandler));
         ConsensusStateUpdate memory update =
-            client.updateClient(clientId, clientMessageBytes);
+            client.updateClient(caller, clientId, clientMessageBytes, relayer);
 
         // // Verify updated consensus state
         bytes memory updatedConsensusState =
@@ -330,7 +345,10 @@ contract StateLensIcs23Ics23ClientTest is Test {
         );
     }
 
-    function test_updateClient_revert_invalid_proof() public {
+    function test_updateClient_revert_invalid_proof(
+        address caller,
+        address relayer
+    ) public {
         uint32 clientId = 1;
 
         // Mock the initial client and consensus states
@@ -357,7 +375,9 @@ contract StateLensIcs23Ics23ClientTest is Test {
             abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(address(ibcHandler));
-        client.createClient(clientId, clientStateBytes, consensusStateBytes);
+        client.createClient(
+            caller, clientId, clientStateBytes, consensusStateBytes, relayer
+        );
 
         // Prepare update client message
         Header memory header = Header({
@@ -387,20 +407,20 @@ contract StateLensIcs23Ics23ClientTest is Test {
                 StateLensIcs23Ics23Lib.ErrInvalidL1Proof.selector
             )
         );
-        client.updateClient(clientId, clientMessageBytes);
+        client.updateClient(caller, clientId, clientMessageBytes, relayer);
     }
 
-    function test_misbehavuour_error() public {
+    function test_misbehavuour_error(address caller, address relayer) public {
         vm.prank(ibcHandler); // Simulate call from the IBC handler
         vm.expectRevert(
             abi.encodeWithSelector(
                 StateLensIcs23Ics23Lib.ErrInvalidMisbehaviour.selector
             )
         );
-        client.misbehaviour(1, bytes(""));
+        client.misbehaviour(caller, 1, bytes(""), relayer);
     }
 
-    function test_isFrozenImpl() public {
+    function test_isFrozenImpl(address caller, address relayer) public {
         uint32 clientId = 1;
 
         // Mock the initial client and consensus states
@@ -427,7 +447,9 @@ contract StateLensIcs23Ics23ClientTest is Test {
             abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(address(ibcHandler));
-        client.createClient(clientId, clientStateBytes, consensusStateBytes);
+        client.createClient(
+            caller, clientId, clientStateBytes, consensusStateBytes, relayer
+        );
 
         // Prepare update client message
         Header memory header = Header({
@@ -456,7 +478,10 @@ contract StateLensIcs23Ics23ClientTest is Test {
         assertTrue(isFrozen, "Client should be frozen");
     }
 
-    function test_verifyMembershipIsFrozen() public {
+    function test_verifyMembershipIsFrozen(
+        address caller,
+        address relayer
+    ) public {
         uint32 clientId = 1;
 
         // Mock the initial client and consensus states
@@ -483,7 +508,9 @@ contract StateLensIcs23Ics23ClientTest is Test {
             abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(address(ibcHandler));
-        client.createClient(clientId, clientStateBytes, consensusStateBytes);
+        client.createClient(
+            caller, clientId, clientStateBytes, consensusStateBytes, relayer
+        );
 
         // Prepare update client message
         Header memory header = Header({
@@ -516,7 +543,10 @@ contract StateLensIcs23Ics23ClientTest is Test {
         client.verifyMembership(1, 1, bytes(""), bytes(""), bytes(""));
     }
 
-    function test_verifyNonMembershipIsFrozen() public {
+    function test_verifyNonMembershipIsFrozen(
+        address caller,
+        address relayer
+    ) public {
         uint32 clientId = 1;
 
         // Mock the initial client and consensus states
@@ -543,7 +573,9 @@ contract StateLensIcs23Ics23ClientTest is Test {
             abi.encode(consensusState.timestamp, consensusState.appHash);
 
         vm.prank(address(ibcHandler));
-        client.createClient(clientId, clientStateBytes, consensusStateBytes);
+        client.createClient(
+            caller, clientId, clientStateBytes, consensusStateBytes, relayer
+        );
 
         // Prepare update client message
         Header memory header = Header({

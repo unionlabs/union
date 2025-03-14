@@ -264,14 +264,15 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 bytes memory acknowledgement;
                 bytes calldata makerMsg = makerMsgs[i];
                 if (intent) {
-                    acknowledgement =
-                        module.onRecvIntentPacket(packet, maker, makerMsg);
+                    acknowledgement = module.onRecvIntentPacket(
+                        msg.sender, packet, maker, makerMsg
+                    );
                     emit IBCPacketLib.IntentPacketRecv(
                         packetHash, maker, makerMsg
                     );
                 } else {
                     acknowledgement =
-                        module.onRecvPacket(packet, maker, makerMsg);
+                        module.onRecvPacket(msg.sender, packet, maker, makerMsg);
                     emit IBCPacketLib.PacketRecv(packetHash, maker, makerMsg);
                 }
                 if (acknowledgement.length > 0) {
@@ -371,7 +372,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             markPacketAsAcknowledged(packet);
             bytes calldata acknowledgement = msg_.acknowledgements[i];
             module.onAcknowledgementPacket(
-                packet, acknowledgement, msg_.relayer
+                msg.sender, packet, acknowledgement, msg_.relayer
             );
             emit IBCPacketLib.PacketAck(
                 IBCPacketLib.commitPacket(packet), acknowledgement, msg_.relayer
@@ -417,7 +418,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         {
             revert IBCErrors.ErrTimeoutHeightNotReached();
         }
-        module.onTimeoutPacket(packet, msg_.relayer);
+        module.onTimeoutPacket(msg.sender, packet, msg_.relayer);
         emit IBCPacketLib.PacketTimeout(packetHash, msg_.relayer);
     }
 

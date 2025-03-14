@@ -136,5 +136,6 @@ library IBCMsgs {
     struct MsgMisbehaviour {
         uint32 clientId;
         bytes clientMessage;
+        address relayer;
     }
 }

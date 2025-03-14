@@ -4,6 +4,7 @@ import "../Types.sol";
 
 interface IIBCModuleRecv {
     function onRecvPacket(
+        address caller,
         IBCPacket calldata packet,
         address relayer,
         bytes calldata relayerMsg
@@ -15,6 +16,7 @@ interface IIBCModuleRecv {
 // https://github.com/cosmos/ibc/blob/2921c5cec7b18e4ef77677e16a6b693051ae3b35/spec/core/ics-026-routing-module/README.md
 interface IIBCModule is IIBCModuleRecv {
     function onChanOpenInit(
+        address caller,
         uint32 connectionId,
         uint32 channelId,
         string calldata version,
@@ -22,6 +24,7 @@ interface IIBCModule is IIBCModuleRecv {
     ) external;
 
     function onChanOpenTry(
+        address caller,
         uint32 connectionId,
         uint32 channelId,
         uint32 counterpartyChannelId,
@@ -31,29 +34,48 @@ interface IIBCModule is IIBCModuleRecv {
     ) external;
 
     function onChanOpenAck(
+        address caller,
         uint32 channelId,
         uint32 counterpartyChannelId,
         string calldata counterpartyVersion,
         address relayer
     ) external;
 
-    function onChanOpenConfirm(uint32 channelId, address relayer) external;
+    function onChanOpenConfirm(
+        address caller,
+        uint32 channelId,
+        address relayer
+    ) external;
 
-    function onChanCloseInit(uint32 channelId, address relayer) external;
+    function onChanCloseInit(
+        address caller,
+        uint32 channelId,
+        address relayer
+    ) external;
 
-    function onChanCloseConfirm(uint32 channelId, address relayer) external;
+    function onChanCloseConfirm(
+        address caller,
+        uint32 channelId,
+        address relayer
+    ) external;
 
     function onRecvIntentPacket(
+        address caller,
         IBCPacket calldata packet,
         address marketMaker,
         bytes calldata marketMakerMsg
     ) external returns (bytes memory);
 
     function onAcknowledgementPacket(
+        address caller,
         IBCPacket calldata packet,
         bytes calldata acknowledgement,
         address relayer
     ) external;
 
-    function onTimeoutPacket(IBCPacket calldata, address relayer) external;
+    function onTimeoutPacket(
+        address caller,
+        IBCPacket calldata,
+        address relayer
+    ) external;
 }
