@@ -50,6 +50,8 @@ function getStatus(
       if (isAptosComplete(state.state)) return "complete"
       return "processing"
     }
+    default:
+      return "empty"
   }
 }
 
@@ -74,6 +76,8 @@ function getError(state: TransferStateUnion): string | null {
       }
       return null
     }
+    default:
+      return null
   }
 }
 
@@ -83,9 +87,13 @@ function getStepName(state: TransferStateUnion): string | null {
     case "Empty":
       return null
     case "EVM":
+      return state.state._tag
     case "Aptos":
+      return state.state._tag
     case "Cosmos":
       return state.state._tag
+    default:
+      return null
   }
 }
 
