@@ -7,7 +7,7 @@ import { generateSalt } from "./salt.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 
-export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
+export const submitTransfer = (_chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
     if (transfer.sourceRpcType !== "aptos") {
       return yield* Effect.fail(new Error("Only EVM transfers are supported"))

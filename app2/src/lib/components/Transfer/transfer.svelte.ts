@@ -86,7 +86,8 @@ export class Transfer {
       const sourceChainValue = this.sourceChain.value
       if (sourceChainValue.rpc_type === "evm") {
         return TransferState.EVM(EvmTransferSubmission.Filling())
-      } else if (sourceChainValue.rpc_type === "aptos") {
+      }
+      if (sourceChainValue.rpc_type === "aptos") {
         return TransferState.Aptos(AptosTransferSubmission.Filling())
       }
       return TransferState.Cosmos(CosmosTransferSubmission.Filling())
