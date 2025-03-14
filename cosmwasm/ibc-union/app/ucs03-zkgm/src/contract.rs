@@ -12,7 +12,7 @@ use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
-use ibc_union_spec::{path::BatchPacketsPath, types::Packet};
+use ibc_union_spec::{path::BatchPacketsPath, ChannelId, Packet};
 use ucs03_zkgm_token_minter_api::{
     LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg, DISPATCH_EVENT, DISPATCH_EVENT_ATTR,
 };
@@ -568,7 +568,7 @@ fn acknowledge_internal(
 fn refund(
     deps: DepsMut,
     path: U256,
-    source_channel: u32,
+    source_channel: ChannelId,
     order: FungibleAssetOrder,
 ) -> Result<Response, ContractError> {
     // 1. Native minter + sent native tokens: correct
@@ -877,7 +877,7 @@ fn predict_wrapped_token(
     deps: Deps,
     minter: &Addr,
     path: U256,
-    channel: u32,
+    channel_id: ChannelId,
     token: Bytes,
 ) -> StdResult<(String, Bytes)> {
     let wrapped_token = deps
@@ -888,7 +888,7 @@ fn predict_wrapped_token(
                 msg: to_json_binary(
                     &ucs03_zkgm_token_minter_api::QueryMsg::PredictWrappedToken {
                         path: path.to_string(),
-                        channel,
+                        channel_id,
                         token: Binary::new(token.to_vec()),
                     },
                 )?,
@@ -912,12 +912,23 @@ fn execute_forward(
     path: U256,
     forward: Forward,
 ) -> Result<Response, ContractError> {
-    let (tail_path, previous_destination_channel_id) = dequeue_channel_from_path(forward.path);
-    let (continuation_path, next_source_channel_id) = dequeue_channel_from_path(tail_path);
+    let (tail_path, Some(previous_destination_channel_id)) =
+        dequeue_channel_from_path(forward.path)
+    else {
+        return Err(ContractError::InvalidForwardDestinationChannelId {
+            actual: None,
+            expected: packet.destination_channel_id,
+        });
+    };
+
+    let (continuation_path, Some(next_source_channel_id)) = dequeue_channel_from_path(tail_path)
+    else {
+        return Err(ContractError::MissingForwardSourceChannelId);
+    };
 
     if packet.destination_channel_id != previous_destination_channel_id {
         return Err(ContractError::InvalidForwardDestinationChannelId {
-            actual: previous_destination_channel_id,
+            actual: Some(previous_destination_channel_id),
             expected: packet.destination_channel_id,
         });
     }
@@ -948,7 +959,7 @@ fn execute_forward(
     )?;
 
     let next_packet = MsgSendPacket {
-        source_channel: next_source_channel_id,
+        source_channel_id: next_source_channel_id,
         timeout_height: forward.timeout_height,
         timeout_timestamp: forward.timeout_timestamp,
         data: ZkgmPacket {
@@ -1149,7 +1160,7 @@ fn execute_fungible_asset_order(
                         decimals: order.base_token_decimals,
                     },
                     path: path.to_be_bytes_vec().into(),
-                    channel: packet.destination_channel_id,
+                    channel_id: packet.destination_channel_id,
                     token: Vec::from(order.base_token.clone()).into(),
                 },
                 &minter,
@@ -1460,7 +1471,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
 pub fn verify_internal(
     deps: Deps,
     info: MessageInfo,
-    channel_id: u32,
+    channel_id: ChannelId,
     path: U256,
     instruction: &Instruction,
     response: &mut Response,
@@ -1514,7 +1525,7 @@ pub fn verify_internal(
 fn verify_fungible_asset_order(
     deps: Deps,
     info: MessageInfo,
-    channel_id: u32,
+    channel_id: ChannelId,
     path: U256,
     order: &FungibleAssetOrder,
     response: &mut Response,
@@ -1565,12 +1576,12 @@ fn verify_fungible_asset_order(
         let origin_u256 = U256::from_be_bytes(origin.to_be_bytes());
         pop_channel_from_path(origin_u256)
     } else {
-        (U256::ZERO, 0)
+        (U256::ZERO, None)
     };
 
     // Check if we're taking same path starting from same channel using wrapped asset
     let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_path);
-    let is_sending_back_to_same_channel = destination_channel_id == channel_id;
+    let is_sending_back_to_same_channel = destination_channel_id == Some(channel_id);
 
     if is_inverse_intermediate_path && is_sending_back_to_same_channel && is_unwrapping {
         // Verify the origin path matches what's in the order
@@ -1621,7 +1632,7 @@ fn verify_fungible_asset_order(
 fn verify_batch(
     deps: Deps,
     info: MessageInfo,
-    channel_id: u32,
+    channel_id: ChannelId,
     path: U256,
     batch: &Batch,
     response: &mut Response,
@@ -1640,7 +1651,7 @@ fn verify_batch(
 pub fn verify_forward(
     deps: Deps,
     info: MessageInfo,
-    channel_id: u32,
+    channel_id: ChannelId,
     forward: &Forward,
     response: &mut Response,
 ) -> Result<(), ContractError> {
@@ -1691,7 +1702,7 @@ fn is_allowed_forward_instruction(opcode: u8) -> bool {
 pub fn send(
     deps: DepsMut,
     info: MessageInfo,
-    channel_id: u32,
+    channel_id: ChannelId,
     timeout_height: u64,
     timeout_timestamp: u64,
     salt: H256,
@@ -1715,7 +1726,7 @@ pub fn send(
     Ok(response.add_message(wasm_execute(
         &config.ibc_host,
         &ibc_union_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
-            source_channel: channel_id,
+            source_channel_id: channel_id,
             timeout_height,
             timeout_timestamp,
             data: ZkgmPacket {
@@ -1735,7 +1746,7 @@ fn transfer(
     mut deps: DepsMut,
     _: Env,
     info: MessageInfo,
-    channel_id: u32,
+    channel_id: ChannelId,
     receiver: Bytes,
     base_token: String,
     base_amount: Uint128,
@@ -1756,7 +1767,7 @@ fn transfer(
     match origin {
         // Burn as we are going to unescrow on the counterparty
         Some(path)
-            if path == Uint256::from(channel_id)
+            if path == Uint256::from(channel_id.raw())
                 && unwrapped_asset == Some(quote_token.clone()) =>
         {
             messages.push(SubMsg::reply_on_success(
@@ -1815,7 +1826,7 @@ fn transfer(
     messages.push(SubMsg::new(wasm_execute(
         &config.ibc_host,
         &ibc_union_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
-            source_channel: channel_id,
+            source_channel_id: channel_id,
             timeout_height,
             timeout_timestamp,
             data: ZkgmPacket {
@@ -1918,7 +1929,7 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
     match msg {
         QueryMsg::PredictWrappedToken {
             path,
-            channel,
+            channel_id,
             token,
         } => {
             let minter = TOKEN_MINTER.load(deps.storage)?;
@@ -1926,7 +1937,7 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
                 deps,
                 &minter,
                 path.parse().map_err(ContractError::InvalidPath)?,
-                channel,
+                channel_id,
                 token,
             )?;
             Ok(to_json_binary(&PredictWrappedTokenResponse {
@@ -1941,14 +1952,18 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
 /// The balance is used to prevent double-spending and ensure token conservation across chains.
 fn increase_channel_balance(
     deps: DepsMut,
-    channel_id: u32,
+    channel_id: ChannelId,
     path: U256,
     base_token: String,
     base_amount: Uint256,
 ) -> Result<(), ContractError> {
     CHANNEL_BALANCE.update(
         deps.storage,
-        (channel_id, path.to_be_bytes::<32>().to_vec(), base_token),
+        (
+            channel_id.raw(),
+            path.to_be_bytes::<32>().to_vec(),
+            base_token,
+        ),
         |balance| match balance {
             Some(value) => value
                 .checked_add(base_amount)
@@ -1963,14 +1978,14 @@ fn increase_channel_balance(
 /// This is used when unwrapping tokens to ensure we don't unescrow more tokens than were originally escrowed.
 fn decrease_channel_balance(
     deps: DepsMut,
-    channel_id: u32,
+    channel_id: ChannelId,
     path: U256,
     token: String,
     amount: Uint256,
 ) -> Result<(), ContractError> {
     CHANNEL_BALANCE.update(
         deps.storage,
-        (channel_id, path.to_be_bytes::<32>().to_vec(), token),
+        (channel_id.raw(), path.to_be_bytes::<32>().to_vec(), token),
         |balance| match balance {
             Some(value) => value
                 .checked_sub(amount)
@@ -1985,21 +2000,27 @@ pub fn derive_batch_salt(index: U256, salt: H256) -> H256 {
     keccak256((index, salt.get()).abi_encode())
 }
 
-pub fn dequeue_channel_from_path(path: U256) -> (U256, u32) {
+pub fn dequeue_channel_from_path(path: U256) -> (U256, Option<ChannelId>) {
     if path == U256::ZERO {
-        (U256::ZERO, 0)
+        (U256::ZERO, None)
     } else {
         (
             path >> 32,
-            u32::try_from(path & U256::from(u32::MAX)).expect("impossible"),
+            // expect/Some is intentional, such that any bugs are loud and not silently accepted
+            Some(
+                ChannelId::from_raw(
+                    u32::try_from(path & U256::from(u32::MAX)).expect("impossible"),
+                )
+                .expect("value is > 0 as path is > 0; qed;"),
+            ),
         )
     }
 }
 
 /// Extract the last channel from a path and return the base path without it
-pub fn pop_channel_from_path(path: U256) -> (U256, u32) {
+pub fn pop_channel_from_path(path: U256) -> (U256, Option<ChannelId>) {
     if path == U256::ZERO {
-        return (U256::ZERO, 0);
+        return (U256::ZERO, None);
     }
     // Find the highest non-zero 32-bit chunk (leftmost)
     let highest_index = (256 - path.leading_zeros() - 1) / 32;
@@ -2011,9 +2032,9 @@ pub fn pop_channel_from_path(path: U256) -> (U256, u32) {
     (base_path, channel_id)
 }
 
-pub fn update_channel_path(path: U256, next_channel_id: u32) -> Result<U256, ContractError> {
+pub fn update_channel_path(path: U256, next_channel_id: ChannelId) -> Result<U256, ContractError> {
     if path == U256::ZERO {
-        Ok(U256::from(next_channel_id))
+        Ok(U256::from(next_channel_id.raw()))
     } else {
         let next_hop_index = (256 - path.leading_zeros()) / 32 + 1;
         if next_hop_index > 7 {
@@ -2026,23 +2047,26 @@ pub fn update_channel_path(path: U256, next_channel_id: u32) -> Result<U256, Con
     }
 }
 
-pub fn get_channel_from_path(path: U256, index: usize) -> u32 {
-    u32::try_from((path >> (32 * index)) & U256::from(u32::MAX)).expect("impossible")
+pub fn get_channel_from_path(path: U256, index: usize) -> Option<ChannelId> {
+    ChannelId::from_raw(
+        u32::try_from((path >> (32 * index)) & U256::from(u32::MAX)).expect("impossible"),
+    )
 }
 
-pub fn make_path_from_channel(channel_id: u32, index: usize) -> U256 {
-    U256::from(channel_id) << (32 * index)
+pub fn make_path_from_channel(channel_id: ChannelId, index: usize) -> U256 {
+    U256::from(channel_id.raw()) << (32 * index)
 }
 
 pub fn reverse_channel_path(path: U256) -> U256 {
-    make_path_from_channel(get_channel_from_path(path, 0), 7)
-        | make_path_from_channel(get_channel_from_path(path, 1), 6)
-        | make_path_from_channel(get_channel_from_path(path, 2), 5)
-        | make_path_from_channel(get_channel_from_path(path, 3), 4)
-        | make_path_from_channel(get_channel_from_path(path, 4), 3)
-        | make_path_from_channel(get_channel_from_path(path, 5), 2)
-        | make_path_from_channel(get_channel_from_path(path, 6), 1)
-        | make_path_from_channel(get_channel_from_path(path, 7), 0)
+    U256::ZERO
+        | get_channel_from_path(path, 0).map_or(U256::ZERO, |id| make_path_from_channel(id, 7))
+        | get_channel_from_path(path, 1).map_or(U256::ZERO, |id| make_path_from_channel(id, 6))
+        | get_channel_from_path(path, 2).map_or(U256::ZERO, |id| make_path_from_channel(id, 5))
+        | get_channel_from_path(path, 3).map_or(U256::ZERO, |id| make_path_from_channel(id, 4))
+        | get_channel_from_path(path, 4).map_or(U256::ZERO, |id| make_path_from_channel(id, 3))
+        | get_channel_from_path(path, 5).map_or(U256::ZERO, |id| make_path_from_channel(id, 2))
+        | get_channel_from_path(path, 6).map_or(U256::ZERO, |id| make_path_from_channel(id, 1))
+        | get_channel_from_path(path, 7).map_or(U256::ZERO, |id| make_path_from_channel(id, 0))
 }
 
 pub fn tint_forward_salt(salt: H256) -> H256 {

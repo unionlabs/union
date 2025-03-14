@@ -16,7 +16,8 @@ pub struct Connection {
     pub state: ConnectionState,
     pub client_id: ClientId,
     pub counterparty_client_id: ClientId,
-    pub counterparty_connection_id: ConnectionId,
+    // can be None if the connection is in the init state
+    pub counterparty_connection_id: Option<ConnectionId>,
 }
 
 // pub enum Connection {
@@ -94,9 +95,12 @@ pub mod ethabi {
                     ConnectionState::TryOpen => ibc_solidity::ConnectionState::TryOpen,
                     ConnectionState::Open => ibc_solidity::ConnectionState::Open,
                 },
-                client_id: value.client_id,
-                counterparty_client_id: value.counterparty_client_id,
-                counterparty_connection_id: value.counterparty_connection_id,
+                client_id: value.client_id.raw(),
+                counterparty_client_id: value.counterparty_client_id.raw(),
+                counterparty_connection_id: value
+                    .counterparty_connection_id
+                    .map(|counterparty_connection_id| counterparty_connection_id.raw())
+                    .unwrap_or_default(),
             }
         }
     }
@@ -113,12 +117,15 @@ pub mod ethabi {
                     ibc_solidity::ConnectionState::Open => ConnectionState::Open,
                     ibc_solidity::ConnectionState::Unspecified
                     | ibc_solidity::ConnectionState::__Invalid => {
-                        return Err(Error::InvalidConnectionState)
+                        return Err(Error::ConnectionState)
                     }
                 },
-                client_id: value.client_id,
-                counterparty_client_id: value.counterparty_client_id,
-                counterparty_connection_id: value.counterparty_connection_id,
+                client_id: ClientId::from_raw(value.client_id).ok_or(Error::ClientId)?,
+                counterparty_client_id: ClientId::from_raw(value.counterparty_client_id)
+                    .ok_or(Error::CounterpartyClientId)?,
+                counterparty_connection_id: ConnectionId::from_raw(
+                    value.counterparty_connection_id,
+                ),
             })
         }
     }
@@ -126,7 +133,11 @@ pub mod ethabi {
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum Error {
         #[error("invalid connection state")]
-        InvalidConnectionState,
+        ConnectionState,
+        #[error("invalid client id")]
+        ClientId,
+        #[error("invalid counterparty client id")]
+        CounterpartyClientId,
     }
 
     type SolTuple = (Uint<8>, Uint<32>, Uint<32>, Uint<32>);
@@ -147,12 +158,15 @@ pub mod ethabi {
         const PACKED_ENCODED_SIZE: Option<usize> = <SolTuple as SolType>::PACKED_ENCODED_SIZE;
 
         fn valid_token(
-            (state, _client_id, _counterparty_client_id, _counterparty_connection_id): &Self::Token<
+            (state, client_id, counterparty_client_id, _counterparty_connection_id): &Self::Token<
                 '_,
             >,
         ) -> bool {
-            <Uint<8>>::valid_token(state)
-                && ConnectionState::try_from(<Uint<8>>::detokenize(*state)).is_ok()
+            (<Uint<8>>::valid_token(state)
+                && ConnectionState::try_from(<Uint<8>>::detokenize(*state)).is_ok())
+                && (<Uint<32>>::valid_token(client_id) && <Uint<32>>::detokenize(*client_id) > 0)
+                && (<Uint<32>>::valid_token(counterparty_client_id)
+                    && <Uint<32>>::detokenize(*counterparty_client_id) > 0)
         }
 
         fn detokenize(
@@ -160,9 +174,14 @@ pub mod ethabi {
         ) -> Self::RustType {
             Self {
                 state: ConnectionState::try_from(<Uint<8>>::detokenize(state)).expect("???"),
-                client_id: <Uint<32>>::detokenize(client_id),
-                counterparty_client_id: <Uint<32>>::detokenize(counterparty_client_id),
-                counterparty_connection_id: <Uint<32>>::detokenize(counterparty_connection_id),
+                client_id: ClientId::from_raw(<Uint<32>>::detokenize(client_id)).expect("???"),
+                counterparty_client_id: ClientId::from_raw(<Uint<32>>::detokenize(
+                    counterparty_client_id,
+                ))
+                .expect("???"),
+                counterparty_connection_id: ConnectionId::from_raw(<Uint<32>>::detokenize(
+                    counterparty_connection_id,
+                )),
             }
         }
     }
@@ -171,15 +190,31 @@ pub mod ethabi {
         fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
             (
                 <Uint<8> as SolType>::tokenize(&(self.state as u8)),
-                <Uint<32> as SolType>::tokenize(&self.client_id),
-                <Uint<32> as SolType>::tokenize(&self.counterparty_client_id),
-                <Uint<32> as SolType>::tokenize(&self.counterparty_connection_id),
+                <Uint<32> as SolType>::tokenize(&self.client_id.raw()),
+                <Uint<32> as SolType>::tokenize(&self.counterparty_client_id.raw()),
+                <Uint<32> as SolType>::tokenize(
+                    &self
+                        .counterparty_connection_id
+                        .map(|counterparty_connection_id| counterparty_connection_id.raw())
+                        .unwrap_or_default(),
+                ),
             )
         }
 
         fn stv_abi_encode_packed_to(&self, out: &mut Vec<u8>) {
-            let tuple = self.as_tuple();
-            <SolTuple as SolType>::abi_encode_packed_to(&tuple, out)
+            let (state, client_id, counterparty_client_id, counterparty_connection_id) =
+                self.as_tuple();
+            <SolTuple as SolType>::abi_encode_packed_to(
+                &(
+                    state,
+                    client_id.raw(),
+                    counterparty_client_id.raw(),
+                    counterparty_connection_id
+                        .map(|counterparty_connection_id| counterparty_connection_id.raw())
+                        .unwrap_or_default(),
+                ),
+                out,
+            )
         }
 
         fn stv_eip712_data_word(&self) -> alloy_sol_types::Word {
@@ -205,9 +240,15 @@ pub mod ethabi {
         fn eip712_encode_data(&self) -> Vec<u8> {
             [
                 <Uint<8> as SolType>::eip712_data_word(&self.state).0,
-                <Uint<32> as SolType>::eip712_data_word(&self.client_id).0,
-                <Uint<32> as SolType>::eip712_data_word(&self.counterparty_client_id).0,
-                <Uint<32> as SolType>::eip712_data_word(&self.counterparty_connection_id).0,
+                <Uint<32> as SolType>::eip712_data_word(&self.client_id.raw()).0,
+                <Uint<32> as SolType>::eip712_data_word(&self.counterparty_client_id.raw()).0,
+                <Uint<32> as SolType>::eip712_data_word(
+                    &self
+                        .counterparty_connection_id
+                        .map(|counterparty_connection_id| counterparty_connection_id.raw())
+                        .unwrap_or_default(),
+                )
+                .0,
             ]
             .concat()
         }
@@ -248,9 +289,9 @@ mod tests {
 
         let connection = Connection {
             state: ConnectionState::Init,
-            client_id: 1,
-            counterparty_client_id: 1,
-            counterparty_connection_id: 1,
+            client_id: ClientId::from_raw(1).unwrap(),
+            counterparty_client_id: ClientId::from_raw(1).unwrap(),
+            counterparty_connection_id: Some(ConnectionId::from_raw(1).unwrap()),
         };
 
         let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
@@ -273,9 +314,9 @@ mod tests {
 
         let connection = Connection {
             state: ConnectionState::Init,
-            client_id: 1,
-            counterparty_client_id: 1,
-            counterparty_connection_id: 1,
+            client_id: ClientId::from_raw(1).unwrap(),
+            counterparty_client_id: ClientId::from_raw(1).unwrap(),
+            counterparty_connection_id: Some(ConnectionId::from_raw(1).unwrap()),
         };
 
         let ibc_solidity_bz = ibc_solidity_connection.abi_encode();

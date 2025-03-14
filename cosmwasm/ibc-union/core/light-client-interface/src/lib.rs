@@ -11,7 +11,7 @@ use ibc_union_msg::lightclient::{
     MisbehaviourResponse, QueryMsg, Status, StorageWrites, UpdateStateResponse,
     VerifyCreationResponse, VerifyCreationResponseEvent,
 };
-use msg::InitMsg;
+use ibc_union_spec::ClientId;
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding, EthAbi},
     primitives::Bytes,
@@ -19,7 +19,7 @@ use unionlabs::{
 };
 use unionlabs_cosmwasm_upgradable::UpgradeError;
 
-use crate::state::IbcHost;
+use crate::{msg::InitMsg, state::IbcHost};
 
 pub mod msg;
 pub mod state;
@@ -70,14 +70,19 @@ impl<T: IbcClient + 'static> From<IbcClientError<T>> for StdError {
 }
 
 pub struct IbcClientCtx<'a, T: IbcClient> {
-    pub client_id: u32,
+    pub client_id: ClientId,
     pub ibc_host: Addr,
     pub deps: Deps<'a, T::CustomQuery>,
     pub env: Env,
 }
 
 impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
-    pub fn new(client_id: u32, ibc_host: Addr, deps: Deps<'a, T::CustomQuery>, env: Env) -> Self {
+    pub fn new(
+        client_id: ClientId,
+        ibc_host: Addr,
+        deps: Deps<'a, T::CustomQuery>,
+        env: Env,
+    ) -> Self {
         Self {
             client_id,
             ibc_host,
@@ -115,14 +120,14 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
 
     pub fn read_client_state<Client: IbcClient>(
         &self,
-        client_id: u32,
+        client_id: ClientId,
     ) -> Result<Client::ClientState, IbcClientError<Client>> {
         read_client_state(self.deps.querier.into_empty(), &self.ibc_host, client_id)
     }
 
     pub fn read_consensus_state<Client: IbcClient>(
         &self,
-        client_id: u32,
+        client_id: ClientId,
         height: u64,
     ) -> Result<Client::ConsensusState, IbcClientError<Client>> {
         read_consensus_state(
@@ -135,7 +140,7 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
 
     pub fn verify_membership<Client: IbcClient>(
         &self,
-        client_id: u32,
+        client_id: ClientId,
         height: u64,
         path: Bytes,
         storage_proof: Client::StorageProof,
@@ -160,7 +165,7 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
 fn client_impl<T: IbcClient>(
     querier: QuerierWrapper,
     ibc_host: &Addr,
-    client_id: u32,
+    client_id: ClientId,
 ) -> Result<Addr, IbcClientError<T>> {
     let addr = querier
         .read::<ClientImpls>(ibc_host, &client_id)
@@ -492,7 +497,7 @@ pub fn query<T: IbcClient>(
 pub fn read_client_state<T: IbcClient>(
     querier: QuerierWrapper,
     ibc_host: &Addr,
-    client_id: u32,
+    client_id: ClientId,
 ) -> Result<T::ClientState, IbcClientError<T>> {
     let client_state = querier
         .read::<ClientStates>(ibc_host, &client_id)
@@ -509,7 +514,7 @@ pub fn read_client_state<T: IbcClient>(
 pub fn read_consensus_state<T: IbcClient>(
     querier: QuerierWrapper,
     ibc_host: &Addr,
-    client_id: u32,
+    client_id: ClientId,
     height: u64,
 ) -> Result<T::ConsensusState, IbcClientError<T>> {
     let consensus_state = querier

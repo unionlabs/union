@@ -6,6 +6,7 @@ use cosmwasm_std::{
     QueryRequest, Response, StdResult, WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
+use ibc_union_spec::ChannelId;
 use ucs03_zkgm_token_minter_api::{
     ExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse, QueryMsg,
     WrappedTokenMsg, DISPATCH_EVENT, DISPATCH_EVENT_ATTR,
@@ -73,7 +74,7 @@ pub fn execute(
                 metadata,
                 subdenom: denom,
                 path,
-                channel,
+                channel_id,
                 token,
             } => {
                 let token_name = if metadata.name.is_empty() {
@@ -99,7 +100,7 @@ pub fn execute(
                                 U256::from_be_bytes::<{ U256::BYTES }>(
                                     path.as_slice().try_into().expect("correctly encoded; qed"),
                                 ),
-                                channel,
+                                channel_id,
                                 token.to_vec(),
                             )),
                         },
@@ -247,7 +248,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
         QueryMsg::PredictWrappedToken {
             path,
-            channel,
+            channel_id,
             token,
         } => {
             let Config { dummy_code_id, .. } = CONFIG.load(deps.storage)?;
@@ -257,7 +258,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
                 &deps.api.addr_canonicalize(env.contract.address.as_str())?,
                 &calculate_salt(
                     path.parse::<U256>().map_err(Error::U256Parse)?,
-                    channel,
+                    channel_id,
                     token.to_vec(),
                 ),
             )?;
@@ -325,8 +326,8 @@ fn query_token_info(deps: Deps, addr: &str) -> StdResult<TokenInfoResponse> {
         }))
 }
 
-fn calculate_salt(path: U256, channel: u32, token: Vec<u8>) -> Vec<u8> {
-    keccak256((path, channel, token.to_vec()).abi_encode_params())
+fn calculate_salt(path: U256, channel_id: ChannelId, token: Vec<u8>) -> Vec<u8> {
+    keccak256((path, channel_id.raw(), token.to_vec()).abi_encode_params())
         .into_bytes()
         .to_vec()
 }

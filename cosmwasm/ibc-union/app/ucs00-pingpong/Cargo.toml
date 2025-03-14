@@ -23,6 +23,7 @@ cosmwasm-std    = { workspace = true, features = ["stargate"] }
 cw-storage-plus = { workspace = true }
 ethabi          = { workspace = true }
 ibc-union-msg   = { workspace = true }
+ibc-union-spec  = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }
 thiserror       = { workspace = true }
 

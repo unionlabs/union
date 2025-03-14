@@ -6,9 +6,7 @@ use aptos_move_ibc::{
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
 use ibc_union_spec::{
-    path::StorePath,
-    types::{Channel, ChannelState, Connection, ConnectionState},
-    IbcUnion,
+    path::StorePath, Channel, ChannelState, ClientId, Connection, ConnectionState, IbcUnion,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -163,9 +161,9 @@ impl Module {
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn client_info(&self, _: &Extensions, client_id: u32) -> RpcResult<ClientInfo> {
+    async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
         let client_type = self
-            .client_id_to_type(self.ibc_handler_address.into(), None, (client_id,))
+            .client_id_to_type(self.ibc_handler_address.into(), None, (client_id.raw(),))
             .await
             .map_err(rest_error_to_rpc_error)?;
         Ok(ClientInfo {
@@ -189,7 +187,7 @@ impl StateModuleServer<IbcUnion> for Module {
                     .client_state(
                         self.ibc_handler_address.into(),
                         Some(ledger_version),
-                        (path.client_id,),
+                        (path.client_id.raw(),),
                     )
                     .await
                     .map_err(rest_error_to_rpc_error)?
@@ -202,7 +200,7 @@ impl StateModuleServer<IbcUnion> for Module {
                     .consensus_state(
                         self.ibc_handler_address.into(),
                         Some(ledger_version),
-                        (path.client_id, path.height),
+                        (path.client_id.raw(), path.height),
                     )
                     .await
                     .map_err(rest_error_to_rpc_error)?
@@ -215,7 +213,7 @@ impl StateModuleServer<IbcUnion> for Module {
                     .get_connection(
                         self.ibc_handler_address.into(),
                         Some(ledger_version),
-                        (path.connection_id,),
+                        (path.connection_id.raw(),),
                     )
                     .await
                     .map_err(rest_error_to_rpc_error)?
@@ -227,7 +225,7 @@ impl StateModuleServer<IbcUnion> for Module {
                     .get_channel(
                         self.ibc_handler_address.into(),
                         Some(ledger_version),
-                        (path.channel_id,),
+                        (path.channel_id.raw(),),
                     )
                     .await
                     .map_err(rest_error_to_rpc_error)?
@@ -337,9 +335,9 @@ fn convert_connection(connection: ConnectionEnd) -> Connection {
             3 => ConnectionState::Open,
             _ => panic!("connection state must be 1..=3"),
         },
-        client_id: connection.client_id,
-        counterparty_client_id: connection.counterparty_client_id,
-        counterparty_connection_id: connection.counterparty_connection_id,
+        client_id: connection.client_id.try_into().unwrap(),
+        counterparty_client_id: connection.counterparty_client_id.try_into().unwrap(),
+        counterparty_connection_id: connection.counterparty_connection_id.try_into().ok(),
     }
 }
 
@@ -352,8 +350,8 @@ fn convert_channel(channel: AptosChannel) -> Channel {
             4 => ChannelState::Closed,
             _ => panic!("channel state must be 1..=4"),
         },
-        connection_id: channel.connection_id,
-        counterparty_channel_id: channel.counterparty_channel_id,
+        connection_id: channel.connection_id.try_into().unwrap(),
+        counterparty_channel_id: channel.counterparty_channel_id.try_into().ok(),
         counterparty_port_id: channel.counterparty_port_id.into(),
         version: channel.version,
     }

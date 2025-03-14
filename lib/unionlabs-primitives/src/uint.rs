@@ -3,6 +3,7 @@
 use core::{
     fmt::{self, Display},
     iter::Sum,
+    num::NonZeroU32,
     ops::{Add, AddAssign, BitAnd, Div, Rem},
     str::FromStr,
 };
@@ -153,6 +154,12 @@ impl U256 {
 impl From<u32> for U256 {
     fn from(value: u32) -> Self {
         Self(primitive_types::U256::from(value))
+    }
+}
+
+impl From<NonZeroU32> for U256 {
+    fn from(value: NonZeroU32) -> Self {
+        Self(primitive_types::U256::from(value.get()))
     }
 }
 

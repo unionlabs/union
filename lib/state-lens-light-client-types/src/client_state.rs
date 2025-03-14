@@ -1,3 +1,4 @@
+use ibc_union_spec::ClientId;
 use tuple_join::{Join, Joined};
 use unionlabs::tuple::{AsTuple, Tuple, TupleAsRef};
 
@@ -126,12 +127,12 @@ pub struct ClientState<Extra> {
     /// inclusion proof against.
     ///
     /// ("B" on "A")
-    pub l1_client_id: u32,
+    pub l1_client_id: ClientId,
 
     /// L2 client ID. This is the ID of the L2 client running on B (L1) tracking the C (L2).
     ///
     /// ("C" on "B")
-    pub l2_client_id: u32,
+    pub l2_client_id: ClientId,
 
     /// L2 latest height
     pub l2_latest_height: u64,
@@ -140,14 +141,14 @@ pub struct ClientState<Extra> {
     pub extra: Extra,
 }
 
-type ClientStateFieldsTuple = (String, u32, u32, u64);
+type ClientStateFieldsTuple = (String, ClientId, ClientId, u64);
 
 impl<Extra> AsTuple for ClientState<Extra>
 where
     Extra: AsTuple,
     ClientStateFieldsTuple: Join<Extra::Tuple, Out: Tuple + TupleAsRef>,
     // can't use `<ClientStateFieldsTuple as Tuple>::Ref<'a>` here for some reason?
-    for<'a> (&'a String, &'a u32, &'a u32, &'a u64): Join<
+    for<'a> (&'a String, &'a ClientId, &'a ClientId, &'a u64): Join<
         <Extra::Tuple as Tuple>::Ref<'a>,
         Out = <<ClientStateFieldsTuple as Join<Extra::Tuple>>::Out as Tuple>::Ref<'a>,
     >,
@@ -203,6 +204,7 @@ pub mod ethabi {
             SolType, SolValue,
         },
     };
+    use ibc_union_spec::ClientId;
     use tuple_join::{Join, Joined};
 
     use crate::ClientState;
@@ -214,7 +216,7 @@ pub mod ethabi {
     where
         for<'a> Extra:
             SolValue<SolType: SolType<RustType = Extra, Token<'a>: TokenSeq<'a>>> + 'static,
-        for<'a> ClientStateTokenTuple<'a>: Join<TokenOfSolValue<'a, Extra>, Out: Token<'a>>,
+        for<'a> ClientStateTokenTuple<'a>: Join<TokenOfSolValue<'a, Extra>, Out: Clone + Token<'a>>,
     {
         type RustType = Self;
 
@@ -228,8 +230,20 @@ pub mod ethabi {
         // dynamic due to containing string
         const PACKED_ENCODED_SIZE: Option<usize> = None;
 
-        fn valid_token(_token: &Self::Token<'_>) -> bool {
-            true
+        fn valid_token(token: &Self::Token<'_>) -> bool {
+            // incredibly poor api, we must first validate the input in this method and then actually decode it in Self::detokenize. as such we must clone here, since we cannot .split() on a ref tuple
+            let token: Self::Token<'_> = token.clone();
+
+            let ((l2_chain_id, l1_client_id, l2_client_id, l2_latest_height), extra_tokens): (
+                ClientStateTokenTuple,
+                TokenOfSolValue<Extra>,
+            ) = token.split();
+
+            SolString::valid_token(&l2_chain_id)
+                && <Uint<32>>::valid_token(&l1_client_id)
+                && <Uint<32>>::valid_token(&l2_client_id)
+                && <Uint<64>>::valid_token(&l2_latest_height)
+                && Extra::SolType::valid_token(&extra_tokens)
         }
 
         fn detokenize(token: Self::Token<'_>) -> Self::RustType {
@@ -240,8 +254,10 @@ pub mod ethabi {
 
             Self {
                 l2_chain_id: <SolString as SolType>::detokenize(l2_chain_id),
-                l1_client_id: <Uint<32> as SolType>::detokenize(l1_client_id),
-                l2_client_id: <Uint<32> as SolType>::detokenize(l2_client_id),
+                l1_client_id: ClientId::from_raw(<Uint<32> as SolType>::detokenize(l1_client_id))
+                    .expect("???"),
+                l2_client_id: ClientId::from_raw(<Uint<32> as SolType>::detokenize(l2_client_id))
+                    .expect("???"),
                 l2_latest_height: <Uint<64> as SolType>::detokenize(l2_latest_height),
                 extra: <Extra::SolType as SolType>::detokenize(extra_tokens),
             }
@@ -252,13 +268,13 @@ pub mod ethabi {
     where
         for<'a> Extra:
             SolValue<SolType: SolType<RustType = Extra, Token<'a>: TokenSeq<'a>>> + 'static,
-        for<'a> ClientStateTokenTuple<'a>: Join<TokenOfSolValue<'a, Extra>, Out: Token<'a>>,
+        for<'a> ClientStateTokenTuple<'a>: Join<TokenOfSolValue<'a, Extra>, Out: Clone + Token<'a>>,
     {
         fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
             let cs_tuple: ClientStateTokenTuple = (
                 SolString::tokenize(&self.l2_chain_id),
-                <Uint<32>>::tokenize(&self.l1_client_id),
-                <Uint<32>>::tokenize(&self.l2_client_id),
+                <Uint<32>>::tokenize(&self.l1_client_id.raw()),
+                <Uint<32>>::tokenize(&self.l2_client_id.raw()),
                 <Uint<64>>::tokenize(&self.l2_latest_height),
             );
 
@@ -280,7 +296,7 @@ pub mod ethabi {
     where
         for<'a> Extra:
             SolValue<SolType: SolType<RustType = Extra, Token<'a>: TokenSeq<'a>>> + 'static,
-        for<'a> ClientStateTokenTuple<'a>: Join<TokenOfSolValue<'a, Extra>, Out: Token<'a>>,
+        for<'a> ClientStateTokenTuple<'a>: Join<TokenOfSolValue<'a, Extra>, Out: Clone + Token<'a>>,
     {
         type SolType = Self;
     }
@@ -372,8 +388,8 @@ mod tests {
     )]
     pub struct ClientStateWithExtra {
         pub l2_chain_id: String,
-        pub l1_client_id: u32,
-        pub l2_client_id: u32,
+        pub l1_client_id: ClientId,
+        pub l2_client_id: ClientId,
         pub l2_latest_height: u64,
         pub a: u64,
         pub b: String,
@@ -395,8 +411,8 @@ mod tests {
     fn test_bincode() {
         let cs = ClientState {
             l2_chain_id: "l2_chain_id".to_owned(),
-            l1_client_id: 1,
-            l2_client_id: 2,
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
             l2_latest_height: 100,
             extra: Extra {
                 a: 5,
@@ -406,8 +422,8 @@ mod tests {
 
         let cs_with_extra = ClientStateWithExtra {
             l2_chain_id: "l2_chain_id".to_owned(),
-            l1_client_id: 1,
-            l2_client_id: 2,
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
             l2_latest_height: 100,
             a: 5,
             b: "b".to_owned(),
@@ -437,8 +453,8 @@ mod tests {
     fn test_serde() {
         let cs = ClientState {
             l2_chain_id: "l2_chain_id".to_owned(),
-            l1_client_id: 1,
-            l2_client_id: 2,
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
             l2_latest_height: 100,
             extra: Extra {
                 a: 5,
@@ -448,8 +464,8 @@ mod tests {
 
         let cs_with_extra = ClientStateWithExtra {
             l2_chain_id: "l2_chain_id".to_owned(),
-            l1_client_id: 1,
-            l2_client_id: 2,
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
             l2_latest_height: 100,
             a: 5,
             b: "b".to_owned(),
@@ -474,8 +490,8 @@ mod tests {
     fn test_bcs() {
         let cs = ClientState {
             l2_chain_id: "l2_chain_id".to_owned(),
-            l1_client_id: 1,
-            l2_client_id: 2,
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
             l2_latest_height: 100,
             extra: Extra {
                 a: 5,
@@ -485,8 +501,8 @@ mod tests {
 
         let cs_with_extra = ClientStateWithExtra {
             l2_chain_id: "l2_chain_id".to_owned(),
-            l1_client_id: 1,
-            l2_client_id: 2,
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
             l2_latest_height: 100,
             a: 5,
             b: "b".to_owned(),
@@ -511,8 +527,8 @@ mod tests {
     fn test_ethabi() {
         let cs = ClientState {
             l2_chain_id: "l2_chain_id".to_owned(),
-            l1_client_id: 1,
-            l2_client_id: 2,
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
             l2_latest_height: 100,
             extra: Extra {
                 a: 5,
@@ -552,8 +568,8 @@ mod tests {
     fn test_bincode_unit() {
         let cs = ClientState {
             l2_chain_id: "l2_chain_id".to_owned(),
-            l1_client_id: 1,
-            l2_client_id: 2,
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
             l2_latest_height: 100,
             extra: (),
         };
@@ -565,8 +581,8 @@ mod tests {
     fn test_serde_unit() {
         let cs = ClientState {
             l2_chain_id: "l2_chain_id".to_owned(),
-            l1_client_id: 1,
-            l2_client_id: 2,
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
             l2_latest_height: 100,
             extra: (),
         };
@@ -578,8 +594,8 @@ mod tests {
     fn test_bcs_unit() {
         let cs = ClientState {
             l2_chain_id: "l2_chain_id".to_owned(),
-            l1_client_id: 1,
-            l2_client_id: 2,
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
             l2_latest_height: 100,
             extra: (),
         };

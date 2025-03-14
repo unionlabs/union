@@ -1,6 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Uint128};
 use enumorph::Enumorph;
+use ibc_union_spec::ChannelId;
 
 pub const DISPATCH_EVENT: &str = "dispatch";
 pub const DISPATCH_EVENT_ATTR: &str = "msg";
@@ -37,7 +38,7 @@ pub enum WrappedTokenMsg {
         // TODO: upgrade tokenfactory to handle this
         metadata: Metadata,
         path: Binary,
-        channel: u32,
+        channel_id: ChannelId,
         token: Binary,
     },
     MintTokens {
@@ -69,7 +70,7 @@ pub enum QueryMsg {
     },
     PredictWrappedToken {
         path: String,
-        channel: u32,
+        channel_id: ChannelId,
         token: Binary,
     },
 }

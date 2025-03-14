@@ -15,12 +15,13 @@ workspace = true
 all-features = true
 
 [dependencies]
-alloy      = { workspace = true, optional = true, features = ["sol-types", "dyn-abi"] }
-bincode    = { workspace = true, optional = true, features = ["alloc", "derive"] }
-serde      = { workspace = true, optional = true, features = ["derive"] }
-thiserror  = { workspace = true }
-tuple_join = { version = "0.1.0" }
-unionlabs  = { workspace = true }
+alloy          = { workspace = true, optional = true, features = ["sol-types", "dyn-abi"] }
+bincode        = { workspace = true, optional = true, features = ["alloc", "derive"] }
+ibc-union-spec = { workspace = true }
+serde          = { workspace = true, optional = true, features = ["derive"] }
+thiserror      = { workspace = true }
+tuple_join     = { version = "0.1.0" }
+unionlabs      = { workspace = true }
 
 [dev-dependencies]
 bcs                           = { workspace = true }
@@ -32,6 +33,6 @@ unionlabs                     = { workspace = true, features = ["test-utils"] }
 [features]
 default = []
 
-bincode = ["dep:bincode", "unionlabs/bincode"]
-ethabi  = ["unionlabs/ethabi", "dep:alloy"]
-serde   = ["dep:serde"]
+bincode = ["dep:bincode", "unionlabs/bincode", "ibc-union-spec/bincode"]
+ethabi  = ["unionlabs/ethabi", "dep:alloy", "ibc-union-spec/ethabi"]
+serde   = ["dep:serde", "ibc-union-spec/serde"]

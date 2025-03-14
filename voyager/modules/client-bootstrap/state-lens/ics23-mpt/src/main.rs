@@ -1,4 +1,5 @@
 use ethereum_light_client_types::ConsensusState as EthConsensusState;
+use ibc_union_spec::ClientId;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -30,8 +31,8 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ClientStateConfig {
-    pub l1_client_id: u32,
-    pub l2_client_id: u32,
+    pub l1_client_id: ClientId,
+    pub l2_client_id: ClientId,
     #[serde(default = "default_timestamp_offset")]
     pub timestamp_offset: u16,
     #[serde(default = "default_state_root_offset")]
