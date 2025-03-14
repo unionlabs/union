@@ -3,13 +3,17 @@ _: {
     {
       jsPkgs,
       ensureAtRepositoryRoot,
+      lib,
       ...
     }:
+    let
+      packageJson = lib.importJSON ./package.json;
+    in
     {
       packages = {
         ts-sdk = jsPkgs.buildNpmPackage {
-          pname = "@unionlabs/sdk";
-          version = "1.0.0";
+          pname = packageJson.name;
+          version = packageJson.version;
 
           src = ./.;
 
