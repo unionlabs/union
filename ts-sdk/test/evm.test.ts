@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { ucs03abi } from "../src/evm/abi/index.ts"
+import { ucs03abi } from "../src/evm/abi/index.js"
 
 describe("abi", () => {
   it("should export ucs03abi", () => {

@@ -1,17 +1,27 @@
 {
   "name": "@unionlabs/sdk",
-  "version": "1.0.1",
-  "main": "index.js",
+  "version": "1.0.5",
+  "type": "module",
+  "license": "MIT",
+  "author": "@unionlabs",
   "scripts": {
-    "build": "tsup",
+    "build": "tsc",
     "test": "vitest run",
     "test-watch": "vitest"
   },
-  "files": ["./src", "./dist"],
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
-  "description": "",
+  "exports": {
+    ".": "./dist/src/index.js",
+    "./evm": "./dist/src/evm/index.js"
+  },
+  "files": [
+    "package.json",
+    "README.md",
+    "src/**/*.ts",
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map"
+  ],
   "devDependencies": {
     "biome": "^0.3.3",
     "tsup": "^8.4.0",

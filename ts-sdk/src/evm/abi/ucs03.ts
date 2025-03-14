@@ -616,4 +616,4 @@ export const ucs03abi = [
     name: "UUPSUnsupportedProxiableUUID",
     inputs: [{ name: "slot", type: "bytes32", internalType: "bytes32" }]
   }
-]
+] as const
