@@ -4124,24 +4124,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-address-like"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "451a4691083a88a3c0630a8a88799e9d4cd6679b7ce8ff22b8da2873ff31d380"
-dependencies = [
- "cosmwasm-std 1.5.8",
-]
-
-[[package]]
-name = "cw-cii"
-version = "0.1.0"
-source = "git+https://github.com/hussein-aitlahcen/cw-ics721?rev=dd5b7add6fdc81e633084031f8512e5e909dd42a#dd5b7add6fdc81e633084031f8512e5e909dd42a"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
-]
-
-[[package]]
 name = "cw-multi-test"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4151,7 +4133,7 @@ dependencies = [
  "bech32 0.11.0",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
+ "cw-utils",
  "derivative",
  "itertools 0.13.0",
  "prost 0.13.2",
@@ -4159,65 +4141,6 @@ dependencies = [
  "serde",
  "sha2 0.10.8",
  "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cw-ownable"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "093dfb4520c48b5848274dd88ea99e280a04bc08729603341c7fb0d758c74321"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-address-like",
- "cw-ownable-derive",
- "cw-storage-plus 1.2.0",
- "cw-utils 1.0.3",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cw-ownable-derive"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1d3bf2e0f341bb6cc100d7d441d31cf713fbd3ce0c511f91e79f14b40a889af"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "cw-paginate-storage"
-version = "2.4.2"
-source = "git+https://github.com/DA0-DA0/dao-contracts.git#3ab701747d6d5571cfee7f5a78d8fe39ffa3a8f7"
-dependencies = [
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
- "serde",
-]
-
-[[package]]
-name = "cw-pause-once"
-version = "0.1.0"
-source = "git+https://github.com/hussein-aitlahcen/cw-ics721?rev=dd5b7add6fdc81e633084031f8512e5e909dd42a#dd5b7add6fdc81e633084031f8512e5e909dd42a"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
- "cw-utils 1.0.3",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cw-storage-plus"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9b6f91c0b94481a3e9ef1ceb183c37d00764f8751e39b45fc09f4d9b970d469"
-dependencies = [
- "cosmwasm-std 1.5.8",
- "schemars",
- "serde",
 ]
 
 [[package]]
@@ -4244,36 +4167,6 @@ dependencies = [
 
 [[package]]
 name = "cw-utils"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6a84c6c1c0acc3616398eba50783934bd6c964bad6974241eaee3460c8f5b26"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw2 0.16.0",
- "schemars",
- "semver 1.0.22",
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cw-utils"
-version = "1.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c4a657e5caacc3a0d00ee96ca8618745d050b8f757c709babafb81208d4239c"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw2 1.1.2",
- "schemars",
- "semver 1.0.22",
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cw-utils"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07dfee7f12f802431a856984a32bce1cb7da1e6c006b5409e3981035ce562dec"
@@ -4281,34 +4174,6 @@ dependencies = [
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "schemars",
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cw2"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91398113b806f4d2a8d5f8d05684704a20ffd5968bf87e3473e1973710b884ad"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 0.16.0",
- "schemars",
- "serde",
-]
-
-[[package]]
-name = "cw2"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6c120b24fbbf5c3bedebb97f2cc85fbfa1c3287e09223428e7e597b5293c1fa"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
- "schemars",
- "semver 1.0.22",
  "serde",
  "thiserror 1.0.69",
 ]
@@ -4336,7 +4201,7 @@ checksum = "a42212b6bf29bbdda693743697c621894723f35d3db0d5df930be22903d0e27c"
 dependencies = [
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
- "cw-utils 2.0.0",
+ "cw-utils",
  "schemars",
  "serde",
 ]
@@ -4349,8 +4214,8 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "cw-multi-test",
  "cw-storage-plus 2.0.0",
- "cw-utils 2.0.0",
- "cw2 2.0.0",
+ "cw-utils",
+ "cw2",
  "cw20",
  "schemars",
  "semver 1.0.22",
@@ -4367,7 +4232,7 @@ dependencies = [
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
- "cw2 2.0.0",
+ "cw2",
  "cw20",
  "schemars",
  "semver 1.0.22",
@@ -4391,66 +4256,6 @@ dependencies = [
  "token-factory-api",
  "ucs03-zkgm-token-minter-api",
  "unionlabs",
-]
-
-[[package]]
-name = "cw721"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94a1ea6e6277bdd6dfc043a9b1380697fe29d6e24b072597439523658d21d791"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-utils 0.16.0",
- "schemars",
- "serde",
-]
-
-[[package]]
-name = "cw721"
-version = "0.18.0"
-source = "git+https://github.com/CosmWasm/cw-nfts?branch=main#e63a7bbb620e6ea39224bb5580967477066cb7ae"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-utils 1.0.3",
- "schemars",
- "serde",
-]
-
-[[package]]
-name = "cw721-base"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77518e27431d43214cff4cdfbd788a7508f68d9b1f32389e6fce513e7eaccbef"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 0.16.0",
- "cw-utils 0.16.0",
- "cw2 0.16.0",
- "cw721 0.16.0",
- "schemars",
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cw721-base"
-version = "0.18.0"
-source = "git+https://github.com/CosmWasm/cw-nfts?branch=main#e63a7bbb620e6ea39224bb5580967477066cb7ae"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-ownable",
- "cw-storage-plus 1.2.0",
- "cw-utils 1.0.3",
- "cw2 1.1.2",
- "cw721 0.18.0",
- "cw721-base 0.16.0",
- "schemars",
- "serde",
- "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -6770,53 +6575,6 @@ dependencies = [
  "sha2 0.10.8",
  "thiserror 1.0.69",
  "unionlabs",
-]
-
-[[package]]
-name = "ics721"
-version = "0.1.0"
-source = "git+https://github.com/hussein-aitlahcen/cw-ics721?rev=dd5b7add6fdc81e633084031f8512e5e909dd42a#dd5b7add6fdc81e633084031f8512e5e909dd42a"
-dependencies = [
- "bech32 0.9.1",
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-cii",
- "cw-ownable",
- "cw-paginate-storage",
- "cw-pause-once",
- "cw-storage-plus 1.2.0",
- "cw-utils 1.0.3",
- "cw721 0.18.0",
- "cw721-base 0.16.0",
- "cw721-base 0.18.0",
- "ics721-types",
- "serde",
- "sha2 0.10.8",
- "thiserror 1.0.69",
- "zip-optional",
-]
-
-[[package]]
-name = "ics721-base"
-version = "0.1.0"
-source = "git+https://github.com/hussein-aitlahcen/cw-ics721?rev=dd5b7add6fdc81e633084031f8512e5e909dd42a#dd5b7add6fdc81e633084031f8512e5e909dd42a"
-dependencies = [
- "cosmwasm-std 1.5.8",
- "cw2 1.1.2",
- "ics721",
-]
-
-[[package]]
-name = "ics721-types"
-version = "0.1.0"
-source = "git+https://github.com/hussein-aitlahcen/cw-ics721?rev=dd5b7add6fdc81e633084031f8512e5e909dd42a#dd5b7add6fdc81e633084031f8512e5e909dd42a"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
- "cw721 0.18.0",
- "serde",
- "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -13409,21 +13167,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ucs02-nft"
-version = "0.0.0"
-dependencies = [
- "cosmwasm-schema 1.5.8",
- "cosmwasm-std 1.5.8",
- "cw-storage-plus 1.2.0",
- "ethabi",
- "ics721",
- "ics721-base",
- "serde_json",
- "thiserror 1.0.69",
- "unionlabs",
-]
-
-[[package]]
 name = "ucs03-zkgm"
 version = "0.0.0"
 dependencies = [
@@ -15507,11 +15250,6 @@ dependencies = [
  "quote",
  "syn 2.0.98",
 ]
-
-[[package]]
-name = "zip-optional"
-version = "0.1.0"
-source = "git+https://github.com/hussein-aitlahcen/cw-ics721?rev=dd5b7add6fdc81e633084031f8512e5e909dd42a#dd5b7add6fdc81e633084031f8512e5e909dd42a"
 
 [[package]]
 name = "zktrie"
