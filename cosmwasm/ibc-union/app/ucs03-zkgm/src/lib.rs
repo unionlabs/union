@@ -6,6 +6,7 @@ mod state;
 mod tests;
 use alloy::primitives::{ruint::ParseError, U256};
 use cosmwasm_std::StdError;
+use ibc_union_spec::ChannelId;
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
 use unionlabs_cosmwasm_upgradable::UpgradeError;
@@ -72,8 +73,16 @@ pub enum ContractError {
     ContractCreationEventNotFound,
     #[error("{0:?}")]
     InvalidPath(ParseError),
-    #[error("forward previousDestinationChannelId mismatch, actual: {actual}, expted: {expected}")]
-    InvalidForwardDestinationChannelId { actual: u32, expected: u32 },
+    #[error(
+        "forward previousDestinationChannelId mismatch, actual: {actual}, expected: {expected}",
+        actual = .actual.map(|id| id.to_string()).unwrap_or("None".to_owned())
+    )]
+    InvalidForwardDestinationChannelId {
+        actual: Option<ChannelId>,
+        expected: ChannelId,
+    },
+    #[error("forward packet missing next source channel id")]
+    MissingForwardSourceChannelId,
     #[error("forward (sent) packet is missing from the reply")]
     ForwardedPacketMissingInReply,
     #[error("could not deserialize sent packet on reply, data: {sent_packet_data}")]

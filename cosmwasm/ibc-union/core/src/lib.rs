@@ -8,7 +8,7 @@ mod tests;
 
 use cosmwasm_std::{Addr, StdError};
 use ibc_union_msg::lightclient::Status;
-use ibc_union_spec::types::{ChannelState, ConnectionState};
+use ibc_union_spec::{ChannelId, ChannelState, ClientId, ConnectionState};
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
 use unionlabs_cosmwasm_upgradable::UpgradeError;
@@ -31,7 +31,16 @@ pub enum ContractError {
     ClientTypeAlreadyExists,
     #[error("{} an arithmetic overflow occurred", ContractErrorKind::from(self))]
     ArithmeticOverflow,
-
+    #[error(
+        "{} counterparty channel id cannot be None",
+        ContractErrorKind::from(self)
+    )]
+    CounterpartyChannelIdInvalid,
+    #[error(
+        "{} counterparty connection id cannot be None",
+        ContractErrorKind::from(self)
+    )]
+    CounterpartyConnectionIdInvalid,
     #[error(
         "{} connection state is invalid: expected {expected:?}, got {got:?}",
         ContractErrorKind::from(self)
@@ -71,7 +80,7 @@ pub enum ContractError {
         ContractErrorKind::from(self)
     )]
     Unauthorized {
-        channel_id: u32,
+        channel_id: ChannelId,
         owner: Addr,
         caller: Addr,
     },
@@ -114,7 +123,7 @@ pub enum ContractError {
         "{} caller {caller} don't have permission to migrate the client {client} with id {client_id}", ContractErrorKind::from(self)
     )]
     UnauthorizedMigration {
-        client_id: u32,
+        client_id: ClientId,
         caller: Addr,
         client: Addr,
     },
@@ -122,11 +131,11 @@ pub enum ContractError {
         "{} cannot migrate the client {client_id} when there's no client state",
         ContractErrorKind::from(self)
     )]
-    CannotMigrateWithNoClientState { client_id: u32 },
+    CannotMigrateWithNoClientState { client_id: ClientId },
     #[error(
         "{} cannot migrate the client {client_id} when there's no consensus state at height {height}", ContractErrorKind::from(self)
     )]
-    CannotMigrateWithNoConsensusState { client_id: u32, height: u64 },
+    CannotMigrateWithNoConsensusState { client_id: ClientId, height: u64 },
     #[error(
         "{} cannot query light client {client_impl} with {query:?}: {error}",
         ContractErrorKind::from(self)
@@ -140,7 +149,7 @@ pub enum ContractError {
         "{} client {client_id} is not active (status {status:?})",
         ContractErrorKind::from(self)
     )]
-    ClientNotActive { client_id: u32, status: Status },
+    ClientNotActive { client_id: ClientId, status: Status },
     #[error(
         "{} a batch of packets can contains packets from the same channel only",
         ContractErrorKind::from(self)

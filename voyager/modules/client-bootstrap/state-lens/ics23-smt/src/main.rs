@@ -1,3 +1,4 @@
+use ibc_union_spec::ClientId;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -30,8 +31,8 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ClientStateConfig {
-    pub l1_client_id: u32,
-    pub l2_client_id: u32,
+    pub l1_client_id: ClientId,
+    pub l2_client_id: ClientId,
     pub table_handle: AccountAddress,
 }
 

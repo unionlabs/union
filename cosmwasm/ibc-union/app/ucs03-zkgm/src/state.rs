@@ -1,6 +1,6 @@
 use cosmwasm_std::{Addr, Uint256};
 use cw_storage_plus::{Item, Map};
-use ibc_union_spec::types::Packet;
+use ibc_union_spec::Packet;
 use unionlabs::primitives::Bytes;
 
 use crate::msg::Config;

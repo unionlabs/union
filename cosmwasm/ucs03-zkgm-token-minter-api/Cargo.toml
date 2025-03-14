@@ -15,4 +15,5 @@ workspace = true
 cosmwasm-schema   = { workspace = true }
 cosmwasm-std      = { workspace = true }
 enumorph          = { workspace = true }
+ibc-union-spec    = { workspace = true, features = ["schemars"] }
 token-factory-api = { workspace = true }

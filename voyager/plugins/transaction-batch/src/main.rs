@@ -9,11 +9,7 @@ use std::{
 use either::Either;
 use futures::{stream::FuturesOrdered, StreamExt};
 use ibc_classic_spec::IbcClassic;
-use ibc_solidity::Packet;
-use ibc_union_spec::{
-    types::{Channel, ChannelState},
-    IbcUnion,
-};
+use ibc_union_spec::{Channel, ChannelState, IbcUnion, Packet};
 use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -675,9 +671,9 @@ async fn do_make_msg_union(
                         port_id: event.counterparty_port_id,
                         channel: Channel {
                             state: ChannelState::TryOpen,
-                            counterparty_channel_id: event.channel_id,
+                            counterparty_channel_id: Some(event.channel_id),
                             counterparty_port_id: event.port_id,
-                            connection_id: event.connection.counterparty_connection_id,
+                            connection_id: event.connection.counterparty_connection_id.unwrap(),
                             version: event.version.clone(),
                         },
                         counterparty_version: event.version,
@@ -762,7 +758,7 @@ async fn do_make_msg_union(
             let packet = Packet {
                 source_channel_id: event.packet.source_channel.channel_id,
                 destination_channel_id: event.packet.destination_channel.channel_id,
-                data: event.packet_data.into(),
+                data: event.packet_data,
                 timeout_height: event.packet.timeout_height,
                 timeout_timestamp: event.packet.timeout_timestamp,
             };
@@ -770,7 +766,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::path::BatchPacketsPath::from_packets(&[packet.clone().into()]),
+                    ibc_union_spec::path::BatchPacketsPath::from_packets(&[packet.clone()]),
                 )
                 .await?;
 
@@ -791,7 +787,7 @@ async fn do_make_msg_union(
 
             Ok(data(IbcDatagram::new::<IbcUnion>(
                 ibc_union_spec::datagram::Datagram::from(ibc_union_spec::datagram::MsgPacketRecv {
-                    packets: vec![packet.into()],
+                    packets: vec![packet],
                     relayer_msgs: vec![vec![].into()],
                     proof: encoded_proof_commitment,
                     proof_height: origin_chain_proof_height.height(),
@@ -803,7 +799,7 @@ async fn do_make_msg_union(
             let packet = Packet {
                 source_channel_id: event.packet.source_channel.channel_id,
                 destination_channel_id: event.packet.destination_channel.channel_id,
-                data: event.packet_data.into(),
+                data: event.packet_data,
                 timeout_height: event.packet.timeout_height,
                 timeout_timestamp: event.packet.timeout_timestamp,
             };
@@ -811,7 +807,7 @@ async fn do_make_msg_union(
                 .query_ibc_proof(
                     origin_chain_id,
                     QueryHeight::Specific(origin_chain_proof_height),
-                    ibc_union_spec::path::BatchReceiptsPath::from_packets(&[packet.clone().into()]),
+                    ibc_union_spec::path::BatchReceiptsPath::from_packets(&[packet.clone()]),
                 )
                 .await?;
 
@@ -833,7 +829,7 @@ async fn do_make_msg_union(
             Ok(data(IbcDatagram::new::<IbcUnion>(
                 ibc_union_spec::datagram::Datagram::from(
                     ibc_union_spec::datagram::MsgPacketAcknowledgement {
-                        packets: vec![packet.into()],
+                        packets: vec![packet],
                         acknowledgements: vec![event.acknowledgement],
                         proof: encoded_proof_commitment,
                         proof_height: origin_chain_proof_height.height(),
@@ -1147,7 +1143,8 @@ impl Module {
         Box::pin(async move {
             let mut batchers_v1 =
                 HashMap::<ClientId, Vec<(usize, BatchableEvent<IbcClassic>)>>::new();
-            let mut batchers_union = HashMap::<u32, Vec<(usize, BatchableEvent<IbcUnion>)>>::new();
+            let mut batchers_union =
+                HashMap::<ibc_union_spec::ClientId, Vec<(usize, BatchableEvent<IbcUnion>)>>::new();
 
             for (idx, msg) in msgs.into_iter().enumerate() {
                 let Op::Data(msg) = msg else {
