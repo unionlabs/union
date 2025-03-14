@@ -27,7 +27,6 @@ import {
   isComplete as isAptosComplete,
   nextState as aptosNextState,
   TransferSubmission as AptosTransferSubmission,
-  SwitchChainState as AptosSwitchChainState,
   TransferReceiptState as AptosTransferReceiptState
 } from "$lib/services/transfer-ucs03-aptos"
 import { chains } from "$lib/stores/chains.svelte.ts"
@@ -87,7 +86,7 @@ export class Transfer {
       const sourceChainValue = this.sourceChain.value
       if (sourceChainValue.rpc_type === "evm") {
         return TransferState.EVM(EvmTransferSubmission.Filling())
-      } else if(sourceChainValue.rpc_type === "aptos") {
+      } else if (sourceChainValue.rpc_type === "aptos") {
         return TransferState.Aptos(AptosTransferSubmission.Filling())
       }
       return TransferState.Cosmos(CosmosTransferSubmission.Filling())
@@ -372,7 +371,7 @@ export class Transfer {
         currentEvmState = nextEvmState
         if (currentEvmState !== null && isEvmComplete(currentEvmState)) break
       }
-    } else if(sourceChainValue.rpc_type === "cosmos") {
+    } else if (sourceChainValue.rpc_type === "cosmos") {
       let cosmosState: CosmosTransferSubmission
       if (this.state._tag === "Cosmos") {
         // If failed, reset the failed step to InProgress
@@ -431,7 +430,7 @@ export class Transfer {
       console.info("this.state._tag is: ", this.state._tag)
       let aptosState: AptosTransferSubmission
       if (this.state._tag === "Aptos") {
-          console.info("state._tag is aptos")
+        console.info("state._tag is aptos")
         // If failed, reset the failed step to InProgress
         if (hasAptosFailedExit(this.state.state)) {
           switch (this.state.state._tag) {
@@ -463,7 +462,8 @@ export class Transfer {
       console.info("aptosState: ", aptosState)
 
       const newState = await aptosNextState(aptosState, this.transferResult.args, sourceChainValue)
-      this._stateOverride = newState !== null ? TransferState.Aptos(newState) : TransferState.Empty()
+      this._stateOverride =
+        newState !== null ? TransferState.Aptos(newState) : TransferState.Empty()
 
       let currentaptosState = newState
       while (currentaptosState !== null && !hasAptosFailedExit(currentaptosState)) {
