@@ -22,7 +22,6 @@ import {StateLensIcs23SmtClient} from
     "../contracts/clients/StateLensIcs23SmtClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
-import "../contracts/apps/ucs/03-zkgm/IWETH.sol";
 import "../contracts/lib/Hex.sol";
 
 import "./Deployer.sol";
@@ -853,8 +852,6 @@ contract DryUpgradeUCS03 is Script {
 
         console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
 
-        IWETH weth = IWETH(vm.envAddress("WETH"));
-
         address newImplementation = address(new UCS03Zkgm());
         vm.prank(owner);
         UCS03Zkgm(ucs03).upgradeToAndCall(newImplementation, new bytes(0));
@@ -887,8 +884,6 @@ contract UpgradeUCS03 is Script {
         address ucs03 = getDeployed(Protocols.make(Protocols.UCS03));
 
         console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
-
-        IWETH weth = IWETH(vm.envAddress("WETH"));
 
         vm.startBroadcast(privateKey);
         address newImplementation = address(new UCS03Zkgm());

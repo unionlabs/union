@@ -23,7 +23,6 @@ import "../../../core/24-host/IBCCommitment.sol";
 import "./IEurekaModule.sol";
 import "./IZkgmERC20.sol";
 import "./ZkgmERC20.sol";
-import "./IWETH.sol";
 
 struct ZkgmPacket {
     bytes32 salt;

@@ -125,36 +125,6 @@ contract TestIBCHandler is IIBCModulePacket {
     }
 }
 
-contract TestWETH is ERC20, IWETH {
-    error ETHTransferFailed();
-
-    constructor() ERC20("Wrapped Ether", "WETH") {}
-
-    function deposit() public payable virtual {
-        _mint(msg.sender, msg.value);
-    }
-
-    function withdraw(
-        uint256 amount
-    ) public virtual {
-        _burn(msg.sender, amount);
-        assembly {
-            if iszero(
-                call(
-                    gas(), caller(), amount, codesize(), 0x00, codesize(), 0x00
-                )
-            ) {
-                mstore(0x00, 0xb12d13eb) // `ETHTransferFailed()`.
-                revert(0x1c, 0x04)
-            }
-        }
-    }
-
-    receive() external payable virtual {
-        deposit();
-    }
-}
-
 contract TestERC20 is ERC20 {
     uint8 _decimals;
 
@@ -236,7 +206,6 @@ contract ZkgmTests is Test {
     TestMultiplexTarget multiplexTarget;
     TestIBCHandler handler;
     TestERC20 erc20;
-    TestWETH weth;
     TestZkgm zkgm;
 
     Instruction dummyMultiplex = Instruction({
@@ -254,7 +223,6 @@ contract ZkgmTests is Test {
 
     function setUp() public {
         erc20 = new TestERC20("Test", "T", 18);
-        weth = new TestWETH();
         handler = new TestIBCHandler();
         TestZkgm implementation = new TestZkgm();
         ERC1967Proxy proxy = new ERC1967Proxy(
