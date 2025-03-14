@@ -15,6 +15,10 @@ import {
   hasFailedExit as hasEvmFailedExit,
   isComplete as isEvmComplete
 } from "$lib/services/transfer-ucs03-evm"
+import {
+  hasFailedExit as hasAptosFailedExit,
+  isComplete as isAptosComplete
+} from "$lib/services/transfer-ucs03-aptos"
 
 $effect(() => {
   transfer.getQuoteToken()
@@ -40,6 +44,14 @@ function getStatus(
       if (isCosmosComplete(state.state)) return "complete"
       return "processing"
     }
+    case "Aptos": {
+      if (state.state._tag === "Filling") return "filling"
+      if (hasAptosFailedExit(state.state)) return "failed"
+      if (isAptosComplete(state.state)) return "complete"
+      return "processing"
+    }
+    default:
+      return "empty"
   }
 }
 
@@ -48,6 +60,7 @@ function getError(state: TransferStateUnion): string | null {
     case "Empty":
       return null
     case "EVM":
+    case "Aptos":
     case "Cosmos": {
       const innerState = state.state
       if (innerState._tag === "Filling") return null
@@ -63,6 +76,8 @@ function getError(state: TransferStateUnion): string | null {
       }
       return null
     }
+    default:
+      return null
   }
 }
 
@@ -72,8 +87,13 @@ function getStepName(state: TransferStateUnion): string | null {
     case "Empty":
       return null
     case "EVM":
+      return state.state._tag
+    case "Aptos":
+      return state.state._tag
     case "Cosmos":
       return state.state._tag
+    default:
+      return null
   }
 }
 
