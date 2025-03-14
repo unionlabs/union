@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/sdk",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "type": "module",
   "license": "MIT",
   "author": "@unionlabs",
@@ -11,7 +11,8 @@
   },
   "exports": {
     ".": "./dist/src/index.js",
-    "./evm": "./dist/src/evm/index.js"
+    "./evm": "./dist/src/evm/index.js",
+    "./evm/abi": "./dist/src/evm/abi/index.js"
   },
   "files": [
     "package.json",
@@ -24,7 +25,6 @@
   ],
   "devDependencies": {
     "biome": "^0.3.3",
-    "tsup": "^8.4.0",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8"
   }
