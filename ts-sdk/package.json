@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "build": "tsup",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test-watch": "vitest"
   },
   "files": ["./src", "./dist"],
   "keywords": [],
