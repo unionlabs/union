@@ -119,9 +119,11 @@ contract StateLensIcs23SmtClient is
     }
 
     function createClient(
+        address,
         uint32 clientId,
         bytes calldata clientStateBytes,
-        bytes calldata consensusStateBytes
+        bytes calldata consensusStateBytes,
+        address
     )
         external
         override
@@ -168,8 +170,10 @@ contract StateLensIcs23SmtClient is
      * Given an L₂ and L₁ heights (H₂, H₁), we prove that L₂[H₂] ∈ L₁[H₁].
      */
     function updateClient(
+        address,
         uint32 clientId,
-        bytes calldata clientMessageBytes
+        bytes calldata clientMessageBytes,
+        address
     ) external override onlyIBC returns (ConsensusStateUpdate memory) {
         Header calldata header;
         assembly {
@@ -228,8 +232,10 @@ contract StateLensIcs23SmtClient is
     }
 
     function misbehaviour(
+        address,
         uint32 clientId,
-        bytes calldata clientMessageBytes
+        bytes calldata clientMessageBytes,
+        address
     ) external override onlyIBC {
         revert StateLensIcs23SmtLib.ErrUnsupported();
     }

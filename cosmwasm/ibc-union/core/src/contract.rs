@@ -164,6 +164,7 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             create_client(
                 deps.branch(),
+                info,
                 client_type,
                 client_state_bytes.to_vec(),
                 consensus_state_bytes.to_vec(),
@@ -176,7 +177,13 @@ pub fn execute(
             relayer,
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
-            update_client(deps.branch(), client_id, client_message.to_vec(), relayer)
+            update_client(
+                deps.branch(),
+                info,
+                client_id,
+                client_message.to_vec(),
+                relayer,
+            )
         }
         ExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
             client_id,
@@ -247,6 +254,7 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_init(
                 deps.branch(),
+                info,
                 port_id,
                 counterparty_port_id,
                 connection_id,
@@ -265,6 +273,7 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_try(
                 deps.branch(),
+                info,
                 port_id,
                 channel,
                 counterparty_version,
@@ -284,6 +293,7 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_ack(
                 deps.branch(),
+                info,
                 channel_id,
                 counterparty_version,
                 counterparty_channel_id,
@@ -301,6 +311,7 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_confirm(
                 deps.branch(),
+                info,
                 channel_id,
                 proof_ack.to_vec(),
                 proof_height,
@@ -312,7 +323,7 @@ pub fn execute(
             relayer,
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
-            channel_close_init(deps.branch(), channel_id, relayer)
+            channel_close_init(deps.branch(), info, channel_id, relayer)
         }
         ExecuteMsg::ChannelCloseConfirm(MsgChannelCloseConfirm {
             channel_id,
@@ -323,6 +334,7 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_close_confirm(
                 deps.branch(),
+                info,
                 channel_id,
                 proof_init.to_vec(),
                 proof_height,
@@ -338,6 +350,7 @@ pub fn execute(
         }) => process_receive(
             deps,
             env,
+            info,
             packets,
             relayer_msgs.into_iter().map(Into::into).collect(),
             relayer,
@@ -355,6 +368,7 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             acknowledge_packet(
                 deps.branch(),
+                info,
                 packets,
                 acknowledgements.into_iter().map(Into::into).collect(),
                 proof.to_vec(),
@@ -369,7 +383,14 @@ pub fn execute(
             relayer,
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
-            timeout_packet(deps.branch(), packet, proof.to_vec(), proof_height, relayer)
+            timeout_packet(
+                deps.branch(),
+                info,
+                packet,
+                proof.to_vec(),
+                proof_height,
+                relayer,
+            )
         }
         ExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
             packets,
@@ -379,6 +400,7 @@ pub fn execute(
         }) => process_receive(
             deps,
             env,
+            info,
             packets,
             market_maker_msgs.into_iter().map(Into::into).collect(),
             market_maker,
@@ -585,6 +607,7 @@ fn batch_acks(deps: DepsMut, packets: Vec<Packet>, acks: Vec<Bytes>) -> Contract
 
 fn timeout_packet(
     mut deps: DepsMut,
+    info: MessageInfo,
     packet: Packet,
     proof: Vec<u8>,
     proof_height: u64,
@@ -637,6 +660,7 @@ fn timeout_packet(
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnTimeoutPacket {
+                caller: info.sender.into_string(),
                 packet,
                 relayer: relayer.into(),
             }),
@@ -646,6 +670,7 @@ fn timeout_packet(
 
 fn acknowledge_packet(
     mut deps: DepsMut,
+    info: MessageInfo,
     packets: Vec<Packet>,
     acknowledgements: Vec<Bytes>,
     proof: Vec<u8>,
@@ -691,6 +716,7 @@ fn acknowledge_packet(
         messages.push(wasm_execute(
             port_id.clone(),
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnAcknowledgementPacket {
+                caller: info.sender.clone().into_string(),
                 packet,
                 acknowledgement: ack.to_vec().into(),
                 relayer: relayer.clone().into(),
@@ -739,10 +765,11 @@ fn register_client(
 
 fn create_client(
     mut deps: DepsMut,
+    info: MessageInfo,
     client_type: String,
     mut client_state_bytes: Vec<u8>,
     consensus_state_bytes: Vec<u8>,
-    _relayer: Addr,
+    relayer: Addr,
 ) -> Result<Response, ContractError> {
     let client_impl = deps.storage.read::<ClientRegistry>(&client_type)?;
     let client_id = next_client_id(deps.branch())?;
@@ -752,9 +779,11 @@ fn create_client(
         deps.as_ref(),
         client_impl,
         LightClientQuery::VerifyCreation {
+            caller: info.sender.into(),
             client_id,
             client_state: client_state_bytes.to_vec().into(),
             consensus_state: consensus_state_bytes.to_vec().into(),
+            relayer: relayer.into(),
         },
     )?;
     if let Some(cs) = verify_creation_response.client_state_bytes {
@@ -805,6 +834,7 @@ fn create_client(
 
 fn update_client(
     mut deps: DepsMut,
+    info: MessageInfo,
     client_id: u32,
     client_message: Vec<u8>,
     relayer: Addr,
@@ -830,8 +860,9 @@ fn update_client(
             deps.as_ref(),
             client_impl,
             LightClientQuery::UpdateState {
+                caller: info.sender.into(),
                 client_id,
-                caller: relayer.into(),
+                relayer: relayer.into(),
             },
         )?;
         deps.storage.delete_item::<QueryStore>();
@@ -1080,6 +1111,7 @@ fn connection_open_confirm(
 
 fn channel_open_init(
     mut deps: DepsMut,
+    info: MessageInfo,
     port_id: String,
     counterparty_port_id: Bytes,
     connection_id: u32,
@@ -1111,6 +1143,7 @@ fn channel_open_init(
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
+                caller: info.sender.into_string(),
                 connection_id,
                 channel_id,
                 version,
@@ -1120,8 +1153,10 @@ fn channel_open_init(
         )?))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn channel_open_try(
     mut deps: DepsMut,
+    info: MessageInfo,
     port_id: String,
     channel: Channel,
     counterparty_version: String,
@@ -1187,6 +1222,7 @@ fn channel_open_try(
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+                caller: info.sender.into_string(),
                 connection_id: channel.connection_id,
                 channel_id,
                 version: channel.version,
@@ -1197,8 +1233,10 @@ fn channel_open_try(
         )?))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn channel_open_ack(
     mut deps: DepsMut,
+    info: MessageInfo,
     channel_id: u32,
     counterparty_version: String,
     counterparty_channel_id: u32,
@@ -1259,6 +1297,7 @@ fn channel_open_ack(
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenAck {
+                caller: info.sender.into_string(),
                 channel_id,
                 counterparty_channel_id,
                 counterparty_version,
@@ -1270,6 +1309,7 @@ fn channel_open_ack(
 
 fn channel_open_confirm(
     mut deps: DepsMut,
+    info: MessageInfo,
     channel_id: u32,
     proof_ack: Vec<u8>,
     proof_height: u64,
@@ -1326,6 +1366,7 @@ fn channel_open_confirm(
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
+                caller: info.sender.into_string(),
                 channel_id,
                 relayer: relayer.into(),
             }),
@@ -1333,7 +1374,13 @@ fn channel_open_confirm(
         )?))
 }
 
-fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> ContractResult {
+fn channel_close_init(
+    mut deps: DepsMut,
+
+    info: MessageInfo,
+    channel_id: u32,
+    relayer: Addr,
+) -> ContractResult {
     let mut channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::Open {
         return Err(ContractError::ChannelInvalidState {
@@ -1361,6 +1408,7 @@ fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> Cont
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
+                caller: info.sender.into_string(),
                 channel_id,
                 relayer: relayer.into(),
             }),
@@ -1370,6 +1418,7 @@ fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> Cont
 
 fn channel_close_confirm(
     mut deps: DepsMut,
+    info: MessageInfo,
     channel_id: u32,
     proof_init: Vec<u8>,
     proof_height: u64,
@@ -1430,6 +1479,7 @@ fn channel_close_confirm(
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
+                caller: info.sender.into_string(),
                 channel_id,
                 relayer: relayer.into(),
             }),
@@ -1441,6 +1491,7 @@ fn channel_close_confirm(
 fn process_receive(
     mut deps: DepsMut,
     env: Env,
+    info: MessageInfo,
     packets: Vec<Packet>,
     relayer_msgs: Vec<alloy::primitives::Bytes>,
     relayer: String,
@@ -1504,6 +1555,7 @@ fn process_receive(
                 messages.push(wasm_execute(
                     port_id.clone(),
                     &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnIntentRecvPacket {
+                        caller: info.sender.clone().into_string(),
                         packet,
                         market_maker: deps.api.addr_validate(&relayer)?.into(),
                         market_maker_msg: relayer_msg.to_vec().into(),
@@ -1523,6 +1575,7 @@ fn process_receive(
                 messages.push(wasm_execute(
                     port_id.clone(),
                     &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+                        caller: info.sender.clone().into_string(),
                         packet,
                         relayer: deps.api.addr_validate(&relayer)?.into(),
                         relayer_msg: relayer_msg.to_vec().into(),

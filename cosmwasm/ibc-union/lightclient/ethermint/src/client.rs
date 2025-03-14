@@ -1,5 +1,5 @@
 use cometbft_types::crypto::public_key::PublicKey;
-use cosmwasm_std::Empty;
+use cosmwasm_std::{Addr, Empty};
 use ethermint_light_client_types::ClientState;
 use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
@@ -103,8 +103,9 @@ impl IbcClient for EthermintLightClient {
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         header: Self::Header,
-        _caller: cosmwasm_std::Addr,
+        _relayer: Addr,
     ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
@@ -141,7 +142,9 @@ impl IbcClient for EthermintLightClient {
 
     fn misbehaviour(
         _ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         _misbehaviour: Self::Misbehaviour,
+        _relayer: Addr,
     ) -> Result<Self::ClientState, IbcClientError<Self>> {
         Err(Error::from(tendermint_light_client::errors::Error::Unimplemented).into())
     }
@@ -186,8 +189,10 @@ impl IbcClient for EthermintLightClient {
     }
 
     fn verify_creation(
+        _caller: Addr,
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
+        _relayer: Addr,
     ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>> {
         Ok(ClientCreationResult::new())
     }

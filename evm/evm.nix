@@ -316,9 +316,14 @@ _: {
                   if [ "$address" != "0x0000000000000000000000000000000000000000" ]
                   then
                     PRIVATE_KEY=${private-key} \
+                    FOUNDRY_LIBS='["libs"]' \
                     FOUNDRY_PROFILE="script" \
-                      forge verify-contract --force --watch "$address" "$contract" --constructor-args "$args" --api-key "$3" \
-                        --rpc-url ${rpc-url}
+                      forge verify-contract \
+                        --force \
+                        --watch "$address" "$contract" \
+                        --constructor-args "$args" \
+                        --api-key "$3" \
+                        --rpc-url ${rpc-url} || true
                   fi
                 done
 
@@ -583,15 +588,6 @@ _: {
                   ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json > core.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
-                  ${contracts}/out/Relay.sol/IRelay.json \
-                  ${contracts}/out/Relay.sol/UCS01Relay.json \
-                  ${contracts}/out/Relay.sol/RelayLib.json \
-                  ${contracts}/out/Relay.sol/RelayPacketLib.json > app.ucs01.json
-
-                jq --compact-output --slurp 'map(.abi) | add' \
-                  ${contracts}/out/NFT.sol/NFTLib.json \
-                  ${contracts}/out/NFT.sol/NFTPacketLib.json \
-                  ${contracts}/out/NFT.sol/UCS02NFT.json > app.ucs02.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/Zkgm.sol/ZkgmLib.json \
@@ -614,15 +610,6 @@ _: {
                   ${contracts}/out/StateLensIcs23SmtClient.sol/StateLensIcs23SmtLib.json > lightclient.state-lens-ics23-smt.json
               ''
           );
-
-        solidity-build-tests = pkgs.writeShellApplication {
-          name = "run-solidity-build-tests";
-          runtimeInputs = [ self'.packages.forge ];
-          text = ''
-            ${ensureAtRepositoryRoot}
-            FOUNDRY_LIBS=["${evm-libs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
-          '';
-        };
 
         evm-contracts-addresses = mkCi false (
           pkgs.writeShellApplication {
@@ -740,18 +727,6 @@ _: {
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-dryupgrade-${args.network}-ucs01";
-              value = eth-upgrade (
-                {
-                  dry = true;
-                  protocol = "UCS01";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
               name = "eth-dryupgrade-${args.network}-ucs03";
               value = eth-upgrade (
                 {
@@ -832,18 +807,6 @@ _: {
                 }
                 // args
               );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-upgrade-${args.network}-ucs00";
-              value = eth-upgrade ({ protocol = "UCS00"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-upgrade-${args.network}-ucs01";
-              value = eth-upgrade ({ protocol = "UCS01"; } // args);
             }) networks
           )
           // builtins.listToAttrs (

@@ -1,5 +1,5 @@
 use cometbls_light_client::client::CometblsLightClient;
-use cosmwasm_std::Empty;
+use cosmwasm_std::{Addr, Empty};
 use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
@@ -105,8 +105,10 @@ impl IbcClient for StateLensIcs23SmtLightClient {
     }
 
     fn verify_creation(
+        _caller: Addr,
         client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
+        _relayer: Addr,
     ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>> {
         Ok(
             ClientCreationResult::new().add_event(VerifyCreationResponseEvent::CreateLensClient {
@@ -119,8 +121,9 @@ impl IbcClient for StateLensIcs23SmtLightClient {
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         header: Self::Header,
-        _caller: cosmwasm_std::Addr,
+        _relayer: Addr,
     ) -> Result<StateUpdate<Self>, ibc_union_light_client::IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 
@@ -162,7 +165,9 @@ impl IbcClient for StateLensIcs23SmtLightClient {
 
     fn misbehaviour(
         _ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         _misbehaviour: Self::Misbehaviour,
+        _relayer: Addr,
     ) -> Result<Self::ClientState, IbcClientError<Self>> {
         unimplemented!()
     }

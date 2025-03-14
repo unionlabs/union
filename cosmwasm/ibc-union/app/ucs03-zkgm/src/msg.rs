@@ -69,6 +69,7 @@ pub enum ExecuteMsg {
     /// Execute an Zkgm packet.
     /// Can only be called by the contract itself during packet handling.
     InternalExecutePacket {
+        caller: Addr,
         packet: Packet,
         relayer: Addr,
         relayer_msg: Bytes,

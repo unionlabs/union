@@ -222,9 +222,11 @@ contract CometblsClient is
     }
 
     function createClient(
+        address,
         uint32 clientId,
         bytes calldata clientStateBytes,
-        bytes calldata consensusStateBytes
+        bytes calldata consensusStateBytes,
+        address
     )
         external
         override
@@ -253,8 +255,10 @@ contract CometblsClient is
     }
 
     function misbehaviour(
+        address,
         uint32 clientId,
-        bytes calldata clientMessageBytes
+        bytes calldata clientMessageBytes,
+        address
     ) external override onlyIBC whenNotPaused {
         Misbehaviour calldata m = clientMessageBytes.decodeMisbehaviour();
         ClientState storage clientState = clientStates[clientId];
@@ -371,8 +375,10 @@ contract CometblsClient is
     }
 
     function updateClient(
+        address,
         uint32 clientId,
-        bytes calldata clientMessageBytes
+        bytes calldata clientMessageBytes,
+        address
     )
         external
         override

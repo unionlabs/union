@@ -43,26 +43,30 @@ contract MockLightClient is ILightClient {
     }
 
     function verifyNonMembership(
-        uint32 clientId,
-        uint64 height,
-        bytes calldata proof,
-        bytes calldata path
+        uint32,
+        uint64,
+        bytes calldata,
+        bytes calldata
     ) external pure override returns (bool) {
         return true;
     }
 
     // The other ILightClient functions are unused in these tests. We stub them out:
     function createClient(
+        address,
         uint32, /*clientId*/
         bytes calldata, /*clientStateBytes*/
-        bytes calldata /*consensusStateBytes*/
+        bytes calldata, /*consensusStateBytes*/
+        address
     ) external returns (ConsensusStateUpdate memory, string memory) {
         return (ConsensusStateUpdate(bytes32(0), bytes32(0), 0), "");
     }
 
     function updateClient(
+        address,
         uint32, /*clientId*/
-        bytes calldata /*clientMessageBytes*/
+        bytes calldata, /*clientMessageBytes*/
+        address
     ) external returns (ConsensusStateUpdate memory) {
         return ConsensusStateUpdate(bytes32(0), bytes32(0), 0);
     }
@@ -87,13 +91,10 @@ contract MockLightClient is ILightClient {
         return new bytes(0);
     }
 
-    function misbehaviour(
-        uint32 clientId,
-        bytes calldata clientMessageBytes
-    ) external {}
+    function misbehaviour(address, uint32, bytes calldata, address) external {}
 
     function getClientState(
-        uint32 clientId
+        uint32
     ) external view returns (bytes memory) {
         return abi.encodePacked("test");
     }
@@ -178,7 +179,10 @@ contract StateLensIcs23SmtClientTest is Test {
         assertEq(client.owner(), admin);
     }
 
-    function test_createClient_success() public {
+    function test_createClient_success(
+        address caller,
+        address relayer
+    ) public {
         uint32 clientId = 99;
 
         ClientState memory cState = ClientState({
@@ -199,7 +203,9 @@ contract StateLensIcs23SmtClientTest is Test {
 
         vm.prank(ibcHandler);
 
-        client.createClient(clientId, clientStateBytes, consStateBytes);
+        client.createClient(
+            caller, clientId, clientStateBytes, consStateBytes, relayer
+        );
 
         bytes memory storedClientState = client.getClientState(clientId);
         assertEq(
@@ -216,7 +222,10 @@ contract StateLensIcs23SmtClientTest is Test {
         );
     }
 
-    function test_createClient_revert_initialState() public {
+    function test_createClient_revert_initialState(
+        address caller,
+        address relayer
+    ) public {
         uint32 clientId = 1;
 
         ClientState memory cState = ClientState({
@@ -239,10 +248,15 @@ contract StateLensIcs23SmtClientTest is Test {
                 StateLensIcs23SmtLib.ErrInvalidInitialConsensusState.selector
             )
         );
-        client.createClient(clientId, cStateBytes, consStateBytes);
+        client.createClient(
+            caller, clientId, cStateBytes, consStateBytes, relayer
+        );
     }
 
-    function test_updateClient_success() public {
+    function test_updateClient_success(
+        address caller,
+        address relayer
+    ) public {
         ClientState memory cState = ClientState({
             l2ChainId: "fake-l2",
             l1ClientId: 10,
@@ -256,9 +270,11 @@ contract StateLensIcs23SmtClientTest is Test {
 
         vm.startPrank(ibcHandler);
         client.createClient(
+            caller,
             1,
             StateLensIcs23SmtLib.encode(cState),
-            StateLensIcs23SmtLib.encode(cs)
+            StateLensIcs23SmtLib.encode(cs),
+            relayer
         );
 
         Header memory header = Header({
@@ -278,7 +294,7 @@ contract StateLensIcs23SmtClientTest is Test {
 
         lightClient.setVerifyMembershipReturn(true);
 
-        client.updateClient(1, headerBytes);
+        client.updateClient(caller, 1, headerBytes, relayer);
 
         bytes memory stored = client.getConsensusState(1, 101);
         ConsensusState memory dec = decodeConsensusState(stored);
@@ -289,7 +305,10 @@ contract StateLensIcs23SmtClientTest is Test {
         vm.stopPrank();
     }
 
-    function test_updateClient_revert_invalidProof() public {
+    function test_updateClient_revert_invalidProof(
+        address caller,
+        address relayer
+    ) public {
         ClientState memory cState = ClientState({
             l2ChainId: "fake-l2",
             l1ClientId: 10,
@@ -303,9 +322,11 @@ contract StateLensIcs23SmtClientTest is Test {
 
         vm.startPrank(ibcHandler);
         client.createClient(
+            caller,
             123,
             StateLensIcs23SmtLib.encode(cState),
-            StateLensIcs23SmtLib.encode(cs)
+            StateLensIcs23SmtLib.encode(cs),
+            relayer
         );
 
         Header memory header = Header({
@@ -330,19 +351,22 @@ contract StateLensIcs23SmtClientTest is Test {
                 StateLensIcs23SmtLib.ErrInvalidL1Proof.selector
             )
         );
-        client.updateClient(123, headerBytes);
+        client.updateClient(caller, 123, headerBytes, relayer);
         vm.stopPrank();
     }
 
-    function test_misbehaviour_reverts() public {
+    function test_misbehaviour_reverts(
+        address caller,
+        address relayer
+    ) public {
         vm.prank(ibcHandler);
         vm.expectRevert(
             abi.encodeWithSelector(StateLensIcs23SmtLib.ErrUnsupported.selector)
         );
-        client.misbehaviour(1, bytes(""));
+        client.misbehaviour(caller, 1, bytes(""), relayer);
     }
 
-    function test_isFrozenImpl() public {
+    function test_isFrozenImpl(address caller, address relayer) public {
         ClientState memory cState = ClientState({
             l2ChainId: "fake-l2",
             l1ClientId: 10,
@@ -355,9 +379,11 @@ contract StateLensIcs23SmtClientTest is Test {
             ConsensusState({timestamp: 9999, stateRoot: keccak256("old-root")});
         vm.startPrank(ibcHandler);
         client.createClient(
+            caller,
             999,
             StateLensIcs23SmtLib.encode(cState),
-            StateLensIcs23SmtLib.encode(cs)
+            StateLensIcs23SmtLib.encode(cs),
+            relayer
         );
 
         lightClient.setIsFrozenReturn(true);
