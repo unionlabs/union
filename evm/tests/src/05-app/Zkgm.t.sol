@@ -254,9 +254,7 @@ contract ZkgmTests is Test {
         TestZkgm implementation = new TestZkgm();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
-            abi.encodeCall(
-                UCS03Zkgm.initialize, (handler, address(this), IWETH(weth))
-            )
+            abi.encodeCall(UCS03Zkgm.initialize, (handler, address(this)))
         );
         zkgm = TestZkgm(address(proxy));
         multiplexTarget = new TestMultiplexTarget(address(zkgm));
@@ -264,70 +262,22 @@ contract ZkgmTests is Test {
 
     function test_proxyInitialization_ok(
         address handlerAddress,
-        address ownerAddress,
-        address wethAddress
+        address ownerAddress
     ) public {
         vm.assume(handlerAddress != address(0));
         vm.assume(ownerAddress != address(0));
-        vm.assume(wethAddress != address(0));
         TestZkgm implementation = new TestZkgm();
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeCall(
                 UCS03Zkgm.initialize,
-                (
-                    IIBCModulePacket(handlerAddress),
-                    ownerAddress,
-                    IWETH(wethAddress)
-                )
+                (IIBCModulePacket(handlerAddress), ownerAddress)
             )
         );
         TestZkgm _zkgm = TestZkgm(address(proxy));
 
         assertEq(address(_zkgm.ibcHandler()), handlerAddress);
         assertEq(_zkgm.owner(), ownerAddress);
-        assertEq(address(_zkgm.weth()), wethAddress);
-    }
-
-    function test_lastChannelFromPath_ok_1(
-        uint32 a
-    ) public {
-        vm.assume(a > 0);
-        assertEq(
-            ZkgmLib.lastChannelFromPath(ZkgmLib.updateChannelPath(0, a)), a
-        );
-    }
-
-    function test_lastChannelFromPath_ok_2(uint32 a, uint32 b) public {
-        vm.assume(a > 0);
-        vm.assume(b > 0);
-        assertEq(
-            ZkgmLib.lastChannelFromPath(
-                ZkgmLib.updateChannelPath(ZkgmLib.updateChannelPath(0, a), b)
-            ),
-            b
-        );
-    }
-
-    function test_lastChannelFromPath_ok_3(
-        uint32 a,
-        uint32 b,
-        uint32 c
-    ) public {
-        vm.assume(a > 0);
-        vm.assume(b > 0);
-        vm.assume(c > 0);
-        assertEq(
-            ZkgmLib.lastChannelFromPath(
-                ZkgmLib.updateChannelPath(
-                    ZkgmLib.updateChannelPath(
-                        ZkgmLib.updateChannelPath(0, a), b
-                    ),
-                    c
-                )
-            ),
-            c
-        );
     }
 
     function test_channelPath_ok(
@@ -1385,7 +1335,7 @@ contract ZkgmTests is Test {
                         salt: salt,
                         path: path,
                         instruction: Instruction({
-                            version: ZkgmLib.INSTR_VERSION_1,
+                            version: ZkgmLib.INSTR_VERSION_0,
                             opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
                             operand: ZkgmLib.encodeFungibleAssetOrder(order)
                         })
@@ -1417,7 +1367,7 @@ contract ZkgmTests is Test {
                         salt: salt,
                         path: path,
                         instruction: Instruction({
-                            version: ZkgmLib.INSTR_VERSION_1,
+                            version: ZkgmLib.INSTR_VERSION_0,
                             opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
                             operand: ZkgmLib.encodeFungibleAssetOrder(order)
                         })
@@ -1674,11 +1624,11 @@ contract ZkgmTests is Test {
         address token,
         uint256 amount
     ) public {
-        assertEq(zkgm.channelBalanceV2(sourceChannelId, path, token), 0);
+        assertEq(zkgm.channelBalance(sourceChannelId, path, token), 0);
         zkgm.doIncreaseOutstanding(sourceChannelId, path, token, amount);
-        assertEq(zkgm.channelBalanceV2(sourceChannelId, path, token), amount);
+        assertEq(zkgm.channelBalance(sourceChannelId, path, token), amount);
         zkgm.doDecreaseOutstanding(sourceChannelId, path, token, amount);
-        assertEq(zkgm.channelBalanceV2(sourceChannelId, path, token), 0);
+        assertEq(zkgm.channelBalance(sourceChannelId, path, token), 0);
     }
 
     function test_onRecvPacket_transferNative_unwrap_ok(
@@ -1777,9 +1727,7 @@ contract ZkgmTests is Test {
                 quoteAmount: baseAmount
             })
         );
-        assertEq(
-            zkgm.channelBalanceV2(destinationChannelId, path, quoteToken), 0
-        );
+        assertEq(zkgm.channelBalance(destinationChannelId, path, quoteToken), 0);
     }
 
     function test_onRecvPacket_transferNative_unwrap_channel_noOutstanding(
@@ -1907,7 +1855,7 @@ contract ZkgmTests is Test {
                         salt: salt,
                         path: path,
                         instruction: Instruction({
-                            version: ZkgmLib.INSTR_VERSION_1,
+                            version: ZkgmLib.INSTR_VERSION_0,
                             opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
                             operand: ZkgmLib.encodeFungibleAssetOrder(order)
                         })
@@ -2186,9 +2134,7 @@ contract ZkgmTests is Test {
                 Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
             )
         );
-        assertEq(
-            zkgm.channelBalanceV2(sourceChannelId, path, address(erc20)), 0
-        );
+        assertEq(zkgm.channelBalance(sourceChannelId, path, address(erc20)), 0);
     }
 
     function test_onAckPacket_transfer_failureAck_mintRefund(

@@ -24,11 +24,10 @@ use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::{
     com::{
-        decode_fungible_asset, Ack, Batch, BatchAck, Forward, FungibleAssetOrder,
-        FungibleAssetOrderAck, Instruction, Multiplex, ZkgmPacket, ACK_ERR_ONLY_MAKER,
-        FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0,
-        INSTR_VERSION_1, OP_BATCH, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX,
-        TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
+        Ack, Batch, BatchAck, Forward, FungibleAssetOrder, FungibleAssetOrderAck, Instruction,
+        Multiplex, ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL,
+        FORWARD_SALT_MAGIC, INSTR_VERSION_0, OP_BATCH, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER,
+        OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
     },
     msg::{EurekaMsg, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg},
     state::{
@@ -314,12 +313,12 @@ fn timeout_internal(
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
-            if instruction.version > INSTR_VERSION_1 {
+            if instruction.version > INSTR_VERSION_0 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
             }
-            let order = decode_fungible_asset(&instruction)?;
+            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
             refund(deps, path, packet.source_channel_id, order)
         }
         OP_BATCH => {
@@ -477,12 +476,12 @@ fn acknowledge_internal(
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
-            if instruction.version > INSTR_VERSION_1 {
+            if instruction.version > INSTR_VERSION_0 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
             }
-            let order = decode_fungible_asset(&instruction)?;
+            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
             let order_ack = if successful {
                 Some(FungibleAssetOrderAck::abi_decode_params(&ack, true)?)
             } else {
@@ -764,12 +763,12 @@ fn execute_internal(
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
-            if instruction.version > INSTR_VERSION_1 {
+            if instruction.version > INSTR_VERSION_0 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
             }
-            let order = decode_fungible_asset(&instruction)?;
+            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
             execute_fungible_asset_order(
                 deps,
                 env,
@@ -1424,12 +1423,12 @@ pub fn verify_internal(
 ) -> Result<(), ContractError> {
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
-            if instruction.version != INSTR_VERSION_1 {
+            if instruction.version != INSTR_VERSION_0 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
             }
-            let order = decode_fungible_asset(instruction)?;
+            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
             verify_fungible_asset_order(deps, info, channel_id, path, &order, response)
         }
         OP_BATCH => {
@@ -1779,7 +1778,7 @@ fn transfer(
                 salt: salt.into(),
                 path: U256::ZERO,
                 instruction: Instruction {
-                    version: INSTR_VERSION_1,
+                    version: INSTR_VERSION_0,
                     opcode: OP_FUNGIBLE_ASSET_ORDER,
                     operand: FungibleAssetOrder {
                         sender: info.sender.as_bytes().to_vec().into(),
