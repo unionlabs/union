@@ -176,7 +176,7 @@ library CometblsClientLib {
 
     function chainIdToString(
         bytes31 source
-    ) external pure returns (string memory result) {
+    ) internal pure returns (string memory result) {
         uint8 offset = 0;
         while (source[offset] == 0 && offset < 31) {
             offset++;

@@ -42,13 +42,13 @@ library StateLensIcs23SmtLib {
 
     function encode(
         ConsensusState memory consensusState
-    ) public pure returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return abi.encode(consensusState.timestamp, consensusState.stateRoot);
     }
 
     function encode(
         ClientState memory clientState
-    ) public pure returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
