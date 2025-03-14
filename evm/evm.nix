@@ -236,7 +236,7 @@ _: {
         }:
         mkCi false (
           pkgs.writeShellApplication {
-            name = "eth-deploy-full";
+            name = "eth-deploy-ibc";
             runtimeInputs = [ self'.packages.forge ];
             text = ''
               ${ensureAtRepositoryRoot}
@@ -313,10 +313,13 @@ _: {
 
               jq -r 'to_entries | map([.key, .value.args, .value.contract]) | .[] | @tsv' "$PROJECT_ROOT"/contracts.json | \
                 while IFS=$'\t' read -r address args contract; do
-                  PRIVATE_KEY=${private-key} \
-                  FOUNDRY_PROFILE="script" \
-                    forge verify-contract --force --watch "$address" "$contract" --constructor-args "$args" --api-key "$3" \
-                      --rpc-url ${rpc-url}
+                  if [ "$address" != "0x0000000000000000000000000000000000000000" ]
+                  then
+                    PRIVATE_KEY=${private-key} \
+                    FOUNDRY_PROFILE="script" \
+                      forge verify-contract --force --watch "$address" "$contract" --constructor-args "$args" --api-key "$3" \
+                        --rpc-url ${rpc-url}
+                  fi
                 done
 
               popd
