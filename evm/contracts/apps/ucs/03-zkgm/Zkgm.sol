@@ -1,13 +1,13 @@
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
-import "@openzeppelin/token/ERC20/IERC20.sol";
-import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "solady/utils/CREATE3.sol";
 import "solady/utils/LibBit.sol";
@@ -902,20 +902,7 @@ contract UCS03Zkgm is
             }
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            return executeFungibleAssetOrder(
-                ibcPacket,
-                relayer,
-                path,
-                order.receiver,
-                order.baseToken,
-                order.baseAmount,
-                order.baseTokenSymbol,
-                order.baseTokenName,
-                order.baseTokenDecimals,
-                order.baseTokenPath,
-                order.quoteToken,
-                order.quoteAmount
-            );
+            return executeFungibleAssetOrder(ibcPacket, relayer, path, order);
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
@@ -1184,32 +1171,24 @@ contract UCS03Zkgm is
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
-        bytes calldata orderReceiver,
-        bytes calldata orderBaseToken,
-        uint256 orderBaseAmount,
-        string calldata orderBaseTokenSymbol,
-        string calldata orderBaseTokenName,
-        uint8 orderBaseTokenDecimals,
-        uint256 orderBaseTokenPath,
-        bytes calldata orderQuoteToken,
-        uint256 orderQuoteAmount
+        FungibleAssetOrder calldata order
     ) internal returns (bytes memory) {
         (address wrappedToken, bytes32 wrappedTokenSalt) =
         internalPredictWrappedToken(
-            path, ibcPacket.destinationChannelId, orderBaseToken
+            path, ibcPacket.destinationChannelId, order.baseToken
         );
-        address quoteToken = address(bytes20(orderQuoteToken));
-        address receiver = address(bytes20(orderReceiver));
-        bool baseAmountCoversQuoteAmount = orderBaseAmount >= orderQuoteAmount;
+        address quoteToken = address(bytes20(order.quoteToken));
+        address receiver = address(bytes20(order.receiver));
+        bool baseAmountCoversQuoteAmount = order.baseAmount >= order.quoteAmount;
         if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
             internalDeployWrappedToken(
                 ibcPacket.destinationChannelId,
                 path,
                 wrappedToken,
                 wrappedTokenSalt,
-                orderBaseTokenSymbol,
-                orderBaseTokenName,
-                orderBaseTokenDecimals
+                order.baseTokenSymbol,
+                order.baseTokenName,
+                order.baseTokenDecimals
             );
             return internalProtocolFill(
                 ibcPacket.destinationChannelId,
@@ -1218,11 +1197,11 @@ contract UCS03Zkgm is
                 quoteToken,
                 receiver,
                 relayer,
-                orderBaseAmount,
-                orderQuoteAmount,
+                order.baseAmount,
+                order.quoteAmount,
                 true
             );
-        } else if (orderBaseTokenPath != 0 && baseAmountCoversQuoteAmount) {
+        } else if (order.baseTokenPath != 0 && baseAmountCoversQuoteAmount) {
             return internalProtocolFill(
                 ibcPacket.destinationChannelId,
                 path,
@@ -1230,8 +1209,8 @@ contract UCS03Zkgm is
                 quoteToken,
                 receiver,
                 relayer,
-                orderBaseAmount,
-                orderQuoteAmount,
+                order.baseAmount,
+                order.quoteAmount,
                 false
             );
         } else {

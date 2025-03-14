@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import "../../../contracts/lib/ICS23.sol";
-import "@openzeppelin/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract ICS23Tests is Test {
     using Ops for bytes;

@@ -26,38 +26,38 @@ _: {
       solady = pkgs.fetchFromGitHub {
         owner = "vectorized";
         repo = "solady";
-        rev = "v0.0.292";
-        hash = "sha256-74No9at4wi0K0bgfjRUYMfvtg2NmWA7yY2MnM1jFAY0=";
+        rev = "v0.1.12";
+        hash = "sha256-XsIXs3lj5gddBzswNFY1DhnlhUQx+ITf6lvBPSkMY7c=";
       };
       forge-std = pkgs.fetchFromGitHub {
         owner = "foundry-rs";
         repo = "forge-std";
-        rev = "v1.9.3";
-        hash = "sha256-v9aFV4TQqbYPNBSRt4QLZMD85fIXTtBQ8rGYPRw2qmE=";
+        rev = "v1.9.6";
+        hash = "sha256-4y1Hf0Te2oJxwKBOgVBEHZeKYt7hs+wTgdIO+rItj0E=";
         fetchSubmodules = true;
       };
       openzeppelin = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-contracts";
-        rev = "v5.0.2";
+        rev = "v5.2.0";
         hash = "sha256-Ln721yNPzbtn36/meSmaszF6iCsJUP7iG35Je5x8x1Q=";
       };
       openzeppelin-upgradeable = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-contracts-upgradeable";
-        rev = "v5.0.2";
-        hash = "sha256-/TCv1EF3HPldTsXKThuc3L2DmlyodiduSMwYymR5idM=";
+        rev = "v5.2.0";
+        hash = "sha256-AKPTlbGkIPK7yYQJH9cEdvHSF5ZM5hFWmaxtEkMhoxQ=";
       };
       openzeppelin-foundry-upgrades = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-foundry-upgrades";
-        rev = "v0.2.1";
-        hash = "sha256-tQ6J5X/kpsGqHfapkDkaS2apbjL+I63vgQEk1vQI/c0=";
+        rev = "v0.4.0";
+        hash = "sha256-e9hnHibo0HXr+shOS6tNEOTu65DyCpwP0DjPRznqMxU=";
       };
       libraries = pkgs.linkFarm "evm-libraries" [
         {
           name = "solidity-stringutils";
-          path = "${solidity-stringutils}/src";
+          path = "${solidity-stringutils}";
         }
         {
           name = "solidity-bytes-utils";
@@ -73,18 +73,18 @@ _: {
         }
         {
           name = "@openzeppelin";
-          path = "${openzeppelin}/contracts";
+          path = "${openzeppelin}";
         }
         {
           name = "@openzeppelin-upgradeable";
-          path = "${openzeppelin-upgradeable}/contracts";
+          path = "${openzeppelin-upgradeable}";
         }
         {
           name = "@openzeppelin-foundry-upgradeable";
           path = "${openzeppelin-foundry-upgrades}/src";
         }
       ];
-      evmLibs = pkgs.stdenv.mkDerivation {
+      evm-libs = pkgs.stdenv.mkDerivation {
         name = "evm-libs-src";
         phases = [
           "installPhase"
@@ -95,23 +95,6 @@ _: {
           mkdir -p $out
           cp -rL $src/* $out
         '';
-        fixupPhase = ''
-          substituteInPlace $out/@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
-
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/Utils.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
-
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
-        '';
       };
       evmSources = pkgs.stdenv.mkDerivation {
         name = "evm-union-src";
@@ -119,7 +102,7 @@ _: {
           "installPhase"
           "fixupPhase"
         ];
-        src = evmLibs;
+        src = evm-libs;
         installPhase = ''
           mkdir -p $out/libs
           cp -rL $src/* $out/libs
@@ -253,7 +236,7 @@ _: {
         }:
         mkCi false (
           pkgs.writeShellApplication {
-            name = "eth-deploy-full";
+            name = "eth-deploy-ibc";
             runtimeInputs = [ self'.packages.forge ];
             text = ''
               ${ensureAtRepositoryRoot}
@@ -330,10 +313,13 @@ _: {
 
               jq -r 'to_entries | map([.key, .value.args, .value.contract]) | .[] | @tsv' "$PROJECT_ROOT"/contracts.json | \
                 while IFS=$'\t' read -r address args contract; do
-                  PRIVATE_KEY=${private-key} \
-                  FOUNDRY_PROFILE="script" \
-                    forge verify-contract --force --watch "$address" "$contract" --constructor-args "$args" --api-key "$3" \
-                      --rpc-url ${rpc-url}
+                  if [ "$address" != "0x0000000000000000000000000000000000000000" ]
+                  then
+                    PRIVATE_KEY=${private-key} \
+                    FOUNDRY_PROFILE="script" \
+                      forge verify-contract --force --watch "$address" "$contract" --constructor-args "$args" --api-key "$3" \
+                        --rpc-url ${rpc-url}
+                  fi
                 done
 
               popd
@@ -522,6 +508,8 @@ _: {
           }
         );
 
+        inherit evm-libs;
+
         evm-contracts = mkCi (system == "x86_64-linux") (
           pkgs.stdenv.mkDerivation {
             name = "evm-contracts";
@@ -632,7 +620,7 @@ _: {
           runtimeInputs = [ self'.packages.forge ];
           text = ''
             ${ensureAtRepositoryRoot}
-            FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
+            FOUNDRY_LIBS=["${evm-libs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
           '';
         };
 

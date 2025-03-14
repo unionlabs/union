@@ -1,14 +1,14 @@
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
-import "@openzeppelin/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/token/ERC721/ERC721.sol";
-import "@openzeppelin/token/ERC721/IERC721.sol";
-import "@openzeppelin/token/ERC721/extensions/IERC721Metadata.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 import "solady/utils/LibString.sol";
 

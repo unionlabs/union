@@ -1,6 +1,6 @@
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./IZkgmERC20.sol";
 
 contract ZkgmERC20 is ERC20, IZkgmERC20 {

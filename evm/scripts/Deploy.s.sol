@@ -7,9 +7,9 @@ import "forge-std/Script.sol";
 import "solady/utils/CREATE3.sol";
 import "solady/utils/LibString.sol";
 import "@openzeppelin-foundry-upgradeable/Upgrades.sol";
-import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
-import "@openzeppelin/proxy/ERC1967/ERC1967Utils.sol";
-import "@openzeppelin/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../contracts/Multicall.sol";
 import "../contracts/core/OwnableIBCHandler.sol";
@@ -709,7 +709,7 @@ contract GetDeployed is Script {
         proxyHandler.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyHandler = proxyHandler.serialize(
@@ -724,7 +724,7 @@ contract GetDeployed is Script {
         proxyComet.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyComet = proxyComet.serialize(
@@ -741,7 +741,7 @@ contract GetDeployed is Script {
         proxyStateLensIcs23MptClient.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyStateLensIcs23MptClient = proxyStateLensIcs23MptClient.serialize(
@@ -761,7 +761,7 @@ contract GetDeployed is Script {
         proxyUCS00.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyUCS00 = proxyUCS00.serialize(
@@ -780,7 +780,7 @@ contract GetDeployed is Script {
         proxyUCS01.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyUCS01 = proxyUCS01.serialize(
@@ -798,7 +798,7 @@ contract GetDeployed is Script {
         proxyUCS02.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyUCS02 = proxyUCS02.serialize(
@@ -816,7 +816,7 @@ contract GetDeployed is Script {
         proxyUCS03.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyUCS03 = proxyUCS03.serialize(

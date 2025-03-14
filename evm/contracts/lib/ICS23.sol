@@ -1,6 +1,6 @@
 pragma solidity ^0.8.27;
 
-import {Math} from "@openzeppelin/utils/math/Math.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import "./UnionICS23.sol";
 
 library Ics23 {

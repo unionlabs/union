@@ -1,9 +1,9 @@
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
 import "../core/02-client/ILightClient.sol";
 import "../core/24-host/IBCStore.sol";
@@ -176,7 +176,7 @@ library CometblsClientLib {
 
     function chainIdToString(
         bytes31 source
-    ) external pure returns (string memory result) {
+    ) internal pure returns (string memory result) {
         uint8 offset = 0;
         while (source[offset] == 0 && offset < 31) {
             offset++;

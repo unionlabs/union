@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import "../../../contracts/clients/StateLensIcs23SmtClient.sol";
-import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /*//////////////////////////////////////////////////////////////
                         MOCKS

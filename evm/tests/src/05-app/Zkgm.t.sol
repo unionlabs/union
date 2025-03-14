@@ -4,9 +4,9 @@ import "forge-std/Test.sol";
 
 import "solady/utils/LibBytes.sol";
 
-import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
-import "@openzeppelin/token/ERC20/ERC20.sol";
-import "@openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "../../../contracts/core/Types.sol";
 import "../../../contracts/core/25-handler/IBCHandler.sol";
