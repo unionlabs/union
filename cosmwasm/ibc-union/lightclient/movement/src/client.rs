@@ -1,4 +1,4 @@
-use cosmwasm_std::Empty;
+use cosmwasm_std::{Addr, Empty};
 use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
@@ -94,16 +94,19 @@ impl IbcClient for MovementLightClient {
     }
 
     fn verify_creation(
+        _caller: Addr,
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
+        _relayer: Addr,
     ) -> Result<ClientCreationResult<Self>, IbcClientError<MovementLightClient>> {
         Ok(ClientCreationResult::new())
     }
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
+        caller: Addr,
         header: Self::Header,
-        caller: cosmwasm_std::Addr,
+        _relayer: Addr,
     ) -> Result<StateUpdate<Self>, ibc_union_light_client::IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         // Check if caller is whitelisted
@@ -174,7 +177,9 @@ impl IbcClient for MovementLightClient {
 
     fn misbehaviour(
         _ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         _misbehaviour: Self::Misbehaviour,
+        _relayer: Addr,
     ) -> Result<Self::ClientState, IbcClientError<Self>> {
         unimplemented!()
     }

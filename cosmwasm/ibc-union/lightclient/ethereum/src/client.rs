@@ -2,7 +2,7 @@ use beacon_api_types::{
     chain_spec::{ChainSpec, Mainnet, Minimal, PresetBaseKind},
     slot::Slot,
 };
-use cosmwasm_std::{Empty, StdError, StdResult};
+use cosmwasm_std::{Addr, Empty, StdError, StdResult};
 use depolama::{KeyCodec, Prefix, Store, ValueCodec};
 use ethereum_light_client_types::{
     ClientState, ClientStateV1, ConsensusState, Header, LightClientUpdate, Misbehaviour,
@@ -115,8 +115,10 @@ impl IbcClient for EthereumLightClient {
     }
 
     fn verify_creation(
+        _caller: Addr,
         client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
+        _relayer: Addr,
     ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>> {
         let ClientState::V1(client_state) = client_state;
         let Some(initial_sync_committee) = client_state.initial_sync_committee.as_ref() else {
@@ -151,8 +153,9 @@ impl IbcClient for EthereumLightClient {
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         header: Header,
-        _caller: cosmwasm_std::Addr,
+        _relayer: Addr,
     ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
         let ClientState::V1(client_state) = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
@@ -189,7 +192,9 @@ impl IbcClient for EthereumLightClient {
 
     fn misbehaviour(
         ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         misbehaviour: Self::Misbehaviour,
+        _relayer: Addr,
     ) -> Result<Self::ClientState, IbcClientError<Self>> {
         let consensus_state =
             ctx.read_self_consensus_state(misbehaviour.trusted_height.height())?;

@@ -1,6 +1,6 @@
 use beacon_api_types::{chain_spec::Mainnet, deneb};
 use berachain_light_client_types::{ClientState, ConsensusState, Header};
-use cosmwasm_std::Empty;
+use cosmwasm_std::{Addr, Empty};
 use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
@@ -90,8 +90,10 @@ impl IbcClient for BerachainLightClient {
     }
 
     fn verify_creation(
+        _caller: Addr,
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
+        _relayer: Addr,
     ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>> {
         Ok(ClientCreationResult::new())
     }
@@ -99,8 +101,9 @@ impl IbcClient for BerachainLightClient {
     // TODO: rearrange to avoid the clones
     fn verify_header(
         ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         header: Self::Header,
-        _caller: cosmwasm_std::Addr,
+        _relayer: Addr,
     ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 
@@ -160,7 +163,9 @@ impl IbcClient for BerachainLightClient {
 
     fn misbehaviour(
         _ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         _misbehaviour: Self::Misbehaviour,
+        _relayer: Addr,
     ) -> Result<Self::ClientState, IbcClientError<Self>> {
         Err(Error::Unimplemented.into())
     }

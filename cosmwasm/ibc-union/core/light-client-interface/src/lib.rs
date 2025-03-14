@@ -293,21 +293,26 @@ pub trait IbcClient: Sized {
 
     /// Verify the initial state of the client
     fn verify_creation(
+        caller: Addr,
         client_state: &Self::ClientState,
         consensus_state: &Self::ConsensusState,
+        relayer: Addr,
     ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>>;
 
     /// Verify `header` against the trusted state (`client_state` and `consensus_state`)
     /// and return `(updated height, updated client state, updated consensus state)`
     fn verify_header(
         ctx: IbcClientCtx<Self>,
-        header: Self::Header,
         caller: Addr,
+        header: Self::Header,
+        relayer: Addr,
     ) -> Result<StateUpdate<Self>, IbcClientError<Self>>;
 
     fn misbehaviour(
         ctx: IbcClientCtx<Self>,
+        caller: Addr,
         misbehaviour: Self::Misbehaviour,
+        relayer: Addr,
     ) -> Result<Self::ClientState, IbcClientError<Self>>;
 }
 
@@ -354,9 +359,11 @@ pub fn query<T: IbcClient>(
         QueryMsg::VerifyCreation {
             // NOTE(aeryz): we don't need `client_id` since we already got the client and
             // consensus states
+            caller,
             client_id: _,
             client_state,
             consensus_state,
+            relayer,
         } => {
             let client_state = T::ClientState::decode_as::<T::Encoding>(&client_state)
                 .map_err(|e| IbcClientError::Decode(DecodeError::ClientState(e)))?;
@@ -364,7 +371,12 @@ pub fn query<T: IbcClient>(
             let consensus_state = T::ConsensusState::decode(&consensus_state)
                 .map_err(|e| IbcClientError::Decode(DecodeError::ConsensusState(e)))?;
 
-            let client_creation = T::verify_creation(&client_state, &consensus_state)?;
+            let client_creation = T::verify_creation(
+                Addr::unchecked(caller),
+                &client_state,
+                &consensus_state,
+                Addr::unchecked(relayer),
+            )?;
 
             let response = VerifyCreationResponse {
                 latest_height: T::get_latest_height(&client_state),
@@ -418,7 +430,11 @@ pub fn query<T: IbcClient>(
 
             to_json_binary(&()).map_err(Into::into)
         }
-        QueryMsg::UpdateState { client_id, caller } => {
+        QueryMsg::UpdateState {
+            caller,
+            client_id,
+            relayer,
+        } => {
             let ibc_host = deps.storage.read_item::<IbcHost>()?;
             let message = deps.querier.read_item::<QueryStore>(&ibc_host)?;
             let header =
@@ -431,8 +447,9 @@ pub fn query<T: IbcClient>(
                 storage_writes,
             } = T::verify_header(
                 IbcClientCtx::new(client_id, ibc_host, deps, env),
-                header,
                 Addr::unchecked(caller),
+                header,
+                Addr::unchecked(relayer),
             )?;
 
             to_json_binary(
@@ -445,14 +462,21 @@ pub fn query<T: IbcClient>(
             )
             .map_err(Into::into)
         }
-        QueryMsg::Misbehaviour { client_id, message } => {
+        QueryMsg::Misbehaviour {
+            caller,
+            client_id,
+            message,
+            relayer,
+        } => {
             let misbehaviour = T::Misbehaviour::decode_as::<T::Encoding>(&message)
                 .map_err(DecodeError::Misbehaviour)?;
 
             let ibc_host = deps.storage.read_item::<IbcHost>()?;
             let client_state = T::misbehaviour(
                 IbcClientCtx::new(client_id, ibc_host, deps, env),
+                Addr::unchecked(caller),
                 misbehaviour,
+                Addr::unchecked(relayer),
             )?;
 
             to_json_binary(

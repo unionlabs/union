@@ -65,9 +65,11 @@ pub enum QueryMsg {
         client_id: u32,
     },
     VerifyCreation {
+        caller: String,
         client_id: u32,
         client_state: Bytes,
         consensus_state: Bytes,
+        relayer: String,
     },
     VerifyMembership {
         client_id: u32,
@@ -83,11 +85,14 @@ pub enum QueryMsg {
         path: Bytes,
     },
     UpdateState {
-        client_id: u32,
         caller: String,
+        client_id: u32,
+        relayer: String,
     },
     Misbehaviour {
+        caller: String,
         client_id: u32,
         message: Bytes,
+        relayer: String,
     },
 }

@@ -4,7 +4,7 @@ use cometbls_light_client_types::{
     client_state::ClientState, consensus_state::ConsensusState, header::Header,
     misbehaviour::Misbehaviour,
 };
-use cosmwasm_std::Empty;
+use cosmwasm_std::{Addr, Empty};
 use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
@@ -121,16 +121,19 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
     }
 
     fn verify_creation(
+        _caller: Addr,
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
+        _relayer: Addr,
     ) -> Result<ClientCreationResult<Self>, ibc_union_light_client::IbcClientError<Self>> {
         Ok(ClientCreationResult::new())
     }
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         header: Self::Header,
-        _caller: cosmwasm_std::Addr,
+        _relayer: Addr,
     ) -> Result<StateUpdate<Self>, ibc_union_light_client::IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
@@ -148,7 +151,9 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
 
     fn misbehaviour(
         ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         misbehaviour: Self::Misbehaviour,
+        _relayer: Addr,
     ) -> Result<Self::ClientState, IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 

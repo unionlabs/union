@@ -123,10 +123,12 @@ pub fn execute(
                     Ok(Response::default())
                 }
                 IbcUnionMsg::OnRecvPacket {
+                    caller,
                     packet,
                     relayer,
                     relayer_msg,
                 } => {
+                    let caller = deps.api.addr_validate(&caller)?;
                     let relayer = deps.api.addr_validate(&relayer)?;
                     if EXECUTING_PACKET.exists(deps.storage) {
                         Err(ContractError::AlreadyExecuting)
@@ -136,6 +138,7 @@ pub fn execute(
                             wasm_execute(
                                 env.contract.address,
                                 &ExecuteMsg::InternalExecutePacket {
+                                    caller,
                                     packet,
                                     relayer,
                                     relayer_msg,
@@ -147,16 +150,23 @@ pub fn execute(
                     }
                 }
                 IbcUnionMsg::OnAcknowledgementPacket {
+                    caller,
                     packet,
                     acknowledgement,
                     relayer,
                 } => {
+                    let caller = deps.api.addr_validate(&caller)?;
                     let relayer = deps.api.addr_validate(&relayer)?;
-                    acknowledge_packet(deps, env, info, packet, relayer, acknowledgement)
+                    acknowledge_packet(deps, env, info, caller, packet, relayer, acknowledgement)
                 }
-                IbcUnionMsg::OnTimeoutPacket { packet, relayer } => {
+                IbcUnionMsg::OnTimeoutPacket {
+                    caller,
+                    packet,
+                    relayer,
+                } => {
+                    let caller = deps.api.addr_validate(&caller)?;
                     let relayer = deps.api.addr_validate(&relayer)?;
-                    timeout_packet(deps, env, info, packet, relayer)
+                    timeout_packet(deps, env, info, caller, packet, relayer)
                 }
                 IbcUnionMsg::OnChannelCloseInit { .. }
                 | IbcUnionMsg::OnChannelCloseConfirm { .. } => {
@@ -168,6 +178,7 @@ pub fn execute(
             }
         }
         ExecuteMsg::InternalExecutePacket {
+            caller,
             packet,
             relayer,
             relayer_msg,
@@ -175,7 +186,7 @@ pub fn execute(
             if info.sender != env.contract.address {
                 Err(ContractError::OnlySelf)
             } else {
-                execute_packet(deps, env, info, packet, relayer, relayer_msg)
+                execute_packet(deps, env, info, caller, packet, relayer, relayer_msg)
             }
         }
         ExecuteMsg::InternalWriteAck { ack } => {
@@ -265,6 +276,7 @@ fn timeout_packet(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    caller: Addr,
     packet: Packet,
     relayer: Addr,
 ) -> Result<Response, ContractError> {
@@ -290,6 +302,7 @@ fn timeout_packet(
         deps,
         env,
         info,
+        caller,
         packet,
         relayer,
         zkgm_packet.salt.into(),
@@ -305,6 +318,7 @@ fn timeout_internal(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    caller: Addr,
     packet: Packet,
     relayer: Addr,
     salt: H256,
@@ -334,6 +348,7 @@ fn timeout_internal(
                     deps.branch(),
                     env.clone(),
                     info.clone(),
+                    caller.clone(),
                     packet.clone(),
                     relayer.clone(),
                     derive_batch_salt(i.try_into().unwrap(), salt),
@@ -354,7 +369,7 @@ fn timeout_internal(
                 });
             }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
-            timeout_multiplex(deps, packet, relayer, path, multiplex)
+            timeout_multiplex(deps, caller, packet, relayer, path, multiplex)
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
@@ -364,6 +379,7 @@ fn timeout_internal(
 
 fn timeout_multiplex(
     deps: DepsMut,
+    caller: Addr,
     packet: Packet,
     relayer: Addr,
     path: U256,
@@ -396,8 +412,9 @@ fn timeout_multiplex(
         Ok(Response::new().add_message(wasm_execute(
             sender_addr,
             &IbcUnionMsg::OnTimeoutPacket {
+                caller: caller.into(),
                 packet: multiplex_packet,
-                relayer: relayer.to_string(),
+                relayer: relayer.into(),
             },
             vec![],
         )?))
@@ -413,6 +430,7 @@ fn acknowledge_packet(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    caller: Addr,
     packet: Packet,
     relayer: Addr,
     ack: Bytes,
@@ -447,6 +465,7 @@ fn acknowledge_packet(
         deps,
         env,
         info,
+        caller,
         packet,
         relayer,
         zkgm_packet.salt.into(),
@@ -466,6 +485,7 @@ fn acknowledge_internal(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    caller: Addr,
     packet: Packet,
     relayer: Addr,
     salt: H256,
@@ -509,6 +529,7 @@ fn acknowledge_internal(
                     deps.branch(),
                     env.clone(),
                     info.clone(),
+                    caller.clone(),
                     packet.clone(),
                     relayer.clone(),
                     derive_batch_salt(i.try_into().unwrap(), salt),
@@ -534,7 +555,9 @@ fn acknowledge_internal(
                 });
             }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
-            acknowledge_multiplex(deps, packet, relayer, path, multiplex, successful, ack)
+            acknowledge_multiplex(
+                deps, caller, packet, relayer, path, multiplex, successful, ack,
+            )
         }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
@@ -674,8 +697,10 @@ fn acknowledge_fungible_asset_order(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn acknowledge_multiplex(
     deps: DepsMut,
+    caller: Addr,
     packet: Packet,
     relayer: Addr,
     path: U256,
@@ -706,9 +731,10 @@ fn acknowledge_multiplex(
         Ok(Response::new().add_message(wasm_execute(
             sender_addr,
             &IbcUnionMsg::OnAcknowledgementPacket {
+                caller: caller.into(),
                 packet: multiplex_packet,
                 acknowledgement: ack,
-                relayer: relayer.to_string(),
+                relayer: relayer.into(),
             },
             vec![],
         )?))
@@ -725,6 +751,7 @@ fn execute_packet(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    caller: Addr,
     packet: Packet,
     relayer: Addr,
     relayer_msg: Bytes,
@@ -734,6 +761,7 @@ fn execute_packet(
         deps.branch(),
         env,
         info,
+        caller,
         packet,
         relayer,
         relayer_msg,
@@ -754,6 +782,7 @@ fn execute_internal(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    caller: Addr,
     packet: Packet,
     relayer: Addr,
     relayer_msg: Bytes,
@@ -792,6 +821,7 @@ fn execute_internal(
                 deps,
                 env,
                 info,
+                caller,
                 packet,
                 relayer,
                 relayer_msg,
@@ -807,7 +837,16 @@ fn execute_internal(
                 });
             }
             let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
-            execute_multiplex(deps, env, packet, relayer, relayer_msg, path, multiplex)
+            execute_multiplex(
+                deps,
+                env,
+                caller,
+                packet,
+                relayer,
+                relayer_msg,
+                path,
+                multiplex,
+            )
         }
         OP_FORWARD => {
             if instruction.version > INSTR_VERSION_0 {
@@ -939,9 +978,11 @@ fn execute_forward(
         )?))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn execute_multiplex(
     deps: DepsMut,
     env: Env,
+    caller: Addr,
     packet: Packet,
     relayer: Addr,
     relayer_msg: Bytes,
@@ -972,6 +1013,7 @@ fn execute_multiplex(
             wasm_execute(
                 contract_address,
                 &IbcUnionMsg::OnRecvPacket {
+                    caller: caller.into(),
                     packet: multiplex_packet,
                     relayer: relayer.into(),
                     relayer_msg,
@@ -1009,6 +1051,7 @@ fn execute_batch(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    caller: Addr,
     packet: Packet,
     relayer: Addr,
     relayer_msg: Bytes,
@@ -1023,6 +1066,7 @@ fn execute_batch(
             deps.branch(),
             env.clone(),
             info.clone(),
+            caller.clone(),
             packet.clone(),
             relayer.clone(),
             relayer_msg.clone(),
