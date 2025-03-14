@@ -10,7 +10,6 @@ nix build .#ts-sdk -L
 
 ## How to publish
 
-
 First, bump `version` in `package.json`. Then:
 
 ```sh

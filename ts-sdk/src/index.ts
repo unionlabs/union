@@ -3,4 +3,4 @@ export function greet(name: string): string {
 }
 
 // Export EVM module
-export * as evm from './evm';
+export * as evm from "./evm"
