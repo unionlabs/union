@@ -384,27 +384,37 @@ CREATE OR REPLACE VIEW current_contribution_average AS (
 
 ALTER VIEW current_contribution_average SET (security_invoker = on);
 
+
+CREATE OR REPLACE FUNCTION ping_expiration_delay() RETURNS INTERVAL AS $$
+BEGIN
+  RETURN INTERVAL '3 minutes';
+END
+$$ LANGUAGE plpgsql SET search_path = '';
+
 -- Current contributor is the highest score in the queue with the contribution
 -- not done yet and it's status expired without payload submitted.
 CREATE OR REPLACE VIEW current_contributor_id AS
   SELECT qq.id
   FROM queue qq
+  -- Contribution hasn't been verified
   WHERE NOT EXISTS (
     SELECT c.id
     FROM contribution c
     WHERE c.id = qq.id
   ) AND (
+    -- Contribution slot expire later and ping delay isn't consumed
     EXISTS (
       SELECT cs.expire
       FROM contribution_status cs
       WHERE cs.id = qq.id
       AND cs.expire > now()
       AND (
-        cs.started > (now() - INTERVAL '10 minutes')
+        cs.started > (now() - public.ping_expiration_delay())
         OR
         EXISTS (SELECT * FROM public.user_ping up WHERE up.id = qq.id))
     )
     OR
+    -- Contribution has been submitted and awaiting verification
     EXISTS (
       SELECT cs.id
       FROM contribution_submitted cs
@@ -451,6 +461,29 @@ CREATE OR REPLACE VIEW current_payload_id AS
 
 ALTER VIEW current_payload_id SET (security_invoker = on);
 
+CREATE OR REPLACE PROCEDURE private.notify_slot_about_to_start(pos integer) AS $$
+BEGIN
+    IF (EXISTS (SELECT cq.id FROM public.current_queue cq WHERE cq.position = pos)) THEN
+      -- I know it's ugly, just for the alert email
+      -- The JWT here is the public anon one, already embedded in the frontend
+      -- It's secured by the private ping_secret
+      PERFORM net.http_post(
+          url := 'https://otfaamdxmgnkjqsosxye.supabase.co/functions/v1/ping',
+          headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90ZmFhbWR4bWdua2pxc29zeHllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjEzMjA5NDMsImV4cCI6MjAzNjg5Njk0M30.q91NJPFFHKJXnbhbpUYwsB0NmimtD7pGPx6PkbB_A3w"}'::jsonb,
+          body := concat(
+            '{',
+            '"position":"', pos::text, '",',
+            '"estimate_min":"', (pos * 3 / 60)::text, ' hours', '",',
+            '"estimate_max":"', (pos * 60 / 60)::text, ' hours', '",',
+            '"email":"', (SELECT u.email FROM auth.users u WHERE u.id = (SELECT cq.id FROM public.current_queue cq WHERE cq.position = 5)), '",',
+            '"secret":"', (SELECT private.ping_secret()), '"',
+            '}'
+          )::jsonb
+      );
+    END IF;
+END
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
 CREATE OR REPLACE PROCEDURE set_next_contributor() AS $$
 BEGIN
   IF (NOT EXISTS (SELECT cci.id FROM public.current_contributor_id cci)) THEN
@@ -466,28 +499,6 @@ BEGIN
           'user', (SELECT un.user_name FROM public.user_name un WHERE un.id = (SELECT cci.id FROM public.current_contributor_id cci))
         )
       );
-      IF (EXISTS (SELECT cq.id FROM public.current_queue cq WHERE cq.position = 5)) THEN
-        -- I know it's ugly, just for the alert email
-        -- The JWT here is the public anon one, already embedded in the frontend
-        -- 5th in the queue get alerted
-        PERFORM net.http_post(
-            url := 'https://otfaamdxmgnkjqsosxye.supabase.co/functions/v1/ping',
-            headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90ZmFhbWR4bWdua2pxc29zeHllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjEzMjA5NDMsImV4cCI6MjAzNjg5Njk0M30.q91NJPFFHKJXnbhbpUYwsB0NmimtD7pGPx6PkbB_A3w"}'::jsonb,
-            body := concat(
-              '{"email": "',
-              (SELECT u.email
-               FROM auth.users u
-               WHERE u.id = (
-                 SELECT cq.id
-                 FROM public.current_queue cq
-                 WHERE cq.position = 5
-               )),
-               '", "secret":"',
-               (SELECT private.ping_secret()),
-               '"}'
-            )::jsonb
-        );
-      END IF;
     END IF;
   END IF;
 END
