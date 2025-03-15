@@ -258,18 +258,6 @@ CREATE OR REPLACE VIEW user_name AS
 
 ALTER VIEW user_name SET (security_invoker = off);
 
--- CREATE OR REPLACE VIEW user_name AS
---   SELECT u.id,
---     COALESCE(
---       (SELECT c.display_name FROM public.code c WHERE c.user_id = u.id),
---       COALESCE(
---         u.raw_user_meta_data->>'user_name',
---         u.raw_user_meta_data->>'name'
---       )
---     ) AS user_name FROM auth.users u;
-
--- ALTER VIEW user_name SET (security_invoker = off);
-
 -------------------------
 -- Contribution Status --
 -------------------------
@@ -468,7 +456,7 @@ BEGIN
       -- The JWT here is the public anon one, already embedded in the frontend
       -- It's secured by the private ping_secret
       PERFORM net.http_post(
-          url := 'https://otfaamdxmgnkjqsosxye.supabase.co/functions/v1/ping',
+          url := 'https://otfaamdxmgnkjqsosxye.supabase.co/functions/v1/ping-v2',
           headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90ZmFhbWR4bWdua2pxc29zeHllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjEzMjA5NDMsImV4cCI6MjAzNjg5Njk0M30.q91NJPFFHKJXnbhbpUYwsB0NmimtD7pGPx6PkbB_A3w"}'::jsonb,
           body := concat(
             '{',
