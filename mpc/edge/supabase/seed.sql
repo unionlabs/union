@@ -463,7 +463,7 @@ BEGIN
             '"position":"', pos::text, '",',
             '"estimate_min":"', (pos * 3 / 60)::text, ' hours', '",',
             '"estimate_max":"', (pos * 60 / 60)::text, ' hours', '",',
-            '"email":"', (SELECT u.email FROM auth.users u WHERE u.id = (SELECT cq.id FROM public.current_queue cq WHERE cq.position = 5)), '",',
+            '"email":"', (SELECT u.email FROM auth.users u WHERE u.id = (SELECT cq.id FROM public.current_queue cq WHERE cq.position = pos)), '",',
             '"secret":"', (SELECT private.ping_secret()), '"',
             '}'
           )::jsonb
@@ -487,6 +487,9 @@ BEGIN
           'user', (SELECT un.user_name FROM public.user_name un WHERE un.id = (SELECT cci.id FROM public.current_contributor_id cci))
         )
       );
+      CALL private.notify_slot_about_to_start(500);
+      CALL private.notify_slot_about_to_start(100);
+      CALL private.notify_slot_about_to_start(50);
     END IF;
   END IF;
 END
