@@ -1,7 +1,6 @@
-import { Schedule, Data, Effect, Option, Schema } from "effect"
+import { Data, Effect, Option, Schema } from "effect"
 import { erc20Abi, type PublicClient } from "viem"
 import type { TimeoutException } from "effect/Cause"
-import type { DurationInput } from "effect/Duration"
 import type { GetBalanceErrorType, ReadContractErrorType } from "viem"
 import { getPublicClient } from "$lib/services/evm/clients"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
@@ -66,27 +65,22 @@ const fetchEvmErc20Balance = ({
     catch: err => new ReadContractError({ cause: err as ReadContractErrorType })
   })
 
-export const createEvmBalanceQuery = ({
+// Core function to fetch a single EVM balance
+export const fetchEvmBalance = ({
   chain,
   tokenAddress,
-  walletAddress,
-  refetchInterval,
-  writeData,
-  writeError
+  walletAddress
 }: {
   chain: Chain
   tokenAddress: TokenRawDenom
   walletAddress: AddressEvmCanonical
-  refetchInterval: DurationInput
-  writeData: (data: RawTokenBalance) => void
-  writeError: (error: Option.Option<FetchEvmBalanceError>) => void
 }) => {
-  const fetcherPipeline = Effect.gen(function* (_) {
+  return Effect.gen(function* (_) {
     const client = yield* getPublicClient(chain)
     const decodedDenom = yield* fromHexString(tokenAddress)
 
     yield* Effect.log(
-      `starting balances fetcher for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`
+      `fetching balance for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`
     )
 
     const fetchBalance =
@@ -96,15 +90,6 @@ export const createEvmBalanceQuery = ({
 
     const balance = yield* Effect.retry(fetchBalance, evmBalanceRetrySchedule)
 
-    writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
-    writeError(Option.none())
-  }).pipe(
-    Effect.tapError(error => Effect.sync(() => writeError(Option.some(error)))),
-    Effect.catchAll(_ => Effect.succeed(null))
-  )
-
-  return Effect.repeat(
-    fetcherPipeline,
-    Schedule.addDelay(Schedule.repeatForever, () => refetchInterval)
-  )
+    return RawTokenBalance.make(Option.some(TokenRawAmount.make(balance)))
+  })
 }
