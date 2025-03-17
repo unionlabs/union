@@ -1,8 +1,6 @@
 <script lang="ts">
-import Chain from "$lib/components/Transfer/Chain.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Button from "$lib/components/ui/Button.svelte"
-import Assets from "$lib/components/Transfer/Assets.svelte"
 import Amount from "$lib/components/Transfer/Amount.svelte"
 import Receiver from "$lib/components/Transfer/Receiver.svelte"
 import ShowData from "$lib/components/Transfer/ShowData.svelte"
@@ -19,6 +17,7 @@ import {
   hasFailedExit as hasAptosFailedExit,
   isComplete as isAptosComplete
 } from "$lib/services/transfer-ucs03-aptos"
+import ChainAsset from "$lib/components/Transfer/ChainAsset/index.svelte"
 
 $effect(() => {
   transfer.getQuoteToken()
@@ -89,9 +88,8 @@ let buttonText = $derived(
 </script>
 
 <Card class="max-w-md relative flex flex-col gap-2">
-  <Chain type="source" />
-  <Chain type="destination" />
-  <Assets />
+  <ChainAsset type="source" />
+  <ChainAsset type="destination" />
   <Amount />
   <Receiver />
   <ShowData />
