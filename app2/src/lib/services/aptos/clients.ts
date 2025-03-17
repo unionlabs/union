@@ -27,10 +27,11 @@ export const getPublicClient = (chain: Chain) =>
     if (chain.rpc_type !== "aptos") {
       throw new NoAptosChainError({ chain })
     }
+    const rpcUrl = chain.getRpcUrl("rpc")
     const aptosClient = yield* Effect.try({
       try: () => {
         const config = new AptosConfig({
-          fullnode: "https://aptos.testnet.bardock.movementlabs.xyz/v1",
+          fullnode: rpcUrl.toString(),
           network: Network.TESTNET
         })
         return new Aptos(config)
@@ -46,10 +47,12 @@ export const getWalletClient = (chain: Chain) =>
       throw new NoAptosChainError({ chain })
     }
 
+    const rpcUrl = chain.getRpcUrl("rpc")
+
     const aptosClient = yield* Effect.try({
       try: () => {
         const config = new AptosConfig({
-          fullnode: "https://aptos.testnet.bardock.movementlabs.xyz/v1",
+          fullnode: rpcUrl.toString(),
           network: Network.TESTNET
         })
         const aptos = new Aptos(config)

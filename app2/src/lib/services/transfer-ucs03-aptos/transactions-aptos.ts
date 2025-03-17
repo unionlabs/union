@@ -3,7 +3,7 @@ import type { Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType }
 import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
 import { getPublicClient } from "../aptos/clients.ts"
 import { getAccount } from "$lib/services/transfer-ucs03-aptos/account.ts"
-import { generateSalt } from "./salt.ts"
+import { generateSaltAptos } from "$lib/services/shared"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 
@@ -15,7 +15,7 @@ export const submitTransfer = (_chain: Chain, transfer: ValidTransfer["args"]) =
     const account = yield* Effect.flatMap(getAccount, account =>
       account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
     )
-    const salt = yield* generateSalt
+    const salt = yield* generateSaltAptos
 
     const walletPayload = {
       function: `${transfer.ucs03address}::ibc_app::transfer`,

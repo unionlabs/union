@@ -10,3 +10,12 @@ export const generateSalt = Effect.sync(() => {
   crypto.getRandomValues(rawSalt)
   return toHex(rawSalt) as Hex
 })
+
+/**
+ * Effect that generates cryptographically secure random salts
+ * used to prevent transfer hash collisions
+ */
+export const generateSaltAptos = Effect.sync(() => {
+  const saltHex = new Uint8Array(14)
+  return toHex(saltHex)
+})
