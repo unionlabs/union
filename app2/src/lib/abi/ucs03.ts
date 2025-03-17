@@ -15,6 +15,13 @@ export const ucs03ZkgmAbi = [
   },
   {
     type: "function",
+    name: "ACK_ERR_ONLYMAKER_HASH",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
+    stateMutability: "view"
+  },
+  {
+    type: "function",
     name: "ACK_FAILURE",
     inputs: [],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
@@ -43,9 +50,37 @@ export const ucs03ZkgmAbi = [
   },
   {
     type: "function",
+    name: "FORWARD_SALT_MAGIC",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
+    stateMutability: "view"
+  },
+  {
+    type: "function",
     name: "IBC_VERSION",
     inputs: [],
     outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
+    stateMutability: "view"
+  },
+  {
+    type: "function",
+    name: "IBC_VERSION_STR",
+    inputs: [],
+    outputs: [{ name: "", type: "string", internalType: "string" }],
+    stateMutability: "view"
+  },
+  {
+    type: "function",
+    name: "INSTR_VERSION_0",
+    inputs: [],
+    outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
+    stateMutability: "view"
+  },
+  {
+    type: "function",
+    name: "INSTR_VERSION_1",
+    inputs: [],
+    outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
     stateMutability: "view"
   },
   {
@@ -76,60 +111,150 @@ export const ucs03ZkgmAbi = [
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
     stateMutability: "view"
   },
+  { type: "error", name: "ErrAsyncMultiplexUnsupported", inputs: [] },
+  { type: "error", name: "ErrBatchMustBeSync", inputs: [] },
+  { type: "error", name: "ErrInfiniteGame", inputs: [] },
+  { type: "error", name: "ErrInvalidAmount", inputs: [] },
+  { type: "error", name: "ErrInvalidAssetDecimals", inputs: [] },
+  { type: "error", name: "ErrInvalidAssetName", inputs: [] },
+  { type: "error", name: "ErrInvalidAssetOrigin", inputs: [] },
+  { type: "error", name: "ErrInvalidAssetSymbol", inputs: [] },
+  { type: "error", name: "ErrInvalidBatchInstruction", inputs: [] },
+  { type: "error", name: "ErrInvalidFillType", inputs: [] },
+  { type: "error", name: "ErrInvalidForwardDestinationChannelId", inputs: [] },
+  { type: "error", name: "ErrInvalidForwardInstruction", inputs: [] },
+  { type: "error", name: "ErrInvalidHops", inputs: [] },
+  { type: "error", name: "ErrInvalidIBCVersion", inputs: [] },
+  { type: "error", name: "ErrInvalidMultiplexSender", inputs: [] },
+  { type: "error", name: "ErrOnlyMaker", inputs: [] },
+  { type: "error", name: "ErrUnauthorized", inputs: [] },
+  { type: "error", name: "ErrUnknownOpcode", inputs: [] },
+  { type: "error", name: "ErrUnsupportedVersion", inputs: [] },
   {
     type: "function",
-    name: "ZKGM_VERSION_0",
-    inputs: [],
-    outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
-    stateMutability: "view"
-  },
-  { type: "error", name: "ErrBatchMustBeSync", inputs: [] },
-  {
-    type: "error",
-    name: "ErrInfiniteGame",
-    inputs: []
-  },
-  { type: "error", name: "ErrInvalidAmount", inputs: [] },
-  {
-    type: "error",
-    name: "ErrInvalidAssetName",
-    inputs: []
-  },
-  { type: "error", name: "ErrInvalidAssetOrigin", inputs: [] },
-  {
-    type: "error",
-    name: "ErrInvalidAssetSymbol",
-    inputs: []
-  },
-  { type: "error", name: "ErrInvalidBatchInstruction", inputs: [] },
-  {
-    type: "error",
-    name: "ErrInvalidFillType",
-    inputs: []
-  },
-  { type: "error", name: "ErrInvalidHops", inputs: [] },
-  {
-    type: "error",
-    name: "ErrInvalidIBCVersion",
-    inputs: []
-  },
-  { type: "error", name: "ErrInvalidMultiplexSender", inputs: [] },
-  {
-    type: "error",
-    name: "ErrOnlyMaker",
-    inputs: []
-  },
-  { type: "error", name: "ErrUnauthorized", inputs: [] },
-  {
-    type: "error",
-    name: "ErrUnimplemented",
-    inputs: []
-  },
-  { type: "error", name: "ErrUnknownOpcode", inputs: [] },
-  {
-    type: "error",
-    name: "ErrUnsupportedVersion",
-    inputs: []
+    name: "ensureExported",
+    inputs: [
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct ZkgmPacket",
+        components: [
+          { name: "salt", type: "bytes32", internalType: "bytes32" },
+          { name: "path", type: "uint256", internalType: "uint256" },
+          {
+            name: "instruction",
+            type: "tuple",
+            internalType: "struct Instruction",
+            components: [
+              { name: "version", type: "uint8", internalType: "uint8" },
+              { name: "opcode", type: "uint8", internalType: "uint8" },
+              { name: "operand", type: "bytes", internalType: "bytes" }
+            ]
+          }
+        ]
+      },
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct Instruction",
+        components: [
+          { name: "version", type: "uint8", internalType: "uint8" },
+          { name: "opcode", type: "uint8", internalType: "uint8" },
+          { name: "operand", type: "bytes", internalType: "bytes" }
+        ]
+      },
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct Forward",
+        components: [
+          { name: "path", type: "uint256", internalType: "uint256" },
+          { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
+          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
+          {
+            name: "instruction",
+            type: "tuple",
+            internalType: "struct Instruction",
+            components: [
+              { name: "version", type: "uint8", internalType: "uint8" },
+              { name: "opcode", type: "uint8", internalType: "uint8" },
+              { name: "operand", type: "bytes", internalType: "bytes" }
+            ]
+          }
+        ]
+      },
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct Multiplex",
+        components: [
+          { name: "sender", type: "bytes", internalType: "bytes" },
+          { name: "eureka", type: "bool", internalType: "bool" },
+          { name: "contractAddress", type: "bytes", internalType: "bytes" },
+          { name: "contractCalldata", type: "bytes", internalType: "bytes" }
+        ]
+      },
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct Batch",
+        components: [
+          {
+            name: "instructions",
+            type: "tuple[]",
+            internalType: "struct Instruction[]",
+            components: [
+              { name: "version", type: "uint8", internalType: "uint8" },
+              { name: "opcode", type: "uint8", internalType: "uint8" },
+              { name: "operand", type: "bytes", internalType: "bytes" }
+            ]
+          }
+        ]
+      },
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct FungibleAssetOrder",
+        components: [
+          { name: "sender", type: "bytes", internalType: "bytes" },
+          { name: "receiver", type: "bytes", internalType: "bytes" },
+          { name: "baseToken", type: "bytes", internalType: "bytes" },
+          { name: "baseAmount", type: "uint256", internalType: "uint256" },
+          { name: "baseTokenSymbol", type: "string", internalType: "string" },
+          { name: "baseTokenName", type: "string", internalType: "string" },
+          { name: "baseTokenDecimals", type: "uint8", internalType: "uint8" },
+          { name: "baseTokenPath", type: "uint256", internalType: "uint256" },
+          { name: "quoteToken", type: "bytes", internalType: "bytes" },
+          { name: "quoteAmount", type: "uint256", internalType: "uint256" }
+        ]
+      },
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct Ack",
+        components: [
+          { name: "tag", type: "uint256", internalType: "uint256" },
+          { name: "innerAck", type: "bytes", internalType: "bytes" }
+        ]
+      },
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct BatchAck",
+        components: [{ name: "acknowledgements", type: "bytes[]", internalType: "bytes[]" }]
+      },
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct FungibleAssetOrderAck",
+        components: [
+          { name: "fillType", type: "uint256", internalType: "uint256" },
+          { name: "marketMaker", type: "bytes", internalType: "bytes" }
+        ]
+      }
+    ],
+    outputs: [],
+    stateMutability: "nonpayable"
   },
   { type: "constructor", inputs: [], stateMutability: "nonpayable" },
   {
@@ -141,40 +266,11 @@ export const ucs03ZkgmAbi = [
   },
   {
     type: "function",
-    name: "call",
-    inputs: [
-      { name: "channelId", type: "uint32", internalType: "uint32" },
-      {
-        name: "contractAddress",
-        type: "bytes",
-        internalType: "bytes"
-      },
-      { name: "contractCalldata", type: "bytes", internalType: "bytes" },
-      {
-        name: "timeoutHeight",
-        type: "uint64",
-        internalType: "uint64"
-      },
-      { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
-      {
-        name: "salt",
-        type: "bytes32",
-        internalType: "bytes32"
-      }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
     name: "channelBalance",
     inputs: [
       { name: "", type: "uint32", internalType: "uint32" },
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      }
+      { name: "", type: "uint256", internalType: "uint256" },
+      { name: "", type: "address", internalType: "address" }
     ],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
     stateMutability: "view"
@@ -183,36 +279,21 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "execute",
     inputs: [
+      { name: "caller", type: "address", internalType: "address" },
       {
         name: "ibcPacket",
         type: "tuple",
         internalType: "struct IBCPacket",
         components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
+          { name: "sourceChannelId", type: "uint32", internalType: "uint32" },
           { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
+          { name: "data", type: "bytes", internalType: "bytes" },
           { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
+          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
         ]
       },
       { name: "relayer", type: "address", internalType: "address" },
-      {
-        name: "relayerMsg",
-        type: "bytes",
-        internalType: "bytes"
-      }
+      { name: "relayerMsg", type: "bytes", internalType: "bytes" }
     ],
     outputs: [{ name: "", type: "bytes", internalType: "bytes" }],
     stateMutability: "nonpayable"
@@ -228,7 +309,7 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "ibcHandler",
     inputs: [],
-    outputs: [{ name: "", type: "address", internalType: "contract IIBCPacket" }],
+    outputs: [{ name: "", type: "address", internalType: "contract IIBCModulePacket" }],
     stateMutability: "view"
   },
   {
@@ -237,17 +318,9 @@ export const ucs03ZkgmAbi = [
     inputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
     outputs: [
       { name: "sourceChannelId", type: "uint32", internalType: "uint32" },
-      {
-        name: "destinationChannelId",
-        type: "uint32",
-        internalType: "uint32"
-      },
+      { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
       { name: "data", type: "bytes", internalType: "bytes" },
-      {
-        name: "timeoutHeight",
-        type: "uint64",
-        internalType: "uint64"
-      },
+      { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
       { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
     ],
     stateMutability: "view"
@@ -256,13 +329,8 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "initialize",
     inputs: [
-      { name: "_ibcHandler", type: "address", internalType: "contract IIBCPacket" },
-      {
-        name: "admin",
-        type: "address",
-        internalType: "address"
-      },
-      { name: "_weth", type: "address", internalType: "contract IWETH" }
+      { name: "_ibcHandler", type: "address", internalType: "contract IIBCModulePacket" },
+      { name: "admin", type: "address", internalType: "address" }
     ],
     outputs: [],
     stateMutability: "nonpayable"
@@ -271,36 +339,21 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "onAcknowledgementPacket",
     inputs: [
+      { name: "caller", type: "address", internalType: "address" },
       {
         name: "ibcPacket",
         type: "tuple",
         internalType: "struct IBCPacket",
         components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
+          { name: "sourceChannelId", type: "uint32", internalType: "uint32" },
           { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
+          { name: "data", type: "bytes", internalType: "bytes" },
           { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
+          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
         ]
       },
       { name: "ack", type: "bytes", internalType: "bytes" },
-      {
-        name: "relayer",
-        type: "address",
-        internalType: "address"
-      }
+      { name: "relayer", type: "address", internalType: "address" }
     ],
     outputs: [],
     stateMutability: "nonpayable"
@@ -309,12 +362,9 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "onChanCloseConfirm",
     inputs: [
+      { name: "", type: "address", internalType: "address" },
       { name: "", type: "uint32", internalType: "uint32" },
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      }
+      { name: "", type: "address", internalType: "address" }
     ],
     outputs: [],
     stateMutability: "nonpayable"
@@ -323,12 +373,9 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "onChanCloseInit",
     inputs: [
+      { name: "", type: "address", internalType: "address" },
       { name: "", type: "uint32", internalType: "uint32" },
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      }
+      { name: "", type: "address", internalType: "address" }
     ],
     outputs: [],
     stateMutability: "nonpayable"
@@ -337,18 +384,11 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "onChanOpenAck",
     inputs: [
+      { name: "", type: "address", internalType: "address" },
       { name: "channelId", type: "uint32", internalType: "uint32" },
-      {
-        name: "",
-        type: "uint32",
-        internalType: "uint32"
-      },
+      { name: "", type: "uint32", internalType: "uint32" },
       { name: "", type: "string", internalType: "string" },
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      }
+      { name: "", type: "address", internalType: "address" }
     ],
     outputs: [],
     stateMutability: "nonpayable"
@@ -357,12 +397,9 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "onChanOpenConfirm",
     inputs: [
+      { name: "", type: "address", internalType: "address" },
       { name: "channelId", type: "uint32", internalType: "uint32" },
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      }
+      { name: "", type: "address", internalType: "address" }
     ],
     outputs: [],
     stateMutability: "nonpayable"
@@ -371,18 +408,11 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "onChanOpenInit",
     inputs: [
+      { name: "", type: "address", internalType: "address" },
       { name: "", type: "uint32", internalType: "uint32" },
-      {
-        name: "",
-        type: "uint32",
-        internalType: "uint32"
-      },
+      { name: "", type: "uint32", internalType: "uint32" },
       { name: "version", type: "string", internalType: "string" },
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      }
+      { name: "", type: "address", internalType: "address" }
     ],
     outputs: [],
     stateMutability: "nonpayable"
@@ -391,24 +421,13 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "onChanOpenTry",
     inputs: [
+      { name: "", type: "address", internalType: "address" },
       { name: "", type: "uint32", internalType: "uint32" },
-      {
-        name: "",
-        type: "uint32",
-        internalType: "uint32"
-      },
       { name: "", type: "uint32", internalType: "uint32" },
-      {
-        name: "version",
-        type: "string",
-        internalType: "string"
-      },
+      { name: "", type: "uint32", internalType: "uint32" },
+      { name: "version", type: "string", internalType: "string" },
       { name: "counterpartyVersion", type: "string", internalType: "string" },
-      {
-        name: "",
-        type: "address",
-        internalType: "address"
-      }
+      { name: "", type: "address", internalType: "address" }
     ],
     outputs: [],
     stateMutability: "nonpayable"
@@ -417,36 +436,21 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "onRecvIntentPacket",
     inputs: [
+      { name: "", type: "address", internalType: "address" },
       {
         name: "",
         type: "tuple",
         internalType: "struct IBCPacket",
         components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
+          { name: "sourceChannelId", type: "uint32", internalType: "uint32" },
           { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
+          { name: "data", type: "bytes", internalType: "bytes" },
           { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
+          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
         ]
       },
       { name: "", type: "address", internalType: "address" },
-      {
-        name: "",
-        type: "bytes",
-        internalType: "bytes"
-      }
+      { name: "", type: "bytes", internalType: "bytes" }
     ],
     outputs: [{ name: "", type: "bytes", internalType: "bytes" }],
     stateMutability: "nonpayable"
@@ -455,36 +459,21 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "onRecvPacket",
     inputs: [
+      { name: "caller", type: "address", internalType: "address" },
       {
-        name: "operand",
+        name: "packet",
         type: "tuple",
         internalType: "struct IBCPacket",
         components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
+          { name: "sourceChannelId", type: "uint32", internalType: "uint32" },
           { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
+          { name: "data", type: "bytes", internalType: "bytes" },
           { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
+          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
         ]
       },
       { name: "relayer", type: "address", internalType: "address" },
-      {
-        name: "relayerMsg",
-        type: "bytes",
-        internalType: "bytes"
-      }
+      { name: "relayerMsg", type: "bytes", internalType: "bytes" }
     ],
     outputs: [{ name: "", type: "bytes", internalType: "bytes" }],
     stateMutability: "nonpayable"
@@ -493,28 +482,17 @@ export const ucs03ZkgmAbi = [
     type: "function",
     name: "onTimeoutPacket",
     inputs: [
+      { name: "caller", type: "address", internalType: "address" },
       {
         name: "ibcPacket",
         type: "tuple",
         internalType: "struct IBCPacket",
         components: [
-          {
-            name: "sourceChannelId",
-            type: "uint32",
-            internalType: "uint32"
-          },
+          { name: "sourceChannelId", type: "uint32", internalType: "uint32" },
           { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
-          {
-            name: "data",
-            type: "bytes",
-            internalType: "bytes"
-          },
+          { name: "data", type: "bytes", internalType: "bytes" },
           { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-          {
-            name: "timeoutTimestamp",
-            type: "uint64",
-            internalType: "uint64"
-          }
+          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
         ]
       },
       { name: "relayer", type: "address", internalType: "address" }
@@ -541,20 +519,12 @@ export const ucs03ZkgmAbi = [
     name: "predictWrappedToken",
     inputs: [
       { name: "path", type: "uint256", internalType: "uint256" },
-      {
-        name: "channel",
-        type: "uint32",
-        internalType: "uint32"
-      },
+      { name: "channel", type: "uint32", internalType: "uint32" },
       { name: "token", type: "bytes", internalType: "bytes" }
     ],
     outputs: [
       { name: "", type: "address", internalType: "address" },
-      {
-        name: "",
-        type: "bytes32",
-        internalType: "bytes32"
-      }
+      { name: "", type: "bytes32", internalType: "bytes32" }
     ],
     stateMutability: "view"
   },
@@ -577,39 +547,20 @@ export const ucs03ZkgmAbi = [
     name: "send",
     inputs: [
       { name: "channelId", type: "uint32", internalType: "uint32" },
-      {
-        name: "timeoutHeight",
-        type: "uint64",
-        internalType: "uint64"
-      },
+      { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
       { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
-      {
-        name: "salt",
-        type: "bytes32",
-        internalType: "bytes32"
-      },
+      { name: "salt", type: "bytes32", internalType: "bytes32" },
       {
         name: "instruction",
         type: "tuple",
         internalType: "struct Instruction",
         components: [
           { name: "version", type: "uint8", internalType: "uint8" },
-          {
-            name: "opcode",
-            type: "uint8",
-            internalType: "uint8"
-          },
+          { name: "opcode", type: "uint8", internalType: "uint8" },
           { name: "operand", type: "bytes", internalType: "bytes" }
         ]
       }
     ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "setWeth",
-    inputs: [{ name: "_weth", type: "address", internalType: "contract IWETH" }],
     outputs: [],
     stateMutability: "nonpayable"
   },
@@ -622,78 +573,6 @@ export const ucs03ZkgmAbi = [
   },
   {
     type: "function",
-    name: "transfer",
-    inputs: [
-      { name: "channelId", type: "uint32", internalType: "uint32" },
-      {
-        name: "receiver",
-        type: "bytes",
-        internalType: "bytes"
-      },
-      { name: "baseToken", type: "address", internalType: "address" },
-      {
-        name: "baseAmount",
-        type: "uint256",
-        internalType: "uint256"
-      },
-      { name: "quoteToken", type: "bytes", internalType: "bytes" },
-      {
-        name: "quoteAmount",
-        type: "uint256",
-        internalType: "uint256"
-      },
-      { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-      {
-        name: "timeoutTimestamp",
-        type: "uint64",
-        internalType: "uint64"
-      },
-      { name: "salt", type: "bytes32", internalType: "bytes32" }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "transferAndCall",
-    inputs: [
-      { name: "channelId", type: "uint32", internalType: "uint32" },
-      {
-        name: "receiver",
-        type: "bytes",
-        internalType: "bytes"
-      },
-      { name: "baseToken", type: "address", internalType: "address" },
-      {
-        name: "baseAmount",
-        type: "uint256",
-        internalType: "uint256"
-      },
-      { name: "quoteToken", type: "bytes", internalType: "bytes" },
-      {
-        name: "quoteAmount",
-        type: "uint256",
-        internalType: "uint256"
-      },
-      { name: "contractAddress", type: "bytes", internalType: "bytes" },
-      {
-        name: "contractCalldata",
-        type: "bytes",
-        internalType: "bytes"
-      },
-      { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-      {
-        name: "timeoutTimestamp",
-        type: "uint64",
-        internalType: "uint64"
-      },
-      { name: "salt", type: "bytes32", internalType: "bytes32" }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
     name: "transferOwnership",
     inputs: [{ name: "newOwner", type: "address", internalType: "address" }],
     outputs: [],
@@ -701,62 +580,13 @@ export const ucs03ZkgmAbi = [
   },
   {
     type: "function",
-    name: "transferV2",
-    inputs: [
-      { name: "channelId", type: "uint32", internalType: "uint32" },
-      {
-        name: "receiver",
-        type: "bytes",
-        internalType: "bytes"
-      },
-      { name: "baseToken", type: "address", internalType: "address" },
-      {
-        name: "baseAmount",
-        type: "uint256",
-        internalType: "uint256"
-      },
-      { name: "quoteToken", type: "bytes", internalType: "bytes" },
-      {
-        name: "quoteAmount",
-        type: "uint256",
-        internalType: "uint256"
-      },
-      { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-      {
-        name: "timeoutTimestamp",
-        type: "uint64",
-        internalType: "uint64"
-      },
-      { name: "salt", type: "bytes32", internalType: "bytes32" },
-      {
-        name: "wethQuoteToken",
-        type: "bytes",
-        internalType: "bytes"
-      }
-    ],
-    outputs: [],
-    stateMutability: "payable"
-  },
-  {
-    type: "function",
     name: "upgradeToAndCall",
     inputs: [
       { name: "newImplementation", type: "address", internalType: "address" },
-      {
-        name: "data",
-        type: "bytes",
-        internalType: "bytes"
-      }
+      { name: "data", type: "bytes", internalType: "bytes" }
     ],
     outputs: [],
     stateMutability: "payable"
-  },
-  {
-    type: "function",
-    name: "weth",
-    inputs: [],
-    outputs: [{ name: "", type: "address", internalType: "contract IWETH" }],
-    stateMutability: "view"
   },
   {
     type: "event",
@@ -768,12 +598,7 @@ export const ucs03ZkgmAbi = [
     type: "event",
     name: "OwnershipTransferred",
     inputs: [
-      {
-        name: "previousOwner",
-        type: "address",
-        indexed: true,
-        internalType: "address"
-      },
+      { name: "previousOwner", type: "address", indexed: true, internalType: "address" },
       { name: "newOwner", type: "address", indexed: true, internalType: "address" }
     ],
     anonymous: false
@@ -812,77 +637,31 @@ export const ucs03ZkgmAbi = [
     inputs: [{ name: "implementation", type: "address", internalType: "address" }]
   },
   { type: "error", name: "ERC1967NonPayable", inputs: [] },
-  {
-    type: "error",
-    name: "EnforcedPause",
-    inputs: []
-  },
+  { type: "error", name: "EnforcedPause", inputs: [] },
+  { type: "error", name: "ErrAsyncMultiplexUnsupported", inputs: [] },
   { type: "error", name: "ErrBatchMustBeSync", inputs: [] },
-  {
-    type: "error",
-    name: "ErrInfiniteGame",
-    inputs: []
-  },
-  { type: "error", name: "ErrInvalidAmount", inputs: [] },
-  {
-    type: "error",
-    name: "ErrInvalidAssetName",
-    inputs: []
-  },
+  { type: "error", name: "ErrInfiniteGame", inputs: [] },
+  { type: "error", name: "ErrInvalidAssetDecimals", inputs: [] },
+  { type: "error", name: "ErrInvalidAssetName", inputs: [] },
   { type: "error", name: "ErrInvalidAssetOrigin", inputs: [] },
-  {
-    type: "error",
-    name: "ErrInvalidAssetSymbol",
-    inputs: []
-  },
+  { type: "error", name: "ErrInvalidAssetSymbol", inputs: [] },
   { type: "error", name: "ErrInvalidBatchInstruction", inputs: [] },
-  {
-    type: "error",
-    name: "ErrInvalidFillType",
-    inputs: []
-  },
+  { type: "error", name: "ErrInvalidFillType", inputs: [] },
+  { type: "error", name: "ErrInvalidForwardDestinationChannelId", inputs: [] },
+  { type: "error", name: "ErrInvalidForwardInstruction", inputs: [] },
   { type: "error", name: "ErrInvalidHops", inputs: [] },
-  {
-    type: "error",
-    name: "ErrInvalidIBCVersion",
-    inputs: []
-  },
+  { type: "error", name: "ErrInvalidIBCVersion", inputs: [] },
   { type: "error", name: "ErrInvalidMultiplexSender", inputs: [] },
-  {
-    type: "error",
-    name: "ErrNotIBC",
-    inputs: []
-  },
+  { type: "error", name: "ErrNotIBC", inputs: [] },
   { type: "error", name: "ErrNotImplemented", inputs: [] },
-  {
-    type: "error",
-    name: "ErrOnlyMaker",
-    inputs: []
-  },
+  { type: "error", name: "ErrOnlyMaker", inputs: [] },
   { type: "error", name: "ErrUnauthorized", inputs: [] },
-  {
-    type: "error",
-    name: "ErrUnimplemented",
-    inputs: []
-  },
   { type: "error", name: "ErrUnknownOpcode", inputs: [] },
-  {
-    type: "error",
-    name: "ErrUnsupportedVersion",
-    inputs: []
-  },
+  { type: "error", name: "ErrUnsupportedVersion", inputs: [] },
   { type: "error", name: "ExpectedPause", inputs: [] },
-  {
-    type: "error",
-    name: "FailedInnerCall",
-    inputs: []
-  },
+  { type: "error", name: "FailedInnerCall", inputs: [] },
   { type: "error", name: "InvalidInitialization", inputs: [] },
-  {
-    type: "error",
-    name: "NotInitializing",
-    inputs: []
-  },
+  { type: "error", name: "NotInitializing", inputs: [] },
   {
     type: "error",
     name: "OwnableInvalidOwner",
