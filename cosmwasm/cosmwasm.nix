@@ -42,10 +42,10 @@
           ucs03_type = "cw20";
           bech32_prefix = "union";
           apps = {
-            # ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20;
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
-          lightclients = [ ];
+          lightclients = [ "ethereum" ];
         }
         {
           name = "union-testnet";
@@ -452,7 +452,7 @@
         ))
         // (
           let
-            name = "migrate-${args.name}-core";
+            name = "migrate-core-${args.name}";
           in
           {
             ${name} = pkgs.writeShellApplication {

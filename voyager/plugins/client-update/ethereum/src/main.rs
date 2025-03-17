@@ -10,8 +10,8 @@ use beacon_api::client::BeaconApiClient;
 use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, slot::Slot};
 use bitvec::{order::Msb0, vec::BitVec};
 use ethereum_light_client_types::{
-    AccountProof, EpochChangeUpdate, Header, LightClientUpdate, LightClientUpdateData,
-    WithinEpochUpdate,
+    AccountProof, Header, LightClientUpdate, LightClientUpdateData,
+    SyncCommitteePeriodChangeUpdate, WithinSyncCommitteePeriodUpdate,
 };
 use futures::{stream, StreamExt, TryStreamExt};
 use jsonrpsee::{
@@ -565,8 +565,12 @@ impl Module {
         let last_update_signature_slot = headers
             .iter()
             .map(|header| match &header.consensus_update {
-                LightClientUpdate::EpochChange(update) => update.update_data.signature_slot,
-                LightClientUpdate::WithinEpoch(update) => update.update_data.signature_slot,
+                LightClientUpdate::SyncCommitteePeriodChange(update) => {
+                    update.update_data.signature_slot
+                }
+                LightClientUpdate::WithinSyncCommitteePeriod(update) => {
+                    update.update_data.signature_slot
+                }
             })
             .max()
             .expect("expected at least one update");
@@ -589,10 +593,10 @@ impl Module {
                         (
                             DecodedHeaderMeta {
                                 height: Height::new(match &header.consensus_update {
-                                    LightClientUpdate::EpochChange(update) => {
+                                    LightClientUpdate::SyncCommitteePeriodChange(update) => {
                                         update.update_data.finalized_header.execution.block_number
                                     }
-                                    LightClientUpdate::WithinEpoch(update) => {
+                                    LightClientUpdate::WithinSyncCommitteePeriod(update) => {
                                         update.update_data.finalized_header.execution.block_number
                                     }
                                 }),
@@ -635,15 +639,19 @@ impl Module {
         Ok(Header {
             consensus_update: match next_sync_committee {
                 Some((next_sync_committee, next_sync_committee_branch)) => {
-                    LightClientUpdate::EpochChange(Box::new(EpochChangeUpdate {
-                        next_sync_committee,
-                        next_sync_committee_branch,
-                        update_data: light_client_update_data,
-                    }))
+                    LightClientUpdate::SyncCommitteePeriodChange(Box::new(
+                        SyncCommitteePeriodChangeUpdate {
+                            next_sync_committee,
+                            next_sync_committee_branch,
+                            update_data: light_client_update_data,
+                        },
+                    ))
                 }
-                None => LightClientUpdate::WithinEpoch(Box::new(WithinEpochUpdate {
-                    update_data: light_client_update_data,
-                })),
+                None => LightClientUpdate::WithinSyncCommitteePeriod(Box::new(
+                    WithinSyncCommitteePeriodUpdate {
+                        update_data: light_client_update_data,
+                    },
+                )),
             },
             trusted_height: Height::new(currently_trusted_block_number),
             ibc_account_proof,

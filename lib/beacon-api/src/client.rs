@@ -155,7 +155,7 @@ impl BeaconApiClient {
                 Err(err) => return Err(err),
             };
 
-            let bootstrap_response = self.bootstrap(header.response.into_inner().root).await;
+            let bootstrap_response = self.bootstrap(header.data.root).await;
 
             match bootstrap_response {
                 Ok(ok) => break Ok(ok),

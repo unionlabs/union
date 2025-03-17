@@ -146,17 +146,26 @@ maybe_sol_attr! {
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event RegisterClient(string clientType, address clientAddress);
+            event RegisterClient(string indexed client_type, address client_address);
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event CreateClient(string client_type, uint32 client_id, string counterparty_chain_id);
+            event CreateClient(
+                string indexed client_type,
+                uint32 indexed client_id,
+                string counterparty_chain_id
+            );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event UpdateClient(uint32 client_id, uint64 height);
+            event UpdateClient(uint32 indexed client_id, uint64 height);
+            // #[cfg_attr(
+            //     feature = "serde", derive(serde::Serialize, serde::Deserialize),
+            //     serde(deny_unknown_fields)
+            // )]
+            // event Misbehaviour(uint32 indexed clientId);
 
             error ErrClientTypeAlreadyExists();
             error ErrClientTypeNotFound();
@@ -168,15 +177,17 @@ maybe_sol_attr! {
                 serde(deny_unknown_fields)
             )]
             event ConnectionOpenInit(
-                uint32 connection_id, uint32 client_id, uint32 counterparty_client_id
+                uint32 indexed connection_id,
+                uint32 indexed client_id,
+                uint32 counterparty_client_id
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
             event ConnectionOpenTry(
-                uint32 connection_id,
-                uint32 client_id,
+                uint32 indexed connection_id,
+                uint32 indexed client_id,
                 uint32 counterparty_client_id,
                 uint32 counterparty_connection_id
             );
@@ -185,8 +196,8 @@ maybe_sol_attr! {
                 serde(deny_unknown_fields)
             )]
             event ConnectionOpenAck(
-                uint32 connection_id,
-                uint32 client_id,
+                uint32 indexed connection_id,
+                uint32 indexed client_id,
                 uint32 counterparty_client_id,
                 uint32 counterparty_connection_id
             );
@@ -195,8 +206,8 @@ maybe_sol_attr! {
                 serde(deny_unknown_fields)
             )]
             event ConnectionOpenConfirm(
-                uint32 connection_id,
-                uint32 client_id,
+                uint32 indexed connection_id,
+                uint32 indexed client_id,
                 uint32 counterparty_client_id,
                 uint32 counterparty_connection_id
             );
@@ -211,31 +222,31 @@ maybe_sol_attr! {
                 serde(deny_unknown_fields)
             )]
             event ChannelOpenInit(
-                address port_id,
-                uint32 channel_id,
+                address indexed port_id,
+                uint32 indexed channel_id,
                 bytes counterparty_port_id,
                 uint32 connection_id,
-                string version
+                string indexed version
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
             event ChannelOpenTry(
-                address port_id,
-                uint32 channel_id,
+                address indexed port_id,
+                uint32 indexed channel_id,
                 bytes counterparty_port_id,
                 uint32 counterparty_channel_id,
                 uint32 connection_id,
-                string version
+                string indexed counterparty_version
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
             event ChannelOpenAck(
-                address port_id,
-                uint32 channel_id,
+                address indexed port_id,
+                uint32 indexed channel_id,
                 bytes counterparty_port_id,
                 uint32 counterparty_channel_id,
                 uint32 connection_id
@@ -245,9 +256,9 @@ maybe_sol_attr! {
                 serde(deny_unknown_fields)
             )]
             event ChannelOpenConfirm(
-                address port_id,
-                uint32 channel_id,
-                bytes counterparty_port_id,
+                address indexed port_id,
+                uint32 indexed channel_id,
+                bytes counterparty_portId,
                 uint32 counterparty_channel_id,
                 uint32 connection_id
             );
@@ -256,8 +267,8 @@ maybe_sol_attr! {
                 serde(deny_unknown_fields)
             )]
             event ChannelCloseInit(
-                address port_id,
-                uint32 channel_id,
+                address indexed port_id,
+                uint32 indexed channel_id,
                 bytes counterparty_port_id,
                 uint32 counterparty_channel_id
             );
@@ -266,8 +277,8 @@ maybe_sol_attr! {
                 serde(deny_unknown_fields)
             )]
             event ChannelCloseConfirm(
-                address port_id,
-                uint32 channel_id,
+                address indexed port_id,
+                uint32 indexed channel_id,
                 bytes counterparty_port_id,
                 uint32 counterparty_channel_id
             );
@@ -278,36 +289,52 @@ maybe_sol_attr! {
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event PacketSend(Packet packet);
+            event PacketSend(bytes32 indexed packet_hash, Packet packet);
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event PacketRecv(Packet packet, address relayer, bytes maker_msg);
+            event PacketRecv(
+                bytes32 indexed packet_hash, address indexed maker, bytes maker_msg
+            );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
             event IntentPacketRecv(
-                Packet packet, address market_maker, bytes market_maker_msg
+                bytes32 indexed packet_hash, address indexed maker, bytes maker_msg
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event WriteAck(Packet packet, bytes acknowledgement);
+            event WriteAck(bytes32 indexed packet_hash, bytes acknowledgement);
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
             event PacketAck(
-                Packet packet, bytes acknowledgement, address relayer
+                bytes32 indexed packet_hash, bytes acknowledgement, address indexed maker
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event PacketTimeout(Packet packet, address relayer);
+            event PacketTimeout(bytes32 indexed packet_hash, address indexed maker);
+            // #[cfg_attr(
+            //     feature = "serde", derive(serde::Serialize, serde::Deserialize),
+            //     serde(deny_unknown_fields)
+            // )]
+            // event BatchedPreviouslySent(
+            //     bytes32 indexed batchHash, bytes32 indexed packetHash
+            // );
+            // #[cfg_attr(
+            //     feature = "serde", derive(serde::Serialize, serde::Deserialize),
+            //     serde(deny_unknown_fields)
+            // )]
+            // event BatchedPreviouslyAcked(
+            //     bytes32 indexed batchHash, bytes32 indexed packetHash
+            // );
 
             error ErrUnauthorized();
             error ErrLatestTimestampNotFound();
@@ -425,7 +452,6 @@ maybe_sol_attr! {
             address relayer;
         }
 
-        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize), serde(deny_unknown_fields))]
         struct MsgChannelOpenInit {
             address port_id;
             bytes counterparty_port_id;

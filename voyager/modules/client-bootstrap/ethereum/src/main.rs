@@ -230,8 +230,7 @@ impl ClientBootstrapModuleServer for Module {
                     None::<()>,
                 )
             })?
-            .response
-            .into_inner();
+            .data;
 
         let current_sync_committee = self
             .beacon_api_client
@@ -298,8 +297,7 @@ impl ClientBootstrapModuleServer for Module {
                     None::<()>,
                 )
             })?
-            .response
-            .into_inner();
+            .data;
 
         let bootstrap_header = self
             .beacon_api_client

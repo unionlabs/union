@@ -50,7 +50,7 @@ in
         in
         pkgs.runCommand "libwasmvm-${version}-${system}" { } ''
           mkdir -p $out/lib
-          cp ${artifact} $out/lib/libwasmvm.${prefix}.a
+          cp ${artifact} $out/lib/libwasmvm_muslc.${prefix}.a
         '';
     in
     {

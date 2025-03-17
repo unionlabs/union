@@ -22,7 +22,7 @@ use unionlabs::{
     bech32::Bech32,
     ibc::core::client::height::Height,
     option_unwrap,
-    primitives::{encoding::Base64, Bytes, H256},
+    primitives::{Bytes, H256},
     ErrorReporter,
 };
 use voyager_message::{
@@ -180,7 +180,7 @@ impl Module {
         client_id: ClientId,
     ) -> RpcResult<Option<Bytes>> {
         let client_state = self
-            .query_smart::<_, Bytes<Base64>>(
+            .query_smart::<_, Bytes>(
                 &ibc_union_msg::query::QueryMsg::GetClientState { client_id },
                 Some(height),
             )
@@ -205,7 +205,7 @@ impl Module {
         trusted_height: u64,
     ) -> RpcResult<Option<Bytes>> {
         let client_state = self
-            .query_smart::<_, Bytes<Base64>>(
+            .query_smart::<_, Bytes>(
                 &ibc_union_msg::query::QueryMsg::GetConsensusState {
                     client_id,
                     height: trusted_height,

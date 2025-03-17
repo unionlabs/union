@@ -229,8 +229,9 @@ impl<T: IbcClient> ClientCreationResult<T> {
         self
     }
 
-    pub fn add_storage_write<V: Encode<T::Encoding>>(mut self, key: Bytes, value: V) -> Self {
-        self.storage_writes.insert(key, value.encode().into());
+    pub fn add_storage_write<S: Store>(mut self, key: S::Key, value: S::Value) -> Self {
+        self.storage_writes
+            .insert(depolama::raw_key::<S>(&key), S::encode_value(&value));
         self
     }
 

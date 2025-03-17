@@ -17,7 +17,7 @@ pub struct MisbehaviourResponse {
     pub client_state: Bytes,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum VerifyCreationResponseEvent {
     CreateLensClient {
@@ -29,7 +29,7 @@ pub enum VerifyCreationResponseEvent {
 
 pub type StorageWrites = BTreeMap<Bytes, Bytes>;
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct VerifyCreationResponse {
     pub latest_height: u64,

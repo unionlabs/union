@@ -375,7 +375,8 @@ tracing-subscriber       = { version = "0.3", default-features = false, features
 typenum                  = { version = "1.17.0", default-features = false }
 
 [patch."crates-io"]
-arbitrary = { git = "https://github.com/unionlabs/arbitrary" }
+arbitrary       = { git = "https://github.com/unionlabs/arbitrary" }
+serde-json-wasm = { git = "https://github.com/benluelo/serde-json-wasm", branch = "impl-collect-str" }
 # parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
 
 # https://aptos.dev/en/build/sdks/rust-sdk

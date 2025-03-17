@@ -6,7 +6,10 @@ use std::{
     num::ParseIntError,
 };
 
-use ibc_union_spec::{path::StorePath, IbcUnion};
+use ibc_union_spec::{
+    path::{StorePath, IBC_UNION_COSMWASM_COMMITMENT_PREFIX},
+    IbcUnion,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -119,6 +122,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         let data = [0x03]
             .into_iter()
             .chain(*self.ibc_host_contract_address.data())
+            .chain(IBC_UNION_COSMWASM_COMMITMENT_PREFIX)
             .chain(path.key())
             .collect::<Vec<_>>();
 

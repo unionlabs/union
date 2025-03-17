@@ -1,5 +1,5 @@
 use beacon_api_types::chain_spec::PresetBaseKind;
-use ethereum_light_client_types::{ClientStateV1, ConsensusState, Header, StorageProof};
+use ethereum_light_client_types::{ClientState, ConsensusState, Header, StorageProof};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -66,8 +66,8 @@ impl Module {
         })
     }
 
-    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientStateV1> {
-        <ClientStateV1>::decode_as::<Bincode>(client_state).map_err(|err| {
+    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientState> {
+        ClientState::decode_as::<Bincode>(client_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode client state: {err}"),
@@ -89,12 +89,12 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
-        let cs = Module::decode_client_state(&client_state)?;
-
-        Ok(ClientStateMeta {
-            counterparty_chain_id: ChainId::new(cs.chain_id.to_string()),
-            counterparty_height: Module::make_height(cs.latest_height),
-        })
+        match Module::decode_client_state(&client_state)? {
+            ClientState::V1(v1) => Ok(ClientStateMeta {
+                counterparty_chain_id: ChainId::new(v1.chain_id.to_string()),
+                counterparty_height: Module::make_height(v1.latest_height),
+            }),
+        }
     }
 
     #[instrument]
@@ -142,7 +142,7 @@ impl ClientModuleServer for Module {
             ));
         }
 
-        serde_json::from_value::<ClientStateV1>(client_state)
+        serde_json::from_value::<ClientState>(client_state)
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,

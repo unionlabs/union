@@ -32,7 +32,7 @@
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
+          "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
           "rpc_url": "http://localhost:8545"
         }
       }
@@ -58,7 +58,7 @@
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
+          "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
           "rpc_url": "http://localhost:8545"
         }
       }
@@ -149,7 +149,7 @@
       },
       {
         "config": {
-          "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
+          "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
           "rpc_url": "http://localhost:8545",
           "chain_spec": "minimal",
           "beacon_rpc_url": "http://localhost:9596"
@@ -180,7 +180,7 @@
       "path": "./target/debug/voyager-event-source-plugin-ethereum",
       "config": {
         "chain_id": "32382",
-        "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
+        "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
         "rpc_url": "http://localhost:8545"
       }
     },
@@ -201,9 +201,9 @@
           ]
         },
         "gas_config": {
-          "gas_price": 1.0,
+          "gas_price": 2.0,
           "gas_denom": "muno",
-          "gas_multiplier": 1.1,
+          "gas_multiplier": 2.0,
           "max_gas": 10000000
         },
         "rpc_url": "http://localhost:26657"
@@ -214,7 +214,7 @@
       "path": "./target/debug/voyager-transaction-plugin-ethereum",
       "config": {
         "chain_id": "32382",
-        "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
+        "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
         "multicall_address": "0x9fd9D9528c8373D990a1380B9414bDE179007A35",
         "keyring": {
           "name": "ethereum-devnet",
@@ -285,7 +285,9 @@
       "config": {
         "chain_id": "union-devnet-1",
         "rpc_url": "http://localhost:26657",
-        "prover_endpoints": ["http://localhost:9999"]
+        "prover_endpoints": [
+          "https://galois.testnet-9.union.build:443"
+        ]
       }
     },
     {
@@ -294,7 +296,7 @@
       "config": {
         "chain_id": "32382",
         "chain_spec": "minimal",
-        "ibc_handler_address": "0xeac5Ea575f74A20251f2c63A44B3cACE7533bF9E",
+        "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
         "rpc_url": "http://localhost:8545",
         "beacon_rpc_url": "http://localhost:9596"
       }

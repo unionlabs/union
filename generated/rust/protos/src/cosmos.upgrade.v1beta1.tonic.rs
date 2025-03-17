@@ -83,10 +83,10 @@ pub mod query_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn params(
+        pub async fn current_plan(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryParamsRequest>,
-        ) -> std::result::Result<tonic::Response<super::QueryParamsResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::QueryCurrentPlanRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryCurrentPlanResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -95,58 +95,99 @@ pub mod query_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Query/Params");
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Query/CurrentPlan");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.upgrade.v1beta1.Query",
+                "CurrentPlan",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn applied_plan(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryAppliedPlanRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryAppliedPlanResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Query/AppliedPlan");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.upgrade.v1beta1.Query",
+                "AppliedPlan",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn upgraded_consensus_state(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryUpgradedConsensusStateRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::QueryUpgradedConsensusStateResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.upgrade.v1beta1.Query/UpgradedConsensusState",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.upgrade.v1beta1.Query",
+                "UpgradedConsensusState",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn module_versions(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryModuleVersionsRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryModuleVersionsResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.upgrade.v1beta1.Query/ModuleVersions",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.upgrade.v1beta1.Query",
+                "ModuleVersions",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn authority(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryAuthorityRequest>,
+        ) -> std::result::Result<tonic::Response<super::QueryAuthorityResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Query/Authority");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("tokenfactory.v1beta1.Query", "Params"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn denom_authority_metadata(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryDenomAuthorityMetadataRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::QueryDenomAuthorityMetadataResponse>,
-            tonic::Status,
-        > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "tokenfactory.v1beta1.Query",
-                "DenomAuthorityMetadata",
-            ));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn denoms_from_creator(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryDenomsFromCreatorRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::QueryDenomsFromCreatorResponse>,
-            tonic::Status,
-        > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/tokenfactory.v1beta1.Query/DenomsFromCreator",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "tokenfactory.v1beta1.Query",
-                "DenomsFromCreator",
-            ));
+                .insert(GrpcMethod::new("cosmos.upgrade.v1beta1.Query", "Authority"));
             self.inner.unary(req, path, codec).await
         }
     }
@@ -232,10 +273,10 @@ pub mod msg_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn create_denom(
+        pub async fn software_upgrade(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgCreateDenom>,
-        ) -> std::result::Result<tonic::Response<super::MsgCreateDenomResponse>, tonic::Status>
+            request: impl tonic::IntoRequest<super::MsgSoftwareUpgrade>,
+        ) -> std::result::Result<tonic::Response<super::MsgSoftwareUpgradeResponse>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -245,83 +286,32 @@ pub mod msg_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Msg/CreateDenom");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("tokenfactory.v1beta1.Msg", "CreateDenom"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn mint(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgMint>,
-        ) -> std::result::Result<tonic::Response<super::MsgMintResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Msg/Mint");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("tokenfactory.v1beta1.Msg", "Mint"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn burn(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgBurn>,
-        ) -> std::result::Result<tonic::Response<super::MsgBurnResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Msg/Burn");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("tokenfactory.v1beta1.Msg", "Burn"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn change_admin(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgChangeAdmin>,
-        ) -> std::result::Result<tonic::Response<super::MsgChangeAdminResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Msg/ChangeAdmin");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("tokenfactory.v1beta1.Msg", "ChangeAdmin"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn set_denom_metadata(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgSetDenomMetadata>,
-        ) -> std::result::Result<tonic::Response<super::MsgSetDenomMetadataResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/tokenfactory.v1beta1.Msg/SetDenomMetadata");
+                http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Msg/SoftwareUpgrade");
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "tokenfactory.v1beta1.Msg",
-                "SetDenomMetadata",
+                "cosmos.upgrade.v1beta1.Msg",
+                "SoftwareUpgrade",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn cancel_upgrade(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgCancelUpgrade>,
+        ) -> std::result::Result<tonic::Response<super::MsgCancelUpgradeResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/cosmos.upgrade.v1beta1.Msg/CancelUpgrade");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.upgrade.v1beta1.Msg",
+                "CancelUpgrade",
             ));
             self.inner.unary(req, path, codec).await
         }

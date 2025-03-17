@@ -113,14 +113,14 @@
       type = "github";
       owner = "unionlabs";
       repo = "cometbft";
-      rev = "40cbc598984d75fc4c8af1f100674dc459cda25d";
+      ref = "v1.0.1-cometbls";
       flake = false;
     };
     cosmossdk = {
       type = "github";
       owner = "unionlabs";
       repo = "cosmos-sdk";
-      rev = "2b819f25de4d2f408fe3e7628bcb3e059244fd1c";
+      ref = "v0.50.11-cometblsv1";
       flake = false;
     };
 

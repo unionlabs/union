@@ -138,15 +138,12 @@ impl IbcClient for EthereumLightClient {
         // Also save the current and next sync committees with the corresponding epoch numbers.
         Ok(ClientCreationResult::new()
             .overwrite_client_state(ClientState::V1(client_state))
-            .add_storage_write(
-                current_sync_period.to_le_bytes().into(),
+            .add_storage_write::<SyncCommitteeStore>(
+                current_sync_period,
                 InverseSyncCommittee::take_inverse(&initial_sync_committee.current_sync_committee),
             )
-            .add_storage_write(
-                {
-                    let sync_period = current_sync_period + 1;
-                    sync_period.to_le_bytes().into()
-                },
+            .add_storage_write::<SyncCommitteeStore>(
+                current_sync_period + 1,
                 InverseSyncCommittee::take_inverse(&initial_sync_committee.next_sync_committee),
             ))
     }
@@ -295,8 +292,8 @@ pub fn verify_header<C: ChainSpec>(
 
     let sync_committee = sync_committee.as_sync_committee();
     let (current_sync_committee, next_sync_committee) = match header.consensus_update {
-        LightClientUpdate::EpochChange(_) => (None, Some(&sync_committee)),
-        LightClientUpdate::WithinEpoch(_) => (Some(&sync_committee), None),
+        LightClientUpdate::SyncCommitteePeriodChange(_) => (None, Some(&sync_committee)),
+        LightClientUpdate::WithinSyncCommitteePeriod(_) => (Some(&sync_committee), None),
     };
 
     validate_light_client_update::<C, _>(
@@ -367,11 +364,12 @@ fn update_state<C: ChainSpec>(
         state_update = state_update.overwrite_client_state(ClientState::V1(client_state));
     }
 
-    if let LightClientUpdate::EpochChange(update) = &mut header.consensus_update {
-        let current_epoch =
-            compute_epoch_at_slot::<C>(update.update_data.finalized_header.beacon.slot);
+    if let LightClientUpdate::SyncCommitteePeriodChange(update) = &mut header.consensus_update {
+        let period = compute_sync_committee_period_at_slot::<C>(
+            update.update_data.finalized_header.beacon.slot,
+        );
         state_update = state_update.add_storage_write::<SyncCommitteeStore>(
-            current_epoch + 1,
+            period + 1,
             InverseSyncCommittee::take_inverse(&update.next_sync_committee),
         );
     }
@@ -421,8 +419,8 @@ pub fn verify_misbehaviour<C: ChainSpec>(
         .read_self_storage::<SyncCommitteeStore>(epoch)?
         .as_sync_committee();
     let (current_sync_committee, next_sync_committee) = match misbehaviour.update_1 {
-        LightClientUpdate::EpochChange(_) => (None, Some(&sync_committee)),
-        LightClientUpdate::WithinEpoch(_) => (Some(&sync_committee), None),
+        LightClientUpdate::SyncCommitteePeriodChange(_) => (None, Some(&sync_committee)),
+        LightClientUpdate::WithinSyncCommitteePeriod(_) => (Some(&sync_committee), None),
     };
 
     // Make sure both headers would have been accepted by the light client
@@ -528,7 +526,9 @@ mod tests {
         testing::{mock_dependencies, mock_env},
         Addr, Timestamp,
     };
-    use ethereum_light_client_types::{AccountProof, LightClientUpdateData, WithinEpochUpdate};
+    use ethereum_light_client_types::{
+        AccountProof, LightClientUpdateData, WithinSyncCommitteePeriodUpdate,
+    };
     use ethereum_sync_protocol::utils::compute_timestamp_at_slot;
     use hex_literal::hex;
     use unionlabs::primitives::H160;
@@ -607,9 +607,11 @@ mod tests {
             InverseSyncCommittee::take_inverse(&CURRENT_SYNC_COMMITTEE),
             Header {
                 trusted_height: Height::new(INITIAL_HEADER.slot.get()),
-                consensus_update: LightClientUpdate::WithinEpoch(Box::new(WithinEpochUpdate {
-                    update_data: FINALITY_UPDATE.clone(),
-                })),
+                consensus_update: LightClientUpdate::WithinSyncCommitteePeriod(Box::new(
+                    WithinSyncCommitteePeriodUpdate {
+                        update_data: FINALITY_UPDATE.clone(),
+                    },
+                )),
                 ibc_account_proof: AccountProof {
                     storage_root: FINALITY_UPDATE_ACCOUNT_STORAGE_ROOT,
                     proof: FINALITY_UPDATE_ACCOUNT_PROOF.clone(),
