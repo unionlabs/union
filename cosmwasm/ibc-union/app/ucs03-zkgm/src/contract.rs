@@ -6,7 +6,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Binary,
     CodeInfoResponse, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QueryRequest, Reply,
-    Response, StdError, StdResult, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
+    Response, StdError, StdResult, SubMsg, SubMsgResult, Uint256, WasmMsg,
 };
 use ibc_union_msg::{
     module::IbcUnionMsg,
@@ -26,8 +26,8 @@ use crate::{
     com::{
         Ack, Batch, BatchAck, Forward, FungibleAssetOrder, FungibleAssetOrderAck, Instruction,
         Multiplex, ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL,
-        FORWARD_SALT_MAGIC, INSTR_VERSION_0, OP_BATCH, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER,
-        OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
+        FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1, OP_BATCH, OP_FORWARD,
+        OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
     },
     msg::{EurekaMsg, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg},
     state::{
@@ -210,30 +210,6 @@ pub fn execute(
                 Ok(Response::new())
             }
         }
-        ExecuteMsg::Transfer {
-            channel_id,
-            receiver,
-            base_token,
-            base_amount,
-            quote_token,
-            quote_amount,
-            timeout_height,
-            timeout_timestamp,
-            salt,
-        } => transfer(
-            deps,
-            env,
-            info,
-            channel_id,
-            receiver,
-            base_token,
-            base_amount,
-            quote_token,
-            quote_amount,
-            timeout_height,
-            timeout_timestamp,
-            salt,
-        ),
         ExecuteMsg::Send {
             channel_id,
             timeout_height,
@@ -1469,7 +1445,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
 /// This is the main entry point for instruction validation that routes to specific verify functions
 /// based on the instruction opcode.
 pub fn verify_internal(
-    deps: Deps,
+    deps: DepsMut,
     info: MessageInfo,
     channel_id: ChannelId,
     path: U256,
@@ -1523,7 +1499,7 @@ pub fn verify_internal(
 /// Checks token metadata matches and validates unwrapping conditions by comparing
 /// the token origin path with the current path and channel.
 fn verify_fungible_asset_order(
-    deps: Deps,
+    deps: DepsMut,
     info: MessageInfo,
     channel_id: ChannelId,
     path: U256,
@@ -1561,7 +1537,7 @@ fn verify_fungible_asset_order(
 
     // Compute the wrapped token from the destination to source
     let (wrapped_token, _) = predict_wrapped_token(
-        deps,
+        deps.as_ref(),
         &minter,
         path,
         channel_id,
@@ -1610,12 +1586,20 @@ fn verify_fungible_asset_order(
         return Err(ContractError::InvalidAssetOrigin);
     } else {
         // Escrow tokens as the counterparty will mint them
+        let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
+        increase_channel_balance(
+            deps,
+            channel_id,
+            path,
+            base_token_str.to_string(),
+            base_amount,
+        )?;
         *response = response.clone().add_message(make_wasm_msg(
             LocalTokenMsg::Escrow {
                 from: info.sender.to_string(),
                 denom: base_token_str.to_string(),
                 recipient: minter.to_string(),
-                amount: Uint256::from_be_bytes(order.base_amount.to_be_bytes())
+                amount: base_amount
                     .try_into()
                     .map_err(|_| ContractError::AmountOverflow)?,
             },
@@ -1630,7 +1614,7 @@ fn verify_fungible_asset_order(
 /// Verifies a batch instruction by checking each sub-instruction is allowed and valid.
 /// Only certain instruction types are allowed in batches to prevent complex nested operations.
 fn verify_batch(
-    deps: Deps,
+    mut deps: DepsMut,
     info: MessageInfo,
     channel_id: ChannelId,
     path: U256,
@@ -1641,7 +1625,14 @@ fn verify_batch(
         if !is_allowed_batch_instruction(instruction.opcode) {
             return Err(ContractError::InvalidBatchInstruction);
         }
-        verify_internal(deps, info.clone(), channel_id, path, instruction, response)?;
+        verify_internal(
+            deps.branch(),
+            info.clone(),
+            channel_id,
+            path,
+            instruction,
+            response,
+        )?;
     }
     Ok(())
 }
@@ -1649,7 +1640,7 @@ fn verify_batch(
 /// Verifies a forward instruction by checking the sub-instruction is allowed and valid.
 /// Forward instructions can contain batch, multiplex or fungible asset orders.
 pub fn verify_forward(
-    deps: Deps,
+    deps: DepsMut,
     info: MessageInfo,
     channel_id: ChannelId,
     forward: &Forward,
@@ -1700,7 +1691,7 @@ fn is_allowed_forward_instruction(opcode: u8) -> bool {
 
 #[allow(clippy::too_many_arguments)]
 pub fn send(
-    deps: DepsMut,
+    mut deps: DepsMut,
     info: MessageInfo,
     channel_id: ChannelId,
     timeout_height: u64,
@@ -1711,7 +1702,7 @@ pub fn send(
     let mut response = Response::new();
     // Verify the instruction
     verify_internal(
-        deps.as_ref(),
+        deps.branch(),
         info.clone(),
         channel_id,
         U256::ZERO,
@@ -1739,126 +1730,6 @@ pub fn send(
         }),
         vec![],
     )?))
-}
-
-#[allow(clippy::too_many_arguments)]
-fn transfer(
-    mut deps: DepsMut,
-    _: Env,
-    info: MessageInfo,
-    channel_id: ChannelId,
-    receiver: Bytes,
-    base_token: String,
-    base_amount: Uint128,
-    quote_token: Bytes,
-    quote_amount: Uint256,
-    timeout_height: u64,
-    timeout_timestamp: u64,
-    salt: H256,
-) -> Result<Response, ContractError> {
-    // NOTE(aeryz): We don't check whether the funds are provided here. We check it in the
-    // minter because cw20 token minter doesn't require funds to be given in the native form.
-    let minter = TOKEN_MINTER.load(deps.storage)?;
-    // If the origin exists, the preimage exists
-    let unwrapped_asset = HASH_TO_FOREIGN_TOKEN.may_load(deps.storage, base_token.clone())?;
-    let mut messages = Vec::<SubMsg>::new();
-    // TODO: handle forward path
-    let mut origin = TOKEN_ORIGIN.may_load(deps.storage, base_token.clone())?;
-    match origin {
-        // Burn as we are going to unescrow on the counterparty
-        Some(path)
-            if path == Uint256::from(channel_id.raw())
-                && unwrapped_asset == Some(quote_token.clone()) =>
-        {
-            messages.push(SubMsg::reply_on_success(
-                make_wasm_msg(
-                    WrappedTokenMsg::BurnTokens {
-                        denom: base_token.clone(),
-                        amount: base_amount,
-                        burn_from_address: minter.to_string(),
-                        sender: info.sender.clone(),
-                    },
-                    &minter,
-                    info.funds,
-                )?,
-                ESCROW_REPLY_ID,
-            ))
-        }
-        // Escrow and update the balance, the counterparty will mint the token
-        _ => {
-            origin = None;
-            messages.push(SubMsg::reply_on_success(
-                make_wasm_msg(
-                    LocalTokenMsg::Escrow {
-                        from: info.sender.to_string(),
-                        denom: base_token.clone(),
-                        recipient: minter.to_string(),
-                        amount: base_amount,
-                    },
-                    &minter,
-                    info.funds,
-                )?,
-                ESCROW_REPLY_ID,
-            ));
-            // Use path = 0 for local tokens, matching Solidity implementation
-            increase_channel_balance(
-                deps.branch(),
-                channel_id,
-                U256::ZERO,
-                base_token.clone(),
-                base_amount.into(),
-            )?;
-        }
-    };
-    let MetadataResponse {
-        name: base_token_name,
-        symbol: base_token_symbol,
-        decimals: base_token_decimals,
-    } = deps.querier.query::<MetadataResponse>(&QueryRequest::Wasm(
-        cosmwasm_std::WasmQuery::Smart {
-            contract_addr: minter.to_string(),
-            msg: to_json_binary(&ucs03_zkgm_token_minter_api::QueryMsg::Metadata {
-                denom: base_token.clone(),
-            })?,
-        },
-    ))?;
-    let config = CONFIG.load(deps.storage)?;
-    messages.push(SubMsg::new(wasm_execute(
-        &config.ibc_host,
-        &ibc_union_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
-            source_channel_id: channel_id,
-            timeout_height,
-            timeout_timestamp,
-            data: ZkgmPacket {
-                salt: salt.into(),
-                path: U256::ZERO,
-                instruction: Instruction {
-                    version: INSTR_VERSION_1,
-                    opcode: OP_FUNGIBLE_ASSET_ORDER,
-                    operand: FungibleAssetOrder {
-                        sender: info.sender.as_bytes().to_vec().into(),
-                        receiver: Vec::from(receiver).into(),
-                        base_token: base_token.as_bytes().to_vec().into(),
-                        base_amount: base_amount.u128().try_into().expect("u256>u128"),
-                        base_token_symbol,
-                        base_token_name,
-                        base_token_decimals,
-                        base_token_path: origin
-                            .map(|x| U256::from_be_bytes(x.to_be_bytes()))
-                            .unwrap_or(U256::ZERO),
-                        quote_token: Vec::from(quote_token).into(),
-                        quote_amount: U256::from_be_bytes(quote_amount.to_be_bytes()),
-                    }
-                    .abi_encode_params()
-                    .into(),
-                },
-            }
-            .abi_encode_params()
-            .into(),
-        }),
-        vec![],
-    )?));
-    Ok(Response::new().add_submessages(messages))
 }
 
 #[cosmwasm_schema::cw_serde]

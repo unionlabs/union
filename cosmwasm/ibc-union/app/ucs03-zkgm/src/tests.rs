@@ -40,7 +40,7 @@ mod tests {
 
     #[test]
     fn test_verify_internal_unsupported_version() {
-        let deps = mock_dependencies();
+        let mut deps = mock_dependencies();
         let info = message_info(&Addr::unchecked("sender"), &[]);
 
         let instruction = Instruction {
@@ -51,7 +51,7 @@ mod tests {
 
         let mut response = Response::new();
         let result = verify_internal(
-            deps.as_ref(),
+            deps.as_mut(),
             info,
             ChannelId!(1),
             U256::ZERO,
@@ -66,7 +66,7 @@ mod tests {
 
     #[test]
     fn test_verify_internal_unknown_opcode() {
-        let deps = mock_dependencies();
+        let mut deps = mock_dependencies();
         let info = message_info(&Addr::unchecked("sender"), &[]);
 
         let instruction = Instruction {
@@ -77,7 +77,7 @@ mod tests {
 
         let mut response = Response::new();
         let result = verify_internal(
-            deps.as_ref(),
+            deps.as_mut(),
             info,
             ChannelId!(1),
             U256::ZERO,
