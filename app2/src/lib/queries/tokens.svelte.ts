@@ -1,6 +1,6 @@
 import { Effect, Option, Schema } from "effect"
 import type { UniversalChainId } from "$lib/schema/chain"
-import { Token, TokenRawDenom } from "$lib/schema/token"
+import { Tokens, TokenRawDenom } from "$lib/schema/token"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import { graphql } from "gql.tada"
@@ -9,7 +9,7 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
   Effect.gen(function* () {
     yield* Effect.log(`zkgm starting token fetcher for ${universalChainId}`)
     const response = yield* createQueryGraphql({
-      schema: Schema.Struct({ v2_tokens: Schema.Array(Token) }),
+      schema: Schema.Struct({ v2_tokens: Tokens }),
       document: graphql(`
         query TokensForChain($universal_chain_id: String!) @cached(ttl: 60) {
           v2_tokens(args: { p_universal_chain_id: $universal_chain_id }) {
