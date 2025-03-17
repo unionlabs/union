@@ -1,5 +1,5 @@
-import { Effect, type Fiber, Option, Queue, Chunk } from "effect"
-import type { TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
+import { Effect, type Fiber, Option, Queue } from "effect"
+import type { TokenRawDenom } from "$lib/schema/token"
 import type { Chain, UniversalChainId } from "$lib/schema/chain"
 import { RawTokenBalance } from "$lib/schema/token"
 import { fetchEvmBalance, type FetchEvmBalanceError } from "$lib/services/evm/balances"
