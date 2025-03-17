@@ -1140,7 +1140,6 @@ fn write_acknowledgement_ok() {
     .expect("recv packet ok");
 
     let msg = MsgWriteAcknowledgement {
-        channel_id: 2,
         packet: Packet {
             source_channel: 1,
             destination_channel: 2,
@@ -1239,7 +1238,6 @@ fn write_acknowledgement_module_is_not_channel_owner() {
     .expect("recv packet ok");
 
     let msg = MsgWriteAcknowledgement {
-        channel_id: 2,
         packet: Packet {
             source_channel: 1,
             destination_channel: 2,
@@ -1317,7 +1315,6 @@ fn write_acknowledgement_packet_not_received() {
     .expect("channel open ack is ok");
 
     let msg = MsgWriteAcknowledgement {
-        channel_id: 2,
         packet: Packet {
             source_channel: 1,
             destination_channel: 2,
@@ -1416,7 +1413,6 @@ fn write_acknowledgement_already_exists() {
     .expect("recv packet ok");
 
     let msg = MsgWriteAcknowledgement {
-        channel_id: 2,
         packet: Packet {
             source_channel: 1,
             destination_channel: 2,
@@ -1434,7 +1430,6 @@ fn write_acknowledgement_already_exists() {
     )
     .is_ok());
     let msg = MsgWriteAcknowledgement {
-        channel_id: 2,
         packet: Packet {
             source_channel: 1,
             destination_channel: 2,
@@ -1731,7 +1726,6 @@ fn batch_acks_ok() {
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
-        channel_id: 2,
         packet: Packet {
             source_channel: 0,
             destination_channel: 2,
@@ -1769,7 +1763,6 @@ fn batch_acks_ok() {
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
-        channel_id: 2,
         packet: Packet {
             source_channel: 0,
             destination_channel: 2,
@@ -1982,7 +1975,6 @@ fn batch_acks_tampered_packet() {
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
-        channel_id: 2,
         packet: Packet {
             source_channel: 0,
             destination_channel: 2,
@@ -2020,7 +2012,6 @@ fn batch_acks_tampered_packet() {
     )
     .expect("recv packet ok");
     let msg = MsgWriteAcknowledgement {
-        channel_id: 2,
         packet: Packet {
             source_channel: 0,
             destination_channel: 2,

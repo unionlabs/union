@@ -15,23 +15,46 @@ library IBCPacketLib {
         0x0200000000000000000000000000000000000000000000000000000000000000;
     bytes32 public constant COMMITMENT_NULL = bytes32(uint256(0));
 
-    event PacketSend(bytes32 indexed packetHash, IBCPacket packet);
+    event PacketSend(
+        uint32 indexed channelId, bytes32 indexed packetHash, IBCPacket packet
+    );
     event PacketRecv(
-        bytes32 indexed packetHash, address indexed maker, bytes makerMsg
+        uint32 indexed channelId,
+        bytes32 indexed packetHash,
+        address indexed maker,
+        bytes makerMsg
     );
     event IntentPacketRecv(
-        bytes32 indexed packetHash, address indexed maker, bytes makerMsg
+        uint32 indexed channelId,
+        bytes32 indexed packetHash,
+        address indexed maker,
+        bytes makerMsg
     );
-    event WriteAck(bytes32 indexed packetHash, bytes acknowledgement);
+    event WriteAck(
+        uint32 indexed channelId,
+        bytes32 indexed packetHash,
+        bytes acknowledgement
+    );
     event PacketAck(
-        bytes32 indexed packetHash, bytes acknowledgement, address indexed maker
+        uint32 indexed channelId,
+        bytes32 indexed packetHash,
+        bytes acknowledgement,
+        address indexed maker
     );
-    event PacketTimeout(bytes32 indexed packetHash, address indexed maker);
+    event PacketTimeout(
+        uint32 indexed channelId,
+        bytes32 indexed packetHash,
+        address indexed maker
+    );
     event BatchedPreviouslySent(
-        bytes32 indexed batchHash, bytes32 indexed packetHash
+        uint32 indexed channelId,
+        bytes32 indexed batchHash,
+        bytes32 indexed packetHash
     );
     event BatchedPreviouslyAcked(
-        bytes32 indexed batchHash, bytes32 indexed packetHash
+        uint32 indexed channelId,
+        bytes32 indexed batchHash,
+        bytes32 indexed packetHash
     );
 
     function commitAcksMemory(
@@ -114,7 +137,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             if (commitment != IBCPacketLib.COMMITMENT_MAGIC) {
                 revert IBCErrors.ErrPacketCommitmentNotFound();
             }
-            emit IBCPacketLib.BatchedPreviouslySent(batchHash, packetHash);
+            emit IBCPacketLib.BatchedPreviouslySent(
+                channelId, batchHash, packetHash
+            );
         }
         commitments[IBCCommitment.batchPacketsCommitmentKey(batchHash)] =
             IBCPacketLib.COMMITMENT_MAGIC;
@@ -153,7 +178,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             if (commitment != IBCPacketLib.commitAck(ack)) {
                 revert IBCErrors.ErrCommittedAckNotPresent();
             }
-            emit IBCPacketLib.BatchedPreviouslyAcked(batchHash, packetHash);
+            emit IBCPacketLib.BatchedPreviouslyAcked(
+                channelId, batchHash, packetHash
+            );
         }
         commitments[IBCCommitment.batchReceiptsCommitmentKey(
             IBCPacketLib.commitPackets(msg_.packets)
@@ -161,7 +188,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
     }
 
     function sendPacket(
-        uint32 sourceChannel,
+        uint32 sourceChannelId,
         uint64 timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata data
@@ -169,12 +196,12 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         if (timeoutTimestamp == 0 && timeoutHeight == 0) {
             revert IBCErrors.ErrTimeoutMustBeSet();
         }
-        if (!authenticateChannelOwner(sourceChannel)) {
+        if (!authenticateChannelOwner(sourceChannelId)) {
             revert IBCErrors.ErrUnauthorized();
         }
-        IBCChannel storage channel = ensureChannelState(sourceChannel);
+        IBCChannel storage channel = ensureChannelState(sourceChannelId);
         IBCPacket memory packet = IBCPacket({
-            sourceChannelId: sourceChannel,
+            sourceChannelId: sourceChannelId,
             destinationChannelId: channel.counterpartyChannelId,
             data: data,
             timeoutHeight: timeoutHeight,
@@ -188,7 +215,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         }
         commitments[commitmentKey] = IBCPacketLib.COMMITMENT_MAGIC;
 
-        emit IBCPacketLib.PacketSend(packetHash, packet);
+        emit IBCPacketLib.PacketSend(sourceChannelId, packetHash, packet);
 
         return packet;
     }
@@ -268,16 +295,20 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                         msg.sender, packet, maker, makerMsg
                     );
                     emit IBCPacketLib.IntentPacketRecv(
-                        packetHash, maker, makerMsg
+                        packet.destinationChannelId, packetHash, maker, makerMsg
                     );
                 } else {
                     acknowledgement =
                         module.onRecvPacket(msg.sender, packet, maker, makerMsg);
-                    emit IBCPacketLib.PacketRecv(packetHash, maker, makerMsg);
+                    emit IBCPacketLib.PacketRecv(
+                        packet.destinationChannelId, packetHash, maker, makerMsg
+                    );
                 }
                 if (acknowledgement.length > 0) {
                     _writeAcknowledgement(commitmentKey, acknowledgement);
-                    emit IBCPacketLib.WriteAck(packetHash, acknowledgement);
+                    emit IBCPacketLib.WriteAck(
+                        packet.destinationChannelId, packetHash, acknowledgement
+                    );
                 }
             }
         }
@@ -338,7 +369,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         bytes32 commitmentKey =
             IBCCommitment.batchReceiptsCommitmentKey(packetHash);
         _writeAcknowledgement(commitmentKey, acknowledgement);
-        emit IBCPacketLib.WriteAck(packetHash, acknowledgement);
+        emit IBCPacketLib.WriteAck(
+            packet.destinationChannelId, packetHash, acknowledgement
+        );
     }
 
     function acknowledgePacket(
@@ -375,7 +408,10 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 msg.sender, packet, acknowledgement, msg_.relayer
             );
             emit IBCPacketLib.PacketAck(
-                IBCPacketLib.commitPacket(packet), acknowledgement, msg_.relayer
+                sourceChannelId,
+                IBCPacketLib.commitPacket(packet),
+                acknowledgement,
+                msg_.relayer
             );
         }
     }
@@ -419,7 +455,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             revert IBCErrors.ErrTimeoutHeightNotReached();
         }
         module.onTimeoutPacket(msg.sender, packet, msg_.relayer);
-        emit IBCPacketLib.PacketTimeout(packetHash, msg_.relayer);
+        emit IBCPacketLib.PacketTimeout(
+            sourceChannelId, packetHash, msg_.relayer
+        );
     }
 
     function verifyCommitment(
