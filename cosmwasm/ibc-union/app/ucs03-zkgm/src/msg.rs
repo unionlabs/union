@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint128, Uint256};
-use ibc_union_spec::types::Packet;
+use ibc_union_spec::{ChannelId, Packet};
 use unionlabs::primitives::{Bytes, H256};
 
 #[cw_serde]
@@ -43,7 +43,7 @@ pub enum ExecuteMsg {
     /// Used for basic token transfers where the receiver gets quote_amount of quote_token
     /// in exchange for base_amount of base_token.
     Transfer {
-        channel_id: u32,
+        channel_id: ChannelId,
         receiver: Bytes,
         base_token: String,
         base_amount: Uint128,
@@ -57,7 +57,7 @@ pub enum ExecuteMsg {
     /// Allows sending any zkgm instruction (forward, multiplex, batch, etc)
     /// with custom timeout and salt parameters.
     Send {
-        channel_id: u32,
+        channel_id: ChannelId,
         timeout_height: u64,
         timeout_timestamp: u64,
         salt: H256,
@@ -84,8 +84,8 @@ pub enum ExecuteMsg {
 pub enum EurekaMsg {
     OnZkgm {
         path: Uint256,
-        source_channel_id: u32,
-        destination_channel_id: u32,
+        source_channel_id: ChannelId,
+        destination_channel_id: ChannelId,
         sender: Bytes,
         message: Bytes,
     },
@@ -100,7 +100,7 @@ pub enum QueryMsg {
     PredictWrappedToken {
         path: String,
         /// Destination channel id
-        channel: u32,
+        channel_id: ChannelId,
         /// Base token denom
         token: Bytes,
     },

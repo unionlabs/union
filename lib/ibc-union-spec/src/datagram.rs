@@ -2,7 +2,10 @@ use enumorph::Enumorph;
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
 use voyager_core::ClientType;
 
-use crate::types::{Channel, ChannelId, ClientId, ConnectionId, Packet};
+use crate::{
+    types::{ChannelId, ClientId, ConnectionId},
+    Channel, Packet,
+};
 
 /// All datagrams that are a part of the IBC union specification.
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]

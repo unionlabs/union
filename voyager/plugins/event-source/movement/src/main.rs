@@ -17,8 +17,7 @@ use ibc_union_spec::{
         PacketSend, UpdateClient, WriteAck,
     },
     path::{ChannelPath, ConnectionPath},
-    types::{Connection, ConnectionState},
-    IbcUnion,
+    ChannelId, ClientId, Connection, ConnectionState, IbcUnion,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -165,7 +164,7 @@ impl Module {
     async fn make_packet_metadata(
         &self,
         event_height: Height,
-        self_channel_id: u32,
+        self_channel_id: ChannelId,
         voyager_client: &VoyagerClient,
     ) -> RpcResult<(ChainId, ClientInfo, ChannelMetadata, ChannelMetadata)> {
         let self_channel = voyager_client
@@ -211,7 +210,7 @@ impl Module {
                 client_state_meta.counterparty_chain_id.clone(),
                 counterparty_latest_height,
                 ChannelPath {
-                    channel_id: other_channel_id,
+                    channel_id: other_channel_id.unwrap(),
                 },
             )
             .await?;
@@ -225,11 +224,11 @@ impl Module {
             },
         };
         let destination_channel = ChannelMetadata {
-            channel_id: other_channel_id,
+            channel_id: other_channel_id.unwrap(),
             version: other_channel.version,
             connection: ConnectionMetadata {
                 client_id: self_connection.counterparty_client_id,
-                connection_id: self_connection.counterparty_connection_id,
+                connection_id: self_connection.counterparty_connection_id.unwrap(),
             },
         };
 
@@ -403,62 +402,83 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 tx_hash,
                 height,
             }) => {
-                let (full_event, client_id): (FullEvent, u32) = match event {
+                let (full_event, client_id): (FullEvent, ClientId) = match event {
                     events::IbcEvent::CreateClient(event) => (
                         CreateClient {
-                            client_id: event.client_id,
+                            client_id: event.client_id.try_into().unwrap(),
                             client_type: ClientType::new(event.client_type),
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::UpdateClient(event) => (
                         UpdateClient {
-                            client_id: event.client_id,
+                            client_id: event.client_id.try_into().unwrap(),
                             client_type: ClientType::new(event.client_type),
                             height: event.counterparty_height,
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::ConnectionOpenInit(event) => (
                         ConnectionOpenInit {
-                            client_id: event.client_id,
-                            connection_id: event.connection_id,
-                            counterparty_client_id: event.counterparty_client_id,
+                            client_id: event.client_id.try_into().unwrap(),
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::ConnectionOpenTry(event) => (
                         ConnectionOpenTry {
-                            client_id: event.client_id,
-                            connection_id: event.connection_id,
-                            counterparty_client_id: event.counterparty_client_id,
-                            counterparty_connection_id: event.counterparty_connection_id,
+                            client_id: event.client_id.try_into().unwrap(),
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
+                            counterparty_connection_id: event
+                                .counterparty_connection_id
+                                .try_into()
+                                .unwrap(),
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::ConnectionOpenAck(event) => (
                         ConnectionOpenAck {
-                            client_id: event.client_id,
-                            connection_id: event.connection_id,
-                            counterparty_client_id: event.counterparty_client_id,
-                            counterparty_connection_id: event.counterparty_connection_id,
+                            client_id: event.client_id.try_into().unwrap(),
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
+                            counterparty_connection_id: event
+                                .counterparty_connection_id
+                                .try_into()
+                                .unwrap(),
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::ConnectionOpenConfirm(event) => (
                         ConnectionOpenConfirm {
-                            client_id: event.client_id,
-                            connection_id: event.connection_id,
-                            counterparty_client_id: event.counterparty_client_id,
-                            counterparty_connection_id: event.counterparty_connection_id,
+                            client_id: event.client_id.try_into().unwrap(),
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
+                            counterparty_connection_id: event
+                                .counterparty_connection_id
+                                .try_into()
+                                .unwrap(),
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::ChannelOpenInit(event) => {
                         let ledger_version = self.ledger_version_of_height(height).await;
@@ -479,7 +499,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenInit {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id,
+                                channel_id: event.channel_id.try_into().unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.into(),
                                 connection,
                                 version: event.version,
@@ -508,9 +528,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenTry {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id,
+                                channel_id: event.channel_id.try_into().unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.into(),
-                                counterparty_channel_id: event.counterparty_channel_id,
+                                counterparty_channel_id: event
+                                    .counterparty_channel_id
+                                    .try_into()
+                                    .unwrap(),
                                 connection,
                                 version: event.version,
                             }
@@ -548,9 +571,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenAck {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id,
+                                channel_id: event.channel_id.try_into().unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.into(),
-                                counterparty_channel_id: event.counterparty_channel_id,
+                                counterparty_channel_id: event
+                                    .counterparty_channel_id
+                                    .try_into()
+                                    .unwrap(),
                                 connection,
                                 version: channel.version,
                             }
@@ -588,9 +614,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenConfirm {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id,
+                                channel_id: event.channel_id.try_into().unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.into(),
-                                counterparty_channel_id: event.counterparty_channel_id,
+                                counterparty_channel_id: event
+                                    .counterparty_channel_id
+                                    .try_into()
+                                    .unwrap(),
                                 connection,
                                 version: channel.version,
                             }
@@ -607,7 +636,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.destination_channel_id,
+                                event.packet.destination_channel_id.try_into().unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -638,7 +667,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.destination_channel_id,
+                                event.packet.destination_channel_id.try_into().unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -669,7 +698,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.source_channel_id,
+                                event.source_channel_id.try_into().unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -699,7 +728,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.source_channel_id,
+                                event.packet.source_channel_id.try_into().unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -767,9 +796,9 @@ fn convert_connection(connection: ConnectionEnd) -> Connection {
             3 => ConnectionState::Open,
             _ => panic!("connection state must be 1..=3"),
         },
-        client_id: connection.client_id,
-        counterparty_client_id: connection.counterparty_client_id,
-        counterparty_connection_id: connection.counterparty_connection_id,
+        client_id: connection.client_id.try_into().unwrap(),
+        counterparty_client_id: connection.counterparty_client_id.try_into().unwrap(),
+        counterparty_connection_id: connection.counterparty_connection_id.try_into().ok(),
     }
 }
 

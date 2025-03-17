@@ -597,7 +597,7 @@ mod tests {
             Timestamp::from_seconds(FINALITY_UPDATE.attested_header.execution.timestamp + 24);
         verify_header::<Mainnet>(
             &IbcClientCtx {
-                client_id: 1,
+                client_id: 1.try_into().unwrap(),
                 ibc_host: Addr::unchecked("hey bro"),
                 deps: deps.as_ref(),
                 env,

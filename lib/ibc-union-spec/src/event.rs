@@ -2,7 +2,10 @@ use enumorph::Enumorph;
 use unionlabs::primitives::Bytes;
 use voyager_core::ClientType;
 
-use crate::types::{ChannelId, ClientId, Connection, ConnectionId, Packet};
+use crate::{
+    types::{ChannelId, ClientId, ConnectionId},
+    Connection, Packet,
+};
 
 /// The fully filled out event for IBC union. This will likely not be what is exactly emitted on chain, however *enough* information should be emitted such that this structure can be constructed.
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]

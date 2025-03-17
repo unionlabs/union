@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use ibc_union_spec::ClientId;
 use unionlabs_primitives::Bytes;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -20,8 +21,8 @@ pub struct MisbehaviourResponse {
 #[serde(rename_all = "snake_case")]
 pub enum VerifyCreationResponseEvent {
     CreateLensClient {
-        l1_client_id: u32,
-        l2_client_id: u32,
+        l1_client_id: ClientId,
+        l2_client_id: ClientId,
         l2_chain_id: String,
     },
 }
@@ -55,43 +56,43 @@ pub struct UpdateStateResponse {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     GetTimestamp {
-        client_id: u32,
+        client_id: ClientId,
         height: u64,
     },
     GetLatestHeight {
-        client_id: u32,
+        client_id: ClientId,
     },
     GetStatus {
-        client_id: u32,
+        client_id: ClientId,
     },
     VerifyCreation {
         caller: String,
-        client_id: u32,
+        client_id: ClientId,
         client_state: Bytes,
         consensus_state: Bytes,
         relayer: String,
     },
     VerifyMembership {
-        client_id: u32,
+        client_id: ClientId,
         height: u64,
         proof: Bytes,
         path: Bytes,
         value: Bytes,
     },
     VerifyNonMembership {
-        client_id: u32,
+        client_id: ClientId,
         height: u64,
         proof: Bytes,
         path: Bytes,
     },
     UpdateState {
         caller: String,
-        client_id: u32,
+        client_id: ClientId,
         relayer: String,
     },
     Misbehaviour {
         caller: String,
-        client_id: u32,
+        client_id: ClientId,
         message: Bytes,
         relayer: String,
     },

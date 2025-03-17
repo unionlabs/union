@@ -1,4 +1,4 @@
-#![warn(clippy::unwrap_used)]
+// #![warn(clippy::unwrap_used)]
 
 use std::{
     cmp::Ordering,
@@ -1632,7 +1632,9 @@ impl Module {
                             version: source_channel.version,
                             connection: ibc_union_spec::event::ConnectionMetadata {
                                 client_id: source_connection.counterparty_client_id,
-                                connection_id: source_connection.counterparty_connection_id,
+                                connection_id: source_connection
+                                    .counterparty_connection_id
+                                    .unwrap(),
                             },
                         },
                         timeout_height: packet.timeout_height,
@@ -1705,7 +1707,9 @@ impl Module {
                             version: source_channel.version,
                             connection: ibc_union_spec::event::ConnectionMetadata {
                                 client_id: source_connection.counterparty_client_id,
-                                connection_id: source_connection.counterparty_connection_id,
+                                connection_id: source_connection
+                                    .counterparty_connection_id
+                                    .unwrap(),
                             },
                         },
                         timeout_height: packet.timeout_height,
@@ -1789,7 +1793,9 @@ impl Module {
                             version: source_channel.version.clone(),
                             connection: ibc_union_spec::event::ConnectionMetadata {
                                 client_id: destination_connection.counterparty_client_id,
-                                connection_id: destination_connection.counterparty_connection_id,
+                                connection_id: destination_connection
+                                    .counterparty_connection_id
+                                    .unwrap(),
                             },
                         },
                         destination_channel: ibc_union_spec::event::ChannelMetadata {
@@ -1880,7 +1886,9 @@ impl Module {
                             version: source_channel.version.clone(),
                             connection: ibc_union_spec::event::ConnectionMetadata {
                                 client_id: destination_connection.counterparty_client_id,
-                                connection_id: destination_connection.counterparty_connection_id,
+                                connection_id: destination_connection
+                                    .counterparty_connection_id
+                                    .unwrap(),
                             },
                         },
                         destination_channel: ibc_union_spec::event::ChannelMetadata {

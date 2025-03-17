@@ -94,7 +94,7 @@ fn create_client_commitments_saved() {
 
     register_client(deps.as_mut()).expect("register client ok");
     let res = create_client(deps.as_mut()).expect("create client ok");
-    let client_id: u32 = res
+    let client_id = res
         .events
         .iter()
         .find(|event| event.ty.eq(events::client::CREATE))
@@ -104,7 +104,7 @@ fn create_client_commitments_saved() {
         .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
         .expect("client type attribute exists")
         .value
-        .parse()
+        .parse::<ClientId>()
         .expect("client type string is u32");
 
     assert_eq!(
@@ -153,7 +153,7 @@ fn update_client_ok() {
 
     register_client(deps.as_mut()).expect("register client ok");
     let res = create_client(deps.as_mut()).expect("create client ok");
-    let client_id: u32 = res
+    let client_id = res
         .events
         .iter()
         .find(|event| event.ty.eq(events::client::CREATE))
@@ -163,7 +163,7 @@ fn update_client_ok() {
         .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
         .expect("client type attribute exists")
         .value
-        .parse()
+        .parse::<ClientId>()
         .expect("client type string is u32");
 
     let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
@@ -201,7 +201,7 @@ fn update_client_ko() {
 
     register_client(deps.as_mut()).expect("register client ok");
     let res = create_client(deps.as_mut()).expect("create client ok");
-    let client_id: u32 = res
+    let client_id = res
         .events
         .iter()
         .find(|event| event.ty.eq(events::client::CREATE))
@@ -211,7 +211,7 @@ fn update_client_ko() {
         .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
         .expect("client type attribute exists")
         .value
-        .parse()
+        .parse::<ClientId>()
         .expect("client type string is u32");
 
     let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
@@ -254,7 +254,7 @@ fn update_client_commitments_saved() {
 
     register_client(deps.as_mut()).expect("register client ok");
     let res = create_client(deps.as_mut()).expect("create client ok");
-    let client_id: u32 = res
+    let client_id = res
         .events
         .iter()
         .find(|event| event.ty.eq(events::client::CREATE))
@@ -264,7 +264,7 @@ fn update_client_commitments_saved() {
         .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
         .expect("client type attribute exists")
         .value
-        .parse()
+        .parse::<ClientId>()
         .expect("client type string is u32");
 
     let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {

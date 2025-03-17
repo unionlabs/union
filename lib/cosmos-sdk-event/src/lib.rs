@@ -85,12 +85,6 @@ pub struct CosmosSdkEvent<T> {
     pub event: T,
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
-enum MyEvents {
-    ConnectionOpenConfirm(),
-}
-
 impl<T: DeserializeOwned> CosmosSdkEvent<T> {
     pub fn new(mut raw: cometbft_types::abci::event::Event) -> Result<Self, Error> {
         Ok(Self {
@@ -128,11 +122,11 @@ fn pull_attr<T: FromStr<Err: Display>>(
     attrs: &mut Vec<EventAttribute>,
     key: &'static str,
 ) -> Result<Option<T>, Error> {
-    let mut found = attrs.extract_if(|attr| attr.key == key).collect::<Vec<_>>();
+    let mut found = attrs.extract_if(|attr| attr.key == key).peekable();
 
-    match found.pop() {
+    match found.next() {
         Some(attr) => {
-            if found.is_empty() {
+            if found.peek().is_none() {
                 attr.value
                     .parse()
                     .map_err(|e: T::Err| Error::WellKnownKeyParse {

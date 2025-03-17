@@ -45,8 +45,8 @@ pub mod ethabi {
     impl From<Packet> for ibc_solidity::Packet {
         fn from(value: Packet) -> Self {
             Self {
-                source_channel_id: value.source_channel_id,
-                destination_channel_id: value.destination_channel_id,
+                source_channel_id: value.source_channel_id.raw(),
+                destination_channel_id: value.destination_channel_id.raw(),
                 data: value.data.into(),
                 timeout_height: value.timeout_height,
                 timeout_timestamp: value.timeout_timestamp,
@@ -55,16 +55,29 @@ pub mod ethabi {
     }
 
     #[cfg(feature = "ibc-solidity-compat")]
-    impl From<ibc_solidity::Packet> for Packet {
-        fn from(value: ibc_solidity::Packet) -> Self {
-            Self {
-                source_channel_id: value.source_channel_id,
-                destination_channel_id: value.destination_channel_id,
+    impl TryFrom<ibc_solidity::Packet> for Packet {
+        type Error = Error;
+
+        fn try_from(value: ibc_solidity::Packet) -> Result<Self, Self::Error> {
+            Ok(Self {
+                source_channel_id: ChannelId::from_raw(value.source_channel_id)
+                    .ok_or(Error::InvalidSourceChannelId)?,
+                destination_channel_id: ChannelId::from_raw(value.destination_channel_id)
+                    .ok_or(Error::InvalidDestinationChannelId)?,
                 data: value.data.into(),
                 timeout_height: value.timeout_height,
                 timeout_timestamp: value.timeout_timestamp,
-            }
+            })
         }
+    }
+
+    #[cfg(feature = "ibc-solidity-compat")]
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum Error {
+        #[error("invalid source channel id")]
+        InvalidSourceChannelId,
+        #[error("invalid destination channel id")]
+        InvalidDestinationChannelId,
     }
 
     type SolTuple = (Uint<32>, Uint<32>, SolBytes, Uint<64>, Uint<64>);
@@ -86,14 +99,17 @@ pub mod ethabi {
 
         fn valid_token(
             (
-                _source_channel_id,
-                _destination_channel_id,
+                source_channel_id,
+                destination_channel_id,
                 _data,
                 _timeout_height,
                 _timeout_timestamp,
             ): &Self::Token<'_>,
         ) -> bool {
-            true
+            (<Uint<32>>::valid_token(source_channel_id)
+                && <Uint<32>>::detokenize(*source_channel_id) > 0)
+                && (<Uint<32>>::valid_token(destination_channel_id)
+                    && <Uint<32>>::detokenize(*destination_channel_id) > 0)
         }
 
         fn detokenize(
@@ -106,8 +122,12 @@ pub mod ethabi {
             ): Self::Token<'_>,
         ) -> Self::RustType {
             Self {
-                source_channel_id: <Uint<32>>::detokenize(source_channel_id),
-                destination_channel_id: <Uint<32>>::detokenize(destination_channel_id),
+                source_channel_id: ChannelId::from_raw(<Uint<32>>::detokenize(source_channel_id))
+                    .expect("???"),
+                destination_channel_id: ChannelId::from_raw(<Uint<32>>::detokenize(
+                    destination_channel_id,
+                ))
+                .expect("???"),
                 data: SolBytes::detokenize(data).into(),
                 timeout_height: <Uint<64>>::detokenize(timeout_height),
                 timeout_timestamp: <Uint<64>>::detokenize(timeout_timestamp),
@@ -138,8 +158,8 @@ pub mod ethabi {
     impl alloy_sol_types::private::SolTypeValue<Self> for Packet {
         fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
             (
-                <Uint<32> as SolType>::tokenize(&self.source_channel_id),
-                <Uint<32> as SolType>::tokenize(&self.destination_channel_id),
+                <Uint<32> as SolType>::tokenize(&self.source_channel_id.raw()),
+                <Uint<32> as SolType>::tokenize(&self.destination_channel_id.raw()),
                 <SolBytes as SolType>::tokenize(&self.data),
                 <Uint<64> as SolType>::tokenize(&self.timeout_height),
                 <Uint<64> as SolType>::tokenize(&self.timeout_timestamp),
@@ -147,8 +167,23 @@ pub mod ethabi {
         }
 
         fn stv_abi_encode_packed_to(&self, out: &mut Vec<u8>) {
-            let tuple = self.as_tuple();
-            <SolTuple as SolType>::abi_encode_packed_to(&tuple, out)
+            let (
+                source_channel_id,
+                destination_channel_id,
+                data,
+                timeout_height,
+                timeout_timestamp,
+            ) = self.as_tuple();
+            <SolTuple as SolType>::abi_encode_packed_to(
+                &(
+                    source_channel_id.raw(),
+                    destination_channel_id.raw(),
+                    data,
+                    timeout_height,
+                    timeout_timestamp,
+                ),
+                out,
+            )
         }
 
         fn stv_eip712_data_word(&self) -> alloy_sol_types::Word {
@@ -221,8 +256,8 @@ pub mod ethabi {
         #[inline]
         fn eip712_encode_data(&self) -> Vec<u8> {
             [
-                <Uint<32> as SolType>::eip712_data_word(&self.source_channel_id),
-                <Uint<32> as SolType>::eip712_data_word(&self.destination_channel_id),
+                <Uint<32> as SolType>::eip712_data_word(&self.source_channel_id.raw()),
+                <Uint<32> as SolType>::eip712_data_word(&self.destination_channel_id.raw()),
                 <SolBytes as SolType>::eip712_data_word(&self.data),
                 <Uint<64> as SolType>::eip712_data_word(&self.timeout_height),
                 <Uint<64> as SolType>::eip712_data_word(&self.timeout_timestamp),
@@ -249,8 +284,8 @@ mod tests {
         };
 
         let packet = Packet {
-            source_channel_id: 1,
-            destination_channel_id: 1,
+            source_channel_id: ChannelId::from_raw(1).unwrap(),
+            destination_channel_id: ChannelId::from_raw(1).unwrap(),
             data: b"data".into(),
             timeout_height: 1,
             timeout_timestamp: 0,
@@ -276,8 +311,8 @@ mod tests {
         };
 
         let packet = Packet {
-            source_channel_id: 1,
-            destination_channel_id: 1,
+            source_channel_id: ChannelId::from_raw(1).unwrap(),
+            destination_channel_id: ChannelId::from_raw(1).unwrap(),
             data: b"data".into(),
             timeout_height: 1,
             timeout_timestamp: 0,
@@ -296,8 +331,8 @@ mod tests {
     // #[test]
     // fn abi_decode_invalid() {
     //     let ibc_solidity_connection = ibc_solidity::Packet {
-    //         source_channel_id: 1,
-    //         destination_channel_id: 1,
+    //         source_channel_id: ChannelId::from_raw(1).unwrap(),
+    //         destination_channel_id: ChannelId::from_raw(1).unwrap(),
     //         data: b"data".into(),
     //         timeout_height: 1,
     //         timeout_timestamp: 0,

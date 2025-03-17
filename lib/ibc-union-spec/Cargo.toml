@@ -16,6 +16,7 @@ alloy-sol-types = { workspace = true, optional = true }
 bincode         = { workspace = true, optional = true, features = ["derive"] }
 enumorph        = { workspace = true }
 ibc-solidity    = { workspace = true, optional = true }
+num-traits      = "0.2.19"
 schemars        = { workspace = true, optional = true, features = ["derive"] }
 serde           = { workspace = true, optional = true, features = ["derive"] }
 sha3            = { workspace = true }

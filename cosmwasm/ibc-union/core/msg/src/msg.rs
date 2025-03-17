@@ -1,4 +1,4 @@
-use ibc_union_spec::types::{Channel, Packet};
+use ibc_union_spec::{Channel, ChannelId, ClientId, ConnectionId, Packet};
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
 
@@ -43,7 +43,7 @@ pub enum ExecuteMsg {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgMigrateState {
-    pub client_id: u32,
+    pub client_id: ClientId,
     pub client_state: Bytes,
     pub consensus_state: Bytes,
     pub height: u64,
@@ -61,7 +61,7 @@ pub struct MsgCreateClient {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgUpdateClient {
-    pub client_id: u32,
+    pub client_id: ClientId,
     pub client_message: Bytes,
     pub relayer: String,
 }
@@ -69,17 +69,17 @@ pub struct MsgUpdateClient {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgConnectionOpenInit {
-    pub client_id: u32,
-    pub counterparty_client_id: u32,
+    pub client_id: ClientId,
+    pub counterparty_client_id: ClientId,
     pub relayer: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgConnectionOpenTry {
-    pub counterparty_client_id: u32,
-    pub counterparty_connection_id: u32,
-    pub client_id: u32,
+    pub counterparty_client_id: ClientId,
+    pub counterparty_connection_id: ConnectionId,
+    pub client_id: ClientId,
     pub proof_init: Bytes,
     pub proof_height: u64,
     pub relayer: String,
@@ -88,8 +88,8 @@ pub struct MsgConnectionOpenTry {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgConnectionOpenAck {
-    pub connection_id: u32,
-    pub counterparty_connection_id: u32,
+    pub connection_id: ConnectionId,
+    pub counterparty_connection_id: ConnectionId,
     pub proof_try: Bytes,
     pub proof_height: u64,
     pub relayer: String,
@@ -98,7 +98,7 @@ pub struct MsgConnectionOpenAck {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgConnectionOpenConfirm {
-    pub connection_id: u32,
+    pub connection_id: ConnectionId,
     pub proof_ack: Bytes,
     pub proof_height: u64,
     pub relayer: String,
@@ -109,7 +109,7 @@ pub struct MsgConnectionOpenConfirm {
 pub struct MsgChannelOpenInit {
     pub port_id: String,
     pub counterparty_port_id: Bytes,
-    pub connection_id: u32,
+    pub connection_id: ConnectionId,
     pub version: String,
     pub relayer: String,
 }
@@ -128,9 +128,9 @@ pub struct MsgChannelOpenTry {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgChannelOpenAck {
-    pub channel_id: u32,
+    pub channel_id: ChannelId,
     pub counterparty_version: String,
-    pub counterparty_channel_id: u32,
+    pub counterparty_channel_id: ChannelId,
     pub proof_try: Bytes,
     pub proof_height: u64,
     pub relayer: String,
@@ -139,7 +139,7 @@ pub struct MsgChannelOpenAck {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgChannelOpenConfirm {
-    pub channel_id: u32,
+    pub channel_id: ChannelId,
     pub proof_ack: Bytes,
     pub proof_height: u64,
     pub relayer: String,
@@ -148,14 +148,14 @@ pub struct MsgChannelOpenConfirm {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgChannelCloseInit {
-    pub channel_id: u32,
+    pub channel_id: ChannelId,
     pub relayer: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgChannelCloseConfirm {
-    pub channel_id: u32,
+    pub channel_id: ChannelId,
     pub proof_init: Bytes,
     pub proof_height: u64,
     pub relayer: String,
@@ -215,7 +215,7 @@ pub struct MsgBatchAcks {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgWriteAcknowledgement {
-    pub channel_id: u32,
+    pub channel_id: ChannelId,
     pub packet: Packet,
     pub acknowledgement: Bytes,
 }
@@ -223,7 +223,7 @@ pub struct MsgWriteAcknowledgement {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgSendPacket {
-    pub source_channel: u32,
+    pub source_channel_id: ChannelId,
     pub timeout_height: u64,
     pub timeout_timestamp: u64,
     pub data: Bytes,

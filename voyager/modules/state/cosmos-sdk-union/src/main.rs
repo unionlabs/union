@@ -7,9 +7,7 @@ use std::{
 };
 
 use ibc_union_spec::{
-    path::StorePath,
-    types::{Channel, Connection},
-    IbcUnion,
+    path::StorePath, Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -176,7 +174,11 @@ impl Module {
             %client_id,
         )
     )]
-    async fn query_client_state(&self, height: Height, client_id: u32) -> RpcResult<Option<Bytes>> {
+    async fn query_client_state(
+        &self,
+        height: Height,
+        client_id: ClientId,
+    ) -> RpcResult<Option<Bytes>> {
         let client_state = self
             .query_smart::<_, Bytes<Base64>>(
                 &ibc_union_msg::query::QueryMsg::GetClientState { client_id },
@@ -199,7 +201,7 @@ impl Module {
     async fn query_consensus_state(
         &self,
         height: Height,
-        client_id: u32,
+        client_id: ClientId,
         trusted_height: u64,
     ) -> RpcResult<Option<Bytes>> {
         let client_state = self
@@ -226,7 +228,7 @@ impl Module {
     async fn query_connection(
         &self,
         height: Height,
-        connection_id: u32,
+        connection_id: ConnectionId,
     ) -> RpcResult<Option<Connection>> {
         let client_state = self
             .query_smart::<_, Connection>(
@@ -246,7 +248,11 @@ impl Module {
             %channel_id
         )
     )]
-    async fn query_channel(&self, height: Height, channel_id: u32) -> RpcResult<Option<Channel>> {
+    async fn query_channel(
+        &self,
+        height: Height,
+        channel_id: ChannelId,
+    ) -> RpcResult<Option<Channel>> {
         let channel = self
             .query_smart::<_, Channel>(
                 &ibc_union_msg::query::QueryMsg::GetChannel { channel_id },
@@ -315,7 +321,7 @@ pub struct ChainIdParseError {
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn client_info(&self, _: &Extensions, client_id: u32) -> RpcResult<ClientInfo> {
+    async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
         let client_type = self
             .query_smart::<_, String>(
                 &ibc_union_msg::query::QueryMsg::GetClientType { client_id },
