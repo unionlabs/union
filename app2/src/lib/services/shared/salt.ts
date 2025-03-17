@@ -17,5 +17,6 @@ export const generateSalt = Effect.sync(() => {
  */
 export const generateSaltAptos = Effect.sync(() => {
   const saltHex = new Uint8Array(14)
+  crypto.getRandomValues(saltHex)
   return toHex(saltHex)
 })

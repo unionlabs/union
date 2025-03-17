@@ -83,9 +83,7 @@ export const getQuoteToken = (
     }
 
     if (destinationChain.rpc_type === "aptos") {
-      console.info("destinationChain is aptos")
       let network: Network
-      // let rpcUrl: string
 
       const rpc = yield* destinationChain
         .requireRpcUrl("rpc")
@@ -94,14 +92,13 @@ export const getQuoteToken = (
       console.info("rpc: ", rpc.origin)
       if (channel.destination_chain_id === "250") {
         network = Network.TESTNET
-        // rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1"
       } else {
         return yield* Effect.fail(
           new GetQuoteError({ cause: `Unsupported Aptos network: ${channel.destination_chain_id}` })
         )
       }
 
-      const config = new AptosConfig({ network, fullnode: rpc.origin + "/v1" }) //TODO: rpc.origin is coming without "/v1" at the end, discuss this later
+      const config = new AptosConfig({ network, fullnode: `${rpc.origin}/v1` }) //TODO: rpc.origin is coming without "/v1" at the end, discuss this later
 
       const aptosClient = new Aptos(config)
 
