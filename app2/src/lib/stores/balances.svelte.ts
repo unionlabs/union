@@ -107,43 +107,44 @@ export class BalancesStore {
         yield* Queue.offer(queue, { chain, address, denom })
       }
 
-      // Process the queue one at a time
-      while (true) {
-        // Take the next request from the queue
-        const request = yield* Queue.take(queue)
-        const { chain, address, denom } = request
+      yield* Effect.forever(
+        Effect.gen(function* (_) {
+          // Take the next request from the queue
+          const request = yield* Queue.take(queue)
+          const { chain, address, denom } = request
 
-        // Process the balance request
-        yield* Effect.gen(function* (_) {
-          let balance: RawTokenBalance
-          if (chain.rpc_type === "evm") {
-            balance = yield* fetchEvmBalance({
-              chain,
-              tokenAddress: denom,
-              walletAddress: AddressEvmCanonical.make(address)
-            })
-          } else {
-            balance = yield* fetchCosmosBalance({
-              chain,
-              tokenAddress: denom,
-              walletAddress: AddressCosmosCanonical.make(address)
-            })
-          }
+          // Process the balance request
+          yield* Effect.gen(function* (_) {
+            let balance: RawTokenBalance
+            if (chain.rpc_type === "evm") {
+              balance = yield* fetchEvmBalance({
+                chain,
+                tokenAddress: denom,
+                walletAddress: AddressEvmCanonical.make(address)
+              })
+            } else {
+              balance = yield* fetchCosmosBalance({
+                chain,
+                tokenAddress: denom,
+                walletAddress: AddressCosmosCanonical.make(address)
+              })
+            }
 
-          // Update the balance
-          self.setBalance(chain.universal_chain_id, address, denom, balance)
-          self.setError(chain.universal_chain_id, address, denom, Option.none())
-        }).pipe(
-          Effect.catchAll(error => {
-            // Update the error
-            self.setError(chain.universal_chain_id, address, denom, Option.some(error))
-            return Effect.succeed(undefined)
-          })
-        )
-      }
+            // Update the balance
+            self.setBalance(chain.universal_chain_id, address, denom, balance)
+            self.setError(chain.universal_chain_id, address, denom, Option.none())
+          }).pipe(
+            Effect.catchAll(error => {
+              // Update the error
+              self.setError(chain.universal_chain_id, address, denom, Option.some(error))
+              return Effect.succeed(undefined)
+            })
+          )
+        })
+      )
     }).pipe(
       Effect.catchAll(error => {
-        console.error("Error processing balance batch:", error)
+        Effect.logError("error processing balance batch:", error)
         return Effect.succeed(undefined)
       }),
       Effect.ensuring(
