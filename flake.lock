@@ -760,11 +760,11 @@
     "v1_0_0": {
       "flake": false,
       "locked": {
-        "lastModified": 1741636411,
-        "narHash": "sha256-DAgoPOacikd3JHpUe3VoEHVwZ4V8mReNiHWnhELYSwE=",
+        "lastModified": 1742224333,
+        "narHash": "sha256-EPRzC/sYZdfxAC53CS14oQ72t/SpagFbccYaUB8XUzA=",
         "owner": "unionlabs",
         "repo": "union",
-        "rev": "f0a49f43158cc204c5f83dd79801077d692f530c",
+        "rev": "a1ce372509bbb2f16216d29ae99743f52e10aff3",
         "type": "github"
       },
       "original": {
