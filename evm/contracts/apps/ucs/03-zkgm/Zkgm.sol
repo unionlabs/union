@@ -533,7 +533,7 @@ contract UCS03Zkgm is
         Instruction calldata instruction
     ) internal {
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version != ZkgmLib.INSTR_VERSION_0) {
+            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             FungibleAssetOrder calldata order =
@@ -724,7 +724,7 @@ contract UCS03Zkgm is
         Instruction calldata instruction
     ) internal returns (bytes memory) {
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version != ZkgmLib.INSTR_VERSION_0) {
+            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             FungibleAssetOrder calldata order =
@@ -1094,7 +1094,7 @@ contract UCS03Zkgm is
         bytes calldata ack
     ) internal {
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version != ZkgmLib.INSTR_VERSION_0) {
+            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             FungibleAssetOrder calldata order =
@@ -1315,7 +1315,7 @@ contract UCS03Zkgm is
         Instruction calldata instruction
     ) internal {
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version != ZkgmLib.INSTR_VERSION_0) {
+            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
             FungibleAssetOrder calldata order =

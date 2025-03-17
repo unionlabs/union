@@ -327,7 +327,7 @@ fn timeout_internal(
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
-            if instruction.version > INSTR_VERSION_0 {
+            if instruction.version != INSTR_VERSION_1 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
@@ -496,7 +496,7 @@ fn acknowledge_internal(
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
-            if instruction.version > INSTR_VERSION_0 {
+            if instruction.version != INSTR_VERSION_1 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
@@ -792,7 +792,7 @@ fn execute_internal(
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
-            if instruction.version > INSTR_VERSION_0 {
+            if instruction.version != INSTR_VERSION_1 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
@@ -1478,7 +1478,7 @@ pub fn verify_internal(
 ) -> Result<(), ContractError> {
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
-            if instruction.version != INSTR_VERSION_0 {
+            if instruction.version != INSTR_VERSION_1 {
                 return Err(ContractError::UnsupportedVersion {
                     version: instruction.version,
                 });
@@ -1833,7 +1833,7 @@ fn transfer(
                 salt: salt.into(),
                 path: U256::ZERO,
                 instruction: Instruction {
-                    version: INSTR_VERSION_0,
+                    version: INSTR_VERSION_1,
                     opcode: OP_FUNGIBLE_ASSET_ORDER,
                     operand: FungibleAssetOrder {
                         sender: info.sender.as_bytes().to_vec().into(),
