@@ -545,16 +545,16 @@
     "osmosis": {
       "flake": false,
       "locked": {
-        "lastModified": 1712018893,
-        "narHash": "sha256-u/1/aMEPt78is4G7/pkjttDLb1IGw3jMP2MW518lLkM=",
+        "lastModified": 1741802709,
+        "narHash": "sha256-Gt8wMPUNPtaSPCw4HJdUPEjw67KNp1djp/xZyM38kLc=",
         "owner": "osmosis-labs",
         "repo": "osmosis",
-        "rev": "7892e2f9e9528bc547c54db2b43cd01eda6a9bc4",
+        "rev": "8d33050d5c727ceb1ad56494b05f25d1be32cb08",
         "type": "github"
       },
       "original": {
         "owner": "osmosis-labs",
-        "ref": "v24.0.0-rc0",
+        "ref": "v28.0.5",
         "repo": "osmosis",
         "type": "github"
       }
@@ -691,17 +691,17 @@
     "stargaze": {
       "flake": false,
       "locked": {
-        "lastModified": 1712533498,
-        "narHash": "sha256-lt5+KTTieUbel6cBPeyXAVTPYj2u8WWCN3NCBt2lU/0=",
-        "ref": "main",
-        "rev": "2f2d5332d152d5cd7d89860962017584670d9d1e",
-        "revCount": 1569,
+        "lastModified": 1739299737,
+        "narHash": "sha256-c0uT1xRnXSTHebBqMTmkn82nifDC4z4kIpUmRK758KU=",
+        "ref": "refs/tags/v15.2.0",
+        "rev": "308487c985fdb096aeb00e865f4c738fdd724ec8",
+        "revCount": 1941,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/public-awesome/stargaze"
       },
       "original": {
-        "ref": "main",
+        "ref": "refs/tags/v15.2.0",
         "submodules": true,
         "type": "git",
         "url": "https://github.com/public-awesome/stargaze"
@@ -710,16 +710,16 @@
     "stride": {
       "flake": false,
       "locked": {
-        "lastModified": 1724989162,
-        "narHash": "sha256-bN+5OUJ/ObexhlZ+XqhQaQuBzGFsjLk/q2+zrllJn3Y=",
+        "lastModified": 1741891612,
+        "narHash": "sha256-Yqroqe7/iJPgWz51KtjzL0W7RfPussB4w0cvB5VmGfg=",
         "owner": "Stride-Labs",
         "repo": "stride",
-        "rev": "4cfda614e8fb9664ce72861d32824d72430d4436",
+        "rev": "32341bf0b668ac00c90bc9d4e02ba95a675d9277",
         "type": "github"
       },
       "original": {
         "owner": "Stride-Labs",
-        "ref": "v24.0.0",
+        "ref": "v26.0.3",
         "repo": "stride",
         "type": "github"
       }

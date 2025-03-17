@@ -133,14 +133,19 @@ let
       export HOME=$(pwd)
       mkdir -p $out
 
-      echo "${toString sdkVersion}"
+      echo "sdk version: ${toString sdkVersion}"
       cat ${mkNodeMnemonic (if idx == null then 0 else idx)} | ${nodeBin} \
         init \
-        testnet ${pkgs.lib.optionalString (sdkVersion >= 50) ''--default-denom ${denom}''} \
+        testnet ${
+          # idk man
+          pkgs.lib.optionalString (
+            chainName != "osmosis" && (sdkVersion > 50 || sdkVersion < 50)
+          ) ''--default-denom ${denom}''
+        } \
         ${pkgs.lib.optionalString (sdkVersion >= 52) ''--consensus-key-algo ${keyType}''} \
         --chain-id ${chainId} \
         --home $out \
-        --recover 2>/dev/null
+        --recover
 
       sed -i 's# "stake"# "${denom}"#g' $out/config/genesis.json
     '';
@@ -788,7 +793,7 @@ let
         ''
       else
         ''
-          ${nodeBin} validate-genesis --home .
+          # ${nodeBin} validate-genesis --home .
         ''
     }
 

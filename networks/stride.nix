@@ -13,31 +13,38 @@
     }:
     {
       packages = {
-        strided = goPkgs.pkgsStatic.buildGoModule (
+        strided = goPkgs.pkgsStatic.buildGo123Module (
           {
             name = "strided";
             src = inputs.stride;
-            vendorHash = "sha256-Tg96wuqgS08GGorY5Hbq3eJvJ7ZngI7XCqOIw84isSI=";
+            vendorHash = "sha256-rher33igRvyQ+dMhYcURnsn/RJt/Km+Z8KHzGBIJH2c=";
             doCheck = false;
             doInstallCheck = false;
             meta.mainProgram = "strided";
             subPackages = [ "./cmd/strided" ];
-            buildTags = [ "netgo" ];
+            # buildTags = [
+            #   "netgo"
+            #   "muslc"
+            # ];
+            tags = [
+              "netgo"
+              "muslc"
+            ];
           }
           // (
             let
-              inherit (self'.packages) libwasmvm-1_5_2;
+              inherit (self'.packages) libwasmvm-1_5_8;
             in
             if pkgs.stdenv.isLinux then
               {
                 # Statically link if we're on linux
                 nativeBuildInputs = [
-                  pkgs.musl
-                  libwasmvm-1_5_2
+                  goPkgs.musl
+                  libwasmvm-1_5_8
                 ];
                 ldflags = [
                   "-linkmode external"
-                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm-1_5_2}/lib'"
+                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${goPkgs.musl}/lib -L${dbg libwasmvm-1_5_8}/lib'"
                 ];
               }
             else

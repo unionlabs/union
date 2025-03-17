@@ -26,6 +26,10 @@ _: {
             doCheck = false;
             doInstallCheck = false;
             meta.mainProgram = "wasmd";
+            tags = [
+              "netgo"
+              "muslc"
+            ];
           }
           // (
             let
