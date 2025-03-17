@@ -25,7 +25,7 @@ require (
 	cosmossdk.io/x/feegrant v0.1.1
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/CosmWasm/wasmd v0.54.0
-	github.com/CosmWasm/wasmvm/v2 v2.2.1
+	github.com/CosmWasm/wasmvm/v2 v2.2.3
 	github.com/cometbft/cometbft v1.0.0-alpha.2.0.20240429102542-490e9bc3de65
 	github.com/cometbft/cometbft/api v1.0.0
 	github.com/cosmos/cosmos-db v1.1.1

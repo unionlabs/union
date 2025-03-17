@@ -17,9 +17,9 @@ let
       "aarch64-linux" = "sha256-+upOFTkOBG0sqEQcIaiNulb5oDY/ksXZQBXfCsbaHy0=";
       "aarch64-darwin" = "";
     };
-    "2.2.1" = {
-      "x86_64-linux" = "sha256-s711XvrA/znAG1m4EQ+WHEiqPrk1iAcdemKCcMwfIyY=";
-      "aarch64-linux" = "sha256-umy122sUomXIVWMmwEWICQjbmx0v+11KqfCawJskzsw=";
+    "2.2.3" = {
+      "x86_64-linux" = "sha256-MlA/41p74gLF98MFFJfW5LPNgweaYfWgv3KipFW22CA=";
+      "aarch64-linux" = "sha256-ZkFzB4G7GtxL3wSh4Pgiua1PuO1X3Lv1dVJ+Y7eRrkE=";
       "aarch64-darwin" = "";
     };
   };
@@ -63,8 +63,8 @@ in
       packages.libwasmvm-2_1_3 = fetchReleaseArtifact {
         version = "2.1.3";
       };
-      packages.libwasmvm-2_2_1 = fetchReleaseArtifact {
-        version = "2.2.1";
+      packages.libwasmvm-2_2_3 = fetchReleaseArtifact {
+        version = "2.2.3";
       };
     };
 }
