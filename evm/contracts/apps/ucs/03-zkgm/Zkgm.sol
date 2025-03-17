@@ -81,6 +81,21 @@ struct FungibleAssetOrderAck {
     bytes marketMaker;
 }
 
+// Dummy lib to ensure all types are exported
+contract AbiExport {
+    function ensureExported(
+        ZkgmPacket calldata,
+        Instruction calldata,
+        Forward calldata,
+        Multiplex calldata,
+        Batch calldata,
+        FungibleAssetOrder calldata,
+        Ack calldata,
+        BatchAck calldata,
+        FungibleAssetOrderAck calldata
+    ) public {}
+}
+
 library ZkgmLib {
     using LibBytes for *;
 

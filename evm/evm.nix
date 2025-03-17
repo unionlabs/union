@@ -588,9 +588,8 @@ _: {
                   ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json > core.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
-
-                jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/Zkgm.sol/ZkgmLib.json \
+                  ${contracts}/out/Zkgm.sol/AbiExport.json \
                   ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > app.ucs03.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
