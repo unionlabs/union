@@ -1,6 +1,5 @@
-import { Data, Effect, Option, Schema, Schedule } from "effect"
+import { Data, Effect, Option, Schema } from "effect"
 import { fetchDecode } from "$lib/utils/queries"
-import type { DurationInput } from "effect/Duration"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
 import type { Chain, NoRpcError } from "$lib/schema/chain"
 import { type AddressCosmosCanonical, AddressCosmosDisplay } from "$lib/schema/address"
@@ -74,28 +73,23 @@ const fetchCosmosBankBalance = ({
     `${rpcUrl}/cosmos/bank/v1beta1/balances/${walletAddress}/by_denom?denom=${denom}`
   ).pipe(Effect.map(response => response.balance.amount))
 
-export const createCosmosBalanceQuery = ({
+// Core function to fetch a single Cosmos balance
+export const fetchCosmosBalance = ({
   chain,
   tokenAddress,
-  walletAddress,
-  refetchInterval,
-  writeData,
-  writeError
+  walletAddress
 }: {
   chain: Chain
   tokenAddress: TokenRawDenom
   walletAddress: AddressCosmosCanonical
-  refetchInterval: DurationInput
-  writeData: (data: RawTokenBalance) => void
-  writeError: (error: Option.Option<FetchCosmosBalanceError>) => void
 }) => {
-  const fetcherPipeline = Effect.gen(function* () {
+  return Effect.gen(function* () {
     const rpcUrl = yield* chain.requireRpcUrl("rest")
     const displayAddress = yield* chain.toCosmosDisplay(walletAddress)
     const decodedDenom = yield* fromHexString(tokenAddress)
 
     yield* Effect.log(
-      `starting balance fetcher for ${chain.universal_chain_id}:${displayAddress}:${decodedDenom}`
+      `fetching balance for ${chain.universal_chain_id}:${displayAddress}:${decodedDenom}`
     )
 
     const fetchBalance = decodedDenom.startsWith(`${chain.addr_prefix}1`)
@@ -112,17 +106,8 @@ export const createCosmosBalanceQuery = ({
 
     let balance = yield* Effect.retry(fetchBalance, cosmosBalanceRetrySchedule)
 
-    writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
-    writeError(Option.none())
+    return RawTokenBalance.make(Option.some(TokenRawAmount.make(balance)))
   }).pipe(
-    Effect.tapError(error => Effect.sync(() => writeError(Option.some(error)))),
-    Effect.catchAll(_ => Effect.succeed(null))
-  )
-
-  return Effect.repeat(
-    fetcherPipeline,
-    Schedule.addDelay(Schedule.repeatForever, () => refetchInterval)
-  ).pipe(
     Effect.scoped,
     Effect.provide(FetchHttpClient.layer),
     withTracerDisabledWhen(() => true) // important! this prevents CORS issues: https://github.com/Effect-TS/effect/issues/4568

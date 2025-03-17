@@ -34,10 +34,9 @@ function fetchAllBalances() {
       continue
     }
 
-    // For each token, fetch its balance
-    for (const token of tokens) {
-      balancesStore.fetchBalance(chain, address, token.denom)
-    }
+    // Fetch all token balances for this chain in a batch
+    const denoms = tokens.map(token => token.denom)
+    balancesStore.fetchBalances(chain, address, denoms)
   }
 }
 

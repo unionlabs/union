@@ -11,9 +11,10 @@ interface Props {
   chain: Chain
   denom: TokenRawDenom
   amount?: TokenRawAmount
+  showRank?: boolean
 }
 
-const { chain, denom, amount = undefined }: Props = $props()
+const { chain, denom, amount = undefined, showRank = true }: Props = $props()
 
 // Start the query when the component mounts
 $effect(() => {
@@ -89,6 +90,13 @@ const displayDenom = $derived(
           <section class="flex justify-between items-center">
             {#if token.value.representations.length > 0}
               <h2 class="text-white font-bold text-lg">{token.value.representations[0].symbol}</h2>
+              <span class="text-neutral-500">
+                {#if Option.isSome(token.value.rank)}
+                  Rank: #{token.value.rank.value}
+                {:else}
+                  Unranked
+                {/if}
+              </span>
             {/if}
           </section>
           <section>

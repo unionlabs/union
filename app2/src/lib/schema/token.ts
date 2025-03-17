@@ -51,6 +51,7 @@ export class TokenWrapping extends Schema.Class<TokenWrapping>("TokenWrapping")(
 }) {}
 
 export class Token extends Schema.Class<Token>("Token")({
+  rank: Schema.OptionFromNullOr(Schema.Int),
   denom: TokenRawDenom,
   representations: Schema.Array(TokenRepresentation),
   wrapping: Schema.Array(TokenWrapping)
