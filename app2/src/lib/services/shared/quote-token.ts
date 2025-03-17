@@ -10,6 +10,7 @@ import { getChainFromWagmi } from "$lib/wallet/evm"
 import { getCosmosPublicClient } from "$lib/services/cosmos/clients.ts"
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
+import { Aptos, AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
 
 export const getQuoteToken = (
   sourceChain: Chain,
@@ -79,6 +80,52 @@ export const getQuoteToken = (
       }).pipe(Effect.map(([address]) => address))
 
       return { type: "NEW_WRAPPED" as const, quote_token: predictedQuoteToken }
+    }
+
+    if (destinationChain.rpc_type === "aptos") {
+      let network: Network
+
+      const rpc = yield* destinationChain
+        .requireRpcUrl("rpc")
+        .pipe(Effect.mapError(err => new GetQuoteError({ cause: err.message })))
+
+      console.info("rpc: ", rpc.origin)
+      if (channel.destination_chain_id === "250") {
+        network = Network.TESTNET
+      } else {
+        return yield* Effect.fail(
+          new GetQuoteError({ cause: `Unsupported Aptos network: ${channel.destination_chain_id}` })
+        )
+      }
+
+      const config = new AptosConfig({ network, fullnode: `${rpc.origin}/v1` }) //TODO: rpc.origin is coming without "/v1" at the end, discuss this later
+
+      const aptosClient = new Aptos(config)
+
+      const output = yield* Effect.tryPromise({
+        try: () =>
+          aptosClient.view({
+            payload: {
+              function: `${channel.destination_port_id}::ibc_app::predict_wrapped_token`,
+              typeArguments: [],
+              functionArguments: [
+                0, // path
+                channel.destination_channel_id,
+                MoveVector.U8(base_token)
+              ]
+            }
+          }),
+        catch: error =>
+          new GetQuoteError({ cause: `Failed to predict quote token (Aptos): ${error}` })
+      })
+
+      const wrappedAddressHex = output[0]?.toString()
+      if (!wrappedAddressHex) {
+        return yield* Effect.fail(
+          new GetQuoteError({ cause: "Failed to get wrapped address from Aptos" })
+        )
+      }
+      return { type: "NEW_WRAPPED" as const, quote_token: wrappedAddressHex }
     }
 
     return yield* Effect.fail(
