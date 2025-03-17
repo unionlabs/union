@@ -81,7 +81,9 @@ let
       cp -r --no-preserve=mode ${initHome idx}/* .
 
       cp ${mkNodeKey idx} ./config/node_key.json
-      ${nodeBin} tendermint show-node-id --home . | tr -d '\n' > $out
+
+      node_id="$(${nodeBin} tendermint show-node-id --home . 2>&1)"
+      echo $node_id | tr -d '\n' > $out
     '';
 
   mkPrivValidatorKey =
