@@ -1,6 +1,7 @@
 import { Effect, Option, Schema } from "effect"
 import type { UniversalChainId } from "$lib/schema/chain"
-import { Tokens, TokenRawDenom } from "$lib/schema/token"
+import { Tokens } from "$lib/schema/token"
+import { isTokenBlacklisted } from "$lib/constants/tokens"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import { graphql } from "gql.tada"
@@ -47,15 +48,8 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
         Effect.runSync(Effect.log(`storing new tokens for ${universalChainId}`))
         tokensStore.setData(
           universalChainId,
-          // Can be removed when this invalid denom is removed from hubble
-          data.pipe(
-            Option.map(d =>
-              d.v2_tokens.filter(
-                token =>
-                  token.denom !== TokenRawDenom.make("0x0000000000000000000000000000000000000000")
-              )
-            )
-          )
+          // Filter out blacklisted tokens
+          data.pipe(Option.map(d => d.v2_tokens.filter(token => !isTokenBlacklisted(token.denom))))
         )
       },
       writeError: error => {
