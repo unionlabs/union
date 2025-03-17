@@ -63,7 +63,6 @@ pub fn execute(
                     &config.ibc_host,
                     &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
                         MsgWriteAcknowledgement {
-                            channel_id: packet.destination_channel_id,
                             packet,
                             acknowledgement: ack_success().into(),
                         },

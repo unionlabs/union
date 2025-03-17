@@ -248,11 +248,13 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketRecv(
+                channelId,
                 IBCPacketLib.commitPacket(msg_.packets[i]),
                 msg_.relayer,
                 msg_.relayerMsgs[i]
             );
             emit IBCPacketLib.WriteAck(
+                channelId,
                 IBCPacketLib.commitPacket(msg_.packets[i]),
                 TestModuleLib.ACKNOWLEDGEMENT
             );
@@ -466,11 +468,13 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.IntentPacketRecv(
+                channelId,
                 IBCPacketLib.commitPacket(msg_.packets[i]),
                 msg_.marketMaker,
                 msg_.marketMakerMsgs[i]
             );
             emit IBCPacketLib.WriteAck(
+                channelId,
                 IBCPacketLib.commitPacket(msg_.packets[i]),
                 TestModuleLib.ACKNOWLEDGEMENT
             );
@@ -579,6 +583,7 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketAck(
+                channelId,
                 IBCPacketLib.commitPacket(msg_.packets[i]),
                 abi.encodePacked(i),
                 msg_.relayer
@@ -753,7 +758,7 @@ contract IBCPacketTests is Test {
         lightClient.setLatestTimestamp(uint64(timestamp) + k);
         vm.expectEmit();
         emit IBCPacketLib.PacketTimeout(
-            IBCPacketLib.commitPacket(msg_.packet), msg_.relayer
+            channelId, IBCPacketLib.commitPacket(msg_.packet), msg_.relayer
         );
         vm.resumeGasMetering();
         handler.timeoutPacket(msg_);
@@ -839,7 +844,7 @@ contract IBCPacketTests is Test {
         msg_.proofHeight = uint64(height) + k;
         vm.expectEmit();
         emit IBCPacketLib.PacketTimeout(
-            IBCPacketLib.commitPacket(msg_.packet), msg_.relayer
+            channelId, IBCPacketLib.commitPacket(msg_.packet), msg_.relayer
         );
         vm.resumeGasMetering();
         handler.timeoutPacket(msg_);
@@ -920,6 +925,7 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketRecv(
+                channelId,
                 IBCPacketLib.commitPacket(msg_.packets[i]),
                 msg_.relayer,
                 msg_.relayerMsgs[i]
@@ -930,7 +936,7 @@ contract IBCPacketTests is Test {
             bytes memory ack = abi.encodePacked(i);
             vm.expectEmit();
             emit IBCPacketLib.WriteAck(
-                IBCPacketLib.commitPacket(msg_.packets[i]), ack
+                channelId, IBCPacketLib.commitPacket(msg_.packets[i]), ack
             );
             vm.prank(address(module));
             vm.resumeGasMetering();
@@ -963,6 +969,7 @@ contract IBCPacketTests is Test {
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
             emit IBCPacketLib.PacketRecv(
+                channelId,
                 IBCPacketLib.commitPacket(msg_.packets[i]),
                 msg_.relayer,
                 msg_.relayerMsgs[i]

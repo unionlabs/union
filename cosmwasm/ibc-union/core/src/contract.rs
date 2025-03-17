@@ -132,12 +132,15 @@ fn packet_to_attrs(packet: &Packet) -> [Attribute; 5] {
 }
 
 #[must_use]
-fn packet_to_attr_hash(packet: &Packet) -> Attribute {
-    (
-        events::attribute::PACKET_HASH,
-        commit_packets(&[packet.clone()]).to_string(),
-    )
-        .into()
+fn packet_to_attr_hash(channel_id: ChannelId, packet: &Packet) -> [Attribute; 2] {
+    [
+        (events::attribute::CHANNEL_ID, channel_id.to_string()),
+        (
+            events::attribute::PACKET_HASH,
+            commit_packets(&[packet.clone()]).to_string(),
+        ),
+    ]
+    .map(Into::into)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -409,13 +412,11 @@ pub fn execute(
             true,
         ),
         ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
-            channel_id,
             packet,
             acknowledgement,
         }) => write_acknowledgement(
             deps.branch(),
             info.sender,
-            channel_id,
             packet,
             acknowledgement.into_vec(),
         ),
@@ -549,7 +550,7 @@ fn batch_send(deps: DepsMut, packets: Vec<Packet>) -> ContractResult {
     for packet in packets {
         events.push(
             Event::new(events::packet::BATCH_SEND)
-                .add_attributes([packet_to_attr_hash(&packet)])
+                .add_attributes(packet_to_attr_hash(channel_id, &packet))
                 .add_attribute(events::attribute::BATCH_HASH, batch_hash.to_string()),
         );
         if packet.source_channel_id != channel_id {
@@ -579,7 +580,7 @@ fn batch_acks(deps: DepsMut, packets: Vec<Packet>, acks: Vec<Bytes>) -> Contract
     for (packet, ack) in packets.into_iter().zip(acks.iter()) {
         events.push(
             Event::new(events::packet::BATCH_ACKS)
-                .add_attributes([packet_to_attr_hash(&packet)])
+                .add_attributes(packet_to_attr_hash(channel_id, &packet))
                 .add_attribute(events::attribute::BATCH_HASH, batch_hash.to_string()),
         );
         if packet.destination_channel_id != channel_id {
@@ -655,7 +656,7 @@ fn timeout_packet(
     Ok(Response::new()
         .add_event(
             Event::new(events::packet::TIMEOUT)
-                .add_attributes([packet_to_attr_hash(&packet)])
+                .add_attributes(packet_to_attr_hash(source_channel, &packet))
                 .add_attributes([(events::attribute::MAKER, relayer.to_string())]),
         )
         .add_message(wasm_execute(
@@ -708,7 +709,7 @@ fn acknowledge_packet(
         mark_packet_as_acknowledged(deps.branch(), &packet)?;
         events.push(
             Event::new(events::packet::ACK)
-                .add_attributes([packet_to_attr_hash(&packet)])
+                .add_attributes(packet_to_attr_hash(source_channel, &packet))
                 .add_attributes([
                     (events::attribute::ACKNOWLEDGEMENT, hex::encode(&ack)),
                     (events::attribute::MAKER, relayer.clone().to_string()),
@@ -1581,7 +1582,7 @@ fn process_receive(
             if intent {
                 events.push(
                     Event::new(events::packet::INTENT_RECV)
-                        .add_attributes([packet_to_attr_hash(&packet)])
+                        .add_attributes(packet_to_attr_hash(destination_channel, &packet))
                         .add_attributes([
                             (events::attribute::MAKER, relayer.clone()),
                             (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
@@ -1601,7 +1602,7 @@ fn process_receive(
             } else {
                 events.push(
                     Event::new(events::packet::RECV)
-                        .add_attributes([packet_to_attr_hash(&packet)])
+                        .add_attributes(packet_to_attr_hash(destination_channel, &packet))
                         .add_attributes([
                             (events::attribute::MAKER, relayer.clone()),
                             (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
@@ -1628,13 +1629,14 @@ fn process_receive(
 fn write_acknowledgement(
     mut deps: DepsMut,
     sender: Addr,
-    channel_id: ChannelId,
     packet: Packet,
     acknowledgement: Vec<u8>,
 ) -> ContractResult {
     if acknowledgement.is_empty() {
         return Err(ContractError::AcknowledgementIsEmpty);
     }
+
+    let channel_id = packet.destination_channel_id;
 
     // make sure the caller owns the channel
     let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
@@ -1668,7 +1670,7 @@ fn write_acknowledgement(
 
     Ok(Response::new().add_event(
         Event::new(events::packet::WRITE_ACK)
-            .add_attributes([packet_to_attr_hash(&packet)])
+            .add_attributes(packet_to_attr_hash(channel_id, &packet))
             .add_attributes([(
                 events::attribute::ACKNOWLEDGEMENT,
                 acknowledgement_serialized,
@@ -1712,7 +1714,7 @@ fn send_packet(
         serde_json_wasm::to_string(&packet).expect("packet serialization is infallible; qed;");
 
     let packet_attrs = packet_to_attrs(&packet);
-    let packet_attr_hash = packet_to_attr_hash(&packet);
+    let packet_attr_hash = packet_to_attr_hash(source_channel_id, &packet);
 
     let commitment_key = BatchPacketsPath::from_packets(&[packet]).key();
 
@@ -1725,7 +1727,7 @@ fn send_packet(
     Ok(Response::new()
         .add_event(
             Event::new(events::packet::SEND)
-                .add_attributes([packet_attr_hash])
+                .add_attributes(packet_attr_hash)
                 .add_attributes(packet_attrs),
         )
         .set_data(serialized_packet.as_bytes()))

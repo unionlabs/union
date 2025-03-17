@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint128, Uint256};
+use cosmwasm_std::{Addr, Uint256};
 use ibc_union_spec::{ChannelId, Packet};
 use unionlabs::primitives::{Bytes, H256};
 
@@ -39,20 +39,6 @@ pub enum TokenMinterInitMsg {
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    /// Transfer tokens across chains with optional quote token and amount.
-    /// Used for basic token transfers where the receiver gets quote_amount of quote_token
-    /// in exchange for base_amount of base_token.
-    Transfer {
-        channel_id: ChannelId,
-        receiver: Bytes,
-        base_token: String,
-        base_amount: Uint128,
-        quote_token: Bytes,
-        quote_amount: Uint256,
-        timeout_height: u64,
-        timeout_timestamp: u64,
-        salt: H256,
-    },
     /// Send a custom instruction across chains.
     /// Allows sending any zkgm instruction (forward, multiplex, batch, etc)
     /// with custom timeout and salt parameters.

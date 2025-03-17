@@ -1337,7 +1337,7 @@ contract ZkgmTests is Test {
                         salt: salt,
                         path: path,
                         instruction: Instruction({
-                            version: ZkgmLib.INSTR_VERSION_0,
+                            version: ZkgmLib.INSTR_VERSION_1,
                             opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
                             operand: ZkgmLib.encodeFungibleAssetOrder(order)
                         })
@@ -1371,7 +1371,7 @@ contract ZkgmTests is Test {
                         salt: salt,
                         path: path,
                         instruction: Instruction({
-                            version: ZkgmLib.INSTR_VERSION_0,
+                            version: ZkgmLib.INSTR_VERSION_1,
                             opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
                             operand: ZkgmLib.encodeFungibleAssetOrder(order)
                         })
@@ -1879,7 +1879,7 @@ contract ZkgmTests is Test {
                         salt: salt,
                         path: path,
                         instruction: Instruction({
-                            version: ZkgmLib.INSTR_VERSION_0,
+                            version: ZkgmLib.INSTR_VERSION_1,
                             opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
                             operand: ZkgmLib.encodeFungibleAssetOrder(order)
                         })
