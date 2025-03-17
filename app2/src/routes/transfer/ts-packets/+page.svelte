@@ -1,8 +1,9 @@
 <script lang="ts">
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03"
 import { generateSalt } from "$lib/services/shared"
-import { Effect, Option } from "effect"
-import { encodeAbiParameters } from "viem"
+import { Effect, Option, pipe } from "effect"
+import { encodeAbiParameters, createPublicClient, http, getContract, parseAbi } from "viem"
+import { mainnet } from "viem/chains"
 
 const packetAbis = Option.fromNullable(
   ucs03ZkgmAbi.find(a => "name" in a && a.name === "ensureExported")
@@ -38,13 +39,13 @@ const zkgmInstruction = Effect.gen(function* () {
     "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
     "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
     "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3",
-    420n,
+    4n,
     "muno",
     "muno",
-    6,
+    18,
     0n,
     "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3",
-    420n
+    4n
   ])
   // const instruction = encodeAbiParameters(instructionAbi, [1, 3, assetOrder])
 
