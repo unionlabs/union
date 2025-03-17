@@ -30,7 +30,7 @@ function selectChain(chain: Chain) {
       {#each chains.data.value as chain}
         <button
                 class={cn(
-            "flex flex-col items-center justify-center p-2 rounded-md transition-colors",
+            "flex items-center gap-1 justify-start p-2 rounded-md transition-colors",
             "border border-zinc-700 hover:bg-zinc-700",
             (type === "source" && transfer.raw.source === chain.chain_id) ||
             (type === "destination" && transfer.raw.destination === chain.chain_id)
@@ -39,7 +39,10 @@ function selectChain(chain: Chain) {
           )}
                 onclick={() => selectChain(chain)}
         >
-          <span class="text-xs text-center truncate w-full">{chain.display_name.split(" ")[0]}</span>
+          <span class="w-4 h-4 rounded-full bg-sky-500 flex items-center justify-center overflow-hidden">
+            <span class="text-xs font-medium uppercase">{chain.display_name.substring(0, 1)}</span>
+          </span>
+          <span class="text-xs text-center truncate w-fit">{chain.display_name.split(" ")[0]}</span>
         </button>
       {/each}
     </div>

@@ -36,19 +36,13 @@ const isChainLoading = $derived.by(() => {
       "focus:outline-none focus:ring-2 focus:ring-sky-500",
       "disabled:opacity-50 disabled:cursor-not-allowed",
       "transition-all duration-200 cursor-pointer",
-      "p-0 overflow-hidden" // No padding to allow child elements to control spacing
+      "p-0 overflow-hidden"
     )}
   >
     <div class="flex items-center">
       {#if isChainLoading}
         <!-- Loading State -->
         <div class="flex items-center justify-center p-2 flex-1">
-          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-               viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
           <span>Loading...</span>
         </div>
       {:else if Option.isNone(selectedChain)}
@@ -64,7 +58,7 @@ const isChainLoading = $derived.by(() => {
       {:else}
         <!-- Chain Selected -->
         <div class="flex items-center bg-zinc-800 p-2 border-r border-zinc-600">
-          <div class="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center overflow-hidden">
+          <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center overflow-hidden">
             <span class="text-xs font-medium uppercase">{selectedChain.value.display_name.substring(0, 2)}</span>
           </div>
         </div>
