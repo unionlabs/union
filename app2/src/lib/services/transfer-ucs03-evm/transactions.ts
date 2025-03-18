@@ -13,14 +13,10 @@ import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 import { generateSalt } from "$lib/services/shared"
 import { sepolia } from "viem/chains"
-import {
-  fetchErc20Decimals,
-  fetchErc20Meta,
-  fetchErc20Name,
-  fetchErc20Symbol
-} from "../evm/erc20.ts"
 import { Batch, FungibleAssetOrder } from "@unionlabs/sdk/evm/ucs03"
 import { ucs03abi } from "@unionlabs/sdk/evm/abi"
+import { readErc20Meta } from "@unionlabs/sdk/evm/erc20"
+import { PublicViemClient } from "@unionlabs/sdk/evm"
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
@@ -34,9 +30,8 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
     const salt = yield* generateSalt
 
     const client = yield* getPublicClient(chain)
-
-    const onchainBaseTokenMeta = yield* fetchErc20Meta(transfer.baseToken).pipe(
-      Effect.provideService(PublicSourceViemClient, { client })
+    const onchainBaseTokenMeta = yield* readErc20Meta(transfer.baseToken).pipe(
+      Effect.provideService(PublicViemClient, { client })
     )
 
     console.log({
@@ -98,21 +93,9 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
                 transfer.receiver as `0x${string}`,
                 transfer.baseToken,
                 transfer.baseAmount,
-                onchainBaseTokenSymbol,
-                onchainBaseTokenName,
-                onchainBaseTokenDecimals,
-                0n,
-                transfer.quoteToken,
-                transfer.quoteAmount
-              ]),
-              FungibleAssetOrder([
-                account.address as `0x${string}`,
-                transfer.receiver as `0x${string}`,
-                transfer.baseToken,
-                transfer.baseAmount,
-                onchainBaseTokenSymbol,
-                onchainBaseTokenName,
-                onchainBaseTokenDecimals,
+                onchainBaseTokenMeta.symbol,
+                onchainBaseTokenMeta.name,
+                onchainBaseTokenMeta.decimals,
                 0n,
                 transfer.quoteToken,
                 transfer.quoteAmount
