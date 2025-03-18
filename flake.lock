@@ -26,16 +26,16 @@
     "babylon": {
       "flake": false,
       "locked": {
-        "lastModified": 1736163423,
-        "narHash": "sha256-GtPuPFwjbxMx/fY+FXO8V3L+soYhA29ak8XbWBWO5Mk=",
+        "lastModified": 1741344883,
+        "narHash": "sha256-vIx/To+nAXemyb5s12oDlSy1EpcSbFLyvg75TqniEE8=",
         "owner": "babylonlabs-io",
         "repo": "babylon",
-        "rev": "b5646552a1606e38fcdfa97ed2606549b9a233f7",
+        "rev": "36f1010b50568caa083250a10410e7662016a224",
         "type": "github"
       },
       "original": {
         "owner": "babylonlabs-io",
-        "ref": "v1.0.0-rc.3",
+        "ref": "v1.0.0-rc.7",
         "repo": "babylon",
         "type": "github"
       }

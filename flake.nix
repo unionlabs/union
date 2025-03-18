@@ -87,7 +87,7 @@
       flake = false;
     };
     babylon = {
-      url = "github:babylonlabs-io/babylon/v1.0.0-rc.3";
+      url = "github:babylonlabs-io/babylon/v1.0.0-rc.7";
       flake = false;
     };
     stride = {
