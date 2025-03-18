@@ -2,7 +2,6 @@ _: {
   perSystem =
     {
       jsPkgs,
-      ensureAtRepositoryRoot,
       lib,
       self',
       ...
@@ -16,7 +15,7 @@ _: {
           pname = packageJson.name;
           inherit (packageJson) version;
           src = ./.;
-          npmDepsHash = "sha256-dFrd5jFaLjE3w9gXUdCx94/Nb3fi5RdxVKwGP6RdKAE=";
+          npmDepsHash = "sha256-yc3gtJ7PARYzDWmALcbRwwxtrSEBqUztq6tGKM5bhvc=";
           doCheck = true;
           checkPhase = ''
             npm run test

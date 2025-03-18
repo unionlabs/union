@@ -26,7 +26,7 @@
     //   no inferred return types of exported functions etc.
     // - Even though this option would be generally useful, it requires
     //   that `declaration` or `composite` is true.
-    "isolatedDeclarations": true,
+    "isolatedDeclarations": false,
     //========== Type checking ==========
     "strict": true, // activates several useful options
     "exactOptionalPropertyTypes": true, // remove if not helpful
