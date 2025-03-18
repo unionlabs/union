@@ -5,8 +5,8 @@ import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import ChainAssetButton from "$lib/components/Transfer/ChainAsset/ChainAssetButton.svelte"
 import ChainSelector from "$lib/components/Transfer/ChainAsset/ChainSelector.svelte"
-import AssetSelector from "$lib/components/Transfer/ChainAsset/AssetSelector.svelte"
 import TransferDirectionInfo from "$lib/components/Transfer/ChainAsset/TransferDirectionInfo.svelte"
+import AssetSelector from "$lib/components/Transfer/ChainAsset/AssetSelector.svelte"
 
 type Props = {
   type: "source" | "destination"

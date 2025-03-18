@@ -2,64 +2,42 @@
 import Input from "$lib/components/ui/Input.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { Option } from "effect"
-import { balancesStore, createKey, type BalanceKey } from "$lib/stores/balances.svelte.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { formatUnits } from "viem"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 
-let sourceChain = $derived(
-  Option.isSome(transfer.sourceChain) ? Option.getOrNull(transfer.sourceChain) : null
+let maxEnabled = $derived(
+  Option.isSome(transfer.sourceChain) && Option.isSome(transfer.baseToken) && !!transfer.raw.asset
 )
-let baseToken = $derived(
-  Option.isSome(transfer.baseToken) ? Option.getOrNull(transfer.baseToken) : null
+
+let isLoading = $derived(
+  Option.isSome(transfer.baseToken) &&
+    Option.isSome(transfer.sortedBalances) &&
+    Option.isNone(transfer.baseTokenBalance)
 )
-let maxEnabled = $derived(!!sourceChain && !!baseToken && !!transfer.raw.asset)
-
-let balanceState = $state({
-  isLoading: false,
-  amount: BigInt("0")
-})
-
-let balanceKey = $state<Option.Option<BalanceKey>>(Option.none())
-
-$effect(() => {
-  if (!(sourceChain && baseToken)) return
-
-  const addressOption = wallets.getAddressForChain(sourceChain)
-  if (!Option.isSome(addressOption)) return
-
-  const address = addressOption.value
-
-  const newBalanceKey = createKey(sourceChain.universal_chain_id, address, baseToken.denom)
-
-  if (Option.isNone(balanceKey) || balanceKey.value !== newBalanceKey) {
-    balanceState.isLoading = true
-    balancesStore.fetchBalance(sourceChain, address, baseToken.denom)
-    balanceKey = Option.some(newBalanceKey)
-  }
-
-  const balance = balancesStore.getBalance(sourceChain.universal_chain_id, address, baseToken.denom)
-
-  balanceState.isLoading = false
-
-  if (Option.isSome(balance)) {
-    balanceState.amount = balance.value
-  } else {
-    balanceState.amount = BigInt("0")
-  }
-})
 
 let displayBalance = $derived.by(() => {
-  if (!baseToken) return "0.00"
+  if (Option.isNone(transfer.baseToken)) return "0.00"
+  if (Option.isNone(transfer.baseTokenBalance)) return "0.00"
+
+  const baseToken = transfer.baseToken.value
+  const balance = transfer.baseTokenBalance.value
+
+  if (Option.isNone(balance.balance)) return "0.00"
+
   const decimals = baseToken.representations[0]?.decimals ?? 0
-  return formatUnits(balanceState.amount, decimals)
+  return formatUnits(BigInt(balance.balance.value), decimals)
 })
 
 function setMaxAmount() {
-  if (!(sourceChain && baseToken && transfer.raw.asset) || balanceState.isLoading) return
+  if (!maxEnabled || isLoading) return
+  if (Option.isNone(transfer.baseToken) || Option.isNone(transfer.baseTokenBalance)) return
 
+  const balance = transfer.baseTokenBalance.value
+  if (Option.isNone(balance.balance)) return
+
+  const baseToken = transfer.baseToken.value
   const maxDecimals = baseToken.representations[0]?.decimals ?? 0
-  const formattedAmount = formatUnits(balanceState.amount, maxDecimals)
+  const formattedAmount = formatUnits(BigInt(balance.balance.value), maxDecimals)
 
   transfer.raw.amount = formattedAmount
 
@@ -108,7 +86,7 @@ function setMaxAmount() {
 <div class="flex w-full justify-between text-xs">
   <p>
     BALANCE:
-    {#if balanceState.isLoading}
+    {#if isLoading}
       <Skeleton class="h-3 w-16 inline-block" />
     {:else}
       {displayBalance}
@@ -116,7 +94,7 @@ function setMaxAmount() {
   </p>
   <button class="cursor-pointer hover:underline"
           onclick={setMaxAmount}
-          disabled={!maxEnabled || balanceState.isLoading}
+          disabled={!maxEnabled || isLoading}
   >
     USE MAX
   </button>
