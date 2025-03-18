@@ -1,18 +1,13 @@
 // source: https://2ality.com/2025/01/tsconfig-json.html#summary
 {
-  "include": [
-    "src/**/*",
-    "test/**/*"
-  ],
+  "include": ["src/**/*", "test/**/*"],
   "compilerOptions": {
     // Specified explicitly (not derived from source file paths)
     "rootDir": ".",
     "outDir": "dist",
     //========== Output: JavaScript ==========
     "target": "ES2024",
-    "lib": [
-      "ES2024"
-    ], // remove if you want to use the DOM
+    "lib": ["ES2024"], // remove if you want to use the DOM
     "skipLibCheck": true,
     "module": "NodeNext", // sets up "moduleResolution"
     // Emptily imported modules must exist
