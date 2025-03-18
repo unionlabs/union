@@ -13,7 +13,8 @@
     ".": "./dist/src/index.js",
     "./evm": "./dist/src/evm/index.js",
     "./evm/abi": "./dist/src/evm/abi/index.js",
-    "./evm/ucs03": "./dist/src/evm/ucs03/index.js"
+    "./evm/ucs03": "./dist/src/evm/ucs03/index.js",
+    "./utils": "./dist/src/utils/index.js"
   },
   "files": [
     "package.json",
