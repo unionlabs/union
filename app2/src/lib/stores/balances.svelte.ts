@@ -12,10 +12,10 @@ import {
 } from "$lib/schema/address"
 
 // Composite key type for the maps
-type BalanceKey = `${UniversalChainId}:${AddressCanonicalBytes}:${TokenRawDenom}`
+export type BalanceKey = `${UniversalChainId}:${AddressCanonicalBytes}:${TokenRawDenom}`
 
 // Helper to create the composite key
-const createKey = (
+export const createKey = (
   universalChainId: UniversalChainId,
   address: AddressCanonicalBytes,
   denom: TokenRawDenom
