@@ -1,7 +1,4 @@
-use beacon_api_types::{
-    chain_spec::{ChainSpec, Mainnet, Minimal, PresetBaseKind},
-    slot::Slot,
-};
+use beacon_api_types::chain_spec::{ChainSpec, Mainnet, Minimal, PresetBaseKind};
 use cosmwasm_std::{Addr, Empty, StdError, StdResult};
 use depolama::{KeyCodec, Prefix, Store, ValueCodec};
 use ethereum_light_client_types::{
@@ -117,7 +114,7 @@ impl IbcClient for EthereumLightClient {
     fn verify_creation(
         _caller: Addr,
         client_state: &Self::ClientState,
-        _consensus_state: &Self::ConsensusState,
+        consensus_state: &Self::ConsensusState,
         _relayer: Addr,
     ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>> {
         let ClientState::V1(client_state) = client_state;
@@ -129,9 +126,9 @@ impl IbcClient for EthereumLightClient {
         client_state.initial_sync_committee = None;
 
         let current_sync_period = if client_state.chain_spec == PresetBaseKind::Minimal {
-            compute_sync_committee_period_at_slot::<Minimal>(Slot::new(client_state.latest_height))
+            compute_sync_committee_period_at_slot::<Minimal>(consensus_state.slot)
         } else {
-            compute_sync_committee_period_at_slot::<Mainnet>(Slot::new(client_state.latest_height))
+            compute_sync_committee_period_at_slot::<Mainnet>(consensus_state.slot)
         };
 
         // Set the client state so that it overwrites the one that is passed.
@@ -521,13 +518,14 @@ impl ValueCodec<InverseSyncCommittee> for SyncCommitteeStore {
 mod tests {
     use std::sync::LazyLock;
 
-    use beacon_api_types::altair::SyncCommittee;
+    use beacon_api_types::{altair::SyncCommittee, electra};
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
         Addr, Timestamp,
     };
     use ethereum_light_client_types::{
-        AccountProof, LightClientUpdateData, WithinSyncCommitteePeriodUpdate,
+        client_state::InitialSyncCommittee, AccountProof, LightClientUpdateData,
+        SyncCommitteePeriodChangeUpdate, WithinSyncCommitteePeriodUpdate,
     };
     use ethereum_sync_protocol::utils::compute_timestamp_at_slot;
     use hex_literal::hex;
@@ -547,13 +545,16 @@ mod tests {
     const FINALITY_UPDATE_ACCOUNT_STORAGE_ROOT: H256 = H256::new(hex!(
         "045c10398196b51905129fdbd1cbafdf0328877c575b9da41f15d7718f330d23"
     ));
+    const PERIOD_CHANGING_UPDATE_ACCOUNT_STORAGE_ROOT: H256 = H256::new(hex!(
+        "bc554ade41b65688ba7edf9e1ad8c4ec28d95e4ec95b9898e11b34d11b24a84e"
+    ));
 
     static INITIAL_HEADER: LazyLock<beacon_api_types::phase0::BeaconBlockHeader> =
         LazyLock::new(|| serde_json::from_str(include_str!("./test/header_7167008.json")).unwrap());
     static CURRENT_SYNC_COMMITTEE: LazyLock<SyncCommittee> = LazyLock::new(|| {
         serde_json::from_str(include_str!("./test/current_sync_committee_7167008.json")).unwrap()
     });
-    static _NEXT_SYNC_COMMITTEE: LazyLock<SyncCommittee> = LazyLock::new(|| {
+    static NEXT_SYNC_COMMITTEE: LazyLock<SyncCommittee> = LazyLock::new(|| {
         serde_json::from_str(include_str!("./test/next_sync_committee_7167008.json")).unwrap()
     });
     static FINALITY_UPDATE: LazyLock<LightClientUpdateData> = LazyLock::new(|| {
@@ -562,19 +563,33 @@ mod tests {
     static FINALITY_UPDATE_ACCOUNT_PROOF: LazyLock<Vec<Bytes>> = LazyLock::new(|| {
         serde_json::from_str(include_str!("./test/account_proof_7167040.json")).unwrap()
     });
+    static PERIOD_CHANGING_UPDATE: LazyLock<electra::LightClientUpdate> = LazyLock::new(|| {
+        serde_json::from_str(include_str!("./test/period_changing_update_7167040.json")).unwrap()
+    });
+    static PERIOD_CHANGING_UPDATE_ACCOUNT_PROOF: LazyLock<Vec<Bytes>> = LazyLock::new(|| {
+        serde_json::from_str(include_str!("./test/account_proof_7168000.json")).unwrap()
+    });
 
-    fn initial_state() -> (ClientState, ConsensusState) {
-        let client_state = ClientState::V1(ClientStateV1 {
+    fn initial_client_state(latest_height: u64) -> ClientState {
+        ClientState::V1(ClientStateV1 {
             chain_id: SEPOLIA_CHAIN_ID,
             chain_spec: PresetBaseKind::Mainnet,
             genesis_validators_root: SEPOLIA_GENESIS_VALIDATORS_ROOT,
             genesis_time: SEPOLIA_GENESIS_TIME,
-            latest_height: INITIAL_HEADER.slot.get(),
+            latest_height,
             frozen_height: Height::default(),
             ibc_contract_address: IBC_CONTRACT_ADDRESS,
             initial_sync_committee: None,
-        });
+        })
+    }
 
+    #[test]
+    fn verify_creation_works() {
+        let ClientState::V1(mut client_state) = initial_client_state(100);
+        client_state.initial_sync_committee = Some(InitialSyncCommittee {
+            current_sync_committee: CURRENT_SYNC_COMMITTEE.clone(),
+            next_sync_committee: NEXT_SYNC_COMMITTEE.clone(),
+        });
         let consensus_state = ConsensusState {
             slot: INITIAL_HEADER.slot,
             state_root: INITIAL_HEADER.state_root,
@@ -585,28 +600,75 @@ mod tests {
             ),
         };
 
-        (client_state, consensus_state)
+        let res = EthereumLightClient::verify_creation(
+            Addr::unchecked("hello"),
+            &ClientState::V1(client_state.clone()),
+            &consensus_state,
+            Addr::unchecked("hello"),
+        )
+        .unwrap();
+
+        client_state.initial_sync_committee = None;
+        assert_eq!(res.client_state, Some(ClientState::V1(client_state)));
+
+        assert!(res.events.is_empty());
+
+        assert_eq!(res.storage_writes.len(), 2);
+        let current_period = compute_sync_committee_period_at_slot::<Mainnet>(consensus_state.slot);
+        assert_eq!(
+            res.storage_writes
+                .get(&depolama::raw_key::<SyncCommitteeStore>(&current_period)),
+            Some(
+                &InverseSyncCommittee::take_inverse(&CURRENT_SYNC_COMMITTEE)
+                    .encode_as::<Bincode>()
+                    .into()
+            ),
+        );
+
+        assert_eq!(
+            res.storage_writes
+                .get(&depolama::raw_key::<SyncCommitteeStore>(
+                    &(current_period + 1)
+                )),
+            Some(
+                &InverseSyncCommittee::take_inverse(&NEXT_SYNC_COMMITTEE)
+                    .encode_as::<Bincode>()
+                    .into()
+            ),
+        );
     }
 
     #[test]
-    fn verify_header_works() {
-        let (ClientState::V1(client_state), consensus_state) = initial_state();
+    fn verify_within_period_update() {
+        let consensus_state = ConsensusState {
+            slot: INITIAL_HEADER.slot,
+            state_root: INITIAL_HEADER.state_root,
+            storage_root: INITIAL_STORAGE_HASH,
+            timestamp: compute_timestamp_at_slot::<Mainnet>(
+                SEPOLIA_GENESIS_TIME,
+                INITIAL_HEADER.slot,
+            ),
+        };
+
+        let ClientState::V1(mut client_state) =
+            initial_client_state(FINALITY_UPDATE.finalized_header.execution.block_number - 1);
+
         let deps = mock_dependencies();
         let mut env = mock_env();
         env.block.time =
             Timestamp::from_seconds(FINALITY_UPDATE.attested_header.execution.timestamp + 24);
-        verify_header::<Mainnet>(
+        let state_update = verify_header::<Mainnet>(
             &IbcClientCtx {
                 client_id: 1.try_into().unwrap(),
                 ibc_host: Addr::unchecked("hey bro"),
                 deps: deps.as_ref(),
                 env,
             },
-            client_state,
+            client_state.clone(),
             consensus_state,
             InverseSyncCommittee::take_inverse(&CURRENT_SYNC_COMMITTEE),
             Header {
-                trusted_height: Height::new(INITIAL_HEADER.slot.get()),
+                trusted_height: Height::new(client_state.latest_height),
                 consensus_update: LightClientUpdate::WithinSyncCommitteePeriod(Box::new(
                     WithinSyncCommitteePeriodUpdate {
                         update_data: FINALITY_UPDATE.clone(),
@@ -619,5 +681,139 @@ mod tests {
             },
         )
         .unwrap();
+
+        let consensus_state = ConsensusState {
+            slot: FINALITY_UPDATE.finalized_header.beacon.slot,
+            state_root: FINALITY_UPDATE.finalized_header.execution.state_root,
+            storage_root: FINALITY_UPDATE_ACCOUNT_STORAGE_ROOT,
+            timestamp: FINALITY_UPDATE.finalized_header.execution.timestamp * 1_000_000_000,
+        };
+
+        client_state.latest_height = FINALITY_UPDATE.finalized_header.execution.block_number;
+
+        assert_eq!(
+            state_update.client_state,
+            Some(ClientState::V1(client_state))
+        );
+
+        assert_eq!(state_update.consensus_state, consensus_state);
+
+        assert_eq!(
+            state_update.height,
+            FINALITY_UPDATE.finalized_header.execution.block_number
+        );
+
+        // No sync committee write because this is within the sync committee period, so no new sync committee to be written
+        assert!(state_update.storage_writes.is_empty());
+    }
+
+    fn construct_light_client_update_data(
+        update: electra::LightClientUpdate,
+    ) -> LightClientUpdateData {
+        LightClientUpdateData {
+            attested_header: update.attested_header.clone().into(),
+            finalized_header: update.finalized_header.clone().into(),
+            finality_branch: update.finality_branch.to_vec(),
+            sync_aggregate: update.sync_aggregate.clone(),
+            signature_slot: update.signature_slot,
+        }
+    }
+
+    // Ensures:
+    // - A valid period changing update is verified,
+    // - Correct client state, consensus state, and height is returned,
+    // - The returned `storage_writes` include the correct sync committee under the correct key.
+    #[test]
+    fn verify_period_changing_update() {
+        let consensus_state = ConsensusState {
+            slot: FINALITY_UPDATE.finalized_header.beacon.slot,
+            state_root: FINALITY_UPDATE.finalized_header.beacon.state_root,
+            storage_root: FINALITY_UPDATE_ACCOUNT_STORAGE_ROOT,
+            timestamp: compute_timestamp_at_slot::<Mainnet>(
+                SEPOLIA_GENESIS_TIME,
+                FINALITY_UPDATE.finalized_header.beacon.slot,
+            ),
+        };
+
+        let ClientState::V1(mut client_state) =
+            initial_client_state(FINALITY_UPDATE.finalized_header.execution.block_number);
+
+        let deps = mock_dependencies();
+        let mut env = mock_env();
+        env.block.time = Timestamp::from_seconds(
+            PERIOD_CHANGING_UPDATE.attested_header.execution.timestamp + 24,
+        );
+        let state_update = verify_header::<Mainnet>(
+            &IbcClientCtx {
+                client_id: 1.try_into().unwrap(),
+                ibc_host: Addr::unchecked("hey bro"),
+                deps: deps.as_ref(),
+                env,
+            },
+            client_state.clone(),
+            consensus_state,
+            InverseSyncCommittee::take_inverse(&NEXT_SYNC_COMMITTEE),
+            Header {
+                trusted_height: Height::new(client_state.latest_height),
+                consensus_update: LightClientUpdate::SyncCommitteePeriodChange(Box::new(
+                    SyncCommitteePeriodChangeUpdate {
+                        update_data: construct_light_client_update_data(
+                            PERIOD_CHANGING_UPDATE.clone(),
+                        ),
+                        next_sync_committee: PERIOD_CHANGING_UPDATE.next_sync_committee.clone(),
+                        next_sync_committee_branch: PERIOD_CHANGING_UPDATE
+                            .next_sync_committee_branch
+                            .into(),
+                    },
+                )),
+                ibc_account_proof: AccountProof {
+                    storage_root: PERIOD_CHANGING_UPDATE_ACCOUNT_STORAGE_ROOT,
+                    proof: PERIOD_CHANGING_UPDATE_ACCOUNT_PROOF.clone(),
+                },
+            },
+        )
+        .unwrap();
+
+        let consensus_state = ConsensusState {
+            slot: PERIOD_CHANGING_UPDATE.finalized_header.beacon.slot,
+            state_root: PERIOD_CHANGING_UPDATE.finalized_header.execution.state_root,
+            storage_root: PERIOD_CHANGING_UPDATE_ACCOUNT_STORAGE_ROOT,
+            timestamp: PERIOD_CHANGING_UPDATE.finalized_header.execution.timestamp * 1_000_000_000,
+        };
+
+        client_state.latest_height = PERIOD_CHANGING_UPDATE
+            .finalized_header
+            .execution
+            .block_number;
+
+        assert_eq!(
+            state_update.client_state,
+            Some(ClientState::V1(client_state))
+        );
+
+        assert_eq!(state_update.consensus_state, consensus_state);
+
+        assert_eq!(
+            state_update.height,
+            PERIOD_CHANGING_UPDATE
+                .finalized_header
+                .execution
+                .block_number
+        );
+
+        let next_sync_period = compute_sync_committee_period_at_slot::<Mainnet>(
+            PERIOD_CHANGING_UPDATE.finalized_header.beacon.slot,
+        ) + 1;
+        assert_eq!(state_update.storage_writes.len(), 1);
+        assert_eq!(
+            state_update
+                .storage_writes
+                .get(&depolama::raw_key::<SyncCommitteeStore>(&next_sync_period)),
+            Some(
+                &InverseSyncCommittee::take_inverse(&PERIOD_CHANGING_UPDATE.next_sync_committee)
+                    .encode_as::<Bincode>()
+                    .into()
+            )
+        );
     }
 }
