@@ -24,8 +24,9 @@
     "dist/**/*.d.ts.map"
   ],
   "devDependencies": {
+    "biome": "^0.3.3",
+    "effect": "^3.13.12",
     "typescript": "^5.8.2",
-    "vitest": "^3.0.8",
-    "biome": "^0.3.3"
+    "vitest": "^3.0.8"
   }
 }
