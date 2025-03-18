@@ -9,7 +9,7 @@ describe("abi", () => {
 
     // Check that it has the expected functions
     const functionNames = ucs03abi.filter(item => item.type === "function").map(item => item.name)
-    expect(functionNames).toContain("transferV2")
-    expect(functionNames).toContain("transferAndCall")
+    expect(functionNames).toContain("send")
+    expect(functionNames).toContain("ensureExported")
   })
 })
