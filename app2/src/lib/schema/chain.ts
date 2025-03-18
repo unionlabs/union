@@ -9,6 +9,8 @@ import type {
 import { bech32, bytes } from "@scure/base"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
+export type ChainId = typeof ChainId.Type
+
 // e.g. union.union-testnet-9
 export const UniversalChainId = Schema.String.pipe(Schema.brand("UniversalChainId")).pipe(
   Schema.pattern(/^[^:]+\.[^:]+$/)

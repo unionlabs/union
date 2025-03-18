@@ -4,6 +4,7 @@ import { ChainId } from "$lib/schema/chain.ts"
 import { ConnectionId } from "$lib/schema/connection.ts"
 
 export const ChannelId = Schema.Int.pipe(Schema.brand("ChannelId"))
+export type ChannelId = typeof ChannelId.Type
 
 export const ChannelVersion = Schema.String.pipe(Schema.brand("ChannelVersion"))
 
