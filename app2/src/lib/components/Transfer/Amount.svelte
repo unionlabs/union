@@ -4,6 +4,14 @@ import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { Option } from "effect"
 import { formatUnits } from "viem"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+
+let chainWallet = $derived.by(() => {
+  if (Option.isSome(transfer.sourceChain)) {
+    return wallets.getAddressForChain(transfer.sourceChain.value)
+  }
+  return Option.none()
+})
 
 function allDataReadyForBalance() {
   return (
@@ -93,13 +101,15 @@ function setMaxAmount() {
 
 <div class="flex w-full justify-between text-xs">
   <p>
-    BALANCE:
-    {#if !transfer.raw.source || !transfer.raw.asset}
-      0
-    {:else if !allDataReadyForBalance()}
-      <Skeleton class="h-3 w-16 inline-block" />
-    {:else}
-      {displayBalance}
+    {#if Option.isSome(chainWallet)}
+      BALANCE:
+      {#if !transfer.raw.source || !transfer.raw.asset}
+        0
+      {:else if !allDataReadyForBalance()}
+        <Skeleton class="h-3 w-16 inline-block"/>
+      {:else}
+        {displayBalance}
+      {/if}
     {/if}
   </p>
   <button
