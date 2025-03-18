@@ -33,7 +33,6 @@ nix build .#hubble-abis -L
 
 copy from `result/` to `src/evm/abi/`
 
-
 ## How to run examples
 
 ```sh
