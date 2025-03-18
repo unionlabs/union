@@ -1,11 +1,12 @@
-import { Data, Effect, Option } from "effect"
+import { Context, Data, Effect, Option } from "effect"
 import {
   createPublicClient,
   createWalletClient,
   http,
   custom,
   type CreatePublicClientErrorType,
-  type CreateWalletClientErrorType
+  type CreateWalletClientErrorType,
+  type PublicClient
 } from "viem"
 import { getConnectorClient, type GetConnectorClientErrorType } from "@wagmi/core"
 import { wagmiConfig } from "$lib/wallet/evm/wagmi-config"
@@ -15,6 +16,11 @@ import {
   ConnectorClientError
 } from "../transfer/errors.ts"
 import type { Chain } from "$lib/schema/chain.ts"
+
+export class PublicSourceViemClient extends Context.Tag("PublicSourceViemClient")<
+  PublicSourceViemClient,
+  { readonly client: PublicClient }
+>() {}
 
 export class NoViemChainError extends Data.TaggedError("NoViemChain")<{
   chain: Chain

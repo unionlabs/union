@@ -6,14 +6,19 @@ import {
   type WriteContractErrorType
 } from "viem"
 import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
-import { getPublicClient, getWalletClient } from "../evm/clients.ts"
+import { getPublicClient, getWalletClient, PublicSourceViemClient } from "../evm/clients.ts"
 import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 import { generateSalt } from "$lib/services/shared"
 import { sepolia } from "viem/chains"
-import { fetchErc20Decimals, fetchErc20Name, fetchErc20Symbol } from "../evm/erc20.ts"
+import {
+  fetchErc20Decimals,
+  fetchErc20Meta,
+  fetchErc20Name,
+  fetchErc20Symbol
+} from "../evm/erc20.ts"
 import { Batch, FungibleAssetOrder } from "@unionlabs/sdk/evm/ucs03"
 import { ucs03abi } from "@unionlabs/sdk/evm/abi"
 
@@ -30,18 +35,9 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
 
     const client = yield* getPublicClient(chain)
 
-    const onchainBaseTokenSymbol = yield* fetchErc20Symbol({
-      client,
-      tokenAddress: transfer.baseToken
-    })
-    const onchainBaseTokenName = yield* fetchErc20Name({
-      client,
-      tokenAddress: transfer.baseToken
-    })
-    const onchainBaseTokenDecimals = yield* fetchErc20Decimals({
-      client,
-      tokenAddress: transfer.baseToken
-    })
+    const onchainBaseTokenMeta = yield* fetchErc20Meta(transfer.baseToken).pipe(
+      Effect.provideService(PublicSourceViemClient, { client })
+    )
 
     console.log({
       account: account.address as `0x${string}`,
@@ -60,9 +56,9 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
             transfer.receiver as `0x${string}`,
             transfer.baseToken,
             transfer.baseAmount,
-            onchainBaseTokenSymbol,
-            onchainBaseTokenName,
-            onchainBaseTokenDecimals,
+            onchainBaseTokenMeta.symbol,
+            onchainBaseTokenMeta.name,
+            onchainBaseTokenMeta.decimals,
             0n,
             transfer.quoteToken,
             transfer.quoteAmount
@@ -72,9 +68,9 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
             transfer.receiver as `0x${string}`,
             transfer.baseToken,
             transfer.baseAmount,
-            onchainBaseTokenSymbol,
-            onchainBaseTokenName,
-            onchainBaseTokenDecimals,
+            onchainBaseTokenMeta.symbol,
+            onchainBaseTokenMeta.name,
+            onchainBaseTokenMeta.decimals,
             0n,
             transfer.quoteToken,
             transfer.quoteAmount
