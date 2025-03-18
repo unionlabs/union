@@ -1,14 +1,14 @@
 // @generated
 /// Generated client implementations.
 #[cfg(feature = "client")]
-pub mod listener_service_client {
+pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::{http::Uri, *};
     #[derive(Debug, Clone)]
-    pub struct ListenerServiceClient<T> {
+    pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl ListenerServiceClient<tonic::transport::Channel> {
+    impl MsgClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -19,7 +19,7 @@ pub mod listener_service_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> ListenerServiceClient<T>
+    impl<T> MsgClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::Error: Into<StdError>,
@@ -34,10 +34,7 @@ pub mod listener_service_client {
             let inner = tonic::client::Grpc::with_origin(inner, origin);
             Self { inner }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> ListenerServiceClient<InterceptedService<T, F>>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> MsgClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -50,7 +47,7 @@ pub mod listener_service_client {
             <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
                 Into<StdError> + Send + Sync,
         {
-            ListenerServiceClient::new(InterceptedService::new(inner, interceptor))
+            MsgClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -83,11 +80,13 @@ pub mod listener_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn listen_deliver_block(
+        pub async fn create_vesting_account(
             &mut self,
-            request: impl tonic::IntoRequest<super::ListenDeliverBlockRequest>,
-        ) -> std::result::Result<tonic::Response<super::ListenDeliverBlockResponse>, tonic::Status>
-        {
+            request: impl tonic::IntoRequest<super::MsgCreateVestingAccount>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgCreateVestingAccountResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -96,20 +95,22 @@ pub mod listener_service_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.streaming.v1.ListenerService/ListenDeliverBlock",
+                "/cosmos.vesting.v1beta1.Msg/CreateVestingAccount",
             );
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "cosmos.streaming.v1.ListenerService",
-                "ListenDeliverBlock",
+                "cosmos.vesting.v1beta1.Msg",
+                "CreateVestingAccount",
             ));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn listen_state_changes(
+        pub async fn create_permanent_locked_account(
             &mut self,
-            request: impl tonic::IntoRequest<super::ListenStateChangesRequest>,
-        ) -> std::result::Result<tonic::Response<super::ListenStateChangesResponse>, tonic::Status>
-        {
+            request: impl tonic::IntoRequest<super::MsgCreatePermanentLockedAccount>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgCreatePermanentLockedAccountResponse>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -118,12 +119,36 @@ pub mod listener_service_client {
             })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/cosmos.streaming.v1.ListenerService/ListenStateChanges",
+                "/cosmos.vesting.v1beta1.Msg/CreatePermanentLockedAccount",
             );
             let mut req = request.into_request();
             req.extensions_mut().insert(GrpcMethod::new(
-                "cosmos.streaming.v1.ListenerService",
-                "ListenStateChanges",
+                "cosmos.vesting.v1beta1.Msg",
+                "CreatePermanentLockedAccount",
+            ));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn create_periodic_vesting_account(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgCreatePeriodicVestingAccount>,
+        ) -> std::result::Result<
+            tonic::Response<super::MsgCreatePeriodicVestingAccountResponse>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.vesting.v1beta1.Msg/CreatePeriodicVestingAccount",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new(
+                "cosmos.vesting.v1beta1.Msg",
+                "CreatePeriodicVestingAccount",
             ));
             self.inner.unary(req, path, codec).await
         }

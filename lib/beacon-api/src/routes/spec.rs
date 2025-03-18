@@ -1,6 +1,4 @@
-use beacon_api_types::{
-    chain_spec::PresetBaseKind, consts::default_epoch, custom_types::Version, slot::Slot,
-};
+use beacon_api_types::{chain_spec::PresetBaseKind, custom_types::Version, slot::Slot};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,26 +22,20 @@ pub struct Spec {
     #[serde(with = "::serde_utils::string")]
     pub genesis_delay: u64,
 
-    pub altair_fork_version: Version,
-    #[serde(with = "::serde_utils::string", default = "default_epoch")]
-    pub altair_fork_epoch: u64,
+    // pub altair_fork_version: Option<Version>,
+    // pub altair_fork_epoch: Option<u64>,
 
-    pub bellatrix_fork_version: Version,
-    #[serde(with = "::serde_utils::string", default = "default_epoch")]
-    pub bellatrix_fork_epoch: u64,
+    // pub bellatrix_fork_version: Option<Version>,
+    // pub bellatrix_fork_epoch: Option<u64>,
 
-    pub capella_fork_version: Version,
-    #[serde(with = "::serde_utils::string", default = "default_epoch")]
-    pub capella_fork_epoch: u64,
+    // pub capella_fork_version: Option<Version>,
+    // pub capella_fork_epoch: Option<u64>,
 
-    pub deneb_fork_version: Version,
-    #[serde(with = "::serde_utils::string", default = "default_epoch")]
-    pub deneb_fork_epoch: u64,
+    // pub deneb_fork_version: Option<Version>,
+    // pub deneb_fork_epoch: Option<u64>,
 
-    pub electra_fork_version: Version,
-    #[serde(with = "::serde_utils::string", default = "default_epoch")]
-    pub electra_fork_epoch: u64,
-
+    // pub electra_fork_version: Option<Version>,
+    // pub electra_fork_epoch: Option<u64>,
     #[serde(with = "::serde_utils::string")]
     pub seconds_per_slot: u64,
     // SECONDS_PER_ETH1_BLOCK: 14,

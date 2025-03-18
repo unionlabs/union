@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::google::protobuf::{any::RawAny, timestamp::Timestamp};
+use crate::google::protobuf::any::RawAny;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TxBody<M = RawAny> {
@@ -8,10 +8,10 @@ pub struct TxBody<M = RawAny> {
     pub memo: String,
     pub timeout_height: u64,
     // lol https://stackoverflow.com/questions/74726116/how-to-skip-serde-serialization-with-skip-serializing-if-for-a-boolean-field
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub unordered: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub timeout_timestamp: Option<Timestamp>,
+    // #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    // pub unordered: bool,
+    // #[serde(default, skip_serializing_if = "Option::is_none")]
+    // pub timeout_timestamp: Option<Timestamp>,
 
     // TODO: Make this struct generic over these types too (in the same way as it is for .messages)
     pub extension_options: Vec<RawAny>,
@@ -46,8 +46,8 @@ pub mod proto {
                     .collect(),
                 memo: value.memo,
                 timeout_height: value.timeout_height,
-                unordered: value.unordered,
-                timeout_timestamp: value.timeout_timestamp.map(Into::into),
+                // unordered: value.unordered,
+                // timeout_timestamp: value.timeout_timestamp.map(Into::into),
                 extension_options: value
                     .extension_options
                     .into_iter()
@@ -88,9 +88,8 @@ pub mod proto {
                     .map_err(|err| Error::Message(ErrorReporter(err).to_string()))?,
                 memo: value.memo,
                 timeout_height: value.timeout_height,
-                unordered: value.unordered,
-                timeout_timestamp: value.timeout_timestamp.map(TryInto::try_into).transpose()?,
-
+                // unordered: value.unordered,
+                // timeout_timestamp: value.timeout_timestamp.map(TryInto::try_into).transpose()?,
                 extension_options: value
                     .extension_options
                     .into_iter()

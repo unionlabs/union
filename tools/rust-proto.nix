@@ -192,7 +192,7 @@ _: {
             ibc-proto.src
             google.src
             cometbls.src
-            cosmos-sdk-evidence.src
+            # cosmos-sdk-evidence.src
           ];
         };
         cosmos-sdk = {
@@ -213,18 +213,19 @@ _: {
             sed -i 's/DenyList(Validators)/DenyList(ValidatorsList)/' "./src/cosmos.staking.v1beta1.rs"
           '';
         };
-        cosmos-sdk-bank = {
-          src = "${proto.cosmossdk}/x/bank/proto";
-          proto-deps = [ ];
-        };
-        cosmos-sdk-staking = {
-          src = "${proto.cosmossdk}/x/staking/proto";
-          proto-deps = [ ];
-        };
-        cosmos-sdk-evidence = {
-          src = "${proto.cosmossdk}/x/evidence/proto";
-          proto-deps = [ ];
-        };
+        # NOTE: Needed for v0.52+
+        # cosmos-sdk-bank = {
+        #   src = "${proto.cosmossdk}/x/bank/proto";
+        #   proto-deps = [ ];
+        # };
+        # cosmos-sdk-staking = {
+        #   src = "${proto.cosmossdk}/x/staking/proto";
+        #   proto-deps = [ ];
+        # };
+        # cosmos-sdk-evidence = {
+        #   src = "${proto.cosmossdk}/x/evidence/proto";
+        #   proto-deps = [ ];
+        # };
       };
 
       fold-opts =

@@ -226,6 +226,7 @@ abstract contract UnionScript is UnionBase {
             StateLensIcs23Ics23Client,
             StateLensIcs23SmtClient,
             PingPong,
+            UCS03Zkgm,
             Multicall
         )
     {
@@ -238,6 +239,7 @@ abstract contract UnionScript is UnionBase {
         StateLensIcs23SmtClient stateLensIcs23SmtClient =
             deployStateLensIcs23SmtClient(handler, owner);
         PingPong pingpong = deployUCS00(handler, owner, 100000000000000);
+        UCS03Zkgm ucs03 = deployUCS03(handler, owner);
         Multicall multicall = deployMulticall();
         return (
             handler,
@@ -246,6 +248,7 @@ abstract contract UnionScript is UnionBase {
             stateLensIcs23Ics23Client,
             stateLensIcs23SmtClient,
             pingpong,
+            ucs03,
             multicall
         );
     }
@@ -478,6 +481,7 @@ contract DeployIBC is UnionScript {
             StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
             StateLensIcs23SmtClient stateLensIcs23SmtClient,
             PingPong pingpong,
+            UCS03Zkgm ucs03,
             Multicall multicall
         ) = deployIBC(vm.addr(privateKey));
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
@@ -507,6 +511,7 @@ contract DeployIBC is UnionScript {
             "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
         );
         console.log("UCS00: ", address(pingpong));
+        console.log("UCS03: ", address(ucs03));
         console.log("Multicall: ", address(multicall));
     }
 }
@@ -532,6 +537,7 @@ contract DeployDeployerAndIBC is UnionScript {
             StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
             StateLensIcs23SmtClient stateLensIcs23SmtClient,
             PingPong pingpong,
+            UCS03Zkgm ucs03,
             Multicall multicall
         ) = deployIBC(vm.addr(privateKey));
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
@@ -561,6 +567,7 @@ contract DeployDeployerAndIBC is UnionScript {
             "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
         );
         console.log("UCS00: ", address(pingpong));
+        console.log("UCS03: ", address(ucs03));
         console.log("Multicall: ", address(multicall));
     }
 }

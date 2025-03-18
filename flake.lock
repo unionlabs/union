@@ -26,16 +26,16 @@
     "babylon": {
       "flake": false,
       "locked": {
-        "lastModified": 1736163423,
-        "narHash": "sha256-GtPuPFwjbxMx/fY+FXO8V3L+soYhA29ak8XbWBWO5Mk=",
+        "lastModified": 1741344883,
+        "narHash": "sha256-vIx/To+nAXemyb5s12oDlSy1EpcSbFLyvg75TqniEE8=",
         "owner": "babylonlabs-io",
         "repo": "babylon",
-        "rev": "b5646552a1606e38fcdfa97ed2606549b9a233f7",
+        "rev": "36f1010b50568caa083250a10410e7662016a224",
         "type": "github"
       },
       "original": {
         "owner": "babylonlabs-io",
-        "ref": "v1.0.0-rc.3",
+        "ref": "v1.0.0-rc.7",
         "repo": "babylon",
         "type": "github"
       }
@@ -60,17 +60,17 @@
     "cometbls": {
       "flake": false,
       "locked": {
-        "lastModified": 1729267630,
-        "narHash": "sha256-bOast89F1/pcT8N13COxLms5nC7+dlxBjR320fGoqKw=",
+        "lastModified": 1740781808,
+        "narHash": "sha256-eSbKeWsUXTUWevzs81jRMd3WK0gvgs3Q6BjdMLIym/o=",
         "owner": "unionlabs",
         "repo": "cometbft",
-        "rev": "40cbc598984d75fc4c8af1f100674dc459cda25d",
+        "rev": "5aa5a57b377d75e0aa01c568dd3c324b6abba1ee",
         "type": "github"
       },
       "original": {
         "owner": "unionlabs",
+        "ref": "v1.0.1-cometbls",
         "repo": "cometbft",
-        "rev": "40cbc598984d75fc4c8af1f100674dc459cda25d",
         "type": "github"
       }
     },
@@ -94,17 +94,17 @@
     "cosmossdk": {
       "flake": false,
       "locked": {
-        "lastModified": 1733197962,
-        "narHash": "sha256-8v4cobX/o5+k4dotZwN0QOo5gOO6v0qqPwyNCXDvk2s=",
+        "lastModified": 1740760619,
+        "narHash": "sha256-Du7Hmjy65tPjRAY5gSuLi8TVST4ejAxm+qKpkOpeyzw=",
         "owner": "unionlabs",
         "repo": "cosmos-sdk",
-        "rev": "2b819f25de4d2f408fe3e7628bcb3e059244fd1c",
+        "rev": "0f0e36772bd6be187544eb55d022ad92dd91ece1",
         "type": "github"
       },
       "original": {
         "owner": "unionlabs",
+        "ref": "v0.50.11-cometblsv1",
         "repo": "cosmos-sdk",
-        "rev": "2b819f25de4d2f408fe3e7628bcb3e059244fd1c",
         "type": "github"
       }
     },
@@ -545,16 +545,16 @@
     "osmosis": {
       "flake": false,
       "locked": {
-        "lastModified": 1712018893,
-        "narHash": "sha256-u/1/aMEPt78is4G7/pkjttDLb1IGw3jMP2MW518lLkM=",
+        "lastModified": 1741802709,
+        "narHash": "sha256-Gt8wMPUNPtaSPCw4HJdUPEjw67KNp1djp/xZyM38kLc=",
         "owner": "osmosis-labs",
         "repo": "osmosis",
-        "rev": "7892e2f9e9528bc547c54db2b43cd01eda6a9bc4",
+        "rev": "8d33050d5c727ceb1ad56494b05f25d1be32cb08",
         "type": "github"
       },
       "original": {
         "owner": "osmosis-labs",
-        "ref": "v24.0.0-rc0",
+        "ref": "v28.0.5",
         "repo": "osmosis",
         "type": "github"
       }
@@ -691,17 +691,17 @@
     "stargaze": {
       "flake": false,
       "locked": {
-        "lastModified": 1712533498,
-        "narHash": "sha256-lt5+KTTieUbel6cBPeyXAVTPYj2u8WWCN3NCBt2lU/0=",
-        "ref": "main",
-        "rev": "2f2d5332d152d5cd7d89860962017584670d9d1e",
-        "revCount": 1569,
+        "lastModified": 1739299737,
+        "narHash": "sha256-c0uT1xRnXSTHebBqMTmkn82nifDC4z4kIpUmRK758KU=",
+        "ref": "refs/tags/v15.2.0",
+        "rev": "308487c985fdb096aeb00e865f4c738fdd724ec8",
+        "revCount": 1941,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/public-awesome/stargaze"
       },
       "original": {
-        "ref": "main",
+        "ref": "refs/tags/v15.2.0",
         "submodules": true,
         "type": "git",
         "url": "https://github.com/public-awesome/stargaze"
@@ -710,16 +710,16 @@
     "stride": {
       "flake": false,
       "locked": {
-        "lastModified": 1724989162,
-        "narHash": "sha256-bN+5OUJ/ObexhlZ+XqhQaQuBzGFsjLk/q2+zrllJn3Y=",
+        "lastModified": 1741891612,
+        "narHash": "sha256-Yqroqe7/iJPgWz51KtjzL0W7RfPussB4w0cvB5VmGfg=",
         "owner": "Stride-Labs",
         "repo": "stride",
-        "rev": "4cfda614e8fb9664ce72861d32824d72430d4436",
+        "rev": "32341bf0b668ac00c90bc9d4e02ba95a675d9277",
         "type": "github"
       },
       "original": {
         "owner": "Stride-Labs",
-        "ref": "v24.0.0",
+        "ref": "v26.0.3",
         "repo": "stride",
         "type": "github"
       }

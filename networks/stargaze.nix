@@ -13,32 +13,35 @@
     }:
     {
       packages = {
-        starsd = goPkgs.pkgsStatic.buildGoModule (
+        starsd = goPkgs.pkgsStatic.buildGo123Module (
           {
             name = "starsd";
             src = inputs.stargaze;
-            vendorHash = "sha256-yg2RT1NnUaqlU8Gvlx5ZxHotSMZbBnicsAj5Jzi0BXo=";
+            vendorHash = "sha256-sOdQlRCv8frw+AYga7LTthmtK9VOtwkPSjGsRai+Q+o=";
             doCheck = false;
             doInstallCheck = false;
             meta.mainProgram = "starsd";
             # CGO_ENABLED = 0;
             subPackages = [ "./cmd/starsd" ];
-            buildTags = [ "netgo" ];
+            tags = [
+              "netgo"
+              "muslc"
+            ];
           }
           // (
             let
-              inherit (self'.packages) libwasmvm-1_5_2;
+              inherit (self'.packages) libwasmvm-2_1_4;
             in
             if pkgs.stdenv.isLinux then
               {
                 # Statically link if we're on linux
                 nativeBuildInputs = [
                   pkgs.musl
-                  libwasmvm-1_5_2
+                  libwasmvm-2_1_4
                 ];
                 ldflags = [
                   "-linkmode external"
-                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm-1_5_2}/lib'"
+                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm-2_1_4}/lib'"
                 ];
               }
             # else if pkgs.stdenv.isDarwin then {

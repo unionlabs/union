@@ -390,43 +390,5 @@ pub mod msg_client {
                 .insert(GrpcMethod::new("cosmos.auth.v1beta1.Msg", "UpdateParams"));
             self.inner.unary(req, path, codec).await
         }
-        pub async fn non_atomic_exec(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgNonAtomicExec>,
-        ) -> std::result::Result<tonic::Response<super::MsgNonAtomicExecResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/cosmos.auth.v1beta1.Msg/NonAtomicExec");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.auth.v1beta1.Msg", "NonAtomicExec"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn migrate_account(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgMigrateAccount>,
-        ) -> std::result::Result<tonic::Response<super::MsgMigrateAccountResponse>, tonic::Status>
-        {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/cosmos.auth.v1beta1.Msg/MigrateAccount");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("cosmos.auth.v1beta1.Msg", "MigrateAccount"));
-            self.inner.unary(req, path, codec).await
-        }
     }
 }

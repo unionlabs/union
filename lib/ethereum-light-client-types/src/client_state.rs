@@ -8,7 +8,7 @@ use unionlabs::{
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "version", content = "data", rename_all = "snake_case") // mirror the beacon api
+    serde(tag = "version", content = "data", rename_all = "snake_case")
 )]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum ClientState {

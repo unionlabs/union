@@ -9,6 +9,7 @@ _: {
       uniondBundleVersions,
       goPkgs,
       mkCi,
+      dbg,
       ...
     }:
     let
@@ -63,9 +64,13 @@ _: {
                     nativeBuildInputs = [
                       goPkgs.musl
                     ];
-                    tags = [ "netgo" ];
+                    tags = [
+                      "netgo"
+                      "muslc"
+                    ];
                     ldflags = [
                       "-linkmode external"
+                      "-extldflags \"-Wl,-z,muldefs -static\""
                       "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
                       "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
                       "-X github.com/cosmos/cosmos-sdk/version.BuildTags=netgo"
@@ -88,6 +93,7 @@ _: {
                 else
                   { }
               )
+
             );
 
         uniond-release = mkCi false (

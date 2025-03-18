@@ -2034,4 +2034,21 @@ mod tests {
         dbg!("0x68361972d5315b7a497e342405661930a6bdb0c17ce58a87227bb676fbcfc3ce");
         dbg!("0x9f4901a9b797640d3d2507111018b5130d209eb7305bdda6ed3163a6ec4d4c9b");
     }
+
+    #[test]
+    fn verify_creation_response() {
+        let response = VerifyCreationResponse {
+            latest_height: 1,
+            counterparty_chain_id: "chain-id".to_owned(),
+            client_state_bytes: None,
+            storage_writes: [([].into(), [].into())].into_iter().collect(),
+            events: vec![],
+        };
+
+        let json = serde_json_wasm::to_string(&response).unwrap();
+
+        let rt = serde_json_wasm::from_str::<VerifyCreationResponse>(&json).unwrap();
+
+        assert_eq!(response, rt);
+    }
 }

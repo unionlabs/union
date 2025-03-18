@@ -8,14 +8,14 @@ use crate::LightClientUpdateData;
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 // boxed for size
 pub enum LightClientUpdate {
-    EpochChange(Box<EpochChangeUpdate>),
-    WithinEpoch(Box<WithinEpochUpdate>),
+    SyncCommitteePeriodChange(Box<SyncCommitteePeriodChangeUpdate>),
+    WithinSyncCommitteePeriod(Box<WithinSyncCommitteePeriodUpdate>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
-pub struct EpochChangeUpdate {
+pub struct SyncCommitteePeriodChangeUpdate {
     /// The next sync committee of the epoch that the client is being updated to, corresponding to `update_data.attested_header.state_root`.
     ///
     /// If the current epoch is 10, this will be the *next* sync committee for epoch 11 (i.e. the sync committee for epoch 12).
@@ -29,38 +29,42 @@ pub struct EpochChangeUpdate {
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
-pub struct WithinEpochUpdate {
+pub struct WithinSyncCommitteePeriodUpdate {
     pub update_data: LightClientUpdateData,
 }
 
 impl LightClientUpdate {
     pub fn update_data(&self) -> &LightClientUpdateData {
         match self {
-            LightClientUpdate::EpochChange(update) => &update.update_data,
-            LightClientUpdate::WithinEpoch(update) => &update.update_data,
+            LightClientUpdate::SyncCommitteePeriodChange(update) => &update.update_data,
+            LightClientUpdate::WithinSyncCommitteePeriod(update) => &update.update_data,
         }
     }
 
     pub fn into_light_client_update(self) -> ethereum_sync_protocol_types::LightClientUpdate {
         match self {
-            LightClientUpdate::EpochChange(u) => ethereum_sync_protocol_types::LightClientUpdate {
-                attested_header: u.update_data.attested_header,
-                next_sync_committee: Some(u.next_sync_committee),
-                next_sync_committee_branch: Some(u.next_sync_committee_branch),
-                finalized_header: u.update_data.finalized_header,
-                finality_branch: u.update_data.finality_branch,
-                sync_aggregate: u.update_data.sync_aggregate,
-                signature_slot: u.update_data.signature_slot,
-            },
-            LightClientUpdate::WithinEpoch(u) => ethereum_sync_protocol_types::LightClientUpdate {
-                attested_header: u.update_data.attested_header,
-                next_sync_committee: None,
-                next_sync_committee_branch: None,
-                finalized_header: u.update_data.finalized_header,
-                finality_branch: u.update_data.finality_branch,
-                sync_aggregate: u.update_data.sync_aggregate,
-                signature_slot: u.update_data.signature_slot,
-            },
+            LightClientUpdate::SyncCommitteePeriodChange(u) => {
+                ethereum_sync_protocol_types::LightClientUpdate {
+                    attested_header: u.update_data.attested_header,
+                    next_sync_committee: Some(u.next_sync_committee),
+                    next_sync_committee_branch: Some(u.next_sync_committee_branch),
+                    finalized_header: u.update_data.finalized_header,
+                    finality_branch: u.update_data.finality_branch,
+                    sync_aggregate: u.update_data.sync_aggregate,
+                    signature_slot: u.update_data.signature_slot,
+                }
+            }
+            LightClientUpdate::WithinSyncCommitteePeriod(u) => {
+                ethereum_sync_protocol_types::LightClientUpdate {
+                    attested_header: u.update_data.attested_header,
+                    next_sync_committee: None,
+                    next_sync_committee_branch: None,
+                    finalized_header: u.update_data.finalized_header,
+                    finality_branch: u.update_data.finality_branch,
+                    sync_aggregate: u.update_data.sync_aggregate,
+                    signature_slot: u.update_data.signature_slot,
+                }
+            }
         }
     }
 }
@@ -78,10 +82,10 @@ mod tests {
     };
 
     use super::*;
-    use crate::{EpochChangeUpdate, LightClientUpdateData};
+    use crate::{LightClientUpdateData, SyncCommitteePeriodChangeUpdate};
 
-    fn mk_epoch_change_update() -> EpochChangeUpdate {
-        EpochChangeUpdate {
+    fn mk_epoch_change_update() -> SyncCommitteePeriodChangeUpdate {
+        SyncCommitteePeriodChangeUpdate {
             next_sync_committee: SyncCommittee {
                 pubkeys: vec![H384::new([0xAA; 48])],
                 aggregate_pubkey: H384::new([0xAA; 48]),
@@ -91,8 +95,8 @@ mod tests {
         }
     }
 
-    fn mk_within_epoch_update() -> WithinEpochUpdate {
-        WithinEpochUpdate {
+    fn mk_within_epoch_update() -> WithinSyncCommitteePeriodUpdate {
+        WithinSyncCommitteePeriodUpdate {
             update_data: mk_light_client_update_data(),
         }
     }
@@ -169,7 +173,7 @@ mod tests {
     #[test]
     fn epoch_change_update_bincode_iso() {
         assert_codec_iso::<_, Bincode>(&mk_epoch_change_update());
-        assert_codec_iso::<_, Bincode>(&LightClientUpdate::EpochChange(Box::new(
+        assert_codec_iso::<_, Bincode>(&LightClientUpdate::SyncCommitteePeriodChange(Box::new(
             mk_epoch_change_update(),
         )));
     }
@@ -177,7 +181,7 @@ mod tests {
     #[test]
     fn epoch_change_update_json_iso() {
         assert_codec_iso::<_, Json>(&mk_epoch_change_update());
-        assert_codec_iso::<_, Json>(&LightClientUpdate::EpochChange(Box::new(
+        assert_codec_iso::<_, Json>(&LightClientUpdate::SyncCommitteePeriodChange(Box::new(
             mk_epoch_change_update(),
         )));
     }
@@ -185,7 +189,7 @@ mod tests {
     #[test]
     fn within_epoch_update_bincode_iso() {
         assert_codec_iso::<_, Bincode>(&mk_within_epoch_update());
-        assert_codec_iso::<_, Bincode>(&LightClientUpdate::WithinEpoch(Box::new(
+        assert_codec_iso::<_, Bincode>(&LightClientUpdate::WithinSyncCommitteePeriod(Box::new(
             mk_within_epoch_update(),
         )));
     }
@@ -193,7 +197,7 @@ mod tests {
     #[test]
     fn within_epoch_update_json_iso() {
         assert_codec_iso::<_, Json>(&mk_within_epoch_update());
-        assert_codec_iso::<_, Json>(&LightClientUpdate::WithinEpoch(Box::new(
+        assert_codec_iso::<_, Json>(&LightClientUpdate::WithinSyncCommitteePeriod(Box::new(
             mk_within_epoch_update(),
         )));
     }

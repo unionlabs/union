@@ -79,19 +79,19 @@
     nix-filter.url = "github:numtide/nix-filter?rev=3449dc925982ad46246cfc36469baf66e1b64f17";
     get-flake.url = "github:ursi/get-flake";
     stargaze = {
-      url = "git+https://github.com/public-awesome/stargaze?ref=main&submodules=1";
+      url = "git+https://github.com/public-awesome/stargaze?ref=refs/tags/v15.2.0&submodules=1";
       flake = false;
     };
     osmosis = {
-      url = "github:osmosis-labs/osmosis/v24.0.0-rc0";
+      url = "github:osmosis-labs/osmosis/v28.0.5";
       flake = false;
     };
     babylon = {
-      url = "github:babylonlabs-io/babylon/v1.0.0-rc.3";
+      url = "github:babylonlabs-io/babylon/v1.0.0-rc.7";
       flake = false;
     };
     stride = {
-      url = "github:Stride-Labs/stride/v24.0.0";
+      url = "github:Stride-Labs/stride/v26.0.3";
       flake = false;
     };
 
@@ -113,14 +113,14 @@
       type = "github";
       owner = "unionlabs";
       repo = "cometbft";
-      rev = "40cbc598984d75fc4c8af1f100674dc459cda25d";
+      ref = "v1.0.1-cometbls";
       flake = false;
     };
     cosmossdk = {
       type = "github";
       owner = "unionlabs";
       repo = "cosmos-sdk";
-      rev = "2b819f25de4d2f408fe3e7628bcb3e059244fd1c";
+      ref = "v0.50.11-cometblsv1";
       flake = false;
     };
 
