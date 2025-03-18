@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/sdk",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "type": "module",
   "license": "MIT",
   "author": "@unionlabs",
@@ -12,7 +12,8 @@
   "exports": {
     ".": "./dist/src/index.js",
     "./evm": "./dist/src/evm/index.js",
-    "./evm/abi": "./dist/src/evm/abi/index.js"
+    "./evm/abi": "./dist/src/evm/abi/index.js",
+    "./evm/ucs03": "./dist/src/evm/ucs03/index.js"
   },
   "files": [
     "package.json",
