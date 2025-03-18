@@ -26,6 +26,7 @@ import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 $effect(() => {
   transfer.getQuoteToken()
   transfer.getWethQuoteToken()
+ 
 })
 
 $effect(() => {
