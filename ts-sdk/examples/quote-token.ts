@@ -3,6 +3,10 @@ import { quoteToken } from "../src/evm/quote-token"
 import { PublicDestinationViemClient } from "../src/evm/client"
 import { createPublicClient, defineChain, http, toHex } from "viem"
 
+BigInt["prototype"].toJSON = function () {
+  return this.toString()
+}
+
 const devnet = defineChain({
   id: 32382,
   name: "ethereum devnet",
@@ -26,6 +30,7 @@ const client = createPublicClient({
 
 Effect.runPromiseExit(
   quoteToken(toHex("muno"), "0x05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5", 1).pipe(
+    Effect.mapError(e => e.cause.message),
     Effect.provideService(PublicDestinationViemClient, { client })
   )
-).then(console.log)
+).then(exit => console.log(JSON.stringify(exit, null, 2)))

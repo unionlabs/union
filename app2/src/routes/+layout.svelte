@@ -30,11 +30,7 @@ BigInt["prototype"].toJSON = function () {
 }
 
 Error.prototype.toJSON = function () {
-  return {
-    name: this.name,
-    message: this.message,
-    stack: this.stack
-  }
+  JSON.stringify(this, Object.getOwnPropertyNames(this))
 }
 
 onMount(() => {
