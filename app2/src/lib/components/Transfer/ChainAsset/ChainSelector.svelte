@@ -15,11 +15,9 @@ const { type, onSelect }: Props = $props()
 
 function selectChain(chain: Chain) {
   transfer.raw.updateField(type, chain.chain_id)
-
   if (type === "source") {
     tokensStore.fetchTokens(chain.universal_chain_id)
   }
-
   onSelect()
 }
 </script>
