@@ -5,96 +5,106 @@ import { Option } from "effect"
 import { formatUnits } from "viem"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 
-let maxEnabled = $derived(
-  Option.isSome(transfer.sourceChain) && Option.isSome(transfer.baseToken) && !!transfer.raw.asset
-)
-
-let isLoading = $derived(
-  Option.isSome(transfer.baseToken) &&
-    Option.isSome(transfer.sortedBalances) &&
-    Option.isNone(transfer.baseTokenBalance)
-)
+function allDataReadyForBalance() {
+  return (
+    Option.isSome(transfer.sourceChain) &&
+    Option.isSome(transfer.baseToken) &&
+    Option.isSome(transfer.baseTokenBalance) &&
+    Option.isSome(transfer.baseTokenBalance.value.balance)
+  )
+}
 
 let displayBalance = $derived.by(() => {
-  if (Option.isNone(transfer.baseToken)) return "0.00"
-  if (Option.isNone(transfer.baseTokenBalance)) return "0.00"
-
-  const baseToken = transfer.baseToken.value
-  const balance = transfer.baseTokenBalance.value
-
-  if (Option.isNone(balance.balance)) return "0.00"
-
-  const decimals = baseToken.representations[0]?.decimals ?? 0
-  return formatUnits(BigInt(balance.balance.value), decimals)
+  if (
+    Option.isSome(transfer.sourceChain) &&
+    Option.isSome(transfer.baseToken) &&
+    Option.isSome(transfer.baseTokenBalance)
+  ) {
+    const bal = transfer.baseTokenBalance.value.balance
+    if (Option.isSome(bal)) {
+      const baseToken = transfer.baseToken.value
+      const decimals = baseToken.representations[0]?.decimals ?? 0
+      const raw = bal.value
+      return formatUnits(BigInt(raw), decimals)
+    }
+  }
+  return "" // Not loaded yet
 })
 
 function setMaxAmount() {
-  if (!maxEnabled || isLoading) return
-  if (Option.isNone(transfer.baseToken) || Option.isNone(transfer.baseTokenBalance)) return
-
-  const balance = transfer.baseTokenBalance.value
-  if (Option.isNone(balance.balance)) return
+  if (Option.isNone(transfer.baseToken)) return
+  if (Option.isNone(transfer.baseTokenBalance)) return
+  if (Option.isNone(transfer.baseTokenBalance.value.balance)) return
 
   const baseToken = transfer.baseToken.value
-  const maxDecimals = baseToken.representations[0]?.decimals ?? 0
-  const formattedAmount = formatUnits(BigInt(balance.balance.value), maxDecimals)
+  const decimals = baseToken.representations[0]?.decimals ?? 0
+
+  const rawBalance = transfer.baseTokenBalance.value.balance.value
+  const formattedAmount = formatUnits(BigInt(rawBalance), decimals)
 
   transfer.raw.amount = formattedAmount
 
   const inputElement = document.getElementById("amount") as HTMLInputElement
   if (inputElement) {
     inputElement.value = formattedAmount
-    const event = new Event("input", { bubbles: true })
-    inputElement.dispatchEvent(event)
+    inputElement.dispatchEvent(new Event("input", { bubbles: true }))
   }
 }
 </script>
 
-<Input id="amount"
-       label="amount"
-       type="text"
-       required={true}
-       disabled={!transfer.raw.asset}
-       autocorrect="off"
-       placeholder="0.00"
-       spellcheck="false"
-       autocomplete="off"
-       inputmode="decimal"
-       data-field="amount"
-       autocapitalize="none"
-       pattern="^[0-9]*[.]?[0-9]*$"
-       value={transfer.raw.amount}
-       oninput={(event) => {
-                const input = event.currentTarget;
-                const value = input.value;
-                const maxDecimals = Option.isSome(transfer.baseToken)
-                  ? (transfer.baseToken.value.representations[0]?.decimals ?? 0)
-                  : 0;
+<!-- AMOUNT INPUT -->
+<Input
+        id="amount"
+        label="amount"
+        type="text"
+        required
+        disabled={!transfer.raw.asset}
+        autocorrect="off"
+        placeholder="0.00"
+        spellcheck="false"
+        autocomplete="off"
+        inputmode="decimal"
+        data-field="amount"
+        autocapitalize="none"
+        pattern="^[0-9]*[.]?[0-9]*$"
+        value={transfer.raw.amount}
+        oninput={(event) => {
+    const input = event.currentTarget
+    const value = input.value
 
-                if (value === '' || (/^\d*\.?\d*$/.test(value) &&
-                  (value.includes('.')
-                    ? value.split('.')[1].length <= maxDecimals
-                    : true)
-                )) {
-                  transfer.raw.updateField('amount', event);
-                } else {
-                  input.value = transfer.raw.amount;
-                }
-              }}
-       class="text-center"
+    const maxDecimals = Option.isSome(transfer.baseToken)
+      ? transfer.baseToken.value.representations[0]?.decimals ?? 0
+      : 0
+
+    if (
+      value === '' ||
+      (
+        /^\d*\.?\d*$/.test(value) &&
+        (!value.includes('.') || value.split('.')[1].length <= maxDecimals)
+      )
+    ) {
+      transfer.raw.updateField('amount', event)
+    } else {
+      input.value = transfer.raw.amount
+    }
+  }}
+        class="text-center"
 />
+
 <div class="flex w-full justify-between text-xs">
   <p>
     BALANCE:
-    {#if isLoading}
+    {#if !transfer.raw.source || !transfer.raw.asset}
+      0
+    {:else if !allDataReadyForBalance()}
       <Skeleton class="h-3 w-16 inline-block" />
     {:else}
       {displayBalance}
     {/if}
   </p>
-  <button class="cursor-pointer hover:underline"
+  <button
+          class="cursor-pointer hover:underline"
           onclick={setMaxAmount}
-          disabled={!maxEnabled || isLoading}
   >
     USE MAX
   </button>
