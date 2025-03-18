@@ -1,0 +1,31 @@
+import { Effect } from "effect"
+import { quoteToken } from "../src/evm/quote-token"
+import { PublicDestinationViemClient } from "../src/evm/client"
+import { createPublicClient, defineChain, http, toHex } from "viem"
+
+const devnet = defineChain({
+  id: 32382,
+  name: "ethereum devnet",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ether",
+    symbol: "ETH"
+  },
+  rpcUrls: {
+    default: {
+      http: ["http://localhost:8545"]
+    }
+  },
+  testnet: true
+})
+
+const client = createPublicClient({
+  chain: devnet,
+  transport: http()
+})
+
+Effect.runPromiseExit(
+  quoteToken(toHex("muno"), "0x05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5", 1).pipe(
+    Effect.provideService(PublicDestinationViemClient, { client })
+  )
+).then(console.log)
