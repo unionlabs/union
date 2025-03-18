@@ -101,8 +101,8 @@ function setMaxAmount() {
 
 <div class="flex w-full justify-between text-xs">
   <p>
+    BALANCE:
     {#if Option.isSome(chainWallet)}
-      BALANCE:
       {#if !transfer.raw.source || !transfer.raw.asset}
         0
       {:else if !allDataReadyForBalance()}
