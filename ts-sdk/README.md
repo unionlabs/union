@@ -1,4 +1,4 @@
-# Union TypeScript SDK
+# Union TypeScript SDK 2
 
 `@unionlabs/sdk`
 
@@ -32,3 +32,12 @@ nix build .#hubble-abis -L
 ```
 
 copy from `result/` to `src/evm/abi/`
+
+## How to run examples
+
+```sh
+nix develop
+cd ts-sdk/
+npm install
+bun run ./examples/create-batch.ts
+```
