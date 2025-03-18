@@ -27,7 +27,7 @@ export const getQuoteToken = (
           source_chain_id: sourceChain.chain_id
         }),
       catch: error => {
-        return new GetQuoteError({ cause: `Failed to get quote token from GraphQL: ${error}` })
+        return new GetQuoteError({ cause: error })
       }
     })
 
@@ -37,9 +37,7 @@ export const getQuoteToken = (
     }
 
     if (destinationChain.rpc_type === "cosmos") {
-      const rpc = yield* destinationChain
-        .requireRpcUrl("rpc")
-        .pipe(Effect.mapError(err => new GetQuoteError({ cause: err.message })))
+      const rpc = yield* destinationChain.requireRpcUrl("rpc")
 
       const client = yield* getCosmosPublicClient(rpc.toString())
       const predictedQuoteToken = yield* Effect.tryPromise({
@@ -51,8 +49,7 @@ export const getQuoteToken = (
               token: base_token
             }
           }),
-        catch: error =>
-          new GetQuoteError({ cause: `Failed to predict quote token (Cosmos): ${error}` })
+        catch: error => new GetQuoteError({ cause: error })
       }).pipe(Effect.map(res => res.wrapped_token as Hex))
 
       return { type: "NEW_WRAPPED" as const, quote_token: predictedQuoteToken }
@@ -70,7 +67,7 @@ export const getQuoteToken = (
       const predictedQuoteToken = yield* Effect.tryPromise({
         try: () =>
           client.readContract({
-            address: `0x${channel.destination_port_id}`,
+            address: channel.destination_port_id,
             abi: ucs03ZkgmAbi,
             functionName: "predictWrappedToken",
             args: [0, channel.destination_channel_id, base_token]

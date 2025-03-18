@@ -2,7 +2,6 @@ import { Effect } from "effect"
 import { erc20Abi, type PublicClient, type ReadContractErrorType } from "viem"
 import { ReadContractError } from "./balances"
 import type { TokenRawDenom } from "$lib/schema/token"
-import type { AddressEvmCanonical } from "$lib/schema/address"
 
 export const fetchErc20Name = ({
   client,
@@ -10,7 +9,6 @@ export const fetchErc20Name = ({
 }: {
   client: PublicClient
   tokenAddress: TokenRawDenom
-  walletAddress: AddressEvmCanonical
 }) =>
   Effect.tryPromise({
     try: () =>
@@ -28,7 +26,6 @@ export const fetchErc20Symbol = ({
 }: {
   client: PublicClient
   tokenAddress: TokenRawDenom
-  walletAddress: AddressEvmCanonical
 }) =>
   Effect.tryPromise({
     try: () =>
@@ -46,7 +43,6 @@ export const fetchErc20Decimals = ({
 }: {
   client: PublicClient
   tokenAddress: TokenRawDenom
-  walletAddress: AddressEvmCanonical
 }) =>
   Effect.tryPromise({
     try: () =>

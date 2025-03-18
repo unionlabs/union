@@ -14,15 +14,14 @@ import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 import { generateSalt } from "$lib/services/shared"
 import { sepolia } from "viem/chains"
 import { fetchErc20Decimals, fetchErc20Name, fetchErc20Symbol } from "../evm/erc20.ts"
+import { Batch, FungibleAssetOrder } from "@unionlabs/sdk/evm/ucs03"
+import { ucs03abi } from "@unionlabs/sdk/evm/abi"
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
     if (transfer.sourceRpcType !== "evm") {
       return yield* Effect.fail(new Error("Only EVM transfers are supported"))
     }
-
-    console.log("chain arg", chain)
-
     const walletClient = yield* getWalletClient(chain)
     const account = yield* Effect.flatMap(getAccount, account =>
       account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
@@ -30,31 +29,65 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
     const salt = yield* generateSalt
 
     const client = yield* getPublicClient(chain)
-    const name = yield* fetchErc20Name({
+
+    const onchainBaseTokenSymbol = yield* fetchErc20Symbol({
       client,
-      tokenAddress: "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3"
+      tokenAddress: transfer.baseToken
+    })
+    const onchainBaseTokenName = yield* fetchErc20Name({
+      client,
+      tokenAddress: transfer.baseToken
+    })
+    const onchainBaseTokenDecimals = yield* fetchErc20Decimals({
+      client,
+      tokenAddress: transfer.baseToken
     })
 
-    console.log("erc20 name", name)
-    const symbol = yield* fetchErc20Symbol({
-      client,
-      tokenAddress: "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3"
+    console.log({
+      account: account.address as `0x${string}`,
+      abi: ucs03abi,
+      chain: sepolia,
+      functionName: "send",
+      address: transfer.ucs03address as `0x${string}`,
+      args: [
+        transfer.sourceChannelId,
+        transfer.timeoutHeight,
+        BigInt(transfer.timeoutTimestamp),
+        salt,
+        Batch([
+          FungibleAssetOrder([
+            account.address as `0x${string}`,
+            transfer.receiver as `0x${string}`,
+            transfer.baseToken,
+            transfer.baseAmount,
+            onchainBaseTokenSymbol,
+            onchainBaseTokenName,
+            onchainBaseTokenDecimals,
+            0n,
+            transfer.quoteToken,
+            transfer.quoteAmount
+          ]),
+          FungibleAssetOrder([
+            account.address as `0x${string}`,
+            transfer.receiver as `0x${string}`,
+            transfer.baseToken,
+            transfer.baseAmount,
+            onchainBaseTokenSymbol,
+            onchainBaseTokenName,
+            onchainBaseTokenDecimals,
+            0n,
+            transfer.quoteToken,
+            transfer.quoteAmount
+          ])
+        ])
+      ]
     })
-
-    console.log("erc20 symbol", symbol)
-
-    const decimals = yield* fetchErc20Decimals({
-      client,
-      tokenAddress: "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3"
-    })
-
-    console.log("erc20 decimals", decimals)
 
     return yield* Effect.tryPromise({
       try: () => {
         return walletClient.writeContract({
           account: account.address as `0x${string}`,
-          abi: ucs03ZkgmAbi,
+          abi: ucs03abi,
           chain: sepolia,
           functionName: "send",
           address: transfer.ucs03address as `0x${string}`,
@@ -63,12 +96,32 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
             transfer.timeoutHeight,
             BigInt(transfer.timeoutTimestamp),
             salt,
-            {
-              opcode: 2,
-              version: 0,
-              operand:
-                "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002c00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000014E6831e169d77a861A0E71326AFA6d80bCC8Bc6aA0000000000000000000000000000000000000000000000000000000000000000000000000000000000000014E6831e169d77a861A0E71326AFA6d80bCC8Bc6aA000000000000000000000000000000000000000000000000000000000000000000000000000000000000001474d5b8eacfeb0dadaaf66403f40e304b3ef968b300000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001474d5b8eacfeb0dadaaf66403f40e304b3ef968b300000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002c00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000014E6831e169d77a861A0E71326AFA6d80bCC8Bc6aA0000000000000000000000000000000000000000000000000000000000000000000000000000000000000014E6831e169d77a861A0E71326AFA6d80bCC8Bc6aA000000000000000000000000000000000000000000000000000000000000000000000000000000000000001474d5b8eacfeb0dadaaf66403f40e304b3ef968b300000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001474d5b8eacfeb0dadaaf66403f40e304b3ef968b3000000000000000000000000"
-            }
+            Batch([
+              FungibleAssetOrder([
+                account.address as `0x${string}`,
+                transfer.receiver as `0x${string}`,
+                transfer.baseToken,
+                transfer.baseAmount,
+                onchainBaseTokenSymbol,
+                onchainBaseTokenName,
+                onchainBaseTokenDecimals,
+                0n,
+                transfer.quoteToken,
+                transfer.quoteAmount
+              ]),
+              FungibleAssetOrder([
+                account.address as `0x${string}`,
+                transfer.receiver as `0x${string}`,
+                transfer.baseToken,
+                transfer.baseAmount,
+                onchainBaseTokenSymbol,
+                onchainBaseTokenName,
+                onchainBaseTokenDecimals,
+                0n,
+                transfer.quoteToken,
+                transfer.quoteAmount
+              ])
+            ])
           ]
         })
       },

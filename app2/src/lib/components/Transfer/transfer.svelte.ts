@@ -169,7 +169,7 @@ export class Transfer {
   wethQuoteToken = $state<Option.Option<typeof WethTokenData.Type>>(Option.none())
 
   getQuoteToken = async () => {
-    const denomOpt = Option.flatMap(this.baseToken, t => Option.fromNullable(t.denom))
+    const denomOpt = Option.map(this.baseToken, t => t.denom)
 
     if (
       Option.isNone(this.sourceChain) ||
@@ -207,7 +207,7 @@ export class Transfer {
           setQuoteToken(
             Option.some({
               type: "QUOTE_ERROR",
-              cause: error.cause
+              cause: error
             } as const)
           )
           return null
