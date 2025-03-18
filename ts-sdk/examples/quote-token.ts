@@ -1,36 +1,22 @@
 import { Effect } from "effect"
-import { quoteToken } from "../src/evm/quote-token"
-import { PublicDestinationViemClient } from "../src/evm/client"
-import { createPublicClient, defineChain, http, toHex } from "viem"
+import { quoteToken } from "../src/evm/quote-token.js"
+import { PublicDestinationViemClient } from "../src/evm/client.js"
+import { createPublicClient, http, toHex } from "viem"
+import { sepolia } from "viem/chains"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
-
-const devnet = defineChain({
-  id: 32382,
-  name: "ethereum devnet",
-  nativeCurrency: {
-    decimals: 18,
-    name: "Ether",
-    symbol: "ETH"
-  },
-  rpcUrls: {
-    default: {
-      http: ["http://localhost:8545"]
-    }
-  },
-  testnet: true
-})
-
 const client = createPublicClient({
-  chain: devnet,
+  chain: sepolia,
   transport: http()
 })
 
-Effect.runPromiseExit(
-  quoteToken(toHex("muno"), "0x05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5", 1).pipe(
-    Effect.provideService(PublicDestinationViemClient, { client })
-  )
-).then(exit => console.log(JSON.stringify(exit, null, 2)))
+quoteToken({
+  baseToken: toHex("muno"),
+  ucs03address: "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
+  destinationChannelId: 9
+})
+  .pipe(Effect.provideService(PublicDestinationViemClient, { client }), Effect.runPromiseExit)
+  .then(e => console.log(JSON.stringify(e, null, 2)))

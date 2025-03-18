@@ -4,7 +4,15 @@ import { ucs03abi } from "./abi/ucs03.js"
 import { readContract } from "./contract.js"
 import { PublicDestinationViemClient } from "./client.js"
 
-export const quoteToken = (baseToken: Hex, ucs03address: Address, destinationChannelId: number) =>
+export const quoteToken = ({
+  baseToken,
+  ucs03address,
+  destinationChannelId
+}: {
+  baseToken: Hex
+  ucs03address: Address
+  destinationChannelId: number
+}) =>
   Effect.gen(function* () {
     const client = (yield* PublicDestinationViemClient).client
     
