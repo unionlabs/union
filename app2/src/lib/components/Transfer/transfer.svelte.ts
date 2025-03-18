@@ -40,6 +40,7 @@ import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/shar
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { getParsedAmountSafe } from "$lib/services/shared"
 import { getDerivedReceiverSafe } from "$lib/services/shared"
+import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
 
 export interface TransferState {
   readonly _tag: string
@@ -116,10 +117,32 @@ export class Transfer {
     this.sourceChain.pipe(Option.flatMap(sc => tokensStore.getData(sc.universal_chain_id)))
   )
 
+  sortedBalances = $derived(
+    this.sourceChain.pipe(
+      Option.flatMap(sc =>
+        Option.fromNullable(
+          Option.isSome(sortedBalancesStore.sortedBalances)
+            ? sortedBalancesStore.sortedBalances.value.find(
+                v => v.chain.universal_chain_id === sc.universal_chain_id
+              )
+            : undefined
+        ).pipe(Option.flatMap(c => c.tokens))
+      )
+    )
+  )
+
   baseToken = $derived(
     this.baseTokens.pipe(
       Option.flatMap(tokens =>
         Option.fromNullable(tokens.find((t: Token) => t.denom === this.raw.asset))
+      )
+    )
+  )
+
+  baseTokenBalance = $derived(
+    Option.all([this.baseToken, this.sortedBalances]).pipe(
+      Option.flatMap(([token, sortedTokens]) =>
+        Option.fromNullable(sortedTokens.find(t => t.token.denom === token.denom))
       )
     )
   )
