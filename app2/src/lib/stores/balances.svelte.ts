@@ -10,10 +10,7 @@ import {
   AddressCosmosCanonical,
   type AddressCanonicalBytes
 } from "$lib/schema/address"
-import {
-  fetchAptosBalance,
-  type FetchAptosBalanceError
-} from "$lib/services/aptos/balances"
+import { fetchAptosBalance, type FetchAptosBalanceError } from "$lib/services/aptos/balances"
 
 // Composite key type for the maps
 export type BalanceKey = `${UniversalChainId}:${AddressCanonicalBytes}:${TokenRawDenom}`
@@ -44,7 +41,10 @@ const createChainKey = (
 export class BalancesStore {
   data = $state(new SvelteMap<BalanceKey, RawTokenBalance>())
   errors = $state(
-    new SvelteMap<BalanceKey, Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError>>()
+    new SvelteMap<
+      BalanceKey,
+      Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError>
+    >()
   )
   chainFibers = $state(new SvelteMap<ChainKey, Fiber.RuntimeFiber<void, never>>())
   pendingRequests = $state(new SvelteMap<ChainKey, Array<BalanceFetchRequest>>())
@@ -126,7 +126,7 @@ export class BalancesStore {
                 tokenAddress: denom,
                 walletAddress: AddressEvmCanonical.make(address)
               })
-            } else if(chain.rpc_type === "aptos") {
+            } else if (chain.rpc_type === "aptos") {
               balance = yield* fetchAptosBalance({
                 chain,
                 tokenAddress: denom,

@@ -1,5 +1,4 @@
-import { Schedule, Data, Effect, Option } from "effect"
-import type { DurationInput } from "effect/Duration"
+import { Data, Effect, Option } from "effect"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
 import type { Chain } from "$lib/schema/chain"
 // You can import a retry schedule specific for Aptos; here we assume one exists.
@@ -13,7 +12,6 @@ export type FetchAptosBalanceError = FetchAptosTokenBalanceError
 export class FetchAptosTokenBalanceError extends Data.TaggedError("FetchAptosTokenBalanceError")<{
   cause: unknown
 }> {}
-
 
 const fetchFABalance = ({
   aptosClient,
