@@ -29,6 +29,7 @@
     "vitest": "^3.0.8"
   },
   "dependencies": {
-    "effect": "^3.13.12"
+    "effect": "^3.13.12",
+    "viem": "^2.23.12"
   }
 }
