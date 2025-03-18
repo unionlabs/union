@@ -1,24 +1,23 @@
 import { Effect } from "effect"
-import type { Address, Hex, ReadContractErrorType } from "viem"
-import { PublicDestinationViemClient, ReadContractError } from "./client.js"
+import type { Address, Hex } from "viem"
 import { ucs03abi } from "./abi/ucs03.js"
-import { extractErrorDetails } from "../utils/extract-error-details.js" 
+import { readContract } from "./contract-utils.js"
+import { PublicDestinationViemClient } from "./client.js"
 
 export const quoteToken = (baseToken: Hex, ucs03address: Address, destinationChannelId: number) =>
   Effect.gen(function* () {
-    let client = (yield* PublicDestinationViemClient).client
+    const client = (yield* PublicDestinationViemClient).client
+    
+    const result = yield* readContract(
+      client,
+      {
+        address: ucs03address,
+        abi: ucs03abi,
+        functionName: "predictWrappedToken",
+        args: [0n, destinationChannelId, baseToken]
+      }
+    )
 
-    const predictedQuoteToken = yield* Effect.tryPromise({
-      try: () =>
-        client.readContract({
-          address: ucs03address,
-          abi: ucs03abi,
-          functionName: "predictWrappedToken",
-          args: [0n, destinationChannelId, baseToken]
-        }),
-      catch: error =>
-        new ReadContractError({ cause: extractErrorDetails(error as ReadContractErrorType) })
-    }).pipe(Effect.map(([address]) => address))
-
-    return predictedQuoteToken
+    // Extract the address from the result tuple
+    return result[0]
   })
