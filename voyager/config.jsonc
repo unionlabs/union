@@ -285,9 +285,7 @@
       "config": {
         "chain_id": "union-devnet-1",
         "rpc_url": "http://localhost:26657",
-        "prover_endpoints": [
-          "https://galois.testnet-9.union.build:443"
-        ]
+        "prover_endpoints": ["https://galois.testnet-9.union.build:443"]
       }
     },
     {

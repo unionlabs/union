@@ -12,7 +12,9 @@ pub use crate::{
     client_state::{ClientState, ClientStateV1},
     consensus_state::ConsensusState,
     header::Header,
-    light_client_update::{SyncCommitteePeriodChangeUpdate, LightClientUpdate, WithinSyncCommitteePeriodUpdate},
+    light_client_update::{
+        LightClientUpdate, SyncCommitteePeriodChangeUpdate, WithinSyncCommitteePeriodUpdate,
+    },
     light_client_update_data::LightClientUpdateData,
     misbehaviour::Misbehaviour,
     storage_proof::StorageProof,
