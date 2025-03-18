@@ -75,6 +75,7 @@ module ibc::light_client {
     const CLIENT_TYPE_COMETBLS: vector<u8> = b"cometbls";
 
     public(friend) fun create_client(
+        sender: &signer,
         client_type: String,
         ibc_signer: &signer,
         client_id: u32,
@@ -83,6 +84,7 @@ module ibc::light_client {
     ): (vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>) {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::create_client(
+                sender,
                 ibc_signer,
                 client_id,
                 client_state_bytes,
@@ -90,6 +92,7 @@ module ibc::light_client {
             )
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
             return state_lens_ics23_mpt_lc::create_client(
+                sender,
                 ibc_signer,
                 client_id,
                 client_state_bytes,
@@ -97,6 +100,7 @@ module ibc::light_client {
             )
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
             return state_lens_ics23_ics23_lc::create_client(
+                sender,
                 ibc_signer,
                 client_id,
                 client_state_bytes,
