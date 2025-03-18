@@ -86,9 +86,6 @@ module ibc::ibc {
     friend ibc::acknowledge_packet;
     friend ibc::timeout_packet;
 
-    #[test_only]
-    friend ibc::client_test;
-
     const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
     const COMMITMENT_MAGIC: vector<u8> = x"0100000000000000000000000000000000000000000000000000000000000000";
 
@@ -342,7 +339,10 @@ module ibc::ibc {
     /// * `client_state`: The initial state of the client. The encoding is defined by the underlying client implementation.
     /// * `consensus_state`: The consensus state at an initial height. The encoding is defined by the underlying client implementation.
     public entry fun create_client(
-        client_type: String, client_state: vector<u8>, consensus_state: vector<u8>
+        sender: &signer,
+        client_type: String,
+        client_state: vector<u8>,
+        consensus_state: vector<u8>
     ) acquires IBCStore, SignerRef {
         create_client_impl(
             client_type,
@@ -350,6 +350,7 @@ module ibc::ibc {
             consensus_state,
             |client_type, ibc_signer, client_id, client_state_bytes, consensus_state_bytes
             | light_client::create_client(
+                sender,
                 client_type,
                 ibc_signer,
                 client_id,
@@ -415,13 +416,7 @@ module ibc::ibc {
             consensus_state
         );
 
-        event::emit(
-            CreateClient {
-                client_id,
-                client_type,
-                counterparty_chain_id: counterparty_chain_id
-            }
-        );
+        event::emit(CreateClient { client_id, client_type, counterparty_chain_id });
     }
 
     /// Execute the init phase of the connection handshake.
@@ -2012,21 +2007,77 @@ module ibc::ibc {
     }
 
     #[test(alice = @ibc)]
-    fun test_create_client(alice: &signer) acquires IBCStore, SignerRef {
+    fun create_client_works(alice: &signer) acquires IBCStore, SignerRef {
         init_module_for_tests(alice);
 
         let client_type = string::utf8(b"mock_client");
         let counterparty_chain_id = string::utf8(b"union");
         let client_state = vector[1, 2, 3];
         let consensus_state = vector[1, 2, 3];
+        let event = create_lens_client_event::new(1, string::utf8(b"hello"), 2, 3);
 
         create_client_impl(
             client_type,
             client_state,
             consensus_state,
-            |client_type, ibc_signer, client_id, client_state_bytes, consensus_state_bytes
-            | (client_state, consensus_state, counterparty_chain_id, option::none()),
+            |_1, _2, _3, _4, _5| (
+                client_state, consensus_state, counterparty_chain_id, option::some(event)
+            ),
             |_s, _s2| 0,
+            |_s, _s2| 10
+        );
+
+        assert!(
+            get_commitment(commitment::client_state_commitment_key(1)) == client_state,
+            1
+        );
+
+        assert!(
+            get_commitment(commitment::consensus_state_commitment_key(1, 10))
+                == consensus_state,
+            1
+        );
+
+        assert!(
+            event::was_event_emitted(
+                &CreateClient { client_id: 1, client_type, counterparty_chain_id }
+            ),
+            1
+        );
+
+        assert!(
+            event::was_event_emitted(
+                &CreateLensClient {
+                    client_id: create_lens_client_event::client_id(&event),
+                    l2_chain_id: create_lens_client_event::l2_chain_id(&event),
+                    l1_client_id: create_lens_client_event::l1_client_id(&event),
+                    l2_client_id: create_lens_client_event::l2_client_id(&event)
+                }
+            ),
+            1
+        );
+    }
+
+    #[test(alice = @ibc)]
+    #[expected_failure(abort_code = E_CLIENT_NOT_ACTIVE)]
+    fun create_client_fails_inactive_client(alice: &signer) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+
+        let client_type = string::utf8(b"mock_client");
+        let counterparty_chain_id = string::utf8(b"union");
+        let client_state = vector[1, 2, 3];
+        let consensus_state = vector[1, 2, 3];
+        let event = create_lens_client_event::new(1, string::utf8(b"hello"), 2, 3);
+
+        create_client_impl(
+            client_type,
+            client_state,
+            consensus_state,
+            |_1, _2, _3, _4, _5| (
+                client_state, consensus_state, counterparty_chain_id, option::some(event)
+            ),
+            // returning nonzero status which means the client is not active
+            |_s, _s2| 1,
             |_s, _s2| 10
         );
     }

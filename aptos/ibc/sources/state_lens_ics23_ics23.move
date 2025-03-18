@@ -120,6 +120,7 @@ module ibc::state_lens_ics23_ics23_lc {
 
     // Function to mock the creation of a client
     public(friend) fun create_client(
+        _: &signer,
         ibc_signer: &signer,
         client_id: u32,
         client_state_bytes: vector<u8>,

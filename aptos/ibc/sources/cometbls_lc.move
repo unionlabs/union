@@ -141,6 +141,7 @@ module ibc::cometbls_lc {
 
     // Function to mock the creation of a client
     public(friend) fun create_client(
+        _: &signer,
         ibc_signer: &signer,
         client_id: u32,
         client_state_bytes: vector<u8>,
@@ -664,7 +665,7 @@ module ibc::cometbls_lc {
     // }
 
     #[test(ibc_signer = @ibc)]
-    fun test2_create_client(ibc_signer: &signer) acquires State {
+    fun test2_cc(ibc_signer: &signer) acquires State {
         let client_state = ClientState {
             chain_id: string::utf8(b"this-chain"),
             trusting_period: 0,
@@ -684,6 +685,7 @@ module ibc::cometbls_lc {
 
         let (cs, cons, _counterparty_channel_id, _) =
             create_client(
+                ibc_signer,
                 ibc_signer,
                 0,
                 bcs::to_bytes(&client_state),
@@ -711,6 +713,7 @@ module ibc::cometbls_lc {
 
         let (cs, cons, _counterparty_channel_id, _) =
             create_client(
+                ibc_signer,
                 ibc_signer,
                 2,
                 bcs::to_bytes(&client_state),

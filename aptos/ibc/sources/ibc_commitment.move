@@ -90,9 +90,9 @@ module ibc::commitment {
     // Generate the path for client state
     public(friend) fun client_state_path(client_id: u32): vector<u8> {
         let state_path = vector::empty();
-        let client_State = bcs::to_bytes<u256>(&CLIENT_STATE);
-        vector::reverse(&mut client_State);
-        vector::append(&mut state_path, client_State);
+        let client_state = bcs::to_bytes<u256>(&CLIENT_STATE);
+        vector::reverse(&mut client_state);
+        vector::append(&mut state_path, client_state);
         let client_id_bytes = bcs::to_bytes<u256>(&(client_id as u256));
         vector::reverse(&mut client_id_bytes);
         vector::append(&mut state_path, client_id_bytes);
