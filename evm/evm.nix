@@ -193,14 +193,12 @@ _: {
           rpc-url = "https://rpc-sepolia.rockx.com";
           private-key = ''"$1"'';
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
-          weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
         }
         {
           network = "holesky";
           rpc-url = "https://1rpc.io/holesky";
           private-key = ''"$1"'';
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
-          weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
         }
         {
           network = "0g-testnet";
@@ -278,6 +276,7 @@ _: {
               cp --no-preserve=mode -r ${evmSources}/* .
 
               PRIVATE_KEY=${private-key} \
+              FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
                 -vvvv \
@@ -371,6 +370,7 @@ _: {
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               PRIVATE_KEY="$argc_private_key" \
+              FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
                 -vvvv \
@@ -388,7 +388,6 @@ _: {
           dry ? false,
           rpc-url,
           protocol,
-          weth ? "",
           ...
         }:
         mkCi false (
@@ -427,11 +426,11 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
-              WETH=${weth} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               OWNER="${pkgs.lib.optionalString dry "$argc_owner_pk"}" \
               PRIVATE_KEY="${pkgs.lib.optionalString (!dry) "$argc_private_key"}" \
+              FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
                 --rpc-url ${rpc-url} \
                 --broadcast
@@ -625,10 +624,10 @@ _: {
               cp --no-preserve=mode -r ${evmSources}/* .
 
               DEPLOYER="$1" \
-                SENDER="$2" \
-                OUTPUT="contracts.json" \
-                FOUNDRY_PROFILE="script" \
-                forge script scripts/Deploy.s.sol:GetDeployed -vvvv --fork-url "$3"
+              SENDER="$2" \
+              OUTPUT="contracts.json" \
+              FOUNDRY_PROFILE="script" \
+                  forge script scripts/Deploy.s.sol:GetDeployed -vvvv --fork-url "$3"
 
               popd
               cp "$OUT"/contracts.json contracts.json
