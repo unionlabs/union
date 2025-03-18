@@ -4,7 +4,6 @@ import type {
   PublicClient, 
   ReadContractErrorType, 
   ReadContractParameters, 
-  ReadContractReturnType,
   ContractFunctionName,
   ContractFunctionArgs
 } from "viem"
@@ -13,7 +12,7 @@ import { extractErrorDetails } from "../utils/extract-error-details.js"
 
 /**
  * A type-safe wrapper around viem's readContract that handles error cases
- * and returns an Effect with proper type inference
+ * and returns an Effect with proper type inference. Extracts all error info
  * 
  * @param client - The viem PublicClient to use for the contract call
  * @param params - The parameters for the contract call
