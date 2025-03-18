@@ -10,6 +10,7 @@ import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import { Aptos, AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
 import { getPublicClient } from "../evm/clients.ts"
 import type { TokenRawDenom } from "$lib/schema/token"
+import { getPublicClient as getAptosClient } from "$lib/services/aptos/clients"
 
 const retryPolicy = Schedule.recurs(2).pipe(
   Schedule.compose(Schedule.exponential(200)),
@@ -80,21 +81,8 @@ export const getQuoteToken = (
     }
 
     if (destinationChain.rpc_type === "aptos") {
-      let network: Network
+      const aptosClient = yield* getAptosClient(destinationChain)
 
-      const rpc = yield* destinationChain.requireRpcUrl("rpc")
-
-      console.info("rpc: ", rpc.origin)
-      if (channel.destination_chain_id === "250") {
-        network = Network.TESTNET
-      } else {
-        return yield* Effect.fail(
-          new GetQuoteError({ cause: `Unsupported Aptos network: ${channel.destination_chain_id}` })
-        )
-      }
-
-      const config = new AptosConfig({ network, fullnode: `${rpc.origin}/v1` })
-      const aptosClient = new Aptos(config)
       const output = yield* Effect.tryPromise({
         try: () =>
           aptosClient.view({

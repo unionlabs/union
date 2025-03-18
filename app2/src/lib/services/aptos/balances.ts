@@ -7,18 +7,66 @@ import type { Chain } from "$lib/schema/chain"
 import { aptosBalanceRetrySchedule } from "$lib/constants/schedules"
 import { getPublicClient } from "$lib/services/aptos/clients"
 import { Aptos, AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
+import type { GetBalanceErrorType, ReadContractErrorType } from "viem"
 
 export type FetchAptosBalanceError =
-  | FetchAptosNativeBalanceError
   | FetchAptosTokenBalanceError
-
-export class FetchAptosNativeBalanceError extends Data.TaggedError("FetchAptosNativeBalanceError")<{
-  cause: unknown
-}> {}
 
 export class FetchAptosTokenBalanceError extends Data.TaggedError("FetchAptosTokenBalanceError")<{
   cause: unknown
 }> {}
+
+// const fetchFABalance = ({
+//   aptosClient,
+//   tokenAddress,
+//   walletAddress
+// }: {
+//   aptosClient: Aptos
+//   tokenAddress: TokenRawDenom
+//   walletAddress: string
+// }) =>
+
+//   Effect.tryPromise({
+//     try: () =>
+//       aptosClient.view({
+//         payload: {
+//           function: `${channel.destination_port_id}::ibc_app::predict_wrapped_token`,
+//           typeArguments: [],
+//           functionArguments: [
+//             0, // path
+//             channel.destination_channel_id,
+//             MoveVector.U8(base_token)
+//           ]
+//         }
+//       }),
+//     catch: err => new ReadContractError({ cause: err as ReadContractErrorType })
+//   })
+
+const fetchFABalance = ({
+    aptosClient,
+    tokenAddress,
+    walletAddress
+  }: {
+    aptosClient: Aptos
+    tokenAddress: TokenRawDenom
+    walletAddress: string
+  }) =>
+  
+    Effect.tryPromise({
+      try: () =>
+        aptosClient.view({
+          payload: {
+            function: `0x1::primary_fungible_store::balance`,
+            typeArguments: ["0x1::fungible_asset::Metadata"],
+            functionArguments: [
+              walletAddress.toString(),
+              tokenAddress.toString()
+            ]
+          }
+        }),
+      catch: err => new FetchAptosTokenBalanceError({ cause: err as ReadContractErrorType })
+    })
+
 
 
 /**
@@ -56,56 +104,14 @@ export const createAptosBalanceQuery = ({
 
     let balance: bigint
     const aptosClient = yield* getPublicClient(chain)
+    console.info("aptosClient: ", aptosClient)
 
-        // For tokens (v2), query the GraphQL endpoint.
-    const query = `
-      query CoinsData($owner_address: String, $limit: Int, $offset: Int) {
-        current_fungible_asset_balances(
-          where: {owner_address: {_eq: $owner_address}}
-          limit: $limit
-          offset: $offset
-        ) {
-          amount
-          asset_type
-          metadata {
-            name
-            decimals
-            symbol
-            token_standard
-          }
-        }
-      }
-    `
-    const variables = {
-      owner_address: walletAddress,
-      limit: 200,
-      offset: 0
-    }
 
-    const response = yield* Effect.retry(
-      Effect.tryPromise({
-        try: () =>
-          fetch("https://indexer.testnet.movementnetwork.xyz/v1/graphql", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query, variables })
-          }).then(res => res.json()),
-        catch: err => new FetchAptosTokenBalanceError({ cause: err })
-      }),
-      aptosBalanceRetrySchedule
-    )
+    const fetchBalance = fetchFABalance({aptosClient, tokenAddress, walletAddress})
+    const balance_request = yield* Effect.retry(fetchBalance, aptosBalanceRetrySchedule)
 
-    console.info("response: ", response)
-
-    // Extract tokens from the response and filter for "v2" tokens.
-    const tokens = response.data.current_fungible_asset_balances as Array<any>
-    const aptosTokens = tokens.filter(
-      token => token.metadata.token_standard === "v2" && token.asset_type === tokenAddress 
-    )
-    // Find the token that matches the provided tokenAddress.
-    const tokenData = aptosTokens.find(token => token.asset_type === tokenAddress)
-    balance = tokenData ? BigInt(tokenData.amount) : 0n  
-
+    balance = BigInt(balance_request[0])
+   
     writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
     writeError(Option.none())
   }).pipe(

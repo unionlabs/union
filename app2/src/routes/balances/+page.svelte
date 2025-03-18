@@ -46,9 +46,7 @@ $effect(() => {
   if (!chainsData) return
 
   for (const chain of chainsData) {
-    if (chain.rpc_type === "evm" || chain.rpc_type === "cosmos") {
-      tokensStore.fetchTokens(chain.universal_chain_id)
-    }
+    tokensStore.fetchTokens(chain.universal_chain_id)
   }
 })
 </script>
