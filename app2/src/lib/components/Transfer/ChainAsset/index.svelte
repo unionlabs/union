@@ -1,8 +1,5 @@
 <script lang="ts">
-import { Option } from "effect"
 import { fade, fly } from "svelte/transition"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import ChainAssetButton from "$lib/components/Transfer/ChainAsset/ChainAssetButton.svelte"
 import ChainSelector from "$lib/components/Transfer/ChainAsset/ChainSelector.svelte"
 import TransferDirectionInfo from "$lib/components/Transfer/ChainAsset/TransferDirectionInfo.svelte"
@@ -14,24 +11,6 @@ type Props = {
 
 const { type }: Props = $props()
 let open = $state(false)
-
-function ensureTokensForChain() {
-  if (type !== "source" || Option.isNone(transfer.sourceChain)) return
-
-  const chainId = transfer.sourceChain.value.universal_chain_id
-  if (!chainId) return
-
-  const tokenData = tokensStore.getData(chainId)
-  if (Option.isNone(tokenData)) {
-    tokensStore.fetchTokens(chainId)
-  }
-}
-
-$effect(() => {
-  if (type === "source" && Option.isSome(transfer.sourceChain)) {
-    ensureTokensForChain()
-  }
-})
 
 function closeModal() {
   open = false

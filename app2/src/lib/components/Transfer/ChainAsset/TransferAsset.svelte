@@ -15,22 +15,26 @@ let { token, selectAsset }: Props = $props()
 
 let isSelected = $derived(transfer.raw.asset === token.denom)
 
-// Find the token's balance information in the sorted balances
 let tokenBalance = $derived.by(() => {
-  if (Option.isNone(transfer.sortedBalances)) return null
-  return transfer.sortedBalances.value.find(t => t.token.denom === token.denom)
+  if (Option.isNone(transfer.sortedBalances)) return Option.none()
+  const found = transfer.sortedBalances.value.find(t => t.token.denom === token.denom)
+  return found ? Option.some(found) : Option.none()
 })
 
-// Format the balance for display
 let displayAmount = $derived.by(() => {
-  if (!tokenBalance || Option.isNone(tokenBalance.balance)) return "0.00"
+  if (Option.isNone(tokenBalance)) return "0.00"
 
-  const decimals = tokenBalance.decimals || token.representations[0]?.decimals || 0
-  return formatUnits(BigInt(tokenBalance.balance.value), decimals)
+  const balanceInfo = tokenBalance.value
+
+  if (Option.isNone(balanceInfo.balance)) return "0.00"
+
+  const decimals = balanceInfo.decimals || token.representations[0]?.decimals || 0
+
+  const balanceValue = Option.getOrElse(balanceInfo.balance, () => "0")
+  return formatUnits(BigInt(balanceValue), decimals)
 })
 
-// Determine if the balance is loading
-let isLoading = $derived(Option.isSome(transfer.sortedBalances) && !tokenBalance)
+let isLoading = $derived(Option.isSome(transfer.sortedBalances) && Option.isNone(tokenBalance))
 </script>
 
 <button
@@ -54,7 +58,7 @@ let isLoading = $derived(Option.isSome(transfer.sortedBalances) && !tokenBalance
     <div class="text-xs text-zinc-400 mr-2">
       {#if isLoading}
         <Skeleton class="h-3 w-16"/>
-      {:else if tokenBalance && Option.isSome(tokenBalance.error)}
+      {:else if Option.isSome(tokenBalance) && Option.isSome(tokenBalance.value.error)}
         <span class="text-red-400">Error</span>
       {:else}
         {displayAmount}
