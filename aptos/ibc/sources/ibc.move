@@ -79,12 +79,15 @@ module ibc::ibc {
     use ibc::channel::{Self, Channel};
     use ibc::packet::{Self, Packet};
     use ibc::dispatcher;
-    use ibc::create_lens_client_event;
+    use ibc::create_lens_client_event::{Self, CreateLensClientEvent};
 
     friend ibc::recv_packet;
     friend ibc::channel_handshake;
     friend ibc::acknowledge_packet;
     friend ibc::timeout_packet;
+
+    #[test_only]
+    friend ibc::client_test;
 
     const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
     const COMMITMENT_MAGIC: vector<u8> = x"0100000000000000000000000000000000000000000000000000000000000000";
@@ -335,17 +338,44 @@ module ibc::ibc {
 
     /// Create a client with an initial client and consensus state.
     ///
-    /// * `client_type`: "cometbls" or "state-lens/ics23/mpt".
+    /// * `client_type`: Check the `light_client` module for supported client types.
     /// * `client_state`: The initial state of the client. The encoding is defined by the underlying client implementation.
     /// * `consensus_state`: The consensus state at an initial height. The encoding is defined by the underlying client implementation.
     public entry fun create_client(
         client_type: String, client_state: vector<u8>, consensus_state: vector<u8>
     ) acquires IBCStore, SignerRef {
+        create_client_impl(
+            client_type,
+            client_state,
+            consensus_state,
+            |client_type, ibc_signer, client_id, client_state_bytes, consensus_state_bytes
+            | light_client::create_client(
+                client_type,
+                ibc_signer,
+                client_id,
+                client_state_bytes,
+                consensus_state_bytes
+            ),
+            |client_type, client_id| light_client::status(client_type, client_id),
+            |client_type, client_id| light_client::latest_height(client_type, client_id)
+        );
+    }
+
+    public(friend) inline fun create_client_impl(
+        client_type: String,
+        client_state: vector<u8>,
+        consensus_state: vector<u8>,
+        lc_create_client_fn: |String, &signer, u32, vector<u8>, vector<u8>| (
+            vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>
+        ),
+        lc_status_fn: |String, u32| u64,
+        lc_latest_height_fn: |String, u32| u64
+    ) acquires IBCStore, SignerRef {
         let client_id = generate_client_identifier();
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let (client_state, consensus_state, counterparty_chain_id, lens_client_event) =
-            light_client::create_client(
+            lc_create_client_fn(
                 client_type,
                 &get_ibc_signer(),
                 client_id,
@@ -368,7 +398,7 @@ module ibc::ibc {
         smart_table::upsert(&mut store.client_id_to_type, client_id, client_type);
 
         // TODO(aeryz): fetch these status from proper exported consts
-        assert!(light_client::status(client_type, client_id) == 0, E_CLIENT_NOT_ACTIVE);
+        assert!(lc_status_fn(client_type, client_id) == 0, E_CLIENT_NOT_ACTIVE);
 
         // Update commitments
         table::upsert(
@@ -377,7 +407,7 @@ module ibc::ibc {
             client_state
         );
 
-        let latest_height = light_client::latest_height(client_type, client_id);
+        let latest_height = lc_latest_height_fn(client_type, client_id);
 
         table::upsert(
             &mut store.commitments,
@@ -1423,7 +1453,7 @@ module ibc::ibc {
     }
 
     // Function to generate a client identifier
-    fun generate_client_identifier(): u32 acquires IBCStore {
+    public(friend) fun generate_client_identifier(): u32 acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let next_sequence =
@@ -1638,17 +1668,6 @@ module ibc::ibc {
         packet: Packet, acknowledgement: vector<u8>, maker: address
     ) {
         event::emit(PacketAck { packet, acknowledgement, maker });
-    }
-
-    #[test(alice = @ibc)]
-    fun test_create_client(alice: &signer) acquires IBCStore, SignerRef {
-        init_module(alice);
-
-        create_client(
-            std::string::utf8(b"cometbls"),
-            x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000e61e000000000000ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b",
-            x"35d26cc3d68a0f18035230d16679d66022604ba42917d8356126ea7a8d0a1db48da17e57241d365b2f4975ab7e75a677f43efebf53e0ec05460d2cf55506ad08d6b05254f96a500d"
-        );
     }
 
     // #[test(alice = @ibc)]
@@ -1974,4 +1993,41 @@ module ibc::ibc {
     //     assert!(*channel::version(&stored_channel) == string::utf8(b"counterparty-version-0"), 9002);
     //     assert!(*channel::chan_counterparty_channel_id(&stored_channel) == string::utf8(b"counterparty-channel-0"), 9003);
     // }
+
+    #[test_only]
+    use std::string;
+
+    #[test_only]
+    public(friend) fun init_module_for_tests(account: &signer) {
+        init_module(account)
+    }
+
+    // Client identifier creation starts from 1 and increases one by one
+    #[test(alice = @ibc)]
+    fun test_generate_client_identifier(alice: &signer) acquires IBCStore {
+        init_module_for_tests(alice);
+
+        assert!(generate_client_identifier() == 1, 1);
+        assert!(generate_client_identifier() == 2, 1);
+    }
+
+    #[test(alice = @ibc)]
+    fun test_create_client(alice: &signer) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+
+        let client_type = string::utf8(b"mock_client");
+        let counterparty_chain_id = string::utf8(b"union");
+        let client_state = vector[1, 2, 3];
+        let consensus_state = vector[1, 2, 3];
+
+        create_client_impl(
+            client_type,
+            client_state,
+            consensus_state,
+            |client_type, ibc_signer, client_id, client_state_bytes, consensus_state_bytes
+            | (client_state, consensus_state, counterparty_chain_id, option::none()),
+            |_s, _s2| 0,
+            |_s, _s2| 10
+        );
+    }
 }
