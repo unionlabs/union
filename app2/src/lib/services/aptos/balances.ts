@@ -1,16 +1,14 @@
-import { Schedule, Data, Effect, Option, Schema } from "effect"
+import { Schedule, Data, Effect, Option } from "effect"
 import type { DurationInput } from "effect/Duration"
-import type { TimeoutException } from "effect/Cause"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
 import type { Chain } from "$lib/schema/chain"
 // You can import a retry schedule specific for Aptos; here we assume one exists.
 import { aptosBalanceRetrySchedule } from "$lib/constants/schedules"
 import { getPublicClient } from "$lib/services/aptos/clients"
-import { Aptos, AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
-import type { GetBalanceErrorType, ReadContractErrorType } from "viem"
+import type { Aptos } from "@aptos-labs/ts-sdk"
+import type { ReadContractErrorType } from "viem"
 
-export type FetchAptosBalanceError =
-  | FetchAptosTokenBalanceError
+export type FetchAptosBalanceError = FetchAptosTokenBalanceError
 
 export class FetchAptosTokenBalanceError extends Data.TaggedError("FetchAptosTokenBalanceError")<{
   cause: unknown
@@ -43,31 +41,25 @@ export class FetchAptosTokenBalanceError extends Data.TaggedError("FetchAptosTok
 //   })
 
 const fetchFABalance = ({
-    aptosClient,
-    tokenAddress,
-    walletAddress
-  }: {
-    aptosClient: Aptos
-    tokenAddress: TokenRawDenom
-    walletAddress: string
-  }) =>
-  
-    Effect.tryPromise({
-      try: () =>
-        aptosClient.view({
-          payload: {
-            function: `0x1::primary_fungible_store::balance`,
-            typeArguments: ["0x1::fungible_asset::Metadata"],
-            functionArguments: [
-              walletAddress.toString(),
-              tokenAddress.toString()
-            ]
-          }
-        }),
-      catch: err => new FetchAptosTokenBalanceError({ cause: err as ReadContractErrorType })
-    })
-
-
+  aptosClient,
+  tokenAddress,
+  walletAddress
+}: {
+  aptosClient: Aptos
+  tokenAddress: TokenRawDenom
+  walletAddress: string
+}) =>
+  Effect.tryPromise({
+    try: () =>
+      aptosClient.view({
+        payload: {
+          function: `0x1::primary_fungible_store::balance`,
+          typeArguments: ["0x1::fungible_asset::Metadata"],
+          functionArguments: [walletAddress.toString(), tokenAddress.toString()]
+        }
+      }),
+    catch: err => new FetchAptosTokenBalanceError({ cause: err as ReadContractErrorType })
+  })
 
 /**
  * createAptosBalanceQuery
@@ -106,12 +98,11 @@ export const createAptosBalanceQuery = ({
     const aptosClient = yield* getPublicClient(chain)
     console.info("aptosClient: ", aptosClient)
 
-
-    const fetchBalance = fetchFABalance({aptosClient, tokenAddress, walletAddress})
+    const fetchBalance = fetchFABalance({ aptosClient, tokenAddress, walletAddress })
     const balance_request = yield* Effect.retry(fetchBalance, aptosBalanceRetrySchedule)
 
     balance = BigInt(balance_request[0])
-   
+
     writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
     writeError(Option.none())
   }).pipe(

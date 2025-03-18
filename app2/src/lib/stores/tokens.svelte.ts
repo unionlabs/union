@@ -31,7 +31,7 @@ class TokensStore {
     if (this.fibers.has(chainId)) {
       return
     }
-    
+
     // Start new query and store its fiber
     const fiber = Effect.runFork(tokensQuery(chainId))
     this.fibers.set(chainId, fiber)
