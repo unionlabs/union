@@ -2,7 +2,7 @@ import { toHex } from "viem"
 import { Batch, FungibleAssetOrder, Instruction } from "../src/evm/ucs03/index.js"
 
 const fungibleAssetOrder = FungibleAssetOrder([
-  "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
+  toHex("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
   "0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD",
   toHex("muno"),
   4n,
