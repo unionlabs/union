@@ -14,31 +14,6 @@ export class FetchAptosTokenBalanceError extends Data.TaggedError("FetchAptosTok
   cause: unknown
 }> {}
 
-// const fetchFABalance = ({
-//   aptosClient,
-//   tokenAddress,
-//   walletAddress
-// }: {
-//   aptosClient: Aptos
-//   tokenAddress: TokenRawDenom
-//   walletAddress: string
-// }) =>
-
-//   Effect.tryPromise({
-//     try: () =>
-//       aptosClient.view({
-//         payload: {
-//           function: `${channel.destination_port_id}::ibc_app::predict_wrapped_token`,
-//           typeArguments: [],
-//           functionArguments: [
-//             0, // path
-//             channel.destination_channel_id,
-//             MoveVector.U8(base_token)
-//           ]
-//         }
-//       }),
-//     catch: err => new ReadContractError({ cause: err as ReadContractErrorType })
-//   })
 
 const fetchFABalance = ({
   aptosClient,
@@ -74,44 +49,29 @@ const fetchFABalance = ({
  * The fetched balance is then passed to the provided `writeData` callback (wrapped in your RawTokenBalance schema)
  * and any errors are reported via `writeError`.
  */
-export const createAptosBalanceQuery = ({
+export const fetchAptosBalance = ({
   chain,
   tokenAddress,
-  walletAddress,
-  refetchInterval,
-  writeData,
-  writeError
+  walletAddress
 }: {
   chain: Chain
   tokenAddress: TokenRawDenom
   walletAddress: string
-  refetchInterval: DurationInput
-  writeData: (data: RawTokenBalance) => void
-  writeError: (error: Option.Option<FetchAptosBalanceError>) => void
 }) => {
-  const fetcherPipeline = Effect.gen(function* (_) {
+  return Effect.gen(function* (_) {
+    const aptosClient = yield* getPublicClient(chain)
+
     yield* Effect.log(
       `starting aptos balance fetcher for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`
     )
 
     let balance: bigint
-    const aptosClient = yield* getPublicClient(chain)
-    console.info("aptosClient: ", aptosClient)
 
     const fetchBalance = fetchFABalance({ aptosClient, tokenAddress, walletAddress })
     const balance_request = yield* Effect.retry(fetchBalance, aptosBalanceRetrySchedule)
 
     balance = BigInt(balance_request[0])
 
-    writeData(RawTokenBalance.make(Option.some(TokenRawAmount.make(balance))))
-    writeError(Option.none())
-  }).pipe(
-    Effect.tapError(error => Effect.sync(() => writeError(Option.some(error)))),
-    Effect.catchAll(() => Effect.succeed(null))
-  )
-
-  return Effect.repeat(
-    fetcherPipeline,
-    Schedule.addDelay(Schedule.repeatForever, () => refetchInterval)
-  )
+    return RawTokenBalance.make(Option.some(TokenRawAmount.make(balance)))
+  })
 }
