@@ -32,7 +32,9 @@ const BaseTransferFields = {
 
 const EVMTransferSchema = Schema.Struct({
   ...BaseTransferFields,
-  sourceRpcType: Schema.Literal("evm"),
+  sourceRpcType: Schema.Literal("evm").annotations({
+    message: () => "sourceRpcType must be 'evm'"
+  }),
   wethQuoteToken: EVMWethToken,
   receiver: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
@@ -43,7 +45,9 @@ export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")(EVMTra
 
 const CosmosTransferSchema = Schema.Struct({
   ...BaseTransferFields,
-  sourceRpcType: Schema.Literal("cosmos"),
+  sourceRpcType: Schema.Literal("cosmos").annotations({
+    message: () => "sourceRpcType must be 'cosmos'"
+  }),
   receiver: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )
@@ -55,7 +59,9 @@ export class CosmosTransfer extends Schema.Class<CosmosTransfer>("CosmosTransfer
 
 const AptosTransferSchema = Schema.Struct({
   ...BaseTransferFields,
-  sourceRpcType: Schema.Literal("aptos"),
+  sourceRpcType: Schema.Literal("aptos").annotations({
+    message: () => "sourceRpcType must be 'aptos'"
+  }),
   receiver: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )

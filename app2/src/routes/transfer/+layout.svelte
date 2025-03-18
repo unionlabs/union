@@ -47,4 +47,17 @@ $effect(() => {
 
 {@render children()}
 
+{#if transfer.validation.isValid}
+  <p class="text-sm">Everything looks good!</p>
+{:else}
+  <p>Transfer validation errors:</p>
+  <ul class="text-xs">
+    {#each transfer.validation.messages ?? [] as msg}
+      <li>{msg}</li>
+    {/each}
+  </ul>
+{/if}
+
+
+
 
