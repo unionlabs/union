@@ -1,4 +1,4 @@
-# Union TypeScript SDK
+# Union TypeScript SDK 2
 
 `@unionlabs/sdk`
 
