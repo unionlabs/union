@@ -5,7 +5,12 @@ export const cosmosBalanceRetrySchedule = Schedule.exponential("2 seconds", 2.0)
   Schedule.intersect(Schedule.recurs(8))
 )
 
-export const evmBalanceRetrySchedule = Schedule.exponential("2 seconds", 2.0).pipe(
+
+export const aptosBalanceRetrySchedule = Schedule.exponential("2 seconds", 2.0).pipe(
+  Schedule.intersect(Schedule.recurs(8))
+)
+
+export const evmBalanceRetrySchedule = Schedule.exponential("100 seconds", 2.0).pipe(
   Schedule.intersect(Schedule.recurs(8)),
   Schedule.whileInput(
     (error: FetchEvmBalanceError) =>

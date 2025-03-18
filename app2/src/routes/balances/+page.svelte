@@ -69,7 +69,6 @@ $effect(() => {
           <ChainComponent {chain}/>
         </section>
         <section class="p-4">
-        {#if chain.rpc_type !== "aptos"}
           <div class="flex flex-col">
             {#if Option.isNone(sortedBalancesStore.sortedBalances)}
               <div class="text-zinc-500">Loading balances...</div>
@@ -111,7 +110,6 @@ $effect(() => {
               {/if}
             {/if}
           </div>
-        {/if}
         </section>
       </Card>
     {/each}
