@@ -4,16 +4,16 @@ import { ReadContractError } from "./balances"
 import type { TokenRawDenom } from "$lib/schema/token"
 import { PublicSourceViemClient } from "./clients"
 
-export const fetchErc20Meta = (tokenAddress: TokenRawDenom) =>
+export const readErc20Meta = (tokenAddress: TokenRawDenom) =>
   Effect.gen(function* () {
     const publicClient = (yield* PublicSourceViemClient).client
-    const name = yield* fetchErc20Name(tokenAddress)
-    const symbol = yield* fetchErc20Symbol(tokenAddress)
-    const decimals = yield* fetchErc20Decimals(tokenAddress)
+    const name = yield* readErc20Name(tokenAddress)
+    const symbol = yield* readErc20Symbol(tokenAddress)
+    const decimals = yield* readErc20Decimals(tokenAddress)
     return { name, symbol, decimals }
   })
 
-export const fetchErc20Name = (tokenAddress: TokenRawDenom) =>
+export const readErc20Name = (tokenAddress: TokenRawDenom) =>
   Effect.gen(function* () {
     const publicClient = (yield* PublicSourceViemClient).client
     const name = yield* Effect.tryPromise({
@@ -29,7 +29,7 @@ export const fetchErc20Name = (tokenAddress: TokenRawDenom) =>
     return name
   })
 
-export const fetchErc20Symbol = (tokenAddress: TokenRawDenom) =>
+export const readErc20Symbol = (tokenAddress: TokenRawDenom) =>
   Effect.gen(function* () {
     const publicClient = (yield* PublicSourceViemClient).client
     const symbol = yield* Effect.tryPromise({
@@ -45,7 +45,7 @@ export const fetchErc20Symbol = (tokenAddress: TokenRawDenom) =>
     return symbol
   })
 
-export const fetchErc20Decimals = (tokenAddress: TokenRawDenom) =>
+export const readErc20Decimals = (tokenAddress: TokenRawDenom) =>
   Effect.gen(function* () {
     const publicClient = (yield* PublicSourceViemClient).client
     const decimals = yield* Effect.tryPromise({
