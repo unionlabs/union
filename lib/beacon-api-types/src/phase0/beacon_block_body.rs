@@ -13,7 +13,11 @@ use crate::phase0::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct BeaconBlockBody {
     pub randao_reveal: H768,
     pub eth1_data: Eth1Data,
@@ -30,7 +34,7 @@ pub struct BeaconBlockBody {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(bound(serialize = "", deserialize = ""))
+    serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)
 )]
 pub struct BeaconBlockBodySsz<C: ChainSpec> {
     pub randao_reveal: H768,

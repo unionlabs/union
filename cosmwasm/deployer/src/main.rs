@@ -7,7 +7,7 @@ use bip32::secp256k1::ecdsa::SigningKey;
 use clap::Parser;
 use cometbft_rpc::rpc_types::GrpcAbciQueryError;
 use cosmos_client::{
-    gas::GasConfig,
+    gas::{FeemarketGasFiller, GasFillerT, StaticGasFiller},
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
     TxClient,
@@ -46,30 +46,35 @@ enum App {
     DeployFull {
         #[arg(long)]
         rpc_url: String,
-        #[arg(long)]
+        #[arg(long, env)]
         private_key: H256,
         #[arg(long)]
         contracts: PathBuf,
         #[arg(long)]
         output: Option<PathBuf>,
+        /// Marks this chain as permissioned.
+        ///
+        /// Permisioned cosmwasm chains require special handling of instantiate permissions in order to deploy the stack.
         #[arg(long)]
         permissioned: bool,
         #[command(flatten)]
-        gas_config: GasConfigArgs,
+        gas_config: GasFillerArgs,
     },
     Migrate {
         #[arg(long)]
         rpc_url: String,
-        #[arg(long)]
+        #[arg(long, env)]
         private_key: H256,
         #[arg(long)]
         address: Bech32<H256>,
         #[arg(long)]
         new_bytecode: PathBuf,
         #[command(flatten)]
-        gas_config: GasConfigArgs,
+        gas_config: GasFillerArgs,
     },
-    /// Calculate the addresses of the deployed stack given the deployer. The returned addresses will have the same bech32 prefix as the deployer address.
+    /// Calculate the addresses of the deployed stack given the deployer.
+    ///
+    /// The returned addresses will have the same bech32 prefix as the deployer address.
     Addresses {
         #[arg(long)]
         deployer: Bech32<Bytes>,
@@ -90,13 +95,13 @@ enum App {
         output: Option<PathBuf>,
     },
     AddressOfPrivateKey {
-        #[arg(long)]
+        #[arg(long, env)]
         private_key: H256,
         #[arg(long)]
         bech32_prefix: String,
     },
     MigrateAdmin {
-        #[arg(long)]
+        #[arg(long, env)]
         private_key: H256,
         #[arg(long)]
         addresses: PathBuf,
@@ -105,7 +110,7 @@ enum App {
         #[arg(long)]
         new_admin: Bech32<Bytes>,
         #[command(flatten)]
-        gas_config: GasConfigArgs,
+        gas_config: GasFillerArgs,
     },
     #[command(subcommand)]
     Tx(TxCmd),
@@ -149,8 +154,58 @@ enum TxCmd {
         #[arg(long)]
         amount: u128,
         #[command(flatten)]
-        gas_config: GasConfigArgs,
+        gas_config: GasFillerArgs,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Default, clap::Args)]
+pub struct GasFillerArgs {
+    #[arg(long, value_enum, default_value_t = GasFillerType::Static)]
+    pub gas: GasFillerType,
+
+    #[arg(long, help_heading = "Gas filler args", default_value_t = 100_000_000)]
+    pub max_gas: u64,
+    #[arg(long, help_heading = "Gas filler args", default_value_t = 0)]
+    pub min_gas: u64,
+    #[arg(
+        long,
+        help_heading = "Gas filler args",
+        required_if_eq("gas", "static"),
+        default_value_t = 1.0
+    )]
+    pub gas_multiplier: f64,
+
+    #[arg(
+        long,
+        help_heading = "--gas static",
+        required_if_eq("gas", "static"),
+        default_value_t
+    )]
+    pub gas_price: f64,
+    #[arg(
+        long,
+        help_heading = "--gas static",
+        required_if_eq("gas", "static"),
+        default_value_t
+    )]
+    pub gas_denom: String,
+
+    /// The denom to use for the feemarket gas token.
+    ///
+    /// If not set, the Params.FeeDenom value will be used.
+    #[arg(
+        long,
+        help_heading = "--gas feemarket",
+        // required_if_eq("gas", "feemarket"),
+    )]
+    pub fee_denom: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Default, clap::ValueEnum)]
+pub enum GasFillerType {
+    #[default]
+    Static,
+    Feemarket,
 }
 
 #[tokio::main]
@@ -550,7 +605,7 @@ async fn do_main() -> Result<()> {
             let ctx = Deployer::new(
                 rpc_url,
                 hex!("9a95f0bb285a5d81415a0571cebbb63dbef2c7a0c90f9b60a40572552da3eac3").into(),
-                GasConfigArgs::default(),
+                GasFillerArgs::default(),
             )
             .await?;
 
@@ -836,7 +891,7 @@ async fn do_main() -> Result<()> {
                                     from_address: funder.wallet().address().map_data(Into::into),
                                     to_address: signer.address().map_data(Into::into),
                                     amount: vec![Coin {
-                                        denom: gas_config.gas_denom.clone(),
+                                        denom: "TODO".to_owned(),
                                         amount,
                                     }],
                                 },
@@ -859,7 +914,7 @@ async fn do_main() -> Result<()> {
                                     from_address: signer.wallet().address().map_data(Into::into),
                                     to_address: signer.wallet().address().map_data(Into::into),
                                     amount: vec![Coin {
-                                        denom: gas_config.gas_denom.clone(),
+                                        denom: "TODO".to_owned(),
                                         amount: 1,
                                     }],
                                 },
@@ -939,65 +994,54 @@ fn write_output(path: Option<PathBuf>, data: impl Serialize) -> Result<()> {
     Ok(())
 }
 
-#[derive(Debug, Clone, PartialEq, Default, clap::Args)]
-pub struct GasConfigArgs {
-    #[arg(long)]
-    pub gas_price: f64,
-    #[arg(long)]
-    pub gas_denom: String,
-    #[arg(long)]
-    pub gas_multiplier: f64,
-    #[arg(long)]
-    pub max_gas: u64,
-    #[arg(long, default_value_t = 0)]
-    pub min_gas: u64,
+enum AnyGasFiller {
+    Static(StaticGasFiller),
+    Feemarket(FeemarketGasFiller),
 }
 
-impl From<GasConfigArgs> for GasConfig {
-    fn from(value: GasConfigArgs) -> Self {
-        GasConfig {
-            gas_price: value.gas_price,
-            gas_denom: value.gas_denom,
-            gas_multiplier: value.gas_multiplier,
-            max_gas: value.max_gas,
-            min_gas: value.min_gas,
+impl AnyGasFiller {
+    async fn from_args(args: GasFillerArgs, rpc_url: String) -> Result<Self> {
+        Ok(match args.gas {
+            GasFillerType::Static => Self::Static(StaticGasFiller {
+                gas_price: args.gas_price,
+                gas_denom: args.gas_denom.clone(),
+                gas_multiplier: args.gas_multiplier,
+                max_gas: args.max_gas,
+                min_gas: args.min_gas,
+            }),
+            GasFillerType::Feemarket => Self::Feemarket(
+                FeemarketGasFiller::new(
+                    rpc_url,
+                    args.max_gas,
+                    Some(args.gas_multiplier),
+                    args.fee_denom,
+                )
+                .await?,
+            ),
+        })
+    }
+}
+
+impl GasFillerT for AnyGasFiller {
+    async fn max_gas(&self) -> u64 {
+        match self {
+            Self::Static(f) => f.max_gas().await,
+            Self::Feemarket(f) => f.max_gas().await,
+        }
+    }
+
+    async fn mk_fee(&self, gas: u64) -> Fee {
+        match self {
+            Self::Static(f) => f.mk_fee(gas).await,
+            Self::Feemarket(f) => f.mk_fee(gas).await,
         }
     }
 }
 
-impl GasConfigArgs {
-    pub fn mk_fee(&self, gas: u64) -> Fee {
-        // gas limit = provided gas * multiplier, clamped between min_gas and max_gas
-        let gas_limit = u128_saturating_mul_f64(gas.into(), self.gas_multiplier)
-            .clamp(self.min_gas.into(), self.max_gas.into());
-
-        let amount = u128_saturating_mul_f64(gas.into(), self.gas_price);
-
-        Fee {
-            amount: vec![Coin {
-                amount,
-                denom: self.gas_denom.clone(),
-            }],
-            gas_limit: gas_limit.try_into().unwrap_or(u64::MAX),
-            payer: String::new(),
-            granter: String::new(),
-        }
-    }
-}
-
-fn u128_saturating_mul_f64(u: u128, f: f64) -> u128 {
-    (num_rational::BigRational::from_integer(u.into())
-        * num_rational::BigRational::from_float(f).expect("finite"))
-    .to_integer()
-    .try_into()
-    .unwrap_or(u128::MAX)
-    // .expect("overflow")
-}
-
-struct Deployer(TxClient<LocalSigner, Rpc, GasConfig>);
+struct Deployer(TxClient<LocalSigner, Rpc, AnyGasFiller>);
 
 impl Deref for Deployer {
-    type Target = TxClient<LocalSigner, Rpc, GasConfig>;
+    type Target = TxClient<LocalSigner, Rpc, AnyGasFiller>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -1008,9 +1052,9 @@ impl Deployer {
     async fn new(
         rpc_url: String,
         private_key: H256,
-        gas_config: GasConfigArgs,
+        gas_config: GasFillerArgs,
     ) -> Result<Deployer> {
-        let rpc = Rpc::new(rpc_url).await?;
+        let rpc = Rpc::new(rpc_url.clone()).await?;
 
         let bech32_prefix = rpc
             .client()
@@ -1029,7 +1073,7 @@ impl Deployer {
         let ctx = TxClient::new(
             LocalSigner::new(private_key, bech32_prefix),
             rpc,
-            gas_config.into(),
+            AnyGasFiller::from_args(gas_config, rpc_url).await?,
         );
 
         let ctx = Deployer(ctx);

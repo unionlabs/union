@@ -11,7 +11,7 @@ use std::{
 use cometbft_rpc::rpc_types::GrpcAbciQueryError;
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use cosmos_client::{
-    gas::GasConfig,
+    gas::{FeemarketGasFiller, GasFillerT, StaticGasFiller},
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
     BroadcastTxCommitError, FetchAccountInfoError, SimulateTxError, TxClient,
@@ -28,6 +28,7 @@ use tracing::{debug, error, info, info_span, instrument, trace, warn};
 use unionlabs::{
     self,
     bech32::Bech32,
+    cosmos::tx::fee::Fee,
     google::protobuf::any::mk_any,
     option_unwrap,
     primitives::{Bytes, H160, H256},
@@ -62,7 +63,7 @@ pub struct Module {
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: ConcurrentKeyring<Bech32<H160>, LocalSigner>,
     pub rpc: Rpc,
-    pub gas_config: GasConfig,
+    pub gas_config: AnyGasFiller,
     pub bech32_prefix: String,
     pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
 }
@@ -74,10 +75,47 @@ pub struct Config {
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: KeyringConfig,
     pub rpc_url: String,
-    pub gas_config: GasConfig,
+    pub gas_config: AnyGasFillerConfig,
     /// A list of (codespace, code) tuples that are to be considered non-recoverable.
     #[serde(default)]
     pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "type", content = "config")]
+pub enum AnyGasFillerConfig {
+    Static(StaticGasFiller),
+    Feemarket(FeemarketGasFillerConfig),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+pub struct FeemarketGasFillerConfig {
+    pub max_gas: u64,
+    pub gas_multiplier: Option<f64>,
+    pub fee_denom: Option<String>,
+}
+
+#[derive(Debug)]
+pub enum AnyGasFiller {
+    Static(StaticGasFiller),
+    Feemarket(FeemarketGasFiller),
+}
+
+impl GasFillerT for AnyGasFiller {
+    async fn max_gas(&self) -> u64 {
+        match self {
+            Self::Static(f) => f.max_gas().await,
+            Self::Feemarket(f) => f.max_gas().await,
+        }
+    }
+
+    async fn mk_fee(&self, gas: u64) -> Fee {
+        match self {
+            Self::Static(f) => f.mk_fee(gas).await,
+            Self::Feemarket(f) => f.mk_fee(gas).await,
+        }
+    }
 }
 
 const FATAL_ERRORS: &[(&str, NonZeroU32)] = &[
@@ -104,7 +142,7 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let rpc = Rpc::new(config.rpc_url).await?;
+        let rpc = Rpc::new(config.rpc_url.clone()).await?;
 
         let chain_id = rpc.client().status().await?.node_info.network.to_string();
 
@@ -138,7 +176,18 @@ impl Plugin for Module {
             ),
             rpc,
             chain_id: ChainId::new(chain_id),
-            gas_config: config.gas_config,
+            gas_config: match config.gas_config {
+                AnyGasFillerConfig::Static(f) => AnyGasFiller::Static(f),
+                AnyGasFillerConfig::Feemarket(f) => AnyGasFiller::Feemarket(
+                    FeemarketGasFiller::new(
+                        config.rpc_url,
+                        f.max_gas,
+                        f.gas_multiplier,
+                        f.fee_denom,
+                    )
+                    .await?,
+                ),
+            },
             bech32_prefix,
             fatal_errors: config
                 .fatal_errors

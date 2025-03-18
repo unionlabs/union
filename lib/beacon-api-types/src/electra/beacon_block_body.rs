@@ -15,10 +15,8 @@ use crate::{
     altair::SyncAggregate,
     capella::SignedBlsToExecutionChange,
     deneb::ExecutionPayload,
-    electra::ExecutionRequests,
-    phase0::{
-        Attestation, AttesterSlashing, Deposit, Eth1Data, ProposerSlashing, SignedVoluntaryExit,
-    },
+    electra::{Attestation, ExecutionRequests},
+    phase0::{AttesterSlashing, Deposit, Eth1Data, ProposerSlashing, SignedVoluntaryExit},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -55,8 +53,8 @@ pub struct BeaconBlockBodySsz<C: ChainSpec> {
     pub eth1_data: Eth1Data,
     pub graffiti: H256,
     pub proposer_slashings: List<ProposerSlashing, C::MAX_PROPOSER_SLASHINGS>,
-    pub attester_slashings: List<AttesterSlashingSsz<C>, C::MAX_ATTESTER_SLASHINGS>,
-    pub attestations: List<AttestationSsz<C>, C::MAX_ATTESTATIONS>,
+    pub attester_slashings: List<AttesterSlashingSsz<C>, C::MAX_ATTESTER_SLASHINGS_ELECTRA>,
+    pub attestations: List<AttestationSsz<C>, C::MAX_ATTESTATIONS_ELECTRA>,
     pub deposits: List<DepositSsz<C>, C::MAX_DEPOSITS>,
     pub voluntary_exits: List<SignedVoluntaryExit, C::MAX_VOLUNTARY_EXITS>,
     pub sync_aggregate: SyncAggregateSsz<C>,

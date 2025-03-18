@@ -1,14 +1,13 @@
 use unionlabs::primitives::H160;
 
+use crate::custom_types::{Gwei, ValidatorIndex, WithdrawalIndex};
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "ssz", derive(ssz::Ssz))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Withdrawal {
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub index: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub validator_index: u64,
+    pub index: WithdrawalIndex,
+    pub validator_index: ValidatorIndex,
     pub address: H160,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub amount: u64,
+    pub amount: Gwei,
 }

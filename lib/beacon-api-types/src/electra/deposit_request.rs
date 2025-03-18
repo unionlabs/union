@@ -1,5 +1,7 @@
 use unionlabs::primitives::{H256, H384, H768};
 
+use crate::custom_types::Gwei;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(
     feature = "serde",
@@ -10,10 +12,9 @@ use unionlabs::primitives::{H256, H384, H768};
 pub struct DepositRequest {
     pub pubkey: H384,
     pub withdrawal_credentials: H256,
-    // TODO: Gwei
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub amount: u64,
+    pub amount: Gwei,
     pub signature: H768,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
+    // TODO: Type?
     pub index: u64,
 }

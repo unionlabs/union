@@ -1,5 +1,5 @@
 use beacon_api::client::{BeaconApiClient, BlockId};
-use beacon_api_types::slot::Slot;
+use beacon_api_types::custom_types::Slot;
 
 #[tokio::main]
 async fn main() {

@@ -1,6 +1,6 @@
 use std::{io::Write, num::NonZeroU64};
 
-use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Packet};
+use ibc_union_spec::{ChannelId, ClientId, ConnectionId};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use unionlabs::{
@@ -303,60 +303,44 @@ pub enum IbcEvent {
 
     #[serde(rename = "wasm-packet_send")]
     WasmPacketSend {
-        #[serde(with = "stringified_json")]
-        packet: Packet,
+        #[serde(with = "serde_utils::string")]
+        packet_source_channel_id: ChannelId,
+        #[serde(with = "serde_utils::string")]
+        packet_destination_channel_id: ChannelId,
+        packet_data: Bytes,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_height: u64,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_timestamp: u64,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
     },
 
     #[serde(rename = "wasm-packet_recv")]
     WasmPacketRecv {
-        #[serde(with = "stringified_json")]
-        packet: Packet,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
         maker: Bech32<Bytes>,
         maker_msg: Bytes<HexUnprefixed>,
     },
 
     #[serde(rename = "wasm-packet_ack")]
     WasmPacketAck {
-        #[serde(with = "stringified_json")]
-        packet: Packet,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
         acknowledgement: Bytes<HexUnprefixed>,
     },
 
     #[serde(rename = "wasm-write_ack")]
     WasmWriteAck {
-        #[serde(with = "stringified_json")]
-        packet: Packet,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
         acknowledgement: Bytes<HexUnprefixed>,
     },
-}
-
-// TODO: Check if human readable
-pub mod stringified_json {
-    use std::string::String;
-
-    use serde::{
-        de::{Deserialize, DeserializeOwned},
-        Deserializer, Serialize, Serializer,
-    };
-
-    pub fn serialize<S, T>(data: T, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-        T: Serialize,
-    {
-        serde_json::to_string(&data)
-            .expect("serialization is infallible; qed;")
-            .serialize(serializer)
-    }
-
-    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
-    where
-        D: Deserializer<'de>,
-        T: DeserializeOwned,
-    {
-        String::deserialize(deserializer)
-            .and_then(|s| serde_json::from_str(&s).map_err(serde::de::Error::custom))
-    }
 }
 
 // TODO: Check if human readable

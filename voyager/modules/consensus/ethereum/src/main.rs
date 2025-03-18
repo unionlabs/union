@@ -3,10 +3,9 @@
 use alloy::{
     eips::BlockNumberOrTag,
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
-    rpc::types::BlockTransactionsKind,
 };
 use beacon_api::client::BeaconApiClient;
-use beacon_api_types::{chain_spec::PresetBaseKind, slot::Slot};
+use beacon_api_types::{chain_spec::PresetBaseKind, custom_types::Slot};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -91,7 +90,8 @@ impl Module {
 
         let block = self
             .provider
-            .get_block((block_number + 1).into(), BlockTransactionsKind::Hashes)
+            .get_block((block_number + 1).into())
+            .hashes()
             .await
             .map_err(|e| {
                 ErrorObject::owned(
@@ -117,7 +117,7 @@ impl Module {
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching block: {}", ErrorReporter(e)),
+                    format!("error fetching beacon block: {}", ErrorReporter(e)),
                     None::<()>,
                 )
             })?
@@ -144,7 +144,7 @@ impl ConsensusModule for Module {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
-                .on_builtin(&config.rpc_url)
+                .connect(&config.rpc_url)
                 .await?,
         );
 
@@ -208,10 +208,8 @@ impl ConsensusModuleServer for Module {
             self.query_latest_execution_meta().await?.1
         } else {
             self.provider
-                .get_block(
-                    BlockNumberOrTag::Latest.into(),
-                    BlockTransactionsKind::Hashes,
-                )
+                .get_block(BlockNumberOrTag::Latest.into())
+                .hashes()
                 .await
                 .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
                 .ok_or_else(|| ErrorObject::owned(-1, "latest block not found", None::<()>))?

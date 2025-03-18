@@ -268,6 +268,16 @@ impl Client {
             .await
     }
 
+    #[instrument(
+        skip_all,
+        fields(
+            query = query.as_ref(),
+            prove,
+            page,
+            per_page,
+            ?order_by
+        )
+    )]
     pub async fn tx_search(
         &self,
         query: impl AsRef<str>,
@@ -278,8 +288,9 @@ impl Client {
         // REVIEW: There is the enum `cosmos.tx.v1beta.OrderBy`, is that related to this?
         order_by: Order,
     ) -> Result<TxSearchResponse, JsonRpcError> {
-        self.inner
-            .request(
+        let response = self
+            .inner
+            .request::<TxSearchResponse, _>(
                 "tx_search",
                 rpc_params![
                     query.as_ref(),
@@ -289,7 +300,11 @@ impl Client {
                     order_by
                 ],
             )
-            .await
+            .await?;
+
+        debug!(total_count = response.total_count, "tx_search");
+
+        Ok(response)
     }
 
     // TODO: support order_by

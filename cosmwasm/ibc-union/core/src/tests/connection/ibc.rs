@@ -19,7 +19,6 @@ fn connection_open_init_ok() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -50,7 +49,6 @@ fn connection_open_init_commitment_saved() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -80,7 +78,6 @@ fn connection_open_try_ok() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -116,7 +113,6 @@ fn connection_open_try_client_not_found() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -160,7 +156,6 @@ fn connection_open_try_commitment_saved() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -206,7 +201,6 @@ fn connection_open_ack_ok() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -247,7 +241,6 @@ fn connection_open_ack_commitment_saved() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -293,7 +286,6 @@ fn connection_open_confirm_ok() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -333,7 +325,6 @@ fn connection_open_try_confirm_commitment_saved() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),

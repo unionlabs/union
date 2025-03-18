@@ -71,11 +71,8 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let eth_provider = DynProvider::new(
-            ProviderBuilder::new()
-                .on_builtin(&config.eth_rpc_url)
-                .await?,
-        );
+        let eth_provider =
+            DynProvider::new(ProviderBuilder::new().connect(&config.eth_rpc_url).await?);
 
         let chain_id = ChainId::new(eth_provider.get_chain_id().await?.to_string());
 

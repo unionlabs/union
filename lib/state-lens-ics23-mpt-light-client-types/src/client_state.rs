@@ -3,7 +3,11 @@ use unionlabs::tuple::AsTuple;
 pub type ClientState = state_lens_light_client_types::ClientState<Extra>;
 
 #[derive(Debug, Clone, PartialEq, AsTuple)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Extra {
     /// the offset at which we extract the u64 timestamp from the l2 consensus state

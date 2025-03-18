@@ -1,4 +1,4 @@
-use beacon_api_types::slot::Slot;
+use beacon_api_types::custom_types::Slot;
 use cosmwasm_std::{StdError, VerificationError};
 use ibc_union_light_client::IbcClientError;
 use unionlabs::primitives::{H256, U256};

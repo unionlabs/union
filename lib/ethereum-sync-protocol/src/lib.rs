@@ -13,9 +13,8 @@ use beacon_api_types::{
         EXECUTION_PAYLOAD_GINDEX, FINALIZED_ROOT_GINDEX, FINALIZED_ROOT_GINDEX_ELECTRA,
         NEXT_SYNC_COMMITTEE_GINDEX, NEXT_SYNC_COMMITTEE_GINDEX_ELECTRA,
     },
-    custom_types::DomainType,
+    custom_types::{DomainType, Slot},
     deneb,
-    slot::Slot,
 };
 use ethereum_sync_protocol_types::LightClientHeader;
 use fork_schedules::{ForkSchedule, Forks};
@@ -325,7 +324,8 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
     if let Some(fork) = fs.fork(Forks::Deneb) {
         if epoch < fork.epoch {
             ensure(
-                header.execution.blob_gas_used == 0 && header.execution.excess_blob_gas == 0,
+                header.execution.blob_gas_used.is_zero()
+                    && header.execution.excess_blob_gas.is_zero(),
                 Error::MustBeDeneb,
             )?;
         }
@@ -335,12 +335,12 @@ pub fn is_valid_light_client_header<C: ChainSpec>(
         unreachable!("all known chains support deneb");
     }
 
-    validate_merkle_branch(
+    Ok(validate_merkle_branch(
         &get_lc_execution_root::<C>(chain_id, header),
         &header.execution_branch,
         EXECUTION_PAYLOAD_GINDEX,
         &header.beacon.body_root,
-    )
+    )?)
 }
 
 /// <https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#finalized_root_gindex_at_slot>

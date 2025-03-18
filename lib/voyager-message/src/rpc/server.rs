@@ -524,6 +524,36 @@ impl Server {
             .await
     }
 
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %query))]
+    async fn query_raw(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        query: Value,
+    ) -> RpcResult<Value> {
+        self.span()
+            .in_scope(|| async {
+                trace!("query");
+
+                let state_module = self
+                    .inner
+                    .modules()?
+                    .state_module(&chain_id, &ibc_spec_id)?
+                    .with_id(self.item_id);
+
+                let value = state_module
+                    .query_raw(into_value(query.clone()))
+                    .await
+                    .map_err(json_rpc_error_to_error_object)?;
+
+                // TODO: Use valuable here
+                trace!(%value, "queried");
+
+                Ok(value)
+            })
+            .await
+    }
+
     #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %height, %path))]
     async fn query_ibc_state_raw(
         &self,
@@ -984,6 +1014,19 @@ impl VoyagerRpcServer for Server {
     ) -> RpcResult<Option<ConsensusStateMeta>> {
         self.with_id(e.try_get().ok().cloned())
             .consensus_state_meta(&chain_id, &ibc_spec_id, at, client_id, counterparty_height)
+            .await
+    }
+
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %query))]
+    async fn query(
+        &self,
+        e: &Extensions,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        query: Value,
+    ) -> RpcResult<Value> {
+        self.with_id(e.try_get().ok().cloned())
+            .query_raw(chain_id, ibc_spec_id, query)
             .await
     }
 

@@ -1,7 +1,11 @@
 use unionlabs::primitives::H768;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct SyncAggregate {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
@@ -14,7 +18,7 @@ pub struct SyncAggregate {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(bound(serialize = "", deserialize = ""))
+    serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)
 )]
 pub struct SyncAggregateSsz<C: crate::chain_spec::SYNC_COMMITTEE_SIZE> {
     // TODO: Change debug print for this type in ssz::types

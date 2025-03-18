@@ -1,4 +1,4 @@
-use beacon_api_types::slot::Slot;
+use beacon_api_types::custom_types::Slot;
 use unionlabs::primitives::H256;
 
 #[derive(Debug, Clone, PartialEq)]

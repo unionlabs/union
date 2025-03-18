@@ -3,11 +3,15 @@ use unionlabs::primitives::H256;
 use crate::{
     altair::{LightClientHeader, SyncAggregate, SyncCommittee},
     consts::{floorlog2, FINALIZED_ROOT_GINDEX, NEXT_SYNC_COMMITTEE_GINDEX},
-    slot::Slot,
+    custom_types::Slot,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct LightClientUpdate {
     /// Header attested to by the sync committee
     pub attested_header: LightClientHeader,

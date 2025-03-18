@@ -1,9 +1,8 @@
 use beacon_api_types::{
     chain_spec::ChainSpec,
     consts::{floorlog2, get_subtree_index},
-    custom_types::{Domain, DomainType, Version},
+    custom_types::{Domain, DomainType, Epoch, Period, Slot, Version},
     phase0::{ForkData, SigningData},
-    slot::Slot,
 };
 use fork_schedules::{ForkSchedule, Forks};
 use sha2::{Digest, Sha256};
@@ -11,15 +10,12 @@ use ssz::Ssz;
 use typenum::Unsigned;
 use unionlabs::primitives::H256;
 
-use crate::{
-    error::{Error, InvalidMerkleBranch},
-    GENESIS_SLOT,
-};
+use crate::{error::InvalidMerkleBranch, GENESIS_SLOT};
 
 /// Returns the fork version based on the `epoch` and `chain_id`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/fork.md#modified-compute_fork_version)
-pub fn compute_fork_version(chain_id: u64, epoch: u64) -> Version {
+pub fn compute_fork_version(chain_id: u64, epoch: Epoch) -> Version {
     let fs = ForkSchedule::for_chain_id(chain_id);
 
     if let Some(fork) = fs.fork(Forks::Electra)
@@ -50,22 +46,22 @@ pub fn compute_fork_version(chain_id: u64, epoch: u64) -> Version {
 /// Returns the sync committee period at a given `slot`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md#compute_sync_committee_period_at_slot)
-pub fn compute_sync_committee_period_at_slot<C: ChainSpec>(slot: Slot) -> u64 {
+pub fn compute_sync_committee_period_at_slot<C: ChainSpec>(slot: Slot) -> Period {
     compute_sync_committee_period::<C>(compute_epoch_at_slot::<C>(slot))
 }
 
 /// Returns the epoch at a given `slot`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#compute_epoch_at_slot)
-pub fn compute_epoch_at_slot<C: ChainSpec>(slot: Slot) -> u64 {
-    slot.get() / C::SLOTS_PER_EPOCH::U64
+pub fn compute_epoch_at_slot<C: ChainSpec>(slot: Slot) -> Epoch {
+    Epoch::new(slot.get() / C::SLOTS_PER_EPOCH::U64)
 }
 
 /// Returns the sync committee period at a given `epoch`.
 ///
 /// [See in consensus-spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/validator.md#sync-committee)
-pub fn compute_sync_committee_period<C: ChainSpec>(epoch: u64) -> u64 {
-    epoch / C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64
+pub fn compute_sync_committee_period<C: ChainSpec>(epoch: Epoch) -> Period {
+    Period::new(epoch.get() / C::EPOCHS_PER_SYNC_COMMITTEE_PERIOD::U64)
 }
 
 /// Returns the timestamp at a `slot`, respect to `genesis_time`.
@@ -152,7 +148,7 @@ pub fn validate_merkle_branch<'a>(
     branch: impl IntoIterator<Item = &'a H256>,
     gindex: u64,
     root: &H256,
-) -> Result<(), Error> {
+) -> Result<(), InvalidMerkleBranch> {
     let depth = floorlog2(gindex);
     let index = get_subtree_index(gindex);
 
@@ -183,13 +179,13 @@ pub fn validate_merkle_branch<'a>(
         value == *root
     }
     .then_some(())
-    .ok_or(Error::InvalidMerkleBranch(InvalidMerkleBranch {
+    .ok_or(InvalidMerkleBranch {
         leaf: *leaf,
         branch,
         depth,
         index,
         root: *root,
-    }))
+    })
 }
 
 // #[cfg(test)]

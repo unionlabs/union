@@ -52,8 +52,7 @@ impl ConsensusModule for Module {
     async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
         let tm_client = cometbft_rpc::Client::new(config.comet_ws_url).await?;
 
-        let eth_provider =
-            DynProvider::new(ProviderBuilder::new().on_builtin(&config.rpc_url).await?);
+        let eth_provider = DynProvider::new(ProviderBuilder::new().connect(&config.rpc_url).await?);
 
         let l2_chain_id = ChainId::new(eth_provider.get_chain_id().await?.to_string());
 
@@ -124,10 +123,8 @@ impl ConsensusModuleServer for Module {
         let latest_height = self.query_latest_height(ext, finalized).await?;
         let latest_block = self
             .eth_provider
-            .get_block_by_number(
-                latest_height.height().into(),
-                alloy::rpc::types::BlockTransactionsKind::Hashes,
-            )
+            .get_block_by_number(latest_height.height().into())
+            .hashes()
             .await
             .expect("big trouble")
             .expect("big trouble");

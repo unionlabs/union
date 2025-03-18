@@ -210,14 +210,19 @@ pub trait IbcSpec {
     /// The type used to index into the IBC store.
     type StorePath: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
 
+    /// Arbitrary queries that must be supported by all implementations of this spec.
+    type Query: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
+
     /// The messages submitted on chain.
     type Datagram: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
 
     /// Events emitted on chain.
     type Event: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
 
+    // TODO: Move this to Datagram
     fn update_client_datagram(client_id: Self::ClientId, client_message: Bytes) -> Self::Datagram;
 
+    // TODO: Move these to Path
     fn client_state_path(client_id: Self::ClientId) -> Self::StorePath;
     fn consensus_state_path(client_id: Self::ClientId, height: Height) -> Self::StorePath;
 }
@@ -241,6 +246,27 @@ pub trait IbcStorePathKey:
 
     /// The value stored under this key. Note that this is NOT the *commitment*, but rather the
     /// actual value.
+    type Value: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
+}
+
+/// A subset of [`IbcSpec::Query`]. This should be implemented by all variants of the
+/// `Query` enum for an `IbcSpec` implementation.
+pub trait IbcQuery:
+    Debug
+    + Clone
+    + PartialEq
+    + MaybeSerde
+    + Send
+    + Sync
+    + Unpin
+    + 'static
+    + TryFrom<<Self::Spec as IbcSpec>::Query, Error = <Self::Spec as IbcSpec>::Query>
+    + Into<<Self::Spec as IbcSpec>::Query>
+{
+    /// The [`IbcSpec`] that this query is for.
+    type Spec: IbcSpec;
+
+    /// The type returned by this query.
     type Value: Debug + Clone + PartialEq + MaybeSerde + Send + Sync + Unpin + 'static;
 }
 

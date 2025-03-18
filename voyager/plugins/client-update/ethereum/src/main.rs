@@ -2,12 +2,9 @@
 
 use std::{collections::VecDeque, ops::Div};
 
-use alloy::{
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
-    rpc::types::BlockTransactionsKind,
-};
+use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
 use beacon_api::client::BeaconApiClient;
-use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, slot::Slot};
+use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, custom_types::Slot};
 use bitvec::{order::Msb0, vec::BitVec};
 use ethereum_light_client_types::{
     AccountProof, Header, LightClientUpdate, LightClientUpdateData,
@@ -20,7 +17,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info, instrument};
+use tracing::{debug, info, instrument, trace};
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{H160, H256},
@@ -133,7 +130,7 @@ impl Plugin for Module {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
-                .on_builtin(&config.rpc_url)
+                .connect(&config.rpc_url)
                 .await?,
         );
 
@@ -267,7 +264,8 @@ impl Module {
     async fn beacon_slot_of_execution_block_number(&self, block_number: u64) -> RpcResult<Slot> {
         let block = self
             .provider
-            .get_block((block_number + 1).into(), BlockTransactionsKind::Hashes)
+            .get_block((block_number + 1).into())
+            .hashes()
             .await
             .map_err(|e| {
                 ErrorObject::owned(
@@ -354,13 +352,7 @@ impl Module {
                 |f| match f {},
                 |_| todo!("altair is not supported"),
                 |_| todo!("bellatrix is not supported"),
-                |f| LightClientUpdateData {
-                    attested_header: f.attested_header.into(),
-                    finalized_header: f.finalized_header.into(),
-                    finality_branch: f.finality_branch.to_vec(),
-                    sync_aggregate: f.sync_aggregate,
-                    signature_slot: f.signature_slot,
-                },
+                |_| todo!("capella is not supported"),
                 |f| LightClientUpdateData {
                     attested_header: f.attested_header.into(),
                     finalized_header: f.finalized_header.into(),
@@ -465,7 +457,7 @@ impl Module {
                     |u| match u {},
                     |_| todo!("altair is not supported"),
                     |_| todo!("bellatrix is not supported"),
-                    |u| u.into(),
+                    |_| todo!("capella is not supported"),
                     |u| u.into(),
                     |u| u.into(),
                 )
@@ -625,6 +617,8 @@ impl Module {
         // if this is an epoch change update, provide the next sync committee for the target epoch
         next_sync_committee: Option<(SyncCommittee, Vec<H256>)>,
     ) -> RpcResult<Header> {
+        trace!(?light_client_update_data);
+
         // When we fetch the update at this height, the `next_sync_committee` will
         // be the current sync committee of the period that we want to update to.
         let ibc_account_proof = self

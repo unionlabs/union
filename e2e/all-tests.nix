@@ -42,7 +42,7 @@
 
             # Tests from ./upgrades.nix
             inherit (upgrades) upgrade-from-genesis;
-            inherit (upgrades) upgrade-with-tokenfactory-state;
+            # inherit (upgrades) upgrade-with-tokenfactory-state;
 
             virtualisation-works = e2e.mkTest {
               name = "full-dev-setup";

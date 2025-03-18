@@ -25,10 +25,7 @@ async fn main() {
 }
 
 async fn do_main(args: Args) {
-    let provider = ProviderBuilder::new()
-        .on_builtin(&args.sepolia)
-        .await
-        .unwrap();
+    let provider = ProviderBuilder::new().connect(&args.sepolia).await.unwrap();
 
     let (tm_client, driver) = WebSocketClient::builder(args.union.parse().unwrap())
         .compat_mode(tendermint_rpc::client::CompatMode::V0_37)

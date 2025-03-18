@@ -23,7 +23,7 @@ pub struct ExecutionRequests {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields)
+    serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)
 )]
 pub struct ExecutionRequestsSsz<C: ChainSpec> {
     pub deposits: List<DepositRequest, C::MAX_DEPOSIT_REQUESTS_PER_PAYLOAD>,

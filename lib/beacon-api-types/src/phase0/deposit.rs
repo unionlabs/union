@@ -8,7 +8,7 @@ use crate::phase0::DepositData;
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(bound(serialize = "", deserialize = ""))
+    serde(deny_unknown_fields)
 )]
 pub struct Deposit {
     pub proof: Vec<H256>,
@@ -20,7 +20,7 @@ pub struct Deposit {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(bound(serialize = "", deserialize = ""))
+    serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)
 )]
 pub struct DepositSsz<C: DEPOSIT_CONTRACT_TREE_DEPTH> {
     /// Merkle path to deposit root

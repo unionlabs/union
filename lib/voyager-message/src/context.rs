@@ -341,7 +341,7 @@ impl Context {
                         interest_filter,
                     },
                 )| {
-                    info!("registering plugin {}", name);
+                    debug!("registering plugin {}", name);
 
                     tokio::spawn(plugin_child_process(
                         name.clone(),
@@ -848,7 +848,7 @@ async fn plugin_child_process(
     let client_socket = ModuleRpcClient::make_socket_path(&plugin_name);
     let server_socket = make_module_rpc_server_socket_path(&plugin_name);
 
-    info!(%client_socket, %server_socket, "starting plugin {plugin_name}");
+    debug!(%client_socket, %server_socket, "starting plugin {plugin_name}");
 
     let mut cmd = tokio::process::Command::new(&module_config.path);
     cmd.arg("run");
@@ -878,7 +878,7 @@ async fn module_child_process<Info: Serialize>(
     let client_socket = ModuleRpcClient::make_socket_path(&module_name);
     let server_socket = make_module_rpc_server_socket_path(&module_name);
 
-    info!(%client_socket, %server_socket, "starting module {module_name}");
+    debug!(%client_socket, %server_socket, "starting module {module_name}");
 
     lazarus_pit(
         &module_config.path,
@@ -1146,7 +1146,7 @@ async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
         .try_for_each(|module_config| {
             let id = id_f(&module_config.info);
 
-            info!("registering module {}", id);
+            debug!("registering module {}", id);
 
             tokio::spawn(module_child_process(
                 id.clone(),

@@ -6,7 +6,7 @@ pub mod routes;
 
 #[cfg(test)]
 mod tests {
-    use beacon_api_types::slot::Slot;
+    use beacon_api_types::custom_types::Slot;
 
     use crate::client::BeaconApiClient;
 

@@ -201,9 +201,7 @@
           ]
         },
         "gas_config": {
-          "gas_price": 2.0,
-          "gas_denom": "muno",
-          "gas_multiplier": 2.0,
+          "type": "feemarket",
           "max_gas": 10000000
         },
         "rpc_url": "http://localhost:26657"

@@ -34,7 +34,7 @@ use ibc_union_spec::{
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
     ethereum::keccak256,
-    primitives::{encoding::HexPrefixed, Bytes, H256},
+    primitives::{Bytes, H256},
 };
 use unionlabs_cosmwasm_upgradable::{UpgradeError, UpgradeMsg};
 
@@ -538,11 +538,13 @@ fn batch_send(deps: DepsMut, packets: Vec<Packet>) -> ContractResult {
             return Err(ContractError::BatchSameChannelOnly);
         }
         let commitment_key = BatchPacketsPath::from_packets(&[packet]).key();
+
         let commitment = deps
             .storage
-            .get(commitment_key.as_ref())
-            .unwrap_or(H256::<HexPrefixed>::default().into_bytes().into());
-        if commitment != COMMITMENT_MAGIC.as_ref() {
+            .maybe_read::<Commitments>(&commitment_key)?
+            .ok_or(ContractError::PacketCommitmentNotFound)?;
+
+        if commitment != COMMITMENT_MAGIC {
             return Err(ContractError::PacketCommitmentNotFound);
         }
     }
@@ -715,15 +717,19 @@ fn mark_packet_as_acknowledged(deps: DepsMut, packet: &Packet) -> Result<(), Con
     let commitment_key = BatchPacketsPath::from_packets(&[packet.clone()]).key();
     let commitment = deps
         .storage
-        .get(commitment_key.as_ref())
-        .unwrap_or(H256::<HexPrefixed>::default().into_bytes().into_vec());
-    if commitment == COMMITMENT_MAGIC_ACK.as_ref() {
+        .maybe_read::<Commitments>(&commitment_key)?
+        .ok_or(ContractError::PacketCommitmentNotFound)?;
+
+    if commitment == COMMITMENT_MAGIC_ACK {
         return Err(ContractError::PacketAlreadyAcknowledged);
     }
-    if commitment != COMMITMENT_MAGIC.as_ref() {
+
+    if commitment != COMMITMENT_MAGIC {
         return Err(ContractError::PacketCommitmentNotFound);
     }
+
     store_commit(deps, &commitment_key, &COMMITMENT_MAGIC_ACK);
+
     Ok(())
 }
 
@@ -750,7 +756,7 @@ fn create_client(
     mut deps: DepsMut,
     info: MessageInfo,
     client_type: String,
-    mut client_state_bytes: Vec<u8>,
+    client_state_bytes: Vec<u8>,
     consensus_state_bytes: Vec<u8>,
     relayer: Addr,
 ) -> Result<Response, ContractError> {
@@ -758,26 +764,39 @@ fn create_client(
     let client_id = next_client_id(deps.branch())?;
     deps.storage.write::<ClientTypes>(&client_id, &client_type);
     deps.storage.write::<ClientImpls>(&client_id, &client_impl);
+
+    // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
+    // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
+
+    // 1. write these states first, so they can be read by the light client contract during VerifyCreation
+    deps.storage
+        .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
+    // 2. once the client state is saved, query the light client impl for the height of that client state (the state we just saved is the latest height)...
+    let latest_height = query_light_client::<u64>(
+        deps.as_ref(),
+        client_impl.clone(),
+        LightClientQuery::GetLatestHeight { client_id },
+    )?;
+    // 3. save the consensus state, so that it can be read during VerifyCreation as well
+    deps.storage.write::<ClientConsensusStates>(
+        &(client_id, latest_height),
+        &consensus_state_bytes.to_vec().into(),
+    );
+    // 4. finally, call VerifyCreation, which will read the states we just stored
     let verify_creation_response = query_light_client::<VerifyCreationResponse>(
         deps.as_ref(),
         client_impl,
         LightClientQuery::VerifyCreation {
             caller: info.sender.into(),
             client_id,
-            client_state: client_state_bytes.to_vec().into(),
-            consensus_state: consensus_state_bytes.to_vec().into(),
             relayer: relayer.into(),
         },
     )?;
-    if let Some(cs) = verify_creation_response.client_state_bytes {
-        client_state_bytes = cs.into_vec();
+    if let Some(client_state_bytes) = verify_creation_response.client_state_bytes {
+        // ...if VerifyCreation returns a new client state to save, overwrite the state we just wrote.
+        deps.storage
+            .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
     }
-    deps.storage
-        .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
-    deps.storage.write::<ClientConsensusStates>(
-        &(client_id, verify_creation_response.latest_height),
-        &consensus_state_bytes.to_vec().into(),
-    );
     store_commit(
         deps.branch(),
         &ClientStatePath { client_id }.key(),
@@ -787,7 +806,7 @@ fn create_client(
         deps.branch(),
         &ConsensusStatePath {
             client_id,
-            height: verify_creation_response.latest_height,
+            height: latest_height,
         }
         .key(),
         &commit(consensus_state_bytes),
@@ -824,11 +843,6 @@ fn update_client(
 ) -> Result<Response, ContractError> {
     let client_impl = client_impl(deps.as_ref(), client_id)?;
     let update = {
-        // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
-        // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
-        deps.storage
-            .write_item::<QueryStore>(&client_message.into());
-
         let status = query_light_client::<Status>(
             deps.as_ref(),
             client_impl.clone(),
@@ -839,6 +853,11 @@ fn update_client(
             return Err(ContractError::ClientNotActive { client_id, status });
         }
 
+        // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
+        // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
+        deps.storage
+            .write_item::<QueryStore>(&client_message.into());
+
         let update = query_light_client::<UpdateStateResponse>(
             deps.as_ref(),
             client_impl,
@@ -848,7 +867,9 @@ fn update_client(
                 relayer: relayer.into(),
             },
         )?;
+
         deps.storage.delete_item::<QueryStore>();
+
         update
     };
 
@@ -2015,7 +2036,6 @@ mod tests {
     #[test]
     fn verify_creation_response() {
         let response = VerifyCreationResponse {
-            latest_height: 1,
             counterparty_chain_id: "chain-id".to_owned(),
             client_state_bytes: None,
             storage_writes: [([].into(), [].into())].into_iter().collect(),

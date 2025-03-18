@@ -2,9 +2,7 @@
 
 use core::fmt::Debug;
 
-use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Deps, DepsMut, Env, QuerierWrapper, Response, StdError,
-};
+use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, DepsMut, Env, Querier, Response, StdError};
 use depolama::{QuerierExt, StorageExt, Store};
 use ibc_union::state::{ClientConsensusStates, ClientImpls, ClientStates, ClientStore, QueryStore};
 use ibc_union_msg::lightclient::{
@@ -92,23 +90,14 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
     }
 
     pub fn read_self_client_state(&self) -> Result<T::ClientState, IbcClientError<T>> {
-        read_client_state(
-            self.deps.querier.into_empty(),
-            &self.ibc_host,
-            self.client_id,
-        )
+        read_client_state(&*self.deps.querier, &self.ibc_host, self.client_id)
     }
 
     pub fn read_self_consensus_state(
         &self,
         height: u64,
     ) -> Result<T::ConsensusState, IbcClientError<T>> {
-        read_consensus_state(
-            self.deps.querier.into_empty(),
-            &self.ibc_host,
-            self.client_id,
-            height,
-        )
+        read_consensus_state(&*self.deps.querier, &self.ibc_host, self.client_id, height)
     }
 
     pub fn read_self_storage<S: Store>(&self, key: S::Key) -> Result<S::Value, IbcClientError<T>> {
@@ -122,7 +111,7 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
         &self,
         client_id: ClientId,
     ) -> Result<Client::ClientState, IbcClientError<Client>> {
-        read_client_state(self.deps.querier.into_empty(), &self.ibc_host, client_id)
+        read_client_state(&*self.deps.querier, &self.ibc_host, client_id)
     }
 
     pub fn read_consensus_state<Client: IbcClient>(
@@ -130,12 +119,7 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
         client_id: ClientId,
         height: u64,
     ) -> Result<Client::ConsensusState, IbcClientError<Client>> {
-        read_consensus_state(
-            self.deps.querier.into_empty(),
-            &self.ibc_host,
-            client_id,
-            height,
-        )
+        read_consensus_state(&*self.deps.querier, &self.ibc_host, client_id, height)
     }
 
     pub fn verify_membership<Client: IbcClient>(
@@ -146,7 +130,7 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
         storage_proof: Client::StorageProof,
         value: Bytes,
     ) -> Result<(), IbcClientError<Client>> {
-        let client_impl = client_impl(self.deps.querier.into_empty(), &self.ibc_host, client_id)?;
+        let client_impl = client_impl(&*self.deps.querier, &self.ibc_host, client_id)?;
         self.deps.querier.query_wasm_smart::<()>(
             &client_impl,
             &(QueryMsg::VerifyMembership {
@@ -163,7 +147,7 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
 }
 
 fn client_impl<T: IbcClient>(
-    querier: QuerierWrapper,
+    querier: &dyn Querier,
     ibc_host: &Addr,
     client_id: ClientId,
 ) -> Result<Addr, IbcClientError<T>> {
@@ -343,19 +327,17 @@ pub fn query<T: IbcClient>(
         QueryMsg::GetTimestamp { client_id, height } => {
             let ibc_host = deps.storage.read_item::<IbcHost>()?;
             let consensus_state =
-                read_consensus_state::<T>(deps.querier.into_empty(), &ibc_host, client_id, height)?;
+                read_consensus_state::<T>(&*deps.querier, &ibc_host, client_id, height)?;
             to_json_binary(&T::get_timestamp(&consensus_state)).map_err(Into::into)
         }
         QueryMsg::GetLatestHeight { client_id } => {
             let ibc_host = deps.storage.read_item::<IbcHost>()?;
-            let client_state =
-                read_client_state::<T>(deps.querier.into_empty(), &ibc_host, client_id)?;
+            let client_state = read_client_state::<T>(&*deps.querier, &ibc_host, client_id)?;
             to_json_binary(&T::get_latest_height(&client_state)).map_err(Into::into)
         }
         QueryMsg::GetStatus { client_id } => {
             let ibc_host = deps.storage.read_item::<IbcHost>()?;
-            let client_state =
-                read_client_state::<T>(deps.querier.into_empty(), &ibc_host, client_id)?;
+            let client_state = read_client_state::<T>(&*deps.querier, &ibc_host, client_id)?;
             let status = T::status(
                 IbcClientCtx::new(client_id, ibc_host, deps, env),
                 &client_state,
@@ -363,19 +345,19 @@ pub fn query<T: IbcClient>(
             to_json_binary(&status).map_err(Into::into)
         }
         QueryMsg::VerifyCreation {
-            // NOTE(aeryz): we don't need `client_id` since we already got the client and
-            // consensus states
             caller,
-            client_id: _,
-            client_state,
-            consensus_state,
+            client_id,
             relayer,
         } => {
-            let client_state = T::ClientState::decode_as::<T::Encoding>(&client_state)
-                .map_err(|e| IbcClientError::Decode(DecodeError::ClientState(e)))?;
+            let ibc_host = deps.storage.read_item::<IbcHost>()?;
 
-            let consensus_state = T::ConsensusState::decode(&consensus_state)
-                .map_err(|e| IbcClientError::Decode(DecodeError::ConsensusState(e)))?;
+            let client_state = read_client_state::<T>(&*deps.querier, &ibc_host, client_id)?;
+            let consensus_state = read_consensus_state::<T>(
+                &*deps.querier,
+                &ibc_host,
+                client_id,
+                T::get_latest_height(&client_state),
+            )?;
 
             let client_creation = T::verify_creation(
                 Addr::unchecked(caller),
@@ -385,7 +367,6 @@ pub fn query<T: IbcClient>(
             )?;
 
             let response = VerifyCreationResponse {
-                latest_height: T::get_latest_height(&client_state),
                 counterparty_chain_id: T::get_counterparty_chain_id(&client_state),
                 client_state_bytes: client_creation
                     .client_state
@@ -458,14 +439,12 @@ pub fn query<T: IbcClient>(
                 Addr::unchecked(relayer),
             )?;
 
-            to_json_binary(
-                &(UpdateStateResponse {
-                    height,
-                    consensus_state_bytes: consensus_state.encode().into(),
-                    client_state_bytes: client_state.map(|cs| cs.encode_as::<T::Encoding>().into()),
-                    storage_writes,
-                }),
-            )
+            to_json_binary(&UpdateStateResponse {
+                height,
+                consensus_state_bytes: consensus_state.encode().into(),
+                client_state_bytes: client_state.map(|cs| cs.encode_as::<T::Encoding>().into()),
+                storage_writes,
+            })
             .map_err(Into::into)
         }
         QueryMsg::Misbehaviour {
@@ -485,18 +464,16 @@ pub fn query<T: IbcClient>(
                 Addr::unchecked(relayer),
             )?;
 
-            to_json_binary(
-                &(MisbehaviourResponse {
-                    client_state: client_state.encode_as::<T::Encoding>().into(),
-                }),
-            )
+            to_json_binary(&MisbehaviourResponse {
+                client_state: client_state.encode_as::<T::Encoding>().into(),
+            })
             .map_err(Into::into)
         }
     }
 }
 
 pub fn read_client_state<T: IbcClient>(
-    querier: QuerierWrapper,
+    querier: &dyn Querier,
     ibc_host: &Addr,
     client_id: ClientId,
 ) -> Result<T::ClientState, IbcClientError<T>> {
@@ -513,7 +490,7 @@ pub fn read_client_state<T: IbcClient>(
 }
 
 pub fn read_consensus_state<T: IbcClient>(
-    querier: QuerierWrapper,
+    querier: &dyn Querier,
     ibc_host: &Addr,
     client_id: ClientId,
     height: u64,

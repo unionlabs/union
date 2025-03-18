@@ -112,7 +112,7 @@ impl Plugin for Module {
             ProviderBuilder::new()
                 .network::<AnyNetwork>()
                 .layer(CacheLayer::new(config.max_cache_size))
-                .on_builtin(&config.rpc_url)
+                .connect(&config.rpc_url)
                 .await?,
         );
 

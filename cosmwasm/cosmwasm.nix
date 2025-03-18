@@ -22,10 +22,33 @@
       inherit
         ((crane.buildWorkspaceMember {
           crateDirFromRoot = "cosmwasm/deployer";
+          dev = true;
         }).packages
         )
         cosmwasm-deployer
         ;
+
+      mk-gas-args =
+        config@{ type, ... }:
+        {
+          static =
+            {
+              gas_denom,
+              gas_multiplier,
+              gas_price,
+              max_gas,
+            }:
+            ''
+              --gas static \
+              --gas-price ${toString gas_price} \
+              --gas-denom ${toString gas_denom} \
+              --gas-multiplier ${toString gas_multiplier} \
+              --max-gas ${toString max_gas}
+            '';
+          feemarket = _: ''--gas feemarket'';
+        }
+        .${type}
+          (builtins.removeAttrs config [ "type" ]);
 
       networks = [
         {
@@ -34,10 +57,7 @@
           # alice from the devnet keyring
           private_key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
           gas_config = {
-            gas_denom = "muno";
-            gas_multiplier = "1.1";
-            gas_price = "1.0";
-            max_gas = 200000000;
+            type = "feemarket";
           };
           ucs03_type = "cw20";
           bech32_prefix = "union";
@@ -48,10 +68,11 @@
           lightclients = [ "ethereum" ];
         }
         {
-          name = "union-testnet";
+          name = "union-testnet-9";
           rpc_url = "https://rpc.testnet-9.union.build";
           private_key = ''"$1"'';
           gas_config = {
+            type = "static";
             gas_denom = "muno";
             gas_multiplier = "1.1";
             gas_price = "1.0";
@@ -73,10 +94,33 @@
           ];
         }
         {
+          name = "union-testnet-10";
+          rpc_url = "https://rpc.rpc-node.union-testnet-10.union.build";
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
+          gas_config = {
+            type = "feemarket";
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "union";
+          lightclients = [
+            # "arbitrum"
+            # "berachain"
+            "ethereum"
+            # "ethermint"
+            # "tendermint-bls"
+            # "movement"
+            # "state-lens-ics23-mpt"
+            # "state-lens-ics23-smt"
+          ];
+        }
+        {
           name = "stargaze-testnet";
           rpc_url = "https://rpc.elgafar-1.stargaze.chain.kitchen";
           private_key = ''"$1"'';
           gas_config = {
+            type = "static";
             gas_price = "1.0";
             gas_denom = "ustars";
             gas_multiplier = "1.1";
@@ -97,6 +141,7 @@
           rpc_url = "https://osmosis-testnet-rpc.polkachu.com";
           private_key = ''"$1"'';
           gas_config = {
+            type = "static";
             gas_price = "0.05";
             gas_denom = "uosmo";
             gas_multiplier = "1.1";
@@ -117,6 +162,7 @@
           rpc_url = "https://babylon-testnet-rpc.polkachu.com";
           private_key = ''"$1"'';
           gas_config = {
+            type = "static";
             gas_price = "0.003";
             gas_denom = "ubbn";
             gas_multiplier = "1.1";
@@ -137,6 +183,7 @@
           rpc_url = "https://stride-testnet-rpc.polkachu.com";
           private_key = ''"$1"'';
           gas_config = {
+            type = "static";
             gas_price = "0.1";
             gas_denom = "ustrd";
             gas_multiplier = "1.1";
@@ -159,6 +206,7 @@
           rpc_url = "https://rpc.xion-testnet-2.burnt.com/";
           private_key = ''"$1"'';
           gas_config = {
+            type = "static";
             gas_price = "0.002";
             gas_denom = "uxion";
             gas_multiplier = "1.5";
@@ -179,6 +227,7 @@
           rpc_url = "https://rpc.dukong.mantrachain.io/";
           private_key = ''"$1"'';
           gas_config = {
+            type = "static";
             gas_price = "0.015";
             gas_denom = "uom";
             gas_multiplier = "1.4";
@@ -293,17 +342,14 @@
           name = "${name}-deploy-full";
           runtimeInputs = [ cosmwasm-deployer ];
           text = ''
+            PRIVATE_KEY=${private_key} \
             RUST_LOG=info \
               cosmwasm-deployer \
               deploy-full \
-              --private-key ${private_key} \
-              --gas-price ${toString gas_config.gas_price} \
-              --gas-denom ${toString gas_config.gas_denom} \
-              --gas-multiplier ${toString gas_config.gas_multiplier} \
-              --max-gas ${toString gas_config.max_gas} \
               --contracts ${chain-deployments-json args} \
               ${if permissioned then "--permissioned " else ""} \
-              --rpc-url ${rpc_url}
+              --rpc-url ${rpc_url} \
+              ${mk-gas-args gas_config}
           '';
         };
 
@@ -325,23 +371,25 @@
             cosmwasm-deployer
           ];
           text = ''
-            DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
+            DEPLOYER=$(
+              PRIVATE_KEY=${private_key} \
+                cosmwasm-deployer \
+                address-of-private-key \
+                --bech32-prefix ${bech32_prefix}
+            )
             ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
 
             echo "$DEPLOYER"
             echo "$ADDRESSES"
 
+            PRIVATE_KEY=${private_key} \
             RUST_LOG=info \
               cosmwasm-deployer \
               migrate-admin \
-              --private-key ${private_key} \
-              --gas-price ${toString gas_config.gas_price} \
-              --gas-denom ${toString gas_config.gas_denom} \
-              --gas-multiplier ${toString gas_config.gas_multiplier} \
-              --max-gas ${toString gas_config.max_gas} \
               --new-admin ${multisig_address} \
               --addresses <(echo "$ADDRESSES") \
-              --rpc-url ${rpc_url}
+              --rpc-url ${rpc_url} \
+              ${mk-gas-args gas_config}
           '';
         };
 
@@ -388,10 +436,16 @@
                   cosmwasm-deployer
                 ];
                 text = ''
-                  DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
+                  DEPLOYER=$(
+                    PRIVATE_KEY=${private_key} \
+                      cosmwasm-deployer \
+                      address-of-private-key \
+                      --bech32-prefix ${bech32_prefix}
+                  )
                   echo "deployer address: $DEPLOYER"
                   ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
 
+                  PRIVATE_KEY=${private_key} \
                   RUST_LOG=info \
                     cosmwasm-deployer \
                     migrate \
@@ -400,11 +454,7 @@
                       (get-lightclient (l: l.name == lc)).client-type
                     }"' -r)" \
                     --new-bytecode ${mk-lightclient lc} \
-                    --private-key ${private_key} \
-                    --gas-price ${toString gas_config.gas_price} \
-                    --gas-denom ${toString gas_config.gas_denom} \
-                    --gas-multiplier ${toString gas_config.gas_multiplier} \
-                    --max-gas ${toString gas_config.max_gas} \
+                    ${mk-gas-args gas_config}
                 '';
               };
             }
@@ -425,10 +475,16 @@
                   cosmwasm-deployer
                 ];
                 text = ''
-                  DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
+                  DEPLOYER=$(
+                    PRIVATE_KEY=${private_key} \
+                      cosmwasm-deployer \
+                      address-of-private-key \
+                      --bech32-prefix ${bech32_prefix}
+                  )
                   echo "deployer address: $DEPLOYER"
                   ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
 
+                  PRIVATE_KEY=${private_key} \
                   RUST_LOG=info \
                     cosmwasm-deployer \
                     migrate \
@@ -440,11 +496,7 @@
                           pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
                         )).name
                     } \
-                    --private-key ${private_key} \
-                    --gas-price ${toString gas_config.gas_price} \
-                    --gas-denom ${toString gas_config.gas_denom} \
-                    --gas-multiplier ${toString gas_config.gas_multiplier} \
-                    --max-gas ${toString gas_config.max_gas} \
+                    ${mk-gas-args gas_config}
                 '';
               };
             }
@@ -462,21 +514,23 @@
                 cosmwasm-deployer
               ];
               text = ''
-                DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
+                DEPLOYER=$(
+                  PRIVATE_KEY=${private_key} \
+                    cosmwasm-deployer \
+                    address-of-private-key \
+                    --bech32-prefix ${bech32_prefix}
+                )
                 echo "deployer address: $DEPLOYER"
                 ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
 
+                PRIVATE_KEY=${private_key} \
                 RUST_LOG=info \
                   cosmwasm-deployer \
                   migrate \
                   --rpc-url ${rpc_url} \
                   --address "$(echo "$ADDRESSES" | jq '.core' -r)" \
                   --new-bytecode ${ibc-union} \
-                  --private-key ${private_key} \
-                  --gas-price ${toString gas_config.gas_price} \
-                  --gas-denom ${toString gas_config.gas_denom} \
-                  --gas-multiplier ${toString gas_config.gas_multiplier} \
-                  --max-gas ${toString gas_config.max_gas} \
+                  ${mk-gas-args gas_config}
               '';
             };
           }

@@ -191,14 +191,14 @@ _: {
         {
           network = "sepolia";
           rpc-url = "https://rpc-sepolia.rockx.com";
-          private-key = ''"$1"'';
-          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key)"'';
+          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
         }
         {
           network = "holesky";
           rpc-url = "https://1rpc.io/holesky";
-          private-key = ''"$1"'';
-          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key)"'';
+          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
         }
         {
           network = "0g-testnet";
@@ -388,6 +388,7 @@ _: {
           dry ? false,
           rpc-url,
           protocol,
+          private-key,
           ...
         }:
         mkCi false (
@@ -410,11 +411,6 @@ _: {
                   help = "The sender address that created the contract through the deployer.";
                 }
               ]
-              ++ pkgs.lib.optional (!dry) {
-                arg = "private_key";
-                required = true;
-                help = "The contract owner private key.";
-              }
               ++ pkgs.lib.optional dry {
                 arg = "owner_pk";
                 required = true;
@@ -429,7 +425,7 @@ _: {
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               OWNER="${pkgs.lib.optionalString dry "$argc_owner_pk"}" \
-              PRIVATE_KEY="${pkgs.lib.optionalString (!dry) "$argc_private_key"}" \
+              PRIVATE_KEY=${private-key} \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
                 --rpc-url ${rpc-url} \

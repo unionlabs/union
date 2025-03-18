@@ -5,16 +5,18 @@ use std::{cmp::Ordering, collections::VecDeque};
 use alloy::{
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
     rpc::types::Filter,
-    sol_types::{SolEvent, SolEventInterface},
+    sol_types::SolEventInterface,
 };
 use ibc_solidity::Ibc;
 use ibc_union_spec::{
     event::{
         ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CreateClient, FullEvent, PacketMetadata, PacketSend, UpdateClient,
+        ConnectionOpenTry, CreateClient, FullEvent, PacketAck, PacketMetadata, PacketRecv,
+        PacketSend, PacketTimeout, UpdateClient, WriteAck,
     },
     path::{ChannelPath, ConnectionPath},
+    query::PacketByHash,
     ChannelId, IbcUnion, Packet,
 };
 use jsonrpsee::{
@@ -128,7 +130,7 @@ impl Module {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
-                .on_builtin(&config.rpc_url)
+                .connect(&config.rpc_url)
                 .await?,
         );
 
@@ -186,19 +188,19 @@ impl Module {
             .query_latest_height(client_state_meta.counterparty_chain_id.clone(), false)
             .await?;
 
-        let other_channel_id = self_channel.counterparty_channel_id;
+        let other_channel_id = self_channel.counterparty_channel_id.unwrap();
 
         let other_channel = voyager_client
             .query_ibc_state(
                 client_state_meta.counterparty_chain_id.clone(),
                 counterparty_latest_height,
                 ChannelPath {
-                    channel_id: other_channel_id.unwrap(),
+                    channel_id: other_channel_id,
                 },
             )
             .await?;
 
-        let source_channel = ChannelMetadata {
+        let self_channel = ChannelMetadata {
             channel_id: self_channel_id,
             version: self_channel.version,
             connection: ConnectionMetadata {
@@ -206,8 +208,8 @@ impl Module {
                 connection_id: self_connection_id,
             },
         };
-        let destination_channel = ChannelMetadata {
-            channel_id: other_channel_id.unwrap(),
+        let other_channel = ChannelMetadata {
+            channel_id: other_channel_id,
             version: other_channel.version,
             connection: ConnectionMetadata {
                 client_id: self_connection.counterparty_client_id,
@@ -218,70 +220,9 @@ impl Module {
         Ok((
             client_state_meta.counterparty_chain_id,
             client_info,
-            source_channel,
-            destination_channel,
+            self_channel,
+            other_channel,
         ))
-    }
-
-    async fn packet_by_packet_hash(&self, packet_hash: H256) -> RpcResult<Packet> {
-        self.provider
-            .get_logs(
-                &Filter::new()
-                    .address(alloy::primitives::Address::from(
-                        self.ibc_handler_address.get(),
-                    ))
-                    .event_signature(ibc_solidity::Ibc::PacketSend::SIGNATURE_HASH)
-                    .topic1(alloy::primitives::U256::from_be_bytes(*(packet_hash.get()))),
-            )
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!(
-                        "error querying for packet {packet_hash}: {}",
-                        ErrorReporter(e)
-                    ),
-                    None::<()>,
-                )
-            })
-            .and_then(|mut packet_logs| {
-                if packet_logs.len() != 1 {
-                    let packet_log = packet_logs.pop().unwrap();
-
-                    ibc_solidity::Ibc::PacketSend::decode_log(&packet_log.inner, true)
-                        .map_err(|e| {
-                            ErrorObject::owned(
-                                -1,
-                                format!(
-                                    "error decoding packet send event for packet {packet_hash}: {}",
-                                    ErrorReporter(e)
-                                ),
-                                None::<()>,
-                            )
-                        })
-                        .and_then(|packet_log| {
-                            packet_log.data.packet.try_into().map_err(|e| {
-                                ErrorObject::owned(
-                                    -1,
-                                    format!(
-                                    "error decoding packet send event for packet {packet_hash}: {}",
-                                    ErrorReporter(e)
-                                ),
-                                    None::<()>,
-                                )
-                            })
-                        })
-                } else {
-                    Err(ErrorObject::owned(
-                        -1,
-                        format!(
-                        "error querying for packet {packet_hash}, expected 1 event but found {}",
-                            packet_logs.len()
-                        ),
-                        None::<()>,
-                    ))
-                }
-            })
     }
 }
 
@@ -994,19 +935,23 @@ impl Module {
 
             // packet origin is this chain
             IbcEvents::PacketSend(raw_event) => {
-                let source_channel_id = raw_event.packet.source_channel_id.try_into().unwrap();
+                let packet: Packet = raw_event.packet.try_into().unwrap();
 
                 let (counterparty_chain_id, client_info, source_channel, destination_channel) =
-                    self.make_packet_metadata(provable_height, source_channel_id, voyager_client)
-                        .await?;
+                    self.make_packet_metadata(
+                        provable_height,
+                        packet.source_channel_id,
+                        voyager_client,
+                    )
+                    .await?;
 
                 let event = PacketSend {
-                    packet_data: raw_event.packet.data.to_vec().into(),
+                    packet_data: packet.data.to_vec().into(),
                     packet: PacketMetadata {
                         source_channel,
                         destination_channel,
-                        timeout_height: raw_event.packet.timeout_height,
-                        timeout_timestamp: raw_event.packet.timeout_timestamp,
+                        timeout_height: packet.timeout_height,
+                        timeout_timestamp: packet.timeout_timestamp,
                     },
                 }
                 .into();
@@ -1023,151 +968,177 @@ impl Module {
                     event: into_value::<FullEvent>(event),
                 }))
             }
-            IbcEvents::PacketTimeout(_raw_event) => {
-                // let source_channel_id = raw_event.packet.source_channel_id.try_into().unwrap();
-
-                // let (counterparty_chain_id, client_info, source_channel, destination_channel) =
-                //     self.make_packet_metadata(provable_height, source_channel_id, voyager_client)
-                //         .await?;
-
-                // let event = PacketTimeout {
-                //     packet: PacketMetadata {
-                //         source_channel,
-                //         destination_channel,
-                //         timeout_height: raw_event.packet.timeout_height,
-                //         timeout_timestamp: raw_event.packet.timeout_timestamp,
-                //     },
-                //     packet_data: raw_event.packet.data.into(),
-                // }
-                // .into();
-
-                // ibc_union_spec::log_event(&event, &self.chain_id);
-
-                // Ok(data(ChainEvent {
-                //     chain_id: self.chain_id.clone(),
-                //     client_info,
-                //     counterparty_chain_id,
-                //     tx_hash,
-                //     provable_height,
-                //     ibc_spec_id: IbcUnion::ID,
-                //     event: into_value::<FullEvent>(event),
-                // }))
-
-                todo!()
-            }
-            IbcEvents::PacketAck(raw_event) => {
-                let _packet = self
-                    .packet_by_packet_hash(raw_event.packet_hash.into())
+            IbcEvents::PacketTimeout(raw_event) => {
+                let (counterparty_chain_id, client_info, source_channel, destination_channel) =
+                    self.make_packet_metadata(
+                        provable_height,
+                        raw_event.channel_id.try_into().unwrap(),
+                        voyager_client,
+                    )
                     .await?;
 
-                // let source_channel_id = raw_event.packet.source_channel_id.try_into().unwrap();
+                let packet = voyager_client
+                    .query(
+                        self.chain_id.clone(),
+                        PacketByHash {
+                            channel_id: raw_event.channel_id.try_into().unwrap(),
+                            packet_hash: raw_event.packet_hash.0.into(),
+                        },
+                    )
+                    .await?;
 
-                // let (counterparty_chain_id, client_info, source_channel, destination_channel) =
-                //     self.make_packet_metadata(provable_height, source_channel_id, voyager_client)
-                //         .await?;
+                let event = PacketTimeout {
+                    packet: PacketMetadata {
+                        source_channel,
+                        destination_channel,
+                        timeout_height: packet.timeout_height,
+                        timeout_timestamp: packet.timeout_timestamp,
+                    },
+                    packet_data: packet.data,
+                }
+                .into();
 
-                // let event = PacketAck {
-                //     packet: PacketMetadata {
-                //         source_channel,
-                //         destination_channel,
-                //         timeout_height: raw_event.packet.timeout_height,
-                //         timeout_timestamp: raw_event.packet.timeout_timestamp,
-                //     },
-                //     packet_data: raw_event.packet.data.into(),
-                //     acknowledgement: raw_event.acknowledgement.into(),
-                // }
-                // .into();
+                ibc_union_spec::log_event(&event, &self.chain_id);
 
-                // ibc_union_spec::log_event(&event, &self.chain_id);
+                Ok(data(ChainEvent {
+                    chain_id: self.chain_id.clone(),
+                    client_info,
+                    counterparty_chain_id,
+                    tx_hash,
+                    provable_height,
+                    ibc_spec_id: IbcUnion::ID,
+                    event: into_value::<FullEvent>(event),
+                }))
+            }
+            IbcEvents::PacketAck(raw_event) => {
+                let (counterparty_chain_id, client_info, source_channel, destination_channel) =
+                    self.make_packet_metadata(
+                        provable_height,
+                        raw_event.channel_id.try_into().unwrap(),
+                        voyager_client,
+                    )
+                    .await?;
 
-                // Ok(data(ChainEvent {
-                //     chain_id: self.chain_id.clone(),
-                //     client_info,
-                //     counterparty_chain_id,
-                //     tx_hash,
-                //     provable_height,
-                //     ibc_spec_id: IbcUnion::ID,
-                //     event: into_value::<FullEvent>(event),
-                // }))
+                let packet = voyager_client
+                    .query(
+                        self.chain_id.clone(),
+                        PacketByHash {
+                            channel_id: raw_event.channel_id.try_into().unwrap(),
+                            packet_hash: raw_event.packet_hash.0.into(),
+                        },
+                    )
+                    .await?;
 
-                todo!()
+                let event = PacketAck {
+                    packet: PacketMetadata {
+                        source_channel,
+                        destination_channel,
+                        timeout_height: packet.timeout_height,
+                        timeout_timestamp: packet.timeout_timestamp,
+                    },
+                    packet_data: packet.data,
+                    acknowledgement: raw_event.acknowledgement.into(),
+                }
+                .into();
+
+                ibc_union_spec::log_event(&event, &self.chain_id);
+
+                Ok(data(ChainEvent {
+                    chain_id: self.chain_id.clone(),
+                    client_info,
+                    counterparty_chain_id,
+                    tx_hash,
+                    provable_height,
+                    ibc_spec_id: IbcUnion::ID,
+                    event: into_value::<FullEvent>(event),
+                }))
             }
             // packet origin is the counterparty chain
-            IbcEvents::WriteAck(_raw_event) => {
-                // let destination_channel_id =
-                //     raw_event.packet.destination_channel_id.try_into().unwrap();
+            IbcEvents::WriteAck(raw_event) => {
+                let (counterparty_chain_id, client_info, destination_channel, source_channel) =
+                    self.make_packet_metadata(
+                        provable_height,
+                        raw_event.channel_id.try_into().unwrap(),
+                        voyager_client,
+                    )
+                    .await?;
 
-                // let (counterparty_chain_id, client_info, destination_channel, source_channel) =
-                //     self.make_packet_metadata(
-                //         provable_height,
-                //         destination_channel_id,
-                //         voyager_client,
-                //     )
-                //     .await?;
+                let packet = voyager_client
+                    .query(
+                        counterparty_chain_id.clone(),
+                        PacketByHash {
+                            channel_id: source_channel.channel_id,
+                            packet_hash: raw_event.packet_hash.0.into(),
+                        },
+                    )
+                    .await?;
 
-                // let event = WriteAck {
-                //     packet_data: raw_event.packet.data.to_vec().into(),
-                //     acknowledgement: raw_event.acknowledgement.to_vec().into(),
-                //     packet: PacketMetadata {
-                //         source_channel,
-                //         destination_channel,
-                //         timeout_height: raw_event.packet.timeout_height,
-                //         timeout_timestamp: raw_event.packet.timeout_timestamp,
-                //     },
-                // }
-                // .into();
+                let event = WriteAck {
+                    packet_data: packet.data.to_vec().into(),
+                    acknowledgement: raw_event.acknowledgement.to_vec().into(),
+                    packet: PacketMetadata {
+                        source_channel,
+                        destination_channel,
+                        timeout_height: packet.timeout_height,
+                        timeout_timestamp: packet.timeout_timestamp,
+                    },
+                }
+                .into();
 
-                // ibc_union_spec::log_event(&event, &self.chain_id);
+                ibc_union_spec::log_event(&event, &self.chain_id);
 
-                // Ok(data(ChainEvent {
-                //     chain_id: self.chain_id.clone(),
-                //     client_info,
-                //     counterparty_chain_id,
-                //     tx_hash,
-                //     provable_height,
-                //     ibc_spec_id: IbcUnion::ID,
-                //     event: into_value::<FullEvent>(event),
-                // }))
-
-                todo!()
+                Ok(data(ChainEvent {
+                    chain_id: self.chain_id.clone(),
+                    client_info,
+                    counterparty_chain_id,
+                    tx_hash,
+                    provable_height,
+                    ibc_spec_id: IbcUnion::ID,
+                    event: into_value::<FullEvent>(event),
+                }))
             }
-            IbcEvents::PacketRecv(_raw_event) => {
-                // let destination_channel_id =
-                //     raw_event.packet.destination_channel_id.try_into().unwrap();
+            IbcEvents::PacketRecv(raw_event) => {
+                let (counterparty_chain_id, client_info, destination_channel, source_channel) =
+                    self.make_packet_metadata(
+                        provable_height,
+                        raw_event.channel_id.try_into().unwrap(),
+                        voyager_client,
+                    )
+                    .await?;
 
-                // let (counterparty_chain_id, client_info, destination_channel, source_channel) =
-                //     self.make_packet_metadata(
-                //         provable_height,
-                //         destination_channel_id,
-                //         voyager_client,
-                //     )
-                //     .await?;
+                let packet = voyager_client
+                    .query(
+                        counterparty_chain_id.clone(),
+                        PacketByHash {
+                            channel_id: source_channel.channel_id,
+                            packet_hash: raw_event.packet_hash.0.into(),
+                        },
+                    )
+                    .await?;
 
-                // let event = PacketRecv {
-                //     packet_data: raw_event.packet.data.to_vec().into(),
-                //     packet: PacketMetadata {
-                //         source_channel,
-                //         destination_channel,
-                //         timeout_height: raw_event.packet.timeout_height,
-                //         timeout_timestamp: raw_event.packet.timeout_timestamp,
-                //     },
-                //     maker_msg: raw_event.maker_msg.into(),
-                // }
-                // .into();
+                let event = PacketRecv {
+                    packet_data: packet.data.to_vec().into(),
+                    packet: PacketMetadata {
+                        source_channel,
+                        destination_channel,
+                        timeout_height: packet.timeout_height,
+                        timeout_timestamp: packet.timeout_timestamp,
+                    },
+                    maker_msg: raw_event.maker_msg.into(),
+                }
+                .into();
 
-                // ibc_union_spec::log_event(&event, &self.chain_id);
+                ibc_union_spec::log_event(&event, &self.chain_id);
 
-                // Ok(data(ChainEvent {
-                //     chain_id: self.chain_id.clone(),
-                //     client_info,
-                //     counterparty_chain_id,
-                //     tx_hash,
-                //     provable_height,
-                //     ibc_spec_id: IbcUnion::ID,
-                //     event: into_value::<FullEvent>(event),
-                // }))
-
-                todo!()
+                Ok(data(ChainEvent {
+                    chain_id: self.chain_id.clone(),
+                    client_info,
+                    counterparty_chain_id,
+                    tx_hash,
+                    provable_height,
+                    ibc_spec_id: IbcUnion::ID,
+                    event: into_value::<FullEvent>(event),
+                }))
             }
             IbcEvents::IntentPacketRecv(_event) => {
                 todo!()

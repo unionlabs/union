@@ -6,7 +6,11 @@ use unionlabs::{
 pub type ClientState = state_lens_light_client_types::ClientState<Extra>;
 
 #[derive(Debug, Clone, PartialEq, AsTuple)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Extra {
     pub table_handle: H256<HexUnprefixed>,
