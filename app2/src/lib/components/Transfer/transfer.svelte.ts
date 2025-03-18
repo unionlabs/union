@@ -1,4 +1,4 @@
-import { Effect, Either, Option, Schema } from "effect"
+import { Effect, Option } from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
 import type { QuoteData, Token, WethTokenData } from "$lib/schema/token.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
@@ -26,6 +26,7 @@ import {
   hasFailedExit as hasAptosFailedExit,
   isComplete as isAptosComplete,
   nextState as aptosNextState,
+  TransferSubmitState as AptosTransferSubmitState,
   TransferSubmission as AptosTransferSubmission,
   TransferReceiptState as AptosTransferReceiptState
 } from "$lib/services/transfer-ucs03-aptos"
@@ -34,13 +35,13 @@ import { type Address, fromHex, type Hex } from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import type { Channel } from "$lib/schema/channel.ts"
-import { TransferSchema } from "$lib/schema/transfer-args.ts"
 import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/shared"
 import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/shared"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { getParsedAmountSafe } from "$lib/services/shared"
 import { getDerivedReceiverSafe } from "$lib/services/shared"
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
+import { validateTransfer, type ValidationResult } from "$lib/components/Transfer/validation.ts"
 
 export interface TransferState {
   readonly _tag: string
@@ -300,47 +301,55 @@ export class Transfer {
     const ucs03addressValue = Option.getOrNull(this.ucs03address)
     const wethQuoteTokenValue = Option.getOrNull(this.wethQuoteToken)
 
+    const maybeQuoteToken =
+      quoteTokenValue &&
+      (quoteTokenValue.type === "UNWRAPPED" || quoteTokenValue.type === "NEW_WRAPPED")
+        ? quoteTokenValue.quote_token
+        : undefined
+
+    const maybeWethQuoteToken =
+      wethQuoteTokenValue && "wethQuoteToken" in wethQuoteTokenValue
+        ? (wethQuoteTokenValue as { wethQuoteToken: string }).wethQuoteToken
+        : undefined
+
     return {
-      sourceChain: sourceChainValue
-        ? sourceChainValue.rpc_type === "evm"
-          ? sourceChainValue.toViemChain()
-          : sourceChainValue
-        : null,
+      sourceChain: sourceChainValue,
       sourceRpcType: sourceChainValue?.rpc_type,
       destinationRpcType: destinationChainValue?.rpc_type,
       sourceChannelId: channelValue?.source_channel_id,
       ucs03address: ucs03addressValue,
       baseToken: baseTokenValue?.denom,
       baseAmount: parsedAmountValue,
-      quoteToken: quoteTokenValue?.quote_token,
+      quoteToken: maybeQuoteToken,
       quoteAmount: parsedAmountValue,
       receiver: derivedReceiverValue,
-      timeoutHeight: 0n,
+      timeoutHeight: "0n",
       timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
-      wethQuoteToken: wethQuoteTokenValue?.wethQuoteToken
+      wethQuoteToken: maybeWethQuoteToken
     }
   })
 
-  transferResult = $derived.by(() => {
-    const validationEffect = Schema.decode(TransferSchema)(this.args)
-    const result = Effect.runSync(Effect.either(validationEffect))
-    return Either.isRight(result)
-      ? { isValid: true, args: result.right }
-      : { isValid: false, args: this.args }
-  })
+  validation = $derived.by<ValidationResult>(() => validateTransfer(this.args))
 
-  isValid = $derived(this.transferResult.isValid)
+  isValid = $derived(this.validation.isValid)
 
   submit = async () => {
+    const validation = this.validation
+    if (!validation.isValid) {
+      console.warn("Validation failed, errors:", validation.messages)
+      return
+    }
+
+    const typedArgs = validation.value
+
     if (Option.isNone(chains.data) || Option.isNone(this.sourceChain)) return
-    console.log(this.transferResult.args)
+    console.info("Validated args:", typedArgs)
 
     const sourceChainValue = this.sourceChain.value
 
     if (sourceChainValue.rpc_type === "evm") {
       let evmState: EvmTransferSubmission
       if (this.state._tag === "EVM") {
-        // If failed, reset the failed step to InProgress
         if (hasEvmFailedExit(this.state.state)) {
           switch (this.state.state._tag) {
             case "SwitchChain":
@@ -378,17 +387,12 @@ export class Transfer {
         evmState = EvmTransferSubmission.Filling()
       }
 
-      const newState = await evmNextState(evmState, this.transferResult.args, sourceChainValue)
+      const newState = await evmNextState(evmState, typedArgs, sourceChainValue)
       this._stateOverride = newState !== null ? TransferState.EVM(newState) : TransferState.Empty()
 
-      console.info("evmState: ", evmState)
       let currentEvmState = newState
       while (currentEvmState !== null && !hasEvmFailedExit(currentEvmState)) {
-        const nextEvmState = await evmNextState(
-          currentEvmState,
-          this.transferResult.args,
-          sourceChainValue
-        )
+        const nextEvmState = await evmNextState(currentEvmState, typedArgs, sourceChainValue)
         this._stateOverride =
           nextEvmState !== null ? TransferState.EVM(nextEvmState) : TransferState.Empty()
 
@@ -398,7 +402,6 @@ export class Transfer {
     } else if (sourceChainValue.rpc_type === "cosmos") {
       let cosmosState: CosmosTransferSubmission
       if (this.state._tag === "Cosmos") {
-        // If failed, reset the failed step to InProgress
         if (hasCosmosFailedExit(this.state.state)) {
           switch (this.state.state._tag) {
             case "SwitchChain":
@@ -428,7 +431,7 @@ export class Transfer {
 
       const newState = await cosmosNextState(
         cosmosState,
-        this.transferResult.args,
+        typedArgs,
         sourceChainValue,
         cosmosStore.connectedWallet
       )
@@ -439,7 +442,7 @@ export class Transfer {
       while (currentCosmosState !== null && !hasCosmosFailedExit(currentCosmosState)) {
         const nextCosmosState = await cosmosNextState(
           currentCosmosState,
-          this.transferResult.args,
+          typedArgs,
           sourceChainValue,
           cosmosStore.connectedWallet
         )
@@ -450,12 +453,8 @@ export class Transfer {
         if (currentCosmosState !== null && isCosmosComplete(currentCosmosState)) break
       }
     } else if (sourceChainValue.rpc_type === "aptos") {
-      console.info("sourceChain is aptos")
-      console.info("this.state._tag is: ", this.state._tag)
       let aptosState: AptosTransferSubmission
       if (this.state._tag === "Aptos") {
-        console.info("state._tag is aptos")
-        // If failed, reset the failed step to InProgress
         if (hasAptosFailedExit(this.state.state)) {
           switch (this.state.state._tag) {
             case "SwitchChain":
@@ -483,24 +482,18 @@ export class Transfer {
         aptosState = AptosTransferSubmission.Filling()
       }
 
-      console.info("aptosState: ", aptosState)
-
-      const newState = await aptosNextState(aptosState, this.transferResult.args, sourceChainValue)
+      const newState = await aptosNextState(aptosState, typedArgs, sourceChainValue)
       this._stateOverride =
         newState !== null ? TransferState.Aptos(newState) : TransferState.Empty()
 
-      let currentaptosState = newState
-      while (currentaptosState !== null && !hasAptosFailedExit(currentaptosState)) {
-        const nextaptosState = await aptosNextState(
-          currentaptosState,
-          this.transferResult.args,
-          sourceChainValue
-        )
+      let currentAptosState = newState
+      while (currentAptosState !== null && !hasAptosFailedExit(currentAptosState)) {
+        const nextAptosState = await aptosNextState(currentAptosState, typedArgs, sourceChainValue)
         this._stateOverride =
-          nextaptosState !== null ? TransferState.Aptos(nextaptosState) : TransferState.Empty()
+          nextAptosState !== null ? TransferState.Aptos(nextAptosState) : TransferState.Empty()
 
-        currentaptosState = nextaptosState
-        if (currentaptosState !== null && isAptosComplete(currentaptosState)) break
+        currentAptosState = nextAptosState
+        if (currentAptosState !== null && isAptosComplete(currentAptosState)) break
       }
     }
   }

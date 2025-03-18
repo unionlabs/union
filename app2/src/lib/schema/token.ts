@@ -72,7 +72,7 @@ export const EVMWethToken = AddressEvmCanonical.pipe(
 
 export const QuoteData = Schema.Union(
   Schema.Struct({
-    quote_token: Schema.String,
+    quote_token: Hex,
     type: Schema.Literal("UNWRAPPED", "NEW_WRAPPED")
   }),
   Schema.Struct({
@@ -88,7 +88,7 @@ export const QuoteData = Schema.Union(
 )
 
 export const WethTokenData = Schema.Union(
-  Schema.Struct({ wethQuoteToken: Schema.String }),
+  Schema.Struct({ wethQuoteToken: Hex }),
   Schema.Struct({ type: Schema.Literal("NO_WETH_QUOTE") }),
   Schema.Struct({ type: Schema.Literal("WETH_LOADING") }),
   Schema.Struct({ type: Schema.Literal("WETH_MISSING_ARGUMENTS") }),
