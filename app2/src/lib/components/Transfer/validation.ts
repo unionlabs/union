@@ -1,50 +1,64 @@
-import { Effect, Either, ParseResult, Schema } from "effect"
+import { Data, Effect, Either, ParseResult, Schema } from "effect"
 import {
   type AptosTransfer,
   type CosmosTransfer,
   type EVMTransfer,
   TransferSchema
 } from "$lib/schema/transfer-args.ts"
+import type { TransferSubmission as EvmTransferSubmission } from "$lib/services/transfer-ucs03-evm"
+import type { TransferSubmission as CosmosTransferSubmission } from "$lib/services/transfer-ucs03-cosmos"
+import type { TransferSubmission as AptosTransferSubmission } from "$lib/services/transfer-ucs03-aptos"
 
-export type ValidationSuccess = {
-  isValid: true
-  value: EVMTransfer | CosmosTransfer | AptosTransfer
-  errors: []
-  messages: []
-  fieldErrors: Record<string, Array<string>> // empty if valid
+export type TransferState = Data.TaggedEnum<{
+  Empty: {}
+  EVM: { state: EvmTransferSubmission }
+  Cosmos: { state: CosmosTransferSubmission }
+  Aptos: { state: AptosTransferSubmission }
+}>
+
+const TransferStateInternal = Data.taggedEnum<TransferState>()
+
+export const TransferState = {
+  Empty: () => TransferStateInternal.Empty(),
+  EVM: (state: EvmTransferSubmission) => TransferStateInternal.EVM({ state }),
+  Aptos: (state: AptosTransferSubmission) => TransferStateInternal.Aptos({ state }),
+  Cosmos: (state: CosmosTransferSubmission) => TransferStateInternal.Cosmos({ state })
 }
 
-export type ValidationFailure = {
-  isValid: false
-  value: undefined
-  errors: unknown
-  messages: Array<string>
-  fieldErrors: Record<string, Array<string>>
-}
+export type TransferStateUnion = TransferState
 
-export type ValidationResult = ValidationSuccess | ValidationFailure
+export type ValidationResult = Data.TaggedEnum<{
+  Success: {
+    value: EVMTransfer | CosmosTransfer | AptosTransfer
+    fieldErrors: Record<string, never>
+  }
+  Failure: {
+    errors: unknown
+    messages: Array<string>
+    fieldErrors: Record<string, Array<string>>
+  }
+}>
 
-const decodeAll = Schema.decodeUnknown(TransferSchema, { errors: "all" })
+const ValidationResultInternal = Data.taggedEnum<ValidationResult>()
+
+export const isValid = (result: ValidationResult): boolean => result._tag === "Success"
 
 export function validateTransfer(args: unknown): ValidationResult {
   const decodeEither = Effect.runSync(Effect.either(decodeAll(args)))
 
   if (Either.isRight(decodeEither)) {
-    return {
-      isValid: true,
+    return ValidationResultInternal.Success({
       value: decodeEither.right,
-      errors: [],
-      messages: [],
       fieldErrors: {}
-    }
+    })
   }
 
   const parseError = decodeEither.left
   const arrayOutput = ParseResult.ArrayFormatter.formatErrorSync(parseError)
 
-  const messages = arrayOutput.map(errObj => {
-    return `Path: [${errObj.path.join(", ")}], message: ${errObj.message}`
-  })
+  const messages = arrayOutput.map(
+    errObj => `Path: [${errObj.path.join(", ")}], message: ${errObj.message}`
+  )
 
   const fieldErrors: Record<string, Array<string>> = {}
 
@@ -64,11 +78,11 @@ export function validateTransfer(args: unknown): ValidationResult {
     }
   }
 
-  return {
-    isValid: false,
-    value: undefined,
+  return ValidationResultInternal.Failure({
     errors: parseError,
     messages,
     fieldErrors
-  }
+  })
 }
+
+const decodeAll = Schema.decodeUnknown(TransferSchema, { errors: "all" })
