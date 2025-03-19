@@ -6,12 +6,14 @@ import {
   TransferSubmission,
   TransferSubmitState
 } from "./state.ts"
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
 import { switchChain } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
+import { SwitchChainError } from "$lib/services/transfer-ucs03-evm/errors.ts"
+import type { SwitchChainErrorType } from "viem"
 
 export async function nextState(
   ts: TransferSubmission,
@@ -26,7 +28,21 @@ export async function nextState(
     SwitchChain: ({ state }) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(switchChain(chain))
+          const viemChainOption = chain.toViemChain()
+          const exit = await Effect.runPromiseExit(
+            Option.match(viemChainOption, {
+              onNone: () =>
+                Effect.fail(
+                  new SwitchChainError({
+                    cause: {
+                      name: "UserRejectedRequestError",
+                      message: "Could not convert to viem chain for chain switch."
+                    } as SwitchChainErrorType
+                  })
+                ),
+              onSome: switchChain
+            })
+          )
           return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
         },
         Complete: ({ exit }) => {
