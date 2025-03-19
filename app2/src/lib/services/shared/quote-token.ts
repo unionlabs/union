@@ -67,7 +67,7 @@ export const getQuoteToken = (
             address: channel.destination_port_id,
             abi: ucs03ZkgmAbi,
             functionName: "predictWrappedToken",
-            args: [BigInt(0), channel.destination_channel_id, base_token]
+            args: [0n, channel.destination_channel_id, base_token]
           }) as Promise<[Address, string]>,
         catch: error =>
           new GetQuoteError({ cause: `Failed to predict quote token (EVM): ${error}` })

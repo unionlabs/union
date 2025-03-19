@@ -9,8 +9,6 @@ import type {
 import { bech32, bytes } from "@scure/base"
 
 export const ChainId = Schema.String.pipe(Schema.brand("ChainId"))
-export type ChainId = typeof ChainId.Type
-
 // e.g. union.union-testnet-9
 export const UniversalChainId = Schema.String.pipe(Schema.brand("UniversalChainId")).pipe(
   Schema.pattern(/^[^:]+\.[^:]+$/)
@@ -39,17 +37,17 @@ export type RpcProtocolType = typeof RpcProtocolType.Type
 
 export class Rpc extends Schema.Class<Rpc>("Rpc")({
   type: RpcProtocolType,
-  url: Schema.String
+  url: Schema.URL
 }) {}
 
 export class Explorer extends Schema.Class<Explorer>("Explorer")({
-  address_url: Schema.String,
-  block_url: Schema.String,
+  address_url: Schema.URL,
+  block_url: Schema.URL,
   description: Schema.String,
   display_name: Schema.String,
-  home_url: Schema.String,
+  home_url: Schema.URL,
   name: Schema.String,
-  tx_url: Schema.String
+  tx_url: Schema.URL
 }) {}
 
 export class NoRpcError extends Data.TaggedError("NoRpcError")<{
