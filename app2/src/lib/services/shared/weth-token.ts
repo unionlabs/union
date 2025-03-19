@@ -1,11 +1,8 @@
 import { Effect } from "effect"
 import type { Hex } from "viem"
-import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import type { Channel } from "$lib/schema/channel.ts"
-import { getQuoteToken } from "./quote-token.ts"
 import { getPublicClient } from "$lib/services/evm/clients.ts"
 import type { Chain } from "$lib/schema/chain.ts"
-import { GetWethQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 
 export const getWethQuoteToken = (
   sourceChain: Chain,

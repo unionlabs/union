@@ -1,14 +1,8 @@
 import { Effect } from "effect"
-import {
-  encodeAbiParameters,
-  type Hash,
-  type WaitForTransactionReceiptErrorType,
-  type WriteContractErrorType
-} from "viem"
+import type { Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType } from "viem"
 import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
-import { getPublicClient, getWalletClient, PublicSourceViemClient } from "../evm/clients.ts"
+import { getPublicClient, getWalletClient } from "../evm/clients.ts"
 import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
-import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 import { generateSalt } from "$lib/services/shared"
