@@ -1,6 +1,5 @@
-
 import { Effect, Schedule } from "effect"
-import { type Address, createPublicClient, fromHex, http } from "viem"
+import { type Address, fromHex } from "viem"
 import type { Hex } from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import type { Channel } from "$lib/schema/channel.ts"
@@ -9,7 +8,7 @@ import { getCosmosPublicClient } from "$lib/services/cosmos/clients.ts"
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import { Aptos, AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
-import { getPublicClient } from "../evm/clients"
+import { getPublicClient } from "../evm/clients.ts"
 import type { TokenRawDenom } from "$lib/schema/token"
 
 const retryPolicy = Schedule.recurs(2).pipe(

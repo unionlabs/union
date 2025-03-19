@@ -1,6 +1,6 @@
 import { Effect } from "effect"
-import { quoteToken } from "../src/evm/quote-token"
-import { ViemPublicClientDestination } from "../src/evm/client"
+import { quoteToken } from "../src/evm/quote-token.ts"
+import { ViemPublicClientDestination } from "../src/evm/client.ts"
 import { createPublicClient, defineChain, http, toHex } from "viem"
 
 // @ts-ignore
