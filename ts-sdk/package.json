@@ -32,6 +32,8 @@
     "vitest": "^3.0.8"
   },
   "dependencies": {
+    "@cosmjs/cosmwasm-stargate": "^0.33.1",
+    "@cosmjs/stargate": "^0.33.1",
     "effect": "^3.13.12",
     "viem": "^2.23.12"
   }

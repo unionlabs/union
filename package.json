@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@cosmjs/proto-signing": "^0.33.1"
+  }
+}

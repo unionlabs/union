@@ -1,10 +1,8 @@
 import type { Address, Hex } from "viem"
-import type { FungibleAssetOrder } from "./index.js"
-import { Context, Effect } from "effect"
-import { ViemPublicClient, ViemPublicClientDestination, ViemPublicClientSource } from "../client.js"
+import { Effect } from "effect"
+import { ViemPublicClient, ViemPublicClientSource } from "../client.js"
 import { readErc20Meta } from "../erc20.js"
 import { predictQuoteToken } from "../quote-token.js"
-import { DestinationConfig } from "../quote-token.js"
 
 export type FungibleAssetOrderIntent = {
   sender: Address
