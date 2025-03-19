@@ -1,0 +1,48 @@
+// source: https://2ality.com/2025/01/tsconfig-json.html#summary
+{
+  "include": ["src/**/*", "test/**/*"],
+  "compilerOptions": {
+    // Specified explicitly (not derived from source file paths)
+    "rootDir": ".",
+    "outDir": "dist",
+
+    //========== Output: JavaScript ==========
+    "target": "ES2024",
+    "skipLibCheck": true,
+    "module": "NodeNext", // sets up "moduleResolution"
+    // Emptily imported modules must exist
+    "noUncheckedSideEffectImports": true,
+    "sourceMap": true, // .js.map files
+
+    //========== Compiling TS with tools other than tsc ==========
+    //----- Emitting .js -----
+    // Enforces keyword `type` for type imports etc.
+    "verbatimModuleSyntax": true, // implies "isolatedModules"
+    // - Forbids non-JavaScript language constructs such as JSX,
+    //   enums, constructor parameter properties and namespaces
+    // - Important for type stripping
+    "erasableSyntaxOnly": true, // TS 5.8+
+
+    //----- Emitting .d.ts -----
+    // - Enforces constraints that enable efficient .d.ts generation:
+    //   no inferred return types of exported functions etc.
+    // - Even though this option would be generally useful, it requires
+    //   that `declaration` or `composite` is true.
+    "isolatedDeclarations": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    //========== Type checking ==========
+    "strict": true, // activates several useful options
+    "exactOptionalPropertyTypes": true, // remove if not helpful
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+
+    //========== Non-code artifacts ==========
+    // Lets us import JSON files
+    "resolveJsonModule": true,
+  }
+}

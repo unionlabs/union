@@ -1,0 +1,26 @@
+{
+  "name": "union-ts-sdk-example",
+  "version": "1.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test-watch": "vitest"
+  },
+  "files": [
+    "./src",
+    "./dist"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "biome": "^0.3.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
+  },
+  "dependencies": {
+    "@unionlabs/sdk": "^1.0.7"
+  }
+}
