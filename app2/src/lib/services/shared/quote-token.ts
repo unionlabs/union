@@ -1,6 +1,5 @@
-
 import { Effect, Schedule } from "effect"
-import { type Address, createPublicClient, fromHex, http } from "viem"
+import { type Address, fromHex } from "viem"
 import type { Hex } from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import type { Channel } from "$lib/schema/channel.ts"

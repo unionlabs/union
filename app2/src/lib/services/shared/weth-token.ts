@@ -1,4 +1,4 @@
-import { Effect, Schedule } from "effect"
+import { Effect } from "effect"
 import type { Hex } from "viem"
 import type { Channel } from "$lib/schema/channel.ts"
 import { getPublicClient } from "$lib/services/evm/clients.ts"
