@@ -1,5 +1,6 @@
 import { encodeAbiParameters, type Hex } from "viem"
 import { batchAbi, fungibleAssetOrderAbi, instructionAbi } from "../abi/index.js"
+export * from "./fungible-asset-order.js"
 
 export type FungibleAssetOrder = { opcode: 3; version: 1; operand: Hex }
 /**
