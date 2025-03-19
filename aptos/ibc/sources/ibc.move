@@ -467,6 +467,33 @@ module ibc::ibc {
         proof_init: vector<u8>,
         proof_height: u64
     ) acquires IBCStore {
+        connection_open_try_impl(
+            counterparty_client_id,
+            counterparty_connection_id,
+            client_id,
+            proof_init,
+            proof_height,
+            |client_type, client_id, proof_height, proof_init, key, value| {
+                light_client::verify_membership(
+                    client_type,
+                    client_id,
+                    proof_height,
+                    proof_init,
+                    key,
+                    value
+                )
+            }
+        )
+    }
+
+    inline fun connection_open_try_impl(
+        counterparty_client_id: u32,
+        counterparty_connection_id: u32,
+        client_id: u32,
+        proof_init: vector<u8>,
+        proof_height: u64,
+        lc_verify_membership: |String, u32, u64, vector<u8>, vector<u8>, vector<u8>| u64
+    ) acquires IBCStore {
         let client_type = client_id_to_type(client_id);
         let connection_id = generate_connection_identifier();
 
@@ -495,22 +522,22 @@ module ibc::ibc {
 
         // Verify the connection state
         let err =
-            verify_connection_state(
+            lc_verify_membership(
                 client_type,
-                connection,
+                client_id,
                 proof_height,
                 proof_init,
-                counterparty_connection_id,
-                expected_connection
+                commitment::connection_commitment_key(counterparty_connection_id),
+                aptos_hash::keccak256(connection_end::encode(&expected_connection))
             );
         assert!(err == 0, err);
 
         event::emit(
             ConnectionOpenTry {
                 connection_id,
-                client_id: client_id,
-                counterparty_client_id: counterparty_client_id,
-                counterparty_connection_id: counterparty_connection_id
+                client_id,
+                counterparty_client_id,
+                counterparty_connection_id
             }
         );
 
@@ -1586,10 +1613,6 @@ module ibc::ibc {
         channel::encode(&channel)
     }
 
-    fun encode_connection(connection: ConnectionEnd): vector<u8> {
-        connection_end::encode(&connection)
-    }
-
     fun commit_channel(channel_id: u32, channel: Channel) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let key = commitment::channel_commitment_key(channel_id);
@@ -1602,7 +1625,7 @@ module ibc::ibc {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let key = commitment::connection_commitment_key(connection_id);
 
-        let encoded = encode_connection(connection);
+        let encoded = aptos_hash::keccak256(connection_end::encode(&connection));
         table::upsert(&mut store.commitments, key, encoded);
     }
 
@@ -1993,6 +2016,9 @@ module ibc::ibc {
     use std::string;
 
     #[test_only]
+    const CLIENT_TYPE: vector<u8> = b"client";
+
+    #[test_only]
     public(friend) fun init_module_for_tests(account: &signer) {
         init_module(account)
     }
@@ -2010,14 +2036,13 @@ module ibc::ibc {
     fun create_client_works(alice: &signer) acquires IBCStore, SignerRef {
         init_module_for_tests(alice);
 
-        let client_type = string::utf8(b"mock_client");
         let counterparty_chain_id = string::utf8(b"union");
         let client_state = vector[1, 2, 3];
         let consensus_state = vector[1, 2, 3];
         let event = create_lens_client_event::new(1, string::utf8(b"hello"), 2, 3);
 
         create_client_impl(
-            client_type,
+            string::utf8(CLIENT_TYPE),
             client_state,
             consensus_state,
             |_1, _2, _3, _4, _5| (
@@ -2040,7 +2065,11 @@ module ibc::ibc {
 
         assert!(
             event::was_event_emitted(
-                &CreateClient { client_id: 1, client_type, counterparty_chain_id }
+                &CreateClient {
+                    client_id: 1,
+                    client_type: string::utf8(CLIENT_TYPE),
+                    counterparty_chain_id
+                }
             ),
             1
         );
@@ -2063,14 +2092,13 @@ module ibc::ibc {
     fun create_client_fails_inactive_client(alice: &signer) acquires IBCStore, SignerRef {
         init_module_for_tests(alice);
 
-        let client_type = string::utf8(b"mock_client");
         let counterparty_chain_id = string::utf8(b"union");
         let client_state = vector[1, 2, 3];
         let consensus_state = vector[1, 2, 3];
         let event = create_lens_client_event::new(1, string::utf8(b"hello"), 2, 3);
 
         create_client_impl(
-            client_type,
+            string::utf8(CLIENT_TYPE),
             client_state,
             consensus_state,
             |_1, _2, _3, _4, _5| (
@@ -2080,5 +2108,142 @@ module ibc::ibc {
             |_s, _s2| 1,
             |_s, _s2| 10
         );
+    }
+
+    #[test_only]
+    fun prepare_client() acquires IBCStore, SignerRef {
+        create_client_impl(
+            string::utf8(b"client"),
+            vector[1, 2],
+            vector[1, 2],
+            |_1, _2, _3, _4, _5| (
+                vector[1, 2], vector[1, 2], string::utf8(b"chain"), option::none()
+            ),
+            // returning nonzero status which means the client is not active
+            |_s, _s2| 0,
+            |_s, _s2| 10
+        );
+
+    }
+
+    #[test(alice = @ibc)]
+    fun connection_open_init_works(alice: &signer) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+        prepare_client();
+
+        let client_id = 1;
+        let counterparty_client_id = 2;
+
+        connection_open_init(client_id, counterparty_client_id);
+
+        let connection =
+            connection_end::new(
+                CONN_STATE_INIT,
+                client_id,
+                counterparty_client_id,
+                0
+            );
+
+        assert!(get_connection(1) == option::some(connection), 1);
+
+        assert!(
+            get_commitment(commitment::connection_commitment_key(1))
+                == aptos_hash::keccak256(connection_end::encode(&connection)),
+            1
+        );
+
+        assert!(
+            event::was_event_emitted(
+                &ConnectionOpenInit { connection_id: 1, client_id, counterparty_client_id }
+            ),
+            1
+        );
+    }
+
+    #[test(alice = @ibc)]
+    fun connection_open_try_works(alice: &signer) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+        prepare_client();
+
+        let client_id = 1;
+        let counterparty_client_id = 2;
+        let counterparty_connection_id = 3;
+        let proof_init = vector[1, 2];
+        let proof_height = 10;
+        let counterparty_connection =
+            connection_end::encode(
+                &connection_end::new(
+                    CONN_STATE_INIT,
+                    counterparty_client_id,
+                    client_id,
+                    0
+                )
+            );
+
+        connection_open_try_impl(
+            counterparty_client_id,
+            counterparty_connection_id,
+            client_id,
+            proof_init,
+            proof_height,
+            |client_type, client_id_, proof_height_, proof_init_, key, value| {
+                assert!(client_type == string::utf8(CLIENT_TYPE), 1);
+                assert!(client_id_ == client_id, 1);
+                assert!(proof_height == proof_height_, 1);
+                assert!(proof_init == proof_init_, 1);
+                assert!(
+                    key
+                        == commitment::connection_commitment_key(
+                            counterparty_connection_id
+                        ),
+                    1
+                );
+                assert!(
+                    value == aptos_hash::keccak256(counterparty_connection),
+                    1
+                );
+
+                0
+            }
+        );
+
+        let connection =
+            connection_end::new(
+                CONN_STATE_TRYOPEN,
+                client_id,
+                counterparty_client_id,
+                counterparty_connection_id
+            );
+
+        assert!(get_connection(1) == option::some(connection), 1);
+
+        assert!(
+            get_commitment(commitment::connection_commitment_key(1))
+                == aptos_hash::keccak256(connection_end::encode(&connection)),
+            1
+        );
+
+        assert!(
+            event::was_event_emitted(
+                &ConnectionOpenTry {
+                    connection_id: 1,
+                    client_id,
+                    counterparty_client_id,
+                    counterparty_connection_id
+                }
+            ),
+            1
+        );
+    }
+
+    #[test(alice = @ibc)]
+    #[expected_failure(location = Self, abort_code = 1)]
+    fun connection_open_try_fails_with_membership_failure(
+        alice: &signer
+    ) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+        prepare_client();
+
+        connection_open_try_impl(0, 0, 1, vector[1, 2], 1, |_0, _1, _2, _3, _4, _5| { 1 });
     }
 }
