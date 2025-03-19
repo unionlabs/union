@@ -100,9 +100,10 @@ const displayDenom = $derived(
             {/if}
           </section>
           <section>
-            {chain.universal_chain_id}
+            <div>Chain: {chain.universal_chain_id}</div>
+            <div>Raw Denom: {denom}</div>
             {#each token.value.wrapping as wrap}
-              ← {wrap.unwrapped_chain.universal_chain_id}
+              <div>← {wrap.unwrapped_chain.universal_chain_id}</div>
             {/each}
           </section>
 

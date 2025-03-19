@@ -1,35 +1,31 @@
 import { Effect } from "effect"
-import { type Address, createPublicClient, fromHex, http } from "viem"
+import { type Address, fromHex } from "viem"
 import type { Hex } from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import type { Channel } from "$lib/schema/channel.ts"
-import { request } from "graphql-request"
-import { GRAQPHQL_URL } from "@unionlabs/client"
 import type { Chain } from "$lib/schema/chain.ts"
-import { getChainFromWagmi } from "$lib/wallet/evm"
 import { getCosmosPublicClient } from "$lib/services/cosmos/clients.ts"
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import { Aptos, AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
+import { getPublicClient } from "../evm/clients"
+import type { TokenRawDenom } from "$lib/schema/token"
 
 export const getQuoteToken = (
   sourceChain: Chain,
-  base_token: Hex,
+  base_token: TokenRawDenom,
   channel: Channel,
   destinationChain: Chain
 ) =>
   Effect.gen(function* () {
-    const { v1_ibc_union_tokens } = yield* Effect.tryPromise({
-      try: () =>
-        request(GRAQPHQL_URL, tokenWrappingQuery, {
-          base_token,
-          destination_channel_id: channel.source_channel_id,
-          source_chain_id: sourceChain.chain_id
-        }),
-      catch: error => {
-        return new GetQuoteError({ cause: `Failed to get quote token from GraphQL: ${error}` })
-      }
+    // TODO: make safer
+    const { v1_ibc_union_tokens } = yield* tokenWrappingQuery({
+      base_token,
+      destination_channel_id: channel.source_channel_id,
+      source_chain_id: sourceChain.chain_id
     })
+
+    console.log(v1_ibc_union_tokens)
 
     const quote_token = v1_ibc_union_tokens[0]?.wrapping[0]?.unwrapped_address_hex
     if (quote_token) {
@@ -37,9 +33,7 @@ export const getQuoteToken = (
     }
 
     if (destinationChain.rpc_type === "cosmos") {
-      const rpc = yield* destinationChain
-        .requireRpcUrl("rpc")
-        .pipe(Effect.mapError(err => new GetQuoteError({ cause: err.message })))
+      const rpc = yield* destinationChain.requireRpcUrl("rpc")
 
       const client = yield* getCosmosPublicClient(rpc.toString())
       const predictedQuoteToken = yield* Effect.tryPromise({
@@ -51,26 +45,19 @@ export const getQuoteToken = (
               token: base_token
             }
           }),
-        catch: error =>
-          new GetQuoteError({ cause: `Failed to predict quote token (Cosmos): ${error}` })
+        catch: error => new GetQuoteError({ cause: error })
       }).pipe(Effect.map(res => res.wrapped_token as Hex))
 
       return { type: "NEW_WRAPPED" as const, quote_token: predictedQuoteToken }
     }
 
     if (destinationChain.rpc_type === "evm") {
-      const rpc = yield* destinationChain
-        .requireRpcUrl("rpc")
-        .pipe(Effect.mapError(err => new GetQuoteError({ cause: err.message })))
+      const client = yield* getPublicClient(destinationChain)
 
-      const client = createPublicClient({
-        chain: getChainFromWagmi(Number.parseInt(channel.destination_chain_id)),
-        transport: http(rpc.toString())
-      })
       const predictedQuoteToken = yield* Effect.tryPromise({
         try: () =>
           client.readContract({
-            address: `0x${channel.destination_port_id}`,
+            address: channel.destination_port_id,
             abi: ucs03ZkgmAbi,
             functionName: "predictWrappedToken",
             args: [0, channel.destination_channel_id, base_token]
@@ -85,9 +72,7 @@ export const getQuoteToken = (
     if (destinationChain.rpc_type === "aptos") {
       let network: Network
 
-      const rpc = yield* destinationChain
-        .requireRpcUrl("rpc")
-        .pipe(Effect.mapError(err => new GetQuoteError({ cause: err.message })))
+      const rpc = yield* destinationChain.requireRpcUrl("rpc")
 
       console.info("rpc: ", rpc.origin)
       if (channel.destination_chain_id === "250") {

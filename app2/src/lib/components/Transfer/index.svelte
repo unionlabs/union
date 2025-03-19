@@ -55,32 +55,6 @@ function getStatus(
   }
 }
 
-function getError(state: TransferStateUnion): string | null {
-  switch (state._tag) {
-    case "Empty":
-      return null
-    case "EVM":
-    case "Aptos":
-    case "Cosmos": {
-      const innerState = state.state
-      if (innerState._tag === "Filling") return null
-      if (
-        innerState.state._tag === "Complete" &&
-        innerState.state.exit._tag === "Failure" &&
-        "cause" in innerState.state.exit
-      ) {
-        const cause = innerState.state.exit.cause
-        return typeof cause === "object" && cause && "cause" in cause
-          ? String(cause.cause)
-          : String(cause)
-      }
-      return null
-    }
-    default:
-      return null
-  }
-}
-
 // Simplified step name extractor
 function getStepName(state: TransferStateUnion): string | null {
   switch (state._tag) {
@@ -134,8 +108,6 @@ let buttonText = $derived(
 {#if transfer.state._tag !== "Empty"}
   {#if getStatus(transfer.state) === "filling"}
     <div>Select assets and amounts to begin transfer.</div>
-  {:else if getStatus(transfer.state) === "failed"}
-    <div style="color: red;">Error: {getError(transfer.state) ?? "Unknown error"}</div>
   {:else if getStatus(transfer.state) === "processing"}
     <div>Processing {getStepName(transfer.state) ?? "step"}...</div>
   {:else if getStatus(transfer.state) === "complete"}
