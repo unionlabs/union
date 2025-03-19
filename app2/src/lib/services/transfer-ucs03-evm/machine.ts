@@ -10,15 +10,13 @@ import { Effect, Option } from "effect"
 import { switchChain } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
-import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 import { SwitchChainError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import type { SwitchChainErrorType } from "viem"
 
 export async function nextState(
   ts: TransferSubmission,
-  params: ValidTransfer["args"],
-  chain: Chain
+  params: ValidTransfer["args"]
 ): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
     Filling: () => {
@@ -28,7 +26,7 @@ export async function nextState(
     SwitchChain: ({ state }) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
-          const viemChainOption = chain.toViemChain()
+          const viemChainOption = params.sourceChain.toViemChain()
           const exit = await Effect.runPromiseExit(
             Option.match(viemChainOption, {
               onNone: () =>

@@ -11,7 +11,7 @@ import type { TransferSubmission as AptosTransferSubmission } from "$lib/service
 
 export type TransferState = Data.TaggedEnum<{
   Empty: {}
-  EVM: { state: EvmTransferSubmission }
+  Evm: { state: EvmTransferSubmission }
   Cosmos: { state: CosmosTransferSubmission }
   Aptos: { state: AptosTransferSubmission }
 }>
@@ -20,7 +20,7 @@ const TransferStateInternal = Data.taggedEnum<TransferState>()
 
 export const TransferState = {
   Empty: () => TransferStateInternal.Empty(),
-  EVM: (state: EvmTransferSubmission) => TransferStateInternal.EVM({ state }),
+  Evm: (state: EvmTransferSubmission) => TransferStateInternal.Evm({ state }),
   Aptos: (state: AptosTransferSubmission) => TransferStateInternal.Aptos({ state }),
   Cosmos: (state: CosmosTransferSubmission) => TransferStateInternal.Cosmos({ state })
 }
