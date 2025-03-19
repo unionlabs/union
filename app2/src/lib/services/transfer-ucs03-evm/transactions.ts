@@ -1,6 +1,6 @@
 import { Effect } from "effect"
-import type { Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType } from "viem"
-import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
+import type { Hash, WaitForTransactionReceiptErrorType } from "viem"
+import { WaitForTransactionReceiptError } from "./errors.ts"
 import { getPublicClient, getWalletClient } from "../evm/clients.ts"
 import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
 import type { Chain } from "$lib/schema/chain.ts"
