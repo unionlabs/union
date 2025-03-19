@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Effect } from "effect"
-import { readContract, writeContract } from "../../src/evm/contract.js"
-import { ViemPublicClient, ViemWalletClient } from "../../src/evm/client.js"
-import type { PublicClient, WalletClient } from "viem"
+import { readContract } from "../../src/evm/contract.js"
+import type { WalletClient } from "viem"
 
 // Mock clients for testing
 // @ts-ignore we do a partial mock
@@ -44,6 +43,7 @@ describe("Contract Module", () => {
       }
 
       // Execute
+      // @ts-ignore it's a mock client
       const result = await Effect.runPromise(readContract(mockPublicClient, testParams))
 
       // Verify

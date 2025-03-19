@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import { writeContract } from "../src/evm/contract.js"
 import { ViemWalletClient } from "../src/evm/client.js"
-import { createWalletClient, http, parseEther, erc20Abi } from "viem"
+import { createWalletClient, http, erc20Abi } from "viem"
 import { sepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 

@@ -1,1 +1,1 @@
-export { extractErrorDetails } from './extract-error-details.js'
+export { extractErrorDetails } from "./extract-error-details.js"

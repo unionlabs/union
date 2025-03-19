@@ -15,16 +15,13 @@ export const quoteToken = ({
 }) =>
   Effect.gen(function* () {
     const client = (yield* ViemPublicClientDestination).client
-    
-    const result = yield* readContract(
-      client,
-      {
-        address: ucs03address,
-        abi: ucs03abi,
-        functionName: "predictWrappedToken",
-        args: [0n, destinationChannelId, baseToken]
-      }
-    )
+
+    const result = yield* readContract(client, {
+      address: ucs03address,
+      abi: ucs03abi,
+      functionName: "predictWrappedToken",
+      args: [0n, destinationChannelId, baseToken]
+    })
 
     // Extract the address from the result tuple
     return result[0]
