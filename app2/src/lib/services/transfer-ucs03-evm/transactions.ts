@@ -34,46 +34,6 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
       Effect.provideService(PublicViemClient, { client })
     )
 
-    console.log({
-      account: account.address as `0x${string}`,
-      abi: ucs03abi,
-      chain: sepolia,
-      functionName: "send",
-      address: transfer.ucs03address as `0x${string}`,
-      args: [
-        transfer.sourceChannelId,
-        transfer.timeoutHeight,
-        BigInt(transfer.timeoutTimestamp),
-        salt,
-        Batch([
-          FungibleAssetOrder([
-            account.address as `0x${string}`,
-            transfer.receiver as `0x${string}`,
-            transfer.baseToken,
-            transfer.baseAmount,
-            onchainBaseTokenMeta.symbol,
-            onchainBaseTokenMeta.name,
-            onchainBaseTokenMeta.decimals,
-            0n,
-            transfer.quoteToken,
-            transfer.quoteAmount
-          ]),
-          FungibleAssetOrder([
-            account.address as `0x${string}`,
-            transfer.receiver as `0x${string}`,
-            transfer.baseToken,
-            transfer.baseAmount,
-            onchainBaseTokenMeta.symbol,
-            onchainBaseTokenMeta.name,
-            onchainBaseTokenMeta.decimals,
-            0n,
-            transfer.quoteToken,
-            transfer.quoteAmount
-          ])
-        ])
-      ]
-    })
-
     return yield* Effect.tryPromise({
       try: () => {
         return walletClient.writeContract({
@@ -96,7 +56,7 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
                 onchainBaseTokenMeta.symbol,
                 onchainBaseTokenMeta.name,
                 onchainBaseTokenMeta.decimals,
-                0n,
+                9n, // when unwrapping, otherwise 0
                 transfer.quoteToken,
                 transfer.quoteAmount
               ])
