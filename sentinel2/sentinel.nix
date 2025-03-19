@@ -1,45 +1,139 @@
-{
-  description = "Example Union TypeScript SDK usage";
+{ self, ... }:
+let
+  sentinel2Module = { lib, pkgs, config, ... }:
+    with lib;
+    let
+      cfg = config.services.sentinel2;
+    in
+    {
+      options.services.sentinel2 = {
+        enable = mkEnableOption "sentinel2 Service";
+        package = mkOption {
+          type = types.package;
+          default = self.packages.${pkgs.system}.sentinel2;
+        };
+        cycleIntervalMs = mkOption {
+          type = types.number;
+          description = "Interval between cycles in milliseconds";
+        };
+        logLevel = mkOption {
+          type = types.str;
+          default = "info";
+          description = "Log level for sentinel2";
+        };
+      };
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-parts.url = "github:hercules-ci/flake-parts";
-  };
-
-  outputs = inputs@{ flake-parts, nixpkgs, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      systems =
-        [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-      perSystem = { config, self', inputs', pkgs, lib, system, ... }:
-        let packageJson = lib.importJSON ./package.json;
-        in {
-          packages = {
-            sentinelv2 = pkgs.buildNpmPackage {
-              pname = packageJson.name;
-              inherit (packageJson) version;
-              src = ./.;
-              sourceRoot = "sentinel2";
-              npmDepsHash = "sha256-IFXTB+dIbRWhC8GZEWbJPSOQnNSDP0+KuKDGx5R8dhw=";
-              
-              postInstall = ''
-                mkdir -p $out/bin
-                cat > $out/bin/${packageJson.name} << EOF
-                #!/usr/bin/env node
-                require('../lib/node_modules/${packageJson.name}/dist/src/index.js')
-                EOF
-                chmod +x $out/bin/${packageJson.name}
-              '';
-            };
+      config = mkIf cfg.enable {
+        systemd.services.sentinel2 = {
+          description = "sentinel2 Service";
+          wantedBy = [ "multi-user.target" ];
+          after = [ "network.target" ];
+          serviceConfig = {
+            Type = "simple";
+            ExecStart = ''
+              ${pkgs.lib.getExe cfg.package} --config ${
+                pkgs.writeText "config.json" (
+                  builtins.toJSON {
+                    inherit (cfg) cycleIntervalMs;
+                  }
+                )
+              }
+            '';
+            Restart = "always";
+            RestartSec = 10;
           };
-
-          devShells.default = pkgs.mkShell {
-            buildInputs = with pkgs; [
-              nodejs
-              nodePackages_latest.typescript-language-server
-              biome
-              nixfmt
-            ];
+          environment = {
+            NODE_ENV = "production";
+            LOG_LEVEL = cfg.logLevel;
           };
         };
+      };
     };
+in
+{
+  perSystem =
+    {
+      pkgs,
+      jsPkgs,
+      ensureAtRepositoryRoot,
+      lib,
+      ...
+    }:
+    let
+      deps = with jsPkgs; [
+        python3
+        pkg-config
+        nodePackages_latest.nodejs
+        nodePackages_latest."patch-package"
+      ];
+      packageJSON = lib.importJSON ./package.json;
+    in
+    {
+      packages = {
+        sentinel2 = jsPkgs.buildNpmPackage {
+          npmDepsHash = "sha256-IFXTB+dIbRWhC8GZEWbJPSOQnNSDP0+KuKDGx5R8dhw=";
+          src = ./.;
+          sourceRoot = "sentinel2";
+          npmFlags = [
+            "--loglevel=verbose"
+            "--enable-pre-post-scripts"
+          ];
+          pname = packageJSON.name;
+          inherit (packageJSON) version;
+          nativeBuildInputs = deps;
+          buildInputs = [ pkgs.bashInteractive ];
+          installPhase = ''
+                        echo "Current directory: $(pwd)"
+                        echo "out is $out"
+
+                        # 1) Copy the compiled ESM .js
+                        mkdir -p $out/lib
+                        cp -r dist/* $out/lib
+
+                        # 2) Copy node_modules
+                        cp -r node_modules $out/lib/node_modules
+
+                        # 3) Copy package.json
+                        cp package.json $out/lib
+
+                        # 4) Create a Bash wrapper in $out/bin
+                        mkdir -p $out/bin
+
+                        # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
+                          cat <<EOF > $out/bin/sentinel2
+            #!${pkgs.bashInteractive}/bin/bash
+            cd "$out/lib"
+            export NODE_PATH="$out/lib/node_modules"
+            EOF
+
+                        echo 'exec '"${pkgs.nodePackages_latest.nodejs}/bin/node"' sentinel2.js "$@"' >> $out/bin/sentinel2
+
+                        chmod +x $out/bin/sentinel2
+          '';
+
+          doDist = false;
+          NODE_OPTIONS = "--no-warnings";
+        };
+      };
+
+      apps = {
+        sentinel2-dev = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "sentinel2-dev-server";
+            runtimeInputs = deps;
+            text = ''
+                      ${ensureAtRepositoryRoot}
+                      cd sentinel2/
+
+                  npm run build
+              node dist/src/sentinel2.js "$@"
+            '';
+          };
+        };
+      };
+    };
+
+  # Flake-wide NixOS module definition
+  flake.nixosModules.sentinel2 = sentinel2Module;
 }
