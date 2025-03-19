@@ -41,39 +41,12 @@ import { cosmosStore } from "$lib/wallet/cosmos"
 import { getParsedAmountSafe } from "$lib/services/shared"
 import { getDerivedReceiverSafe } from "$lib/services/shared"
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
-import { validateTransfer, type ValidationResult } from "$lib/components/Transfer/validation.ts"
-
-export interface TransferState {
-  readonly _tag: string
-}
-
-export interface EmptyState extends TransferState {
-  readonly _tag: "Empty"
-}
-
-export interface EVMState extends TransferState {
-  readonly _tag: "EVM"
-  readonly state: EvmTransferSubmission
-}
-
-export interface CosmosState extends TransferState {
-  readonly _tag: "Cosmos"
-  readonly state: CosmosTransferSubmission
-}
-
-export interface AptosState extends TransferState {
-  readonly _tag: "Aptos"
-  readonly state: AptosTransferSubmission
-}
-
-export type TransferStateUnion = EmptyState | EVMState | CosmosState | AptosState
-
-export const TransferState = {
-  Empty: (): EmptyState => ({ _tag: "Empty" }),
-  EVM: (state: EvmTransferSubmission): EVMState => ({ _tag: "EVM", state }),
-  Aptos: (state: AptosTransferSubmission): AptosState => ({ _tag: "Aptos", state }),
-  Cosmos: (state: CosmosTransferSubmission): CosmosState => ({ _tag: "Cosmos", state })
-}
+import {
+  TransferState,
+  type TransferStateUnion,
+  validateTransfer,
+  type ValidationResult
+} from "$lib/components/Transfer/validation.ts"
 
 export class Transfer {
   raw = new RawTransferSvelte()
@@ -252,10 +225,6 @@ export class Transfer {
       return null
     }
 
-    if (this.sourceChain.value.rpc_type !== "evm") return
-
-    this.wethQuoteToken = Option.some({ type: "WETH_LOADING" } as const)
-
     const sourceChainValue = this.sourceChain.value
     const ucs03addressValue = this.ucs03address.value
     const channelValue = this.channel.value
@@ -263,6 +232,17 @@ export class Transfer {
     const setWethQuoteToken = (value: Option.Option<typeof WethTokenData.Type>) => {
       this.wethQuoteToken = value
     }
+
+    if (this.sourceChain.value.rpc_type !== "evm") {
+      setWethQuoteToken(
+        Option.some({
+          type: "NOT_EVM"
+        } as const)
+      )
+      return
+    }
+
+    this.wethQuoteToken = Option.some({ type: "WETH_LOADING" } as const)
 
     return Effect.gen(function* () {
       const result = yield* getWethQuoteTokenEffect(
@@ -323,7 +303,7 @@ export class Transfer {
       quoteToken: maybeQuoteToken,
       quoteAmount: parsedAmountValue,
       receiver: derivedReceiverValue,
-      timeoutHeight: "0n",
+      timeoutHeight: "0",
       timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
       wethQuoteToken: maybeWethQuoteToken
     }
@@ -331,11 +311,9 @@ export class Transfer {
 
   validation = $derived.by<ValidationResult>(() => validateTransfer(this.args))
 
-  isValid = $derived(this.validation.isValid)
-
   submit = async () => {
     const validation = this.validation
-    if (!validation.isValid) {
+    if (validation._tag !== "Success") {
       console.warn("Validation failed, errors:", validation.messages)
       return
     }

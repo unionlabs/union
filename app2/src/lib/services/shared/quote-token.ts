@@ -1,5 +1,6 @@
-import { Effect } from "effect"
-import { type Address, fromHex } from "viem"
+
+import { Effect, Schedule } from "effect"
+import { type Address, createPublicClient, fromHex, http } from "viem"
 import type { Hex } from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import type { Channel } from "$lib/schema/channel.ts"
@@ -10,6 +11,11 @@ import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import { Aptos, AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
 import { getPublicClient } from "../evm/clients.ts"
 import type { TokenRawDenom } from "$lib/schema/token"
+
+const retryPolicy = Schedule.recurs(2).pipe(
+  Schedule.compose(Schedule.exponential(200)),
+  Schedule.compose(Schedule.spaced(500))
+)
 
 export const getQuoteToken = (
   sourceChain: Chain,
@@ -24,8 +30,6 @@ export const getQuoteToken = (
       destination_channel_id: channel.source_channel_id,
       source_chain_id: sourceChain.chain_id
     })
-
-    console.log(v1_ibc_union_tokens)
 
     const quote_token = v1_ibc_union_tokens[0]?.wrapping[0]?.unwrapped_address_hex
     if (quote_token) {
@@ -45,8 +49,12 @@ export const getQuoteToken = (
               token: base_token
             }
           }),
-        catch: error => new GetQuoteError({ cause: error })
-      }).pipe(Effect.map(res => res.wrapped_token as Hex))
+        catch: error =>
+          new GetQuoteError({ cause: `Failed to predict quote token (Cosmos): ${error}` })
+      }).pipe(
+        Effect.map(res => res.wrapped_token as Hex),
+        Effect.retry(retryPolicy)
+      )
 
       return { type: "NEW_WRAPPED" as const, quote_token: predictedQuoteToken }
     }
@@ -60,11 +68,14 @@ export const getQuoteToken = (
             address: channel.destination_port_id,
             abi: ucs03ZkgmAbi,
             functionName: "predictWrappedToken",
-            args: [0, channel.destination_channel_id, base_token]
+            args: [BigInt(0), channel.destination_channel_id, base_token]
           }) as Promise<[Address, string]>,
         catch: error =>
           new GetQuoteError({ cause: `Failed to predict quote token (EVM): ${error}` })
-      }).pipe(Effect.map(([address]) => address))
+      }).pipe(
+        Effect.map(([address]) => address),
+        Effect.retry(retryPolicy)
+      )
 
       return { type: "NEW_WRAPPED" as const, quote_token: predictedQuoteToken }
     }
@@ -83,10 +94,8 @@ export const getQuoteToken = (
         )
       }
 
-      const config = new AptosConfig({ network, fullnode: `${rpc.origin}/v1` }) //TODO: rpc.origin is coming without "/v1" at the end, discuss this later
-
+      const config = new AptosConfig({ network, fullnode: `${rpc.origin}/v1` })
       const aptosClient = new Aptos(config)
-
       const output = yield* Effect.tryPromise({
         try: () =>
           aptosClient.view({
@@ -102,7 +111,7 @@ export const getQuoteToken = (
           }),
         catch: error =>
           new GetQuoteError({ cause: `Failed to predict quote token (Aptos): ${error}` })
-      })
+      }).pipe(Effect.retry(retryPolicy))
 
       const wrappedAddressHex = output[0]?.toString()
       if (!wrappedAddressHex) {
@@ -110,6 +119,7 @@ export const getQuoteToken = (
           new GetQuoteError({ cause: "Failed to get wrapped address from Aptos" })
         )
       }
+
       return { type: "NEW_WRAPPED" as const, quote_token: wrappedAddressHex }
     }
 

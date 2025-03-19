@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import { Effect, Schedule } from "effect"
 import type { Hex } from "viem"
 import type { Channel } from "$lib/schema/channel.ts"
 import { getPublicClient } from "$lib/services/evm/clients.ts"
@@ -12,7 +12,6 @@ export const getWethQuoteToken = (
 ) =>
   Effect.gen(function* () {
     const publicClient = yield* getPublicClient(sourceChain)
-
     // const wethAddress = yield* Effect.tryPromise({
     //   try: () => new Promise(() => {Promise.resolve("0x000")}),
 
