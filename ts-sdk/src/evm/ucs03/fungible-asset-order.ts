@@ -6,7 +6,7 @@ import { readErc20Meta } from "../erc20.js"
 import { predictQuoteToken } from "../quote-token.js"
 import { DestinationConfig } from "../quote-token.js"
 
-type FungibleAssetOrderIntent = {
+export type FungibleAssetOrderIntent = {
   sender: Address
   receiver: Address
   baseToken: Hex
@@ -14,7 +14,7 @@ type FungibleAssetOrderIntent = {
   quoteAmount: bigint
 }
 
-const createFungibleAssetOrder = (intent: FungibleAssetOrderIntent) =>
+export const createFungibleAssetOrder = (intent: FungibleAssetOrderIntent) =>
   Effect.gen(function* () {
     const sourceClient = (yield* ViemPublicClientSource).client
     const erc20Meta = yield* readErc20Meta(intent.baseToken).pipe(
