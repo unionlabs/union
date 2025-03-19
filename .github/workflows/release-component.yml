@@ -29,6 +29,14 @@ jobs:
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               echo "ARCHIVE=true" >> $GITHUB_OUTPUT
               ;;
+            bundle-union-testnet-10)
+              attrs="[\"bundle-union-testnet-10\", \"bundle-union-testnet-10-image\"]"
+              systems="[\"x86_64-linux\", \"aarch64-linux\"]"
+              echo "COMPONENT=$component" >> $GITHUB_OUTPUT
+              echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
+              echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
+              echo "ARCHIVE=true" >> $GITHUB_OUTPUT
+              ;;
             cometbls-light-client)
               attrs="[\"cometbls-light-client\"]"
               systems="[\"x86_64-linux\"]"

@@ -117,6 +117,19 @@
           };
         };
 
+        bundle-union-testnet-10-image = mkUnionvisorImage self'.packages.bundle-union-testnet-10;
+
+        bundle-union-testnet-10 = mkBundle {
+          name = "union-testnet-10";
+          versions = uniondBundleVersions.complete;
+          genesis = ../networks/genesis/union-testnet-10/genesis.json;
+          meta = {
+            binary_name = "uniond";
+            versions_directory = "versions";
+            fallback_version = uniondBundleVersions.first;
+          };
+        };
+
         bundle-union-1-next = mkBundle {
           name = "union-1-next";
           versions = uniondBundleVersions.complete;
