@@ -1,5 +1,10 @@
 import { Context, Data } from "effect"
-import type { PublicClient, ReadContractErrorType } from "viem"
+import type {
+  PublicClient,
+  ReadContractErrorType,
+  WalletClient,
+  WriteContractErrorType
+} from "viem"
 
 export class PublicSourceViemClient extends Context.Tag("PublicSourceViemClient")<
   PublicSourceViemClient,
@@ -20,6 +25,18 @@ export class PublicViemClient extends Context.Tag("PublicViemClient")<
   { readonly client: PublicClient }
 >() {}
 
+/**
+ * A wallet client that can be used for signing transactions
+ */
+export class ViemWalletClient extends Context.Tag("ViemWalletClient")<
+  ViemWalletClient,
+  { readonly client: WalletClient }
+>() {}
+
 export class ReadContractError extends Data.TaggedError("ReadContractError")<{
   cause: ReadContractErrorType
+}> {}
+
+export class WriteContractError extends Data.TaggedError("WriteContractError")<{
+  cause: WriteContractErrorType
 }> {}
