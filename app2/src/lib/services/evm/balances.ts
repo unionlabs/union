@@ -65,7 +65,7 @@ const fetchEvmErc20Balance = ({
     catch: err => new ReadContractError({ cause: err as ReadContractErrorType })
   })
 
-// Core function to fetch a single EVM balance
+// Core function to fetch a single Evm balance
 export const fetchEvmBalance = ({
   chain,
   tokenAddress,
