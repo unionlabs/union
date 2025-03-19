@@ -10,14 +10,13 @@ import { sepolia } from "viem/chains"
 import { Batch, FungibleAssetOrder } from "@unionlabs/sdk/evm/ucs03"
 import { ucs03abi } from "@unionlabs/sdk/evm/abi"
 import { readErc20Meta } from "@unionlabs/sdk/evm/erc20"
-import { PublicViemClient } from "@unionlabs/sdk/evm"
+import { ViemPublicClient, writeContract } from "@unionlabs/sdk/evm"
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
     if (transfer.sourceRpcType !== "evm") {
       return yield* Effect.fail(new Error("Only EVM transfers are supported"))
     }
-    const walletClient = yield* getWalletClient(chain)
     const account = yield* Effect.flatMap(getAccount, account =>
       account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
     )
@@ -25,43 +24,36 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
 
     const client = yield* getPublicClient(chain)
     const onchainBaseTokenMeta = yield* readErc20Meta(transfer.baseToken).pipe(
-      Effect.provideService(PublicViemClient, { client })
+      Effect.provideService(ViemPublicClient, { client })
     )
 
-    return yield* Effect.tryPromise({
-      try: () => {
-        return walletClient.writeContract({
-          account: account.address as `0x${string}`,
-          abi: ucs03abi,
-          chain: sepolia,
-          functionName: "send",
-          address: transfer.ucs03address as `0x${string}`,
-          args: [
-            transfer.sourceChannelId,
-            transfer.timeoutHeight,
-            BigInt(transfer.timeoutTimestamp),
-            salt,
-            Batch([
-              FungibleAssetOrder([
-                account.address as `0x${string}`,
-                transfer.receiver as `0x${string}`,
-                transfer.baseToken,
-                transfer.baseAmount,
-                onchainBaseTokenMeta.symbol,
-                onchainBaseTokenMeta.name,
-                onchainBaseTokenMeta.decimals,
-                9n, // when unwrapping, otherwise 0
-                transfer.quoteToken,
-                transfer.quoteAmount
-              ])
-            ])
-          ]
-        })
-      },
-      catch: err => {
-        console.error("write contract error", err)
-        return new WriteContractError({ cause: err as WriteContractErrorType })
-      }
+    const walletClient = yield* getWalletClient(chain)
+    return yield* writeContract(walletClient, {
+      account: account.address as `0x${string}`,
+      abi: ucs03abi,
+      chain: sepolia,
+      functionName: "send",
+      address: transfer.ucs03address as `0x${string}`,
+      args: [
+        transfer.sourceChannelId,
+        transfer.timeoutHeight,
+        BigInt(transfer.timeoutTimestamp),
+        salt,
+        Batch([
+          FungibleAssetOrder([
+            account.address as `0x${string}`,
+            transfer.receiver as `0x${string}`,
+            transfer.baseToken,
+            transfer.baseAmount,
+            onchainBaseTokenMeta.symbol,
+            onchainBaseTokenMeta.name,
+            onchainBaseTokenMeta.decimals,
+            9n, // when unwrapping, otherwise 0
+            transfer.quoteToken,
+            transfer.quoteAmount
+          ])
+        ])
+      ]
     })
   })
 
