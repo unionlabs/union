@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { quoteToken } from "../src/evm/quote-token"
-import { PublicDestinationViemClient } from "../src/evm/client"
+import { ViemPublicClientDestination } from "../src/evm/client"
 import { createPublicClient, defineChain, http, toHex } from "viem"
 
 // @ts-ignore
@@ -35,6 +35,6 @@ Effect.runPromiseExit(
     ucs03address: "0x05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5",
     destinationChannelId: 1
   }).pipe(
-    Effect.provideService(PublicDestinationViemClient, { client })
+    Effect.provideService(ViemPublicClientDestination, { client })
   )
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

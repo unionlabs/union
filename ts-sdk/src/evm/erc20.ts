@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import { erc20Abi, type Address } from "viem"
 import { readContract } from "./contract.js"
-import { PublicViemClient } from "./client.js"
+import { ViemPublicClient } from "./client.js"
 
 /**
  * Read ERC20 token metadata (name, symbol, decimals)
@@ -23,7 +23,7 @@ export const readErc20Meta = (tokenAddress: Address) =>
  */
 export const readErc20Name = (tokenAddress: Address) =>
   Effect.gen(function* () {
-    const client = (yield* PublicViemClient).client
+    const client = (yield* ViemPublicClient).client
 
     return yield* readContract(client, {
       address: tokenAddress,
@@ -39,7 +39,7 @@ export const readErc20Name = (tokenAddress: Address) =>
  */
 export const readErc20Symbol = (tokenAddress: Address) =>
   Effect.gen(function* () {
-    const client = (yield* PublicViemClient).client
+    const client = (yield* ViemPublicClient).client
 
     return yield* readContract(client, {
       address: tokenAddress,
@@ -55,7 +55,7 @@ export const readErc20Symbol = (tokenAddress: Address) =>
  */
 export const readErc20Decimals = (tokenAddress: Address) =>
   Effect.gen(function* () {
-    const client = (yield* PublicViemClient).client
+    const client = (yield* ViemPublicClient).client
 
     return yield* readContract(client, {
       address: tokenAddress,

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Effect } from "effect"
 import { quoteToken } from "../../src/evm/quote-token.js"
-import { PublicDestinationViemClient } from "../../src/evm/client.js"
+import { ViemPublicClientDestination } from "../../src/evm/client.js"
 import { ucs03abi } from "../../src/evm/abi/ucs03.js"
 import { toHex } from "viem"
 
@@ -11,7 +11,7 @@ const mockClient = {
 }
 
 // Mock service layer
-const mockPublicDestinationViemClient = {
+const mockViemPublicClientDestination = {
   // @ts-ignore we do a partial mock
   client: mockClient as PublicClient
 }
@@ -35,7 +35,7 @@ describe("Quote Token Module", () => {
     // Execute
     const result = await Effect.runPromise(
       quoteToken(testParams).pipe(
-        Effect.provideService(PublicDestinationViemClient, mockPublicDestinationViemClient)
+        Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination)
       )
     )
 
@@ -58,7 +58,7 @@ describe("Quote Token Module", () => {
     await expect(
       Effect.runPromise(
         quoteToken(testParams).pipe(
-          Effect.provideService(PublicDestinationViemClient, mockPublicDestinationViemClient)
+          Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination)
         )
       )
     ).rejects.toThrow()

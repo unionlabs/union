@@ -6,13 +6,13 @@ import type {
   WriteContractErrorType
 } from "viem"
 
-export class PublicSourceViemClient extends Context.Tag("PublicSourceViemClient")<
-  PublicSourceViemClient,
+export class ViemPublicClientSource extends Context.Tag("ViemPublicClientSource")<
+  ViemPublicClientSource,
   { readonly client: PublicClient }
 >() {}
 
-export class PublicDestinationViemClient extends Context.Tag("PublicDestinationViemClient")<
-  PublicDestinationViemClient,
+export class ViemPublicClientDestination extends Context.Tag("ViemPublicClientDestination")<
+  ViemPublicClientDestination,
   { readonly client: PublicClient }
 >() {}
 
@@ -20,8 +20,8 @@ export class PublicDestinationViemClient extends Context.Tag("PublicDestinationV
  * A neutral public client that can be used for general-purpose operations
  * that don't specifically target source or destination chains
  */
-export class PublicViemClient extends Context.Tag("PublicViemClient")<
-  PublicViemClient,
+export class ViemPublicClient extends Context.Tag("ViemPublicClient")<
+  ViemPublicClient,
   { readonly client: PublicClient }
 >() {}
 

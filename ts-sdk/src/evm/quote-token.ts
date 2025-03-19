@@ -2,7 +2,7 @@ import { Effect } from "effect"
 import type { Address, Hex } from "viem"
 import { ucs03abi } from "./abi/ucs03.js"
 import { readContract } from "./contract.js"
-import { PublicDestinationViemClient } from "./client.js"
+import { ViemPublicClientDestination } from "./client.js"
 
 export const quoteToken = ({
   baseToken,
@@ -14,7 +14,7 @@ export const quoteToken = ({
   destinationChannelId: number
 }) =>
   Effect.gen(function* () {
-    const client = (yield* PublicDestinationViemClient).client
+    const client = (yield* ViemPublicClientDestination).client
     
     const result = yield* readContract(
       client,

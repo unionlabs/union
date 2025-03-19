@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Effect } from "effect"
 import { readContract, writeContract } from "../../src/evm/contract.js"
-import { PublicViemClient, ViemWalletClient } from "../../src/evm/client.js"
+import { ViemPublicClient, ViemWalletClient } from "../../src/evm/client.js"
 import type { PublicClient, WalletClient } from "viem"
 
 // Mock clients for testing

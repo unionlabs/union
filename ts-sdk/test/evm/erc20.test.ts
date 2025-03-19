@@ -6,7 +6,7 @@ import {
   readErc20Symbol,
   readErc20Decimals
 } from "../../src/evm/erc20.js"
-import { PublicViemClient } from "../../src/evm/client.js"
+import { ViemPublicClient } from "../../src/evm/client.js"
 import { erc20Abi, type PublicClient } from "viem"
 
 // Mock client for testing
@@ -15,7 +15,7 @@ const mockClient = {
 }
 
 // Mock service layer
-const mockPublicViemClient = {
+const mockViemPublicClient = {
   // @ts-ignore we do a partial mock
   client: mockClient as PublicClient
 }
@@ -35,7 +35,7 @@ describe("ERC20 Module", () => {
       // Execute
       const result = await Effect.runPromise(
         readErc20Name(testTokenAddress).pipe(
-          Effect.provideService(PublicViemClient, mockPublicViemClient)
+          Effect.provideService(ViemPublicClient, mockViemPublicClient)
         )
       )
 
@@ -57,7 +57,7 @@ describe("ERC20 Module", () => {
       await expect(
         Effect.runPromise(
           readErc20Name(testTokenAddress).pipe(
-            Effect.provideService(PublicViemClient, mockPublicViemClient)
+            Effect.provideService(ViemPublicClient, mockViemPublicClient)
           )
         )
       ).rejects.toThrow()
@@ -72,7 +72,7 @@ describe("ERC20 Module", () => {
       // Execute
       const result = await Effect.runPromise(
         readErc20Symbol(testTokenAddress).pipe(
-          Effect.provideService(PublicViemClient, mockPublicViemClient)
+          Effect.provideService(ViemPublicClient, mockViemPublicClient)
         )
       )
 
@@ -94,7 +94,7 @@ describe("ERC20 Module", () => {
       // Execute
       const result = await Effect.runPromise(
         readErc20Decimals(testTokenAddress).pipe(
-          Effect.provideService(PublicViemClient, mockPublicViemClient)
+          Effect.provideService(ViemPublicClient, mockViemPublicClient)
         )
       )
 
@@ -118,7 +118,7 @@ describe("ERC20 Module", () => {
       // Execute
       const result = await Effect.runPromise(
         readErc20Meta(testTokenAddress).pipe(
-          Effect.provideService(PublicViemClient, mockPublicViemClient)
+          Effect.provideService(ViemPublicClient, mockViemPublicClient)
         )
       )
 
