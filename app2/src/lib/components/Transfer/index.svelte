@@ -4,7 +4,7 @@ import Button from "$lib/components/ui/Button.svelte"
 import Amount from "$lib/components/Transfer/Amount.svelte"
 import Receiver from "$lib/components/Transfer/Receiver.svelte"
 import ShowData from "$lib/components/Transfer/ShowData.svelte"
-import { transfer, type TransferStateUnion } from "$lib/components/Transfer/transfer.svelte.ts"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import {
   hasFailedExit as hasCosmosFailedExit,
   isComplete as isCosmosComplete
@@ -18,6 +18,7 @@ import {
   isComplete as isAptosComplete
 } from "$lib/services/transfer-ucs03-aptos"
 import ChainAsset from "$lib/components/Transfer/ChainAsset/index.svelte"
+import type { TransferStateUnion } from "$lib/components/Transfer/validation.ts"
 
 function getStatus(
   state: TransferStateUnion
