@@ -308,7 +308,7 @@
         "max_learning_rate": "0.125000000000000000",
         "max_block_utilization": "30000000",
         "window": "1",
-        "fee_denom": "stake",
+        "fee_denom": "muno",
         "enabled": true,
         "distribute_fees": true
       },
