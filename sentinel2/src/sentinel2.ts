@@ -6,6 +6,7 @@ import consola from "consola"
 import fs from "node:fs"
 import { type Address } from "viem"
 import { argv } from "node:process"
+import { run } from "node:test"
 
 
 // Chain pair configuration
@@ -98,8 +99,35 @@ const transferLoop = (config: ConfigFile) =>
     }
   })
 
-// ----- Main Effect to Load Config and Start Transfer(s) -----
 
+const runIbcChecksForever = (config: ConfigFile) =>
+    Effect.gen(function* (_) {
+        const chainPairs: Array<ChainPair> = config.interactions
+        while (true) {
+            consola.info("\n========== Starting IBC cross-chain checks ==========")
+            for (const pair of chainPairs) {
+              if (!pair.enabled) {
+                consola.info("Checking task is disabled. Skipping.")
+                continue
+              }
+              consola.info(
+                `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
+              )
+        
+                // Simulating an IBC check
+                if (Math.random() > 0.3) {
+                consola.info("IBC Check successful!")
+                } else {
+                consola.info("IBC Check failed due to network error")
+                }
+            }
+            consola.info(`IBC Checks done (or skipped). Sleeping 10 minutes...`)
+            yield* Effect.sleep(5 * 1000) // 5 seconds delay before repeating the check
+            }
+        })
+
+    
+// ----- Main Effect to Load Config and Start Transfer(s) -----
 const parse_argv = Effect.sync(() => {
     const argv = yargs(hideBin(process.argv))
       .option("config", {
@@ -136,7 +164,13 @@ const mainEffect = Effect.gen(function* (_) {
 
     const config = loadConfig(configPath)
    
-    yield* transferLoop(config);
+  // Fork both effects: transferLoop and runIbcChecksForever to run concurrently
+  const transferEffect = Effect.fork(transferLoop(config))
+  const ibcCheckEffect = Effect.fork(runIbcChecksForever(config))
+
+  const forked = yield* Effect.forkAll([transferEffect, ibcCheckEffect]) // Fork both effects to run concurrently
+    Effect.runFork(forked) // Run the forked effects
+//   yield* Effect.zip(transferEffect, ibcCheckEffect) // Ensures both effects continue indefinitely
 
 })
 
