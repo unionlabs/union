@@ -234,6 +234,7 @@
         ./drip/drip.nix
         ./zkgm-dev/zkgm-dev.nix
         ./sentinel/sentinel.nix
+        ./sentinel2/sentinel.nix
         treefmt-nix.flakeModule
       ];
 
