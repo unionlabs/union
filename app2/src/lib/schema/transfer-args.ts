@@ -41,7 +41,7 @@ const EvmTransferSchema = Schema.Struct({
   )
 })
 
-export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")(EVMTransferSchema) {}
+export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")(EvmTransferSchema) {}
 
 const CosmosTransferSchema = Schema.Struct({
   ...BaseTransferFields,
@@ -92,7 +92,7 @@ export class ValidTransfer extends Schema.Class<ValidTransfer>("ValidTransfer")(
 
 // Then create the union of those partial schemas
 const PartialTransferUnionSchema = Schema.Union(
-  Schema.partial(EVMTransferSchema),
+  Schema.partial(EvmTransferSchema),
   Schema.partial(CosmosTransferSchema),
   Schema.partial(AptosTransferSchema)
 )
