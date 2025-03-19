@@ -559,26 +559,36 @@ module ibc::ibc {
         proof_try: vector<u8>,
         proof_height: u64
     ) acquires IBCStore {
-        assert!(
-            smart_table::contains(
-                &borrow_global<IBCStore>(get_vault_addr()).connections,
-                connection_id
-            ),
-            E_CONNECTION_DOES_NOT_EXIST
-        );
-
-        let client_type =
-            client_id_to_type(
-                connection_end::client_id(
-                    smart_table::borrow(
-                        &borrow_global<IBCStore>(get_vault_addr()).connections,
-                        connection_id
-                    )
+        connection_open_ack_impl(
+            connection_id,
+            counterparty_connection_id,
+            proof_try,
+            proof_height,
+            |client_type, client_id, proof_height, proof_init, key, value| {
+                light_client::verify_membership(
+                    client_type,
+                    client_id,
+                    proof_height,
+                    proof_init,
+                    key,
+                    value
                 )
-            );
+            }
+        )
+    }
+
+    inline fun connection_open_ack_impl(
+        connection_id: u32,
+        counterparty_connection_id: u32,
+        proof_try: vector<u8>,
+        proof_height: u64,
+        lc_verify_membership: |String, u32, u64, vector<u8>, vector<u8>, vector<u8>| u64
+    ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let connection = smart_table::borrow_mut(&mut store.connections, connection_id);
+        let client_id = connection_end::client_id(connection);
+        let client_type = *smart_table::borrow(&store.client_id_to_type, client_id);
         assert!(
             connection_end::state(connection) == CONN_STATE_INIT,
             E_INVALID_CONNECTION_STATE
@@ -589,19 +599,19 @@ module ibc::ibc {
             connection_end::new(
                 CONN_STATE_TRYOPEN,
                 connection_end::counterparty_client_id(connection),
-                connection_end::client_id(connection),
+                client_id,
                 connection_id
             );
 
         // Verify the connection state
         let err =
-            verify_connection_state(
+            lc_verify_membership(
                 client_type,
-                connection,
+                client_id,
                 proof_height,
                 proof_try,
-                counterparty_connection_id,
-                expected_connection
+                commitment::connection_commitment_key(counterparty_connection_id),
+                aptos_hash::keccak256(connection_end::encode(&expected_connection))
             );
         assert!(err == 0, err);
 
@@ -613,13 +623,11 @@ module ibc::ibc {
         event::emit(
             ConnectionOpenAck {
                 connection_id,
-                client_id: connection_end::client_id(connection),
+                client_id,
                 counterparty_client_id: connection_end::counterparty_client_id(
                     connection
                 ),
-                counterparty_connection_id: connection_end::counterparty_connection_id(
-                    connection
-                )
+                counterparty_connection_id
             }
         );
 
@@ -636,18 +644,36 @@ module ibc::ibc {
     public entry fun connection_open_confirm(
         connection_id: u32, proof_ack: vector<u8>, proof_height: u64
     ) acquires IBCStore {
-        let client_type =
-            client_id_to_type(
-                connection_end::client_id(
-                    smart_table::borrow(
-                        &borrow_global<IBCStore>(get_vault_addr()).connections,
-                        connection_id
-                    )
+        connection_open_confirm_impl(
+            connection_id,
+            proof_ack,
+            proof_height,
+            |client_type, client_id, proof_height, proof_init, key, value| {
+                light_client::verify_membership(
+                    client_type,
+                    client_id,
+                    proof_height,
+                    proof_init,
+                    key,
+                    value
                 )
-            );
+            }
+        );
+    }
+
+    inline fun connection_open_confirm_impl(
+        connection_id: u32,
+        proof_ack: vector<u8>,
+        proof_height: u64,
+        lc_verify_membership: |String, u32, u64, vector<u8>, vector<u8>, vector<u8>| u64
+    ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
         let connection = smart_table::borrow_mut(&mut store.connections, connection_id);
+        let client_id = connection_end::client_id(connection);
+        let client_type = *smart_table::borrow(&store.client_id_to_type, client_id);
+        let counterparty_client_id = connection_end::counterparty_client_id(connection);
+
         assert!(
             connection_end::state(connection) == CONN_STATE_TRYOPEN,
             E_INVALID_CONNECTION_STATE
@@ -657,8 +683,8 @@ module ibc::ibc {
         let expected_connection =
             connection_end::new(
                 CONN_STATE_OPEN,
-                connection_end::counterparty_client_id(connection),
-                connection_end::client_id(connection),
+                counterparty_client_id,
+                client_id,
                 connection_id
             );
         let counterparty_connection_id =
@@ -666,13 +692,13 @@ module ibc::ibc {
 
         // Verify the connection state
         let err =
-            verify_connection_state(
+            lc_verify_membership(
                 client_type,
-                connection,
+                client_id,
                 proof_height,
                 proof_ack,
-                counterparty_connection_id,
-                expected_connection
+                commitment::connection_commitment_key(counterparty_connection_id),
+                aptos_hash::keccak256(connection_end::encode(&expected_connection))
             );
         assert!(err == 0, err);
 
@@ -681,11 +707,9 @@ module ibc::ibc {
         event::emit(
             ConnectionOpenConfirm {
                 connection_id: connection_id,
-                client_id: connection_end::client_id(connection),
-                counterparty_client_id: connection_end::counterparty_client_id(connection),
-                counterparty_connection_id: connection_end::counterparty_connection_id(
-                    connection
-                )
+                client_id,
+                counterparty_client_id,
+                counterparty_connection_id
             }
         );
 
@@ -2245,5 +2269,290 @@ module ibc::ibc {
         prepare_client();
 
         connection_open_try_impl(0, 0, 1, vector[1, 2], 1, |_0, _1, _2, _3, _4, _5| { 1 });
+    }
+
+    #[test(alice = @ibc)]
+    fun connection_open_ack_works(alice: &signer) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+        prepare_client();
+
+        let client_id = 1;
+        let counterparty_client_id = 2;
+        let connection_id = 1;
+        let counterparty_connection_id = 3;
+        let proof_try = vector[1, 2];
+        let proof_height = 10;
+
+        let counterparty_connection =
+            connection_end::encode(
+                &connection_end::new(
+                    CONN_STATE_TRYOPEN,
+                    counterparty_client_id,
+                    client_id,
+                    connection_id
+                )
+            );
+
+        connection_open_init(client_id, counterparty_client_id);
+
+        connection_open_ack_impl(
+            connection_id,
+            counterparty_connection_id,
+            proof_try,
+            proof_height,
+            |client_type, client_id_, proof_height_, proof_try_, key, value| {
+                assert!(client_type == string::utf8(CLIENT_TYPE), 1);
+                assert!(client_id_ == client_id, 1);
+                assert!(proof_height == proof_height_, 1);
+                assert!(proof_try == proof_try_, 1);
+                assert!(
+                    key
+                        == commitment::connection_commitment_key(
+                            counterparty_connection_id
+                        ),
+                    1
+                );
+                assert!(
+                    value == aptos_hash::keccak256(counterparty_connection),
+                    1
+                );
+
+                0
+            }
+        );
+
+        let connection =
+            connection_end::new(
+                CONN_STATE_OPEN,
+                client_id,
+                counterparty_client_id,
+                counterparty_connection_id
+            );
+
+        assert!(get_connection(connection_id) == option::some(connection), 1);
+
+        assert!(
+            get_commitment(commitment::connection_commitment_key(connection_id))
+                == aptos_hash::keccak256(connection_end::encode(&connection)),
+            1
+        );
+
+        assert!(
+            event::was_event_emitted(
+                &ConnectionOpenAck {
+                    connection_id,
+                    client_id,
+                    counterparty_client_id,
+                    counterparty_connection_id
+                }
+            ),
+            1
+        );
+    }
+
+    #[test(alice = @ibc)]
+    #[expected_failure(location = smart_table, abort_code = 65537 /* ENOT_FOUND */)]
+    fun connection_open_ack_fails_when_no_connection_exist(
+        alice: &signer
+    ) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+        prepare_client();
+
+        // no connection with id = 1, so this should fail
+        connection_open_ack_impl(1, 1, vector[1, 2], 1, |_0, _1, _2, _3, _4, _5| { 0 });
+    }
+
+    #[test(alice = @ibc)]
+    #[expected_failure(location = Self, abort_code = 1)]
+    fun connection_open_ack_fails_with_membership_failure(
+        alice: &signer
+    ) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+        prepare_client();
+
+        let connection_id = 1;
+        connection_open_init(connection_id, 1);
+        connection_open_ack_impl(
+            connection_id,
+            1,
+            vector[1, 2],
+            1,
+            |_0, _1, _2, _3, _4, _5| { 1 }
+        );
+    }
+
+    #[test(alice = @ibc)]
+    #[expected_failure(abort_code = E_INVALID_CONNECTION_STATE)]
+    fun connection_open_ack_fails_when_invalid_connection_state(
+        alice: &signer
+    ) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+        prepare_client();
+
+        let connection_id = 1;
+        connection_open_init(connection_id, 1);
+        connection_open_ack_impl(
+            connection_id,
+            1,
+            vector[1, 2],
+            1,
+            |_0, _1, _2, _3, _4, _5| { 0 }
+        );
+        // this will fail since the connnection state is already changed to OPEN
+        connection_open_ack_impl(
+            connection_id,
+            1,
+            vector[1, 2],
+            1,
+            |_0, _1, _2, _3, _4, _5| { 0 }
+        );
+    }
+
+    #[test(alice = @ibc)]
+    fun connection_open_confirm_works(alice: &signer) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+        prepare_client();
+
+        let client_id = 1;
+        let counterparty_client_id = 2;
+        let connection_id = 1;
+        let counterparty_connection_id = 3;
+        let proof_ack = vector[1, 2];
+        let proof_height = 10;
+
+        let counterparty_connection =
+            connection_end::encode(
+                &connection_end::new(
+                    CONN_STATE_OPEN,
+                    counterparty_client_id,
+                    client_id,
+                    connection_id
+                )
+            );
+
+        connection_open_try_impl(
+            counterparty_client_id,
+            counterparty_connection_id,
+            client_id,
+            proof_ack,
+            proof_height,
+            |_0, _1, _2, _3, _4, _5| 0
+        );
+
+        connection_open_confirm_impl(
+            connection_id,
+            proof_ack,
+            proof_height,
+            |client_type, client_id_, proof_height_, proof_ack_, key, value| {
+                assert!(client_type == string::utf8(CLIENT_TYPE), 1);
+                assert!(client_id_ == client_id, 1);
+                assert!(proof_height == proof_height_, 1);
+                assert!(proof_ack == proof_ack_, 1);
+                assert!(
+                    key
+                        == commitment::connection_commitment_key(
+                            counterparty_connection_id
+                        ),
+                    1
+                );
+                assert!(
+                    value == aptos_hash::keccak256(counterparty_connection),
+                    1
+                );
+
+                0
+            }
+        );
+
+        let connection =
+            connection_end::new(
+                CONN_STATE_OPEN,
+                client_id,
+                counterparty_client_id,
+                counterparty_connection_id
+            );
+
+        assert!(get_connection(connection_id) == option::some(connection), 1);
+
+        assert!(
+            get_commitment(commitment::connection_commitment_key(connection_id))
+                == aptos_hash::keccak256(connection_end::encode(&connection)),
+            1
+        );
+
+        assert!(
+            event::was_event_emitted(
+                &ConnectionOpenConfirm {
+                    connection_id,
+                    client_id,
+                    counterparty_client_id,
+                    counterparty_connection_id
+                }
+            ),
+            1
+        );
+    }
+
+    #[test(alice = @ibc)]
+    #[expected_failure(location = smart_table, abort_code = 65537 /* ENOT_FOUND */)]
+    fun connection_open_confirm_fails_when_no_connection_exist(
+        alice: &signer
+    ) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+        prepare_client();
+
+        // no connection with id = 1, so this should fail
+        connection_open_confirm_impl(1, vector[1, 2], 1, |_0, _1, _2, _3, _4, _5| { 0 });
+    }
+
+    #[test(alice = @ibc)]
+    #[expected_failure(location = Self, abort_code = 1)]
+    fun connection_open_confirm_fails_with_membership_failure(
+        alice: &signer
+    ) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+        prepare_client();
+
+        let connection_id = 1;
+        connection_open_try_impl(
+            1,
+            1,
+            1,
+            vector[1, 2],
+            1,
+            |_0, _1, _2, _3, _4, _5| 0
+        );
+        connection_open_confirm_impl(
+            connection_id,
+            vector[1, 2],
+            1,
+            |_0, _1, _2, _3, _4, _5| { 1 }
+        );
+    }
+
+    #[test(alice = @ibc)]
+    #[expected_failure(abort_code = E_INVALID_CONNECTION_STATE)]
+    fun connection_open_confirm_fails_when_invalid_connection_state(
+        alice: &signer
+    ) acquires IBCStore, SignerRef {
+        init_module_for_tests(alice);
+        prepare_client();
+
+        let connection_id = 1;
+        connection_open_init(connection_id, 1);
+        connection_open_ack_impl(
+            connection_id,
+            1,
+            vector[1, 2],
+            1,
+            |_0, _1, _2, _3, _4, _5| { 0 }
+        );
+        // this will fail since the connnection state is already changed to OPEN
+        connection_open_confirm_impl(
+            connection_id,
+            vector[1, 2],
+            1,
+            |_0, _1, _2, _3, _4, _5| { 0 }
+        );
     }
 }
