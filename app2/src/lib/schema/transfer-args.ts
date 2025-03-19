@@ -1,6 +1,6 @@
 import { Schema } from "effect"
 import { Chain, RpcType } from "$lib/schema/chain"
-import { EVMWethToken, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
+import { EvmWethToken, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
 import { ChannelId } from "$lib/schema/channel"
 
 const BaseTransferFields = {
@@ -30,12 +30,12 @@ const BaseTransferFields = {
   timeoutTimestamp: Schema.String
 }
 
-const EVMTransferSchema = Schema.Struct({
+const EvmTransferSchema = Schema.Struct({
   ...BaseTransferFields,
   sourceRpcType: Schema.Literal("evm").annotations({
     message: () => "sourceRpcType must be 'evm'"
   }),
-  wethQuoteToken: EVMWethToken,
+  wethQuoteToken: EvmWethToken,
   receiver: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )

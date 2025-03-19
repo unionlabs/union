@@ -25,7 +25,7 @@ function getStatus(
   switch (state._tag) {
     case "Empty":
       return "empty"
-    case "EVM": {
+    case "Evm": {
       if (state.state._tag === "Filling") return "filling"
       if (hasEvmFailedExit(state.state)) return "failed"
       if (isEvmComplete(state.state)) return "complete"
@@ -53,7 +53,7 @@ function getStepName(state: TransferStateUnion): string | null {
   switch (state._tag) {
     case "Empty":
       return null
-    case "EVM":
+    case "Evm":
       return state.state._tag
     case "Aptos":
       return state.state._tag
