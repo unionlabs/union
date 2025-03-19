@@ -21,12 +21,14 @@
     "vitest": "^3.0.8",
     "@types/node-fetch": "3.0.2",
     "@types/yargs": "^17.0.33",
+    "@effect/platform": "^0.77.2",
     "ts-node": "^10.9.1"
   },
   "dependencies": {
     "@unionlabs/sdk": "^1.0.7",
     "viem": "^2.22.11",
     "consola": "^3.4.0",
+    "effect": "^3.13.2",
     "yargs": "^17.7.2"
   }
 }
