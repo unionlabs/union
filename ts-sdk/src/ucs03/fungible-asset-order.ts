@@ -6,6 +6,7 @@ import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js
 import { CosmWasmClientContext, CosmWasmClientSource } from "../cosmos/client.js"
 import { readCw20TokenInfo } from "../cosmos/cw20.js"
 import { predictQuoteToken as predictCosmosQuoteToken } from "../cosmos/quote-token.js"
+import { FungibleAssetOrder } from "./instruction.js"
 
 export type FungibleAssetOrderIntent = {
   sender: Address
@@ -32,7 +33,7 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
     )
     const quoteToken = yield* predictEvmQuoteToken(intent.baseToken)
 
-    return [
+    return FungibleAssetOrder([
       intent.sender,
       intent.receiver,
       intent.baseToken,
@@ -40,10 +41,10 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
       tokenMeta.symbol,
       tokenMeta.name,
       tokenMeta.decimals,
-      0, // channel if unwrapping
+      0n, // channel if unwrapping
       quoteToken,
       intent.quoteAmount
-    ]
+    ])
   })
 
 /**
@@ -63,7 +64,7 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
     )
     const quoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
 
-    return [
+    return FungibleAssetOrder([
       intent.sender,
       toHex(intent.receiver),
       intent.baseToken,
@@ -71,10 +72,10 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
       tokenMeta.symbol,
       tokenMeta.name,
       tokenMeta.decimals,
-      0, // channel if unwrapping
+      0n, // channel if unwrapping
       quoteToken,
       intent.quoteAmount
-    ]
+    ])
   })
 
 /**
@@ -94,18 +95,18 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
     )
     const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
-    return [
+    return FungibleAssetOrder([
       toHex(intent.sender),
       intent.receiver,
       toHex(intent.baseToken),
-      toHex(intent.baseAmount),
+      intent.baseAmount,
       tokenMeta.symbol,
       tokenMeta.name,
       tokenMeta.decimals,
-      0, // channel if unwrapping
+      0n, // channel if unwrapping
       quoteToken,
       intent.quoteAmount
-    ]
+    ])
   })
 
 /**
@@ -125,7 +126,7 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
     )
     const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
 
-    return [
+    return FungibleAssetOrder([
       toHex(intent.sender),
       toHex(intent.receiver),
       toHex(intent.baseToken),
@@ -133,8 +134,8 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
       tokenMeta.symbol,
       tokenMeta.name,
       tokenMeta.decimals,
-      0, // channel if unwrapping
+      0n, // channel if unwrapping
       quoteToken,
       intent.quoteAmount
-    ]
+    ])
   })
