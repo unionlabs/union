@@ -6,6 +6,7 @@ import {
   TransferSubmission as AptosTransferSubmission,
   TransferReceiptState as AptosTransferReceiptState
 } from "$lib/services/transfer-ucs03-aptos"
+import { SwitchChainState as EvmSwitchChainState } from "$lib/services/transfer-ucs03-evm"
 import { TransferState, type TransferStateUnion } from "$lib/components/Transfer/validation.ts"
 import type { AptosTransfer } from "$lib/schema/transfer-args.ts"
 import type { Chain } from "$lib/schema/chain.ts"
@@ -13,7 +14,8 @@ import type { Chain } from "$lib/schema/chain.ts"
 export async function handleAptosSubmit(
   currentState: TransferStateUnion,
   typedArgs: AptosTransfer,
-  sourceChainValue: Chain
+  sourceChainValue: Chain,
+  updateState: (state: TransferStateUnion) => void
 ) {
   let aptosState: AptosTransferSubmission
 
@@ -22,7 +24,7 @@ export async function handleAptosSubmit(
       switch (currentState.state._tag) {
         case "SwitchChain":
           aptosState = AptosTransferSubmission.SwitchChain({
-            state: AptosTransferSubmitState.InProgress()
+            state: EvmSwitchChainState.InProgress()
           })
           break
         case "TransferSubmit":
@@ -38,6 +40,7 @@ export async function handleAptosSubmit(
         default:
           aptosState = AptosTransferSubmission.Filling()
       }
+      updateState(TransferState.Aptos(aptosState))
     } else {
       aptosState = currentState.state
     }
@@ -46,16 +49,18 @@ export async function handleAptosSubmit(
   }
 
   const newState = await aptosNextState(aptosState, typedArgs, sourceChainValue)
-  let result = newState !== null ? TransferState.Aptos(newState) : TransferState.Empty()
+  updateState(newState !== null ? TransferState.Aptos(newState) : TransferState.Empty())
 
   let currentAptosState = newState
-  while (currentAptosState !== null && !hasAptosFailedExit(currentAptosState)) {
+  while (
+    currentAptosState !== null &&
+    !hasAptosFailedExit(currentAptosState) &&
+    !isAptosComplete(currentAptosState)
+  ) {
     const nextAptosState = await aptosNextState(currentAptosState, typedArgs, sourceChainValue)
-    result = nextAptosState !== null ? TransferState.Aptos(nextAptosState) : TransferState.Empty()
-
+    updateState(
+      nextAptosState !== null ? TransferState.Aptos(nextAptosState) : TransferState.Empty()
+    )
     currentAptosState = nextAptosState
-    if (currentAptosState !== null && isAptosComplete(currentAptosState)) break
   }
-
-  return result
 }

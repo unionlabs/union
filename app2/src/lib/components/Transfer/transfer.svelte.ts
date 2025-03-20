@@ -175,7 +175,6 @@ export class Transfer {
       })
     ])
 
-    console.log("zkgm run1")
     return checkRequiredFields.pipe(
       Effect.flatMap(([denom, sourceChain, destinationChain, channel]) => {
         const denomValue = denom as `0x${string}`
@@ -213,13 +212,11 @@ export class Transfer {
       field: string
     }> {}
 
-    // Local function to update the state
     const setWethQuoteToken = (value: Option.Option<typeof WethTokenData.Type>) =>
       Effect.sync(() => {
         this.wethQuoteToken = value
       })
 
-    // Check required options are present
     const checkRequiredFields = Effect.all([
       Option.match(this.sourceChain, {
         onNone: () => Effect.fail(new MissingArgumentError({ field: "sourceChain" })),
@@ -315,7 +312,6 @@ export class Transfer {
 
   validation = $derived.by<ValidationResult>(() => validateTransfer(this.args))
 
-  //Convert to effect maybe
   submit = async () => {
     const validation = this.validation
     if (validation._tag !== "Success") {
@@ -327,24 +323,34 @@ export class Transfer {
 
     console.info("Validated args:", typedArgs)
 
+    const updateState = (state: TransferStateUnion) => {
+      this._stateOverride = state
+    }
+
     switch (typedArgs.sourceChain.rpc_type) {
       case "evm":
-        this._stateOverride = await handleEvmSubmit(this.state, typedArgs as EVMTransfer)
+        await handleEvmSubmit(this.state, typedArgs as EVMTransfer, updateState)
         break
       case "cosmos":
-        this._stateOverride = await handleCosmosSubmit(
+        await handleCosmosSubmit(
           this.state,
           typedArgs as CosmosTransfer,
-          cosmosStore.connectedWallet
+          cosmosStore.connectedWallet,
+          updateState
         )
         break
       case "aptos":
-        this._stateOverride = await handleAptosSubmit(
+        await handleAptosSubmit(
           this.state,
           typedArgs as AptosTransfer,
-          typedArgs.sourceChain
+          typedArgs.sourceChain,
+          updateState
         )
         break
+      default: {
+        console.error(`Unsupported RPC type: ${typedArgs.sourceChain.rpc_type}`)
+        updateState(TransferState.Empty())
+      }
     }
   }
 }

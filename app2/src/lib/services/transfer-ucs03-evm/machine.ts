@@ -55,7 +55,7 @@ export async function nextState(
     ApprovalSubmit: ({ state }) => {
       return ApprovalSubmitState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(approveTransfer(chain, params))
+          const exit = await Effect.runPromiseExit(approveTransfer(params))
           if (exit._tag === "Failure") {
             return TransferSubmission.ApprovalSubmit({
               state: ApprovalSubmitState.Complete({ exit })
@@ -78,7 +78,7 @@ export async function nextState(
     ApprovalReceipt: ({ state }) => {
       return ApprovalReceiptState.$match(state, {
         InProgress: async ({ hash }) => {
-          const exit = await Effect.runPromiseExit(waitForApprovalReceipt(chain, hash))
+          const exit = await Effect.runPromiseExit(waitForApprovalReceipt(params.sourceChain, hash))
           return TransferSubmission.ApprovalReceipt({
             state: ApprovalReceiptState.Complete({ exit })
           })
@@ -97,7 +97,7 @@ export async function nextState(
     TransferSubmit: ({ state }) => {
       return TransferSubmitState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(submitTransfer(chain, params))
+          const exit = await Effect.runPromiseExit(submitTransfer(params.sourceChain, params))
           return TransferSubmission.TransferSubmit({
             state: TransferSubmitState.Complete({ exit })
           })
@@ -116,7 +116,7 @@ export async function nextState(
     TransferReceipt: ({ state }) => {
       return TransferReceiptState.$match(state, {
         InProgress: async ({ hash }) => {
-          const exit = await Effect.runPromiseExit(waitForTransferReceipt(chain, hash))
+          const exit = await Effect.runPromiseExit(waitForTransferReceipt(params.sourceChain, hash))
           return TransferSubmission.TransferReceipt({
             state: TransferReceiptState.Complete({ exit })
           })
