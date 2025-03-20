@@ -18,13 +18,19 @@ export type FungibleAssetOrderIntent = {
 /**
  * Creates a fungible asset order from EVM to EVM
  */
-export const createEvmToEvmFungibleAssetOrder = (intent: FungibleAssetOrderIntent) =>
+export const createEvmToEvmFungibleAssetOrder = (intent: {
+  sender: Address
+  receiver: Address
+  baseToken: Hex
+  baseAmount: bigint
+  quoteAmount: bigint
+}) =>
   Effect.gen(function* () {
     const sourceClient = (yield* ViemPublicClientSource).client
     const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
       Effect.provideService(ViemPublicClient, { client: sourceClient })
     )
-    const quoteToken = yield* predictEvmQuoteToken(intent.baseToken as Hex)
+    const quoteToken = yield* predictEvmQuoteToken(intent.baseToken)
 
     return [
       intent.sender,
@@ -43,7 +49,13 @@ export const createEvmToEvmFungibleAssetOrder = (intent: FungibleAssetOrderInten
 /**
  * Creates a fungible asset order from EVM to Cosmos
  */
-export const createEvmToCosmosFungibleAssetOrder = (intent: FungibleAssetOrderIntent) =>
+export const createEvmToCosmosFungibleAssetOrder = (intent: {
+  sender: Address
+  receiver: string
+  baseToken: Hex
+  baseAmount: bigint
+  quoteAmount: bigint
+}) =>
   Effect.gen(function* () {
     const sourceClient = (yield* ViemPublicClientSource).client
     const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
@@ -53,7 +65,7 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: FungibleAssetOrderIn
 
     return [
       intent.sender,
-      intent.receiver,
+      toHex(intent.receiver),
       intent.baseToken,
       intent.baseAmount,
       tokenMeta.symbol,
@@ -68,7 +80,13 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: FungibleAssetOrderIn
 /**
  * Creates a fungible asset order from Cosmos to EVM
  */
-export const createCosmosToEvmFungibleAssetOrder = (intent: FungibleAssetOrderIntent) =>
+export const createCosmosToEvmFungibleAssetOrder = (intent: {
+  sender: string
+  receiver: Address
+  baseToken: string
+  baseAmount: bigint
+  quoteAmount: bigint
+}) =>
   Effect.gen(function* () {
     const sourceClient = (yield* CosmWasmClientSource).client
     const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
@@ -77,10 +95,10 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: FungibleAssetOrderIn
     const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
     return [
-      intent.sender,
+      toHex(intent.sender),
       intent.receiver,
       toHex(intent.baseToken),
-      intent.baseAmount,
+      toHex(intent.baseAmount),
       tokenMeta.symbol,
       tokenMeta.name,
       tokenMeta.decimals,
@@ -93,7 +111,13 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: FungibleAssetOrderIn
 /**
  * Creates a fungible asset order from Cosmos to Cosmos
  */
-export const createCosmosToCosmosFungibleAssetOrder = (intent: FungibleAssetOrderIntent) =>
+export const createCosmosToCosmosFungibleAssetOrder = (intent: {
+  sender: string
+  receiver: string
+  baseToken: string
+  baseAmount: bigint
+  quoteAmount: bigint
+}) =>
   Effect.gen(function* () {
     const sourceClient = (yield* CosmWasmClientSource).client
     const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
@@ -102,9 +126,9 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: FungibleAssetOrde
     const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
 
     return [
-      intent.sender,
-      intent.receiver,
-      intent.baseToken,
+      toHex(intent.sender),
+      toHex(intent.receiver),
+      toHex(intent.baseToken),
       intent.baseAmount,
       tokenMeta.symbol,
       tokenMeta.name,
