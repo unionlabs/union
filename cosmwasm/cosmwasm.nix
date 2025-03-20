@@ -6,6 +6,7 @@
       crane,
       pkgs,
       dbg,
+      mkCi,
       ...
     }:
     let
@@ -633,7 +634,7 @@
             multicall
             ;
           cosmwasm-scripts =
-            {
+            (mkCi false ({
               inherit ibc-union-contract-addresses;
             }
             // (
@@ -663,7 +664,7 @@
               ))
             )
             // (builtins.foldl' (a: b: a // b) { } (map chain-migration-scripts networks))
-            // derivation { name = "cosmwasm-scripts"; };
+            // derivation { name = "cosmwasm-scripts"; }));
         }
         //
           # all light clients

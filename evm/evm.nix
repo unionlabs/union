@@ -672,7 +672,7 @@ _: {
             }
           );
         eth-scripts =
-          (derivation {
+          mkCi false ((derivation {
             name = "eth-scripts-empty-derivation-to-make-top-level-packages-happy";
           })
           // builtins.listToAttrs (
@@ -824,7 +824,7 @@ _: {
               name = "eth-upgrade-${args.network}-ibc";
               value = eth-upgrade ({ protocol = "IBCHandler"; } // args);
             }) networks
-          );
+          ));
       };
     };
 }
