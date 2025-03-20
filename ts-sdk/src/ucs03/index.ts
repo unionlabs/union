@@ -6,14 +6,17 @@ type Instruction = Forward | Multiplex | Batch | FungibleAssetOrder
 type Forward = {
   opcode: 0
   version: 0
-  operand: Parameters<typeof encodeAbiParameters<typeof forwardAbi>>[1]
+  operand: [bigint, bigint, bigint, Instruction]
 }
 export const Forward = (
-  operand: Parameters<typeof encodeAbiParameters<typeof forwardAbi>>[1]
+  path: bigint,
+  timeoutHeight: bigint,
+  timeoutTimestamp: bigint,
+  instruction: Instruction
 ): Forward => ({
   opcode: 0,
   version: 0,
-  operand
+  operand: [path, timeoutHeight, timeoutTimestamp, instruction]
 })
 
 type Multiplex = {
