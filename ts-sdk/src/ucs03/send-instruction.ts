@@ -7,12 +7,12 @@ import { generateSalt } from "../utils/index.js"
 import { SourceConfig } from "../evm/quote-token.js"
 import type { Address } from "viem"
 
-const sendInstructionEvm = (instruction: Instruction, sender: Address) =>
+export const sendInstructionEvm = (instruction: Instruction, sender: Address) =>
   Effect.gen(function* () {
     const walletClient = yield* ViemWalletClient
     const sourceConfig = yield* SourceConfig
 
-    yield* writeContract(walletClient.client, {
+    return yield* writeContract(walletClient.client, {
       account: sender,
       abi: ucs03abi,
       chain: walletClient.chain,

@@ -8,13 +8,15 @@ export const predictQuoteToken = (baseToken: string) =>
     const client = (yield* CosmWasmClientDestination).client
     const config = yield* CosmosDestinationConfig
 
-    const result = yield* queryContract<{ wrapped_token: Address }>(client, config.ucs03address, {
+    const result = yield* queryContract<object>(client, config.ucs03address, {
       predict_wrapped_token: {
         path: "0",
         channel: config.channelId,
         token: baseToken
       }
     })
+
+    if (!("wrapped_token" in result)) return yield* Effect.fail("incorrect quote token response")
 
     return result.wrapped_token
   })

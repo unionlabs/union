@@ -58,10 +58,13 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
   quoteAmount: bigint
 }) =>
   Effect.gen(function* () {
+    yield* Effect.log("creating client")
     const sourceClient = (yield* ViemPublicClientSource).client
+    yield* Effect.log("reading meta")
     const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
       Effect.provideService(ViemPublicClient, { client: sourceClient })
     )
+    yield* Effect.log("predicting quote")
     const quoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
 
     return FungibleAssetOrder([

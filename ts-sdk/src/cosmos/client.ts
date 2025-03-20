@@ -52,7 +52,7 @@ export const createCosmWasmClient = (rpcEndpoint: string) =>
   Effect.tryPromise({
     try: () => CosmWasmClient.connect(rpcEndpoint),
     catch: error => new CosmWasmClientError({ cause: extractErrorDetails(error as Error) })
-  })
+  }).pipe(Effect.timeout("4 seconds"), Effect.retry({ times: 5 }))
 
 /**
  * Creates a SigningCosmWasmClient from a given RPC endpoint and wallet
