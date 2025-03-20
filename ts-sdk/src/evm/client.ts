@@ -1,13 +1,16 @@
 import { Context, Data, Effect } from "effect"
 import {
   createPublicClient,
+  createWalletClient,
   type Account,
   type Chain,
   type CreatePublicClientErrorType,
+  type CreateWalletClientErrorType,
   type PublicClient,
   type PublicClientConfig,
   type ReadContractErrorType,
   type WalletClient,
+  type WalletClientConfig,
   type WriteContractErrorType
 } from "viem"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
@@ -55,6 +58,10 @@ export class CreateViemPublicClientError extends Data.TaggedError("CreateViemPub
   cause: CreatePublicClientErrorType
 }> {}
 
+export class CreateViemWalletClientError extends Data.TaggedError("CreateViemWalletClientError")<{
+  cause: CreateWalletClientErrorType
+}> {}
+
 export const createViemPublicClient = (
   parameters: PublicClientConfig
 ): Effect.Effect<PublicClient, CreateViemPublicClientError> =>
@@ -63,5 +70,16 @@ export const createViemPublicClient = (
     catch: err =>
       new CreateViemPublicClientError({
         cause: extractErrorDetails(err as CreatePublicClientErrorType)
+      })
+  })
+
+export const createViemWalletClient = (
+  parameters: WalletClientConfig
+): Effect.Effect<WalletClient, CreateViemWalletClientError> =>
+  Effect.try({
+    try: () => createWalletClient(parameters),
+    catch: err =>
+      new CreateViemWalletClientError({
+        cause: extractErrorDetails(err as CreateWalletClientErrorType)
       })
   })

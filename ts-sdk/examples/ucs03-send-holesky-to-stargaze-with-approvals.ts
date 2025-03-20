@@ -2,9 +2,10 @@ import { Effect } from "effect"
 import {
   ViemPublicClientSource,
   ViemPublicClient,
-  createViemPublicClient
+  createViemPublicClient,
+  createViemWalletClient
 } from "../src/evm/client.js"
-import { createPublicClient, createWalletClient, http } from "viem"
+import { http } from "viem"
 import { sepolia } from "viem/chains"
 import { CosmosDestinationConfig } from "../src/cosmos/quote-token.js"
 import { createEvmToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
@@ -127,18 +128,19 @@ Effect.runPromiseExit(
     const cosmWasmClientDestination = yield* createCosmWasmClient(
       "https://rpc.elgafar-1.stargaze-apis.com"
     )
-    const account = privateKeyToAccount(PRIVATE_KEY)
 
     const publicSourceClient = yield* createViemPublicClient({
       chain: sepolia,
       transport: http()
     })
 
-    const walletClient = createWalletClient({
+    const account = privateKeyToAccount(PRIVATE_KEY)
+    const walletClient = yield* createViemWalletClient({
       account,
       chain: sepolia,
-      transport: http("https://rpc.11155111.sepolia.chain.kitchen")
+      transport: http()
     })
+
     yield* Effect.log("clients created")
 
     // Main effect: create the batch and send it

@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { createViemPublicClient, ViemPublicClientSource } from "../src/evm/client.js"
-import { createPublicClient, createWalletClient, http } from "viem"
+import { createWalletClient, http } from "viem"
 import { sepolia } from "viem/chains"
 import { CosmosDestinationConfig } from "../src/cosmos/quote-token.js"
 import { createEvmToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
