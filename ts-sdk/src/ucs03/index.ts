@@ -1,5 +1,5 @@
-import type { encodeAbiParameters } from "viem"
-import type { forwardAbi, fungibleAssetOrderAbi, multiplexAbi } from "../evm/abi/index.js"
+import { encodeAbiParameters, type Hex } from "viem"
+import { batchAbi, forwardAbi, fungibleAssetOrderAbi, multiplexAbi } from "../evm/abi/index.js"
 
 type Instruction = Forward | Multiplex | Batch | FungibleAssetOrder
 
@@ -55,3 +55,42 @@ export const FungibleAssetOrder = (
   version: 1,
   operand
 })
+
+export const encodeAbi = (instruction: Instruction): Hex => {
+  switch (instruction.opcode) {
+    case 0: {
+      // Forward
+      return encodeAbiParameters(forwardAbi, [
+        instruction.operand[0],
+        instruction.operand[1],
+        instruction.operand[2],
+        {
+          opcode: instruction.operand[3].opcode,
+          version: instruction.operand[3].version,
+          operand: encodeAbi(instruction.operand[3])
+        }
+      ])
+    }
+    case 1: {
+      // Multiplex
+      return encodeAbiParameters(multiplexAbi, instruction.operand)
+    }
+    case 2: {
+      // Batch - recursively encode each instruction
+      return encodeAbiParameters(batchAbi, [
+        instruction.operand.map(instr => ({
+          version: instr.version,
+          opcode: instr.opcode,
+          operand: encodeAbi(instr)
+        }))
+      ])
+    }
+    case 3: {
+      // FungibleAssetOrder
+      return encodeAbiParameters(fungibleAssetOrderAbi, instruction.operand)
+    }
+    default: {
+      throw new Error(`impossible`)
+    }
+  }
+}
