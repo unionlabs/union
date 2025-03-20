@@ -45,8 +45,7 @@ contract IBCPacketTests is Test {
             counterpartyClientId: 0xDEADC0DE,
             clientId: clientId,
             proofInit: hex"",
-            proofHeight: 0,
-            relayer: address(this)
+            proofHeight: 0
         });
         lightClient.pushValidMembership();
         connectionId = handler.connectionOpenTry(msgTry_);
@@ -54,8 +53,7 @@ contract IBCPacketTests is Test {
             .MsgConnectionOpenConfirm({
             connectionId: connectionId,
             proofAck: hex"",
-            proofHeight: 0,
-            relayer: address(this)
+            proofHeight: 0
         });
         lightClient.pushValidMembership();
         handler.connectionOpenConfirm(msgConfirm_);

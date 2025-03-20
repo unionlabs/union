@@ -32,7 +32,8 @@ use crate::{
     msg::{EurekaMsg, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg},
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, EXECUTING_PACKET_IS_BATCH,
-        EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN, IN_FLIGHT_PACKET, TOKEN_MINTER, TOKEN_ORIGIN,
+        EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN, IN_FLIGHT_PACKET, MARKET_MAKER, TOKEN_MINTER,
+        TOKEN_ORIGIN,
     },
     ContractError,
 };
@@ -44,6 +45,7 @@ pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
 pub const ESCROW_REPLY_ID: u64 = 0xcafe;
 pub const FORWARD_REPLY_ID: u64 = 0xbabe;
 pub const MULTIPLEX_REPLY_ID: u64 = 0xface;
+pub const MM_FILL_REPLY_ID: u64 = 0xdead;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
 
@@ -175,6 +177,13 @@ pub fn execute(
                 x => Err(
                     StdError::generic_err(format!("not handled: {}", to_json_string(&x)?)).into(),
                 ),
+            }
+        }
+        ExecuteMsg::InternalBatch { messages } => {
+            if info.sender != env.contract.address {
+                Err(ContractError::OnlySelf)
+            } else {
+                Ok(Response::new().add_messages(messages))
             }
         }
         ExecuteMsg::InternalExecutePacket {
@@ -777,6 +786,7 @@ fn execute_internal(
                 deps,
                 env,
                 info,
+                caller,
                 packet,
                 relayer,
                 relayer_msg,
@@ -1072,10 +1082,11 @@ fn execute_batch(
 fn execute_fungible_asset_order(
     deps: DepsMut,
     env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
+    caller: Addr,
     packet: Packet,
     relayer: Addr,
-    _relayer_msg: Bytes,
+    relayer_msg: Bytes,
     _salt: H256,
     path: U256,
     order: FungibleAssetOrder,
@@ -1112,7 +1123,7 @@ fn execute_fungible_asset_order(
     let base_covers_quote = base_amount >= quote_amount;
     let fee_amount = base_amount.saturating_sub(quote_amount);
 
-    let mut messages = Vec::<SubMsg>::new();
+    let mut messages = Vec::new();
 
     // Protocol Fill - If the quote token matches the wrapped version of the base token and base amount >= quote amount
     if quote_token_str == wrapped_denom && base_covers_quote {
@@ -1126,7 +1137,7 @@ fn execute_fungible_asset_order(
             )?;
 
             // Create the token with metadata
-            messages.push(SubMsg::new(make_wasm_msg(
+            messages.push(SubMsg::reply_never(make_wasm_msg(
                 WrappedTokenMsg::CreateDenom {
                     subdenom: wrapped_denom.clone(),
                     metadata: Metadata {
@@ -1154,7 +1165,7 @@ fn execute_fungible_asset_order(
 
         // Mint the quote amount to the receiver
         if quote_amount > 0 {
-            messages.push(SubMsg::new(make_wasm_msg(
+            messages.push(SubMsg::reply_never(make_wasm_msg(
                 WrappedTokenMsg::MintTokens {
                     denom: wrapped_denom.clone(),
                     amount: quote_amount.into(),
@@ -1167,7 +1178,7 @@ fn execute_fungible_asset_order(
 
         // Mint any fee to the relayer
         if fee_amount > 0 {
-            messages.push(SubMsg::new(make_wasm_msg(
+            messages.push(SubMsg::reply_never(make_wasm_msg(
                 WrappedTokenMsg::MintTokens {
                     denom: wrapped_denom,
                     amount: fee_amount.into(),
@@ -1191,7 +1202,7 @@ fn execute_fungible_asset_order(
 
         // Transfer the quote amount to the receiver
         if quote_amount > 0 {
-            messages.push(SubMsg::new(make_wasm_msg(
+            messages.push(SubMsg::reply_never(make_wasm_msg(
                 LocalTokenMsg::Unescrow {
                     denom: quote_token_str.clone(),
                     recipient: receiver.into_string(),
@@ -1204,7 +1215,7 @@ fn execute_fungible_asset_order(
 
         // Transfer any fee to the relayer
         if fee_amount > 0 {
-            messages.push(SubMsg::new(make_wasm_msg(
+            messages.push(SubMsg::reply_never(make_wasm_msg(
                 LocalTokenMsg::Unescrow {
                     denom: quote_token_str,
                     recipient: relayer.into_string(),
@@ -1217,14 +1228,42 @@ fn execute_fungible_asset_order(
     }
     // Market Maker Fill - Any party can fill the order by providing the quote token
     else {
-        // Return a special acknowledgement that indicates this order needs a market maker
-        return Ok(Response::new().add_message(wasm_execute(
-            env.contract.address,
-            &ExecuteMsg::InternalWriteAck {
-                ack: ACK_ERR_ONLY_MAKER.into(),
-            },
-            vec![],
-        )?));
+        if quote_amount > 0 {
+            MARKET_MAKER.save(deps.storage, &relayer_msg)?;
+            messages.push(SubMsg::reply_always(
+                wasm_execute(
+                    &env.contract.address,
+                    &ExecuteMsg::InternalBatch {
+                        messages: vec![
+                            // Make sure the marker provide the funds
+                            make_wasm_msg(
+                                LocalTokenMsg::Escrow {
+                                    from: caller.to_string(),
+                                    denom: quote_token_str.clone(),
+                                    recipient: minter.to_string(),
+                                    amount: quote_amount.into(),
+                                },
+                                &minter,
+                                info.funds,
+                            )?,
+                            // Release the funds to the user
+                            make_wasm_msg(
+                                LocalTokenMsg::Unescrow {
+                                    denom: quote_token_str,
+                                    recipient: receiver.to_string(),
+                                    amount: quote_amount.into(),
+                                },
+                                minter,
+                                vec![],
+                            )?,
+                        ],
+                    },
+                    vec![],
+                )?,
+                MM_FILL_REPLY_ID,
+            ));
+        }
+        return Ok(Response::new().add_submessages(messages));
     }
 
     // Return success acknowledgement with protocol fill type
@@ -1289,7 +1328,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
             let packet = EXECUTING_PACKET.load(deps.storage)?;
             EXECUTING_PACKET.remove(deps.storage);
             match reply.result {
-                SubMsgResult::Ok(_) => {
+                SubMsgResult::Ok(msg) => {
                     // If the execution succedeed one of the acks is guaranteed to exist.
                     let execution_ack = (|| -> Result<Bytes, ContractError> {
                         match EXECUTING_PACKET_IS_BATCH.may_load(deps.storage)? {
@@ -1337,19 +1376,21 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                             inner_ack: Vec::from(execution_ack).into(),
                         }
                         .abi_encode_params();
-                        Ok(Response::new().add_message(wasm_execute(
-                            &ibc_host,
-                            &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
-                                MsgWriteAcknowledgement {
-                                    packet,
-                                    acknowledgement: zkgm_ack.into(),
-                                },
-                            ),
-                            vec![],
-                        )?))
+                        Ok(Response::new()
+                            .add_events(msg.events)
+                            .add_message(wasm_execute(
+                                &ibc_host,
+                                &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
+                                    MsgWriteAcknowledgement {
+                                        packet,
+                                        acknowledgement: zkgm_ack.into(),
+                                    },
+                                ),
+                                vec![],
+                            )?))
                     } else {
                         // Async acknowledgement, we don't write anything
-                        Ok(Response::new())
+                        Ok(Response::new().add_events(msg.events))
                     }
                 }
                 // Something went horribly wrong.
@@ -1411,26 +1452,55 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
         // eureka mode of multiplex operations.
         MULTIPLEX_REPLY_ID => {
             // Extract the acknowledgement from the reply
-            if let SubMsgResult::Ok(reply_data) = reply.result {
-                #[allow(deprecated)]
-                let acknowledgement = reply_data.data.unwrap_or_default();
+            match reply.result {
+                SubMsgResult::Ok(reply_data) => {
+                    #[allow(deprecated)]
+                    let acknowledgement = reply_data.data.unwrap_or_default();
 
-                // If the acknowledgement is empty, we can't proceed
-                if acknowledgement.is_empty() {
-                    return Err(ContractError::AsyncMultiplexUnsupported);
+                    // If the acknowledgement is empty, we can't proceed
+                    if acknowledgement.is_empty() {
+                        return Err(ContractError::AsyncMultiplexUnsupported);
+                    }
+
+                    Ok(Response::new().add_message(wasm_execute(
+                        env.contract.address,
+                        &ExecuteMsg::InternalWriteAck {
+                            ack: Vec::from(acknowledgement).into(),
+                        },
+                        vec![],
+                    )?))
                 }
-
+                SubMsgResult::Err(error) => Err(ContractError::MultiplexError { error }),
+            }
+        }
+        MM_FILL_REPLY_ID => match reply.result {
+            SubMsgResult::Ok(_) => {
+                let market_maker = MARKET_MAKER.load(deps.storage)?;
+                MARKET_MAKER.remove(deps.storage);
                 Ok(Response::new().add_message(wasm_execute(
                     env.contract.address,
                     &ExecuteMsg::InternalWriteAck {
-                        ack: Vec::from(acknowledgement).into(),
+                        ack: FungibleAssetOrderAck {
+                            fill_type: FILL_TYPE_MARKETMAKER,
+                            market_maker: Vec::from(market_maker).into(),
+                        }
+                        .abi_encode_params()
+                        .into(),
                     },
                     vec![],
                 )?))
-            } else {
-                Err(ContractError::AsyncMultiplexUnsupported)
             }
-        }
+            // Leave a chance for another MM to fill by telling the top level handler to revert.
+            SubMsgResult::Err(error) => Ok(Response::new()
+                .add_attribute("maker_execution_failure", error)
+                .add_message(wasm_execute(
+                    env.contract.address,
+                    &ExecuteMsg::InternalWriteAck {
+                        ack: ACK_ERR_ONLY_MAKER.into(),
+                    },
+                    vec![],
+                )?)),
+        },
         // For any other reply ID, we don't know how to handle it, so we return an error.
         // This is a safety measure to ensure we don't silently ignore unexpected replies,
         // which could indicate a bug in the contract or an attempt to exploit it.
