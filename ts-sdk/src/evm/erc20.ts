@@ -81,3 +81,22 @@ export const readErc20Decimals = (tokenAddress: Address) =>
       functionName: "decimals"
     })
   })
+
+/**
+ * Read the allowance of an ERC20 token for a specific owner and spender
+ * @param tokenAddress The address of the ERC20 token
+ * @param ownerAddress The address of the token owner
+ * @param spenderAddress The address of the spender
+ * @returns An Effect that resolves to the token allowance
+ */
+export const readErc20Allowance = (tokenAddress: Address, ownerAddress: Address, spenderAddress: Address) =>
+  Effect.gen(function* () {
+    const client = (yield* ViemPublicClient).client
+
+    return yield* readContract(client, {
+      address: tokenAddress,
+      abi: erc20Abi,
+      functionName: "allowance",
+      args: [ownerAddress, spenderAddress]
+    })
+  })

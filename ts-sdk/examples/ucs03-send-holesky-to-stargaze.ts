@@ -17,7 +17,7 @@ BigInt["prototype"].toJSON = function () {
 }
 
 const createBatch = Effect.gen(function* () {
-  const mainTransfer = yield* createEvmToCosmosFungibleAssetOrder({
+  const transfer1 = yield* createEvmToCosmosFungibleAssetOrder({
     sender: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
     receiver: "stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4",
     baseToken: "0x779877a7b0d9e8603169ddbd7836e478b4624789", // LINK on sepolia
@@ -25,7 +25,15 @@ const createBatch = Effect.gen(function* () {
     quoteAmount: 100n
   })
 
-  const feeTransfer = yield* createEvmToCosmosFungibleAssetOrder({
+  const transfer2 = yield* createEvmToCosmosFungibleAssetOrder({
+    sender: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
+    receiver: "stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4",
+    baseToken: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238", // USDC on sepolia
+    baseAmount: 100n,
+    quoteAmount: 100n
+  })
+
+  const transferFee = yield* createEvmToCosmosFungibleAssetOrder({
     sender: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
     receiver: "stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4",
     baseToken: "0x7b79995e5f793a07bc00c21412e50ecae098e7f9", // WETH on sepolia
@@ -33,7 +41,7 @@ const createBatch = Effect.gen(function* () {
     quoteAmount: 0n
   })
 
-  return Batch([mainTransfer, feeTransfer])
+  return Batch([transfer1, transfer2, transferFee])
 })
 
 Effect.runPromiseExit(
@@ -46,6 +54,7 @@ Effect.runPromiseExit(
       "https://rpc.elgafar-1.stargaze-apis.com"
     )
     const privateKey = "0xc0ffee"
+
     const account = privateKeyToAccount(privateKey)
     const walletClient = createWalletClient({
       account,
