@@ -5,6 +5,8 @@ import { writeContract } from "../evm/contract.js"
 import { type Instruction, encodeAbi } from "./instruction.js"
 import { generateSalt } from "../utils/index.js"
 import { SourceConfig } from "../evm/quote-token.js"
+import { executeContract } from "../cosmos/contract.js"
+import { SigningCosmWasmClientContext } from "../cosmos/client.js"
 
 export const sendInstructionEvm = (instruction: Instruction) =>
   Effect.gen(function* () {
@@ -30,3 +32,32 @@ export const sendInstructionEvm = (instruction: Instruction) =>
       ]
     })
   })
+
+export const sendInstructionCosmos = (instruction: Instruction) =>
+  Effect.gen(function* () {
+    const signingClient = yield* SigningCosmWasmClientContext
+    const sourceConfig = yield* SourceConfig
+
+    return yield* executeContract(
+      signingClient.client,
+      "union1d95n4r6dnrfrps59szhl8mk7yqewsuzyw0zh5q",
+      sourceConfig.ucs03address,
+      {
+        send: {
+          channel_id: sourceConfig.channelId,
+          timeout_height: 0,
+          timeout_timestamp: 100000n,
+          salt: generateSalt(),
+          instruction: encodeAbi(instruction)
+        }
+      }
+    )
+  })
+
+// Send {
+//     channel_id: ChannelId,
+//     timeout_height: u64,
+//     timeout_timestamp: u64,
+//     salt: H256,
+//     instruction: Bytes,
+// },
