@@ -715,7 +715,6 @@ fn process_msgs(
                                     client_id: msg_connection_open_init.client_id,
                                     counterparty_client_id: msg_connection_open_init
                                         .counterparty_client_id,
-                                    relayer: signer.to_string(),
                                 },
                             ),
                         )
@@ -737,7 +736,6 @@ fn process_msgs(
                                     client_id: msg_connection_open_try.client_id,
                                     proof_init: msg_connection_open_try.proof_init,
                                     proof_height: msg_connection_open_try.proof_height,
-                                    relayer: signer.to_string(),
                                 },
                             ),
                         )
@@ -757,7 +755,6 @@ fn process_msgs(
                                         .counterparty_connection_id,
                                     proof_try: msg_connection_open_ack.proof_try,
                                     proof_height: msg_connection_open_ack.proof_height,
-                                    relayer: signer.to_string(),
                                 },
                             ),
                         )
@@ -775,7 +772,6 @@ fn process_msgs(
                                     connection_id: msg_connection_open_confirm.connection_id,
                                     proof_ack: msg_connection_open_confirm.proof_ack,
                                     proof_height: msg_connection_open_confirm.proof_height,
-                                    relayer: signer.to_string(),
                                 },
                             ),
                         )

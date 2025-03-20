@@ -74,7 +74,6 @@ fn connection_open_init(deps: DepsMut) -> Result<Response, ContractError> {
     let msg = MsgConnectionOpenInit {
         client_id: ClientId!(1),
         counterparty_client_id: ClientId!(2),
-        relayer: mock_addr(RELAYER).into_string(),
     };
     execute(
         deps,
@@ -91,7 +90,6 @@ fn connection_open_try(deps: DepsMut) -> Result<Response, ContractError> {
         client_id: ClientId!(1),
         proof_init: vec![1, 2, 3].into(),
         proof_height: 1,
-        relayer: mock_addr(RELAYER).into_string(),
     };
 
     execute(
@@ -107,7 +105,6 @@ fn connection_open_confirm(deps: DepsMut) -> Result<Response, ContractError> {
         connection_id: ConnectionId!(1),
         proof_ack: vec![1, 2, 3].into(),
         proof_height: 1,
-        relayer: mock_addr(RELAYER).into_string(),
     };
 
     execute(

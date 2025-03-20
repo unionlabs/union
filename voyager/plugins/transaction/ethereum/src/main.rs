@@ -552,7 +552,6 @@ fn process_msgs<'a>(
                         .connectionOpenInit(ibc_solidity::MsgConnectionOpenInit {
                             client_id: data.client_id.raw(),
                             counterparty_client_id: data.counterparty_client_id.raw(),
-                            relayer: relayer.into(),
                         })
                         .clear_decoder(),
                 ),
@@ -565,7 +564,6 @@ fn process_msgs<'a>(
                             client_id: data.client_id.raw(),
                             proof_init: data.proof_init.into(),
                             proof_height: data.proof_height,
-                            relayer: relayer.into(),
                         })
                         .clear_decoder(),
                 ),
@@ -577,7 +575,6 @@ fn process_msgs<'a>(
                             counterparty_connection_id: data.counterparty_connection_id.raw(),
                             proof_height: data.proof_height,
                             proof_try: data.proof_try.into(),
-                            relayer: relayer.into(),
                         })
                         .clear_decoder(),
                 ),
@@ -588,7 +585,6 @@ fn process_msgs<'a>(
                             connection_id: data.connection_id.raw(),
                             proof_ack: data.proof_ack.into(),
                             proof_height: data.proof_height,
-                            relayer: relayer.into(),
                         })
                         .clear_decoder(),
                 ),

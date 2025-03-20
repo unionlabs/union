@@ -425,7 +425,6 @@ maybe_sol_attr! {
         struct MsgConnectionOpenInit {
             uint32 client_id;
             uint32 counterparty_client_id;
-            address relayer;
         }
 
         struct MsgConnectionOpenTry {
@@ -434,7 +433,6 @@ maybe_sol_attr! {
             uint32 client_id;
             bytes proof_init;
             uint64 proof_height;
-            address relayer;
         }
 
         struct MsgConnectionOpenAck {
@@ -442,14 +440,12 @@ maybe_sol_attr! {
             uint32 counterparty_connection_id;
             bytes proof_try;
             uint64 proof_height;
-            address relayer;
         }
 
         struct MsgConnectionOpenConfirm {
             uint32 connection_id;
             bytes proof_ack;
             uint64 proof_height;
-            address relayer;
         }
 
         struct MsgChannelOpenInit {

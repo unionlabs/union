@@ -33,7 +33,6 @@ fn connection_open_init_ok() {
     let msg = MsgConnectionOpenInit {
         client_id: ClientId!(1),
         counterparty_client_id: ClientId!(2),
-        relayer: mock_addr(RELAYER).into_string(),
     };
     assert!(execute(
         deps.as_mut(),
@@ -99,7 +98,6 @@ fn connection_open_try_ok() {
         client_id: ClientId!(1),
         proof_init: vec![1, 2, 3].into(),
         proof_height: 1,
-        relayer: mock_addr(RELAYER).into_string(),
     };
 
     assert!(execute(
@@ -135,7 +133,6 @@ fn connection_open_try_client_not_found() {
         client_id: ClientId!(1),
         proof_init: vec![1, 2, 3].into(),
         proof_height: 1,
-        relayer: mock_addr(RELAYER).into_string(),
     };
 
     assert_eq!(
@@ -181,7 +178,6 @@ fn connection_open_try_commitment_saved() {
         client_id: ClientId!(1),
         proof_init: vec![1, 2, 3].into(),
         proof_height: 1,
-        relayer: mock_addr(RELAYER).into_string(),
     };
 
     execute(
@@ -228,7 +224,6 @@ fn connection_open_ack_ok() {
         counterparty_connection_id: ConnectionId!(1),
         proof_try: vec![1, 2, 3].into(),
         proof_height: 1,
-        relayer: mock_addr(RELAYER).into_string(),
     };
 
     assert!(execute(
@@ -270,7 +265,6 @@ fn connection_open_ack_commitment_saved() {
         counterparty_connection_id: ConnectionId!(1),
         proof_try: vec![1, 2, 3].into(),
         proof_height: 1,
-        relayer: mock_addr(RELAYER).into_string(),
     };
 
     execute(
@@ -316,7 +310,6 @@ fn connection_open_confirm_ok() {
         connection_id: ConnectionId!(1),
         proof_ack: vec![1, 2, 3].into(),
         proof_height: 1,
-        relayer: mock_addr(RELAYER).into_string(),
     };
 
     assert!(execute(
