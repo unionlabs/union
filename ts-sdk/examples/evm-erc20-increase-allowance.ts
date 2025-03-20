@@ -4,6 +4,7 @@ import { createPublicClient, createWalletClient, http, parseEther } from "viem"
 import { sepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { increaseErc20Allowance, readErc20Allowance, readErc20Meta } from "../src/evm/erc20.ts"
+import { waitForTransactionReceipt } from "../src/evm/receipts.ts"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -56,6 +57,13 @@ Effect.runPromiseExit(
       Effect.provideService(ViemWalletClient, { client, account, chain })
     )
 
+    // Wait for transaction receipt
+    const receipt = yield* waitForTransactionReceipt(txHash).pipe(
+      Effect.provideService(ViemPublicClient, { client: publicClient })
+    )
+
+    console.log("Transaction confirmed in block:", receipt.blockNumber)
+
     // Read new allowance
     const newAllowance = yield* readErc20Allowance(
       tokenAddress,
@@ -71,7 +79,11 @@ Effect.runPromiseExit(
       ...metadata,
       previousAllowance: currentAllowance,
       newAllowance,
-      transactionHash: txHash
+      transactionHash: txHash,
+      receipt: {
+        blockNumber: receipt.blockNumber,
+        status: receipt.status
+      }
     }
   })
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))
