@@ -158,7 +158,7 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       flake =
       let
-        inherit (inputs.nixpkgs.lib) filterAtters;
+        inherit (inputs.nixpkgs.lib) filterAttrs;
         isCi = attr: v: (if v?ci then v.ci else true);
       in
       {
@@ -180,15 +180,15 @@
               branch = "main";
               include = {
                 packages.x86_64-linux =
-                  filterAtters isCi self.packages.x86_64-linux;
+                  filterAttrs isCi self.packages.x86_64-linux;
                 packages.aarch64-liunx =
-                  filterAtters isCi self.packages.aarch64-linux;
+                  filterAttrs isCi self.packages.aarch64-linux;
               };
             }
             {
               include = {
                 packages.x86_64-linux =
-                  filterAtters isCi self.packages.x86_64-linux;
+                  filterAttrs isCi self.packages.x86_64-linux;
               };
             }
           ];
