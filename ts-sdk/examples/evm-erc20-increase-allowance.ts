@@ -31,7 +31,7 @@ Effect.runPromiseExit(
     })
 
     // Token address and spender address
-    const tokenAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+    const tokenAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" // USDC on sepolia
     const spenderAddress = "0x84f074c15513f15baea0fbed3ec42f0bd1fb3efa" // ucs03 on sepolia
 
     // Read ERC20 token metadata
