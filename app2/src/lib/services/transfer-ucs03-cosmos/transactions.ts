@@ -1,5 +1,4 @@
 import { Effect } from "effect"
-import type { Chain } from "$lib/schema/chain.ts"
 import { CosmWasmError } from "$lib/services/transfer-ucs03-cosmos/errors.ts"
 import { executeCosmWasmInstructions } from "$lib/services/transfer-ucs03-cosmos/execute.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
@@ -8,7 +7,7 @@ import { generateSalt } from "$lib/services/shared"
 import { fromHex, isHex } from "viem"
 import { isValidBech32ContractAddress } from "$lib/utils"
 
-export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) => {
+export const submitTransfer = (transfer: ValidTransfer["args"]) => {
   const { connectedWallet } = cosmosStore
 
   if (!connectedWallet) {
@@ -56,7 +55,7 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
     ]
 
     return Effect.mapError(
-      executeCosmWasmInstructions(chain, connectedWallet, instructions),
+      executeCosmWasmInstructions(transfer.sourceChain, connectedWallet, instructions),
       err => err
     )
   })

@@ -40,7 +40,7 @@ export const cosmosDisplayToCanonical = (
   )
 
 /**
- * Convert an EVM display address (hex) to canonical bytes
+ * Convert an Evm display address (hex) to canonical bytes
  */
 export const evmDisplayToCanonical = (
   displayAddress: typeof AddressEvmDisplay.Type
@@ -179,7 +179,7 @@ export const runExample = async () => {
   const evmAddr = "0x3C5daAa3c96AB8fe4cFC2fB6d76193fe959A9f82" as typeof AddressEvmDisplay.Type
   const evmResult = await Effect.runPromise(evmDisplayToCanonical(evmAddr))
   console.log(
-    "EVM:",
+    "Evm:",
     Option.getOrElse(evmResult, () => "Invalid EVM address")
   )
 
@@ -202,5 +202,5 @@ export const runExample = async () => {
   const isValidEvm = await Effect.runPromise(
     isValidCanonicalForChain("0x1234567890123456789012345678901234567890", "evm")
   )
-  console.log("Is valid EVM:", isValidEvm)
+  console.log("Is valid Evm:", isValidEvm)
 }

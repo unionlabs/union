@@ -1,77 +1,33 @@
-import { Effect, Either, Option, Schema } from "effect"
+import { Data, Effect, Option } from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
 import type { QuoteData, Token, WethTokenData } from "$lib/schema/token.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
-import {
-  hasFailedExit as hasCosmosFailedExit,
-  isComplete as isCosmosComplete,
-  nextState as cosmosNextState,
-  TransferSubmission as CosmosTransferSubmission,
-  SwitchChainState,
-  ApprovalSubmitState,
-  TransferSubmitState
-} from "$lib/services/transfer-ucs03-cosmos"
-import {
-  hasFailedExit as hasEvmFailedExit,
-  isComplete as isEvmComplete,
-  nextState as evmNextState,
-  TransferSubmission as EvmTransferSubmission,
-  SwitchChainState as EvmSwitchChainState,
-  ApprovalSubmitState as EvmApprovalSubmitState,
-  ApprovalReceiptState,
-  TransferSubmitState as EvmTransferSubmitState,
-  TransferReceiptState as EvmTransferReceiptState
-} from "$lib/services/transfer-ucs03-evm"
-import {
-  hasFailedExit as hasAptosFailedExit,
-  isComplete as isAptosComplete,
-  nextState as aptosNextState,
-  TransferSubmission as AptosTransferSubmission,
-  TransferReceiptState as AptosTransferReceiptState
-} from "$lib/services/transfer-ucs03-aptos"
+import { TransferSubmission as CosmosTransferSubmission } from "$lib/services/transfer-ucs03-cosmos"
+import { TransferSubmission as EvmTransferSubmission } from "$lib/services/transfer-ucs03-evm"
+import { TransferSubmission as AptosTransferSubmission } from "$lib/services/transfer-ucs03-aptos"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { type Address, fromHex, type Hex } from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import type { Channel } from "$lib/schema/channel.ts"
-import { TransferSchema } from "$lib/schema/transfer-args.ts"
-import { getQuoteToken as getQuoteTokenEffect } from "$lib/services/shared"
-import { getWethQuoteToken as getWethQuoteTokenEffect } from "$lib/services/shared"
+import {
+  getDerivedReceiverSafe,
+  getParsedAmountSafe,
+  getQuoteToken as getQuoteTokenEffect,
+  getWethQuoteToken as getWethQuoteTokenEffect
+} from "$lib/services/shared"
 import { cosmosStore } from "$lib/wallet/cosmos"
-import { getParsedAmountSafe } from "$lib/services/shared"
-import { getDerivedReceiverSafe } from "$lib/services/shared"
-
-export interface TransferState {
-  readonly _tag: string
-}
-
-export interface EmptyState extends TransferState {
-  readonly _tag: "Empty"
-}
-
-export interface EVMState extends TransferState {
-  readonly _tag: "EVM"
-  readonly state: EvmTransferSubmission
-}
-
-export interface CosmosState extends TransferState {
-  readonly _tag: "Cosmos"
-  readonly state: CosmosTransferSubmission
-}
-
-export interface AptosState extends TransferState {
-  readonly _tag: "Aptos"
-  readonly state: AptosTransferSubmission
-}
-
-export type TransferStateUnion = EmptyState | EVMState | CosmosState | AptosState
-
-export const TransferState = {
-  Empty: (): EmptyState => ({ _tag: "Empty" }),
-  EVM: (state: EvmTransferSubmission): EVMState => ({ _tag: "EVM", state }),
-  Aptos: (state: AptosTransferSubmission): AptosState => ({ _tag: "Aptos", state }),
-  Cosmos: (state: CosmosTransferSubmission): CosmosState => ({ _tag: "Cosmos", state })
-}
+import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
+import {
+  TransferState,
+  type TransferStateUnion,
+  validateTransfer,
+  type ValidationResult
+} from "$lib/components/Transfer/validation.ts"
+import { handleAptosSubmit } from "$lib/components/Transfer/handlers/aptos.ts"
+import { handleCosmosSubmit } from "$lib/components/Transfer/handlers/cosmos.ts"
+import { handleEvmSubmit } from "$lib/components/Transfer/handlers/evm.ts"
+import type { AptosTransfer, CosmosTransfer, EVMTransfer } from "$lib/schema/transfer-args.ts"
 
 export class Transfer {
   raw = new RawTransferSvelte()
@@ -85,7 +41,7 @@ export class Transfer {
     if (Option.isSome(this.sourceChain)) {
       const sourceChainValue = this.sourceChain.value
       if (sourceChainValue.rpc_type === "evm") {
-        return TransferState.EVM(EvmTransferSubmission.Filling())
+        return TransferState.Evm(EvmTransferSubmission.Filling())
       }
       if (sourceChainValue.rpc_type === "aptos") {
         return TransferState.Aptos(AptosTransferSubmission.Filling())
@@ -116,10 +72,32 @@ export class Transfer {
     this.sourceChain.pipe(Option.flatMap(sc => tokensStore.getData(sc.universal_chain_id)))
   )
 
+  sortedBalances = $derived(
+    this.sourceChain.pipe(
+      Option.flatMap(sc =>
+        Option.fromNullable(
+          Option.isSome(sortedBalancesStore.sortedBalances)
+            ? sortedBalancesStore.sortedBalances.value.find(
+                v => v.chain.universal_chain_id === sc.universal_chain_id
+              )
+            : undefined
+        ).pipe(Option.flatMap(c => c.tokens))
+      )
+    )
+  )
+
   baseToken = $derived(
     this.baseTokens.pipe(
       Option.flatMap(tokens =>
         Option.fromNullable(tokens.find((t: Token) => t.denom === this.raw.asset))
+      )
+    )
+  )
+
+  baseTokenBalance = $derived(
+    Option.all([this.baseToken, this.sortedBalances]).pipe(
+      Option.flatMap(([token, sortedTokens]) =>
+        Option.fromNullable(sortedTokens.find(t => t.token.denom === token.denom))
       )
     )
   )
@@ -168,101 +146,128 @@ export class Transfer {
   quoteToken = $state<Option.Option<typeof QuoteData.Type>>(Option.none())
   wethQuoteToken = $state<Option.Option<typeof WethTokenData.Type>>(Option.none())
 
-  getQuoteToken = async () => {
-    const denomOpt = Option.map(this.baseToken, t => t.denom)
+  getQuoteToken = () => {
+    class MissingArgumentError extends Data.TaggedError("MissingArgumentError")<{
+      field: string
+    }> {}
 
-    if (
-      Option.isNone(this.sourceChain) ||
-      Option.isNone(this.destinationChain) ||
-      Option.isNone(denomOpt) ||
-      Option.isNone(this.channel)
-    ) {
-      this.quoteToken = Option.some({ type: "QUOTE_MISSING_ARGUMENTS" } as const)
-      return null
-    }
+    const setQuoteToken = (value: Option.Option<typeof QuoteData.Type>) =>
+      Effect.sync(() => {
+        this.quoteToken = value
+      })
 
-    this.quoteToken = Option.some({ type: "QUOTE_LOADING" } as const)
+    const checkRequiredFields = Effect.all([
+      Option.match(this.baseToken, {
+        onNone: () => Effect.fail(new MissingArgumentError({ field: "baseToken" })),
+        onSome: token => Effect.succeed(token.denom)
+      }),
+      Option.match(this.sourceChain, {
+        onNone: () => Effect.fail(new MissingArgumentError({ field: "sourceChain" })),
+        onSome: Effect.succeed
+      }),
+      Option.match(this.destinationChain, {
+        onNone: () => Effect.fail(new MissingArgumentError({ field: "destinationChain" })),
+        onSome: Effect.succeed
+      }),
+      Option.match(this.channel, {
+        onNone: () => Effect.fail(new MissingArgumentError({ field: "channel" })),
+        onSome: Effect.succeed
+      })
+    ])
 
-    const sourceChainValue = this.sourceChain.value
-    const denomValue = denomOpt.value as `0x${string}`
-    const channelValue = this.channel.value
-    const destinationChainValue = this.destinationChain.value
-    const setQuoteToken = (value: Option.Option<typeof QuoteData.Type>) => {
-      this.quoteToken = value
-    }
-
-    return Effect.gen(function* () {
-      const result = yield* getQuoteTokenEffect(
-        sourceChainValue,
-        denomValue,
-        channelValue,
-        destinationChainValue
-      )
-      setQuoteToken(Option.some(result))
-      return result
-    }).pipe(
-      Effect.catchTag("GetQuoteError", error =>
-        Effect.sync(() => {
-          console.error(error)
-          setQuoteToken(
-            Option.some({
-              type: "QUOTE_ERROR",
-              cause: error
-            } as const)
+    return checkRequiredFields.pipe(
+      Effect.flatMap(([denom, sourceChain, destinationChain, channel]) => {
+        const denomValue = denom as `0x${string}`
+        return setQuoteToken(Option.some({ type: "QUOTE_LOADING" } as const)).pipe(
+          Effect.flatMap(() =>
+            getQuoteTokenEffect(sourceChain, denomValue, channel, destinationChain)
+          ),
+          Effect.tap(result => setQuoteToken(Option.some(result)))
+        )
+      }),
+      Effect.catchAll(error => {
+        if (error instanceof MissingArgumentError) {
+          return setQuoteToken(Option.some({ type: "QUOTE_MISSING_ARGUMENTS" } as const)).pipe(
+            Effect.as(null)
           )
-          return null
-        })
-      ),
-      Effect.runPromise
+        }
+
+        return Effect.logError(`Quote Token Error: ${JSON.stringify(error)}`).pipe(
+          Effect.flatMap(() =>
+            setQuoteToken(
+              Option.some({
+                type: "QUOTE_ERROR",
+                cause: error
+              } as const)
+            )
+          ),
+          Effect.as(null)
+        )
+      })
     )
   }
 
-  getWethQuoteToken = async () => {
-    if (
-      Option.isNone(this.sourceChain) ||
-      Option.isNone(this.destinationChain) ||
-      Option.isNone(this.ucs03address) ||
-      Option.isNone(this.channel)
-    ) {
-      this.wethQuoteToken = Option.some({ type: "WETH_MISSING_ARGUMENTS" } as const)
-      return null
-    }
+  getWethQuoteToken = () => {
+    class MissingArgumentError extends Data.TaggedError("MissingArgumentError")<{
+      field: string
+    }> {}
 
-    if (this.sourceChain.value.rpc_type !== "evm") return
+    const setWethQuoteToken = (value: Option.Option<typeof WethTokenData.Type>) =>
+      Effect.sync(() => {
+        this.wethQuoteToken = value
+      })
 
-    this.wethQuoteToken = Option.some({ type: "WETH_LOADING" } as const)
+    const checkRequiredFields = Effect.all([
+      Option.match(this.sourceChain, {
+        onNone: () => Effect.fail(new MissingArgumentError({ field: "sourceChain" })),
+        onSome: Effect.succeed
+      }),
+      Option.match(this.destinationChain, {
+        onNone: () => Effect.fail(new MissingArgumentError({ field: "destinationChain" })),
+        onSome: Effect.succeed
+      }),
+      Option.match(this.ucs03address, {
+        onNone: () => Effect.fail(new MissingArgumentError({ field: "ucs03address" })),
+        onSome: Effect.succeed
+      }),
+      Option.match(this.channel, {
+        onNone: () => Effect.fail(new MissingArgumentError({ field: "channel" })),
+        onSome: Effect.succeed
+      })
+    ])
 
-    const sourceChainValue = this.sourceChain.value
-    const ucs03addressValue = this.ucs03address.value
-    const channelValue = this.channel.value
-    const destinationChainValue = this.destinationChain.value
-    const setWethQuoteToken = (value: Option.Option<typeof WethTokenData.Type>) => {
-      this.wethQuoteToken = value
-    }
+    return checkRequiredFields.pipe(
+      Effect.flatMap(([sourceChain, destinationChain, ucs03address, channel]) => {
+        if (sourceChain.rpc_type !== "evm") {
+          return setWethQuoteToken(Option.some({ type: "NOT_EVM" } as const)).pipe(Effect.as(null))
+        }
 
-    return Effect.gen(function* () {
-      const result = yield* getWethQuoteTokenEffect(
-        sourceChainValue,
-        ucs03addressValue,
-        channelValue,
-        destinationChainValue
-      )
-      setWethQuoteToken(Option.some(result))
-      return result
-    }).pipe(
-      Effect.catchTag("GetWethQuoteError", error =>
-        Effect.sync(() => {
-          console.error(error)
-          setWethQuoteToken(
-            Option.some({
-              type: "WETH_ERROR",
-              cause: error.cause
-            } as const)
+        return setWethQuoteToken(Option.some({ type: "WETH_LOADING" } as const)).pipe(
+          Effect.flatMap(() =>
+            getWethQuoteTokenEffect(sourceChain, ucs03address, channel, destinationChain)
+          ),
+          Effect.tap(result => setWethQuoteToken(Option.some(result)))
+        )
+      }),
+      Effect.catchAll(error => {
+        if (error instanceof MissingArgumentError) {
+          return setWethQuoteToken(Option.some({ type: "WETH_MISSING_ARGUMENTS" } as const)).pipe(
+            Effect.as(null)
           )
-          return
-        })
-      ),
-      Effect.runPromise
+        }
+
+        return Effect.logError(`WETH Quote Error: ${JSON.stringify(error)}`).pipe(
+          Effect.flatMap(() =>
+            setWethQuoteToken(
+              Option.some({
+                type: "WETH_ERROR",
+                cause: error
+              } as const)
+            )
+          ),
+          Effect.as(Option.none())
+        )
+      })
     )
   }
 
@@ -277,207 +282,74 @@ export class Transfer {
     const ucs03addressValue = Option.getOrNull(this.ucs03address)
     const wethQuoteTokenValue = Option.getOrNull(this.wethQuoteToken)
 
+    const maybeQuoteToken =
+      quoteTokenValue &&
+      (quoteTokenValue.type === "UNWRAPPED" || quoteTokenValue.type === "NEW_WRAPPED")
+        ? quoteTokenValue.quote_token
+        : undefined
+
+    const maybeWethQuoteToken =
+      wethQuoteTokenValue && "wethQuoteToken" in wethQuoteTokenValue
+        ? (wethQuoteTokenValue as { wethQuoteToken: string }).wethQuoteToken
+        : undefined
+
     return {
-      sourceChain: sourceChainValue
-        ? sourceChainValue.rpc_type === "evm"
-          ? sourceChainValue.toViemChain()
-          : sourceChainValue
-        : null,
+      sourceChain: sourceChainValue,
       sourceRpcType: sourceChainValue?.rpc_type,
       destinationRpcType: destinationChainValue?.rpc_type,
       sourceChannelId: channelValue?.source_channel_id,
       ucs03address: ucs03addressValue,
       baseToken: baseTokenValue?.denom,
       baseAmount: parsedAmountValue,
-      quoteToken: quoteTokenValue?.quote_token,
+      quoteToken: maybeQuoteToken,
       quoteAmount: parsedAmountValue,
       receiver: derivedReceiverValue,
-      timeoutHeight: 0n,
+      timeoutHeight: "0",
       timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
-      wethQuoteToken: wethQuoteTokenValue?.wethQuoteToken
+      wethQuoteToken: maybeWethQuoteToken
     }
   })
 
-  transferResult = $derived.by(() => {
-    const validationEffect = Schema.decode(TransferSchema)(this.args)
-    const result = Effect.runSync(Effect.either(validationEffect))
-    return Either.isRight(result)
-      ? { isValid: true, args: result.right }
-      : { isValid: false, args: this.args }
-  })
-
-  isValid = $derived(this.transferResult.isValid)
+  validation = $derived.by<ValidationResult>(() => validateTransfer(this.args))
 
   submit = async () => {
-    if (Option.isNone(chains.data) || Option.isNone(this.sourceChain)) return
-    console.log(this.transferResult.args)
+    const validation = this.validation
+    if (validation._tag !== "Success") {
+      console.warn("Validation failed, errors:", validation.messages)
+      return
+    }
 
-    const sourceChainValue = this.sourceChain.value
+    const typedArgs = validation.value
 
-    if (sourceChainValue.rpc_type === "evm") {
-      let evmState: EvmTransferSubmission
-      if (this.state._tag === "EVM") {
-        // If failed, reset the failed step to InProgress
-        if (hasEvmFailedExit(this.state.state)) {
-          switch (this.state.state._tag) {
-            case "SwitchChain":
-              evmState = EvmTransferSubmission.SwitchChain({
-                state: EvmSwitchChainState.InProgress()
-              })
-              break
-            case "ApprovalSubmit":
-              evmState = EvmTransferSubmission.ApprovalSubmit({
-                state: EvmApprovalSubmitState.InProgress()
-              })
-              break
-            case "ApprovalReceipt":
-              evmState = EvmTransferSubmission.ApprovalReceipt({
-                state: ApprovalReceiptState.InProgress({ hash: this.state.state.state.hash })
-              })
-              break
-            case "TransferSubmit":
-              evmState = EvmTransferSubmission.TransferSubmit({
-                state: EvmTransferSubmitState.InProgress()
-              })
-              break
-            case "TransferReceipt":
-              evmState = EvmTransferSubmission.TransferReceipt({
-                state: EvmTransferReceiptState.InProgress({ hash: this.state.state.state.hash })
-              })
-              break
-            default:
-              evmState = EvmTransferSubmission.Filling()
-          }
-        } else {
-          evmState = this.state.state
-        }
-      } else {
-        evmState = EvmTransferSubmission.Filling()
-      }
+    console.info("Validated args:", typedArgs)
 
-      const newState = await evmNextState(evmState, this.transferResult.args, sourceChainValue)
-      this._stateOverride = newState !== null ? TransferState.EVM(newState) : TransferState.Empty()
+    const updateState = (state: TransferStateUnion) => {
+      this._stateOverride = state
+    }
 
-      console.info("evmState: ", evmState)
-      let currentEvmState = newState
-      while (currentEvmState !== null && !hasEvmFailedExit(currentEvmState)) {
-        const nextEvmState = await evmNextState(
-          currentEvmState,
-          this.transferResult.args,
-          sourceChainValue
+    switch (typedArgs.sourceChain.rpc_type) {
+      case "evm":
+        await handleEvmSubmit(this.state, typedArgs as EVMTransfer, updateState)
+        break
+      case "cosmos":
+        await handleCosmosSubmit(
+          this.state,
+          typedArgs as CosmosTransfer,
+          cosmosStore.connectedWallet,
+          updateState
         )
-        this._stateOverride =
-          nextEvmState !== null ? TransferState.EVM(nextEvmState) : TransferState.Empty()
-
-        currentEvmState = nextEvmState
-        if (currentEvmState !== null && isEvmComplete(currentEvmState)) break
-      }
-    } else if (sourceChainValue.rpc_type === "cosmos") {
-      let cosmosState: CosmosTransferSubmission
-      if (this.state._tag === "Cosmos") {
-        // If failed, reset the failed step to InProgress
-        if (hasCosmosFailedExit(this.state.state)) {
-          switch (this.state.state._tag) {
-            case "SwitchChain":
-              cosmosState = CosmosTransferSubmission.SwitchChain({
-                state: SwitchChainState.InProgress()
-              })
-              break
-            case "ApprovalSubmit":
-              cosmosState = CosmosTransferSubmission.ApprovalSubmit({
-                state: ApprovalSubmitState.InProgress()
-              })
-              break
-            case "TransferSubmit":
-              cosmosState = CosmosTransferSubmission.TransferSubmit({
-                state: TransferSubmitState.InProgress()
-              })
-              break
-            default:
-              cosmosState = CosmosTransferSubmission.Filling()
-          }
-        } else {
-          cosmosState = this.state.state
-        }
-      } else {
-        cosmosState = CosmosTransferSubmission.Filling()
-      }
-
-      const newState = await cosmosNextState(
-        cosmosState,
-        this.transferResult.args,
-        sourceChainValue,
-        cosmosStore.connectedWallet
-      )
-      this._stateOverride =
-        newState !== null ? TransferState.Cosmos(newState) : TransferState.Empty()
-
-      let currentCosmosState = newState
-      while (currentCosmosState !== null && !hasCosmosFailedExit(currentCosmosState)) {
-        const nextCosmosState = await cosmosNextState(
-          currentCosmosState,
-          this.transferResult.args,
-          sourceChainValue,
-          cosmosStore.connectedWallet
+        break
+      case "aptos":
+        await handleAptosSubmit(
+          this.state,
+          typedArgs as AptosTransfer,
+          typedArgs.sourceChain,
+          updateState
         )
-        this._stateOverride =
-          nextCosmosState !== null ? TransferState.Cosmos(nextCosmosState) : TransferState.Empty()
-
-        currentCosmosState = nextCosmosState
-        if (currentCosmosState !== null && isCosmosComplete(currentCosmosState)) break
-      }
-    } else if (sourceChainValue.rpc_type === "aptos") {
-      console.info("sourceChain is aptos")
-      console.info("this.state._tag is: ", this.state._tag)
-      let aptosState: AptosTransferSubmission
-      if (this.state._tag === "Aptos") {
-        console.info("state._tag is aptos")
-        // If failed, reset the failed step to InProgress
-        if (hasAptosFailedExit(this.state.state)) {
-          switch (this.state.state._tag) {
-            case "SwitchChain":
-              aptosState = AptosTransferSubmission.SwitchChain({
-                state: EvmSwitchChainState.InProgress()
-              })
-              break
-            case "TransferSubmit":
-              aptosState = AptosTransferSubmission.TransferSubmit({
-                state: AptosTransferSubmitState.InProgress()
-              })
-              break
-            case "TransferReceipt":
-              aptosState = AptosTransferSubmission.TransferReceipt({
-                state: AptosTransferReceiptState.InProgress({ hash: this.state.state.state.hash })
-              })
-              break
-            default:
-              aptosState = AptosTransferSubmission.Filling()
-          }
-        } else {
-          aptosState = this.state.state
-        }
-      } else {
-        aptosState = AptosTransferSubmission.Filling()
-      }
-
-      console.info("aptosState: ", aptosState)
-
-      const newState = await aptosNextState(aptosState, this.transferResult.args, sourceChainValue)
-      this._stateOverride =
-        newState !== null ? TransferState.Aptos(newState) : TransferState.Empty()
-
-      let currentaptosState = newState
-      while (currentaptosState !== null && !hasAptosFailedExit(currentaptosState)) {
-        const nextaptosState = await aptosNextState(
-          currentaptosState,
-          this.transferResult.args,
-          sourceChainValue
-        )
-        this._stateOverride =
-          nextaptosState !== null ? TransferState.Aptos(nextaptosState) : TransferState.Empty()
-
-        currentaptosState = nextaptosState
-        if (currentaptosState !== null && isAptosComplete(currentaptosState)) break
+        break
+      default: {
+        console.error(`Unsupported RPC type: ${typedArgs.sourceChain.rpc_type}`)
+        updateState(TransferState.Empty())
       }
     }
   }

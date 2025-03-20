@@ -41,8 +41,6 @@ export type TransferReceiptState = Data.TaggedEnum<{
 }>
 export const TransferReceiptState = Data.taggedEnum<TransferReceiptState>()
 
-export const TransferSubmission2 = Data.taggedEnum<TransferSubmission>()
-
 export type TransferSubmission = Data.TaggedEnum<{
   Filling: {}
   SwitchChain: { state: SwitchChainState }

@@ -63,16 +63,16 @@ export type Tokens = typeof Tokens.Type
 export const RawTokenBalance = Schema.Option(TokenRawAmount).pipe(Schema.brand("RawTokenBalance"))
 export type RawTokenBalance = typeof RawTokenBalance.Type
 
-export const EVMWethToken = AddressEvmCanonical.pipe(
+export const EvmWethToken = AddressEvmCanonical.pipe(
   Schema.annotations({
     message: () =>
-      "WETH token must be a valid EVM canonical address (e.g., 0x followed by 40 hex chars)"
+      "WETH token must be a valid Evm canonical address (e.g., 0x followed by 40 hex chars)"
   })
 )
 
 export const QuoteData = Schema.Union(
   Schema.Struct({
-    quote_token: Schema.String,
+    quote_token: Hex,
     type: Schema.Literal("UNWRAPPED", "NEW_WRAPPED")
   }),
   Schema.Struct({
@@ -88,7 +88,8 @@ export const QuoteData = Schema.Union(
 )
 
 export const WethTokenData = Schema.Union(
-  Schema.Struct({ wethQuoteToken: Schema.String }),
+  Schema.Struct({ wethQuoteToken: Hex }),
+  Schema.Struct({ type: Schema.Literal("NOT_EVM") }),
   Schema.Struct({ type: Schema.Literal("NO_WETH_QUOTE") }),
   Schema.Struct({ type: Schema.Literal("WETH_LOADING") }),
   Schema.Struct({ type: Schema.Literal("WETH_MISSING_ARGUMENTS") }),

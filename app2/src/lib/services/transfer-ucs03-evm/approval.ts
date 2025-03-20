@@ -11,18 +11,13 @@ import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
 import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 
-export const approveTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
+export const approveTransfer = (transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
-    const walletClient = yield* getWalletClient(chain)
+    const walletClient = yield* getWalletClient(transfer.sourceChain)
 
     const account = yield* Effect.flatMap(getAccount, account =>
       account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
     )
-
-    console.log({
-      address: transfer.baseToken,
-      args: [transfer.ucs03address, transfer.baseAmount]
-    })
 
     const hash = yield* Effect.tryPromise({
       try: () =>

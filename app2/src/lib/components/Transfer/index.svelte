@@ -1,12 +1,10 @@
 <script lang="ts">
-import Chain from "$lib/components/Transfer/Chain.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Button from "$lib/components/ui/Button.svelte"
-import Assets from "$lib/components/Transfer/Assets.svelte"
 import Amount from "$lib/components/Transfer/Amount.svelte"
 import Receiver from "$lib/components/Transfer/Receiver.svelte"
 import ShowData from "$lib/components/Transfer/ShowData.svelte"
-import { transfer, type TransferStateUnion } from "$lib/components/Transfer/transfer.svelte.ts"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import {
   hasFailedExit as hasCosmosFailedExit,
   isComplete as isCosmosComplete
@@ -19,20 +17,16 @@ import {
   hasFailedExit as hasAptosFailedExit,
   isComplete as isAptosComplete
 } from "$lib/services/transfer-ucs03-aptos"
+import ChainAsset from "$lib/components/Transfer/ChainAsset/index.svelte"
+import type { TransferStateUnion } from "$lib/components/Transfer/validation.ts"
 
-$effect(() => {
-  transfer.getQuoteToken()
-  transfer.getWethQuoteToken()
-})
-
-// Simplified status checker using the enum
 function getStatus(
   state: TransferStateUnion
 ): "empty" | "filling" | "processing" | "failed" | "complete" {
   switch (state._tag) {
     case "Empty":
       return "empty"
-    case "EVM": {
+    case "Evm": {
       if (state.state._tag === "Filling") return "filling"
       if (hasEvmFailedExit(state.state)) return "failed"
       if (isEvmComplete(state.state)) return "complete"
@@ -60,7 +54,7 @@ function getStepName(state: TransferStateUnion): string | null {
   switch (state._tag) {
     case "Empty":
       return null
-    case "EVM":
+    case "Evm":
       return state.state._tag
     case "Aptos":
       return state.state._tag
@@ -89,17 +83,16 @@ let buttonText = $derived(
 </script>
 
 <Card class="max-w-md relative flex flex-col gap-2">
-  <Chain type="source" />
-  <Chain type="destination" />
-  <Assets />
-  <Amount />
-  <Receiver />
-  <ShowData />
+  <ChainAsset type="source"/>
+  <ChainAsset type="destination"/>
+  <Amount/>
+  <Receiver/>
+  <ShowData/>
   <Button
           class="mt-2"
           variant="primary"
           onclick={transfer.submit}
-          disabled={!isButtonEnabled}
+          disabled={!isButtonEnabled || transfer.validation._tag !== "Success"}
   >
     {buttonText}
   </Button>

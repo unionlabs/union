@@ -1,6 +1,6 @@
 import { Schema } from "effect"
 import { Chain, RpcType } from "$lib/schema/chain"
-import { EVMWethToken, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
+import { EvmWethToken, TokenRawAmount, TokenRawDenom } from "$lib/schema/token"
 import { ChannelId } from "$lib/schema/channel"
 
 const BaseTransferFields = {
@@ -30,20 +30,24 @@ const BaseTransferFields = {
   timeoutTimestamp: Schema.String
 }
 
-const EVMTransferSchema = Schema.Struct({
+const EvmTransferSchema = Schema.Struct({
   ...BaseTransferFields,
-  sourceRpcType: Schema.Literal("evm"),
-  wethQuoteToken: EVMWethToken,
+  sourceRpcType: Schema.Literal("evm").annotations({
+    message: () => "sourceRpcType must be 'evm'"
+  }),
+  wethQuoteToken: EvmWethToken,
   receiver: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )
 })
 
-export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")(EVMTransferSchema) {}
+export class EVMTransfer extends Schema.Class<EVMTransfer>("EVMTransfer")(EvmTransferSchema) {}
 
 const CosmosTransferSchema = Schema.Struct({
   ...BaseTransferFields,
-  sourceRpcType: Schema.Literal("cosmos"),
+  sourceRpcType: Schema.Literal("cosmos").annotations({
+    message: () => "sourceRpcType must be 'cosmos'"
+  }),
   receiver: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )
@@ -55,7 +59,9 @@ export class CosmosTransfer extends Schema.Class<CosmosTransfer>("CosmosTransfer
 
 const AptosTransferSchema = Schema.Struct({
   ...BaseTransferFields,
-  sourceRpcType: Schema.Literal("aptos"),
+  sourceRpcType: Schema.Literal("aptos").annotations({
+    message: () => "sourceRpcType must be 'aptos'"
+  }),
   receiver: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )
@@ -86,7 +92,7 @@ export class ValidTransfer extends Schema.Class<ValidTransfer>("ValidTransfer")(
 
 // Then create the union of those partial schemas
 const PartialTransferUnionSchema = Schema.Union(
-  Schema.partial(EVMTransferSchema),
+  Schema.partial(EvmTransferSchema),
   Schema.partial(CosmosTransferSchema),
   Schema.partial(AptosTransferSchema)
 )

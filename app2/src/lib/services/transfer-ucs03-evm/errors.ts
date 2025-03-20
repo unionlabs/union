@@ -51,7 +51,7 @@ export class ChannelValidationError extends Data.TaggedError("ChannelValidationE
 }> {}
 
 export class GetQuoteError extends Data.TaggedError("GetQuoteError")<{
-  cause: Error
+  cause: string
 }> {}
 
 export class GetWethQuoteError extends Data.TaggedError("GetWethQuoteError")<{

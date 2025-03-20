@@ -12,7 +12,6 @@ export const getWethQuoteToken = (
 ) =>
   Effect.gen(function* () {
     const publicClient = yield* getPublicClient(sourceChain)
-
     // const wethAddress = yield* Effect.tryPromise({
     //   try: () => new Promise(() => {Promise.resolve("0x000")}),
 
