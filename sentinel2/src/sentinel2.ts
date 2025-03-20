@@ -1,4 +1,4 @@
-import { Effect, Schedule, Data } from "effect"
+import { Effect, Schedule, Data, Context, Schema, Arbitrary, FastCheck } from "effect"
 import { createWalletClient, createPublicClient, http, erc20Abi } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { sepolia } from "viem/chains"
@@ -41,14 +41,6 @@ interface ConfigFile {
   load_test_enabled: boolean
 }
 
-function getRandomArbitrary(min_bigint: bigint, max_bigint: bigint) {
-  const min = Number(min_bigint)
-  const max = Number(max_bigint)
-  const value = Math.random() * (max - min) + min
-
-  return BigInt(Math.ceil(value))
-}
-
 class DoTransferError extends Data.TaggedError("DoTransferError")<{
   cause: unknown
 }> {}
@@ -57,6 +49,13 @@ class FilesystemError extends Data.TaggedError("FilesystemError")<{
   message: string
   cause: unknown
 }> {}
+
+
+export class Config extends Context.Tag("Config")<
+  Config,
+  { readonly config: ConfigFile }
+>() {}
+
 
 const doTransferRetrySchedule = Schedule.exponential("2 seconds", 2.0).pipe(
   Schedule.intersect(Schedule.recurs(2)) // Limit retries to 3
@@ -99,16 +98,17 @@ const doTransfer = (task: TransferConfig) =>
       sourceChainId = task.sourceChainIdEVM
     }
 
-    const random_amount = getRandomArbitrary(task.amount_range[0] ?? 1n, task.amount_range[1] ?? 1n)
+    const arb = Arbitrary.make(Schema.Int.pipe(Schema.between(1, 80)))
+    const random_amount = BigInt(FastCheck.sample(arb, 1)[0]!)
 
     yield* Effect.log(
       `\n[${chainType}] Starting transfer for chainId=${sourceChainId} to chain=${task.destinationChainId}`
     )
 
-    const client = createPublicClient({
-      chain: sepolia,
-      transport: http()
-    })
+    // const client = createPublicClient({
+    //   chain: sepolia,
+    //   transport: http()
+    // })
 
     const account = privateKeyToAccount(`0x${task.privateKey.replace(/^0x/, "")}`)
     const tokenAddress = task.denomAddress
@@ -134,9 +134,11 @@ const doTransfer = (task: TransferConfig) =>
     yield* Effect.log("Transfer tx hash:", tx_hash)
   })
 
-const transferLoop = (config: ConfigFile) =>
+const transferLoop =
   Effect.repeat(
     Effect.gen(function* (_) {
+      let config = (yield* Config).config
+
       const transfers: Array<TransferConfig> = config.transfers ?? []
       if (transfers.length > 0) {
         yield* Effect.log("\n========== Starting transfers tasks ==========")
@@ -150,12 +152,13 @@ const transferLoop = (config: ConfigFile) =>
       }
       yield* Effect.log("Transfers done (or skipped). Sleeping 10 minutes...")
     }),
-    Schedule.spaced(10 * 30 * 10) // Sleep for 10 minutes between each loop
+    Schedule.spaced("3 seconds")
   )
 
-const runIbcChecksForever = (config: ConfigFile) =>
+const runIbcChecksForever =
   Effect.repeat(
     Effect.gen(function* (_) {
+      let config = (yield* Config).config
       const chainPairs: Array<ChainPair> = config.interactions
       yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
       for (const pair of chainPairs) {
@@ -176,10 +179,9 @@ const runIbcChecksForever = (config: ConfigFile) =>
       }
       yield* Effect.log("IBC Checks done (or skipped). Sleeping 10 minutes...")
     }),
-    Schedule.spaced(5 * 1000) // Sleep for 5 seconds between each loop
+    Schedule.spaced("5 seconds")
   )
 
-// const mainEffect = (configPath: string) => Effect.gen(function* (_) {
 const mainEffect = Effect.gen(function* (_) {
   const argv = yield* Effect.sync(() =>
     yargs(hideBin(process.argv))
@@ -203,13 +205,9 @@ const mainEffect = Effect.gen(function* (_) {
 
   const config = yield* configEffect // This will resolve to the loaded config or an error
 
-  const transferEffect = transferLoop(config)
-  const ibcCheckEffect = runIbcChecksForever(config)
+  yield* Effect.all([transferLoop, runIbcChecksForever], {concurrency: "unbounded"}).pipe(Effect.provideService(Config, { config }))
 
-  yield* Effect.forkAll([transferEffect, ibcCheckEffect])
-  yield* Effect.zip(transferEffect, ibcCheckEffect)
 })
 
-// ----- Run the Main Effect -----
 
 Effect.runPromise(mainEffect).catch(err => Effect.logError("Error in mainEffect", err))

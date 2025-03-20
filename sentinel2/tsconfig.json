@@ -28,7 +28,7 @@
     //   no inferred return types of exported functions etc.
     // - Even though this option would be generally useful, it requires
     //   that `declaration` or `composite` is true.
-    "isolatedDeclarations": true,
+    "isolatedDeclarations": false,
     "declaration": true,
     "declarationMap": true,
 
