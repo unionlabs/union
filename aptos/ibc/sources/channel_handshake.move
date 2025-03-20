@@ -66,18 +66,10 @@ module ibc::channel_handshake {
     use ibc::helpers;
 
     public entry fun channel_open_init<T: key + store + drop>(
-        port_id: address,
-        counterparty_port_id: vector<u8>,
-        connection_id: u32,
-        version: String
+        counterparty_port_id: vector<u8>, connection_id: u32, version: String
     ) {
         let (channel_id, connection_id) =
-            ibc::channel_open_init<T>(
-                port_id,
-                counterparty_port_id,
-                connection_id,
-                version
-            );
+            ibc::channel_open_init<T>(counterparty_port_id, connection_id, version);
 
         engine::dispatch<T>(
             helpers::pack_channel_open_init_params(connection_id, channel_id, version)
@@ -87,7 +79,6 @@ module ibc::channel_handshake {
     }
 
     public entry fun channel_open_try<T: key + store + drop>(
-        port_id: address,
         connection_id: u32,
         counterparty_channel_id: u32,
         counterparty_port_id: vector<u8>,
@@ -98,7 +89,6 @@ module ibc::channel_handshake {
     ) {
         let channel_id =
             ibc::channel_open_try<T>(
-                port_id,
                 connection_id,
                 counterparty_channel_id,
                 counterparty_port_id,
@@ -122,7 +112,6 @@ module ibc::channel_handshake {
     }
 
     public entry fun channel_open_ack<T: key + store + drop>(
-        port_id: address,
         channel_id: u32,
         counterparty_version: String,
         counterparty_channel_id: u32,
@@ -130,7 +119,6 @@ module ibc::channel_handshake {
         proof_height: u64
     ) {
         ibc::channel_open_ack<T>(
-            port_id,
             channel_id,
             counterparty_version,
             counterparty_channel_id,
