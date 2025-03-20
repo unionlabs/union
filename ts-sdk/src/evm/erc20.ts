@@ -17,6 +17,25 @@ export const readErc20Meta = (tokenAddress: Address) =>
   })
 
 /**
+ * Read the balance of an ERC20 token for a specific address
+ * @param tokenAddress The address of the ERC20 token
+ * @param ownerAddress The address to check the balance for
+ * @returns An Effect that resolves to the token balance
+ */
+export const readErc20Balance = (tokenAddress: Address, ownerAddress: Address) =>
+  Effect.gen(function* () {
+    const client = (yield* ViemPublicClient).client
+
+    return yield* readContract(client, {
+      address: tokenAddress,
+      abi: erc20Abi,
+      functionName: "balanceOf",
+      args: [ownerAddress]
+    })
+  })
+
+
+/**
  * Read the name of an ERC20 token
  * @param tokenAddress The address of the ERC20 token
  * @returns An Effect that resolves to the token name

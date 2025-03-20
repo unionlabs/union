@@ -58,19 +58,3 @@ export const readCw20Balance = (contractAddress: string, address: string) =>
     return response.balance
   })
 
-/**
- * Read CW20 token metadata and balance for a specific address
- * @param contractAddress The address of the CW20 token contract
- * @param address The address to check the balance for
- * @returns An Effect that resolves to the token metadata and balance
- */
-export const readCw20TokenInfoAndBalance = (contractAddress: string, address: string) =>
-  Effect.gen(function* () {
-    const tokenInfo = yield* readCw20TokenInfo(contractAddress)
-    const balance = yield* readCw20Balance(contractAddress, address)
-    
-    return {
-      ...tokenInfo,
-      balance
-    }
-  })
