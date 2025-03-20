@@ -20,14 +20,16 @@ import {
   createCosmWasmClient,
   createSigningCosmWasmClient
 } from "../src/cosmos/client.js"
-import { Batch } from "../src/ucs03/instruction.js"
+import { Batch, encodeAbi } from "../src/ucs03/instruction.js"
 import { sendInstructionCosmos, sendInstructionEvm } from "../src/ucs03/send-instruction.js"
 import { privateKeyToAccount } from "viem/accounts"
 import { ViemWalletClient } from "../src/evm/client.js"
-import { DestinationConfig, SourceConfig } from "../src/evm/quote-token.js"
+import { EvmChannelDestination, EvmChannelSource } from "../src/evm/channel.js"
 import { readErc20Allowance, increaseErc20Allowance } from "../src/evm/erc20.ts"
 import { waitForTransactionReceipt } from "../src/evm/receipts.ts"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
+import { CosmosChannelSource } from "../src/cosmos/channel.ts"
+import { Decimal } from "@cosmjs/math"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -36,10 +38,9 @@ BigInt["prototype"].toJSON = function () {
 
 const MNEMONIC = process.env.MNEMONIC || "memo memo memo"
 
-// Define transfer parameters as constants for reuse
 const SENDER = "union1d95n4r6dnrfrps59szhl8mk7yqewsuzyw0zh5q"
 const RECEIVER = "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA"
-const UCS03_ADDRESS = "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962" // UCS03 contract on Sepolia
+const UCS03_ADDRESS = "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6" // UCS03 contract on testnet 10
 
 // Define token transfers
 const TRANSFERS = [
@@ -137,7 +138,10 @@ Effect.runPromiseExit(
     // Create a signing client
     const signingClient = yield* createSigningCosmWasmClient(
       "https://rpc.rpc-node.union-testnet-10.union.build",
-      wallet
+      wallet,
+      {
+        gasPrice: { amount: Decimal.fromUserInput("1", 6), denom: "muno" }
+      }
     )
 
     yield* Effect.log("clients created")
@@ -146,7 +150,8 @@ Effect.runPromiseExit(
     return yield* Effect.gen(function* () {
       yield* Effect.log("creating batch")
       const batch = yield* createBatch
-      yield* Effect.log("batch created", JSON.stringify(batch))
+      yield* Effect.log("batch created", JSON.stringify(batch, null, 2))
+      yield* Effect.log("batch abi", encodeAbi(batch))
 
       // Check and increase allowances before sending the batch
       // yield* Effect.log("checking and increasing allowances if needed")
@@ -156,14 +161,17 @@ Effect.runPromiseExit(
       yield* Effect.log("sending batch")
       return yield* sendInstructionCosmos(batch)
     }).pipe(
-      Effect.provideService(SigningCosmWasmClientContext, { client: signingClient }),
+      Effect.provideService(SigningCosmWasmClientContext, {
+        client: signingClient,
+        address: firstAccount.address
+      }),
       Effect.provideService(CosmWasmClientSource, { client: cosmWasmClientSource }),
       Effect.provideService(ViemPublicClientDestination, { client: publicDestinationClient }),
-      Effect.provideService(DestinationConfig, {
+      Effect.provideService(EvmChannelDestination, {
         ucs03address: "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
         channelId: 1
       }),
-      Effect.provideService(SourceConfig, {
+      Effect.provideService(CosmosChannelSource, {
         ucs03address: UCS03_ADDRESS,
         channelId: 1
       })

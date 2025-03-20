@@ -14,7 +14,7 @@ import { Batch } from "../src/ucs03/instruction.js"
 import { sendInstructionEvm } from "../src/ucs03/send-instruction.js"
 import { privateKeyToAccount } from "viem/accounts"
 import { ViemWalletClient } from "../src/evm/client.js"
-import { SourceConfig } from "../src/evm/quote-token.js"
+import { EvmChannelSource } from "../src/evm/channel.js"
 import { readErc20Allowance, increaseErc20Allowance } from "../src/evm/erc20.ts"
 import { waitForTransactionReceipt } from "../src/evm/receipts.ts"
 
@@ -164,7 +164,7 @@ Effect.runPromiseExit(
         ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
         channelId: 1
       }),
-      Effect.provideService(SourceConfig, {
+      Effect.provideService(EvmChannelSource, {
         ucs03address: UCS03_ADDRESS,
         channelId: 1
       }),

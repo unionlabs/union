@@ -1,5 +1,9 @@
 import { Context, Data, Effect } from "effect"
-import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import {
+  CosmWasmClient,
+  SigningCosmWasmClient,
+  type SigningCosmWasmClientOptions
+} from "@cosmjs/cosmwasm-stargate"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
 
 /**
@@ -32,7 +36,10 @@ export class CosmWasmClientContext extends Context.Tag("CosmWasmClientContext")<
  */
 export class SigningCosmWasmClientContext extends Context.Tag("SigningCosmWasmClientContext")<
   SigningCosmWasmClientContext,
-  { client: SigningCosmWasmClient }
+  {
+    client: SigningCosmWasmClient
+    address: string
+  }
 >() {}
 
 /**
@@ -61,8 +68,12 @@ export const createCosmWasmClient = (rpcEndpoint: string) =>
  * @param signer - The signer to use for transactions
  * @returns An Effect that resolves to a SigningCosmWasmClient
  */
-export const createSigningCosmWasmClient = (rpcEndpoint: string, signer: any) =>
+export const createSigningCosmWasmClient = (
+  rpcEndpoint: string,
+  signer: any,
+  options: SigningCosmWasmClientOptions
+) =>
   Effect.tryPromise({
-    try: () => SigningCosmWasmClient.connectWithSigner(rpcEndpoint, signer),
+    try: () => SigningCosmWasmClient.connectWithSigner(rpcEndpoint, signer, options),
     catch: error => new CosmWasmClientError({ cause: extractErrorDetails(error as Error) })
   }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))

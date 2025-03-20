@@ -4,14 +4,15 @@ import { ViemWalletClient } from "../evm/client.js"
 import { writeContract } from "../evm/contract.js"
 import { type Instruction, encodeAbi } from "./instruction.js"
 import { generateSalt } from "../utils/index.js"
-import { SourceConfig } from "../evm/quote-token.js"
+import { EvmChannelSource } from "../evm/channel.js"
 import { executeContract } from "../cosmos/contract.js"
 import { SigningCosmWasmClientContext } from "../cosmos/client.js"
+import { CosmosChannelSource } from "../cosmos/channel.js"
 
 export const sendInstructionEvm = (instruction: Instruction) =>
   Effect.gen(function* () {
     const walletClient = yield* ViemWalletClient
-    const sourceConfig = yield* SourceConfig
+    const sourceConfig = yield* EvmChannelSource
 
     return yield* writeContract(walletClient.client, {
       account: walletClient.account,
@@ -36,28 +37,20 @@ export const sendInstructionEvm = (instruction: Instruction) =>
 export const sendInstructionCosmos = (instruction: Instruction) =>
   Effect.gen(function* () {
     const signingClient = yield* SigningCosmWasmClientContext
-    const sourceConfig = yield* SourceConfig
+    const sourceConfig = yield* CosmosChannelSource
 
     return yield* executeContract(
       signingClient.client,
-      "union1d95n4r6dnrfrps59szhl8mk7yqewsuzyw0zh5q",
+      signingClient.address,
       sourceConfig.ucs03address,
       {
         send: {
           channel_id: sourceConfig.channelId,
           timeout_height: 0,
-          timeout_timestamp: 100000n,
+          timeout_timestamp: 100000,
           salt: generateSalt(),
           instruction: encodeAbi(instruction)
         }
       }
     )
   })
-
-// Send {
-//     channel_id: ChannelId,
-//     timeout_height: u64,
-//     timeout_timestamp: u64,
-//     salt: H256,
-//     instruction: Bytes,
-// },
