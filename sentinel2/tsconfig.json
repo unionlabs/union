@@ -43,6 +43,6 @@
 
     //========== Non-code artifacts ==========
     // Lets us import JSON files
-    "resolveJsonModule": true,
+    "resolveJsonModule": true
   }
 }
