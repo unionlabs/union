@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { ViemPublicClientSource } from "../src/evm/client.js"
+import { createViemPublicClient, ViemPublicClientSource } from "../src/evm/client.js"
 import { createPublicClient, createWalletClient, http } from "viem"
 import { sepolia } from "viem/chains"
 import { CosmosDestinationConfig } from "../src/cosmos/quote-token.js"
@@ -50,9 +50,14 @@ const createBatch = Effect.gen(function* () {
 Effect.runPromiseExit(
   Effect.gen(function* () {
     // Create clients and setup
-    yield* Effect.log("transfering from sepolia to stargaze")
+    yield* Effect.log("transferring from sepolia to stargaze")
 
     yield* Effect.log("creating clients")
+
+    const publicSourceClient = yield* createViemPublicClient({
+      chain: sepolia,
+      transport: http()
+    })
     const cosmWasmClientDestination = yield* createCosmWasmClient(
       "https://rpc.elgafar-1.stargaze-apis.com"
     )
@@ -70,14 +75,9 @@ Effect.runPromiseExit(
       const batch = yield* createBatch
       yield* Effect.log("batch created", JSON.stringify(batch))
       yield* Effect.log("sending batch")
-      return yield* sendInstructionEvm(batch, "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA")
+      return yield* sendInstructionEvm(batch)
     }).pipe(
-      Effect.provideService(ViemPublicClientSource, {
-        client: createPublicClient({
-          chain: sepolia,
-          transport: http()
-        })
-      }),
+      Effect.provideService(ViemPublicClientSource, { client: publicSourceClient }),
       Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
       Effect.provideService(CosmosDestinationConfig, {
         ucs03address: "stars1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqsnqksg",

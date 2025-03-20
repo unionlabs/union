@@ -1,11 +1,15 @@
 import { Effect } from "effect"
-import { ViemPublicClientSource, ViemPublicClient } from "../src/evm/client.js"
+import {
+  ViemPublicClientSource,
+  ViemPublicClient,
+  createViemPublicClient
+} from "../src/evm/client.js"
 import { createPublicClient, createWalletClient, http } from "viem"
 import { sepolia } from "viem/chains"
 import { CosmosDestinationConfig } from "../src/cosmos/quote-token.js"
 import { createEvmToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
 import { CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/client.js"
-import { Batch, Multiplex } from "../src/ucs03/instruction.js"
+import { Batch } from "../src/ucs03/instruction.js"
 import { sendInstructionEvm } from "../src/ucs03/send-instruction.js"
 import { privateKeyToAccount } from "viem/accounts"
 import { ViemWalletClient } from "../src/evm/client.js"
@@ -117,17 +121,19 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
 Effect.runPromiseExit(
   Effect.gen(function* () {
     // Create clients and setup
-    yield* Effect.log("transfering from sepolia to stargaze")
+    yield* Effect.log("transferring from sepolia to stargaze")
 
     yield* Effect.log("creating clients")
     const cosmWasmClientDestination = yield* createCosmWasmClient(
       "https://rpc.elgafar-1.stargaze-apis.com"
     )
     const account = privateKeyToAccount(PRIVATE_KEY)
-    const publicClient = createPublicClient({
+
+    const publicSourceClient = yield* createViemPublicClient({
       chain: sepolia,
       transport: http()
     })
+
     const walletClient = createWalletClient({
       account,
       chain: sepolia,
@@ -147,12 +153,10 @@ Effect.runPromiseExit(
       yield* Effect.log("allowances verified")
 
       yield* Effect.log("sending batch")
-      return yield* sendInstructionEvm(batch, SENDER)
+      return yield* sendInstructionEvm(batch)
     }).pipe(
-      Effect.provideService(ViemPublicClient, { client: publicClient }),
-      Effect.provideService(ViemPublicClientSource, {
-        client: publicClient
-      }),
+      Effect.provideService(ViemPublicClient, { client: publicSourceClient }),
+      Effect.provideService(ViemPublicClientSource, { client: publicSourceClient }),
       Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
       Effect.provideService(CosmosDestinationConfig, {
         ucs03address: "stars1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqsnqksg",

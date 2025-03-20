@@ -5,9 +5,8 @@ import { writeContract } from "../evm/contract.js"
 import { type Instruction, encodeAbi } from "./instruction.js"
 import { generateSalt } from "../utils/index.js"
 import { SourceConfig } from "../evm/quote-token.js"
-import type { Address } from "viem"
 
-export const sendInstructionEvm = (instruction: Instruction, sender: Address) =>
+export const sendInstructionEvm = (instruction: Instruction) =>
   Effect.gen(function* () {
     const walletClient = yield* ViemWalletClient
     const sourceConfig = yield* SourceConfig

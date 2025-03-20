@@ -1,12 +1,16 @@
-import { Context, Data } from "effect"
-import type {
-  Account,
-  Chain,
-  PublicClient,
-  ReadContractErrorType,
-  WalletClient,
-  WriteContractErrorType
+import { Context, Data, Effect } from "effect"
+import {
+  createPublicClient,
+  type Account,
+  type Chain,
+  type CreatePublicClientErrorType,
+  type PublicClient,
+  type PublicClientConfig,
+  type ReadContractErrorType,
+  type WalletClient,
+  type WriteContractErrorType
 } from "viem"
+import { extractErrorDetails } from "../utils/extract-error-details.js"
 
 export class ViemPublicClientSource extends Context.Tag("ViemPublicClientSource")<
   ViemPublicClientSource,
@@ -46,3 +50,18 @@ export class ReadContractError extends Data.TaggedError("ReadContractError")<{
 export class WriteContractError extends Data.TaggedError("WriteContractError")<{
   cause: WriteContractErrorType
 }> {}
+
+export class CreateViemPublicClientError extends Data.TaggedError("CreateViemPublicClientError")<{
+  cause: CreatePublicClientErrorType
+}> {}
+
+export const createViemPublicClient = (
+  parameters: PublicClientConfig
+): Effect.Effect<PublicClient, CreateViemPublicClientError> =>
+  Effect.try({
+    try: () => createPublicClient(parameters),
+    catch: err =>
+      new CreateViemPublicClientError({
+        cause: extractErrorDetails(err as CreatePublicClientErrorType)
+      })
+  })

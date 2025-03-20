@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { ViemPublicClient, ViemWalletClient } from "../src/evm/client.ts"
-import { createPublicClient, createWalletClient, http, parseEther } from "viem"
+import { createPublicClient, createWalletClient, http } from "viem"
 import { sepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 import { increaseErc20Allowance, readErc20Allowance, readErc20Meta } from "../src/evm/erc20.ts"
