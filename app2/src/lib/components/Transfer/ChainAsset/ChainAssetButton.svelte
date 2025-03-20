@@ -3,6 +3,7 @@ import { cn } from "$lib/utils/index.js"
 import { Option } from "effect"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.js"
 import Label from "$lib/components/ui/Label.svelte"
+import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 
 type Props = {
   type: "source" | "destination"
@@ -58,8 +59,8 @@ const isChainLoading = $derived.by(() => {
       {:else}
         <!-- Chain Selected -->
         <div class="flex items-center bg-zinc-800 p-2 border-r border-zinc-600">
-          <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center overflow-hidden">
-            <span class="text-xs font-medium uppercase">{selectedChain.value.display_name.substring(0, 2)}</span>
+          <div class="w-8 h-8 flex items-center justify-center overflow-hidden">
+            <img src={chainLogoMap.get(selectedChain.value.universal_chain_id).color} alt="">
           </div>
         </div>
 
