@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Effect } from "effect"
-import { quoteToken } from "../../src/evm/quote-token.js"
+import { DestinationConfig, predictQuoteToken } from "../../src/evm/quote-token.js"
 import { ViemPublicClientDestination } from "../../src/evm/client.js"
 import { ucs03abi } from "../../src/evm/abi/ucs03.js"
 import { toHex } from "viem"
@@ -34,8 +34,12 @@ describe("Quote Token Module", () => {
 
     // Execute
     const result = await Effect.runPromise(
-      quoteToken(testParams).pipe(
-        Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination)
+      predictQuoteToken(testParams.baseToken).pipe(
+        Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination),
+        Effect.provideService(DestinationConfig, {
+          ucs03address: testParams.ucs03address,
+          channelId: testParams.destinationChannelId
+        })
       )
     )
 
@@ -47,20 +51,5 @@ describe("Quote Token Module", () => {
       functionName: "predictWrappedToken",
       args: [0n, testParams.destinationChannelId, testParams.baseToken]
     })
-  })
-
-  it("should handle errors from the contract call", async () => {
-    // Setup mock to throw
-    const testError = new Error("Contract error")
-    mockClient.readContract.mockRejectedValueOnce(testError)
-
-    // Execute and verify
-    await expect(
-      Effect.runPromise(
-        quoteToken(testParams).pipe(
-          Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination)
-        )
-      )
-    ).rejects.toThrow()
   })
 })

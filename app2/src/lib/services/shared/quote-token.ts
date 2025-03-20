@@ -8,7 +8,7 @@ import { getCosmosPublicClient } from "$lib/services/cosmos/clients.ts"
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import { Aptos, AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
-import { getPublicClient } from "../evm/clients"
+import { getPublicClient } from "../evm/clients.ts"
 import type { TokenRawDenom } from "$lib/schema/token"
 
 export const getQuoteToken = (
