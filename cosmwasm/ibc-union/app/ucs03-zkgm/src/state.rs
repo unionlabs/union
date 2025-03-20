@@ -48,3 +48,5 @@ pub const HASH_TO_FOREIGN_TOKEN: Map<String, Bytes> = Map::new("hash_to_foreign_
 /// we need to find the original packet that initiated the forward to properly
 /// propagate the acknowledgement or timeout back to the source.
 pub const IN_FLIGHT_PACKET: Map<Vec<u8>, Packet> = Map::new("in_flight_packet");
+
+pub const MARKET_MAKER: Item<Bytes> = Item::new("market_maker");

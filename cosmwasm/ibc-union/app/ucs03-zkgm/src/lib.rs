@@ -33,6 +33,8 @@ pub enum ContractError {
     UnknownReply { id: u64 },
     #[error("invalid operation, can only be executed by a market maker")]
     OnlyMaker,
+    #[error("market maker failed to fill: {error}")]
+    MarketMakerFailed { error: String },
     #[error("packet execution reentrancy not allowed")]
     AlreadyExecuting,
     #[error("order amount must be u128")]
@@ -92,6 +94,8 @@ pub enum ContractError {
     },
     #[error("asynchronous multiplexing is not supported")]
     AsyncMultiplexUnsupported,
+    #[error("an error happened while calling the destination contract: {error}")]
+    MultiplexError { error: String },
     #[error("channel path is full and can't be updated, too many hops? path: {path}, next_hop_index: {next_hop_index}")]
     ChannelPathIsFull { path: U256, next_hop_index: usize },
     #[error("invalid asset origin path")]

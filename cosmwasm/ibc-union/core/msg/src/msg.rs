@@ -71,7 +71,6 @@ pub struct MsgUpdateClient {
 pub struct MsgConnectionOpenInit {
     pub client_id: ClientId,
     pub counterparty_client_id: ClientId,
-    pub relayer: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -82,7 +81,6 @@ pub struct MsgConnectionOpenTry {
     pub client_id: ClientId,
     pub proof_init: Bytes,
     pub proof_height: u64,
-    pub relayer: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -92,7 +90,6 @@ pub struct MsgConnectionOpenAck {
     pub counterparty_connection_id: ConnectionId,
     pub proof_try: Bytes,
     pub proof_height: u64,
-    pub relayer: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -101,7 +98,6 @@ pub struct MsgConnectionOpenConfirm {
     pub connection_id: ConnectionId,
     pub proof_ack: Bytes,
     pub proof_height: u64,
-    pub relayer: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

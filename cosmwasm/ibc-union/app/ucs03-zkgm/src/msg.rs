@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint256};
+use cosmwasm_std::{Addr, CosmosMsg, Uint256};
 use ibc_union_spec::{ChannelId, Packet};
 use unionlabs::primitives::{Bytes, H256};
 
@@ -62,7 +62,12 @@ pub enum ExecuteMsg {
     },
     /// Write an acknowledgement for an Zkgm packet.
     /// Can only be called by the contract itself after packet execution.
-    InternalWriteAck { ack: Bytes },
+    InternalWriteAck {
+        ack: Bytes,
+    },
+    InternalBatch {
+        messages: Vec<CosmosMsg>,
+    },
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]

@@ -191,62 +191,43 @@ pub fn execute(
         ExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
             client_id,
             counterparty_client_id,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            connection_open_init(deps.branch(), client_id, counterparty_client_id, relayer)
-        }
+        }) => connection_open_init(deps.branch(), client_id, counterparty_client_id),
         ExecuteMsg::ConnectionOpenTry(MsgConnectionOpenTry {
             counterparty_client_id,
             counterparty_connection_id,
             client_id,
             proof_init,
             proof_height,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            connection_open_try(
-                deps.branch(),
-                counterparty_client_id,
-                counterparty_connection_id,
-                client_id,
-                proof_init.to_vec(),
-                proof_height,
-                relayer,
-            )
-        }
+        }) => connection_open_try(
+            deps.branch(),
+            counterparty_client_id,
+            counterparty_connection_id,
+            client_id,
+            proof_init.to_vec(),
+            proof_height,
+        ),
         ExecuteMsg::ConnectionOpenAck(MsgConnectionOpenAck {
             connection_id,
             counterparty_connection_id,
             proof_try,
             proof_height,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            connection_open_ack(
-                deps.branch(),
-                connection_id,
-                counterparty_connection_id,
-                proof_try.to_vec(),
-                proof_height,
-                relayer,
-            )
-        }
+        }) => connection_open_ack(
+            deps.branch(),
+            connection_id,
+            counterparty_connection_id,
+            proof_try.to_vec(),
+            proof_height,
+        ),
         ExecuteMsg::ConnectionOpenConfirm(MsgConnectionOpenConfirm {
             connection_id,
             proof_ack,
             proof_height,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            connection_open_confirm(
-                deps.branch(),
-                connection_id,
-                proof_ack.to_vec(),
-                proof_height,
-                relayer,
-            )
-        }
+        }) => connection_open_confirm(
+            deps.branch(),
+            connection_id,
+            proof_ack.to_vec(),
+            proof_height,
+        ),
         ExecuteMsg::ChannelOpenInit(MsgChannelOpenInit {
             port_id,
             counterparty_port_id,
@@ -916,7 +897,6 @@ fn connection_open_init(
     mut deps: DepsMut,
     client_id: ClientId,
     counterparty_client_id: ClientId,
-    _relayer: Addr,
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
     let connection = Connection {
@@ -945,7 +925,6 @@ fn connection_open_try(
     client_id: ClientId,
     proof_init: Vec<u8>,
     proof_height: u64,
-    _relayer: Addr,
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
     let connection = Connection {
@@ -1001,7 +980,6 @@ fn connection_open_ack(
     counterparty_connection_id: ConnectionId,
     proof_try: Vec<u8>,
     proof_height: u64,
-    _relayer: Addr,
 ) -> ContractResult {
     let mut connection = deps.storage.read::<Connections>(&connection_id)?;
     if connection.state != ConnectionState::Init {
@@ -1059,7 +1037,6 @@ fn connection_open_confirm(
     connection_id: ConnectionId,
     proof_ack: Vec<u8>,
     proof_height: u64,
-    _relayer: Addr,
 ) -> ContractResult {
     let mut connection = deps.storage.read::<Connections>(&connection_id)?;
     if connection.state != ConnectionState::TryOpen {

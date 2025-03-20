@@ -52,6 +52,7 @@ contract UCS03Zkgm is
     using ZkgmLib for *;
     using LibString for *;
     using LibBytes for *;
+    using SafeERC20 for *;
 
     IIBCModulePacket public ibcHandler;
     mapping(bytes32 => IBCPacket) public inFlightPacket;
@@ -210,8 +211,8 @@ contract UCS03Zkgm is
             increaseOutstanding(
                 channelId, path, address(baseToken), order.baseAmount
             );
-            SafeERC20.safeTransferFrom(
-                baseToken, msg.sender, address(this), order.baseAmount
+            baseToken.safeTransferFrom(
+                msg.sender, address(this), order.baseAmount
             );
         }
     }
@@ -324,7 +325,9 @@ contract UCS03Zkgm is
             }
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            return executeFungibleAssetOrder(ibcPacket, relayer, path, order);
+            return executeFungibleAssetOrder(
+                caller, ibcPacket, relayer, relayerMsg, path, order
+            );
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
@@ -551,21 +554,48 @@ contract UCS03Zkgm is
                 channelId,
                 ZkgmLib.reverseChannelPath(path),
                 quoteToken,
-                baseAmount
+                quoteAmount + fee
             );
             if (quoteAmount > 0) {
-                SafeERC20.safeTransfer(
-                    IERC20(quoteToken), receiver, quoteAmount
-                );
+                IERC20(quoteToken).safeTransfer(receiver, quoteAmount);
             }
             if (fee > 0) {
-                SafeERC20.safeTransfer(IERC20(quoteToken), relayer, fee);
+                IERC20(quoteToken).safeTransfer(relayer, fee);
             }
         }
         return ZkgmLib.encodeFungibleAssetOrderAck(
             FungibleAssetOrderAck({
                 fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
                 marketMaker: ZkgmLib.ACK_EMPTY
+            })
+        );
+    }
+
+    function internalMarketMakerFill(
+        address caller,
+        bytes calldata relayerMsg,
+        address quoteToken,
+        address receiver,
+        uint256 quoteAmount
+    ) internal returns (bytes memory) {
+        if (quoteAmount != 0) {
+            // We want the top level handler in onRecvPacket to know we need to
+            // revert for another MM to get a chance to fill. If we revert now
+            // the entire packet would be considered to be "failed" and refunded
+            // at origin, which we want to avoid.
+            if (!IERC20(quoteToken).transferFrom(caller, receiver, quoteAmount))
+            {
+                return ZkgmLib.ACK_ERR_ONLYMAKER;
+            }
+        }
+        return ZkgmLib.encodeFungibleAssetOrderAck(
+            FungibleAssetOrderAck({
+                fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
+                // The relayer has to provide it's maker address using the
+                // relayerMsg. This address is specific to the counterparty
+                // chain and is where the protocol will pay back the base amount
+                // on acknowledgement.
+                marketMaker: relayerMsg
             })
         );
     }
@@ -598,8 +628,10 @@ contract UCS03Zkgm is
     }
 
     function executeFungibleAssetOrder(
+        address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
+        bytes calldata relayerMsg,
         uint256 path,
         FungibleAssetOrder calldata order
     ) internal returns (bytes memory) {
@@ -644,9 +676,9 @@ contract UCS03Zkgm is
                 false
             );
         } else {
-            // TODO: allow for MM filling after having added the caller to the
-            // interface (from which we extract funds)
-            return ZkgmLib.ACK_ERR_ONLYMAKER;
+            return internalMarketMakerFill(
+                caller, relayerMsg, quoteToken, receiver, order.quoteAmount
+            );
         }
     }
 
@@ -865,9 +897,7 @@ contract UCS03Zkgm is
                         baseToken,
                         orderBaseAmount
                     );
-                    SafeERC20.safeTransfer(
-                        IERC20(baseToken), marketMaker, orderBaseAmount
-                    );
+                    IERC20(baseToken).safeTransfer(marketMaker, orderBaseAmount);
                 }
             } else {
                 revert ZkgmLib.ErrInvalidFillType();
@@ -1043,7 +1073,7 @@ contract UCS03Zkgm is
             decreaseOutstanding(
                 sourceChannelId, path, baseToken, orderBaseAmount
             );
-            SafeERC20.safeTransfer(IERC20(baseToken), sender, orderBaseAmount);
+            IERC20(baseToken).safeTransfer(sender, orderBaseAmount);
         }
     }
 
