@@ -7,7 +7,8 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "test-watch": "vitest"
+    "test-watch": "vitest",
+    "postinstall": "patch-package"
   },
   "exports": {
     ".": "./dist/src/index.js",
@@ -35,6 +36,7 @@
     "@cosmjs/cosmwasm-stargate": "^0.33.1",
     "@cosmjs/stargate": "^0.33.1",
     "effect": "^3.13.12",
+    "patch-package": "^8.0.0",
     "viem": "^2.23.12"
   }
 }

@@ -99,7 +99,7 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: FungibleAssetOrde
     const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
       Effect.provideService(CosmWasmClientContext, { client: sourceClient })
     )
-    const quoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
+    const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
 
     return [
       intent.sender,
