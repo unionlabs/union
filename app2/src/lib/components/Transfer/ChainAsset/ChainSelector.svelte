@@ -39,7 +39,7 @@ function selectChain(chain: Chain) {
                 onclick={() => selectChain(chain)}
         >
 
-          <span class="w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center overflow-hidden">
+          <span class="w-5 h-5 flex items-center justify-center overflow-hidden">
                    <img src={chainLogoMap.get(chain.universal_chain_id).color} alt="">
           </span>
 

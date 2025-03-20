@@ -59,7 +59,7 @@ const isChainLoading = $derived.by(() => {
       {:else}
         <!-- Chain Selected -->
         <div class="flex items-center bg-zinc-800 p-2 border-r border-zinc-600">
-          <div class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center overflow-hidden">
+          <div class="w-8 h-8 flex items-center justify-center overflow-hidden">
             <img src={chainLogoMap.get(selectedChain.value.universal_chain_id).color} alt="">
           </div>
         </div>
