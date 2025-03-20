@@ -9,7 +9,7 @@ import {
   createEvmToCosmosFungibleAssetOrder,
   createCosmosToEvmFungibleAssetOrder,
   createCosmosToCosmosFungibleAssetOrder
-} from "../src/evm/ucs03/fungible-asset-order.js"
+} from "../src/ucs03/fungible-asset-order.js"
 
 import {
   CosmWasmClientDestination,

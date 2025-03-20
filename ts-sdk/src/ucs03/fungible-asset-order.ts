@@ -1,11 +1,11 @@
 import { toHex, type Address, type Hex } from "viem"
 import { Effect } from "effect"
-import { ViemPublicClient, ViemPublicClientSource } from "../client.js"
-import { readErc20Meta } from "../erc20.js"
-import { predictQuoteToken as predictEvmQuoteToken } from "../quote-token.js"
-import { CosmWasmClientContext, CosmWasmClientSource } from "../../cosmos/client.js"
-import { readCw20TokenInfo } from "../../cosmos/cw20.js"
-import { predictQuoteToken as predictCosmosQuoteToken } from "../../cosmos/quote-token.js"
+import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
+import { readErc20Meta } from "../evm/erc20.js"
+import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js"
+import { CosmWasmClientContext, CosmWasmClientSource } from "../cosmos/client.js"
+import { readCw20TokenInfo } from "../cosmos/cw20.js"
+import { predictQuoteToken as predictCosmosQuoteToken } from "../cosmos/quote-token.js"
 
 export type FungibleAssetOrderIntent = {
   sender: Address
