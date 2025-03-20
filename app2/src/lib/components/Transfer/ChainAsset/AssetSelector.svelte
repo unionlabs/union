@@ -66,51 +66,51 @@ function selectAsset(token: Token) {
 }
 </script>
 
-<div class="border-t border-zinc-700">
-  <div class="p-4 sticky top-0 z-10 border-b border-zinc-700">
-    <!-- Search Bar -->
-    <Input
-            type="text"
-            placeholder="Search assets..."
-            disabled={!Option.isSome(transfer.sourceChain)}
-            value={searchQuery}
-            oninput={(e) => (searchQuery = (e.currentTarget as HTMLInputElement).value)}
-    />
-  </div>
+<div class="p-4 border-y border-zinc-700">
+  <!-- Search Bar -->
+  <Input
+          type="text"
+          placeholder="Search assets..."
+          disabled={!Option.isSome(transfer.sourceChain)}
+          value={searchQuery}
+          oninput={(e) => (searchQuery = (e.currentTarget as HTMLInputElement).value)}
+  />
+</div>
 
-  <div class="overflow-y-auto max-h-full">
-    {#if Option.isNone(transfer.sourceChain)}
-      <div class="flex items-center justify-center text-zinc-500 p-8">
-        Please select a source chain first
-      </div>
-    {:else if Option.isNone(transfer.baseTokens)}
-      <div>
-        {#each Array(5) as _, i}
-          <div class="flex items-center w-full px-4 py-2 border-b border-zinc-700">
-            <div class="flex-1 min-w-0">
-              <div class="mb-1">
-                <Skeleton class="h-4 w-24" randomWidth={true}/>
+<div class="overflow-y-scroll mb-12">
+  <div class="w-full h-full">
+      {#if Option.isNone(transfer.sourceChain)}
+        <div class="flex items-center justify-center text-zinc-500 p-8">
+          Please select a source chain first
+        </div>
+      {:else if Option.isNone(transfer.baseTokens)}
+        <div>
+          {#each Array(5) as _, i}
+            <div class="flex items-center w-full px-4 py-2 border-b border-zinc-700">
+              <div class="flex-1 min-w-0">
+                <div class="mb-1">
+                  <Skeleton class="h-4 w-24" randomWidth={true}/>
+                </div>
+                <Skeleton class="h-3 w-32" randomWidth={true}/>
               </div>
-              <Skeleton class="h-3 w-32" randomWidth={true}/>
+              <div class="ml-2">
+                <Skeleton class="h-4 w-4"/>
+              </div>
             </div>
-            <div class="ml-2">
-              <Skeleton class="h-4 w-4"/>
-            </div>
-          </div>
-        {/each}
-      </div>
-    {:else if filteredTokens.length === 0}
-      <div class="flex items-center justify-center text-zinc-500 p-8">
-        {searchQuery ? `No assets found matching "${searchQuery}"` : "No tokens found for this chain"}
-      </div>
-    {:else}
-      <div>
-        {#each filteredTokens as token}
-          {#key token.denom}
-            <TransferAsset {token} {selectAsset} />
-          {/key}
-        {/each}
-      </div>
-    {/if}
+          {/each}
+        </div>
+      {:else if filteredTokens.length === 0}
+        <div class="flex items-center justify-center text-zinc-500 p-8">
+          {searchQuery ? `No assets found matching "${searchQuery}"` : "No tokens found for this chain"}
+        </div>
+      {:else}
+        <div>
+          {#each filteredTokens as token}
+            {#key token.denom}
+              <TransferAsset {token} {selectAsset} />
+            {/key}
+          {/each}
+        </div>
+      {/if}
   </div>
 </div>
