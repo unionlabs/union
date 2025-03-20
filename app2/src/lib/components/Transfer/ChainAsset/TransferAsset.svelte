@@ -50,7 +50,7 @@ export const toDisplayName = (
 
 <button
         class={cn(
-                "flex flex-col items-start w-full overflow-x-scroll px-4 py-2 text-left hover:bg-zinc-700 transition-colors border-b border-zinc-700 cursor-pointer",
+                "flex flex-col items-start w-full overflow-x-scroll px-4 py-1 text-left hover:bg-zinc-700 transition-colors border-b border-zinc-700 cursor-pointer",
                 isSelected ? "bg-zinc-700 text-white" : "text-zinc-300"
               )}
         onclick={() => {

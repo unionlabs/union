@@ -32,7 +32,6 @@ import type { AptosTransfer, CosmosTransfer, EVMTransfer } from "$lib/schema/tra
 export class Transfer {
   raw = new RawTransferSvelte()
   _stateOverride = $state<TransferStateUnion | null>(null)
-
   state = $derived.by<TransferStateUnion>(() => {
     if (this._stateOverride !== null) {
       return this._stateOverride
@@ -285,7 +284,7 @@ export class Transfer {
     const maybeQuoteToken =
       quoteTokenValue &&
       (quoteTokenValue.type === "UNWRAPPED" || quoteTokenValue.type === "NEW_WRAPPED")
-        ? quoteTokenValue.quote_token
+        ? quoteTokenValue.quote_token.toLowerCase()
         : undefined
 
     const maybeWethQuoteToken =
