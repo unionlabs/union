@@ -63,7 +63,7 @@ const createBatch = Effect.gen(function* () {
   const transferFee = yield* createEvmToCosmosFungibleAssetOrder(TRANSFERS[2])
 
   return Batch([transfer1, transfer2, transferFee])
-})
+}).pipe(Effect.withLogSpan("batch creation"))
 
 // Check and increase allowances if needed
 const checkAndIncreaseAllowances = Effect.gen(function* () {
@@ -72,7 +72,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
   yield* Effect.log("Checking token allowances...")
 
   for (const transfer of TRANSFERS) {
-    yield* Effect.log(`Checking ${transfer.name} allowance...`)
+    yield* Effect.log(`checking ${transfer.name} allowance...`)
 
     // Check current allowance
     const currentAllowance = yield* readErc20Allowance(
@@ -81,11 +81,11 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
       UCS03_ADDRESS
     )
 
-    yield* Effect.log(`Current ${transfer.name} allowance: ${currentAllowance}`)
+    yield* Effect.log(`current ${transfer.name} allowance: ${currentAllowance}`)
 
     // If allowance is insufficient, increase it
     if (currentAllowance < transfer.baseAmount) {
-      yield* Effect.log(`Increasing ${transfer.name} allowance...`)
+      yield* Effect.log(`increasing ${transfer.name} allowance...`)
 
       // Approve exact amount needed
       const txHash = yield* increaseErc20Allowance(
@@ -94,12 +94,12 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
         transfer.baseAmount
       )
 
-      yield* Effect.log(`Approval transaction sent: ${txHash}`)
+      yield* Effect.log(`approval transaction sent: ${txHash}`)
 
       // Wait for transaction receipt
       const receipt = yield* waitForTransactionReceipt(txHash)
 
-      yield* Effect.log(`Approval confirmed in block: ${receipt.blockNumber}`)
+      yield* Effect.log(`approval confirmed in block: ${receipt.blockNumber}`)
 
       // Verify new allowance
       const newAllowance = yield* readErc20Allowance(
@@ -108,14 +108,14 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
         UCS03_ADDRESS
       )
 
-      yield* Effect.log(`New ${transfer.name} allowance: ${newAllowance}`)
+      yield* Effect.log(`new ${transfer.name} allowance: ${newAllowance}`)
     } else {
       yield* Effect.log(`${transfer.name} allowance is sufficient`)
     }
   }
 
   yield* Effect.log("All allowances checked and increased if needed")
-})
+}).pipe(Effect.withLogSpan("allowance check and increase"))
 
 Effect.runPromiseExit(
   Effect.gen(function* () {

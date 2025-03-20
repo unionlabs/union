@@ -60,11 +60,11 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
   Effect.gen(function* () {
     yield* Effect.log("creating client")
     const sourceClient = (yield* ViemPublicClientSource).client
-    yield* Effect.log("reading meta")
+    yield* Effect.log("reading erc20 meta")
     const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
       Effect.provideService(ViemPublicClient, { client: sourceClient })
     )
-    yield* Effect.log("predicting quote")
+    yield* Effect.log("predicting quote token")
     const quoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
     yield* Effect.log("quote token", quoteToken)
 
@@ -80,7 +80,7 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
       quoteToken,
       intent.quoteAmount
     ])
-  })
+  }).pipe(Effect.withLogSpan("create fungible asset order"))
 
 /**
  * Creates a fungible asset order from Cosmos to EVM
