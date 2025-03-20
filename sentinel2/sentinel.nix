@@ -1,6 +1,12 @@
 { self, ... }:
 let
-  sentinel2Module = { lib, pkgs, config, ... }:
+  sentinel2Module =
+    {
+      lib,
+      pkgs,
+      config,
+      ...
+    }:
     with lib;
     let
       cfg = config.services.sentinel2;
