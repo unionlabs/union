@@ -1,6 +1,11 @@
 import { toHex } from "viem"
-import { Batch, encodeAbi, Forward, FungibleAssetOrder, Multiplex } from "../src/ucs03/instruction.js"
-import { forwardAbi } from "../src/evm/abi/index.js"
+import {
+  Batch,
+  encodeAbi,
+  Forward,
+  FungibleAssetOrder,
+  Multiplex
+} from "../src/ucs03/instruction.js"
 
 export const exampleBatchInstruction = Batch([
   FungibleAssetOrder([
