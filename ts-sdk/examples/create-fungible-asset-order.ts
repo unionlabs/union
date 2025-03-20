@@ -1,16 +1,20 @@
 import { Effect } from "effect"
-import { ViemPublicClientDestination, ViemPublicClientSource } from "../src/evm/client"
-import { createPublicClient, http, parseEther, toHex } from "viem"
+import { ViemPublicClientDestination, ViemPublicClientSource } from "../src/evm/client.js"
+import { createPublicClient, http, parseEther } from "viem"
 import { sepolia, holesky } from "viem/chains"
-import { DestinationConfig } from "../src/evm/quote-token"
-import { CosmosDestinationConfig } from "../src/cosmos/quote-token"
-import { 
-  createEvmToEvmFungibleAssetOrder, 
+import { DestinationConfig } from "../src/evm/quote-token.js"
+import { CosmosDestinationConfig } from "../src/cosmos/quote-token.js"
+import {
+  createEvmToEvmFungibleAssetOrder,
   createEvmToCosmosFungibleAssetOrder,
-  createCosmosToEvmFungibleAssetOrder,
-  createCosmosToCosmosFungibleAssetOrder
-} from "../src/evm/ucs03/fungible-asset-order"
-import { CosmWasmClientContext, createCosmWasmClient } from "../src/cosmos/client"
+  createCosmosToEvmFungibleAssetOrder
+} from "../src/evm/ucs03/fungible-asset-order.js"
+
+import {
+  CosmWasmClientDestination,
+  CosmWasmClientSource,
+  createCosmWasmClient
+} from "../src/cosmos/client.js"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -18,7 +22,6 @@ BigInt["prototype"].toJSON = function () {
 }
 
 // Example 1: EVM to EVM transfer
-console.log("EVM to EVM transfer:")
 Effect.runPromiseExit(
   createEvmToEvmFungibleAssetOrder({
     sender: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -44,22 +47,22 @@ Effect.runPromiseExit(
       channelId: 8
     })
   )
-).then(exit => console.log(JSON.stringify(exit, null, 2)))
+).then(exit => console.log("EVM to EVM", JSON.stringify(exit, null, 2)))
 
 // Example 2: Cosmos to EVM transfer
-console.log("\nCosmos to EVM transfer:")
+// console.log("\nCosmos to EVM transfer:")
 Effect.runPromiseExit(
   Effect.gen(function* () {
     const client = yield* createCosmWasmClient("https://rpc.elgafar-1.stargaze-apis.com")
-    
+
     return yield* createCosmosToEvmFungibleAssetOrder({
-      sender: "stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4",
+      sender: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       receiver: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
       baseToken: "stars1qrde534d4jwk44dn7w7gu9e2rayutr7kqx8lfjhsk3rd7z9rzxhq2gh3lr", // WETH on stargaze
       baseAmount: BigInt(1000000), // 1 token
       quoteAmount: parseEther("0.05") // 0.05 quote tokens
     }).pipe(
-      Effect.provideService(CosmWasmClientContext, { client }),
+      Effect.provideService(CosmWasmClientSource, { client }),
       Effect.provideService(ViemPublicClientDestination, {
         client: createPublicClient({
           chain: sepolia,
@@ -72,14 +75,13 @@ Effect.runPromiseExit(
       })
     )
   })
-).then(exit => console.log(JSON.stringify(exit, null, 2)))
+).then(exit => console.log("Cosmos to EVM", JSON.stringify(exit, null, 2)))
 
-// Example 3: EVM to Cosmos transfer
-console.log("\nEVM to Cosmos transfer:")
+// // Example 3: EVM to Cosmos transfer
 Effect.runPromiseExit(
   Effect.gen(function* () {
     const client = yield* createCosmWasmClient("https://rpc.elgafar-1.stargaze-apis.com")
-    
+
     return yield* createEvmToCosmosFungibleAssetOrder({
       sender: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       receiver: "stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4",
@@ -93,11 +95,11 @@ Effect.runPromiseExit(
           transport: http()
         })
       }),
-      Effect.provideService(CosmWasmClientContext, { client }),
+      Effect.provideService(CosmWasmClientDestination, { client }),
       Effect.provideService(CosmosDestinationConfig, {
-        ucs03address: "stars1qrde534d4jwk44dn7w7gu9e2rayutr7kqx8lfjhsk3rd7z9rzxhq2gh3lr",
-        channelId: 8
+        ucs03address: "stars1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqsnqksg",
+        channelId: 3
       })
     )
   })
-).then(exit => console.log(JSON.stringify(exit, null, 2)))
+).then(exit => console.log("EVM to Cosmos", JSON.stringify(exit, null, 2)))

@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { createCosmWasmClient } from "../src/cosmos/client"
+import { CosmWasmClientContext, createCosmWasmClient } from "../src/cosmos/client"
 import { queryContract } from "../src/cosmos/contract"
 
 // Example CW20 token balance query

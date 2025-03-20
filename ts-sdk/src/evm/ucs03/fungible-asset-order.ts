@@ -1,9 +1,9 @@
-import type { Address, Hex } from "viem"
+import { toHex, type Address, type Hex } from "viem"
 import { Context, Effect } from "effect"
 import { ViemPublicClient, ViemPublicClientSource } from "../client.js"
 import { readErc20Meta } from "../erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../quote-token.js"
-import { CosmWasmClientContext } from "../../cosmos/client.js"
+import { CosmWasmClientContext, CosmWasmClientSource } from "../../cosmos/client.js"
 import { readCw20TokenInfo } from "../../cosmos/cw20.js"
 import { predictQuoteToken as predictCosmosQuoteToken } from "../../cosmos/quote-token.js"
 
@@ -70,13 +70,16 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: FungibleAssetOrderIn
  */
 export const createCosmosToEvmFungibleAssetOrder = (intent: FungibleAssetOrderIntent) =>
   Effect.gen(function* () {
-    const tokenMeta = yield* readCw20TokenInfo(intent.baseToken)
-    const quoteToken = yield* predictEvmQuoteToken(intent.baseToken as Hex)
+    const sourceClient = (yield* CosmWasmClientSource).client
+    const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
+      Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+    )
+    const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
     return [
       intent.sender,
       intent.receiver,
-      intent.baseToken,
+      toHex(intent.baseToken),
       intent.baseAmount,
       tokenMeta.symbol,
       tokenMeta.name,
@@ -92,7 +95,10 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: FungibleAssetOrderIn
  */
 export const createCosmosToCosmosFungibleAssetOrder = (intent: FungibleAssetOrderIntent) =>
   Effect.gen(function* () {
-    const tokenMeta = yield* readCw20TokenInfo(intent.baseToken)
+    const sourceClient = (yield* CosmWasmClientSource).client
+    const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
+      Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+    )
     const quoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
 
     return [

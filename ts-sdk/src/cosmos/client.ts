@@ -3,7 +3,24 @@ import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate
 import { extractErrorDetails } from "../utils/extract-error-details.js"
 
 /**
- * Context for providing a CosmWasmClient
+ * Context for providing a CosmWasmClient for the source chain
+ */
+export class CosmWasmClientSource extends Context.Tag("CosmWasmClientSource")<
+  CosmWasmClientSource,
+  { client: CosmWasmClient }
+>() {}
+
+/**
+ * Context for providing a CosmWasmClient for the destination chain
+ */
+export class CosmWasmClientDestination extends Context.Tag("CosmWasmClientDestination")<
+  CosmWasmClientDestination,
+  { client: CosmWasmClient }
+>() {}
+
+/**
+ * A neutral CosmWasmClient that can be used for general-purpose operations
+ * that don't specifically target source or destination chains
  */
 export class CosmWasmClientContext extends Context.Tag("CosmWasmClientContext")<
   CosmWasmClientContext,
