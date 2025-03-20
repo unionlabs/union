@@ -16,6 +16,9 @@ BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
 
+const PRIVATE_KEY =
+  process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000"
+
 const createBatch = Effect.gen(function* () {
   const transfer1 = yield* createEvmToCosmosFungibleAssetOrder({
     sender: "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA",
@@ -53,9 +56,7 @@ Effect.runPromiseExit(
     const cosmWasmClientDestination = yield* createCosmWasmClient(
       "https://rpc.elgafar-1.stargaze-apis.com"
     )
-    const privateKey = "0xc0ffee"
-
-    const account = privateKeyToAccount(privateKey)
+    const account = privateKeyToAccount(PRIVATE_KEY)
     const walletClient = createWalletClient({
       account,
       chain: sepolia,
