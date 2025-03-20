@@ -38,54 +38,51 @@ const createBatch = Effect.gen(function* () {
 
 Effect.runPromiseExit(
   Effect.gen(function* () {
+    // Create clients and setup
     yield* Effect.log("transfering from sepolia to stargaze")
 
-    const client = yield* createCosmWasmClient("https://rpc.elgafar-1.stargaze-apis.com")
+    yield* Effect.log("creating clients")
+    const cosmWasmClientDestination = yield* createCosmWasmClient(
+      "https://rpc.elgafar-1.stargaze-apis.com"
+    )
+    const privateKey = "0xc0ffee"
+    const account = privateKeyToAccount(privateKey)
+    const walletClient = createWalletClient({
+      account,
+      chain: sepolia,
+      transport: http("https://rpc.11155111.sepolia.chain.kitchen")
+    })
+    yield* Effect.log("clients created")
 
-    yield* Effect.log("creating batch")
-
-    const batch = yield* createBatch.pipe(
+    // Main effect: create the batch and send it
+    return yield* Effect.gen(function* () {
+      yield* Effect.log("creating batch")
+      const batch = yield* createBatch
+      yield* Effect.log("batch created", JSON.stringify(batch))
+      yield* Effect.log("sending batch")
+      return yield* sendInstructionEvm(batch, "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA")
+    }).pipe(
       Effect.provideService(ViemPublicClientSource, {
         client: createPublicClient({
           chain: sepolia,
           transport: http()
         })
       }),
-      Effect.provideService(CosmWasmClientDestination, { client }),
+      Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
       Effect.provideService(CosmosDestinationConfig, {
         ucs03address: "stars1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqsnqksg",
         channelId: 3
-      })
-    )
-
-    yield* Effect.log("batch created", JSON.stringify(batch))
-
-    const privateKey = "0xc0ffee"
-    const account = privateKeyToAccount(privateKey)
-
-    const walletClient = createWalletClient({
-      account,
-      chain: sepolia,
-      transport: http("https://rpc.11155111.sepolia.chain.kitchen")
-    })
-
-    yield* Effect.log("submitting transfer")
-
-    const txHash = yield* sendInstructionEvm(
-      batch,
-      "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA"
-    ).pipe(
+      }),
       Effect.provideService(SourceConfig, {
         ucs03address: "0x84f074c15513f15baea0fbed3ec42f0bd1fb3efa",
         channelId: 11
       }),
       Effect.provideService(ViemWalletClient, {
         client: walletClient,
+        account: account,
         chain: sepolia
       })
     )
-
-    return txHash
   })
 ).then(e => {
   console.log(JSON.stringify(e, null, 2))

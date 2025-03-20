@@ -13,7 +13,7 @@ export const sendInstructionEvm = (instruction: Instruction, sender: Address) =>
     const sourceConfig = yield* SourceConfig
 
     return yield* writeContract(walletClient.client, {
-      account: sender,
+      account: walletClient.account,
       abi: ucs03abi,
       chain: walletClient.chain,
       functionName: "send",

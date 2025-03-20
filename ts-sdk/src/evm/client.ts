@@ -1,5 +1,6 @@
 import { Context, Data } from "effect"
 import type {
+  Account,
   Chain,
   PublicClient,
   ReadContractErrorType,
@@ -33,6 +34,7 @@ export class ViemWalletClient extends Context.Tag("ViemWalletClient")<
   ViemWalletClient,
   {
     readonly client: WalletClient
+    readonly account: Account
     readonly chain: Chain
   }
 >() {}

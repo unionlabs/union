@@ -66,6 +66,7 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
     )
     yield* Effect.log("predicting quote")
     const quoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
+    yield* Effect.log("quote token", quoteToken)
 
     return FungibleAssetOrder([
       intent.sender,
