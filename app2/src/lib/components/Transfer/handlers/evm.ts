@@ -12,9 +12,12 @@ import {
 import { TransferState, type TransferStateUnion } from "$lib/components/Transfer/validation.ts"
 import type { EVMTransfer } from "$lib/schema/transfer-args.ts"
 
-export async function handleEvmSubmit(currentState: TransferStateUnion, typedArgs: EVMTransfer) {
+export async function handleEvmSubmit(
+  currentState: TransferStateUnion,
+  typedArgs: EVMTransfer,
+  updateState: (state: TransferStateUnion) => void
+) {
   let evmState: EvmTransferSubmission
-
   if (currentState._tag === "Evm") {
     if (hasEvmFailedExit(currentState.state)) {
       switch (currentState.state._tag) {
@@ -46,6 +49,7 @@ export async function handleEvmSubmit(currentState: TransferStateUnion, typedArg
         default:
           evmState = EvmTransferSubmission.Filling()
       }
+      updateState(TransferState.Evm(evmState))
     } else {
       evmState = currentState.state
     }
@@ -54,16 +58,16 @@ export async function handleEvmSubmit(currentState: TransferStateUnion, typedArg
   }
 
   const newState = await evmNextState(evmState, typedArgs)
-  let result = newState !== null ? TransferState.Evm(newState) : TransferState.Empty()
+  updateState(newState !== null ? TransferState.Evm(newState) : TransferState.Empty())
 
   let currentEvmState = newState
-  while (currentEvmState !== null && !hasEvmFailedExit(currentEvmState)) {
+  while (
+    currentEvmState !== null &&
+    !hasEvmFailedExit(currentEvmState) &&
+    !isEvmComplete(currentEvmState)
+  ) {
     const nextEvmState = await evmNextState(currentEvmState, typedArgs)
-    result = nextEvmState !== null ? TransferState.Evm(nextEvmState) : TransferState.Empty()
-
+    updateState(nextEvmState !== null ? TransferState.Evm(nextEvmState) : TransferState.Empty())
     currentEvmState = nextEvmState
-    if (currentEvmState !== null && isEvmComplete(currentEvmState)) break
   }
-
-  return result
 }

@@ -29,10 +29,6 @@ BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
 
-Error.prototype.toJSON = function () {
-  JSON.stringify(this, Object.getOwnPropertyNames(this))
-}
-
 onMount(() => {
   runExample()
   const chainsFiber = Effect.runFork(chainsQuery(ENV()))

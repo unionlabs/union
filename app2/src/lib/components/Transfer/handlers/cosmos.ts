@@ -13,7 +13,8 @@ import type { CosmosTransfer } from "$lib/schema/transfer-args.ts"
 export async function handleCosmosSubmit(
   currentState: TransferStateUnion,
   typedArgs: CosmosTransfer,
-  connectedWallet: "leap" | "keplr"
+  connectedWallet: "leap" | "keplr",
+  updateState: (state: TransferStateUnion) => void
 ) {
   let cosmosState: CosmosTransferSubmission
 
@@ -38,6 +39,7 @@ export async function handleCosmosSubmit(
         default:
           cosmosState = CosmosTransferSubmission.Filling()
       }
+      updateState(TransferState.Cosmos(cosmosState))
     } else {
       cosmosState = currentState.state
     }
@@ -47,18 +49,19 @@ export async function handleCosmosSubmit(
 
   const newState = await cosmosNextState(cosmosState, typedArgs, connectedWallet)
 
-  let result = newState !== null ? TransferState.Cosmos(newState) : TransferState.Empty()
+  updateState(newState !== null ? TransferState.Cosmos(newState) : TransferState.Empty())
 
   let currentCosmosState = newState
-  while (currentCosmosState !== null && !hasCosmosFailedExit(currentCosmosState)) {
+  while (
+    currentCosmosState !== null &&
+    !hasCosmosFailedExit(currentCosmosState) &&
+    !isCosmosComplete(currentCosmosState)
+  ) {
     const nextCosmosState = await cosmosNextState(currentCosmosState, typedArgs, connectedWallet)
 
-    result =
+    updateState(
       nextCosmosState !== null ? TransferState.Cosmos(nextCosmosState) : TransferState.Empty()
-
+    )
     currentCosmosState = nextCosmosState
-    if (currentCosmosState !== null && isCosmosComplete(currentCosmosState)) break
   }
-
-  return result
 }
