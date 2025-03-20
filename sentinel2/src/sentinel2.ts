@@ -1,5 +1,9 @@
 import { Effect, Schedule, Data } from "effect"
 import { ucs03abi } from '@unionlabs/sdk/evm/abi'
+import { createWalletClient, createPublicClient, http, erc20Abi } from "viem"
+import { privateKeyToAccount } from "viem/accounts"
+import { sepolia } from "viem/chains"
+import { ViemPublicClient, ViemWalletClient, writeContract  } from '@unionlabs/sdk/evm'
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import consola from "consola"
@@ -22,8 +26,9 @@ interface TransferConfig {
   enabled: boolean
   privateKey: string
   sourceChainIdEVM: string
-  sourceChainIdCosmos: string
-  destinationChainId: string
+  sourceChainIdCosmos: string // TODO: Change them later
+  destinationChainId: string // TODO: Change them later
+  sourceChainIdAptos: string // TODO: Change them later
   rpcs: Array<string>
   gasPriceDenom: string
   receiverAddress: Address
@@ -41,6 +46,15 @@ interface ConfigFile {
   load_test_enabled: boolean
 }
 
+function getRandomArbitrary(min_bigint: bigint, max_bigint: bigint) {
+    const min = Number(min_bigint)
+    const max = Number(max_bigint)
+    const value = Math.random() * (max - min) + min
+  
+    return BigInt(Math.ceil(value))
+  }
+
+  
 class DoTransferError extends Data.TaggedError("DoTransferError")<{
     cause: unknown
   }> {}
@@ -61,10 +75,63 @@ function loadConfig(configPath: string): ConfigFile {
   return config
 }
 
-const doTransfer = (transferConfig: TransferConfig) =>
+const doTransfer = (task: TransferConfig) =>
   Effect.tryPromise({
     try: async () => {
-        consola.info("transferConfig:", transferConfig.denomAddress)
+        let chainType: "Cosmos" | "EVM" | "Aptos"
+
+        let sourceChainId: string // TODO: change type later
+        
+        if (task.sourceChainIdCosmos) {
+            chainType = "Cosmos"
+            sourceChainId = task.sourceChainIdCosmos
+        } else if (task.sourceChainIdAptos) {
+            chainType = "Aptos"
+            sourceChainId = task.sourceChainIdAptos
+        } else {
+            chainType = "EVM"
+            sourceChainId = task.sourceChainIdEVM
+        }
+
+        const random_amount = getRandomArbitrary(task.amount_range[0] ?? 1n, task.amount_range[1] ?? 1n)
+
+        consola.info(
+            `\n[${chainType}] Starting transfer for chainId=${sourceChainId} to chain=${task.destinationChainId}`
+          )
+
+        const client = createPublicClient({
+            chain: sepolia,
+            transport: http()
+        })
+
+        const account = privateKeyToAccount(`0x${task.privateKey.replace(/^0x/, "")}`)
+          
+        const tokenAddress = task.denomAddress
+        
+        const walletClient = createWalletClient({
+            account,
+            chain: sepolia,
+            transport: http()
+          })
+        
+
+          writeContract(walletClient, {
+            account,
+            chain: sepolia,
+            address: tokenAddress,
+            abi: erc20Abi,
+            functionName: "transfer",
+            args: [task.receiverAddress, random_amount]
+          })
+            .pipe(
+              Effect.provideService(ViemWalletClient, { client: walletClient }),
+              Effect.mapError(e => e.cause.message),
+              Effect.runPromiseExit
+            )
+            .then(exit => console.log(JSON.stringify(exit, null, 2)))
+        
+
+
       // Simulate transfer logic:
       // For demonstration, we randomly succeed or fail.
       if (Math.random() > 0.3) {
@@ -164,12 +231,13 @@ const mainEffect = Effect.gen(function* (_) {
 
     const config = loadConfig(configPath)
    
+    yield* transferLoop(config)
   // Fork both effects: transferLoop and runIbcChecksForever to run concurrently
-  const transferEffect = Effect.fork(transferLoop(config))
-  const ibcCheckEffect = Effect.fork(runIbcChecksForever(config))
+//   const transferEffect = Effect.fork(transferLoop(config))
+//   const ibcCheckEffect = Effect.fork(runIbcChecksForever(config))
 
-  const forked = yield* Effect.forkAll([transferEffect, ibcCheckEffect]) // Fork both effects to run concurrently
-    Effect.runFork(forked) // Run the forked effects
+//   const forked = yield* Effect.forkAll([transferEffect, ibcCheckEffect]) // Fork both effects to run concurrently
+    // Effect.runFork(forked) // Run the forked effects
 //   yield* Effect.zip(transferEffect, ibcCheckEffect) // Ensures both effects continue indefinitely
 
 })
