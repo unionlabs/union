@@ -129,18 +129,7 @@ const doTransfer = (task: TransferConfig) =>
               Effect.runPromiseExit
             )
             .then(exit => console.log(JSON.stringify(exit, null, 2)))
-        
-
-
-      // Simulate transfer logic:
-      // For demonstration, we randomly succeed or fail.
-      if (Math.random() > 0.3) {
-        consola.info("Transfer successful!")
-        return "Transfer successful!"
-      } else {
-        consola.info("Error !!!")
-        throw new Error("Transfer failed due to network error")
-      }
+    
     },
     catch: (error) => new DoTransferError({ cause: error }) // Wrap the error with DoTransferError
   })
