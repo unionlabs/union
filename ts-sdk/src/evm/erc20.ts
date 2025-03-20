@@ -34,7 +34,6 @@ export const readErc20Balance = (tokenAddress: Address, ownerAddress: Address) =
     })
   })
 
-
 /**
  * Read the name of an ERC20 token
  * @param tokenAddress The address of the ERC20 token

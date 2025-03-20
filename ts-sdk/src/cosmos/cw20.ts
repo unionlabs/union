@@ -28,11 +28,7 @@ export const readCw20TokenInfo = (contractAddress: string) =>
   Effect.gen(function* () {
     const client = (yield* CosmWasmClientContext).client
 
-    return yield* queryContract<Cw20TokenInfo>(
-      client,
-      contractAddress,
-      { token_info: {} }
-    )
+    return yield* queryContract<Cw20TokenInfo>(client, contractAddress, { token_info: {} })
   })
 
 /**
@@ -45,16 +41,11 @@ export const readCw20Balance = (contractAddress: string, address: string) =>
   Effect.gen(function* () {
     const client = (yield* CosmWasmClientContext).client
 
-    const response = yield* queryContract<Cw20BalanceResponse>(
-      client,
-      contractAddress,
-      { 
-        balance: { 
-          address 
-        } 
+    const response = yield* queryContract<Cw20BalanceResponse>(client, contractAddress, {
+      balance: {
+        address
       }
-    )
-    
+    })
+
     return response.balance
   })
-

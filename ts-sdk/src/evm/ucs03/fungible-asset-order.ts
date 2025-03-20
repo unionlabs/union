@@ -1,5 +1,5 @@
 import { toHex, type Address, type Hex } from "viem"
-import { Context, Effect } from "effect"
+import { Effect } from "effect"
 import { ViemPublicClient, ViemPublicClientSource } from "../client.js"
 import { readErc20Meta } from "../erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../quote-token.js"

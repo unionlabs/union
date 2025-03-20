@@ -1,6 +1,6 @@
 import { Effect } from "effect"
-import { CosmWasmClientContext, createCosmWasmClient } from "../src/cosmos/client"
-import { queryContract } from "../src/cosmos/contract"
+import { createCosmWasmClient } from "../src/cosmos/client.ts"
+import { queryContract } from "../src/cosmos/contract.ts"
 
 // Example CW20 token balance query
 Effect.runPromiseExit(

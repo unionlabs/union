@@ -1,7 +1,6 @@
 import { Context, Effect } from "effect"
 import { CosmWasmClientDestination } from "./client.js"
 import { queryContract } from "./contract.js"
-import type { Hex } from "viem"
 
 export const predictQuoteToken = (baseToken: string) =>
   Effect.gen(function* () {

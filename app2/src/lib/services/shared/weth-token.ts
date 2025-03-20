@@ -6,9 +6,9 @@ import type { Chain } from "$lib/schema/chain.ts"
 
 export const getWethQuoteToken = (
   sourceChain: Chain,
-  ucs03Address: Hex,
-  channel: Channel,
-  destinationChain: Chain
+  _ucs03Address: Hex,
+  _channel: Channel,
+  _destinationChain: Chain
 ) =>
   Effect.gen(function* () {
     const publicClient = yield* getPublicClient(sourceChain)

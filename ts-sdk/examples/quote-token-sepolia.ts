@@ -1,6 +1,6 @@
 import { Effect } from "effect"
-import { DestinationConfig, predictQuoteToken } from "../src/evm/quote-token"
-import { ViemPublicClientDestination } from "../src/evm/client"
+import { DestinationConfig, predictQuoteToken } from "../src/evm/quote-token.ts"
+import { ViemPublicClientDestination } from "../src/evm/client.ts"
 import { createPublicClient, http, toHex } from "viem"
 import { sepolia } from "viem/chains"
 

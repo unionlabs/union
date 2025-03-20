@@ -1,8 +1,8 @@
 import { Effect } from "effect"
-import { ViemPublicClient } from "../src/evm/client"
+import { ViemPublicClient } from "../src/evm/client.ts"
 import { createPublicClient, http } from "viem"
 import { sepolia } from "viem/chains"
-import { readErc20Meta, readErc20Balance } from "../src/evm/erc20"
+import { readErc20Meta, readErc20Balance } from "../src/evm/erc20.ts"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {

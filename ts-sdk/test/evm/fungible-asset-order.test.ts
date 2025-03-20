@@ -53,7 +53,7 @@ const mockViemPublicClientDestination = {
 
 const mockCosmWasmClientSource = {
   client: {
-    queryContractSmart: async (contractAddress: string, query: any) => {
+    queryContractSmart: async (_contractAddress: string, query: any) => {
       // This simulates reading CW20 token info
       if (query.token_info) {
         return mockCw20TokenInfo
@@ -68,7 +68,7 @@ const mockCosmWasmClientSource = {
 
 const mockCosmWasmClientDestination = {
   client: {
-    queryContractSmart: async (contractAddress: string, query: any) => {
+    queryContractSmart: async (_contractAddress: string, query: any) => {
       // This simulates predicting a quote token
       if (query.predict_wrapped_token) {
         return { wrapped_token: mockCosmosQuoteToken }
