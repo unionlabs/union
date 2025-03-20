@@ -1,5 +1,5 @@
 import { Effect, Schedule, Data, Context, Schema, Arbitrary, FastCheck } from "effect"
-import { createWalletClient, createPublicClient, http, erc20Abi } from "viem"
+import { createWalletClient, http, erc20Abi } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { sepolia } from "viem/chains"
 import { ViemWalletClient, writeContract } from "@unionlabs/sdk/evm"
@@ -56,12 +56,7 @@ class FilesystemError extends Data.TaggedError("FilesystemError")<{
   cause: unknown
 }> {}
 
-
-export class Config extends Context.Tag("Config")<
-  Config,
-  { readonly config: ConfigFile }
->() {}
-
+export class Config extends Context.Tag("Config")<Config, { readonly config: ConfigFile }>() {}
 
 const doTransferRetrySchedule = Schedule.exponential("2 seconds", 2.0).pipe(
   Schedule.intersect(Schedule.recurs(2)) // Limit retries to 2
@@ -135,52 +130,50 @@ const doTransfer = (task: TransferConfig) =>
     yield* Effect.log("Transfer tx hash:", tx_hash)
   })
 
-const transferLoop =
-  Effect.repeat(
-    Effect.gen(function* (_) {
-      let config = (yield* Config).config
+const transferLoop = Effect.repeat(
+  Effect.gen(function* (_) {
+    let config = (yield* Config).config
 
-      const transfers: Array<TransferConfig> = config.transfers ?? []
-      if (transfers.length > 0) {
-        yield* Effect.log("\n========== Starting transfers tasks ==========")
-        for (const task of transfers) {
-          if (task.enabled) {
-            yield* Effect.retry(doTransfer(task), doTransferRetrySchedule) // Retry logic for transfer
-          }
+    const transfers: Array<TransferConfig> = config.transfers ?? []
+    if (transfers.length > 0) {
+      yield* Effect.log("\n========== Starting transfers tasks ==========")
+      for (const task of transfers) {
+        if (task.enabled) {
+          yield* Effect.retry(doTransfer(task), doTransferRetrySchedule) // Retry logic for transfer
         }
+      }
+    } else {
+      yield* Effect.log("No transfers configured. Skipping transfer step.")
+    }
+    yield* Effect.log("Transfers done (or skipped). Sleeping 10 minutes...")
+  }),
+  Schedule.spaced("3 seconds")
+)
+
+const runIbcChecksForever = Effect.repeat(
+  Effect.gen(function* (_) {
+    let config = (yield* Config).config
+    const chainPairs: Array<ChainPair> = config.interactions
+    yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
+    for (const pair of chainPairs) {
+      if (!pair.enabled) {
+        yield* Effect.log("Checking task is disabled. Skipping.")
+        continue
+      }
+      yield* Effect.log(
+        `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
+      )
+      // Simulating an IBC check
+      if (Math.random() > 0.3) {
+        yield* Effect.log("IBC Check successful!")
       } else {
-        yield* Effect.log("No transfers configured. Skipping transfer step.")
+        yield* Effect.log("IBC Check failed due to network error")
       }
-      yield* Effect.log("Transfers done (or skipped). Sleeping 10 minutes...")
-    }),
-    Schedule.spaced("3 seconds")
-  )
-
-const runIbcChecksForever =
-  Effect.repeat(
-    Effect.gen(function* (_) {
-      let config = (yield* Config).config
-      const chainPairs: Array<ChainPair> = config.interactions
-      yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
-      for (const pair of chainPairs) {
-        if (!pair.enabled) {
-          yield* Effect.log("Checking task is disabled. Skipping.")
-          continue
-        }
-        yield* Effect.log(
-          `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
-        )
-        // Simulating an IBC check
-        if (Math.random() > 0.3) {
-          yield* Effect.log("IBC Check successful!")
-        } else {
-          yield* Effect.log("IBC Check failed due to network error")
-        }
-      }
-      yield* Effect.log("IBC Checks done (or skipped). Sleeping 10 minutes...")
-    }),
-    Schedule.spaced("5 seconds")
-  )
+    }
+    yield* Effect.log("IBC Checks done (or skipped). Sleeping 10 minutes...")
+  }),
+  Schedule.spaced("5 seconds")
+)
 
 const mainEffect = Effect.gen(function* (_) {
   const argv = yield* Effect.sync(() =>
@@ -196,10 +189,11 @@ const mainEffect = Effect.gen(function* (_) {
       .parseSync()
   )
 
-  const config = yield* loadConfig(argv.config) 
+  const config = yield* loadConfig(argv.config)
 
-  yield* Effect.all([transferLoop, runIbcChecksForever], {concurrency: "unbounded"}).pipe(Effect.provideService(Config, { config }))
+  yield* Effect.all([transferLoop, runIbcChecksForever], { concurrency: "unbounded" }).pipe(
+    Effect.provideService(Config, { config })
+  )
 })
-
 
 Effect.runPromise(mainEffect).catch(err => Effect.logError("Error in mainEffect", err))
