@@ -41,6 +41,12 @@ interface ConfigFile {
   load_test_enabled: boolean
 }
 
+// export class Transfer extends Schema.Class<Transfer>("Transfer")({
+//   token: Schema.Literal("0x09B8aE6BB8D447bF910068E6c246A270F42b41be", "0x09B8aE6BB8D447bF910068E6c246A270F42b41be"),
+//   amount: Schema.Int.pipe(Schema.between(1, 80)),
+//   hex: Schema.String.pipe(Schema.pattern(/^0x[0-9a-fA-F]+$/))
+// }) {}
+
 class DoTransferError extends Data.TaggedError("DoTransferError")<{
   cause: unknown
 }> {}
@@ -58,7 +64,7 @@ export class Config extends Context.Tag("Config")<
 
 
 const doTransferRetrySchedule = Schedule.exponential("2 seconds", 2.0).pipe(
-  Schedule.intersect(Schedule.recurs(2)) // Limit retries to 3
+  Schedule.intersect(Schedule.recurs(2)) // Limit retries to 2
 )
 
 function loadConfig(configPath: string) {
@@ -104,11 +110,6 @@ const doTransfer = (task: TransferConfig) =>
     yield* Effect.log(
       `\n[${chainType}] Starting transfer for chainId=${sourceChainId} to chain=${task.destinationChainId}`
     )
-
-    // const client = createPublicClient({
-    //   chain: sepolia,
-    //   transport: http()
-    // })
 
     const account = privateKeyToAccount(`0x${task.privateKey.replace(/^0x/, "")}`)
     const tokenAddress = task.denomAddress
@@ -169,7 +170,6 @@ const runIbcChecksForever =
         yield* Effect.log(
           `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
         )
-
         // Simulating an IBC check
         if (Math.random() > 0.3) {
           yield* Effect.log("IBC Check successful!")
@@ -196,17 +196,9 @@ const mainEffect = Effect.gen(function* (_) {
       .parseSync()
   )
 
-  yield* Effect.log("argv:", argv.config)
-
-  const configPath = argv.config
-  yield* Effect.log(`Using config file: ${configPath}`)
-
-  const configEffect = loadConfig(configPath)
-
-  const config = yield* configEffect // This will resolve to the loaded config or an error
+  const config = yield* loadConfig(argv.config) 
 
   yield* Effect.all([transferLoop, runIbcChecksForever], {concurrency: "unbounded"}).pipe(Effect.provideService(Config, { config }))
-
 })
 
 
