@@ -7,9 +7,12 @@ import "../24-host/IBCCommitment.sol";
 import "../02-client/IIBCClient.sol";
 
 library IBCClientLib {
-    event RegisterClient(string indexed clientType, address clientAddress);
+    event RegisterClient(
+        string indexed clientTypeIndex, string clientType, address clientAddress
+    );
     event CreateClient(
-        string indexed clientType,
+        string indexed clientTypeIndex,
+        string clientType,
         uint32 indexed clientId,
         string counterpartyChainId
     );
@@ -32,7 +35,9 @@ abstract contract IBCClient is IBCStore, IIBCClient {
             revert IBCErrors.ErrClientTypeAlreadyExists();
         }
         clientRegistry[clientType] = address(client);
-        emit IBCClientLib.RegisterClient(clientType, address(client));
+        emit IBCClientLib.RegisterClient(
+            clientType, clientType, address(client)
+        );
     }
 
     /**
@@ -62,7 +67,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
             clientId, update.height
         )] = update.consensusStateCommitment;
         emit IBCClientLib.CreateClient(
-            msg_.clientType, clientId, counterpartyChainId
+            msg_.clientType, msg_.clientType, clientId, counterpartyChainId
         );
         return clientId;
     }
