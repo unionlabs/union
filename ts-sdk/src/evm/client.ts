@@ -1,10 +1,19 @@
-import { Context, Data } from "effect"
-import type {
-  PublicClient,
-  ReadContractErrorType,
-  WalletClient,
-  WriteContractErrorType
+import { Context, Data, Effect } from "effect"
+import {
+  createPublicClient,
+  createWalletClient,
+  type Account,
+  type Chain,
+  type CreatePublicClientErrorType,
+  type CreateWalletClientErrorType,
+  type PublicClient,
+  type PublicClientConfig,
+  type ReadContractErrorType,
+  type WalletClient,
+  type WalletClientConfig,
+  type WriteContractErrorType
 } from "viem"
+import { extractErrorDetails } from "../utils/extract-error-details.js"
 
 export class ViemPublicClientSource extends Context.Tag("ViemPublicClientSource")<
   ViemPublicClientSource,
@@ -30,7 +39,11 @@ export class ViemPublicClient extends Context.Tag("ViemPublicClient")<
  */
 export class ViemWalletClient extends Context.Tag("ViemWalletClient")<
   ViemWalletClient,
-  { readonly client: WalletClient }
+  {
+    readonly client: WalletClient
+    readonly account: Account
+    readonly chain: Chain
+  }
 >() {}
 
 export class ReadContractError extends Data.TaggedError("ReadContractError")<{
@@ -40,3 +53,33 @@ export class ReadContractError extends Data.TaggedError("ReadContractError")<{
 export class WriteContractError extends Data.TaggedError("WriteContractError")<{
   cause: WriteContractErrorType
 }> {}
+
+export class CreateViemPublicClientError extends Data.TaggedError("CreateViemPublicClientError")<{
+  cause: CreatePublicClientErrorType
+}> {}
+
+export class CreateViemWalletClientError extends Data.TaggedError("CreateViemWalletClientError")<{
+  cause: CreateWalletClientErrorType
+}> {}
+
+export const createViemPublicClient = (
+  parameters: PublicClientConfig
+): Effect.Effect<PublicClient, CreateViemPublicClientError> =>
+  Effect.try({
+    try: () => createPublicClient(parameters),
+    catch: err =>
+      new CreateViemPublicClientError({
+        cause: extractErrorDetails(err as CreatePublicClientErrorType)
+      })
+  })
+
+export const createViemWalletClient = (
+  parameters: WalletClientConfig
+): Effect.Effect<WalletClient, CreateViemWalletClientError> =>
+  Effect.try({
+    try: () => createWalletClient(parameters),
+    catch: err =>
+      new CreateViemWalletClientError({
+        cause: extractErrorDetails(err as CreateWalletClientErrorType)
+      })
+  })

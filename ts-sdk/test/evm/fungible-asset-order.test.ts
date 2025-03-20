@@ -111,18 +111,22 @@ describe("Fungible Asset Order Tests", () => {
         )
       )
 
-      expect(result).toEqual([
-        evmIntent.sender,
-        evmIntent.receiver,
-        evmIntent.baseToken,
-        evmIntent.baseAmount,
-        mockErc20Meta.symbol,
-        mockErc20Meta.name,
-        mockErc20Meta.decimals,
-        0,
-        mockEvmQuoteToken,
-        evmIntent.quoteAmount
-      ])
+      expect(result).toEqual({
+        opcode: 3,
+        version: 1,
+        operand: [
+          evmIntent.sender,
+          evmIntent.receiver,
+          evmIntent.baseToken,
+          evmIntent.baseAmount,
+          mockErc20Meta.symbol,
+          mockErc20Meta.name,
+          mockErc20Meta.decimals,
+          0n,
+          mockEvmQuoteToken,
+          evmIntent.quoteAmount
+        ]
+      })
     })
   })
 
@@ -141,18 +145,22 @@ describe("Fungible Asset Order Tests", () => {
         )
       )
 
-      expect(result).toEqual([
-        evmIntent.sender,
-        evmIntent.receiver,
-        evmIntent.baseToken,
-        evmIntent.baseAmount,
-        mockErc20Meta.symbol,
-        mockErc20Meta.name,
-        mockErc20Meta.decimals,
-        0,
-        mockCosmosQuoteToken,
-        evmIntent.quoteAmount
-      ])
+      expect(result).toEqual({
+        opcode: 3,
+        version: 1,
+        operand: [
+          evmIntent.sender,
+          "0x30785265636569766572",
+          evmIntent.baseToken,
+          evmIntent.baseAmount,
+          mockErc20Meta.symbol,
+          mockErc20Meta.name,
+          mockErc20Meta.decimals,
+          0n,
+          mockCosmosQuoteToken,
+          evmIntent.quoteAmount
+        ]
+      })
     })
   })
 
@@ -172,18 +180,22 @@ describe("Fungible Asset Order Tests", () => {
         )
       )
 
-      expect(result).toEqual([
-        cosmosIntent.sender,
-        cosmosIntent.receiver,
-        toHex(cosmosIntent.baseToken),
-        cosmosIntent.baseAmount,
-        mockCw20TokenInfo.symbol,
-        mockCw20TokenInfo.name,
-        mockCw20TokenInfo.decimals,
-        0,
-        mockEvmQuoteToken,
-        cosmosIntent.quoteAmount
-      ])
+      expect(result).toEqual({
+        opcode: 3,
+        version: 1,
+        operand: [
+          toHex(cosmosIntent.sender),
+          "cosmos1receiver",
+          toHex(cosmosIntent.baseToken),
+          cosmosIntent.baseAmount,
+          mockCw20TokenInfo.symbol,
+          mockCw20TokenInfo.name,
+          mockCw20TokenInfo.decimals,
+          0n,
+          mockEvmQuoteToken,
+          cosmosIntent.quoteAmount
+        ]
+      })
     })
   })
 
@@ -203,18 +215,22 @@ describe("Fungible Asset Order Tests", () => {
         )
       )
 
-      expect(result).toEqual([
-        cosmosIntent.sender,
-        cosmosIntent.receiver,
-        cosmosIntent.baseToken,
-        cosmosIntent.baseAmount,
-        mockCw20TokenInfo.symbol,
-        mockCw20TokenInfo.name,
-        mockCw20TokenInfo.decimals,
-        0,
-        mockCosmosQuoteToken,
-        cosmosIntent.quoteAmount
-      ])
+      expect(result).toEqual({
+        opcode: 3,
+        version: 1,
+        operand: [
+          toHex(cosmosIntent.sender),
+          toHex(cosmosIntent.receiver),
+          toHex(cosmosIntent.baseToken),
+          cosmosIntent.baseAmount,
+          mockCw20TokenInfo.symbol,
+          mockCw20TokenInfo.name,
+          mockCw20TokenInfo.decimals,
+          0n,
+          mockCosmosQuoteToken,
+          cosmosIntent.quoteAmount
+        ]
+      })
     })
   })
 
