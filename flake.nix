@@ -156,7 +156,12 @@
       ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      flake = {
+      flake =
+      let
+        inherit (inputs.nixpkgs.lib) filterAtters;
+        isCi = attr: v: (if v?ci then v.ci else true);
+      in
+      {
         site = {
           x86_64-linux = {
             inherit (self.packages.x86_64-linux) site;
@@ -168,6 +173,25 @@
             inherit (self.packages.aarch64-linux) app;
             inherit (self.packages.aarch64-linux) ceremony;
           };
+        };
+        garnix.config = {
+          builds = [
+            {
+              branch = "main";
+              include = {
+                packages.x86_64-linux =
+                  filterAtters isCi self.packages.x86_64-linux;
+                packages.aarch64-liunx =
+                  filterAtters isCi self.packages.aarch64-linux;
+              };
+            }
+            {
+              include = {
+                packages.x86_64-linux =
+                  filterAtters isCi self.packages.x86_64-linux;
+              };
+            }
+          ];
         };
       };
       systems = [
