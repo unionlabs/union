@@ -1,5 +1,6 @@
 import { Context, Data } from "effect"
 import type {
+  Chain,
   PublicClient,
   ReadContractErrorType,
   WalletClient,
@@ -30,7 +31,10 @@ export class ViemPublicClient extends Context.Tag("ViemPublicClient")<
  */
 export class ViemWalletClient extends Context.Tag("ViemWalletClient")<
   ViemWalletClient,
-  { readonly client: WalletClient }
+  {
+    readonly client: WalletClient
+    readonly chain: Chain
+  }
 >() {}
 
 export class ReadContractError extends Data.TaggedError("ReadContractError")<{

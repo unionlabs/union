@@ -24,3 +24,8 @@ export class DestinationConfig extends Context.Tag("DestinationConfig")<
   DestinationConfig,
   { readonly ucs03address: Address; readonly channelId: number }
 >() {}
+
+export class SourceConfig extends Context.Tag("SourceConfig")<
+  SourceConfig,
+  { readonly ucs03address: Address; readonly channelId: number }
+>() {}
