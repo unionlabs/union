@@ -5,7 +5,7 @@ import { sepolia } from "viem/chains"
 import { CosmosDestinationConfig } from "../src/cosmos/quote-token.js"
 import { createEvmToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
 import { CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/client.js"
-import { Batch } from "../src/ucs03/instruction.js"
+import { Batch, Multiplex } from "../src/ucs03/instruction.js"
 import { sendInstructionEvm } from "../src/ucs03/send-instruction.js"
 import { privateKeyToAccount } from "viem/accounts"
 import { ViemWalletClient } from "../src/evm/client.js"
@@ -33,24 +33,21 @@ const TRANSFERS = [
     receiver: RECEIVER,
     baseToken: "0x779877a7b0d9e8603169ddbd7836e478b4624789", // LINK on sepolia
     baseAmount: 100n,
-    quoteAmount: 100n,
-    name: "LINK"
+    quoteAmount: 100n
   },
   {
     sender: SENDER,
     receiver: RECEIVER,
     baseToken: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238", // USDC on sepolia
     baseAmount: 100n,
-    quoteAmount: 100n,
-    name: "USDC"
+    quoteAmount: 100n
   },
   {
     sender: SENDER,
     receiver: RECEIVER,
     baseToken: "0x7b79995e5f793a07bc00c21412e50ecae098e7f9", // WETH on sepolia
     baseAmount: 50n,
-    quoteAmount: 0n,
-    name: "WETH"
+    quoteAmount: 0n
   }
 ] as const
 
@@ -72,7 +69,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
   yield* Effect.log("Checking token allowances...")
 
   for (const transfer of TRANSFERS) {
-    yield* Effect.log(`checking ${transfer.name} allowance...`)
+    yield* Effect.log(`checking ${transfer.baseToken} allowance...`)
 
     // Check current allowance
     const currentAllowance = yield* readErc20Allowance(
@@ -81,11 +78,11 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
       UCS03_ADDRESS
     )
 
-    yield* Effect.log(`current ${transfer.name} allowance: ${currentAllowance}`)
+    yield* Effect.log(`current ${transfer.baseToken} allowance: ${currentAllowance}`)
 
     // If allowance is insufficient, increase it
     if (currentAllowance < transfer.baseAmount) {
-      yield* Effect.log(`increasing ${transfer.name} allowance...`)
+      yield* Effect.log(`increasing ${transfer.baseToken} allowance...`)
 
       // Approve exact amount needed
       const txHash = yield* increaseErc20Allowance(
@@ -108,9 +105,9 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
         UCS03_ADDRESS
       )
 
-      yield* Effect.log(`new ${transfer.name} allowance: ${newAllowance}`)
+      yield* Effect.log(`new ${transfer.baseToken} allowance: ${newAllowance}`)
     } else {
-      yield* Effect.log(`${transfer.name} allowance is sufficient`)
+      yield* Effect.log(`${transfer.baseToken} allowance is sufficient`)
     }
   }
 
