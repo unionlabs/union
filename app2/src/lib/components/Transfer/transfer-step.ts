@@ -19,3 +19,19 @@ export type TransferStep = Data.TaggedEnum<{
 
 // Create constructors for the steps
 export const { Filling, ApprovalRequired, SubmitInstruction } = Data.taggedEnum<TransferStep>()
+
+/**
+ * Get a human-readable description for a transfer step
+ */
+export function getStepDescription(step: TransferStep): string {
+  if (step._tag === "Filling") {
+    return "Configure your transfer details"
+  }
+  if (step._tag === "ApprovalRequired") {
+    return "Approve token spending"
+  }
+  if (step._tag === "SubmitInstruction") {
+    return "Submit transfer to blockchain"
+  }
+  return "Transfer step"
+}
