@@ -17,6 +17,7 @@ import { ViemWalletClient } from "../src/evm/client.js"
 import { EvmChannelSource } from "../src/evm/channel.js"
 import { readErc20Allowance, increaseErc20Allowance } from "../src/evm/erc20.ts"
 import { waitForTransactionReceipt } from "../src/evm/receipts.ts"
+import { CosmosChannelDestination } from "../src/cosmos/channel.ts"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -158,7 +159,7 @@ Effect.runPromiseExit(
       Effect.provideService(ViemPublicClient, { client: publicSourceClient }),
       Effect.provideService(ViemPublicClientSource, { client: publicSourceClient }),
       Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
-      Effect.provideService(CosmosDestinationConfig, {
+      Effect.provideService(CosmosChannelDestination, {
         ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
         channelId: 1
       }),
