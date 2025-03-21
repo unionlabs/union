@@ -138,12 +138,9 @@ module ibc::channel_handshake {
     }
 
     public entry fun channel_open_confirm<T: key + store + drop>(
-        port_id: address,
-        channel_id: u32,
-        proof_ack: vector<u8>,
-        proof_height: u64
+        channel_id: u32, proof_ack: vector<u8>, proof_height: u64
     ) {
-        ibc::channel_open_confirm<T>(port_id, channel_id, proof_ack, proof_height);
+        ibc::channel_open_confirm<T>(channel_id, proof_ack, proof_height);
 
         engine::dispatch<T>(helpers::pack_channel_open_confirm_params(channel_id));
 

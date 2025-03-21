@@ -168,40 +168,23 @@ module ibc::commitment {
         path_vec
     }
 
-    // Generate the path for channel
     public(friend) fun batch_packets_commitment_path(
-        channel_id: u32, batchHash: vector<u8>
+        batch_hash: vector<u8>
     ): vector<u8> {
-        let path_vec = vector::empty<u8>();
-
-        let channels_bytes = bcs::to_bytes<u256>(&PACKETS);
-        vector::reverse(&mut channels_bytes);
-        vector::append(&mut path_vec, channels_bytes);
-
-        let param_bytes = bcs::to_bytes<u256>(&(channel_id as u256));
-        vector::reverse(&mut param_bytes);
-        vector::append(&mut path_vec, param_bytes);
-
-        vector::append(&mut path_vec, batchHash);
-        path_vec
+        let path = bcs::to_bytes<u256>(&PACKETS);
+        vector::reverse(&mut path);
+        vector::append(&mut path, batch_hash);
+        path
     }
 
     // Generate the path for channel
     public(friend) fun batch_receipts_commitment_path(
-        channel_id: u32, batchHash: vector<u8>
+        batch_hash: vector<u8>
     ): vector<u8> {
-        let path_vec = vector::empty<u8>();
-
-        let channels_bytes = bcs::to_bytes<u256>(&PACKET_ACKS);
-        vector::reverse(&mut channels_bytes);
-        vector::append(&mut path_vec, channels_bytes);
-
-        let param_bytes = bcs::to_bytes<u256>(&(channel_id as u256));
-        vector::reverse(&mut param_bytes);
-        vector::append(&mut path_vec, param_bytes);
-
-        vector::append(&mut path_vec, batchHash);
-        path_vec
+        let out = bcs::to_bytes<u256>(&PACKET_ACKS);
+        vector::reverse(&mut out);
+        vector::append(&mut out, batch_hash);
+        out
     }
 
     // Generate the path for channel
@@ -274,15 +257,15 @@ module ibc::commitment {
     }
 
     public(friend) fun batch_packets_commitment_key(
-        channel_id: u32, batch_hash: vector<u8>
+        batch_hash: vector<u8>
     ): vector<u8> {
-        keccak256(batch_packets_commitment_path(channel_id, batch_hash))
+        keccak256(batch_packets_commitment_path(batch_hash))
     }
 
     public(friend) fun batch_receipts_commitment_key(
-        channel_id: u32, batch_hash: vector<u8>
+        batch_hash: vector<u8>
     ): vector<u8> {
-        keccak256(batch_receipts_commitment_path(channel_id, batch_hash))
+        keccak256(batch_receipts_commitment_path(batch_hash))
     }
 
     public(friend) fun next_sequence_send_commitment_key(channel_id: u32): vector<u8> {
