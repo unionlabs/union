@@ -21,12 +21,15 @@ export const waitForTransactionReceipt = (hash: Hash) =>
     const client = (yield* AptosPublicClient).client
 
     const receipt = yield* Effect.tryPromise({
-      try: () => client.waitForTransaction({ hash, options: { checkSuccess: false } }),
+      try: () => client.waitForTransaction({ 
+        transactionHash: hash, 
+        options: { checkSuccess: false } 
+      }),
       catch: err =>
         new WaitForTransactionReceiptError({
           cause: extractErrorDetails(err as WaitForTransactionReceiptError)
         })
-    })
+    }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 3 }))
 
     return receipt
   })
