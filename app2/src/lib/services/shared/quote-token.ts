@@ -17,7 +17,6 @@ const retryPolicy = Schedule.recurs(2).pipe(
   Schedule.compose(Schedule.spaced(500))
 )
 
-
 export const getQuoteToken = (
   sourceChain: Chain,
   base_token: TokenRawDenom,
