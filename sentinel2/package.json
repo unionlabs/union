@@ -13,7 +13,6 @@
   "license": "MIT",
   "description": "",
   "devDependencies": {
-    "@effect/platform": "^0.77.2",
     "@types/node-fetch": "3.0.2",
     "@types/yargs": "^17.0.33",
     "biome": "^0.3.3",
@@ -22,9 +21,7 @@
     "vitest": "^3.0.8"
   },
   "dependencies": {
-    "@effect/cli": "^0.59.0",
-    "@effect/platform-node": "^0.76.0",
-    "@unionlabs/sdk": "^1.3.0",
+    "@unionlabs/sdk": "^1.6.1",
     "consola": "^3.4.0",
     "effect": "^3.13.2",
     "viem": "^2.22.11",
