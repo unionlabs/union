@@ -1,32 +1,21 @@
 import { Effect } from "effect"
 import {
-  ViemPublicClientSource,
   ViemPublicClient,
   createViemPublicClient,
-  createViemWalletClient,
   ViemPublicClientDestination
 } from "../src/evm/client.js"
 import { http } from "viem"
 import { sepolia } from "viem/chains"
-import { CosmosDestinationConfig } from "../src/cosmos/quote-token.js"
+import { createCosmosToEvmFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
 import {
-  createCosmosToEvmFungibleAssetOrder,
-  createEvmToCosmosFungibleAssetOrder
-} from "../src/ucs03/fungible-asset-order.js"
-import {
-  CosmWasmClientDestination,
   CosmWasmClientSource,
   SigningCosmWasmClientContext,
   createCosmWasmClient,
   createSigningCosmWasmClient
 } from "../src/cosmos/client.js"
 import { Batch, encodeAbi } from "../src/ucs03/instruction.js"
-import { sendInstructionCosmos, sendInstructionEvm } from "../src/ucs03/send-instruction.js"
-import { privateKeyToAccount } from "viem/accounts"
-import { ViemWalletClient } from "../src/evm/client.js"
-import { EvmChannelDestination, EvmChannelSource } from "../src/evm/channel.js"
-import { readErc20Allowance, increaseErc20Allowance } from "../src/evm/erc20.ts"
-import { waitForTransactionReceipt } from "../src/evm/receipts.ts"
+import { sendInstructionCosmos } from "../src/ucs03/send-instruction.js"
+import { EvmChannelDestination } from "../src/evm/channel.js"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { CosmosChannelSource } from "../src/cosmos/channel.ts"
 import { Decimal } from "@cosmjs/math"

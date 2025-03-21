@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest"
 import { Effect } from "effect"
 import { ViemPublicClientSource, ViemPublicClientDestination } from "../../src/evm/client.js"
 import { CosmWasmClientSource, CosmWasmClientDestination } from "../../src/cosmos/client.js"
-import { DestinationConfig } from "../../src/evm/quote-token.js"
-import { CosmosDestinationConfig } from "../../src/cosmos/quote-token.js"
+import { EvmChannelDestination } from "../../src/evm/channel.js"
+import { CosmosChannelDestination } from "../../src/cosmos/channel.js"
 import {
   createEvmToEvmFungibleAssetOrder,
   createEvmToCosmosFungibleAssetOrder,
@@ -104,7 +104,7 @@ describe("Fungible Asset Order Tests", () => {
           Effect.provideService(ViemPublicClientSource, mockViemPublicClientSource),
           //@ts-ignore: its a mock
           Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination),
-          Effect.provideService(DestinationConfig, {
+          Effect.provideService(EvmChannelDestination, {
             ucs03address: "0xUCS03Address",
             channelId: 1
           })
@@ -138,7 +138,7 @@ describe("Fungible Asset Order Tests", () => {
           Effect.provideService(ViemPublicClientSource, mockViemPublicClientSource),
           //@ts-ignore: its a mock
           Effect.provideService(CosmWasmClientDestination, mockCosmWasmClientDestination),
-          Effect.provideService(CosmosDestinationConfig, {
+          Effect.provideService(CosmosChannelDestination, {
             ucs03address: "cosmos1ucs03address",
             channelId: 1
           })
@@ -173,7 +173,7 @@ describe("Fungible Asset Order Tests", () => {
           Effect.provideService(CosmWasmClientSource, mockCosmWasmClientSource),
           //@ts-ignore: its a mock
           Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination),
-          Effect.provideService(DestinationConfig, {
+          Effect.provideService(EvmChannelDestination, {
             ucs03address: "0xUCS03Address",
             channelId: 1
           })
@@ -208,7 +208,7 @@ describe("Fungible Asset Order Tests", () => {
           Effect.provideService(CosmWasmClientSource, mockCosmWasmClientSource),
           //@ts-ignore: its a mock
           Effect.provideService(CosmWasmClientDestination, mockCosmWasmClientDestination),
-          Effect.provideService(CosmosDestinationConfig, {
+          Effect.provideService(CosmosChannelDestination, {
             ucs03address: "cosmos1ucs03address",
             channelId: 1
           })
@@ -250,7 +250,7 @@ describe("Fungible Asset Order Tests", () => {
           Effect.provideService(ViemPublicClientSource, errorClient),
           //@ts-ignore: its a mock
           Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination),
-          Effect.provideService(DestinationConfig, {
+          Effect.provideService(EvmChannelDestination, {
             ucs03address: "0xUCS03Address",
             channelId: 1
           })
@@ -276,7 +276,7 @@ describe("Fungible Asset Order Tests", () => {
           Effect.provideService(CosmWasmClientSource, errorClient),
           //@ts-ignore: its a mock
           Effect.provideService(CosmWasmClientDestination, mockCosmWasmClientDestination),
-          Effect.provideService(CosmosDestinationConfig, {
+          Effect.provideService(CosmosChannelDestination, {
             ucs03address: "cosmos1ucs03address",
             channelId: 1
           })
