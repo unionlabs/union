@@ -41,13 +41,6 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
     const signingClient = yield* SigningCosmWasmClientContext
     const sourceConfig = yield* CosmosChannelSource
 
-    const ins = encodeAbiParameters(instructionAbi, [
-      instruction.version,
-      instruction.opcode,
-      encodeAbi(instruction)
-    ])
-
-    yield* Effect.log("ins", ins)
     return yield* executeContract(
       signingClient.client,
       signingClient.address,
@@ -58,7 +51,11 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
           timeout_height: 10000000,
           timeout_timestamp: 0,
           salt: generateSalt(),
-          instruction: ins
+          instruction: encodeAbiParameters(instructionAbi, [
+            instruction.version,
+            instruction.opcode,
+            encodeAbi(instruction)
+          ])
         }
       }
     )
