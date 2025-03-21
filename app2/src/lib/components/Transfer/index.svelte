@@ -353,6 +353,20 @@ function handleActionButtonClick() {
       class="w-full"
       currentStep={currentPage + 1} 
       totalSteps={transferSteps.pipe(Option.map(ts => ts.length), Option.getOrElse(() => 1))}
+      stepDescriptions={Option.isSome(transferSteps) 
+        ? transferSteps.value.map(step => {
+            switch (step._tag) {
+              case "Filling":
+                return "Configure your transfer details"
+              case "ApprovalRequired":
+                return "Approve token spending"
+              case "SubmitInstruction":
+                return "Submit transfer to blockchain"
+              default:
+                return "Transfer step"
+            }
+          })
+        : ["Configure your transfer"]}
     />
   </div>
   
