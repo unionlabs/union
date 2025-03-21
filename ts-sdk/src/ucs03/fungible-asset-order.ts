@@ -94,9 +94,18 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
 }) =>
   Effect.gen(function* () {
     const sourceClient = (yield* CosmWasmClientSource).client
-    const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
-      Effect.provideService(CosmWasmClientContext, { client: sourceClient })
-    )
+
+    // HACK: special cased for muno for now
+    const tokenMeta =
+      intent.baseToken === "muno"
+        ? {
+            symbol: "muno",
+            name: "muno",
+            decimals: 0
+          }
+        : yield* readCw20TokenInfo(intent.baseToken).pipe(
+            Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+          )
     const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
     return FungibleAssetOrder([

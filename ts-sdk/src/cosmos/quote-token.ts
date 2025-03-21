@@ -2,16 +2,17 @@ import { Context, Effect } from "effect"
 import { CosmWasmClientDestination } from "./client.js"
 import { queryContract } from "./contract.js"
 import type { Hex } from "viem"
+import { CosmosChannelDestination } from "./channel.js"
 
 export const predictQuoteToken = (baseToken: string) =>
   Effect.gen(function* () {
     const client = (yield* CosmWasmClientDestination).client
-    const config = yield* CosmosDestinationConfig
+    const config = yield* CosmosChannelDestination
 
     const result = yield* queryContract<{ wrapped_token: Hex }>(client, config.ucs03address, {
       predict_wrapped_token: {
         path: "0",
-        channel: config.channelId,
+        channel_id: config.channelId,
         token: baseToken
       }
     })

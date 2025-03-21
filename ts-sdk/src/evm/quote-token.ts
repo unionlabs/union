@@ -1,13 +1,14 @@
-import { Context, Effect } from "effect"
-import type { Address, Hex } from "viem"
+import { Effect } from "effect"
+import type { Hex } from "viem"
 import { ucs03abi } from "./abi/ucs03.js"
 import { readContract } from "./contract.js"
 import { ViemPublicClientDestination } from "./client.js"
+import { EvmChannelDestination } from "./channel.js"
 
 export const predictQuoteToken = (baseToken: Hex) =>
   Effect.gen(function* () {
     const client = (yield* ViemPublicClientDestination).client
-    const config = yield* DestinationConfig
+    const config = yield* EvmChannelDestination
 
     const result = yield* readContract(client, {
       address: config.ucs03address,
@@ -19,13 +20,3 @@ export const predictQuoteToken = (baseToken: Hex) =>
     // Extract the address from the result tuple
     return result[0]
   })
-
-export class DestinationConfig extends Context.Tag("DestinationConfig")<
-  DestinationConfig,
-  { readonly ucs03address: Address; readonly channelId: number }
->() {}
-
-export class SourceConfig extends Context.Tag("SourceConfig")<
-  SourceConfig,
-  { readonly ucs03address: Address; readonly channelId: number }
->() {}

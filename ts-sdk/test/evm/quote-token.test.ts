@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Effect } from "effect"
-import { DestinationConfig, predictQuoteToken } from "../../src/evm/quote-token.js"
+import { predictQuoteToken } from "../../src/evm/quote-token.js"
 import { ViemPublicClientDestination } from "../../src/evm/client.js"
 import { ucs03abi } from "../../src/evm/abi/ucs03.js"
 import { toHex } from "viem"
+import { EvmChannelDestination } from "../../src/evm/channel.js"
 
 // Mock client for testing
 const mockClient = {
@@ -36,7 +37,7 @@ describe("Quote Token Module", () => {
     const result = await Effect.runPromise(
       predictQuoteToken(testParams.baseToken).pipe(
         Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination),
-        Effect.provideService(DestinationConfig, {
+        Effect.provideService(EvmChannelDestination, {
           ucs03address: testParams.ucs03address,
           channelId: testParams.destinationChannelId
         })
