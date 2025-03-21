@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, num::NonZeroU64, ops::Deref, path::PathBuf};
+use std::{collections::BTreeMap, num::NonZeroU64, ops::Deref, path::PathBuf, str::FromStr};
 
 use anyhow::{bail, Context, Result};
 use bip32::secp256k1::ecdsa::SigningKey;
@@ -19,7 +19,7 @@ use rand_chacha::{
     ChaChaCore,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use sha2::Digest;
 use tracing::{info, instrument};
 use tracing_subscriber::EnvFilter;
@@ -67,6 +67,15 @@ enum App {
         address: Bech32<H256>,
         #[arg(long)]
         new_bytecode: PathBuf,
+        #[arg(
+            long,
+            // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
+            value_parser(serde_json::Value::from_str),
+            default_value_t = serde_json::Value::Object(serde_json::Map::new())
+        )]
+        message: Value,
+        #[arg(long, default_value_t = false)]
+        force: bool,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -109,6 +118,18 @@ enum App {
         new_admin: Bech32<Bytes>,
         #[command(flatten)]
         gas_config: GasFillerArgs,
+    },
+    StoreCode {
+        #[arg(long, env)]
+        private_key: H256,
+        #[arg(long)]
+        bytecode: PathBuf,
+        #[arg(long)]
+        rpc_url: String,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
+        #[arg(long)]
+        output: Option<PathBuf>,
     },
     #[command(subcommand)]
     Tx(TxCmd),
@@ -675,6 +696,8 @@ async fn do_main() -> Result<()> {
             private_key,
             address,
             new_bytecode,
+            message,
+            force,
             gas_config,
         } => {
             let new_bytecode = std::fs::read(new_bytecode).context("reading new bytecode")?;
@@ -691,8 +714,12 @@ async fn do_main() -> Result<()> {
             if checksum == sha2(BYTECODE_BASE_BYTECODE) {
                 bail!("contract {address} has not yet been initiated, it must be fully deployed before it can be migrated")
             } else if checksum == sha2(&new_bytecode) {
-                info!("contract {address} has already been migrated to this bytecode");
-                return Ok(());
+                if force {
+                    info!("contract {address} has already been migrated to this bytecode, migrating anyways since --force was passed");
+                } else {
+                    info!("contract {address} has already been migrated to this bytecode");
+                    return Ok(());
+                }
             }
 
             let (tx_hash, store_code_response) = ctx
@@ -713,13 +740,17 @@ async fn do_main() -> Result<()> {
                 "code stored"
             );
 
+            let message = json!({ "migrate": message });
+
+            info!("migrate message: {message}");
+
             let (tx_hash, _migrate_response) = ctx
                 .tx(
                     MsgMigrateContract {
                         sender: ctx.wallet().address().map_data(Into::into),
                         contract: address,
                         code_id: store_code_response.code_id,
-                        msg: json!({ "migrate": {} }).to_string().into_bytes().into(),
+                        msg: message.to_string().into_bytes().into(),
                     },
                     "",
                 )
@@ -934,6 +965,36 @@ async fn do_main() -> Result<()> {
                 )?;
             }
         },
+        App::StoreCode {
+            private_key,
+            bytecode,
+            rpc_url,
+            gas_config,
+            output,
+        } => {
+            let bytecode = std::fs::read(bytecode).context("reading bytecode path")?;
+
+            let deployer = Deployer::new(rpc_url.clone(), private_key, gas_config.clone()).await?;
+
+            let (tx_hash, response) = deployer
+                .tx(
+                    MsgStoreCode {
+                        sender: deployer.wallet().address().map_data(Into::into),
+                        wasm_byte_code: bytecode.into(),
+                        // TODO: Support permissions
+                        instantiate_permission: None,
+                    },
+                    "",
+                )
+                .await
+                .context("store code")?;
+
+            let code_id = response.code_id;
+
+            info!(%tx_hash, %code_id, "stored code");
+
+            write_output(output, code_id)?;
+        }
     }
 
     Ok(())
