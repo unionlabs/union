@@ -11,7 +11,7 @@ export function truncate(str: string, showChars: number, position: string): stri
     return str
   }
 
-  const ellipsis = "..."
+  const ellipsis = "…"
 
   switch (position.toLowerCase()) {
     case "start":
