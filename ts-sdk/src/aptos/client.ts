@@ -1,6 +1,6 @@
 import { Context, Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
-import { Aptos, AptosConfig, Network, AptosApiError } from "@aptos-labs/ts-sdk"
+import { Aptos, AptosConfig, AptosApiError } from "@aptos-labs/ts-sdk"
 
 export class AptosPublicClientSource extends Context.Tag("AptosPublicClientSource")<
 AptosPublicClientSource,

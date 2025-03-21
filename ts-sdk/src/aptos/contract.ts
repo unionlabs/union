@@ -1,8 +1,7 @@
 import { Effect, Data } from "effect"
-import { Aptos, AptosConfig, Network, AptosApiError, type Account as AptosAccount } from "@aptos-labs/ts-sdk"
+import { Aptos, type Account as AptosAccount } from "@aptos-labs/ts-sdk"
   import { extractErrorDetails } from "../utils/extract-error-details.js"
   import type { AptosBrowserWallet } from "./wallet.js"
-  import { waitForTransactionReceipt } from "./receipts.js"
 
 /**
  * Error type for Aptos contract query failures
