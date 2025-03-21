@@ -27,7 +27,7 @@ let {
 }: Props = $props()
 
 const classes = cn(
-  "w-full p-2 bg-zinc-800 rounded text-zinc-200",
+  "w-full p-2 bg-zinc-800 rounded-md text-zinc-200",
   "focus:outline-none focus:ring-2 focus:ring-sky-500",
   "disabled:opacity-50 disabled:cursor-not-allowed",
   "transition-colors duration-200",

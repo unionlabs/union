@@ -34,7 +34,7 @@ const isChainLoading = $derived.by(() => {
   <button
           onclick={onClick}
           class={cn(
-      "w-full h-12 rounded bg-zinc-800 text-zinc-200",
+      "w-full h-12 rounded-md bg-zinc-800 text-zinc-200",
       "hover:bg-zinc-600 hover:border-zinc-500",
       "focus:outline-none focus:ring-2 focus:ring-sky-500",
       "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -43,7 +43,7 @@ const isChainLoading = $derived.by(() => {
   >
     <div class="flex items-center">
       {#if isChainLoading}
-        <div class="flex gap-1 items-center justify-between p-2 flex-1">
+        <div class="flex gap-2 items-center justify-between p-2 flex-1">
           <div class="w-8 h-8 flex items-center bg-zinc-500 text-white rounded-full justify-center">
             <LoadingSpinnerIcon />
           </div>
@@ -54,7 +54,7 @@ const isChainLoading = $derived.by(() => {
         </div>
       {:else if Option.isNone(selectedChain)}
         <!-- No Chain Selected -->
-        <div class="flex gap-1 items-center justify-between p-2 flex-1">
+        <div class="flex gap-2 items-center justify-between p-2 flex-1">
           <div class="w-8 h-8 flex items-center bg-zinc-500 rounded-full justify-center">
             ?
           </div>
@@ -64,7 +64,7 @@ const isChainLoading = $derived.by(() => {
       {:else}
 
         <!-- Chain Selected -->
-        <div class="flex gap-1 items-center justify-between p-2 flex-1 w-full">
+        <div class="flex gap-2 items-center justify-between p-2 flex-1 w-full">
 
           <!--LOGO-->
           <div class="flex items-center">
@@ -92,7 +92,7 @@ const isChainLoading = $derived.by(() => {
           {:else}
             <span class="text-zinc-400 flex-1 text-start">No asset</span>
           {/if}
-          <SharpChevronDownIcon/>
+          <SharpChevronDownIcon class="size-6"/>
         </div>
       {/if}
     </div>

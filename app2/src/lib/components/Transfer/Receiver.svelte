@@ -249,13 +249,13 @@ function hasBookmarks() {
 }
 </script>
 
-<Button class="w-fit" onclick={openModal}>
+<Button class="w-fit" onclick={openModal} disabled={!destinationChainId}>
   <SharpWalletIcon class="size-5"/>
 </Button>
 
 <!-- Modal -->
 {#if isModalOpen}
-  <div class="absolute inset-0 bg-zinc-900 z-40" transition:fade={{ duration: 300 }}>
+  <div class="absolute bg-zinc-950 inset-0 z-40" transition:fade={{ duration: 300 }}>
     <div class="w-full h-full max-h-full flex flex-col p-4" transition:fly={{ y: 30, duration: 300, opacity: 0 }}>
       <div class="flex items-center justify-between mb-4 h-10">
         <div class="flex items-center h-full">
@@ -327,7 +327,7 @@ function hasBookmarks() {
                         bind:value={manualAddress}
                         placeholder="Enter receiver address"
                         class={cn(
-                    "w-full p-2 rounded-l bg-zinc-800 text-zinc-200 h-full",
+                    "w-full p-2 rounded-md bg-zinc-800 text-zinc-200 h-full",
                     "focus:outline-none focus:ring-1 focus:ring-sky-500",
                   )}
                 />

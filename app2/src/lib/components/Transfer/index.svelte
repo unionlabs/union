@@ -39,6 +39,8 @@ import {
 } from "@unionlabs/sdk/cosmos"
 import { sepolia } from "viem/chains"
 import { http } from "viem"
+import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
+import { truncate } from "$lib/utils/format.ts"
 
 function getStatus(
   state: TransferStateUnion
@@ -290,16 +292,28 @@ let showDetails = $state(false)
     </div>
     <Amount type="source"/>
   </div>
-  <div class="w-full items-center flex gap-2">
-    <Button
-            class="flex-1"
-            variant="primary"
-            onclick={transfer.submit}
-            disabled={!isButtonEnabled || transfer.validation._tag !== "Success"}
-    >
-      {buttonText}
-    </Button>
-    <Receiver/>
+
+  <div class="flex flex-col items-end">
+      <div class="flex items-center mr-5 text-zinc-400">
+        {#if transfer.args.receiver}
+        <p class="text-xs mb-2">{truncate(transfer.raw.receiver, 5, "middle")}</p>
+          {:else}
+          <p class="text-xs mb-2"> No receiver</p>
+        {/if}
+        <AngleArrowIcon class="rotate-270"/>
+      </div>
+    <div class="w-full items-end flex gap-2">
+      <Button
+              class="flex-1"
+              variant="primary"
+              onclick={transfer.submit}
+              disabled={!isButtonEnabled || transfer.validation._tag !== "Success"}
+      >
+        {buttonText}
+      </Button>
+      <Receiver/>
+
+    </div>
   </div>
   {#if showDetails}
     <ShowData/>
