@@ -69,8 +69,6 @@ const createBatch = Effect.gen(function* () {
 
 // Check and increase allowances if needed
 const checkAndIncreaseAllowances = Effect.gen(function* () {
-  const publicClient = (yield* ViemPublicClient).client
-
   yield* Effect.log("Checking token allowances...")
 
   for (const transfer of TRANSFERS) {
