@@ -31,7 +31,8 @@ const fetchFABalance = ({
           functionArguments: [walletAddress.toString(), tokenAddress.toString()]
         }
       }),
-    catch: err => new FetchAptosTokenBalanceError({ cause: extractErrorDetails(err as AptosApiError) })
+    catch: err =>
+      new FetchAptosTokenBalanceError({ cause: extractErrorDetails(err as AptosApiError) })
   })
 
 /**
