@@ -13,9 +13,7 @@ use ibc_union_msg::{
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
 use ibc_union_spec::{path::BatchPacketsPath, ChannelId, Packet};
-use ucs03_zkgm_token_minter_api::{
-    LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg, DISPATCH_EVENT, DISPATCH_EVENT_ATTR,
-};
+use ucs03_zkgm_token_minter_api::{LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg};
 use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
@@ -42,7 +40,6 @@ pub const PROTOCOL_VERSION: &str = "ucs03-zkgm-0";
 
 pub const EXECUTE_REPLY_ID: u64 = 0x1337;
 pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
-pub const ESCROW_REPLY_ID: u64 = 0xcafe;
 pub const FORWARD_REPLY_ID: u64 = 0xbabe;
 pub const MULTIPLEX_REPLY_ID: u64 = 0xface;
 pub const MM_FILL_REPLY_ID: u64 = 0xdead;
@@ -1286,36 +1283,6 @@ fn execute_fungible_asset_order(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, ContractError> {
     match reply.id {
-        // This reply is triggered after we escrow tokens in the token minter contract.
-        // We need to handle this reply to process any dispatch events that the token minter might have
-        // emitted during the escrow operation. These events can contain additional messages that need
-        // to be executed as part of the token transfer process, such as updating balances or
-        // performing additional token operations.
-        ESCROW_REPLY_ID => {
-            let Some(dispatch) = reply
-                .result
-                .into_result()
-                .expect("only if success")
-                .events
-                .into_iter()
-                .find(|e| e.ty == format!("wasm-{DISPATCH_EVENT}"))
-            else {
-                return Ok(Response::new());
-            };
-
-            let Some(attr) = dispatch
-                .attributes
-                .into_iter()
-                .find(|a| a.key == DISPATCH_EVENT_ATTR)
-            else {
-                return Ok(Response::new());
-            };
-
-            match serde_json_wasm::from_str::<Vec<WasmMsg>>(&attr.value) {
-                Ok(msgs) => Ok(Response::new().add_messages(msgs)),
-                Err(_) => Ok(Response::new()),
-            }
-        }
         // This reply is triggered after we execute a packet.
         // We need to handle this reply to process the acknowledgement that was generated during
         // packet execution. This is a critical part of the IBC protocol - after a packet is

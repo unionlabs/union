@@ -3,9 +3,6 @@ use cosmwasm_std::{Addr, Binary, Uint128};
 use enumorph::Enumorph;
 use ibc_union_spec::ChannelId;
 
-pub const DISPATCH_EVENT: &str = "dispatch";
-pub const DISPATCH_EVENT_ATTR: &str = "msg";
-
 #[cw_serde]
 pub enum LocalTokenMsg {
     Escrow {
