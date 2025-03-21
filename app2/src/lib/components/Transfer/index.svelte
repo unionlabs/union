@@ -1,6 +1,7 @@
 <script lang="ts">
 import Card from "$lib/components/ui/Card.svelte"
 import Button from "$lib/components/ui/Button.svelte"
+import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import Amount from "$lib/components/Transfer/Amount.svelte"
 import Receiver from "$lib/components/Transfer/Receiver.svelte"
 import ShowData from "$lib/components/Transfer/ShowData.svelte"
@@ -293,8 +294,12 @@ let showDetails = $state(false)
 </script>
 
 <Card divided class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[450px]">
-  <div class="p-4">
-    Step 1/4
+  <div class="p-4 w-full">
+    <StepProgressBar 
+      class="w-full"
+      currentStep={1} 
+      totalSteps={transferSteps.pipe(Option.map(ts => ts.length), Option.getOrElse(() => 1))}
+    />
   </div>
   <div class="p-4 flex-1 flex flex-col justify-between">
     <div class="flex flex-col gap-4">
