@@ -45,7 +45,7 @@ const isChainLoading = $derived.by(() => {
       {#if isChainLoading}
         <div class="flex gap-2 items-center justify-between p-2 flex-1">
           <div class="w-8 h-8 flex items-center bg-zinc-500 text-white rounded-full justify-center">
-            <LoadingSpinnerIcon />
+            <LoadingSpinnerIcon/>
           </div>
           <span class="text-zinc-400">Loading...</span>
           <div class="text-transparent">
@@ -82,10 +82,16 @@ const isChainLoading = $derived.by(() => {
             <!-- Selected Asset (both source and destination) -->
             <!-- Show the asset, grayed out for destination type -->
             <div class={cn(
-              type === "destination" ? "text-zinc-400 truncate" : "truncate",
-              "flex items-center w-full"
+              type === "destination" ? "truncate" : "truncate",
+              "flex flex-col items-start w-full"
               )}>
-              {transfer.baseToken.value.representations[0]?.symbol ?? transfer.baseToken.value.denom}
+              <p  class="text-sm leading-4">
+                {transfer.baseToken.value.representations[0]?.symbol ?? transfer.baseToken.value.denom}
+              </p>
+              {#if Option.isSome(transfer.sourceChain)}
+                <p class="text-xs text-zinc-400">{transfer.sourceChain.value.display_name}</p>
+              {/if}
+
             </div>
           {:else if type === "source"}
             <span class="text-zinc-400 flex-1 text-start">Select</span>

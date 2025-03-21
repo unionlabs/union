@@ -286,22 +286,20 @@ let showDetails = $state(false)
 
 <Card class="max-w-sm relative flex flex-col justify-between min-h-[400px]">
   <div class=" flex flex-col gap-4">
-    <div class="flex items-end gap-2">
-      <ChainAsset type="source"/>
-      <ChainAsset type="destination"/>
-    </div>
+    <ChainAsset type="source"/>
+    <ChainAsset type="destination"/>
     <Amount type="source"/>
   </div>
 
   <div class="flex flex-col items-end">
-      <div class="flex items-center mr-5 text-zinc-400">
-        {#if transfer.args.receiver}
+    <div class="flex items-center mr-5 text-zinc-400">
+      {#if transfer.args.receiver}
         <p class="text-xs mb-2">{truncate(transfer.raw.receiver, 5, "middle")}</p>
-          {:else}
-          <p class="text-xs mb-2"> No receiver</p>
-        {/if}
-        <AngleArrowIcon class="rotate-270"/>
-      </div>
+      {:else}
+        <p class="text-xs mb-2"> No receiver</p>
+      {/if}
+      <AngleArrowIcon class="rotate-270"/>
+    </div>
     <div class="w-full items-end flex gap-2">
       <Button
               class="flex-1"
@@ -338,7 +336,7 @@ let showDetails = $state(false)
             </div>
           {:else if step._tag === "SubmitInstruction"}
             <div>Submit transfer instruction</div>
-            <pre>{JSON.stringify(instruction,null,2)}</pre>
+            <pre>{JSON.stringify(instruction, null, 2)}</pre>
           {/if}
         </li>
       {/each}
@@ -347,21 +345,20 @@ let showDetails = $state(false)
 {/if}
 
 
-
 <h2>transfer intents</h2>
-<pre>{JSON.stringify(transferIntents,null,2)}</pre>
+<pre>{JSON.stringify(transferIntents, null, 2)}</pre>
 
 <h2>instruction</h2>
-<pre>{JSON.stringify(instruction,null,2)}</pre>
+<pre>{JSON.stringify(instruction, null, 2)}</pre>
 
 <h2>allowances</h2>
-<pre>{JSON.stringify(allowances,null,2)}</pre>
+<pre>{JSON.stringify(allowances, null, 2)}</pre>
 
 <h2>required approvals</h2>
-<pre>{JSON.stringify(requiredApprovals,null,2)}</pre>
+<pre>{JSON.stringify(requiredApprovals, null, 2)}</pre>
 
 <h2>transfer steps</h2>
-<pre>{JSON.stringify(transferSteps,null,2)}</pre>
+<pre>{JSON.stringify(transferSteps, null, 2)}</pre>
 
 {#if transfer.state._tag !== "Empty"}
   {#if getStatus(transfer.state) === "filling"}
