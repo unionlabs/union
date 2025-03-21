@@ -95,6 +95,7 @@ pub enum QueryMsg {
         /// Base token denom
         token: Bytes,
     },
+    GetMinter {}
 }
 
 #[cw_serde]

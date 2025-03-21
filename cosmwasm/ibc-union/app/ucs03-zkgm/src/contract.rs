@@ -1861,6 +1861,10 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
                 wrapped_token: token.as_bytes().into(),
             })?)
         }
+        QueryMsg::GetMinter {} => {
+            let minter = TOKEN_MINTER.load(deps.storage)?;
+            Ok(to_json_binary(&minter)?)
+        }
     }
 }
 
