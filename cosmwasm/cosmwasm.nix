@@ -464,6 +464,11 @@
           map (
             app:
             let
+              full-app = (
+                pkgs.lib.lists.findFirst (a: a.value.name == app) (throw "???") (
+                  pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
+                )
+              );
               name = "migrate-app-${args.name}-${app}";
             in
             {
@@ -473,15 +478,29 @@
                 runtimeInputs = [
                   ibc-union-contract-addresses
                   cosmwasm-deployer
+                  pkgs.jq
                 ];
                 text = ''
+                  PRIVATE_KEY=${private_key} \
+                  RUST_LOG=info \
+                    cosmwasm-deployer \
+                    store-code \
+                    --rpc-url ${rpc_url} \
+                    --bytecode ${apps.ucs03.token_minter_path} \
+                    --output token-minter-code-id.txt \
+                    ${mk-gas-args gas_config}
+
+                  echo "token minter code id: $(cat token-minter-code-id.txt)"
+
                   DEPLOYER=$(
                     PRIVATE_KEY=${private_key} \
                       cosmwasm-deployer \
                       address-of-private-key \
                       --bech32-prefix ${bech32_prefix}
                   )
+
                   echo "deployer address: $DEPLOYER"
+
                   ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
 
                   PRIVATE_KEY=${private_key} \
@@ -490,13 +509,12 @@
                     migrate \
                     --rpc-url ${rpc_url} \
                     --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
-                    --new-bytecode ${
-                      mk-app
-                        (pkgs.lib.lists.findFirst (a: a.value.name == app) (throw "???") (
-                          pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
-                        )).name
-                    } \
+                    --message "{\"token_minter_migration\":{\"new_code_id\":$(cat token-minter-code-id.txt),\"msg\":\"$(echo '{}' | base64)\"}}" \
+                    --force \
+                    --new-bytecode ${mk-app full-app.name} \
                     ${mk-gas-args gas_config}
+
+                  rm token-minter-code-id.txt
                 '';
               };
             }
