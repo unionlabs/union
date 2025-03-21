@@ -143,6 +143,7 @@ module ibc::state_lens_ics23_mpt_lc {
     }
 
     public fun create_client(
+        _: &signer,
         ibc_signer: &signer,
         client_id: u32,
         client_state_bytes: vector<u8>,
