@@ -45,6 +45,7 @@ import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
 import { truncate } from "$lib/utils/format.ts"
 import AddressComponent from "../model/AddressComponent.svelte"
 import TokenComponent from "../model/TokenComponent.svelte"
+import { type TransferStep, Filling, ApprovalRequired, SubmitInstruction } from "./transfer-step"
 
 function getStatus(
   state: TransferStateUnion
@@ -144,21 +145,6 @@ let transferIntents = $derived.by(() => {
   ])
 })
 
-// Define the step type using Data.TaggedEnum
-export type TransferStep = Data.TaggedEnum<{
-  Filling: {}
-  ApprovalRequired: {
-    readonly token: string
-    readonly requiredAmount: bigint
-    readonly currentAllowance: bigint
-  }
-  SubmitInstruction: {
-    readonly instruction: Instruction
-  }
-}>
-
-// Create constructors for the steps
-const { Filling, ApprovalRequired, SubmitInstruction } = Data.taggedEnum<TransferStep>()
 
 let instruction: Option.Option<Instruction> = $state(Option.none())
 let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
