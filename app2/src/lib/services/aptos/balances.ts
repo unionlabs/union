@@ -5,7 +5,6 @@ import type { Chain } from "$lib/schema/chain"
 import { aptosBalanceRetrySchedule } from "$lib/constants/schedules"
 import { getPublicClient } from "$lib/services/aptos/clients"
 import type { Aptos } from "@aptos-labs/ts-sdk"
-import type { ReadContractErrorType } from "viem"
 
 export type FetchAptosBalanceError = FetchAptosTokenBalanceError
 
@@ -31,7 +30,7 @@ const fetchFABalance = ({
           functionArguments: [walletAddress.toString(), tokenAddress.toString()]
         }
       }),
-    catch: err => new FetchAptosTokenBalanceError({ cause: err as ReadContractErrorType })
+    catch: err => new FetchAptosTokenBalanceError({ cause: err })
   })
 
 /**
