@@ -294,6 +294,7 @@ export class Transfer {
 
     return {
       sourceChain: sourceChainValue,
+      destinationChain: destinationChainValue,
       sourceRpcType: sourceChainValue?.rpc_type,
       destinationRpcType: destinationChainValue?.rpc_type,
       sourceChannelId: channelValue?.source_channel_id,

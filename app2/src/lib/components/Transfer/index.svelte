@@ -40,6 +40,7 @@ import { sepolia } from "viem/chains"
 import { http } from "viem"
 import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
 import { truncate } from "$lib/utils/format.ts"
+import AddressComponent from "../model/AddressComponent.svelte"
 
 function getStatus(
   state: TransferStateUnion
@@ -291,7 +292,7 @@ const checkAllowances = (ti: typeof transferIntents) =>
 let showDetails = $state(false)
 </script>
 
-<Card class="max-w-sm relative flex flex-col justify-between min-h-[400px]">
+<Card class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[400px]">
   <div class=" flex flex-col gap-4">
     <ChainAsset type="source" />
     <ChainAsset type="destination" />
@@ -300,10 +301,8 @@ let showDetails = $state(false)
 
   <div class="flex flex-col items-end">
     <div class="flex items-center mr-5 text-zinc-400">
-      {#if transfer.args.receiver}
-        <p class="text-xs mb-2">
-          {truncate(transfer.raw.receiver, 5, "middle")}
-        </p>
+      {#if transfer.args.receiver && transfer.validation._tag === "Success" && transfer.args.destinationChain}
+        <p class="text-xs mb-2"><AddressComponent truncate address={transfer.raw.receiver} chain={transfer.args.destinationChain}/></p>
       {:else}
         <p class="text-xs mb-2">No receiver</p>
       {/if}
