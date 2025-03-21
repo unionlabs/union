@@ -29,8 +29,10 @@ import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03
 import {
   createViemPublicClient,
   ViemPublicClient,
-  ViemPublicClientSource
+  ViemPublicClientSource,
+  readErc20Allowance
 } from "@unionlabs/sdk/evm"
+import { Data } from "effect"
 
 import {
   CosmWasmClientDestination,
@@ -132,13 +134,88 @@ let transferIntents = $derived.by(() => {
   ])
 })
 
+// Define the step type using Data.TaggedEnum
+type TransferStep = Data.TaggedEnum<{
+  ApprovalRequired: {
+    readonly token: string
+    readonly requiredAmount: bigint
+    readonly currentAllowance: bigint
+  }
+  SubmitInstruction: {
+    readonly instruction: Instruction
+  }
+}>
+
+// Create constructors for the steps
+const { ApprovalRequired, SubmitInstruction } = Data.taggedEnum<TransferStep>()
+
 let instruction: Option.Option<Instruction> = $state(Option.none())
+let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
+let requiredApprovals = $derived.by(() => {
+  if (Option.isNone(transferIntents) || Option.isNone(allowances)) return Option.none()
+
+  // Create a map of token to required amount from transfer intents
+  const requiredAmounts = new Map<string, bigint>()
+  for (const intent of transferIntents.value) {
+    const currentAmount = requiredAmounts.get(intent.baseToken) || 0n
+    requiredAmounts.set(intent.baseToken, intent.baseAmount)
+  }
+
+  // Filter for tokens that need approval (allowance < required amount)
+  const tokensNeedingApproval = allowances.value
+    .filter(({ token, allowance }) => {
+      const requiredAmount = requiredAmounts.get(token) || 0n
+      return allowance < requiredAmount
+    })
+    .map(({ token }) => ({
+      token,
+      requiredAmount: requiredAmounts.get(token) || 0n
+    }))
+
+  return tokensNeedingApproval.length > 0 ? Option.some(tokensNeedingApproval) : Option.none()
+})
+
+// Derive the steps based on required approvals and instruction
+let transferSteps = $derived.by(() => {
+  const steps: Array<TransferStep> = []
+
+  // Add approval steps if needed
+  if (Option.isSome(requiredApprovals)) {
+    // Find the allowance for each token that needs approval
+    for (const approval of requiredApprovals.value) {
+      if (Option.isSome(allowances)) {
+        const tokenAllowance = allowances.value.find(a => a.token === approval.token)
+        if (tokenAllowance) {
+          steps.push(
+            ApprovalRequired({
+              token: approval.token,
+              requiredAmount: approval.requiredAmount,
+              currentAllowance: tokenAllowance.allowance
+            })
+          )
+        }
+      }
+    }
+  }
+
+  // Add the instruction submission step if we have an instruction
+  if (Option.isSome(instruction)) {
+    steps.push(SubmitInstruction({ instruction: instruction.value }))
+  }
+
+  return steps.length > 0 ? Option.some(steps) : Option.none()
+})
 
 $effect(() => {
   if (Option.isNone(transferIntents)) return
 
   intentsToBatch(transferIntents).pipe(
     Effect.tap(batch => (instruction = batch)),
+    Effect.runPromiseExit
+  )
+
+  checkAllowances(transferIntents).pipe(
+    Effect.tap(result => (allowances = result)),
     Effect.runPromiseExit
   )
 })
@@ -171,6 +248,39 @@ const intentsToBatch = (ti: typeof transferIntents) =>
 
     return Option.some(batch)
   })
+
+const checkAllowances = (ti: typeof transferIntents) =>
+  Effect.gen(function* () {
+    if (Option.isNone(ti)) return Option.none()
+    if (Option.isNone(wallets.evmAddress)) return Option.none()
+
+    const publicClientSource = yield* createViemPublicClient({
+      chain: sepolia, // todo
+      transport: http()
+    })
+
+    // Get unique token addresses from the transfer intents
+    const tokenAddresses = [...new Set(ti.value.map(intent => intent.baseToken))]
+
+    // The UCS03 contract address that needs the allowance
+    const spenderAddress = "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962" // Replace with actual UCS03 contract address
+
+    // Check allowance for each token
+    const allowanceChecks = yield* Effect.all(
+      tokenAddresses.map(tokenAddress =>
+        Effect.gen(function* () {
+          const allowance = yield* readErc20Allowance(
+            tokenAddress,
+            wallets.evmAddress.value,
+            spenderAddress
+          )
+          return { token: tokenAddress, allowance }
+        }).pipe(Effect.provideService(ViemPublicClient, { client: publicClientSource }))
+      )
+    )
+
+    return Option.some(allowanceChecks)
+  })
 </script>
 
 <Card class="max-w-md relative flex flex-col gap-2">
@@ -190,6 +300,32 @@ const intentsToBatch = (ti: typeof transferIntents) =>
 </Card>
 
 
+{#if Option.isSome(transferSteps)}
+  <div class="mt-4">
+    <h3 class="text-lg font-semibold">Steps to complete transfer:</h3>
+    <ol class="list-decimal pl-5 mt-2">
+      {#each transferSteps.value as step, index}
+        <li class="mb-2">
+          {#if step._tag === "ApprovalRequired"}
+            <div>
+              Approve token: <span class="font-mono">{step.token}</span>
+              <div class="text-sm">
+                Current allowance: {step.currentAllowance.toString()}
+                <br/>
+                Required amount: {step.requiredAmount.toString()}
+              </div>
+            </div>
+          {:else if step._tag === "SubmitInstruction"}
+            <div>Submit transfer instruction</div>
+            <pre>{JSON.stringify(instruction,null,2)}</pre>
+          {/if}
+        </li>
+      {/each}
+    </ol>
+  </div>
+{/if}
+
+
 
 <h2>transfer intents</h2>
 <pre>{JSON.stringify(transferIntents,null,2)}</pre>
@@ -197,6 +333,14 @@ const intentsToBatch = (ti: typeof transferIntents) =>
 <h2>instruction</h2>
 <pre>{JSON.stringify(instruction,null,2)}</pre>
 
+<h2>allowances</h2>
+<pre>{JSON.stringify(allowances,null,2)}</pre>
+
+<h2>required approvals</h2>
+<pre>{JSON.stringify(requiredApprovals,null,2)}</pre>
+
+<h2>transfer steps</h2>
+<pre>{JSON.stringify(transferSteps,null,2)}</pre>
 
 {#if transfer.state._tag !== "Empty"}
   {#if getStatus(transfer.state) === "filling"}
