@@ -8,6 +8,8 @@ import { EvmChannelSource } from "../evm/channel.js"
 import { executeContract } from "../cosmos/contract.js"
 import { SigningCosmWasmClientContext } from "../cosmos/client.js"
 import { CosmosChannelSource } from "../cosmos/channel.js"
+import { encodeAbiParameters } from "viem"
+import { instructionAbi } from "../evm/abi/index.js"
 
 export const sendInstructionEvm = (instruction: Instruction) =>
   Effect.gen(function* () {
@@ -39,6 +41,13 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
     const signingClient = yield* SigningCosmWasmClientContext
     const sourceConfig = yield* CosmosChannelSource
 
+    const ins = encodeAbiParameters(instructionAbi, [
+      instruction.version,
+      instruction.opcode,
+      encodeAbi(instruction)
+    ])
+
+    yield* Effect.log("ins", ins)
     return yield* executeContract(
       signingClient.client,
       signingClient.address,
@@ -46,10 +55,10 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
       {
         send: {
           channel_id: sourceConfig.channelId,
-          timeout_height: 0,
-          timeout_timestamp: 100000,
+          timeout_height: 10000000,
+          timeout_timestamp: 0,
           salt: generateSalt(),
-          instruction: encodeAbi(instruction)
+          instruction: ins
         }
       }
     )

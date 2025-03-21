@@ -101,7 +101,7 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
         ? {
             symbol: "muno",
             name: "muno",
-            decimals: 6
+            decimals: 0
           }
         : yield* readCw20TokenInfo(intent.baseToken).pipe(
             Effect.provideService(CosmWasmClientContext, { client: sourceClient })

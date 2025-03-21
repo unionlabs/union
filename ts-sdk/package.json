@@ -14,6 +14,7 @@
     ".": "./dist/src/index.js",
     "./ucs03": "./dist/src/ucs03/index.js",
     "./evm": "./dist/src/evm/index.js",
+    "./cosmos": "./dist/src/cosmos/index.js",
     "./evm/abi": "./dist/src/evm/abi/index.js",
     "./evm/ucs03": "./dist/src/evm/ucs03/index.js",
     "./evm/erc20": "./dist/src/evm/erc20.js",
