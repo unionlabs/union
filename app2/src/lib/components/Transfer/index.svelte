@@ -7,6 +7,7 @@ import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import FillingPage from "./pages/FillingPage.svelte"
 import ApprovalPage from "./pages/ApprovalPage.svelte"
 import SubmitPage from "./pages/SubmitPage.svelte"
+import { lockedTransferStore } from "./locked-transfer.svelte.ts"
 import {
   hasFailedExit as hasCosmosFailedExit,
   isComplete as isCosmosComplete
@@ -285,7 +286,6 @@ const checkAllowances = (ti: typeof transferIntents) =>
 
 let showDetails = $state(false)
 let currentPage = $state(0)
-let lockedTransfer = $state<Option.Option<LockedTransfer>>(Option.none())
 
 function goToNextPage() {
   if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
@@ -299,7 +299,7 @@ function goToPreviousPage() {
     
     // If we're going back to the filling page (page 0), unlock the transfer
     if (currentPage === 0) {
-      lockedTransfer = Option.none()
+      lockedTransferStore.unlock()
     }
   }
 }
@@ -337,8 +337,8 @@ function handleActionButtonClick() {
 
   if (currentStep._tag === "Filling") {
     // Lock the transfer values before proceeding
-    if (Option.isNone(lockedTransfer)) {
-      lockedTransfer = LockedTransfer.fromTransfer(
+    if (!lockedTransferStore.isLocked()) {
+      const newLockedTransfer = LockedTransfer.fromTransfer(
         transfer.sourceChain,
         transfer.destinationChain,
         transfer.channel,
@@ -346,10 +346,12 @@ function handleActionButtonClick() {
       )
 
       // If we couldn't create a locked transfer, don't proceed
-      if (Option.isNone(lockedTransfer)) {
+      if (Option.isNone(newLockedTransfer)) {
         console.error("Failed to lock transfer values")
         return
       }
+      
+      lockedTransferStore.lock(newLockedTransfer.value)
     }
     goToNextPage()
     return
@@ -375,11 +377,11 @@ function handleActionButtonClick() {
     <StepProgressBar 
       class="w-full"
       currentStep={currentPage + 1} 
-      totalSteps={Option.isSome(lockedTransfer) 
-        ? lockedTransfer.value.steps.length 
+      totalSteps={lockedTransferStore.isLocked() 
+        ? lockedTransferStore.get().value.steps.length 
         : transferSteps.pipe(Option.map(ts => ts.length), Option.getOrElse(() => 1))}
-      stepDescriptions={Option.isSome(lockedTransfer)
-        ? lockedTransfer.value.steps.map(step => {
+      stepDescriptions={lockedTransferStore.isLocked()
+        ? lockedTransferStore.get().value.steps.map(step => {
             if (step._tag === "Filling") {
               return "Configure your transfer details"
             }
@@ -422,23 +424,18 @@ function handleActionButtonClick() {
       />
 
       <!-- Dynamic pages for each step -->
-      {#if Option.isSome(lockedTransfer)}
-        {#each lockedTransfer.value.steps.slice(1) as step, i}
+      {#if lockedTransferStore.isLocked()}
+        {#each lockedTransferStore.get().value.steps.slice(1) as step, i}
           {#if step._tag === "ApprovalRequired"}
             <ApprovalPage
-              token={step.token}
-              currentAllowance={step.currentAllowance}
-              requiredAmount={step.requiredAmount}
-              sourceChain={lockedTransfer.value.sourceChain}
+              stepIndex={i + 1}
               onBack={goToPreviousPage}
               onApprove={handleActionButtonClick}
               actionButtonText={actionButtonText}
             />
           {:else if step._tag === "SubmitInstruction"}
             <SubmitPage
-              sourceChain={lockedTransfer.value.sourceChain}
-              destinationChain={lockedTransfer.value.destinationChain}
-              amount={transfer.args.amount}
+              stepIndex={i + 1}
               onBack={goToPreviousPage}
               onSubmit={handleActionButtonClick}
               actionButtonText={actionButtonText}
@@ -456,12 +453,12 @@ function handleActionButtonClick() {
 
 
 <!-- Debug info can be hidden in production -->
-{#if Option.isSome(lockedTransfer) || Option.isSome(transferSteps)}
+{#if lockedTransferStore.isLocked() || Option.isSome(transferSteps)}
   <div class="mt-4">
-    <h3 class="text-lg font-semibold">Current Page: {currentPage + 1}/{Option.isSome(lockedTransfer) ? lockedTransfer.value.steps.length : Option.isSome(transferSteps) ? transferSteps.value.length : 0}</h3>
+    <h3 class="text-lg font-semibold">Current Page: {currentPage + 1}/{lockedTransferStore.isLocked() ? lockedTransferStore.get().value.steps.length : Option.isSome(transferSteps) ? transferSteps.value.length : 0}</h3>
     <h4 class="text-md">Steps to complete transfer:</h4>
     <ol class="list-decimal pl-5 mt-2">
-      {#each Option.isSome(lockedTransfer) ? lockedTransfer.value.steps : Option.isSome(transferSteps) ? transferSteps.value : [] as step, index}
+      {#each lockedTransferStore.isLocked() ? lockedTransferStore.get().value.steps : Option.isSome(transferSteps) ? transferSteps.value : [] as step, index}
         <li class="mb-2" class:font-bold={index === currentPage}>
           {#if step._tag === "Filling"}
             <div>Configure transfer details</div>
@@ -499,7 +496,7 @@ function handleActionButtonClick() {
 <pre>{JSON.stringify(transferSteps, null, 2)}</pre>
 
 <h2>locked transfer</h2>
-<pre>{JSON.stringify(lockedTransfer, null, 2)}</pre>
+<pre>{JSON.stringify(lockedTransferStore.get(), null, 2)}</pre>
 
 {#if transfer.state._tag !== "Empty"}
   {#if getStatus(transfer.state) === "filling"}
