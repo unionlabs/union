@@ -28,32 +28,25 @@ Effect.runPromiseExit(
     const publicClient = yield* createAptosPublicClient(config)
 
     const real_token_address = "0x19842c145c835df3bb4daa4fb3914bb9bdbd4ff4bcf53b53a014eb54d39e875e"
-    
+
     const result_name = yield* readFaName(real_token_address).pipe(
       Effect.provideService(AptosPublicClient, { client: publicClient })
     )
-    yield * Effect.log("Result Name:", result_name)
-
+    yield* Effect.log("Result Name:", result_name)
 
     const result_decimals = yield* readFaDecimals(real_token_address).pipe(
       Effect.provideService(AptosPublicClient, { client: publicClient })
     )
-    yield * Effect.log("Result Decimals:", result_decimals)
-
-
+    yield* Effect.log("Result Decimals:", result_decimals)
 
     const result_symbol = yield* readFaSymbol(real_token_address).pipe(
       Effect.provideService(AptosPublicClient, { client: publicClient })
     )
-    yield * Effect.log("Result Symbol:", result_symbol)
-
-
-
+    yield* Effect.log("Result Symbol:", result_symbol)
 
     const result_metadata = yield* readFaMetadata(real_token_address).pipe(
       Effect.provideService(AptosPublicClient, { client: publicClient })
     )
-    yield * Effect.log("Result Metadata:", result_metadata)
-    
+    yield* Effect.log("Result Metadata:", result_metadata)
   })
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

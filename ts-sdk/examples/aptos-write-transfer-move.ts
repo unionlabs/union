@@ -1,9 +1,9 @@
 import { Effect } from "effect"
 import { AptosPublicClient, createAptosPublicClient } from "../src/aptos/client.ts"
-import { queryContract, executeContractWithKey } from "../src/aptos/contract.ts"
+import { executeContractWithKey } from "../src/aptos/contract.ts"
 import { waitForTransactionReceipt } from "../src/aptos/receipts.ts"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { Aptos, AptosConfig, Network, AptosApiError, MoveVector } from "@aptos-labs/ts-sdk"
+import { AptosConfig, Network } from "@aptos-labs/ts-sdk"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -28,28 +28,28 @@ Effect.runPromiseExit(
     })
     const publicClient = yield* createAptosPublicClient(config)
 
-
     const contract_address = "0x1"
-    const transfer_function_name = "aptos_account::transfer"
-    const transfer_typeArguments = []
+    const transfer_module_name = "aptos_account"
+    const transfer_function_name = "transfer"
     const receiver_address = "0x9ec0ea9b728dd1aa4f0b9b779e7f885099bcea7d28f88f357982d7de746183c9"
     const transfer_amount = 100
     const transfer_functionArguments = [receiver_address, transfer_amount]
 
-    yield * Effect.log("transfer_functionArguments:", transfer_functionArguments)
+    yield* Effect.log("transfer_functionArguments:", transfer_functionArguments)
 
-
-    const result_execute = yield* executeContractWithKey(publicClient, account, contract_address, 
-        transfer_function_name, transfer_typeArguments, transfer_functionArguments).pipe(
-      Effect.provideService(AptosPublicClient, { client: publicClient })
-    )
+    const result_execute = yield* executeContractWithKey(
+      publicClient,
+      account,
+      contract_address,
+      transfer_module_name,
+      transfer_function_name,
+      [], // type arguments
+      transfer_functionArguments
+    ).pipe(Effect.provideService(AptosPublicClient, { client: publicClient }))
 
     const txHash = yield* waitForTransactionReceipt(result_execute.hash).pipe(
       Effect.provideService(AptosPublicClient, { client: publicClient })
     )
-    yield * Effect.log("transaction receipt:", txHash)
-
-
-
+    yield* Effect.log("transaction receipt:", txHash)
   })
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))
