@@ -15,6 +15,7 @@ workspace = true
 aptos-rest-client   = { workspace = true }
 aptos-types         = { workspace = true }
 bcs                 = { workspace = true }
+embed-commit        = { workspace = true }
 move-bindgen-derive = { workspace = true }
 move-core-types     = { workspace = true }
 prettyplease        = "0.2.22"

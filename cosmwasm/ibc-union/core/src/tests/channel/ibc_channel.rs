@@ -31,6 +31,7 @@ fn channel_open_init_ok() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -68,6 +69,7 @@ fn channel_open_init_channel_claimed() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -96,6 +98,7 @@ fn channel_open_init_commitment_saved() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -130,6 +133,7 @@ fn channel_open_try_ok() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -174,6 +178,7 @@ fn channel_open_try_invalid_state() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -227,6 +232,7 @@ fn channel_open_try_channel_claimed() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -276,6 +282,7 @@ fn channel_open_try_commitment_saved() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -331,6 +338,7 @@ fn channel_open_ack_ok() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -385,6 +393,7 @@ fn channel_open_ack_not_found() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -428,6 +437,7 @@ fn channel_open_ack_commitment_saved() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -493,6 +503,7 @@ fn channel_open_confirm_ok() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -551,6 +562,7 @@ fn channel_open_try_invalid_counterparty() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -597,6 +609,7 @@ fn channel_open_confirm_not_found() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");
@@ -638,6 +651,7 @@ fn channel_open_confirm_commitment_saved() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
     register_client(deps.as_mut()).expect("register client ok");

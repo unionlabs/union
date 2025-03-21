@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 clap               = { workspace = true, features = ["derive"] }
+embed-commit       = { workspace = true }
 hex                = { workspace = true }
 mpc-shared         = { workspace = true }
 pgp                = "0.13"

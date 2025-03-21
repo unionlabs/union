@@ -17,6 +17,7 @@ clap             = { workspace = true, features = ["derive"] }
 cometbft-rpc     = { workspace = true }
 cosmos-sdk-event = { workspace = true }
 dashmap          = { workspace = true }
+embed-commit     = { workspace = true }
 enumorph         = { workspace = true }
 ibc-classic-spec = { workspace = true }
 ibc-solidity     = { workspace = true, features = ["serde"] }

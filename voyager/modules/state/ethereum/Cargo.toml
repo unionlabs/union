@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 alloy                    = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+embed-commit             = { workspace = true }
 ibc-solidity             = { workspace = true, features = ["rpc", "serde"] }
 ibc-union-spec.workspace = true
 jsonrpsee                = { workspace = true, features = ["macros", "server", "tracing"] }

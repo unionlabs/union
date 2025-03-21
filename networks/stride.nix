@@ -44,7 +44,7 @@
                 ];
                 ldflags = [
                   "-linkmode external"
-                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${goPkgs.musl}/lib -L${dbg libwasmvm-1_5_8}/lib'"
+                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm-1_5_8}/lib'"
                 ];
               }
             else

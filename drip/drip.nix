@@ -2,24 +2,14 @@
 {
   perSystem =
     {
-      self',
-      pkgs,
-      system,
-      config,
       crane,
-      stdenv,
-      dbg,
-      mkCi,
       ...
     }:
     let
-      drip = crane.buildWorkspaceMember {
-        crateDirFromRoot = "drip";
-        dev = true;
-      };
+      drip = crane.buildWorkspaceMember "drip" { };
     in
     {
-      packages.drip = drip.packages.drip;
+      packages = drip;
     };
 
   flake.nixosModules.drip =

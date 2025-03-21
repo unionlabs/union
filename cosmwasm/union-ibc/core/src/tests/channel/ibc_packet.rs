@@ -23,6 +23,7 @@ fn send_packet_ok() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -65,6 +66,7 @@ fn send_packet_missing_timeout() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -107,6 +109,7 @@ fn send_packet_channel_does_not_exist() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -154,6 +157,7 @@ fn send_packet_module_is_not_channel_owner() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -196,6 +200,7 @@ fn recv_packet_ok() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -246,6 +251,7 @@ fn recv_packet_invalid_channel_state() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -303,6 +309,7 @@ fn recv_packet_timeout_timestamp() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -353,6 +360,7 @@ fn recv_packet_timeout_height() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -403,6 +411,7 @@ fn recv_intent_packet_ok() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -452,6 +461,7 @@ fn recv_intent_packet_timeout_timestamp() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -501,6 +511,7 @@ fn recv_intent_packet_timeout_height() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -550,6 +561,7 @@ fn acknowledge_packet_ok() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -644,6 +656,7 @@ fn acknowledge_packet_tampered() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -738,6 +751,7 @@ fn acknowledge_packet_not_sent() {
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&1),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -820,6 +834,7 @@ fn timeout_packet_timestamp_ok() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -884,6 +899,7 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -948,6 +964,7 @@ fn timeout_packet_height_ok() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -1012,6 +1029,7 @@ fn timeout_packet_height_not_reached() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -1076,6 +1094,7 @@ fn write_acknowledgement_ok() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -1174,6 +1193,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -1272,6 +1292,7 @@ fn write_acknowledgement_packet_not_received() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -1349,6 +1370,7 @@ fn write_acknowledgement_already_exists() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -1464,6 +1486,7 @@ fn batch_send_ok() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -1577,6 +1600,7 @@ fn batch_send_packet_not_sent() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -1663,6 +1687,7 @@ fn batch_acks_ok() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -1825,6 +1850,7 @@ fn batch_acks_packet_not_received() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -1912,6 +1938,7 @@ fn batch_acks_tampered_packet() {
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 

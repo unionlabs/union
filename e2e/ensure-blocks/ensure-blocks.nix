@@ -7,9 +7,7 @@
 let
   ensure-blocks =
     pkgs.lib.meta.getExe
-      (crane.buildWorkspaceMember {
-        crateDirFromRoot = "e2e/ensure-blocks";
-      }).packages.ensure-blocks;
+      (crane.buildWorkspaceMember "e2e/ensure-blocks" { }).ensure-blocks;
 in
 
 e2e.mkTestWithDevnetSetup {

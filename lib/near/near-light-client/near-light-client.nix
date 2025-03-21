@@ -14,8 +14,7 @@ _: {
       ...
     }:
     let
-      near-light-client = crane.buildWasmContract {
-        crateDirFromRoot = "near/near-light-client";
+      near-light-client = crane.buildWasmContract "near/near-light-client" {
         extraBuildInputs = [
           pkgs.pkg-config
           pkgs.openssl

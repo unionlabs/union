@@ -15,6 +15,7 @@ workspace = true
 cometbft-rpc                = { workspace = true }
 cometbft-types              = { workspace = true }
 cometbls-light-client-types = { workspace = true, features = ["serde"] }
+embed-commit                = { workspace = true }
 enumorph                    = { workspace = true }
 galois-rpc                  = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }

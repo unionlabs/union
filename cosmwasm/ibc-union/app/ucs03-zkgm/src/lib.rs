@@ -6,10 +6,10 @@ mod state;
 mod tests;
 use alloy::primitives::{ruint::ParseError, U256};
 use cosmwasm_std::StdError;
+use frissitheto::UpgradeError;
 use ibc_union_spec::ChannelId;
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
-use unionlabs_cosmwasm_upgradable::UpgradeError;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {

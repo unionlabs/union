@@ -183,13 +183,8 @@
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
         ./mpc/mpc.nix
-        ./lib/ics23/ics23.nix
-        ./lib/ssz/ssz.nix
-        ./lib/unionlabs/unionlabs.nix
         ./hubble/hubble.nix
         ./lib/aptos.nix
-        ./lib/tendermint-verifier/tendermint-verifier.nix
-        ./lib/scroll-verifier/scroll-verifier.nix
         ./uniond/proto.nix
         ./app/app.nix
         ./app2/app2.nix
@@ -200,12 +195,6 @@
         ./ts-sdk/ts-sdk.nix
         # ./lib/near/near.nix
         ./typescript-sdk/typescript-sdk.nix
-        ./cosmwasm/ibc-union/lightclient/ethereum/default.nix
-        ./lib/cometbls-groth16-verifier/default.nix
-        ./lib/ethereum-sync-protocol/default.nix
-        ./lib/evm-storage-verifier/default.nix
-        ./lib/linea-verifier/default.nix
-        ./lib/linea-zktrie/default.nix
         ./cosmwasm/cosmwasm.nix
         ./evm/evm.nix
         ./tools/rust-proto.nix
@@ -234,6 +223,7 @@
         ./drip/drip.nix
         ./zkgm-dev/zkgm-dev.nix
         ./sentinel/sentinel.nix
+        ./lib/embed-commit
         treefmt-nix.flakeModule
       ];
 
@@ -269,11 +259,14 @@
           goPkgs = import inputs.nixpkgs-go { inherit system; };
           jsPkgs = import inputs.nixpkgs-js { inherit system; };
           unstablePkgs = import inputs.nixpkgs-unstable { inherit system; };
+
+          gitRev = if (builtins.hasAttr "rev" self) then self.rev else "dirty";
         in
         {
           _module = {
             args = {
               inherit
+                gitRev
                 nixpkgs
                 dbg
                 get-flake
@@ -283,8 +276,6 @@
                 unstablePkgs
                 mkCi
                 ;
-
-              gitRev = if (builtins.hasAttr "rev" self) then self.rev else "dirty";
 
               pkgs = nixpkgs.legacyPackages.${system}.appendOverlays (
                 with inputs;
@@ -417,6 +408,14 @@
           packages = {
             default = mkCi false self'.packages.uniond;
             inherit (pkgs) solc;
+            # sourceInfo = builtins.toFile "gitRev" (
+            #   builtins.toJSON (
+            #     builtins.removeAttrs self.sourceInfo [
+            #       "narHash"
+            #       "outPath"
+            #     ]
+            #   )
+            # );
           };
 
           checks = {

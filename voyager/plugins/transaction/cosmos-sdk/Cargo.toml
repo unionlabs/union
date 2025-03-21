@@ -16,6 +16,7 @@ bip32              = { workspace = true }
 cometbft-rpc       = { workspace = true }
 concurrent-keyring = { workspace = true }
 cosmos-client      = { workspace = true }
+embed-commit       = { workspace = true }
 enumorph           = { workspace = true }
 ibc-classic-spec   = { workspace = true }
 ibc-union          = { workspace = true, features = ["library"] }

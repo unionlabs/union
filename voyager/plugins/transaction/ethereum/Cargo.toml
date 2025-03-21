@@ -15,6 +15,7 @@ workspace = true
 alloy              = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 bip32              = { workspace = true }
 concurrent-keyring = { workspace = true }
+embed-commit       = { workspace = true }
 enumorph           = { workspace = true }
 ibc-solidity       = { workspace = true, features = ["rpc"] }
 ibc-union-spec     = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }

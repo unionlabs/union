@@ -14,9 +14,7 @@
       spec_compliance_tests_dir = "lib/ssz/tests/spec_conformance";
       spec_compliance_tests_file = "lib/ssz/tests/spec_conformance.rs";
 
-      tests-generator = crane.buildWorkspaceMember {
-        crateDirFromRoot = "lib/ssz/tests-generator";
-      };
+      tests-generator = crane.buildWorkspaceMember "lib/ssz/tests-generator" { };
 
       ssz-compliance-tests = mkCi false (
         pkgs.stdenv.mkDerivation {
@@ -47,13 +45,9 @@
           '';
         }
       );
-
-      ssz = crane.buildWorkspaceMember {
-        crateDirFromRoot = "lib/ssz";
-      };
     in
     {
-      checks = ssz.checks // {
+      checks = {
         ssz-tests-up-to-date = mkCi (system == "x86_64") (
           pkgs.stdenv.mkDerivation {
             name = "ssz-tests-up-to-date";

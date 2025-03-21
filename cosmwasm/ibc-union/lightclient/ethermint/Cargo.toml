@@ -20,7 +20,9 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 cometbft-types                = { workspace = true, features = ["hash"] }
 cosmwasm-std                  = { workspace = true, features = ["abort"] }
+embed-commit                  = { workspace = true }
 ethermint-light-client-types  = { workspace = true, features = ["serde", "bincode"] }
+frissitheto                   = { workspace = true }
 ibc-union-light-client        = { workspace = true }
 ibc-union-msg                 = { workspace = true }
 ics23                         = { workspace = true }
@@ -30,7 +32,6 @@ tendermint-light-client-types = { workspace = true, features = ["serde", "ethabi
 tendermint-verifier           = { workspace = true }
 thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true }
-unionlabs-cosmwasm-upgradable = { workspace = true }
 
 [dev-dependencies]
 base64                = { workspace = true }

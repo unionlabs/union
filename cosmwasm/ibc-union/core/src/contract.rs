@@ -8,6 +8,7 @@ use cosmwasm_std::{
     OverflowError, OverflowOperation, Response, StdError, StdResult,
 };
 use depolama::{RawStore, StorageExt};
+use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_msg::{
     lightclient::{
         QueryMsg as LightClientQuery, Status, UpdateStateResponse, VerifyCreationResponse,
@@ -36,7 +37,6 @@ use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
 };
-use unionlabs_cosmwasm_upgradable::{UpgradeError, UpgradeMsg};
 
 use crate::{
     state::{

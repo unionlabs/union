@@ -51,7 +51,7 @@
         keyType = "bn254";
         validatorCount = 4;
         sdkVersion = 50;
-        genesisOverwrites = dbg {
+        genesisOverwrites = {
           consensus.params = {
             block = {
               max_bytes = "10485760";

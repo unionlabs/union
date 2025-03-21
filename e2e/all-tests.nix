@@ -17,8 +17,6 @@
             e2e,
             networks,
             pkgs,
-            nixpkgs,
-            crane,
             self',
             dbg,
             ...

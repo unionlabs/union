@@ -17,6 +17,7 @@ beacon-api-types              = { workspace = true, features = ["serde", "ssz"] 
 berachain-light-client-types  = { workspace = true, features = ["serde"] }
 cometbft-rpc                  = { workspace = true }
 dashmap                       = { workspace = true }
+embed-commit                  = { workspace = true }
 enumorph                      = { workspace = true }
 futures                       = { workspace = true }
 ics23                         = { workspace = true }

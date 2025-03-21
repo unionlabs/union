@@ -12,5 +12,6 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-clap      = { workspace = true, features = ["derive", "help"] }
-unionlabs = { workspace = true }
+clap         = { workspace = true, features = ["derive", "help"] }
+embed-commit = { workspace = true }
+unionlabs    = { workspace = true }

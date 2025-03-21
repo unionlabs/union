@@ -1,5 +1,4 @@
-{ inputs, ... }:
-{
+_: {
   perSystem =
     {
       self',
@@ -19,14 +18,7 @@
         '';
       };
 
-      inherit
-        ((crane.buildWorkspaceMember {
-          crateDirFromRoot = "cosmwasm/deployer";
-          dev = true;
-        }).packages
-        )
-        cosmwasm-deployer
-        ;
+      inherit (crane.buildWorkspaceMember "cosmwasm/deployer" { }) cosmwasm-deployer;
 
       mk-gas-args =
         config@{ type, ... }:
@@ -564,56 +556,30 @@
           lc = get-lightclient (lc: lc.name == name);
         in
         (lc.hook or (d: d)) (
-          crane.buildWasmContract {
-            crateDirFromRoot = "cosmwasm/ibc-union/lightclient/${lc.dir}";
+          crane.buildWasmContract "cosmwasm/ibc-union/lightclient/${lc.dir}" {
             features = lc.features or null;
           }
         );
 
-      mk-app =
-        dir:
-        (crane.buildWasmContract {
-          crateDirFromRoot = "cosmwasm/ibc-union/app/${dir}";
-        });
+      mk-app = dir: crane.buildWasmContract "cosmwasm/ibc-union/app/${dir}" { };
 
       # ucs00-pingpong = crane.buildWasmContract {
       #   crateDirFromRoot = "cosmwasm/ucs00-pingpong";
       # };
 
-      cw721-base = crane.buildRemoteWasmContract {
-        src = inputs.cosmwasm-nfts;
-        version = inputs.cosmwasm-nfts.rev;
-        package = "cw721-base@0.18.0";
-        contractFileNameWithoutExt = "cw721_base";
-      };
+      ucs03-zkgm = crane.buildWasmContract "cosmwasm/ibc-union/app/ucs03-zkgm" { };
 
-      ucs03-zkgm = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/ibc-union/app/ucs03-zkgm";
-      };
+      cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
 
-      ucs03-zkgm-native = crane.buildWorkspaceMember {
-        crateDirFromRoot = "cosmwasm/ibc-union/app/ucs03-zkgm";
-      };
+      ibc-union = crane.buildWasmContract "cosmwasm/ibc-union/core" { };
 
-      cw20-base = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/cw20-base";
-      };
-
-      ibc-union = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/ibc-union/core";
-      };
-
-      multicall = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/multicall";
-      };
+      multicall = crane.buildWasmContract "cosmwasm/multicall" { };
 
       # native-token-minter = crane.buildWasmContract {
       #   crateDirFromRoot = "cosmwasm/native-token-minter";
       # };
 
-      cw20-token-minter = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/cw20-token-minter";
-      };
+      cw20-token-minter = crane.buildWasmContract "cosmwasm/cw20-token-minter" { };
 
       deployments-json-entry =
         { name, rpc_url, ... }:
@@ -673,12 +639,10 @@
         };
     in
     {
-      inherit (ucs03-zkgm-native) checks;
       packages =
         {
           inherit
             bytecode-base
-            cw721-base
             ucs03-zkgm
             cosmwasm-deployer
             # native-token-minter

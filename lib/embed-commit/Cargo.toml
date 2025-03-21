@@ -1,5 +1,5 @@
 [package]
-name    = "unionlabs-cosmwasm-upgradable"
+name    = "embed-commit"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -12,6 +12,5 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-cosmwasm-std = { workspace = true }
-serde        = { workspace = true, features = ["derive"] }
-thiserror    = { workspace = true }
+bytemuck  = { version = "1.20", default-features = false, features = ["derive"] }
+const-hex = { version = "1.14.0", default-features = false }

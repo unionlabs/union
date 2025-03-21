@@ -8,22 +8,18 @@
       ...
     }:
     let
-      hubble = crane.buildWorkspaceMember {
-        crateDirFromRoot = "hubble";
-        cargoTestExtraAttrs = {
-          partitions = 1;
-          partitionType = "count";
-        };
+      hubble = crane.buildWorkspaceMember "hubble" {
+        # cargoTestExtraAttrs = {
+        #   partitions = 1;
+        #   partitionType = "count";
+        # };
         extraEnv = {
           SQLX_OFFLINE = "1";
         };
       };
     in
     {
-      inherit (hubble) checks;
-      packages = {
-        inherit (hubble.packages) hubble;
-
+      packages = hubble // {
         hubble-image = pkgs.dockerTools.buildLayeredImage {
           name = "hubble";
           contents = [

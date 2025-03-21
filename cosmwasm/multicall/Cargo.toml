@@ -19,6 +19,7 @@ library = []
 
 [dependencies]
 cosmwasm-std         = { workspace = true, features = ["std", "stargate"] }
+embed-commit         = { workspace = true }
 serde                = { workspace = true, features = ["derive"] }
 thiserror            = { workspace = true }
 unionlabs-primitives = { workspace = true, features = ["serde"] }

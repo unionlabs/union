@@ -46,24 +46,6 @@
 //!     vec![42]
 //! );
 //!
-//! /// Represented as an SSZ "list" *without* an SSZ "container". The `bar` byte is ignored.
-//! #[derive(Debug, PartialEq, Ssz)]
-//! #[ssz(transparent)]
-//! struct WrapperStructSkippedField {
-//!     foo: List<u8, U4>,
-//!     #[ssz(skip_serializing, skip_deserializing)]
-//!     bar: u8,
-//! }
-//!
-//! assert_eq!(
-//!     WrapperStructSkippedField { foo: vec![42].try_into().unwrap(), bar: 99 }.as_ssz_bytes(),
-//!     vec![42]
-//! );
-//! assert_eq!(
-//!     WrapperStructSkippedField::from_ssz_bytes(&[42]).unwrap(),
-//!     WrapperStructSkippedField { foo: vec![42].try_into().unwrap(), bar: 0 }
-//! );
-//!
 //! /// Represented as an SSZ "list" *without* an SSZ "container".
 //! #[derive(Ssz)]
 //! #[ssz(transparent)]
@@ -72,20 +54,6 @@
 //! assert_eq!(
 //!     NewType(vec![42].try_into().unwrap()).as_ssz_bytes(),
 //!     vec![42]
-//! );
-//!
-//! /// Represented as an SSZ "list" *without* an SSZ "container". The `bar` byte is ignored.
-//! #[derive(Debug, PartialEq, Ssz)]
-//! #[ssz(transparent)]
-//! struct NewTypeSkippedField(List<u8, U4>, #[ssz(skip_serializing, skip_deserializing)] u8);
-//!
-//! assert_eq!(
-//!     NewTypeSkippedField(vec![42].try_into().unwrap(), 99).as_ssz_bytes(),
-//!     vec![42]
-//! );
-//! assert_eq!(
-//!     NewTypeSkippedField::from_ssz_bytes(&[42]).unwrap(),
-//!     NewTypeSkippedField(vec![42].try_into().unwrap(), 0)
 //! );
 //! ```
 //!
@@ -110,23 +78,6 @@
 //! assert_eq!(
 //!     UnionEnum::from_ssz_bytes(&[1, 42, 42]).unwrap(),
 //!     UnionEnum::Bar(vec![42, 42].try_into().unwrap()),
-//! );
-//!
-//! /// Represented as only the value in the enum variant.
-//! #[derive(Debug, PartialEq, Encode)]
-//! #[ssz(transparent)]
-//! enum TransparentEnum {
-//!     Foo(u8),
-//!     Bar(List<u8, U4>),
-//! }
-//!
-//! assert_eq!(
-//!     TransparentEnum::Foo(42).as_ssz_bytes(),
-//!     vec![42]
-//! );
-//! assert_eq!(
-//!     TransparentEnum::Bar(vec![42, 42].try_into().unwrap()).as_ssz_bytes(),
-//!     vec![42, 42]
 //! );
 
 use syn::{parse_macro_input, DeriveInput};

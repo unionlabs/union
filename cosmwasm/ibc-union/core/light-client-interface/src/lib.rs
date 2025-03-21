@@ -4,6 +4,7 @@ use core::fmt::Debug;
 
 use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, DepsMut, Env, Querier, Response, StdError};
 use depolama::{QuerierExt, StorageExt, Store};
+use frissitheto::UpgradeError;
 use ibc_union::state::{ClientConsensusStates, ClientImpls, ClientStates, ClientStore, QueryStore};
 use ibc_union_msg::lightclient::{
     MisbehaviourResponse, QueryMsg, Status, StorageWrites, UpdateStateResponse,
@@ -15,7 +16,6 @@ use unionlabs::{
     primitives::Bytes,
     ErrorReporter,
 };
-use unionlabs_cosmwasm_upgradable::UpgradeError;
 
 use crate::{msg::InitMsg, state::IbcHost};
 

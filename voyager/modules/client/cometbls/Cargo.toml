@@ -16,6 +16,7 @@ alloy                       = { workspace = true, features = ["sol-types"] }
 ark-bn254                   = { version = "0.4", default-features = false, features = ["curve"] }
 ark-serialize               = "0.4.2"
 cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi", "serde", "bincode"] }
+embed-commit                = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 num-bigint                  = { workspace = true }
@@ -29,6 +30,6 @@ voyager-message             = { workspace = true }
 voyager-vm                  = { workspace = true }
 
 [dev-dependencies]
-bcs.workspace         = true
-hex-literal.workspace = true
-hex.workspace         = true
+bcs         = { workspace = true }
+hex         = { workspace = true }
+hex-literal = { workspace = true }

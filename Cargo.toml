@@ -53,7 +53,7 @@ members = [
   "lib/voyager-core",
   "lib/galois-rpc",
   "lib/cosmos-sdk-event",
-  "lib/unionlabs-cosmwasm-upgradable",
+  "lib/frissitheto",
 
   # "lib/near/near-ibc",
   # "lib/near/near-light-client",
@@ -194,6 +194,9 @@ members = [
   "lib/scroll-types",
   "lib/fork-schedules",
   "lib/depolama",
+
+  "lib/embed-commit",
+  "lib/embed-commit/verifier",
 ]
 
 [workspace.package]
@@ -270,7 +273,7 @@ ibc-union              = { path = "cosmwasm/ibc-union/core", default-features = 
 ibc-union-light-client = { path = "cosmwasm/ibc-union/core/light-client-interface", default-features = false }
 ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-features = false }
 
-unionlabs-cosmwasm-upgradable = { path = "lib/unionlabs-cosmwasm-upgradable", default-features = false }
+frissitheto = { path = "lib/frissitheto", default-features = false }
 
 ucs03-zkgm                  = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
 ucs03-zkgm-token-minter-api = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
@@ -310,6 +313,8 @@ galois-rpc = { path = "lib/galois-rpc", default-features = false }
 voyager-core    = { path = "lib/voyager-core", default-features = false }
 voyager-message = { path = "lib/voyager-message", default-features = false }
 voyager-vm      = { path = "lib/voyager-vm", default-features = false }
+
+embed-commit = { path = "lib/embed-commit", default-features = false }
 
 # external dependencies
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }

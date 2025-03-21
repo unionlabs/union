@@ -18,16 +18,17 @@ test-include = ["cosmwasm/ibc-union/lightclient/cometbls/src/test"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cometbls-groth16-verifier     = { workspace = true }
-cometbls-light-client-types   = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-cosmwasm-std                  = { workspace = true, features = ["abort", "iterator"] }
-ibc-union-light-client        = { workspace = true }
-ibc-union-msg                 = { workspace = true }
-ics23                         = { workspace = true }
-serde                         = { workspace = true, features = ["derive"] }
-thiserror                     = { workspace = true }
-unionlabs                     = { workspace = true, features = ["ethabi"] }
-unionlabs-cosmwasm-upgradable = { workspace = true }
+cometbls-groth16-verifier   = { workspace = true }
+cometbls-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+cosmwasm-std                = { workspace = true, features = ["abort", "iterator"] }
+embed-commit                = { workspace = true }
+frissitheto                 = { workspace = true }
+ibc-union-light-client      = { workspace = true }
+ibc-union-msg               = { workspace = true }
+ics23                       = { workspace = true }
+serde                       = { workspace = true, features = ["derive"] }
+thiserror                   = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
 base64      = { workspace = true }

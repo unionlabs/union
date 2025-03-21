@@ -17,6 +17,7 @@ cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_3"] }
 cw-storage-plus             = { workspace = true }
 cw20                        = { version = "2.0" }
 cw20-base                   = { version = "2.0", features = ["library"] }
+embed-commit                = { workspace = true }
 ibc-union-spec              = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
