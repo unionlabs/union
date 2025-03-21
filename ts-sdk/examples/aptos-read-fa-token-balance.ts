@@ -29,7 +29,7 @@ Effect.runPromiseExit(
     const publicClient = yield* createAptosPublicClient(config)
 
     const real_token_address = "0x188b41399546602e35658962477fdf72bd52443474a899d9d48636e8bc299c2c"
-
+    
     const result_balance = yield* readFaBalance(real_token_address, account.accountAddress.toString()).pipe(
       Effect.provideService(AptosPublicClient, { client: publicClient })
     )
