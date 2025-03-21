@@ -98,8 +98,8 @@ pub enum ContractError {
     MultiplexError { error: String },
     #[error("channel path is full and can't be updated, too many hops? path: {path}, next_hop_index: {next_hop_index}")]
     ChannelPathIsFull { path: U256, next_hop_index: usize },
-    #[error("invalid asset origin path")]
-    InvalidAssetOrigin,
+    #[error("invalid asset origin path: actual={actual}, expected={expected}")]
+    InvalidAssetOrigin { actual: U256, expected: U256 },
     #[error("invalid asset name")]
     InvalidAssetName,
     #[error("invalid asset symbol")]

@@ -1615,11 +1615,12 @@ fn verify_fungible_asset_order(
     let is_unwrapping = base_token_str == wrapped_token;
 
     // Get the intermediate path and destination channel from origin
-    let (intermediate_path, destination_channel_id) = if let Some(origin) = origin {
+    let (origin, intermediate_path, destination_channel_id) = if let Some(origin) = origin {
         let origin_u256 = U256::from_be_bytes(origin.to_be_bytes());
-        pop_channel_from_path(origin_u256)
+        let (intermediate_path, destination_channel_id) = pop_channel_from_path(origin_u256);
+        (origin_u256, intermediate_path, destination_channel_id)
     } else {
-        (U256::ZERO, None)
+        (U256::ZERO, U256::ZERO, None)
     };
 
     // Check if we're taking same path starting from same channel using wrapped asset
@@ -1628,30 +1629,32 @@ fn verify_fungible_asset_order(
 
     if is_inverse_intermediate_path && is_sending_back_to_same_channel && is_unwrapping {
         // Verify the origin path matches what's in the order
-        if let Some(origin) = origin {
-            let origin_u256 = U256::from_be_bytes(origin.to_be_bytes());
-            if origin_u256 != order.base_token_path {
-                return Err(ContractError::InvalidAssetOrigin);
-            }
-            // Burn tokens as we are going to unescrow on the counterparty
-            *response = response.clone().add_message(make_wasm_msg(
-                WrappedTokenMsg::BurnTokens {
-                    denom: base_token_str.to_string(),
-                    amount: Uint256::from_be_bytes(order.base_amount.to_be_bytes())
-                        .try_into()
-                        .map_err(|_| ContractError::AmountOverflow)?,
-                    burn_from_address: minter.to_string(),
-                    sender: info.sender,
-                },
-                &minter,
-                info.funds,
-            )?);
-        } else {
-            return Err(ContractError::InvalidAssetOrigin);
+        if origin != order.base_token_path {
+            return Err(ContractError::InvalidAssetOrigin {
+                actual: order.base_token_path,
+                expected: origin,
+            });
         }
-    } else if !order.base_token_path.is_zero() {
-        return Err(ContractError::InvalidAssetOrigin);
+        // Burn tokens as we are going to unescrow on the counterparty
+        *response = response.clone().add_message(make_wasm_msg(
+            WrappedTokenMsg::BurnTokens {
+                denom: base_token_str.to_string(),
+                amount: Uint256::from_be_bytes(order.base_amount.to_be_bytes())
+                    .try_into()
+                    .map_err(|_| ContractError::AmountOverflow)?,
+                burn_from_address: minter.to_string(),
+                sender: info.sender,
+            },
+            &minter,
+            info.funds,
+        )?);
     } else {
+        if !order.base_token_path.is_zero() {
+            return Err(ContractError::InvalidAssetOrigin {
+                actual: order.base_token_path,
+                expected: U256::ZERO,
+            });
+        }
         // Escrow tokens as the counterparty will mint them
         let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
         increase_channel_balance(
