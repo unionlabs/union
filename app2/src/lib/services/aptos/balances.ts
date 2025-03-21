@@ -4,7 +4,7 @@ import type { Chain } from "$lib/schema/chain"
 // You can import a retry schedule specific for Aptos; here we assume one exists.
 import { aptosBalanceRetrySchedule } from "$lib/constants/schedules"
 import { getPublicClient } from "$lib/services/aptos/clients"
-import type { Aptos } from "@aptos-labs/ts-sdk"
+import type { Aptos, AptosApiError } from "@aptos-labs/ts-sdk"
 
 export type FetchAptosBalanceError = FetchAptosTokenBalanceError
 
@@ -30,7 +30,7 @@ const fetchFABalance = ({
           functionArguments: [walletAddress.toString(), tokenAddress.toString()]
         }
       }),
-    catch: err => new FetchAptosTokenBalanceError({ cause: err })
+    catch: err => new FetchAptosTokenBalanceError({ cause: err as AptosApiError })
   })
 
 /**
