@@ -5,6 +5,7 @@ import type { Chain } from "$lib/schema/chain"
 import { aptosBalanceRetrySchedule } from "$lib/constants/schedules"
 import { getPublicClient } from "$lib/services/aptos/clients"
 import type { Aptos, AptosApiError } from "@aptos-labs/ts-sdk"
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
 
 export type FetchAptosBalanceError = FetchAptosTokenBalanceError
 
@@ -30,7 +31,7 @@ const fetchFABalance = ({
           functionArguments: [walletAddress.toString(), tokenAddress.toString()]
         }
       }),
-    catch: err => new FetchAptosTokenBalanceError({ cause: err as AptosApiError })
+    catch: err => new FetchAptosTokenBalanceError({ cause: extractErrorDetails(err as AptosApiError) })
   })
 
 /**
