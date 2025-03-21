@@ -687,7 +687,6 @@
             ibc-union
             multicall
             ;
-          gitRev = builtins.toFile "gitRev" gitRev;
           cosmwasm-scripts =
             {
               inherit ibc-union-contract-addresses;
