@@ -19,10 +19,23 @@ import {
 } from "$lib/services/transfer-ucs03-aptos"
 import ChainAsset from "$lib/components/Transfer/ChainAsset/index.svelte"
 import type { TransferStateUnion } from "$lib/components/Transfer/validation.ts"
-import { Option } from "effect"
+import { Effect, Option } from "effect"
 import { wallets } from "$lib/stores/wallets.svelte"
 import TransferAsset from "./ChainAsset/TransferAsset.svelte"
 import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
+import type { Instruction } from "@unionlabs/sdk/ucs03"
+import { runPromiseExit } from "effect/Runtime"
+import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03"
+import {
+  createViemPublicClient,
+  ViemPublicClient,
+  ViemPublicClientSource
+} from "@unionlabs/sdk/evm"
+
+import { CosmWasmClientDestination, createCosmWasmClient, CosmosChannelDestination } from "@unionlabs/sdk/cosmos"
+import { sepolia } from "viem/chains"
+import { http } from "viem"
+    import { tapBoth } from "effect/STM";
 
 function getStatus(
   state: TransferStateUnion
@@ -85,15 +98,7 @@ let buttonText = $derived(
   }[getStatus(transfer.state)]
 )
 
-type TransferIntent = {
-  sender: string
-  receiver: string
-  baseToken: string
-  baseAmount: bigint
-  quoteAmount: bigint
-}
-
-let transferIntents: Option.Option<Array<TransferIntent>> = $derived.by(() => {
+let transferIntents = $derived.by(() => {
   if (transfer.validation._tag !== "Success") return Option.none()
   if (Option.isNone(wallets.evmAddress)) return Option.none()
 
@@ -122,6 +127,49 @@ let transferIntents: Option.Option<Array<TransferIntent>> = $derived.by(() => {
     }
   ])
 })
+
+
+let instruction: Option.Option<Instruction> = $state(Option.none())
+
+$effect(() => {
+  if (Option.isNone(transferIntents)) return
+
+  intentsToBatch(transferIntents).pipe(
+    Effect.tap(batch => instruction = batch),
+    Effect.runPromiseExit
+  )
+})
+
+
+const intentsToBatch = (ti: typeof transferIntents) => Effect.gen(function* () {
+  if (Option.isNone(ti)) return Option.none()
+
+  const publicClientSource = yield* createViemPublicClient({
+    chain: sepolia, // todo
+    transport: http()
+  })
+
+  const cosmwasmClientDestination = yield* createCosmWasmClient(
+    "https://rpc.rpc-node.union-testnet-10.union.build"
+  )
+
+  const batch = yield* Effect.gen(function* () {
+    const t1 = yield* createEvmToCosmosFungibleAssetOrder(ti.value[0])
+    const t2 = yield* createEvmToCosmosFungibleAssetOrder(ti.value[1])
+    return Batch([t1, t2])
+  }).pipe(
+    Effect.provideService(ViemPublicClientSource, { client: publicClientSource }),
+    Effect.provideService(CosmWasmClientDestination, { client: cosmwasmClientDestination }),
+    Effect.provideService(CosmosChannelDestination, {
+      ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
+      channelId: 1
+    }),
+  )
+
+  return Option.some(batch)
+})
+
+
 </script>
 
 <Card class="max-w-md relative flex flex-col gap-2">
@@ -144,6 +192,9 @@ let transferIntents: Option.Option<Array<TransferIntent>> = $derived.by(() => {
 
 <h2>transfer intents</h2>
 <pre>{JSON.stringify(transferIntents,null,2)}</pre>
+
+<h2>instruction</h2>
+<pre>{JSON.stringify(instruction,null,2)}</pre>
 
 
 {#if transfer.state._tag !== "Empty"}
