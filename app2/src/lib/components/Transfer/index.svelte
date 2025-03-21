@@ -285,7 +285,7 @@ const checkAllowances = (ti: typeof transferIntents) =>
 let showDetails = $state(false)
 </script>
 
-<Card divided class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[400px]">
+<Card divided class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[450px]">
   <div class="p-4">
     Step 1/4
   </div>
