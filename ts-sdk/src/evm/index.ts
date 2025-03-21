@@ -1,4 +1,7 @@
 export * as abi from "./abi/index.js"
-export * from "./contract.js"
+export * from "./channel.js"
 export * from "./client.js"
+export * from "./contract.js"
 export * from "./erc20.js"
+export * from "./quote-token.js"
+export * from "./receipts.js"
