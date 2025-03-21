@@ -13,6 +13,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+const-hex = "1.14.0"
 cosmwasm-std = { workspace = true }
 depolama     = { workspace = true }
 serde        = { workspace = true, features = ["derive"] }

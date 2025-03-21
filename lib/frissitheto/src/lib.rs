@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 #![warn(clippy::pedantic, missing_docs)]
 
 use std::num::NonZeroU32;
@@ -5,10 +6,44 @@ use std::num::NonZeroU32;
 use cosmwasm_std::{DepsMut, Response, StdError};
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(C)]
+pub enum Rev {
+    Dirty,
+    Hash([u8; 32]),
+}
+
+#[no_mangle]
+pub const extern "C" fn commit_hash() -> Rev {
+    const {
+        match option_env!("GIT_REV") {
+            None => Rev::Dirty,
+            Some(hash) => match hash.as_bytes() {
+                b"dirty" => {
+                    todo!()
+                }
+                hash => Rev::Hash(match const_hex::const_decode_to_array(hash) {
+                    Ok(ok) => ok,
+                    Err(_) => panic!(
+                        "invalid GIT_REV env var, value must be \
+                        either \"dirty\" or a 32-byte hex string"
+                    ),
+                }),
+            },
+        }
+    }
+}
+
+/// The migrate message to be used for contracts using `frissitheto`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum UpgradeMsg<Init, Migrate> {
+    /// Initiate the contract, migrating it from the existing bytecode.
+    ///
+    /// This can only be called once. Any subsequent migrations called with this entrypoint will
+    /// fail with [`UpgradeError::AlreadyInitiated`].
     Init(Init),
+    /// Migrate the contract.
     Migrate(Migrate),
 }
 
@@ -95,7 +130,9 @@ impl<Init, Migrate> UpgradeMsg<Init, Migrate> {
     }
 }
 
+/// Possible errors that can occur while executing [`UpgradeMsg::run()`].
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[allow(missing_docs, reason = "#[error] attributes provide documentation")]
 pub enum UpgradeError {
     #[error("attempted to initiate a contract that was already initiated")]
     AlreadyInitiated,

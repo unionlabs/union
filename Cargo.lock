@@ -5516,6 +5516,7 @@ dependencies = [
 name = "frissitheto"
 version = "0.0.0"
 dependencies = [
+ "const-hex",
  "cosmwasm-std 2.1.4",
  "depolama",
  "serde",
