@@ -2,6 +2,7 @@
 import Card from "$lib/components/ui/Card.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
+import { slide } from "svelte/transition"
 import Amount from "$lib/components/Transfer/Amount.svelte"
 import Receiver from "$lib/components/Transfer/Receiver.svelte"
 import ShowData from "$lib/components/Transfer/ShowData.svelte"
@@ -292,60 +293,196 @@ const checkAllowances = (ti: typeof transferIntents) =>
   })
 
 let showDetails = $state(false)
+let currentPage = $state(0)
+
+function goToNextPage() {
+  if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
+    currentPage++
+  }
+}
+
+function goToPreviousPage() {
+  if (currentPage > 0) {
+    currentPage--
+  }
+}
+
+// Determine which button text to show based on current page and state
+let actionButtonText = $derived.by(() => {
+  if (Option.isNone(transferSteps)) return "Submit"
+
+  const currentStep = transferSteps.value[currentPage]
+
+  if (currentPage === transferSteps.value.length - 1) {
+    return "Complete"
+  }
+
+  switch (currentStep._tag) {
+    case "Filling":
+      return "Continue"
+    case "ApprovalRequired":
+      return "Approve"
+    case "SubmitInstruction":
+      return "Submit"
+    default:
+      return "Next"
+  }
+})
+
+// Handle the action button click based on current page
+function handleActionButtonClick() {
+  if (Option.isNone(transferSteps)) return
+
+  const currentStep = transferSteps.value[currentPage]
+
+  switch (currentStep._tag) {
+    case "Filling":
+      // Just go to next page for now
+      goToNextPage()
+      break
+    case "ApprovalRequired":
+      // Here you would handle the approval action
+      // For now, just go to next page
+      goToNextPage()
+      break
+    case "SubmitInstruction":
+      // Here you would handle the submit action
+      transfer.submit()
+      break
+  }
+}
 </script>
 
-<Card divided class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[450px]">
+<Card divided class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden">
   <div class="p-4 w-full">
     <StepProgressBar 
       class="w-full"
-      currentStep={1} 
+      currentStep={currentPage + 1} 
       totalSteps={transferSteps.pipe(Option.map(ts => ts.length), Option.getOrElse(() => 1))}
     />
   </div>
-  <div class="p-4 flex-1 flex flex-col justify-between">
-    <div class="flex flex-col gap-4">
-      <ChainAsset type="source"/>
-      <ChainAsset type="destination"/>
-      <Amount type="source"/>
-    </div>
+  
+  <!-- Sliding pages container -->
+  <div class="relative flex-1 overflow-hidden">
+    <!-- Pages wrapper with horizontal sliding -->
+    <div 
+      class="absolute inset-0 flex transition-transform duration-300 ease-in-out"
+      style="transform: translateX(-{currentPage * 100}%);"
+    >
+      <!-- Page 1: Filling -->
+      <div class="min-w-full p-4 flex flex-col justify-between h-full">
+        <div class="flex flex-col gap-4">
+          <ChainAsset type="source"/>
+          <ChainAsset type="destination"/>
+          <Amount type="source"/>
+        </div>
 
-    <div class="flex flex-col items-end">
-      <div class="flex items-center mr-5 text-zinc-400">
-        {#if transfer.args.receiver && transfer.validation._tag === "Success" && transfer.args.destinationChain}
-          <p class="text-xs mb-2"><AddressComponent truncate address={transfer.raw.receiver} chain={transfer.args.destinationChain}/></p>
-        {:else}
-          <p class="text-xs mb-2"> No receiver</p>
-        {/if}
-        <AngleArrowIcon class="rotate-270"/>
+        <div class="flex flex-col items-end">
+          <div class="flex items-center mr-5 text-zinc-400">
+            {#if transfer.args.receiver && transfer.validation._tag === "Success" && transfer.args.destinationChain}
+              <p class="text-xs mb-2"><AddressComponent truncate address={transfer.raw.receiver} chain={transfer.args.destinationChain}/></p>
+            {:else}
+              <p class="text-xs mb-2"> No receiver</p>
+            {/if}
+            <AngleArrowIcon class="rotate-270"/>
+          </div>
+          <div class="w-full items-end flex gap-2">
+            <Button
+              class="flex-1"
+              variant="primary"
+              onclick={handleActionButtonClick}
+              disabled={transfer.validation._tag !== "Success"}
+            >
+              {actionButtonText}
+            </Button>
+            <Receiver/>
+          </div>
+        </div>
       </div>
-      <div class="w-full items-end flex gap-2">
-        <Button
-                class="flex-1"
+
+      <!-- Dynamic pages for each step -->
+      {#if Option.isSome(transferSteps)}
+        {#each transferSteps.value.slice(1) as step, i}
+          <div class="min-w-full p-4 flex flex-col justify-between h-full">
+            {#if step._tag === "ApprovalRequired"}
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold mb-4">Approve Token</h3>
+                <div class="bg-zinc-800 rounded-lg p-4 mb-4">
+                  <div class="mb-2">
+                    <span class="text-zinc-400">Token:</span>
+                    <span class="font-mono text-sm ml-2">{truncate(step.token, 8, "middle")}</span>
+                  </div>
+                  <div class="mb-2">
+                    <span class="text-zinc-400">Current Allowance:</span>
+                    <span class="font-mono text-sm ml-2">{step.currentAllowance.toString()}</span>
+                  </div>
+                  <div>
+                    <span class="text-zinc-400">Required Amount:</span>
+                    <span class="font-mono text-sm ml-2">{step.requiredAmount.toString()}</span>
+                  </div>
+                </div>
+                <p class="text-sm text-zinc-400">
+                  You need to approve the smart contract to spend your tokens.
+                  This is a one-time approval for this token.
+                </p>
+              </div>
+            {:else if step._tag === "SubmitInstruction"}
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold mb-4">Submit Transfer</h3>
+                <div class="bg-zinc-800 rounded-lg p-4 mb-4">
+                  <p class="mb-2">Ready to submit your transfer instruction to the blockchain.</p>
+                  <div class="text-sm text-zinc-400">
+                    <div class="mb-1">From: {transfer.args.sourceChain?.display_name || "Unknown"}</div>
+                    <div class="mb-1">To: {transfer.args.destinationChain?.display_name || "Unknown"}</div>
+                    <div>Amount: {transfer.args.amount || "0"}</div>
+                  </div>
+                </div>
+                <p class="text-sm text-zinc-400">
+                  This will initiate the transfer on the blockchain. 
+                  You'll need to confirm the transaction in your wallet.
+                </p>
+              </div>
+            {/if}
+            
+            <div class="flex justify-between mt-4">
+              <Button
+                variant="outline"
+                onclick={goToPreviousPage}
+              >
+                Back
+              </Button>
+              <Button
                 variant="primary"
-                onclick={transfer.submit}
-                disabled={!isButtonEnabled || transfer.validation._tag !== "Success"}
-        >
-          {buttonText}
-        </Button>
-        <Receiver/>
-
-      </div>
+                onclick={handleActionButtonClick}
+              >
+                {actionButtonText}
+              </Button>
+            </div>
+          </div>
+        {/each}
+      {/if}
     </div>
   </div>
+  
   {#if showDetails}
     <ShowData />
   {/if}
 </Card>
 
+
+<!-- Debug info can be hidden in production -->
 {#if Option.isSome(transferSteps)}
   <div class="mt-4">
-    <h3 class="text-lg font-semibold">Steps to complete transfer:</h3>
+    <h3 class="text-lg font-semibold">Current Page: {currentPage + 1}/{transferSteps.value.length}</h3>
+    <h4 class="text-md">Steps to complete transfer:</h4>
     <ol class="list-decimal pl-5 mt-2">
       {#each transferSteps.value as step, index}
-        <li class="mb-2">
-          {#if step._tag === "ApprovalRequired"}
+        <li class="mb-2" class:font-bold={index === currentPage}>
+          {#if step._tag === "Filling"}
+            <div>Configure transfer details</div>
+          {:else if step._tag === "ApprovalRequired"}
             <div>
-              Approve token: <span class="font-mono">{step.token}</span>
+              Approve token: <span class="font-mono">{truncate(step.token, 8, "middle")}</span>
               <div class="text-sm">
                 Current allowance: {step.currentAllowance.toString()}
                 <br />
@@ -354,7 +491,6 @@ let showDetails = $state(false)
             </div>
           {:else if step._tag === "SubmitInstruction"}
             <div>Submit transfer instruction</div>
-            <pre>{JSON.stringify(instruction, null, 2)}</pre>
           {/if}
         </li>
       {/each}
