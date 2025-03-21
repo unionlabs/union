@@ -285,33 +285,38 @@ const checkAllowances = (ti: typeof transferIntents) =>
 let showDetails = $state(false)
 </script>
 
-<Card class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[400px]">
-  <div class=" flex flex-col gap-4">
-    <ChainAsset type="source"/>
-    <ChainAsset type="destination"/>
-    <Amount type="source"/>
+<Card divided class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[400px]">
+  <div class="p-4">
+    Step 1/4
   </div>
-
-  <div class="flex flex-col items-end">
-    <div class="flex items-center mr-5 text-zinc-400">
-      {#if transfer.args.receiver && transfer.validation._tag === "Success" && transfer.args.destinationChain}
-        <p class="text-xs mb-2"><AddressComponent truncate address={transfer.raw.receiver} chain={transfer.args.destinationChain}/></p>
-      {:else}
-        <p class="text-xs mb-2"> No receiver</p>
-      {/if}
-      <AngleArrowIcon class="rotate-270"/>
+  <div class="p-4 flex-1 flex flex-col justify-between">
+    <div class="flex flex-col gap-4">
+      <ChainAsset type="source"/>
+      <ChainAsset type="destination"/>
+      <Amount type="source"/>
     </div>
-    <div class="w-full items-end flex gap-2">
-      <Button
-              class="flex-1"
-              variant="primary"
-              onclick={transfer.submit}
-              disabled={!isButtonEnabled || transfer.validation._tag !== "Success"}
-      >
-        {buttonText}
-      </Button>
-      <Receiver/>
 
+    <div class="flex flex-col items-end">
+      <div class="flex items-center mr-5 text-zinc-400">
+        {#if transfer.args.receiver && transfer.validation._tag === "Success" && transfer.args.destinationChain}
+          <p class="text-xs mb-2"><AddressComponent truncate address={transfer.raw.receiver} chain={transfer.args.destinationChain}/></p>
+        {:else}
+          <p class="text-xs mb-2"> No receiver</p>
+        {/if}
+        <AngleArrowIcon class="rotate-270"/>
+      </div>
+      <div class="w-full items-end flex gap-2">
+        <Button
+                class="flex-1"
+                variant="primary"
+                onclick={transfer.submit}
+                disabled={!isButtonEnabled || transfer.validation._tag !== "Success"}
+        >
+          {buttonText}
+        </Button>
+        <Receiver/>
+
+      </div>
     </div>
   </div>
   {#if showDetails}
