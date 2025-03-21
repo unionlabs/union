@@ -32,6 +32,7 @@ import {
   ViemPublicClientSource,
   readErc20Allowance
 } from "@unionlabs/sdk/evm"
+import { Data } from "effect"
 
 import {
   CosmWasmClientDestination,
@@ -133,6 +134,21 @@ let transferIntents = $derived.by(() => {
   ])
 })
 
+// Define the step type using Data.TaggedEnum
+type TransferStep = Data.TaggedEnum<{
+  ApprovalRequired: {
+    readonly token: string
+    readonly requiredAmount: bigint
+    readonly currentAllowance: bigint
+  }
+  SubmitInstruction: {
+    readonly instruction: Instruction
+  }
+}>
+
+// Create constructors for the steps
+const { ApprovalRequired, SubmitInstruction } = Data.taggedEnum<TransferStep>()
+
 let instruction: Option.Option<Instruction> = $state(Option.none())
 let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
 let requiredApprovals = $derived.by(() => {
@@ -157,6 +173,37 @@ let requiredApprovals = $derived.by(() => {
     }))
 
   return tokensNeedingApproval.length > 0 ? Option.some(tokensNeedingApproval) : Option.none()
+})
+
+// Derive the steps based on required approvals and instruction
+let transferSteps = $derived.by(() => {
+  const steps: Array<TransferStep> = []
+
+  // Add approval steps if needed
+  if (Option.isSome(requiredApprovals)) {
+    // Find the allowance for each token that needs approval
+    for (const approval of requiredApprovals.value) {
+      if (Option.isSome(allowances)) {
+        const tokenAllowance = allowances.value.find(a => a.token === approval.token)
+        if (tokenAllowance) {
+          steps.push(
+            ApprovalRequired({
+              token: approval.token,
+              requiredAmount: approval.requiredAmount,
+              currentAllowance: tokenAllowance.allowance
+            })
+          )
+        }
+      }
+    }
+  }
+
+  // Add the instruction submission step if we have an instruction
+  if (Option.isSome(instruction)) {
+    steps.push(SubmitInstruction({ instruction: instruction.value }))
+  }
+
+  return steps.length > 0 ? Option.some(steps) : Option.none()
 })
 
 $effect(() => {
@@ -253,6 +300,32 @@ const checkAllowances = (ti: typeof transferIntents) =>
 </Card>
 
 
+{#if Option.isSome(transferSteps)}
+  <div class="mt-4">
+    <h3 class="text-lg font-semibold">Steps to complete transfer:</h3>
+    <ol class="list-decimal pl-5 mt-2">
+      {#each transferSteps.value as step, index}
+        <li class="mb-2">
+          {#if step._tag === "ApprovalRequired"}
+            <div>
+              Approve token: <span class="font-mono">{step.token}</span>
+              <div class="text-sm">
+                Current allowance: {step.currentAllowance.toString()}
+                <br/>
+                Required amount: {step.requiredAmount.toString()}
+              </div>
+            </div>
+          {:else if step._tag === "SubmitInstruction"}
+            <div>Submit transfer instruction</div>
+            <pre>{JSON.stringify(instruction,null,2)}</pre>
+          {/if}
+        </li>
+      {/each}
+    </ol>
+  </div>
+{/if}
+
+
 
 <h2>transfer intents</h2>
 <pre>{JSON.stringify(transferIntents,null,2)}</pre>
@@ -266,6 +339,8 @@ const checkAllowances = (ti: typeof transferIntents) =>
 <h2>required approvals</h2>
 <pre>{JSON.stringify(requiredApprovals,null,2)}</pre>
 
+<h2>transfer steps</h2>
+<pre>{JSON.stringify(transferSteps,null,2)}</pre>
 
 {#if transfer.state._tag !== "Empty"}
   {#if getStatus(transfer.state) === "filling"}
