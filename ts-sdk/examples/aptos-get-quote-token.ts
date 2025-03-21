@@ -1,25 +1,17 @@
 import { Effect } from "effect"
-import { AptosPublicClient, createAptosPublicClient } from "../src/aptos/client.ts"
-import { queryContract } from "../src/aptos/contract.ts"
-import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { Aptos, AptosConfig, Network, AptosApiError, MoveVector } from "@aptos-labs/ts-sdk"
+import { AptosPublicClientDestination, createAptosPublicClient } from "../src/aptos/client.ts"
+import { AptosChannelDestination } from "../src/aptos/channel.ts"
+import { predictQuoteToken} from "../src/aptos/quote-token.ts"
+import { AptosConfig, Network } from "@aptos-labs/ts-sdk"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
 
-// Replace with your private key
-const PRIVATE_KEY =
-  process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000"
-
 Effect.runPromiseExit(
   Effect.gen(function* () {
     // Create account from private key
-    const chain = "250"
-
-    const privateKey = new Ed25519PrivateKey(PRIVATE_KEY)
-    const account = Account.fromPrivateKey({ privateKey })
 
     const rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1"
 
@@ -29,27 +21,19 @@ Effect.runPromiseExit(
     })
     const publicClient = yield* createAptosPublicClient(config)
 
-    yield* Effect.log("Aptos publicclient:", publicClient)
-
-
-    const zkgm_address = "0x80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84"
-    const real_token_address = "0x188b41399546602e35658962477fdf72bd52443474a899d9d48636e8bc299c2c"
     const token_address = "0x6d756e6f"
-    const function_name = "ibc_app::predict_wrapped_token"
-    const typeArguments = []
-    const destination_channel_id = "2"
-    const base_token = MoveVector.U8(token_address)
-    const functionArguments = [0,  destination_channel_id, base_token]
 
-    const result = yield* queryContract(publicClient, zkgm_address, function_name, typeArguments, functionArguments).pipe(
-      Effect.provideService(AptosPublicClient, { client: publicClient })
+    const result2 = yield* predictQuoteToken(token_address).pipe(
+      Effect.provideService(AptosPublicClientDestination, { client: publicClient }),
+      Effect.provideService(AptosChannelDestination, { 
+        ucs03address: "0x80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
+        channelId: 2
+      }),
+      Effect.tapErrorCause(cause => Effect.logError("Predict failed with cause", cause))
+
     )
-    yield * Effect.log("Result:", result)
 
-    if (result[0] === real_token_address){
-      yield * Effect.log("Success")
-    } else {
-      yield * Effect.logError("Failure")
-    }
+    yield* Effect.log("Result:", result2)
+
   })
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))
