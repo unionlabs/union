@@ -116,7 +116,6 @@ module ibc::acknowledge_packet {
         let commitment_value;
         if (l == 1) {
             commitment_key = commitment::batch_receipts_commitment_key(
-                destination_channel_id,
                 commitment::commit_packet(&first_packet)
             );
             commitment_value = commitment::commit_ack(
@@ -124,7 +123,6 @@ module ibc::acknowledge_packet {
             );
         } else {
             commitment_key = commitment::batch_receipts_commitment_key(
-                destination_channel_id,
                 commitment::commit_packets(&packets)
             );
             commitment_value = commitment::commit_acks(acknowledgements);
@@ -148,7 +146,7 @@ module ibc::acknowledge_packet {
             let packet = *vector::borrow(&packets, i);
             let commitment_key =
                 commitment::batch_packets_commitment_key(
-                    source_channel_id, commitment::commit_packet(&packet)
+                    commitment::commit_packet(&packet)
                 );
             ibc::remove_commitment(commitment_key);
 

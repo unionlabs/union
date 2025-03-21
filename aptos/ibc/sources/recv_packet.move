@@ -142,12 +142,10 @@ module ibc::recv_packet {
             let commitment_key;
             if (l == 1) {
                 commitment_key = commitment::batch_packets_commitment_key(
-                    source_channel,
                     commitment::commit_packet(&first_packet)
                 )
             } else {
                 commitment_key = commitment::batch_packets_commitment_key(
-                    source_channel,
                     commitment::commit_packets(&packets)
                 )
             };
@@ -189,7 +187,6 @@ module ibc::recv_packet {
 
             let commitment_key =
                 commitment::batch_receipts_commitment_key(
-                    destination_channel,
                     commitment::commit_packet(&packet)
                 );
 
