@@ -1,6 +1,7 @@
 [package]
-name    = "unionlabs-cosmwasm-upgradable"
-version = "0.0.0"
+description = "frissíthető is a library for upgradable cosmwasm contracts, enabling contract versioning and commit references."
+name        = "frissitheto"
+version     = "0.0.0"
 
 authors      = { workspace = true }
 edition      = { workspace = true }
@@ -13,5 +14,6 @@ workspace = true
 
 [dependencies]
 cosmwasm-std = { workspace = true }
+depolama     = { workspace = true }
 serde        = { workspace = true, features = ["derive"] }
 thiserror    = { workspace = true }

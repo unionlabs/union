@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic, missing_docs)]
+
 use std::num::NonZeroU32;
 
 use cosmwasm_std::{DepsMut, Response, StdError};
@@ -26,6 +28,15 @@ impl<Init, Migrate> UpgradeMsg<Init, Migrate> {
     ///
     /// State is stored under `b"state_version"` at the contract root. Consumers of this library
     /// MUST ensure to not overwrite this key.
+    ///
+    /// # Errors
+    ///
+    /// This function will error if either `init_f` or `migrate_f` error. See [`UpgradeError`] for
+    /// additional failure modes.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the state version cannot be decoded.
     pub fn run<E: From<UpgradeError> + From<StdError>>(
         self,
         mut deps: DepsMut,
@@ -73,7 +84,7 @@ impl<Init, Migrate> UpgradeMsg<Init, Migrate> {
 
                     deps.storage.set(
                         b"state_version",
-                        &version.map(|v| v.get()).unwrap_or(1).to_be_bytes(),
+                        &version.map_or(1, NonZeroU32::get).to_be_bytes(),
                     );
 
                     Ok(res)

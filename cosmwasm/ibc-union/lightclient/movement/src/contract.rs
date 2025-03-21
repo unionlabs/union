@@ -3,7 +3,7 @@ use ibc_union_light_client::{
     msg::{InitMsg, QueryMsg},
     IbcClientError,
 };
-use unionlabs_cosmwasm_upgradable::UpgradeMsg;
+use frissitheto::UpgradeMsg;
 
 use crate::client::MovementLightClient;
 

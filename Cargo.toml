@@ -53,7 +53,7 @@ members = [
   "lib/voyager-core",
   "lib/galois-rpc",
   "lib/cosmos-sdk-event",
-  "lib/unionlabs-cosmwasm-upgradable",
+  "lib/frissitheto",
 
   # "lib/near/near-ibc",
   # "lib/near/near-light-client",
@@ -270,7 +270,7 @@ ibc-union              = { path = "cosmwasm/ibc-union/core", default-features = 
 ibc-union-light-client = { path = "cosmwasm/ibc-union/core/light-client-interface", default-features = false }
 ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-features = false }
 
-unionlabs-cosmwasm-upgradable = { path = "lib/unionlabs-cosmwasm-upgradable", default-features = false }
+frissitheto = { path = "lib/frissitheto", default-features = false }
 
 ucs03-zkgm                  = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
 ucs03-zkgm-token-minter-api = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
