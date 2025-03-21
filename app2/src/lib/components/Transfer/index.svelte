@@ -43,6 +43,7 @@ import { http } from "viem"
 import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
 import { truncate } from "$lib/utils/format.ts"
 import AddressComponent from "../model/AddressComponent.svelte"
+import TokenComponent from "../model/TokenComponent.svelte"
 
 function getStatus(
   state: TransferStateUnion
@@ -410,7 +411,7 @@ function handleActionButtonClick() {
                 <div class="bg-zinc-800 rounded-lg p-4 mb-4">
                   <div class="mb-2">
                     <span class="text-zinc-400">Token:</span>
-                    <span class="font-mono text-sm ml-2">{truncate(step.token, 8, "middle")}</span>
+                    <span class="font-mono text-sm ml-2"><TokenComponent chain={transfer.args.sourceChain} denom={step.token}/></span>
                   </div>
                   <div class="mb-2">
                     <span class="text-zinc-400">Current Allowance:</span>
