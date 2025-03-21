@@ -91,6 +91,13 @@ impl Module {
         plugin_name(&self.chain_id)
     }
 
+    #[instrument(
+        skip_all,
+        fields(
+            block_number,
+            ibc_handler_address = %self.ibc_handler_address
+        )
+    )]
     pub async fn fetch_account_update(&self, block_number: u64) -> RpcResult<AccountProof> {
         let account_update = self
             .provider
@@ -107,6 +114,8 @@ impl Module {
                     None::<()>,
                 )
             })?;
+
+        debug!(storage_hash = %account_update.storage_hash, "fetched account update");
 
         Ok(AccountProof {
             storage_root: account_update.storage_hash.into(),
