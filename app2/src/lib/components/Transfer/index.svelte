@@ -19,6 +19,10 @@ import {
 } from "$lib/services/transfer-ucs03-aptos"
 import ChainAsset from "$lib/components/Transfer/ChainAsset/index.svelte"
 import type { TransferStateUnion } from "$lib/components/Transfer/validation.ts"
+import { Option } from "effect"
+import { wallets } from "$lib/stores/wallets.svelte"
+import TransferAsset from "./ChainAsset/TransferAsset.svelte"
+import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
 
 function getStatus(
   state: TransferStateUnion
@@ -80,6 +84,44 @@ let buttonText = $derived(
     complete: "Submit"
   }[getStatus(transfer.state)]
 )
+
+type TransferIntent = {
+  sender: string
+  receiver: string
+  baseToken: string
+  baseAmount: bigint
+  quoteAmount: bigint
+}
+
+let transferIntents: Option.Option<Array<TransferIntent>> = $derived.by(() => {
+  if (transfer.validation._tag !== "Success") return Option.none()
+  if (Option.isNone(wallets.evmAddress)) return Option.none()
+
+  const transferValue = transfer.validation.value
+
+  const wethDenom =
+    transferValue.sourceChain.universal_chain_id in WETH_DENOMS
+      ? Option.some(WETH_DENOMS[transferValue.sourceChain.universal_chain_id])
+      : Option.none()
+
+  if (Option.isNone(wethDenom)) return Option.none()
+  return Option.some([
+    {
+      sender: wallets.evmAddress.value,
+      receiver: transferValue.receiver,
+      baseToken: transferValue.baseToken,
+      baseAmount: transferValue.baseAmount,
+      quoteAmount: transferValue.baseAmount
+    },
+    {
+      sender: wallets.evmAddress.value,
+      receiver: transferValue.receiver,
+      baseToken: wethDenom.value,
+      baseAmount: 500n,
+      quoteAmount: 0n
+    }
+  ])
+})
 </script>
 
 <Card class="max-w-md relative flex flex-col gap-2">
@@ -97,6 +139,12 @@ let buttonText = $derived(
     {buttonText}
   </Button>
 </Card>
+
+
+
+<h2>transfer intents</h2>
+<pre>{JSON.stringify(transferIntents,null,2)}</pre>
+
 
 {#if transfer.state._tag !== "Empty"}
   {#if getStatus(transfer.state) === "filling"}

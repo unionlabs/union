@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import type { Hash, WaitForTransactionReceiptErrorType } from "viem"
+import type { Account, Hash, WaitForTransactionReceiptErrorType } from "viem"
 import { WaitForTransactionReceiptError } from "./errors.ts"
 import { getPublicClient, getWalletClient } from "../evm/clients.ts"
 import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
@@ -7,10 +7,10 @@ import type { Chain } from "$lib/schema/chain.ts"
 import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 import { generateSalt } from "$lib/services/shared"
 import { sepolia } from "viem/chains"
-import { Batch, FungibleAssetOrder } from "@unionlabs/sdk/evm/ucs03"
+import { Batch, FungibleAssetOrder, encodeAbi, sendInstructionEvm } from "@unionlabs/sdk/ucs03"
 import { ucs03abi } from "@unionlabs/sdk/evm/abi"
 import { readErc20Meta } from "@unionlabs/sdk/evm/erc20"
-import { ViemPublicClient, writeContract } from "@unionlabs/sdk/evm"
+import { ViemPublicClient, ViemWalletClient, writeContract } from "@unionlabs/sdk/evm"
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
@@ -28,33 +28,60 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
     )
 
     const walletClient = yield* getWalletClient(chain)
-    return yield* writeContract(walletClient, {
-      account: account.address as `0x${string}`,
-      abi: ucs03abi,
-      chain: sepolia,
-      functionName: "send",
-      address: transfer.ucs03address as `0x${string}`,
-      args: [
-        transfer.sourceChannelId,
-        transfer.timeoutHeight,
-        BigInt(transfer.timeoutTimestamp),
-        salt,
-        Batch([
-          FungibleAssetOrder([
-            account.address as `0x${string}`,
-            transfer.receiver as `0x${string}`,
-            transfer.baseToken,
-            transfer.baseAmount,
-            onchainBaseTokenMeta.symbol,
-            onchainBaseTokenMeta.name,
-            onchainBaseTokenMeta.decimals,
-            9n, // when unwrapping, otherwise 0
-            transfer.quoteToken,
-            transfer.quoteAmount
-          ])
-        ])
-      ]
-    })
+
+    return "0x0fabab"
+
+    // return yield* sendInstructionEvm(
+    //   Batch([
+    //     FungibleAssetOrder([
+    //       account.address as `0x${string}`,
+    //       transfer.receiver as `0x${string}`,
+    //       transfer.baseToken,
+    //       transfer.baseAmount,
+    //       onchainBaseTokenMeta.symbol,
+    //       onchainBaseTokenMeta.name,
+    //       onchainBaseTokenMeta.decimals,
+    //       9n, // when unwrapping, otherwise 0
+    //       transfer.quoteToken,
+    //       transfer.quoteAmount
+    //     ])
+    //   ])
+    // ).pipe(
+    //   Effect.provideService(ViemWalletClient, {
+    //     account: account as Account,
+    //     client: walletClient,
+    //     chain: sepolia
+    //   })
+    // )
+    // return yield* writeContract(walletClient, {
+    //   account: account.address as `0x${string}`,
+    //   abi: ucs03abi,
+    //   chain: sepolia,
+    //   functionName: "send",
+    //   address: transfer.ucs03address as `0x${string}`,
+    //   args: [
+    //     transfer.sourceChannelId,
+    //     transfer.timeoutHeight,
+    //     BigInt(transfer.timeoutTimestamp),
+    //     salt,
+    //     encodeAbi(
+    // Batch([
+    //   FungibleAssetOrder([
+    //     account.address as `0x${string}`,
+    //     transfer.receiver as `0x${string}`,
+    //     transfer.baseToken,
+    //     transfer.baseAmount,
+    //     onchainBaseTokenMeta.symbol,
+    //     onchainBaseTokenMeta.name,
+    //     onchainBaseTokenMeta.decimals,
+    //     9n, // when unwrapping, otherwise 0
+    //     transfer.quoteToken,
+    //     transfer.quoteAmount
+    //   ])
+    // ])
+    //     )
+    //   ]
+    // })
   })
 
 export const waitForTransferReceipt = (chain: Chain, hash: Hash) =>
