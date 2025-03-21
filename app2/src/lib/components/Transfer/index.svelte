@@ -3,6 +3,7 @@ import Card from "$lib/components/ui/Card.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import { slide } from "svelte/transition"
+import { LockedTransfer } from "./locked-transfer"
 import Amount from "$lib/components/Transfer/Amount.svelte"
 import Receiver from "$lib/components/Transfer/Receiver.svelte"
 import ShowData from "$lib/components/Transfer/ShowData.svelte"
@@ -48,46 +49,53 @@ import TokenComponent from "../model/TokenComponent.svelte"
 function getStatus(
   state: TransferStateUnion
 ): "empty" | "filling" | "processing" | "failed" | "complete" {
-  switch (state._tag) {
-    case "Empty":
-      return "empty"
-    case "Evm": {
-      if (state.state._tag === "Filling") return "filling"
-      if (hasEvmFailedExit(state.state)) return "failed"
-      if (isEvmComplete(state.state)) return "complete"
-      return "processing"
-    }
-    case "Cosmos": {
-      if (state.state._tag === "Filling") return "filling"
-      if (hasCosmosFailedExit(state.state)) return "failed"
-      if (isCosmosComplete(state.state)) return "complete"
-      return "processing"
-    }
-    case "Aptos": {
-      if (state.state._tag === "Filling") return "filling"
-      if (hasAptosFailedExit(state.state)) return "failed"
-      if (isAptosComplete(state.state)) return "complete"
-      return "processing"
-    }
-    default:
-      return "empty"
+  if (state._tag === "Empty") {
+    return "empty"
   }
+
+  if (state._tag === "Evm") {
+    if (state.state._tag === "Filling") return "filling"
+    if (hasEvmFailedExit(state.state)) return "failed"
+    if (isEvmComplete(state.state)) return "complete"
+    return "processing"
+  }
+
+  if (state._tag === "Cosmos") {
+    if (state.state._tag === "Filling") return "filling"
+    if (hasCosmosFailedExit(state.state)) return "failed"
+    if (isCosmosComplete(state.state)) return "complete"
+    return "processing"
+  }
+
+  if (state._tag === "Aptos") {
+    if (state.state._tag === "Filling") return "filling"
+    if (hasAptosFailedExit(state.state)) return "failed"
+    if (isAptosComplete(state.state)) return "complete"
+    return "processing"
+  }
+
+  return "empty"
 }
 
 // Simplified step name extractor
 function getStepName(state: TransferStateUnion): string | null {
-  switch (state._tag) {
-    case "Empty":
-      return null
-    case "Evm":
-      return state.state._tag
-    case "Aptos":
-      return state.state._tag
-    case "Cosmos":
-      return state.state._tag
-    default:
-      return null
+  if (state._tag === "Empty") {
+    return null
   }
+
+  if (state._tag === "Evm") {
+    return state.state._tag
+  }
+
+  if (state._tag === "Aptos") {
+    return state.state._tag
+  }
+
+  if (state._tag === "Cosmos") {
+    return state.state._tag
+  }
+
+  return null
 }
 
 let isButtonEnabled = $derived(
@@ -137,7 +145,7 @@ let transferIntents = $derived.by(() => {
 })
 
 // Define the step type using Data.TaggedEnum
-type TransferStep = Data.TaggedEnum<{
+export type TransferStep = Data.TaggedEnum<{
   Filling: {}
   ApprovalRequired: {
     readonly token: string
@@ -295,6 +303,7 @@ const checkAllowances = (ti: typeof transferIntents) =>
 
 let showDetails = $state(false)
 let currentPage = $state(0)
+let lockedTransfer = $state<Option.Option<LockedTransfer>>(Option.none())
 
 function goToNextPage() {
   if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
@@ -318,16 +327,19 @@ let actionButtonText = $derived.by(() => {
     return "Complete"
   }
 
-  switch (currentStep._tag) {
-    case "Filling":
-      return "Continue"
-    case "ApprovalRequired":
-      return "Approve"
-    case "SubmitInstruction":
-      return "Submit"
-    default:
-      return "Next"
+  if (currentStep._tag === "Filling") {
+    return "Continue"
   }
+
+  if (currentStep._tag === "ApprovalRequired") {
+    return "Approve"
+  }
+
+  if (currentStep._tag === "SubmitInstruction") {
+    return "Submit"
+  }
+
+  return "Next"
 })
 
 // Handle the action button click based on current page
@@ -336,20 +348,37 @@ function handleActionButtonClick() {
 
   const currentStep = transferSteps.value[currentPage]
 
-  switch (currentStep._tag) {
-    case "Filling":
-      // Just go to next page for now
-      goToNextPage()
-      break
-    case "ApprovalRequired":
-      // Here you would handle the approval action
-      // For now, just go to next page
-      goToNextPage()
-      break
-    case "SubmitInstruction":
-      // Here you would handle the submit action
-      transfer.submit()
-      break
+  if (currentStep._tag === "Filling") {
+    // Lock the transfer values before proceeding
+    if (Option.isNone(lockedTransfer)) {
+      lockedTransfer = LockedTransfer.fromTransfer(
+        transfer.sourceChain,
+        transfer.destinationChain,
+        transfer.channel,
+        transferSteps
+      )
+
+      // If we couldn't create a locked transfer, don't proceed
+      if (Option.isNone(lockedTransfer)) {
+        console.error("Failed to lock transfer values")
+        return
+      }
+    }
+    goToNextPage()
+    return
+  }
+
+  if (currentStep._tag === "ApprovalRequired") {
+    // Here you would handle the approval action
+    // For now, just go to next page
+    goToNextPage()
+    return
+  }
+
+  if (currentStep._tag === "SubmitInstruction") {
+    // Here you would handle the submit action
+    transfer.submit()
+    return
   }
 }
 </script>
@@ -359,21 +388,36 @@ function handleActionButtonClick() {
     <StepProgressBar 
       class="w-full"
       currentStep={currentPage + 1} 
-      totalSteps={transferSteps.pipe(Option.map(ts => ts.length), Option.getOrElse(() => 1))}
-      stepDescriptions={Option.isSome(transferSteps) 
-        ? transferSteps.value.map(step => {
-            switch (step._tag) {
-              case "Filling":
-                return "Configure your transfer details"
-              case "ApprovalRequired":
-                return "Approve token spending"
-              case "SubmitInstruction":
-                return "Submit transfer to blockchain"
-              default:
-                return "Transfer step"
+      totalSteps={Option.isSome(lockedTransfer) 
+        ? lockedTransfer.value.steps.length 
+        : transferSteps.pipe(Option.map(ts => ts.length), Option.getOrElse(() => 1))}
+      stepDescriptions={Option.isSome(lockedTransfer)
+        ? lockedTransfer.value.steps.map(step => {
+            if (step._tag === "Filling") {
+              return "Configure your transfer details"
             }
+            if (step._tag === "ApprovalRequired") {
+              return "Approve token spending"
+            }
+            if (step._tag === "SubmitInstruction") {
+              return "Submit transfer to blockchain"
+            }
+            return "Transfer step"
           })
-        : ["Configure your transfer"]}
+        : Option.isSome(transferSteps) 
+          ? transferSteps.value.map(step => {
+              if (step._tag === "Filling") {
+                return "Configure your transfer details"
+              }
+              if (step._tag === "ApprovalRequired") {
+                return "Approve token spending"
+              }
+              if (step._tag === "SubmitInstruction") {
+                return "Submit transfer to blockchain"
+              }
+              return "Transfer step"
+            })
+          : ["Configure your transfer"]}
     />
   </div>
   
@@ -416,8 +460,8 @@ function handleActionButtonClick() {
       </div>
 
       <!-- Dynamic pages for each step -->
-      {#if Option.isSome(transferSteps)}
-        {#each transferSteps.value.slice(1) as step, i}
+      {#if Option.isSome(lockedTransfer)}
+        {#each lockedTransfer.value.steps.slice(1) as step, i}
           <div class="min-w-full p-4 flex flex-col justify-between h-full">
             {#if step._tag === "ApprovalRequired"}
               <div class="flex-1">
@@ -425,7 +469,15 @@ function handleActionButtonClick() {
                 <div class="bg-zinc-800 rounded-lg p-4 mb-4">
                   <div class="mb-2">
                     <span class="text-zinc-400">Token:</span>
-                    <span class="font-mono text-sm ml-2"><TokenComponent chain={transfer.args.sourceChain} denom={step.token}/></span>
+                    <span class="font-mono text-sm ml-2">
+                      {#if Option.isSome(lockedTransfer)}
+                        <TokenComponent chain={lockedTransfer.value.sourceChain} denom={step.token}/>
+                      {:else if transfer.args.sourceChain}
+                        <TokenComponent chain={transfer.args.sourceChain} denom={step.token}/>
+                      {:else}
+                        {truncate(step.token, 8, "middle")}
+                      {/if}
+                    </span>
                   </div>
                   <div class="mb-2">
                     <span class="text-zinc-400">Current Allowance:</span>
@@ -486,12 +538,12 @@ function handleActionButtonClick() {
 
 
 <!-- Debug info can be hidden in production -->
-{#if Option.isSome(transferSteps)}
+{#if Option.isSome(lockedTransfer) || Option.isSome(transferSteps)}
   <div class="mt-4">
-    <h3 class="text-lg font-semibold">Current Page: {currentPage + 1}/{transferSteps.value.length}</h3>
+    <h3 class="text-lg font-semibold">Current Page: {currentPage + 1}/{Option.isSome(lockedTransfer) ? lockedTransfer.value.steps.length : Option.isSome(transferSteps) ? transferSteps.value.length : 0}</h3>
     <h4 class="text-md">Steps to complete transfer:</h4>
     <ol class="list-decimal pl-5 mt-2">
-      {#each transferSteps.value as step, index}
+      {#each Option.isSome(lockedTransfer) ? lockedTransfer.value.steps : Option.isSome(transferSteps) ? transferSteps.value : [] as step, index}
         <li class="mb-2" class:font-bold={index === currentPage}>
           {#if step._tag === "Filling"}
             <div>Configure transfer details</div>
@@ -527,6 +579,9 @@ function handleActionButtonClick() {
 
 <h2>transfer steps</h2>
 <pre>{JSON.stringify(transferSteps, null, 2)}</pre>
+
+<h2>locked transfer</h2>
+<pre>{JSON.stringify(lockedTransfer, null, 2)}</pre>
 
 {#if transfer.state._tag !== "Empty"}
   {#if getStatus(transfer.state) === "filling"}
