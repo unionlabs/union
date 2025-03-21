@@ -10,6 +10,7 @@ import {
   AddressCosmosCanonical,
   type AddressCanonicalBytes
 } from "$lib/schema/address"
+import { fetchAptosBalance, type FetchAptosBalanceError } from "$lib/services/aptos/balances"
 
 // Composite key type for the maps
 export type BalanceKey = `${UniversalChainId}:${AddressCanonicalBytes}:${TokenRawDenom}`
@@ -40,7 +41,10 @@ const createChainKey = (
 export class BalancesStore {
   data = $state(new SvelteMap<BalanceKey, RawTokenBalance>())
   errors = $state(
-    new SvelteMap<BalanceKey, Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError>>()
+    new SvelteMap<
+      BalanceKey,
+      Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError>
+    >()
   )
   chainFibers = $state(new SvelteMap<ChainKey, Fiber.RuntimeFiber<void, never>>())
   pendingRequests = $state(new SvelteMap<ChainKey, Array<BalanceFetchRequest>>())
@@ -58,7 +62,7 @@ export class BalancesStore {
     universalChainId: UniversalChainId,
     address: AddressCanonicalBytes,
     denom: TokenRawDenom,
-    error: Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError>
+    error: Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError>
   ) {
     this.errors.set(createKey(universalChainId, address, denom), error)
   }
@@ -75,7 +79,7 @@ export class BalancesStore {
     universalChainId: UniversalChainId,
     address: AddressCanonicalBytes,
     denom: TokenRawDenom
-  ): Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError> {
+  ): Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError> {
     return this.errors.get(createKey(universalChainId, address, denom)) ?? Option.none()
   }
 
@@ -121,6 +125,12 @@ export class BalancesStore {
                 chain,
                 tokenAddress: denom,
                 walletAddress: AddressEvmCanonical.make(address)
+              })
+            } else if (chain.rpc_type === "aptos") {
+              balance = yield* fetchAptosBalance({
+                chain,
+                tokenAddress: denom,
+                walletAddress: address
               })
             } else {
               balance = yield* fetchCosmosBalance({

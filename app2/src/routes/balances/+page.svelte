@@ -46,9 +46,7 @@ $effect(() => {
   if (!chainsData) return
 
   for (const chain of chainsData) {
-    if (chain.rpc_type === "evm" || chain.rpc_type === "cosmos") {
-      tokensStore.fetchTokens(chain.universal_chain_id)
-    }
+    tokensStore.fetchTokens(chain.universal_chain_id)
   }
 })
 </script>
@@ -69,7 +67,6 @@ $effect(() => {
           <ChainComponent {chain}/>
         </section>
         <section class="p-4">
-        {#if chain.rpc_type !== "aptos"}
           <div class="flex flex-col">
             {#if Option.isNone(sortedBalancesStore.sortedBalances)}
               <div class="text-zinc-500">Loading balances...</div>
@@ -111,7 +108,6 @@ $effect(() => {
               {/if}
             {/if}
           </div>
-        {/if}
         </section>
       </Card>
     {/each}
