@@ -1,7 +1,6 @@
 import { Effect, Data } from "effect"
 import type { Aptos, Account as AptosAccount } from "@aptos-labs/ts-sdk"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
-import type { AptosBrowserWallet } from "./wallet.js"
 
 /**
  * Error type for Aptos contract query failures
@@ -22,7 +21,7 @@ export const queryContract = <T = unknown>(
   client: Aptos,
   contractAddress: string,
   module_name: string,
-  function_name: string, 
+  function_name: string,
   typeArguments: Array<any>,
   functionArguments: Array<any>
 ) =>
