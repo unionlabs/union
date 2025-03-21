@@ -135,6 +135,29 @@ let transferIntents = $derived.by(() => {
 
 let instruction: Option.Option<Instruction> = $state(Option.none())
 let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
+let requiredApprovals = $derived.by(() => {
+  if (Option.isNone(transferIntents) || Option.isNone(allowances)) return Option.none()
+
+  // Create a map of token to required amount from transfer intents
+  const requiredAmounts = new Map<string, bigint>()
+  for (const intent of transferIntents.value) {
+    const currentAmount = requiredAmounts.get(intent.baseToken) || 0n
+    requiredAmounts.set(intent.baseToken, intent.baseAmount)
+  }
+
+  // Filter for tokens that need approval (allowance < required amount)
+  const tokensNeedingApproval = allowances.value
+    .filter(({ token, allowance }) => {
+      const requiredAmount = requiredAmounts.get(token) || 0n
+      return allowance < requiredAmount
+    })
+    .map(({ token }) => ({
+      token,
+      requiredAmount: requiredAmounts.get(token) || 0n
+    }))
+
+  return tokensNeedingApproval.length > 0 ? Option.some(tokensNeedingApproval) : Option.none()
+})
 
 $effect(() => {
   if (Option.isNone(transferIntents)) return
@@ -239,6 +262,9 @@ const checkAllowances = (ti: typeof transferIntents) =>
 
 <h2>allowances</h2>
 <pre>{JSON.stringify(allowances,null,2)}</pre>
+
+<h2>required approvals</h2>
+<pre>{JSON.stringify(requiredApprovals,null,2)}</pre>
 
 
 {#if transfer.state._tag !== "Empty"}
