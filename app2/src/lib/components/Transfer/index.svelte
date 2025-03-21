@@ -289,6 +289,11 @@ function goToNextPage() {
 function goToPreviousPage() {
   if (currentPage > 0) {
     currentPage--
+    
+    // If we're going back to the filling page (page 0), unlock the transfer
+    if (currentPage === 0) {
+      lockedTransfer = Option.none()
+    }
   }
 }
 
