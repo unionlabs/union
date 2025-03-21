@@ -29,7 +29,8 @@ import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03
 import {
   createViemPublicClient,
   ViemPublicClient,
-  ViemPublicClientSource
+  ViemPublicClientSource,
+  readErc20Allowance
 } from "@unionlabs/sdk/evm"
 
 import {
@@ -133,12 +134,18 @@ let transferIntents = $derived.by(() => {
 })
 
 let instruction: Option.Option<Instruction> = $state(Option.none())
+let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
 
 $effect(() => {
   if (Option.isNone(transferIntents)) return
 
   intentsToBatch(transferIntents).pipe(
     Effect.tap(batch => (instruction = batch)),
+    Effect.runPromiseExit
+  )
+
+  checkAllowances(transferIntents).pipe(
+    Effect.tap(result => (allowances = result)),
     Effect.runPromiseExit
   )
 })
@@ -171,6 +178,39 @@ const intentsToBatch = (ti: typeof transferIntents) =>
 
     return Option.some(batch)
   })
+
+const checkAllowances = (ti: typeof transferIntents) =>
+  Effect.gen(function* () {
+    if (Option.isNone(ti)) return Option.none()
+    if (Option.isNone(wallets.evmAddress)) return Option.none()
+
+    const publicClientSource = yield* createViemPublicClient({
+      chain: sepolia, // todo
+      transport: http()
+    })
+
+    // Get unique token addresses from the transfer intents
+    const tokenAddresses = [...new Set(ti.value.map(intent => intent.baseToken))]
+
+    // The UCS03 contract address that needs the allowance
+    const spenderAddress = "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962" // Replace with actual UCS03 contract address
+
+    // Check allowance for each token
+    const allowanceChecks = yield* Effect.all(
+      tokenAddresses.map(tokenAddress =>
+        Effect.gen(function* () {
+          const allowance = yield* readErc20Allowance(
+            tokenAddress,
+            wallets.evmAddress.value,
+            spenderAddress
+          )
+          return { token: tokenAddress, allowance }
+        }).pipe(Effect.provideService(ViemPublicClient, { client: publicClientSource }))
+      )
+    )
+
+    return Option.some(allowanceChecks)
+  })
 </script>
 
 <Card class="max-w-md relative flex flex-col gap-2">
@@ -196,6 +236,9 @@ const intentsToBatch = (ti: typeof transferIntents) =>
 
 <h2>instruction</h2>
 <pre>{JSON.stringify(instruction,null,2)}</pre>
+
+<h2>allowances</h2>
+<pre>{JSON.stringify(allowances,null,2)}</pre>
 
 
 {#if transfer.state._tag !== "Empty"}
