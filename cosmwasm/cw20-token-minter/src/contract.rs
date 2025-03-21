@@ -1,15 +1,15 @@
 use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, instantiate2_address, to_json_binary, to_json_string, wasm_execute, BankMsg,
-    Binary, CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Env, Event, MessageInfo,
-    QueryRequest, Response, StdResult, WasmMsg,
+    entry_point, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary,
+    CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Env, MessageInfo, QueryRequest,
+    Response, StdResult, WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use ibc_union_spec::ChannelId;
 use ucs03_zkgm_token_minter_api::{
     ExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse, QueryMsg,
-    WrappedTokenMsg, DISPATCH_EVENT, DISPATCH_EVENT_ATTR,
+    WrappedTokenMsg,
 };
 use unionlabs::{ethereum::keccak256, primitives::H256};
 
@@ -131,36 +131,27 @@ pub fn execute(
                 denom,
                 amount,
                 mint_to_address,
-            } => {
-                let msg = wasm_execute(
-                    denom,
-                    &cw20::Cw20ExecuteMsg::Mint {
-                        recipient: mint_to_address,
-                        amount,
-                    },
-                    vec![],
-                )?;
-                Response::new().add_message(msg)
-            }
+            } => Response::new().add_message(wasm_execute(
+                denom,
+                &cw20::Cw20ExecuteMsg::Mint {
+                    recipient: mint_to_address,
+                    amount,
+                },
+                vec![],
+            )?),
             WrappedTokenMsg::BurnTokens {
                 denom,
                 amount,
                 sender,
                 ..
-            } => {
-                let msg = wasm_execute(
-                    denom,
-                    &cw20::Cw20ExecuteMsg::BurnFrom {
-                        owner: sender.to_string(),
-                        amount,
-                    },
-                    vec![],
-                )?;
-                Response::new().add_event(
-                    Event::new(DISPATCH_EVENT)
-                        .add_attribute(DISPATCH_EVENT_ATTR, to_json_string(&vec![msg])?),
-                )
-            }
+            } => Response::new().add_message(wasm_execute(
+                denom,
+                &cw20::Cw20ExecuteMsg::BurnFrom {
+                    owner: sender.to_string(),
+                    amount,
+                },
+                vec![],
+            )?),
         },
         ExecuteMsg::Local(msg) => match msg {
             LocalTokenMsg::Escrow {
@@ -179,7 +170,7 @@ pub fn execute(
                     save_native_token(deps, &denom);
                     Response::new()
                 } else {
-                    let msg = wasm_execute(
+                    Response::new().add_message(wasm_execute(
                         denom,
                         &cw20::Cw20ExecuteMsg::TransferFrom {
                             owner: from,
@@ -187,11 +178,7 @@ pub fn execute(
                             amount,
                         },
                         vec![],
-                    )?;
-                    // We are delegating the TransferFrom to zkgm so it is capable
-                    Response::new().add_event(
-                        Event::new("dispatch").add_attribute("msg", to_json_string(&vec![msg])?),
-                    )
+                    )?)
                 }
             }
             LocalTokenMsg::Unescrow {
@@ -205,12 +192,11 @@ pub fn execute(
                         amount: vec![Coin { denom, amount }],
                     })
                 } else {
-                    let msg = wasm_execute(
+                    Response::new().add_message(wasm_execute(
                         denom,
                         &cw20::Cw20ExecuteMsg::Transfer { recipient, amount },
                         vec![],
-                    )?;
-                    Response::new().add_message(msg)
+                    )?)
                 }
             }
         },
