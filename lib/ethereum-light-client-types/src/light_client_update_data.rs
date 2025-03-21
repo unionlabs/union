@@ -1,4 +1,4 @@
-use beacon_api_types::{altair::SyncAggregate, slot::Slot};
+use beacon_api_types::{altair::SyncAggregate, custom_types::Slot};
 use ethereum_sync_protocol_types::LightClientHeader;
 use unionlabs::primitives::H256;
 

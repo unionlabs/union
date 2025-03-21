@@ -527,6 +527,7 @@
             # RUST_MIN_STACK = 16777216; # ICE fix: maybe related to https://github.com/rust-lang/rust/issues/131419
             PROTOC = "${pkgs.protobuf}/bin/protoc";
             FOUNDRY_LIBS = ''["${self'.packages.evm-libs}"]'';
+            FOUNDRY_DISABLE_NIGHTLY_WARNING = "1";
           };
           # https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt
           treefmt = import ./treefmt.nix {

@@ -32,7 +32,6 @@ pub type StorageWrites = BTreeMap<Bytes, Bytes>;
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct VerifyCreationResponse {
-    pub latest_height: u64,
     pub counterparty_chain_id: String,
     pub client_state_bytes: Option<Bytes>,
     pub storage_writes: StorageWrites,
@@ -65,11 +64,10 @@ pub enum QueryMsg {
     GetStatus {
         client_id: ClientId,
     },
+    /// NOTE: Reads state through the [`QueryStore`].
     VerifyCreation {
         caller: String,
         client_id: ClientId,
-        client_state: Bytes,
-        consensus_state: Bytes,
         relayer: String,
     },
     VerifyMembership {
@@ -85,11 +83,13 @@ pub enum QueryMsg {
         proof: Bytes,
         path: Bytes,
     },
+    /// NOTE: Reads state through the [`QueryStore`].
     UpdateState {
         caller: String,
         client_id: ClientId,
         relayer: String,
     },
+    /// TODO: Should read state through the [`QueryStore`].
     Misbehaviour {
         caller: String,
         client_id: ClientId,

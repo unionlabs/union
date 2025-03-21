@@ -40,8 +40,8 @@ use unionlabs::{
     ibc::core::client::height::Height, primitives::Bytes, traits::Member, ErrorReporter,
 };
 use voyager_core::{
-    ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcSpec,
-    IbcSpecId, IbcStorePathKey, QueryHeight, Timestamp,
+    ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcQuery,
+    IbcSpec, IbcSpecId, IbcStorePathKey, QueryHeight, Timestamp,
 };
 use voyager_vm::{BoxDynError, ItemId, QueueError, QueueMessage};
 
@@ -714,6 +714,28 @@ impl VoyagerClient {
             .map_err(json_rpc_error_to_error_object)?;
 
         Ok(client_state)
+    }
+
+    pub async fn query<Q: IbcQuery>(&self, chain_id: ChainId, query: Q) -> RpcResult<Q::Value> {
+        self.0
+            .query(
+                chain_id.clone(),
+                <Q::Spec as IbcSpec>::ID,
+                into_value(<Q::Spec as IbcSpec>::Query::from(query.clone().into())),
+            )
+            .await
+            .map_err(json_rpc_error_to_error_object)
+            .and_then(|value| {
+                serde_json::from_value(value.clone()).map_err(|e| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("error decoding query return value: {}", ErrorReporter(e)),
+                        Some(json!({
+                            "query": query
+                        })),
+                    )
+                })
+            })
     }
 
     pub async fn query_ibc_state<P: IbcStorePathKey>(

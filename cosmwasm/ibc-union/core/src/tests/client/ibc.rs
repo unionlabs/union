@@ -62,7 +62,6 @@ fn create_client_ok() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -83,7 +82,6 @@ fn create_client_commitments_saved() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -135,7 +133,6 @@ fn update_client_ok() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -188,7 +185,6 @@ fn update_client_ko() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),
@@ -236,7 +232,6 @@ fn update_client_commitments_saved() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 events: vec![],
                 storage_writes: Default::default(),

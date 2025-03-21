@@ -167,7 +167,7 @@
           )
           "cannot set both buildStdTarget (${toString buildStdTarget}) and cargoBuildRustToolchain (${toString cargoBuildRustToolchain})";
         let
-          pnameSuffix' = "${pnameSuffix}${lib.optionalString dev "-dev"}";
+          pnameSuffix' = "${pnameSuffix}";
 
           # normalize the crate info passed in, such that we can support both single and multiple packages with the same attribute
           processedCrateInfo =

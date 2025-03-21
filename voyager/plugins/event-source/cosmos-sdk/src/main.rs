@@ -12,7 +12,7 @@ use std::{
 use cosmos_sdk_event::CosmosSdkEvent;
 use dashmap::DashMap;
 use ibc_classic_spec::IbcClassic;
-use ibc_union_spec::{path::ChannelPath, IbcUnion};
+use ibc_union_spec::{path::ChannelPath, query::PacketByHash, IbcUnion, Packet};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -1570,7 +1570,23 @@ impl Module {
                     event: into_value::<ibc_union_spec::event::FullEvent>(event),
                 }))
             }
-            IbcEvent::WasmPacketSend { packet } => {
+            IbcEvent::WasmPacketSend {
+                packet_source_channel_id,
+                packet_destination_channel_id,
+                packet_data,
+                packet_timeout_height,
+                packet_timeout_timestamp,
+                channel_id: _,
+                packet_hash: _,
+            } => {
+                let packet = Packet {
+                    source_channel_id: packet_source_channel_id,
+                    destination_channel_id: packet_destination_channel_id,
+                    data: packet_data,
+                    timeout_height: packet_timeout_height,
+                    timeout_timestamp: packet_timeout_timestamp,
+                };
+
                 let state = voyager_client
                     .maybe_query_ibc_state(
                         self.chain_id.clone(),
@@ -1656,9 +1672,20 @@ impl Module {
                 }))
             }
             IbcEvent::WasmPacketAck {
-                packet,
                 acknowledgement,
+                channel_id,
+                packet_hash,
             } => {
+                let packet = voyager_client
+                    .query(
+                        self.chain_id.clone(),
+                        PacketByHash {
+                            channel_id,
+                            packet_hash,
+                        },
+                    )
+                    .await?;
+
                 let source_channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
@@ -1732,17 +1759,16 @@ impl Module {
                 }))
             }
             IbcEvent::WasmPacketRecv {
-                packet,
                 maker: _,
                 maker_msg,
+                channel_id,
+                packet_hash,
             } => {
                 let destination_channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
                         height,
-                        ibc_union_spec::path::ChannelPath {
-                            channel_id: packet.destination_channel_id,
-                        },
+                        ibc_union_spec::path::ChannelPath { channel_id },
                     )
                     .await?;
 
@@ -1780,7 +1806,17 @@ impl Module {
                         client_state_meta.counterparty_chain_id.clone(),
                         counterparty_latest_height,
                         ibc_union_spec::path::ChannelPath {
-                            channel_id: packet.source_channel_id,
+                            channel_id: destination_channel.counterparty_channel_id.unwrap(),
+                        },
+                    )
+                    .await?;
+
+                let packet = voyager_client
+                    .query(
+                        client_state_meta.counterparty_chain_id.clone(),
+                        PacketByHash {
+                            channel_id: destination_channel.counterparty_channel_id.unwrap(),
+                            packet_hash,
                         },
                     )
                     .await?;
@@ -1826,16 +1862,15 @@ impl Module {
                 }))
             }
             IbcEvent::WasmWriteAck {
-                packet,
                 acknowledgement,
+                channel_id,
+                packet_hash,
             } => {
                 let destination_channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
                         height,
-                        ibc_union_spec::path::ChannelPath {
-                            channel_id: packet.destination_channel_id,
-                        },
+                        ibc_union_spec::path::ChannelPath { channel_id },
                     )
                     .await?;
 
@@ -1873,7 +1908,17 @@ impl Module {
                         client_state_meta.counterparty_chain_id.clone(),
                         counterparty_latest_height,
                         ibc_union_spec::path::ChannelPath {
-                            channel_id: packet.source_channel_id,
+                            channel_id: destination_channel.counterparty_channel_id.unwrap(),
+                        },
+                    )
+                    .await?;
+
+                let packet = voyager_client
+                    .query(
+                        client_state_meta.counterparty_chain_id.clone(),
+                        PacketByHash {
+                            channel_id: destination_channel.counterparty_channel_id.unwrap(),
+                            packet_hash,
                         },
                     )
                     .await?;

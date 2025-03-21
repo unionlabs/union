@@ -5,7 +5,11 @@ use crate::phase0::BeaconBlock;
 use crate::{chain_spec::ChainSpec, phase0::BeaconBlockSsz};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct SignedBeaconBlock {
     pub message: BeaconBlock,
     pub signature: H768,
@@ -16,7 +20,7 @@ pub struct SignedBeaconBlock {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(bound(serialize = "", deserialize = ""))
+    serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)
 )]
 pub struct SignedBeaconBlockSsz<C: ChainSpec> {
     pub message: BeaconBlockSsz<C>,

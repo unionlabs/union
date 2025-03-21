@@ -4,6 +4,7 @@ use voyager_core::{IbcSpec, IbcSpecId};
 pub mod datagram;
 pub mod event;
 pub mod path;
+pub mod query;
 
 pub(crate) mod types;
 
@@ -17,6 +18,7 @@ use crate::{
     datagram::{Datagram, MsgUpdateClient},
     event::FullEvent,
     path::{ClientStatePath, ConsensusStatePath, StorePath},
+    query::Query,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -28,6 +30,8 @@ impl IbcSpec for IbcUnion {
     type ClientId = ClientId;
 
     type StorePath = StorePath;
+
+    type Query = Query;
 
     type Datagram = Datagram;
 

@@ -1,13 +1,17 @@
-#![warn(clippy::unwrap_used)]
+// #![warn(clippy::unwrap_used)]
 
 use std::{
     error::Error,
     fmt::{Debug, Display},
-    num::{NonZeroU32, ParseIntError},
+    num::{NonZeroU32, NonZeroU8, ParseIntError},
 };
 
+use cometbft_rpc::rpc_types::Order;
+use cosmos_sdk_event::CosmosSdkEvent;
 use ibc_union_spec::{
-    path::StorePath, Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion,
+    path::StorePath,
+    query::{PacketByHash, Query},
+    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, Packet,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -321,6 +325,62 @@ pub struct ChainIdParseError {
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn query(&self, _: &Extensions, query: Query) -> RpcResult<Value> {
+        match query {
+            Query::PacketByHash(PacketByHash {
+                channel_id,
+                packet_hash,
+            }) => {
+                let query = format!("wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}");
+
+                let mut res = self
+                    .cometbft_client
+                    .tx_search(
+                        query,
+                        false,
+                        option_unwrap!(NonZeroU32::new(1)),
+                        option_unwrap!(NonZeroU8::new(1)),
+                        Order::Asc,
+                    )
+                    .await
+                    .map_err(rpc_error("error querying packet by packet hash", None))?;
+
+                if res.total_count != 1 {
+                    todo!()
+                }
+
+                let res = res.txs.pop().unwrap();
+
+                let Some(IbcEvent::WasmPacketSend {
+                    packet_source_channel_id,
+                    packet_destination_channel_id,
+                    packet_data,
+                    packet_timeout_height,
+                    packet_timeout_timestamp,
+                    channel_id: _,
+                    packet_hash: _,
+                }) = res.tx_result.events.into_iter().find_map(|event| {
+                    CosmosSdkEvent::<IbcEvent>::new(event).ok().and_then(|e| {
+                        (e.contract_address.unwrap() == self.ibc_host_contract_address)
+                            .then_some(e.event)
+                    })
+                })
+                else {
+                    panic!()
+                };
+
+                Ok(into_value(Packet {
+                    source_channel_id: packet_source_channel_id,
+                    destination_channel_id: packet_destination_channel_id,
+                    data: packet_data,
+                    timeout_height: packet_timeout_height,
+                    timeout_timestamp: packet_timeout_timestamp,
+                }))
+            }
+        }
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
         let client_type = self
             .query_smart::<_, String>(
@@ -388,4 +448,24 @@ fn rpc_error<E: Error>(
         error!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
         ErrorObject::owned(-1, message, data)
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
+pub enum IbcEvent {
+    #[serde(rename = "wasm-packet_send")]
+    WasmPacketSend {
+        #[serde(with = "serde_utils::string")]
+        packet_source_channel_id: ChannelId,
+        #[serde(with = "serde_utils::string")]
+        packet_destination_channel_id: ChannelId,
+        packet_data: Bytes,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_height: u64,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_timestamp: u64,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
+    },
 }

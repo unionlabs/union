@@ -25,6 +25,7 @@ use unionlabs::{
         },
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
+    never::Never,
     primitives::{Bytes, H256},
     ErrorReporter,
 };
@@ -39,6 +40,8 @@ impl IbcSpec for IbcClassic {
     type ClientId = ClientId;
 
     type StorePath = StorePath;
+
+    type Query = Never;
 
     type Datagram = Datagram;
 

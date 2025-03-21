@@ -14,7 +14,7 @@ workspace = true
 [dependencies]
 anyhow                        = { version = "1.0.95", features = ["std"] }
 bip32                         = { workspace = true }
-clap                          = { workspace = true, features = ["derive", "error-context", "help"] }
+clap                          = { workspace = true, features = ["derive", "error-context", "help", "env"] }
 cometbft-rpc                  = { workspace = true }
 cosmos-client                 = { workspace = true }
 cosmwasm-std                  = { workspace = true, features = ["std"] }

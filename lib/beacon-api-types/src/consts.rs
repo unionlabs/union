@@ -33,7 +33,3 @@ pub const FINALIZED_ROOT_GINDEX_ELECTRA: u64 = 169;
 pub const CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA: u64 = 86;
 /// `get_generalized_index(BeaconState, 'next_sync_committee')`
 pub const NEXT_SYNC_COMMITTEE_GINDEX_ELECTRA: u64 = 87;
-
-pub const fn default_epoch() -> u64 {
-    u64::MAX
-}

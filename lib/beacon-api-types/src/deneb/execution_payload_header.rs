@@ -1,12 +1,18 @@
 use unionlabs::primitives::{Bytes, H160, H256, U256};
 #[cfg(feature = "ssz")]
 use {
-    crate::chain_spec::{BYTES_PER_LOGS_BLOOM, MAX_EXTRA_DATA_BYTES},
+    crate::chain_spec::ChainSpec,
     ::ssz::types::{List, Vector},
 };
 
+use crate::custom_types::Gas;
+
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ExecutionPayloadHeader {
     pub parent_hash: H256,
@@ -17,10 +23,8 @@ pub struct ExecutionPayloadHeader {
     pub prev_randao: H256,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub block_number: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub gas_limit: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub gas_used: u64,
+    pub gas_limit: Gas,
+    pub gas_used: Gas,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub timestamp: u64,
     pub extra_data: Bytes,
@@ -28,10 +32,8 @@ pub struct ExecutionPayloadHeader {
     pub block_hash: H256,
     pub transactions_root: H256,
     pub withdrawals_root: H256,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub blob_gas_used: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub excess_blob_gas: u64,
+    pub blob_gas_used: Gas,
+    pub excess_blob_gas: Gas,
 }
 
 #[cfg(feature = "ssz")]
@@ -39,9 +41,9 @@ pub struct ExecutionPayloadHeader {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(bound(serialize = "", deserialize = ""))
+    serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)
 )]
-pub struct ExecutionPayloadHeaderSsz<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> {
+pub struct ExecutionPayloadHeaderSsz<C: ChainSpec> {
     pub parent_hash: H256,
     pub fee_recipient: H160,
     pub state_root: H256,
@@ -51,10 +53,8 @@ pub struct ExecutionPayloadHeaderSsz<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BY
     pub prev_randao: H256,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub block_number: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub gas_limit: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub gas_used: u64,
+    pub gas_limit: Gas,
+    pub gas_used: Gas,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub timestamp: u64,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
@@ -63,10 +63,8 @@ pub struct ExecutionPayloadHeaderSsz<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BY
     pub block_hash: H256,
     pub transactions_root: H256,
     pub withdrawals_root: H256,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub blob_gas_used: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub excess_blob_gas: u64,
+    pub blob_gas_used: Gas,
+    pub excess_blob_gas: Gas,
 }
 
 #[cfg(feature = "ssz")]
@@ -85,9 +83,7 @@ pub mod ssz {
         ExtraData(#[source] InvalidLength),
     }
 
-    impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> TryFrom<ExecutionPayloadHeader>
-        for ExecutionPayloadHeaderSsz<C>
-    {
+    impl<C: ChainSpec> TryFrom<ExecutionPayloadHeader> for ExecutionPayloadHeaderSsz<C> {
         type Error = Error;
 
         fn try_from(value: ExecutionPayloadHeader) -> Result<Self, Self::Error> {
@@ -131,9 +127,7 @@ pub mod ssz {
         }
     }
 
-    impl<C: BYTES_PER_LOGS_BLOOM + MAX_EXTRA_DATA_BYTES> From<ExecutionPayloadHeaderSsz<C>>
-        for ExecutionPayloadHeader
-    {
+    impl<C: ChainSpec> From<ExecutionPayloadHeaderSsz<C>> for ExecutionPayloadHeader {
         fn from(value: ExecutionPayloadHeaderSsz<C>) -> Self {
             Self {
                 parent_hash: value.parent_hash,

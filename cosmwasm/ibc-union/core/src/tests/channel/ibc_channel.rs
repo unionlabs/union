@@ -25,7 +25,6 @@ fn channel_open_init_ok() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -63,7 +62,6 @@ fn channel_open_init_channel_claimed() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -92,7 +90,6 @@ fn channel_open_init_commitment_saved() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -127,7 +124,6 @@ fn channel_open_try_ok() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -172,7 +168,6 @@ fn channel_open_try_invalid_state() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -226,7 +221,6 @@ fn channel_open_try_channel_claimed() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -276,7 +270,6 @@ fn channel_open_try_commitment_saved() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -332,7 +325,6 @@ fn channel_open_ack_ok() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -387,7 +379,6 @@ fn channel_open_ack_not_found() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -431,7 +422,6 @@ fn channel_open_ack_commitment_saved() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -497,7 +487,6 @@ fn channel_open_confirm_ok() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -556,7 +545,6 @@ fn channel_open_try_invalid_counterparty() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -603,7 +591,6 @@ fn channel_open_confirm_not_found() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],
@@ -645,7 +632,6 @@ fn channel_open_confirm_commitment_saved() {
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
                 client_state_bytes: None,
                 events: vec![],

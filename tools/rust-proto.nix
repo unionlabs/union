@@ -22,6 +22,13 @@ _: {
         };
       };
 
+      feemarket-repo = pkgs.fetchFromGitHub {
+        owner = "skip-mev";
+        repo = "feemarket";
+        rev = "v1.1.1";
+        sha256 = "sha256-MDrwJhzDKcPXbExViwYgoKeVhNB2CXkqj+iq8kUb2i8=";
+      };
+
       cargo_toml =
         { name }:
         let
@@ -226,6 +233,12 @@ _: {
         #   src = "${proto.cosmossdk}/x/evidence/proto";
         #   proto-deps = [ ];
         # };
+        feemarket = rec {
+          src = "${feemarket-repo}/proto";
+          proto-deps = [
+            src
+          ];
+        };
       };
 
       fold-opts =

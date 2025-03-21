@@ -1590,13 +1590,22 @@ fn verify_fungible_asset_order(
 
     // Verify metadata matches
     if metadata.name != order.base_token_name {
-        return Err(ContractError::InvalidAssetName);
+        return Err(ContractError::InvalidAssetName {
+            expected: metadata.name,
+            found: order.base_token_name.clone(),
+        });
     }
     if metadata.symbol != order.base_token_symbol {
-        return Err(ContractError::InvalidAssetSymbol);
+        return Err(ContractError::InvalidAssetSymbol {
+            expected: metadata.symbol,
+            found: order.base_token_symbol.clone(),
+        });
     }
     if metadata.decimals != order.base_token_decimals {
-        return Err(ContractError::InvalidAssetDecimals);
+        return Err(ContractError::InvalidAssetDecimals {
+            expected: metadata.decimals,
+            found: order.base_token_decimals,
+        });
     }
 
     // Get the origin path for the base token

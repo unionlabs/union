@@ -19,7 +19,7 @@
       };
     in
     {
-      packages.drip = drip.packages.drip-dev;
+      packages.drip = drip.packages.drip;
     };
 
   flake.nixosModules.drip =

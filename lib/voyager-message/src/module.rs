@@ -344,6 +344,10 @@ pub trait Plugin<C: Member, Cb: Member> {
     namespace = "state",
 )]
 pub trait StateModule<V: IbcSpec> {
+    /// Execute a query on this chain returning the proof as a JSON [`Value`].
+    #[method(name = "query", with_extensions)]
+    async fn query(&self, query: V::Query) -> RpcResult<Value>;
+
     /// Query a proof of IBC state on this chain, at the specified [`Height`],
     /// returning the proof as a JSON [`Value`].
     #[method(name = "queryIbcState", with_extensions)]
@@ -357,10 +361,13 @@ pub trait StateModule<V: IbcSpec> {
 /// Type-erased version of [`StateModuleClient`].
 #[rpc(client, namespace = "state")]
 pub trait RawStateModule {
-    #[method(name = "queryIbcState")]
+    #[method(name = "query", with_extensions)]
+    async fn query_raw(&self, query: Value) -> RpcResult<Value>;
+
+    #[method(name = "queryIbcState", with_extensions)]
     async fn query_ibc_state_raw(&self, at: Height, path: Value) -> RpcResult<Value>;
 
-    #[method(name = "clientInfo")]
+    #[method(name = "clientInfo", with_extensions)]
     async fn client_info_raw(&self, client_id: RawClientId) -> RpcResult<Option<ClientInfo>>;
 }
 

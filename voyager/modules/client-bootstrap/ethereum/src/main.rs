@@ -1,11 +1,8 @@
 use std::ops::Div;
 
-use alloy::{
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
-    rpc::types::BlockTransactionsKind,
-};
+use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
 use beacon_api::client::BeaconApiClient;
-use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, slot::Slot};
+use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, custom_types::Slot};
 use ethereum_light_client_types::{
     client_state::InitialSyncCommittee, ClientState, ClientStateV1, ConsensusState,
 };
@@ -73,12 +70,13 @@ impl Module {
 
         let block = self
             .provider
-            .get_block((block_number + 1).into(), BlockTransactionsKind::Hashes)
+            .get_block((block_number + 1).into())
+            .hashes()
             .await
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching block: {}", ErrorReporter(e)),
+                    format!("error fetching execution block: {}", ErrorReporter(e)),
                     None::<()>,
                 )
             })?
@@ -99,7 +97,7 @@ impl Module {
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching block: {}", ErrorReporter(e)),
+                    format!("error fetching beacon block: {}", ErrorReporter(e)),
                     None::<()>,
                 )
             })?
@@ -129,7 +127,7 @@ impl ClientBootstrapModule for Module {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
-                .on_builtin(&config.rpc_url)
+                .connect(&config.rpc_url)
                 .await?,
         );
 
@@ -213,7 +211,7 @@ impl ClientBootstrapModuleServer for Module {
                     |e| match e {},
                     |_| todo!("altair not supported"),
                     |_| todo!("bellatrix not supported"),
-                    |u| u.into(),
+                    |_| todo!("capella not supported"),
                     |u| u.into(),
                     |u| u.into(),
                 )
@@ -314,7 +312,7 @@ impl ClientBootstrapModuleServer for Module {
                 |l| match l {},
                 |_| todo!("altair not supported"),
                 |_| todo!("bellatrix not supported"),
-                |l| l.header.into(),
+                |_| todo!("capella not supported"),
                 |l| l.header.into(),
                 |l| l.header.into(),
             );

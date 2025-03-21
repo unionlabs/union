@@ -1,8 +1,8 @@
 //! Beacon API client, implemented as per <https://ethereum.github.io/beacon-APIs/releases/v2.4.1/beacon-node-oapi.json>
 
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
-use beacon_api_types::slot::Slot;
+use beacon_api_types::custom_types::Slot;
 use reqwest::{Client, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tracing::{debug, info, trace};
@@ -258,23 +258,41 @@ impl<T: VersionedResponseTypes> VersionedResponse<T> {
         electra: impl FnOnce(T::Electra) -> U,
     ) -> U {
         match self {
-            VersionedResponse::Phase0(t) => phase0(t),
-            VersionedResponse::Altair(t) => altair(t),
-            VersionedResponse::Bellatrix(t) => bellatrix(t),
-            VersionedResponse::Capella(t) => capella(t),
-            VersionedResponse::Deneb(t) => deneb(t),
-            VersionedResponse::Electra(t) => electra(t),
+            VersionedResponse::Phase0(t) => {
+                trace!(?t, "phase0");
+                phase0(t)
+            }
+            VersionedResponse::Altair(t) => {
+                trace!(?t, "altair");
+                altair(t)
+            }
+            VersionedResponse::Bellatrix(t) => {
+                trace!(?t, "bellatrix");
+                bellatrix(t)
+            }
+            VersionedResponse::Capella(t) => {
+                trace!(?t, "capella");
+                capella(t)
+            }
+            VersionedResponse::Deneb(t) => {
+                trace!(?t, "deneb");
+                deneb(t)
+            }
+            VersionedResponse::Electra(t) => {
+                trace!(?t, "electra");
+                electra(t)
+            }
         }
     }
 }
 
 pub trait VersionedResponseTypes {
-    type Phase0: Serialize + DeserializeOwned;
-    type Altair: Serialize + DeserializeOwned;
-    type Bellatrix: Serialize + DeserializeOwned;
-    type Capella: Serialize + DeserializeOwned;
-    type Deneb: Serialize + DeserializeOwned;
-    type Electra: Serialize + DeserializeOwned;
+    type Phase0: Debug + Serialize + DeserializeOwned;
+    type Altair: Debug + Serialize + DeserializeOwned;
+    type Bellatrix: Debug + Serialize + DeserializeOwned;
+    type Capella: Debug + Serialize + DeserializeOwned;
+    type Deneb: Debug + Serialize + DeserializeOwned;
+    type Electra: Debug + Serialize + DeserializeOwned;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

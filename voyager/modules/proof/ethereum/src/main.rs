@@ -60,7 +60,7 @@ impl ProofModule<IbcUnion> for Module {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
-                .on_builtin(&config.rpc_url)
+                .connect(&config.rpc_url)
                 .await?,
         );
 

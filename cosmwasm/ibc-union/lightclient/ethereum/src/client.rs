@@ -1,4 +1,7 @@
-use beacon_api_types::chain_spec::{ChainSpec, Mainnet, Minimal, PresetBaseKind};
+use beacon_api_types::{
+    chain_spec::{ChainSpec, Mainnet, Minimal, PresetBaseKind},
+    custom_types::Period,
+};
 use cosmwasm_std::{Addr, Empty, StdError, StdResult};
 use depolama::{KeyCodec, Prefix, Store, ValueCodec};
 use ethereum_light_client_types::{
@@ -7,7 +10,7 @@ use ethereum_light_client_types::{
 };
 use ethereum_sync_protocol::{
     utils::{
-        compute_epoch_at_slot, compute_slot_at_timestamp, compute_sync_committee_period_at_slot,
+        compute_slot_at_timestamp, compute_sync_committee_period_at_slot,
         validate_signature_supermajority,
     },
     validate_light_client_update,
@@ -410,10 +413,10 @@ pub fn verify_misbehaviour<C: ChainSpec>(
         compute_slot_at_timestamp::<C>(client_state.genesis_time, ctx.env.block.time.seconds())
             .ok_or(Error::IntegerOverflow)?;
 
-    let epoch = compute_epoch_at_slot::<C>(slot_1);
+    let period = compute_sync_committee_period_at_slot::<C>(slot_1);
 
     let sync_committee = ctx
-        .read_self_storage::<SyncCommitteeStore>(epoch)?
+        .read_self_storage::<SyncCommitteeStore>(period)?
         .as_sync_committee();
     let (current_sync_committee, next_sync_committee) = match misbehaviour.update_1 {
         LightClientUpdate::SyncCommitteePeriodChange(_) => (None, Some(&sync_committee)),
@@ -475,15 +478,15 @@ pub enum SyncCommitteeStore {}
 impl Store for SyncCommitteeStore {
     const PREFIX: Prefix = Prefix::new(b"sync_committee");
 
-    type Key = u64;
+    type Key = Period;
     type Value = InverseSyncCommittee;
 }
-impl KeyCodec<u64> for SyncCommitteeStore {
-    fn encode_key(key: &u64) -> Bytes {
-        key.to_be_bytes().into()
+impl KeyCodec<Period> for SyncCommitteeStore {
+    fn encode_key(key: &Period) -> Bytes {
+        key.get().to_be_bytes().into()
     }
 
-    fn decode_key(raw: &Bytes) -> StdResult<u64> {
+    fn decode_key(raw: &Bytes) -> StdResult<Period> {
         raw.try_into()
             .map_err(|_| {
                 StdError::generic_err(format!(
@@ -493,6 +496,7 @@ impl KeyCodec<u64> for SyncCommitteeStore {
                 ))
             })
             .map(u64::from_be_bytes)
+            .map(Period::new)
     }
 }
 impl ValueCodec<InverseSyncCommittee> for SyncCommitteeStore {

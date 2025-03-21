@@ -1,5 +1,7 @@
 use unionlabs::primitives::{H160, H384};
 
+use crate::custom_types::Gwei;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(
     feature = "serde",
@@ -10,7 +12,5 @@ use unionlabs::primitives::{H160, H384};
 pub struct WithdrawalRequest {
     pub source_address: H160,
     pub validator_pubkey: H384,
-    // TODO: Gwei
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub amount: u64,
+    pub amount: Gwei,
 }

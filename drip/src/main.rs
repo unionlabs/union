@@ -16,7 +16,7 @@ use axum::{
 use chrono::{NaiveDateTime, Utc};
 use clap::Parser;
 use cosmos_client::{
-    gas::GasConfig,
+    gas::StaticGasFiller,
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
     TxClient,
@@ -308,7 +308,7 @@ pub struct Chain {
     pub id: String,
     pub bech32_prefix: String,
     pub rpc_url: String,
-    pub gas_config: GasConfig,
+    pub gas_config: StaticGasFiller,
     pub signer: H256,
     pub coins: Vec<Coin>,
     pub memo: String,
@@ -327,7 +327,7 @@ pub struct CaptchaBypassSecret(pub String);
 #[derive(Clone)]
 struct ChainClient {
     pub chain: Chain,
-    pub cosmos_ctx: Arc<TxClient<LocalSigner, Rpc, GasConfig>>,
+    pub cosmos_ctx: Arc<TxClient<LocalSigner, Rpc, StaticGasFiller>>,
 }
 
 impl ChainClient {

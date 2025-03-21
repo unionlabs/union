@@ -808,6 +808,24 @@ pub mod cosmwasm {
         }
     }
 }
+pub mod feemarket {
+    pub mod feemarket {
+        pub mod module {
+            #[cfg(feature = "feemarket+feemarket+module+v1")]
+            // @@protoc_insertion_point(attribute:feemarket.feemarket.module.v1)
+            pub mod v1 {
+                include!("feemarket.feemarket.module.v1.rs");
+                // @@protoc_insertion_point(feemarket.feemarket.module.v1)
+            }
+        }
+        #[cfg(feature = "feemarket+feemarket+v1")]
+        // @@protoc_insertion_point(attribute:feemarket.feemarket.v1)
+        pub mod v1 {
+            include!("feemarket.feemarket.v1.rs");
+            // @@protoc_insertion_point(feemarket.feemarket.v1)
+        }
+    }
+}
 pub mod google {
     #[cfg(feature = "google+protobuf")]
     // @@protoc_insertion_point(attribute:google.protobuf)

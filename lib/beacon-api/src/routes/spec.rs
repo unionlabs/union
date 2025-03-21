@@ -1,4 +1,7 @@
-use beacon_api_types::{chain_spec::PresetBaseKind, custom_types::Version, slot::Slot};
+use beacon_api_types::{
+    chain_spec::PresetBaseKind,
+    custom_types::{Slot, Version},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

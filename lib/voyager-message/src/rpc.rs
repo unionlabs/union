@@ -78,6 +78,14 @@ pub trait VoyagerRpc {
         counterparty_height: Height,
     ) -> RpcResult<Option<ConsensusStateMeta>>;
 
+    #[method(name = "query", with_extensions)]
+    async fn query(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        query: Value,
+    ) -> RpcResult<Value>;
+
     #[method(name = "queryIbcState", with_extensions)]
     async fn query_ibc_state(
         &self,

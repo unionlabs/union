@@ -100,12 +100,12 @@ pub enum ContractError {
     ChannelPathIsFull { path: U256, next_hop_index: usize },
     #[error("invalid asset origin path: actual={actual}, expected={expected}")]
     InvalidAssetOrigin { actual: U256, expected: U256 },
-    #[error("invalid asset name")]
-    InvalidAssetName,
-    #[error("invalid asset symbol")]
-    InvalidAssetSymbol,
-    #[error("invalid asset decimals")]
-    InvalidAssetDecimals,
+    #[error("invalid asset name (expected {expected}, found {found})")]
+    InvalidAssetName { expected: String, found: String },
+    #[error("invalid asset symbol (expected {expected}, found {found})")]
+    InvalidAssetSymbol { expected: String, found: String },
+    #[error("invalid asset decimals (expected {expected}, found {found})")]
+    InvalidAssetDecimals { expected: u8, found: u8 },
     #[error("invalid batch instruction")]
     InvalidBatchInstruction,
     #[error("invalid forward instruction")]

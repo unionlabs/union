@@ -9,11 +9,14 @@
       ...
     }:
     let
-      tidy =
-        (crane.buildWorkspaceMember {
+      inherit
+        ((crane.buildWorkspaceMember {
           crateDirFromRoot = "tools/tidy";
           dev = true;
-        }).packages.tidy-dev;
+        }).packages
+        )
+        tidy
+        ;
     in
     {
       checks.cargo-tidy = pkgs.stdenv.mkDerivation {

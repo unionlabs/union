@@ -17,6 +17,7 @@ pub struct Preset {
     /// ---------------------------------------------------------------
     pub MAX_PROPOSER_SLASHINGS: usize,
     pub MAX_ATTESTER_SLASHINGS: usize,
+    pub MAX_ATTESTER_SLASHINGS_ELECTRA: usize,
     pub MAX_ATTESTATIONS: usize,
     pub MAX_DEPOSITS: usize,
     pub MAX_VOLUNTARY_EXITS: usize,
@@ -57,6 +58,7 @@ pub const MAINNET: Preset = Preset {
 
     MAX_PROPOSER_SLASHINGS: 16,
     MAX_ATTESTER_SLASHINGS: 2,
+    MAX_ATTESTER_SLASHINGS_ELECTRA: 1,
     MAX_ATTESTATIONS: 128,
     MAX_DEPOSITS: 16,
     MAX_VOLUNTARY_EXITS: 16,
@@ -89,6 +91,7 @@ pub const MINIMAL: Preset = Preset {
 
     MAX_PROPOSER_SLASHINGS: 16,
     MAX_ATTESTER_SLASHINGS: 2,
+    MAX_ATTESTER_SLASHINGS_ELECTRA: 1,
     MAX_ATTESTATIONS: 128,
     MAX_DEPOSITS: 16,
     MAX_VOLUNTARY_EXITS: 16,

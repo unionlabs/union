@@ -146,13 +146,16 @@ maybe_sol_attr! {
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event RegisterClient(string indexed client_type, address client_address);
+            event RegisterClient(
+                string indexed client_type_index, string client_type, address client_address
+            );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
             event CreateClient(
-                string indexed client_type,
+                string indexed client_type_index,
+                string clientType,
                 uint32 indexed client_id,
                 string counterparty_chain_id
             );
@@ -289,51 +292,74 @@ maybe_sol_attr! {
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event PacketSend(bytes32 indexed packet_hash, Packet packet);
+            event PacketSend(
+                uint32 indexed channel_id, bytes32 indexed packet_hash, Packet packet
+            );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
             event PacketRecv(
-                bytes32 indexed packet_hash, address indexed maker, bytes maker_msg
+                uint32 indexed channel_id,
+                bytes32 indexed packet_hash,
+                address indexed maker,
+                bytes maker_msg
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
             event IntentPacketRecv(
-                bytes32 indexed packet_hash, address indexed maker, bytes maker_msg
+                uint32 indexed channel_id,
+                bytes32 indexed packet_hash,
+                address indexed maker,
+                bytes maker_msg
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event WriteAck(bytes32 indexed packet_hash, bytes acknowledgement);
+            event WriteAck(
+                uint32 indexed channel_id,
+                bytes32 indexed packet_hash,
+                bytes acknowledgement
+            );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
             event PacketAck(
-                bytes32 indexed packet_hash, bytes acknowledgement, address indexed maker
+                uint32 indexed channel_id,
+                bytes32 indexed packet_hash,
+                bytes acknowledgement,
+                address indexed maker
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
                 serde(deny_unknown_fields)
             )]
-            event PacketTimeout(bytes32 indexed packet_hash, address indexed maker);
+            event PacketTimeout(
+                uint32 indexed channel_id,
+                bytes32 indexed packet_hash,
+                address indexed maker
+            );
             // #[cfg_attr(
             //     feature = "serde", derive(serde::Serialize, serde::Deserialize),
             //     serde(deny_unknown_fields)
             // )]
             // event BatchedPreviouslySent(
-            //     bytes32 indexed batchHash, bytes32 indexed packetHash
+            //     uint32 indexed channel_id,
+            //     bytes32 indexed batch_hash,
+            //     bytes32 indexed packet_hash
             // );
             // #[cfg_attr(
             //     feature = "serde", derive(serde::Serialize, serde::Deserialize),
             //     serde(deny_unknown_fields)
             // )]
             // event BatchedPreviouslyAcked(
-            //     bytes32 indexed batchHash, bytes32 indexed packetHash
+            //     uint32 indexed channel_id,
+            //     bytes32 indexed batch_hash,
+            //     bytes32 indexed packet_hash
             // );
 
             error ErrUnauthorized();

@@ -11,7 +11,8 @@ use ibc_solidity::{
 };
 use ibc_union_spec::{
     path::{BatchPacketsPath, BatchReceiptsPath, StorePath},
-    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion,
+    query::Query,
+    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, Packet,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -30,7 +31,7 @@ use voyager_message::{
     core::{ChainId, ClientInfo, ClientType, IbcInterface},
     into_value,
     module::{StateModuleInfo, StateModuleServer},
-    StateModule, MISSING_STATE_ERROR_CODE,
+    StateModule,
 };
 use voyager_vm::BoxDynError;
 
@@ -67,7 +68,7 @@ impl StateModule<IbcUnion> for Module {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
-                .on_builtin(&config.rpc_url)
+                .connect(&config.rpc_url)
                 .await?,
         );
 
@@ -120,7 +121,11 @@ impl Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]
-    async fn query_client_state(&self, height: Height, client_id: ClientId) -> RpcResult<Bytes> {
+    async fn query_client_state(
+        &self,
+        height: Height,
+        client_id: ClientId,
+    ) -> RpcResult<Option<Bytes>> {
         let execution_height = height.height();
 
         let client_address = self
@@ -132,21 +137,19 @@ impl Module {
             .getClientState(client_id.raw())
             .block(execution_height.into())
             .call()
-            .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    match err {
-                        alloy::contract::Error::AbiError(_) => MISSING_STATE_ERROR_CODE,
-                        _ => -1,
-                    },
-                    format!("error fetching client state: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?
-            ._0
-            .0;
+            .await;
 
-        Ok(client_state.to_vec().into())
+        match client_state {
+            Ok(client_state) => Ok(Some(client_state._0.0.to_vec().into())),
+            Err(alloy::contract::Error::AbiError(_) | alloy::contract::Error::ZeroData(_, _)) => {
+                Ok(None)
+            }
+            Err(err) => Err(ErrorObject::owned(
+                -1,
+                format!("error fetching client state: {}", ErrorReporter(err)),
+                None::<()>,
+            )),
+        }
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id, %trusted_height))]
@@ -155,7 +158,7 @@ impl Module {
         height: Height,
         client_id: ClientId,
         trusted_height: u64,
-    ) -> RpcResult<Bytes> {
+    ) -> RpcResult<Option<Bytes>> {
         let execution_height = height.height();
 
         let client_address = self
@@ -168,18 +171,19 @@ impl Module {
             .getConsensusState(client_id.raw(), trusted_height)
             .block(execution_height.into())
             .call()
-            .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching consensus state: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?
-            ._0
-            .0;
+            .await;
 
-        Ok(consensus_state.to_vec().into())
+        match consensus_state {
+            Ok(consensus_state) => Ok(Some(consensus_state._0.0.to_vec().into())),
+            Err(alloy::contract::Error::AbiError(_) | alloy::contract::Error::ZeroData(_, _)) => {
+                Ok(None)
+            }
+            Err(err) => Err(ErrorObject::owned(
+                -1,
+                format!("error fetching consensus state: {}", ErrorReporter(err)),
+                None::<()>,
+            )),
+        }
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %connection_id))]
@@ -194,7 +198,7 @@ impl Module {
 
         let raw = ibc_handler
             .provider()
-            .call(&TransactionRequest {
+            .call(TransactionRequest {
                 from: None,
                 to: Some(alloy::primitives::Address::from(self.ibc_handler_address).into()),
                 input: TransactionInput::new(
@@ -254,7 +258,7 @@ impl Module {
 
         let raw = ibc_handler
             .provider()
-            .call(&TransactionRequest {
+            .call(TransactionRequest {
                 from: None,
                 to: Some(alloy::primitives::Address::from(self.ibc_handler_address).into()),
                 input: TransactionInput::new(
@@ -348,10 +352,71 @@ impl Module {
             Ok(Some(raw.into()))
         }
     }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %packet_hash))]
+    async fn packet_by_packet_hash(
+        &self,
+        channel_id: ChannelId,
+        packet_hash: H256,
+    ) -> RpcResult<Packet> {
+        self.ibc_handler()
+            .PacketSend_filter()
+            .topic1(alloy::primitives::U256::from(channel_id.raw()))
+            .topic2(alloy::primitives::U256::from_be_bytes(*(packet_hash.get())))
+            .query()
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!(
+                        "error querying for packet {packet_hash}: {}",
+                        ErrorReporter(e)
+                    ),
+                    None::<()>,
+                )
+            })
+            .and_then(|mut packet_logs| {
+                if packet_logs.len() == 1 {
+                    // there's really no nicer way to do this without having multiple checks (we want to ensure there's only 1 item in the list)
+                    let (packet_log, _) = packet_logs.pop().expect("len is 1; qed;");
+
+                    packet_log.packet.try_into().map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            format!(
+                                "error decoding packet send event for packet {packet_hash}: {}",
+                                ErrorReporter(e)
+                            ),
+                            None::<()>,
+                        )
+                    })
+                } else {
+                    Err(ErrorObject::owned(
+                        -1,
+                        format!(
+                        "error querying for packet {packet_hash}, expected 1 event but found {}",
+                            packet_logs.len()
+                        ),
+                        None::<()>,
+                    ))
+                }
+            })
+    }
 }
 
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn query(&self, _: &Extensions, query: Query) -> RpcResult<Value> {
+        match query {
+            Query::PacketByHash(packet_by_hash) => self
+                .packet_by_packet_hash(packet_by_hash.channel_id, packet_by_hash.packet_hash)
+                .await
+                .map(into_value),
+        }
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_ibc_state(
         &self,
         _: &Extensions,

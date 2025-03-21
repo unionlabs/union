@@ -4,7 +4,7 @@ use crate::{
     altair::SyncAggregate,
     capella::LightClientHeader,
     consts::{floorlog2, FINALIZED_ROOT_GINDEX},
-    slot::Slot,
+    custom_types::Slot,
 };
 
 #[derive(Debug, Clone, PartialEq)]

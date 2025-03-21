@@ -5,7 +5,11 @@ use {crate::chain_spec::MAX_VALIDATORS_PER_COMMITTEE, ssz::types::BitList};
 use crate::phase0::AttestationData;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct Attestation {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
     pub aggregation_bits: Vec<u8>,

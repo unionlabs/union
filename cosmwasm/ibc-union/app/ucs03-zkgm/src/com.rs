@@ -22,65 +22,65 @@ pub const FORWARD_SALT_MAGIC: U256 = U256::from_be_slice(&[
 ]);
 
 alloy::sol! {
-  #[derive(Debug)]
-  struct ZkgmPacket {
-      bytes32 salt;
-      uint256 path;
-      Instruction instruction;
-  }
+    #[derive(Debug)]
+    struct ZkgmPacket {
+        bytes32 salt;
+        uint256 path;
+        Instruction instruction;
+    }
 
-  #[derive(Debug)]
-  struct Instruction {
-      uint8 version;
-      uint8 opcode;
-      bytes operand;
-  }
+    #[derive(Debug)]
+    struct Instruction {
+        uint8 version;
+        uint8 opcode;
+        bytes operand;
+    }
 
-  struct Forward {
-      uint256 path;
-      uint64 timeout_height;
-      uint64 timeout_timestamp;
-      Instruction instruction;
-  }
+    struct Forward {
+        uint256 path;
+        uint64 timeout_height;
+        uint64 timeout_timestamp;
+        Instruction instruction;
+    }
 
-  struct Multiplex {
-      bytes sender;
-      bool eureka;
-      bytes contract_address;
-      bytes contract_calldata;
-  }
+    struct Multiplex {
+        bytes sender;
+        bool eureka;
+        bytes contract_address;
+        bytes contract_calldata;
+    }
 
-  struct Batch {
-      Instruction[] instructions;
-  }
+    struct Batch {
+        Instruction[] instructions;
+    }
 
-  #[derive(Debug, PartialEq)]
-  struct FungibleAssetOrder {
-      bytes sender;
-      bytes receiver;
-      bytes base_token;
-      uint256 base_amount;
-      string base_token_symbol;
-      string base_token_name;
-      uint8 base_token_decimals;
-      uint256 base_token_path;
-      bytes quote_token;
-      uint256 quote_amount;
-  }
+    #[derive(Debug, PartialEq)]
+    struct FungibleAssetOrder {
+        bytes sender;
+        bytes receiver;
+        bytes base_token;
+        uint256 base_amount;
+        string base_token_symbol;
+        string base_token_name;
+        uint8 base_token_decimals;
+        uint256 base_token_path;
+        bytes quote_token;
+        uint256 quote_amount;
+    }
 
-  #[derive(Debug)]
-  struct Ack {
-      uint256 tag;
-      bytes inner_ack;
-  }
+    #[derive(Debug)]
+    struct Ack {
+        uint256 tag;
+        bytes inner_ack;
+    }
 
-  struct BatchAck {
-      bytes[] acknowledgements;
-  }
+    struct BatchAck {
+        bytes[] acknowledgements;
+    }
 
-  #[derive(Debug)]
-  struct FungibleAssetOrderAck {
-      uint256 fill_type;
-      bytes market_maker;
-  }
+    #[derive(Debug)]
+    struct FungibleAssetOrderAck {
+        uint256 fill_type;
+        bytes market_maker;
+    }
 }

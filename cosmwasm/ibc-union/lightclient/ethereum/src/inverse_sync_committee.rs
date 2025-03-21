@@ -4,7 +4,7 @@ use beacon_api_types::altair::SyncCommittee;
 use unionlabs::primitives::H384;
 
 /// Sync committee where all the public keys are changed to additive inverses.
-#[derive(Debug, Clone, PartialEq, Eq, bincode::Encode, bincode::Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, bincode::Encode, bincode::Decode)]
 pub struct InverseSyncCommittee {
     pub pubkeys: Vec<H384>,
     pub aggregate_pubkey: H384,

@@ -6,7 +6,8 @@ use aptos_move_ibc::{
 use aptos_rest_client::{aptos_api_types::Address, error::RestError};
 use aptos_types::state_store::state_value::PersistedStateValueMetadata;
 use ibc_union_spec::{
-    path::StorePath, Channel, ChannelState, ClientId, Connection, ConnectionState, IbcUnion,
+    path::StorePath, query::Query, Channel, ChannelState, ClientId, Connection, ConnectionState,
+    IbcUnion,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -160,6 +161,13 @@ impl Module {
 
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn query(&self, _: &Extensions, query: Query) -> RpcResult<Value> {
+        match query {
+            Query::PacketByHash(_packet_by_hash) => todo!(),
+        }
+    }
+
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
         let client_type = self

@@ -6,7 +6,11 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct LightClientBootstrap {
     pub header: LightClientHeader,
     /// Current sync committee corresponding to `beacon_header.state_root`

@@ -1,7 +1,11 @@
 use unionlabs::primitives::H384;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct SyncCommittee {
     pub pubkeys: Vec<H384>,
@@ -13,7 +17,7 @@ pub struct SyncCommittee {
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(bound(serialize = "", deserialize = ""))
+    serde(bound(serialize = "", deserialize = ""), deny_unknown_fields)
 )]
 pub struct SyncCommitteeSsz<C: crate::chain_spec::SYNC_COMMITTEE_SIZE> {
     pub pubkeys: ::ssz::types::Vector<H384, C::SYNC_COMMITTEE_SIZE>,

@@ -1,3 +1,5 @@
+use std::future::IntoFuture;
+
 use alloy::{
     eips::BlockId,
     network::{AnyNetwork, AnyRpcBlock},
@@ -79,7 +81,9 @@ impl Provider {
         provider_id: Option<RpcProviderId>,
     ) -> Result<Option<RpcResult<AnyRpcBlock>>, RpcError<TransportErrorKind>> {
         self.rpc_client
-            .race_some(provider_id.map(Into::into), |c| c.get_block(id, kind))
+            .race_some(provider_id.map(Into::into), |c| {
+                c.get_block(id).kind(kind).into_future()
+            })
             .await
             .map(|op| op.map(Into::into))
     }

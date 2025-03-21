@@ -29,6 +29,7 @@ use unionlabs::{
         connection::connection_end::ConnectionEnd,
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
+    never::Never,
     primitives::{encoding::HexUnprefixed, Bytes, H256, H64},
     ErrorReporter, WasmClientType,
 };
@@ -510,6 +511,11 @@ pub struct ChainIdParseError {
 
 #[async_trait]
 impl StateModuleServer<IbcClassic> for Module {
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn query(&self, _: &Extensions, query: Never) -> RpcResult<Value> {
+        match query {}
+    }
+
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
         match client_id.to_string().rsplit_once('-') {

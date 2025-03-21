@@ -8,6 +8,8 @@ use {
     ssz::types::{List, Vector},
 };
 
+use crate::custom_types::Gas;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ExecutionPayload {
@@ -22,10 +24,8 @@ pub struct ExecutionPayload {
     /// 'number' in the yellow paper
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub block_number: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub gas_limit: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub gas_used: u64,
+    pub gas_limit: Gas,
+    pub gas_used: Gas,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub timestamp: u64,
     pub extra_data: Bytes,
@@ -57,10 +57,8 @@ pub struct ExecutionPayloadSsz<
     /// 'number' in the yellow paper
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub block_number: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub gas_limit: u64,
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
-    pub gas_used: u64,
+    pub gas_limit: Gas,
+    pub gas_used: Gas,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub timestamp: u64,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]

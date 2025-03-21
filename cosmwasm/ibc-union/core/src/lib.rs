@@ -58,8 +58,8 @@ pub enum ContractError {
         expected: ChannelState,
     },
     #[error(
-        "{} received a timed-out packet: (timeout_height ({timeout_height}) \
-        <= current_height({current_height})",
+        "{} received a timed-out packet: timeout_height {timeout_height} \
+        <= current_height {current_height}",
         ContractErrorKind::from(self)
     )]
     ReceivedTimedOutPacketHeight {
@@ -67,8 +67,8 @@ pub enum ContractError {
         current_height: u64,
     },
     #[error(
-        "{} received a timed-out packet: (timeout timestamp ({timeout_timestamp}) \
-        <= current timestamp({current_timestamp})",
+        "{} received a timed-out packet: timeout timestamp {timeout_timestamp} \
+        <= current timestamp {current_timestamp}",
         ContractErrorKind::from(self)
     )]
     ReceivedTimedOutPacketTimestamp {
@@ -117,7 +117,7 @@ pub enum ContractError {
         ContractErrorKind::from(self)
     )]
     AcknowledgementMismatch { found: Bytes, expected: Bytes },
-    #[error("{} the packet already exist", ContractErrorKind::from(self))]
+    #[error("{} the packet already exists", ContractErrorKind::from(self))]
     PacketCommitmentAlreadyExist,
     #[error(
         "{} caller {caller} don't have permission to migrate the client {client} with id {client_id}", ContractErrorKind::from(self)

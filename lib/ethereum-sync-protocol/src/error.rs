@@ -1,4 +1,7 @@
-use beacon_api_types::{altair::sync_aggregate, slot::Slot};
+use beacon_api_types::{
+    altair::sync_aggregate,
+    custom_types::{Period, Slot},
+};
 use unionlabs::primitives::{H256, H384, H768};
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
@@ -48,8 +51,8 @@ pub enum Error {
     IrrelevantUpdate {
         update_attested_slot: Slot,
         trusted_finalized_slot: Slot,
-        update_attested_period: u64,
-        stored_period: u64,
+        update_attested_period: Period,
+        stored_period: Period,
         update_sync_committee_is_set: bool,
         trusted_next_sync_committee_is_set: bool,
     },
@@ -75,16 +78,16 @@ pub enum Error {
         ({stored_period}) or `store_period + 1` when the next sync committee is stored"
     )]
     InvalidSignaturePeriodWhenNextSyncCommitteeExists {
-        signature_period: u64,
-        stored_period: u64,
+        signature_period: Period,
+        stored_period: Period,
     },
     #[error(
         "signature period ({signature_period}) must be equal to `store_period` \
         ({stored_period}) when the next sync committee is not stored"
     )]
     InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist {
-        signature_period: u64,
-        stored_period: u64,
+        signature_period: Period,
+        stored_period: Period,
     },
     #[error(
         "next sync committee ({found}) does not match with the one in the current state ({expected})"
