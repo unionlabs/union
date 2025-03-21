@@ -136,6 +136,7 @@ let transferIntents = $derived.by(() => {
 
 // Define the step type using Data.TaggedEnum
 type TransferStep = Data.TaggedEnum<{
+  Filling: {}
   ApprovalRequired: {
     readonly token: string
     readonly requiredAmount: bigint
@@ -147,7 +148,7 @@ type TransferStep = Data.TaggedEnum<{
 }>
 
 // Create constructors for the steps
-const { ApprovalRequired, SubmitInstruction } = Data.taggedEnum<TransferStep>()
+const { Filling, ApprovalRequired, SubmitInstruction } = Data.taggedEnum<TransferStep>()
 
 let instruction: Option.Option<Instruction> = $state(Option.none())
 let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
@@ -177,7 +178,7 @@ let requiredApprovals = $derived.by(() => {
 
 // Derive the steps based on required approvals and instruction
 let transferSteps = $derived.by(() => {
-  const steps: Array<TransferStep> = []
+  const steps: Array<TransferStep> = [Filling()]
 
   // Add approval steps if needed
   if (Option.isSome(requiredApprovals)) {
