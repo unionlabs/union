@@ -29,12 +29,11 @@ function selectChain(chain: Chain) {
       {#each chains.data.value as chain}
         <button
                 class={cn(
-            "flex items-center gap-2 justify-start px-2 py-1 rounded-md transition-colors",
-            "border border-zinc-700 hover:bg-zinc-700",
+            "flex items-center gap-2 justify-start px-2 py-1 rounded-md transition-colors cursor-pointer",
             (type === "source" && transfer.raw.source === chain.chain_id) ||
             (type === "destination" && transfer.raw.destination === chain.chain_id)
-              ? "bg-zinc-700 ring-2 ring-sky-500"
-              : "bg-zinc-800/50"
+              ? "bg-zinc-700 hover:bg-zinc-600 ring-1 ring-sky-500"
+              : "bg-zinc-800 hover:bg-zinc-600"
           )}
                 onclick={() => selectChain(chain)}
         >
