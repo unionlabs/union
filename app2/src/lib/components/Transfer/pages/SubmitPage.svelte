@@ -2,6 +2,8 @@
 import Button from "$lib/components/ui/Button.svelte"
 import { transfer } from "../transfer.svelte.ts"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
+import { Option } from "effect"
+import { SubmitInstruction } from "../transfer-step.ts"
 
 type Props = {
   stepIndex: number
@@ -17,40 +19,35 @@ const {
   actionButtonText 
 }: Props = $props()
 
+const lts = lockedTransferStore.get()
+
 // Get the step data from the locked transfer store
-const step = $derived(() => {
-  if (!lockedTransferStore.isLocked()) return null
-  
-  const steps = lockedTransferStore.get().value.steps
-  if (stepIndex < 0 || stepIndex >= steps.length) return null
-  
+const step: Option.Option<ReturnType<typeof SubmitInstruction>> = $derived.by(() => {
+  if (Option.isNone(lts)) return Option.none()
+
+  const steps = lts.value.steps
+  if (stepIndex < 0 || stepIndex >= steps.length) return Option.none()
+
   const step = steps[stepIndex]
-  return step._tag === "SubmitInstruction" ? step : null
+  return step._tag === "SubmitInstruction" ? Option.some(step) : Option.none()
 })
 
-const sourceChain = $derived(() => {
-  if (!lockedTransferStore.isLocked()) return null
-  return lockedTransferStore.get().value.sourceChain
-})
-
-const destinationChain = $derived(() => {
-  if (!lockedTransferStore.isLocked()) return null
-  return lockedTransferStore.get().value.destinationChain
-})
+const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
+const destinationChain = $derived(lts.pipe(Option.map(ltss => ltss.destinationChain)))
 
 // Get the amount from the transfer args
 const amount = $derived(() => transfer.args.amount)
 </script>
 
 <div class="min-w-full p-4 flex flex-col justify-between h-full">
-  {#if step && sourceChain && destinationChain}
+  {#if Option.isSome(step) && Option.isSome(sourceChain) && Option.isSome(destinationChain)}
     <div class="flex-1">
       <h3 class="text-lg font-semibold mb-4">Submit Transfer</h3>
       <div class="bg-zinc-800 rounded-lg p-4 mb-4">
         <p class="mb-2">Ready to submit your transfer instruction to the blockchain.</p>
         <div class="text-sm text-zinc-400">
-          <div class="mb-1">From: {sourceChain.display_name || "Unknown"}</div>
-          <div class="mb-1">To: {destinationChain.display_name || "Unknown"}</div>
+          <div class="mb-1">From: {sourceChain.value.display_name || "Unknown"}</div>
+          <div class="mb-1">To: {destinationChain.value.display_name || "Unknown"}</div>
           <div>Amount: {amount || "0"}</div>
         </div>
       </div>
@@ -62,7 +59,7 @@ const amount = $derived(() => transfer.args.amount)
     
     <div class="flex justify-between mt-4">
       <Button
-        variant="outline"
+        variant="secondary"
         onclick={onBack}
       >
         Back
