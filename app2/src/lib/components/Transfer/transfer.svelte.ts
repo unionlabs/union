@@ -1,4 +1,5 @@
 import { Data, Effect, Option } from "effect"
+import type { TransferStep } from "./transfer-step"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
 import type { QuoteData, Token, WethTokenData } from "$lib/schema/token.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
