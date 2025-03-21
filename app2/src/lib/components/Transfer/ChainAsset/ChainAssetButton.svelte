@@ -30,7 +30,7 @@ const isChainLoading = $derived.by(() => {
 </script>
 
 <div class="w-full">
-  <Label>{type === "source" ? "From" : "To"}</Label>
+  <Label class="pb-1">{type === "source" ? "From" : "To"}</Label>
   <button
           onclick={onClick}
           class={cn(
@@ -85,11 +85,11 @@ const isChainLoading = $derived.by(() => {
               type === "destination" ? "truncate" : "truncate",
               "flex flex-col items-start w-full"
               )}>
-              <p  class="text-sm leading-4">
+              <p class="leading-4 font-bold">
                 {transfer.baseToken.value.representations[0]?.symbol ?? transfer.baseToken.value.denom}
               </p>
               {#if Option.isSome(transfer.sourceChain)}
-                <p class="text-xs text-zinc-400">{transfer.sourceChain.value.display_name}</p>
+                <p class="text-xs text-zinc-400">{ type === "source" ? transfer.sourceChain.value.display_name :  transfer.destinationChain.value.display_name }</p>
               {/if}
 
             </div>
