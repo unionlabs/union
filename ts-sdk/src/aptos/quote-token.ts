@@ -14,13 +14,21 @@ export const predictQuoteToken = (baseToken: Hex) =>
     yield* Effect.log("AFTER Fetching client and config:")
 
     const contract_address = config.ucs03address
-    const function_name = "ibc_app::predict_wrapped_token"
+    const module_name = "ibc_app"
+    const function_name = "predict_wrapped_token"
     const converted_base_token = MoveVector.U8(baseToken)
     const function_arguments = [0, config.channelId.toString(), converted_base_token]
-    
+
     yield* Effect.log("Predicting quote token for base token:", baseToken)
 
-    const result = yield* queryContract(client, contract_address, function_name, [], function_arguments);
+    const result = yield* queryContract(
+      client,
+      contract_address,
+      module_name,
+      function_name,
+      [],
+      function_arguments
+    )
 
     // Extract the address from the result tuple
     return result[0]

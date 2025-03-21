@@ -1,9 +1,8 @@
 import { Effect } from "effect"
 import { AptosPublicClient, createAptosPublicClient } from "../src/aptos/client.ts"
 import { readFaBalance } from "../src/aptos/fa.ts"
-import { queryContract } from "../src/aptos/contract.ts"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { Aptos, AptosConfig, Network, AptosApiError, MoveVector } from "@aptos-labs/ts-sdk"
+import { AptosConfig, Network } from "@aptos-labs/ts-sdk"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -29,11 +28,11 @@ Effect.runPromiseExit(
     const publicClient = yield* createAptosPublicClient(config)
 
     const real_token_address = "0x188b41399546602e35658962477fdf72bd52443474a899d9d48636e8bc299c2c"
-    
-    const result_balance = yield* readFaBalance(real_token_address, account.accountAddress.toString()).pipe(
-      Effect.provideService(AptosPublicClient, { client: publicClient })
-    )
-    yield * Effect.log("Result Balance:", result_balance)
-    
+
+    const result_balance = yield* readFaBalance(
+      real_token_address,
+      account.accountAddress.toString()
+    ).pipe(Effect.provideService(AptosPublicClient, { client: publicClient }))
+    yield* Effect.log("Result Balance:", result_balance)
   })
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

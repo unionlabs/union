@@ -1,14 +1,14 @@
 import { Context, Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
-import { Aptos, AptosConfig, AptosApiError } from "@aptos-labs/ts-sdk"
+import { Aptos, type AptosConfig, type AptosApiError } from "@aptos-labs/ts-sdk"
 
 export class AptosPublicClientSource extends Context.Tag("AptosPublicClientSource")<
-AptosPublicClientSource,
+  AptosPublicClientSource,
   { readonly client: Aptos }
 >() {}
 
 export class AptosPublicClientDestination extends Context.Tag("AptosPublicClientDestination")<
-AptosPublicClientDestination,
+  AptosPublicClientDestination,
   { readonly client: Aptos }
 >() {}
 
@@ -17,7 +17,7 @@ AptosPublicClientDestination,
  * that don't specifically target source or destination chains
  */
 export class AptosPublicClient extends Context.Tag("AptosPublicClient")<
-AptosPublicClient,
+  AptosPublicClient,
   { readonly client: Aptos }
 >() {}
 
@@ -46,7 +46,6 @@ export class CreatePublicAptosClientError extends Data.TaggedError("CreatePublic
 export class CreateWalletAptosClientError extends Data.TaggedError("CreateWalletAptosClientError")<{
   cause: unknown
 }> {}
-
 
 export const createAptosPublicClient = (
   parameters: AptosConfig
