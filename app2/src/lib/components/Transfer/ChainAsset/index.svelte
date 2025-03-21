@@ -1,9 +1,11 @@
 <script lang="ts">
 import { fade, fly } from "svelte/transition"
+import { onMount, onDestroy } from "svelte"
 import ChainAssetButton from "$lib/components/Transfer/ChainAsset/ChainAssetButton.svelte"
 import ChainSelector from "$lib/components/Transfer/ChainAsset/ChainSelector.svelte"
 import TransferDirectionInfo from "$lib/components/Transfer/ChainAsset/TransferDirectionInfo.svelte"
 import AssetSelector from "$lib/components/Transfer/ChainAsset/AssetSelector.svelte"
+import SharpCancelIcon from "$lib/components/icons/SharpCancelIcon.svelte"
 
 type Props = {
   type: "source" | "destination"
@@ -25,6 +27,20 @@ function onChainSelected() {
 function onAssetSelected() {
   closeModal()
 }
+
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape" && open) {
+    closeModal()
+  }
+}
+
+onMount(() => {
+  document.addEventListener("keydown", handleKeydown)
+})
+
+onDestroy(() => {
+  document.removeEventListener("keydown", handleKeydown)
+})
 </script>
 
 {#if open}
@@ -34,14 +50,11 @@ function onAssetSelected() {
       <div class="p-4 border-b border-zinc-700 flex justify-between items-center h-12">
         <h3 class="text-sm font-medium text-zinc-400">Select {type.charAt(0).toUpperCase() + type.slice(1)}</h3>
         <button
-                class="text-zinc-400 hover:text-white"
+                aria-label="Close"
+                class="text-zinc-400 hover:text-white cursor-pointer"
                 onclick={closeModal}
         >
-          <span class="sr-only">close</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
+          <SharpCancelIcon />
         </button>
       </div>
 
