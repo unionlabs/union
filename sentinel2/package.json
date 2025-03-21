@@ -21,7 +21,7 @@
     "vitest": "^3.0.8"
   },
   "dependencies": {
-    "@unionlabs/sdk": "^1.6.1",
+    "@unionlabs/sdk": "^1.6.3",
     "consola": "^3.4.0",
     "effect": "^3.13.2",
     "viem": "^2.22.11",
