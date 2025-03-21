@@ -202,7 +202,10 @@
         },
         "gas_config": {
           "type": "feemarket",
-          "max_gas": 10000000
+          "config": {
+            "max_gas": 10000000,
+            "gas_multiplier": 1.4
+          }
         },
         "rpc_url": "http://localhost:26657"
       }
