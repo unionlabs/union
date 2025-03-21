@@ -3,8 +3,15 @@ import Input from "$lib/components/ui/Input.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { Option } from "effect"
 import { formatUnits } from "viem"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import Label from "$lib/components/ui/Label.svelte"
+
+type Props = {
+  type: "source" | "destination"
+  disabled?: boolean
+}
+let { type, disabled = false }: Props = $props()
 
 let chainWallet = $derived.by(() => {
   if (Option.isSome(transfer.sourceChain)) {
@@ -60,23 +67,46 @@ function setMaxAmount() {
 }
 </script>
 
-<!-- AMOUNT INPUT -->
-<Input
-        id="amount"
-        label="amount"
-        type="text"
-        required
-        disabled={!transfer.raw.asset}
-        autocorrect="off"
-        placeholder="0.00"
-        spellcheck="false"
-        autocomplete="off"
-        inputmode="decimal"
-        data-field="amount"
-        autocapitalize="none"
-        pattern="^[0-9]*[.]?[0-9]*$"
-        value={transfer.raw.amount}
-        oninput={(event) => {
+
+  <div class="w-full">
+    {#if Option.isSome(chainWallet)}
+    {#if type === "source"}
+      <div class="flex w-full justify-between items-center text-xs gap-1">
+        <div class="flex gap-1">
+          <Label>BALANCE:</Label>
+          {#if !transfer.raw.source || !transfer.raw.asset}
+            0
+          {:else if !allDataReadyForBalance()}
+            <Skeleton class="h-3 w-16 inline-block"/>
+          {:else}
+            {displayBalance}
+          {/if}
+        </div>
+        <button
+                class="cursor-pointer  text-xs text-sky-400 hover:text-sky-200"
+                onclick={setMaxAmount}
+        >
+          MAX
+        </button>
+      </div>
+    {/if}
+{/if}
+    <Input
+            id="amount"
+            type="text"
+            required
+            disabled={!transfer.raw.asset || disabled}
+            autocorrect="off"
+            placeholder="0.00"
+            spellcheck="false"
+            autocomplete="off"
+            inputmode="decimal"
+            data-field="amount"
+            autocapitalize="none"
+            pattern="^[0-9]*[.]?[0-9]*$"
+            value={transfer.raw.amount}
+            class="h-12 text-center"
+            oninput={(event) => {
     const input = event.currentTarget
     const value = input.value
 
@@ -96,26 +126,5 @@ function setMaxAmount() {
       input.value = transfer.raw.amount
     }
   }}
-        class="text-center"
-/>
-
-<div class="flex w-full justify-between text-xs">
-  <p>
-    BALANCE:
-    {#if Option.isSome(chainWallet)}
-      {#if !transfer.raw.source || !transfer.raw.asset}
-        0
-      {:else if !allDataReadyForBalance()}
-        <Skeleton class="h-3 w-16 inline-block"/>
-      {:else}
-        {displayBalance}
-      {/if}
-    {/if}
-  </p>
-  <button
-          class="cursor-pointer hover:underline"
-          onclick={setMaxAmount}
-  >
-    USE MAX
-  </button>
-</div>
+    />
+  </div>

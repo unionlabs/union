@@ -21,10 +21,8 @@ import ChainAsset from "$lib/components/Transfer/ChainAsset/index.svelte"
 import type { TransferStateUnion } from "$lib/components/Transfer/validation.ts"
 import { Effect, Option } from "effect"
 import { wallets } from "$lib/stores/wallets.svelte"
-import TransferAsset from "./ChainAsset/TransferAsset.svelte"
 import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
 import type { Instruction } from "@unionlabs/sdk/ucs03"
-import { runPromiseExit } from "effect/Runtime"
 import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03"
 import {
   createViemPublicClient,
@@ -41,7 +39,8 @@ import {
 } from "@unionlabs/sdk/cosmos"
 import { sepolia } from "viem/chains"
 import { http } from "viem"
-import { tapBoth } from "effect/STM"
+import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
+import { truncate } from "$lib/utils/format.ts"
 
 function getStatus(
   state: TransferStateUnion
@@ -281,22 +280,42 @@ const checkAllowances = (ti: typeof transferIntents) =>
 
     return Option.some(allowanceChecks)
   })
+
+let showDetails = $state(false)
 </script>
 
-<Card class="max-w-md relative flex flex-col gap-2">
-  <ChainAsset type="source"/>
-  <ChainAsset type="destination"/>
-  <Amount/>
-  <Receiver/>
-  <ShowData/>
-  <Button
-          class="mt-2"
-          variant="primary"
-          onclick={transfer.submit}
-          disabled={!isButtonEnabled || transfer.validation._tag !== "Success"}
-  >
-    {buttonText}
-  </Button>
+<Card class="max-w-sm relative flex flex-col justify-between min-h-[400px]">
+  <div class=" flex flex-col gap-4">
+    <ChainAsset type="source"/>
+    <ChainAsset type="destination"/>
+    <Amount type="source"/>
+  </div>
+
+  <div class="flex flex-col items-end">
+    <div class="flex items-center mr-5 text-zinc-400">
+      {#if transfer.args.receiver}
+        <p class="text-xs mb-2">{truncate(transfer.raw.receiver, 5, "middle")}</p>
+      {:else}
+        <p class="text-xs mb-2"> No receiver</p>
+      {/if}
+      <AngleArrowIcon class="rotate-270"/>
+    </div>
+    <div class="w-full items-end flex gap-2">
+      <Button
+              class="flex-1"
+              variant="primary"
+              onclick={transfer.submit}
+              disabled={!isButtonEnabled || transfer.validation._tag !== "Success"}
+      >
+        {buttonText}
+      </Button>
+      <Receiver/>
+
+    </div>
+  </div>
+  {#if showDetails}
+    <ShowData/>
+  {/if}
 </Card>
 
 
@@ -317,7 +336,7 @@ const checkAllowances = (ti: typeof transferIntents) =>
             </div>
           {:else if step._tag === "SubmitInstruction"}
             <div>Submit transfer instruction</div>
-            <pre>{JSON.stringify(instruction,null,2)}</pre>
+            <pre>{JSON.stringify(instruction, null, 2)}</pre>
           {/if}
         </li>
       {/each}
@@ -326,21 +345,20 @@ const checkAllowances = (ti: typeof transferIntents) =>
 {/if}
 
 
-
 <h2>transfer intents</h2>
-<pre>{JSON.stringify(transferIntents,null,2)}</pre>
+<pre>{JSON.stringify(transferIntents, null, 2)}</pre>
 
 <h2>instruction</h2>
-<pre>{JSON.stringify(instruction,null,2)}</pre>
+<pre>{JSON.stringify(instruction, null, 2)}</pre>
 
 <h2>allowances</h2>
-<pre>{JSON.stringify(allowances,null,2)}</pre>
+<pre>{JSON.stringify(allowances, null, 2)}</pre>
 
 <h2>required approvals</h2>
-<pre>{JSON.stringify(requiredApprovals,null,2)}</pre>
+<pre>{JSON.stringify(requiredApprovals, null, 2)}</pre>
 
 <h2>transfer steps</h2>
-<pre>{JSON.stringify(transferSteps,null,2)}</pre>
+<pre>{JSON.stringify(transferSteps, null, 2)}</pre>
 
 {#if transfer.state._tag !== "Empty"}
   {#if getStatus(transfer.state) === "filling"}
