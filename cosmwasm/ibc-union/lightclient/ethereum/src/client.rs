@@ -522,6 +522,7 @@ impl ValueCodec<InverseSyncCommittee> for SyncCommitteeStore {
 mod tests {
     use std::sync::LazyLock;
 
+    use alloy::hex;
     use beacon_api_types::{altair::SyncCommittee, electra};
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
@@ -532,7 +533,6 @@ mod tests {
         SyncCommitteePeriodChangeUpdate, WithinSyncCommitteePeriodUpdate,
     };
     use ethereum_sync_protocol::utils::compute_timestamp_at_slot;
-    use hex_literal::hex;
     use unionlabs::primitives::H160;
 
     use super::*;
@@ -819,5 +819,19 @@ mod tests {
                     .into()
             )
         );
+    }
+
+    #[test]
+    fn please_work() {
+        verify_account_storage_root(
+            hex!("69d1e6cec47b2abb7319b11a1f94cff7d532deff9ee5da3cf101dd4c16dd72b1").into(),
+            &hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
+            vec![
+                hex!("f90211a02e8a5ae0114f9e87cfce7f748e78b30c3c8e657afa573873d764390965f9bbeea027cce7ec5bd0d64c3c4c43a34ac8a0ebdf61044c1c8e9b3765804ef98c12b606a06e764ed325954592e828e93edea0d8495f97e7117eebdc3e09efc4cb82dbf1b9a09517e96d8ff66ff58f7831da45addcad21c2bdf58c2ae80ffeffb6c042f90e14a0d7418824f145a59200a234ae2fca19e87bc7b9447bf4f4f1ab641719f0f8e9a5a0167b05d0feb501b9eebf4fcae4407250e703ffc504f8560060b845abcce43444a081aa05ba6e956d19ce38943727a944107a5b96008bb0ec4a9c1cd06f5d3909a9a04e08a6f1dff4965e506b19bd874f4717db1a0b8015dae5124504a0db09706e06a0d0bfec2a0c4210491eeee0de1147ca12e21a8a286356960d77b1d56bf1af778ba080cab207fb3d07baa1bb8aa398e4cb97d38fac06994e85d22aa34d04f6fb4e0ca0843c39734c48fd518e0c782e87b9168b4053768f27a7559d2d30352bc5e64261a0c52469f342b22fb92b7e099d038fe9bda84958a2508bdb093d85ad1073e72c0da04f1967913b504d0abb84ae3e381fe8273536715e4985c17a7b398d533706a704a0323715bdc0a7198f62844a2bc297d8aaa85b4ca0f044f13483dddf2addc2fa78a0213ebe73c28294598d6317486f3cdecd5409542531cf7dfbba30cc1710dda25fa07c055cf086c71e3fb8e02c0a1daec973a238745652110a310041187016c8e05c80").as_slice(),
+                hex!("f8b180a0de5d0f8d14997487a666b6a3c137e46422e0c327d2bf20c87467ad7c5f5ea02580a00d460a0db693d5bfda59c16f2e3ee87df226323afa73836ad9ca3dfd6954fe4c8080a0557a3dd917abc049f5cbf3c308799f78332ce7058a75598e6f21fe0498c5e59e8080a00a0e576564c351990f2393de596a429df581ac49557a4ff88f7291c5ccd9d5c280a05b133b1620ecde5f13d72cf1a4afc0b955b0c9eec50236475495bdbd7bea4c008080808080").as_slice(),
+                hex!("f869a020fa8211e9294f5039596478f2268d90b881d2de706d04dcf3e2e1a87f451f51b846f8440180a0342bd0953abafd893cb0303edbab9ba83bcca1b32378a516766765a7f69eb290a0f1da0a71fdc1bdb5a344cb66eb8a98a3fa0aef81853ca761b387738e4c1899a4").as_slice(),
+              ],
+              &hex!("342bd0953abafd893cb0303edbab9ba83bcca1b32378a516766765a7f69eb290").into()
+        ).unwrap();
     }
 }

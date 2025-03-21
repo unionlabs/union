@@ -285,7 +285,7 @@ pub const LATEST: _ = [
     ("02000001", 0), // bellatrix
     ("03000001", 0), // capella
     ("04000001", 0), // deneb
-    ("04000001", 0), // electra
+                     // ("04000001", 0), // electra
 ];
 
 #[cfg(test)]

@@ -2,7 +2,7 @@
 
 use std::{collections::VecDeque, ops::Div};
 
-use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
+use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use beacon_api::client::BeaconApiClient;
 use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, custom_types::Slot};
 use bitvec::{order::Msb0, vec::BitVec};
@@ -94,7 +94,7 @@ impl Module {
     #[instrument(
         skip_all,
         fields(
-            block_number,
+            %block_number,
             ibc_handler_address = %self.ibc_handler_address
         )
     )]
@@ -114,6 +114,8 @@ impl Module {
                     None::<()>,
                 )
             })?;
+
+        // tokio::time::sleep(std::time::Duration::from_millis(500));
 
         debug!(storage_hash = %account_update.storage_hash, "fetched account update");
 
@@ -138,7 +140,7 @@ impl Plugin for Module {
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
-                .layer(CacheLayer::new(config.max_cache_size))
+                // .layer(CacheLayer::new(config.max_cache_size))
                 .connect(&config.rpc_url)
                 .await?,
         );
@@ -616,6 +618,7 @@ impl Module {
             chain_id = %self.chain_id,
             %currently_trusted_block_number,
             signature_slot = %light_client_update_data.signature_slot,
+            has_next_sync_committee = next_sync_committee.is_some(),
         )
     )]
     async fn make_header(
