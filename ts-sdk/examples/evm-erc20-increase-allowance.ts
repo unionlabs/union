@@ -13,7 +13,7 @@ BigInt["prototype"].toJSON = function () {
 
 // Replace with your private key
 const PRIVATE_KEY =
-  process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000"
+  process.env.PRIVATE_KEY || "0xebfeb1c76e9a5edd6e79cd1a69ed85fd85f27ff06d3136f53d6bb74f0984d77b"
 
 Effect.runPromiseExit(
   Effect.gen(function* () {
