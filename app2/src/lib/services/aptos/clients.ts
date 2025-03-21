@@ -28,10 +28,11 @@ export const getPublicClient = (chain: Chain) =>
       throw new NoAptosChainError({ chain })
     }
     const rpcUrl = chain.getRpcUrl("rpc")
+    yield* Effect.log("rpcUrl", rpcUrl)
     const aptosClient = yield* Effect.try({
       try: () => {
         const config = new AptosConfig({
-          fullnode: `${rpcUrl.value}v1`, // TODO: there is not v1 in the url
+          fullnode: `${rpcUrl.value}/v1`, // TODO: there is not v1 in the url
           network: Network.TESTNET
         })
         return new Aptos(config)
@@ -53,7 +54,7 @@ export const getWalletClient = (chain: Chain) =>
     const aptosClient = yield* Effect.try({
       try: () => {
         const config = new AptosConfig({
-          fullnode: `${rpcUrl.value}v1`, // TODO: there is not v1 in the url
+          fullnode: `${rpcUrl.value}/v1`, // TODO: there is not v1 in the url
           network: Network.TESTNET
         })
         const aptos = new Aptos(config)
