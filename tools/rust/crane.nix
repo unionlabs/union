@@ -353,12 +353,13 @@
               (crateAttrsWithArtifactsTest // cargoTestExtraAttrs)
           );
 
-        in
-        {
-          packages."${pname'}${pnameSuffix'}" = cargoBuild.buildPackage (
+          cargoBuildAttrs =
             extraBuildEnv
             // crateAttrs
             // {
+              # we don't want to run cargo check/ cargo test on this derivation since we do that in a separate package
+              doCheck = false;
+
               pnameSuffix = pnameSuffix';
               cargoExtraArgs =
                 "${lib.optionalString (!dev) "-j1"} ${packageFilterArgs} ${cargoBuildExtraArgs}"
@@ -378,9 +379,13 @@
 
                 echo "$RUSTFLAGS"
               '';
+            };
 
-              # we don't want to run cargo check/ cargo test on this derivation since we do that in a separate package
-              doCheck = false;
+        in
+        {
+          packages."${pname'}${pnameSuffix'}" = cargoBuild.buildPackage (
+            cargoBuildAttrs
+            // {
               meta =
                 if (builtins.length crateDirFromRoot' == 1) then
                   {
@@ -402,7 +407,7 @@
               then
                 { cargoArtifacts = artifacts; }
               else
-                { }
+                { cargoArtifacts = cargoBuild.buildDepsOnly cargoBuildAttrs; }
             )
           );
 
