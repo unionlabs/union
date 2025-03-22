@@ -45,7 +45,6 @@ extern crate embed_commit as _;
 
 #[derive(clap::Parser)]
 enum App {
-    // Version,
     DeployFull {
         #[arg(long)]
         rpc_url: String,
@@ -293,16 +292,6 @@ async fn do_main() -> Result<()> {
     let app = App::parse();
 
     match app {
-        // App::Version => {
-        //     write_output(
-        //         None,
-        //         match embed_commit::commit_hash() {
-        //             embed_commit::Rev::Unknown => "unknown".to_owned(),
-        //             embed_commit::Rev::Dirty => "dirty".to_owned(),
-        //             embed_commit::Rev::Hash(hash) => to_hex(hash),
-        //         },
-        //     )?;
-        // }
         App::Addresses {
             deployer,
             lightclient,

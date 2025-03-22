@@ -15,7 +15,7 @@ pub enum Rev {
     Dirty          = 0x_64_69_72_74_79,
     /// The build was done on the specified commit hash.
     ///
-    /// `GIT_REV=66569e6cc7b3c7a7edadeb80219aa23386ed7554`
+    /// `GIT_REV=6e65766572676f6e6e6167697665796f75757020`
     //                  H  A  S  H
     Hash([u8; 20]) = 0x_68_61_73_68,
 }

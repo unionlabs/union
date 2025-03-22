@@ -1,5 +1,5 @@
 [package]
-description = "frissíthető is a library for upgradable cosmwasm contracts, enabling contract versioning and commit references."
+description = "frissíthető is a library for versioned upgradable cosmwasm contracts."
 include     = ["README.md"]
 name        = "frissitheto"
 version     = "0.0.0"
