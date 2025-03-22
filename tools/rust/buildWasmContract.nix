@@ -107,7 +107,7 @@ in
           contractFileNameWithoutExt = contract-basename;
         };
 
-        extraEnv = {
+        extraBuildEnv = {
           GIT_REV = gitRev;
         };
       };

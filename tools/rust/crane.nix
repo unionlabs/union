@@ -154,6 +154,8 @@
           pnameSuffix ? "",
           # extra environment variables to pass to the derivation.
           extraEnv ? { },
+          # extra environment variables to pass to the derivation, only for crane.buildPackage.
+          extraBuildEnv ? { },
           # if true, build without -j1 and --release.
           dev ? false,
           extraBuildInputs ? [ ],
@@ -354,7 +356,8 @@
         in
         {
           packages."${pname'}${pnameSuffix'}" = cargoBuild.buildPackage (
-            crateAttrs
+            extraBuildEnv
+            // crateAttrs
             // {
               pnameSuffix = pnameSuffix';
               cargoExtraArgs =
