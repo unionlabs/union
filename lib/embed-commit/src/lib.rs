@@ -1,0 +1,47 @@
+use bytemuck::CheckedBitPattern;
+
+/// The git rev of the code, as supplied at build time. On `wasm32` targets, this is available via the [`commit_hash`] export.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, CheckedBitPattern)]
+#[repr(C, u64)]
+#[rustfmt::skip]
+pub enum Rev {
+    /// The state of the build is unknown (i.e. `GIT_REV` was not passed).
+    //                  U  N  K  N  O  W  N
+    Unknown        = 0x_75_6E_6B_6E_6F_77_6E,
+    /// The build is dirty.
+    ///
+    /// `GIT_REV=dirty`
+    //                  D  I  R  T  Y
+    Dirty          = 0x_64_69_72_74_79,
+    /// The build was done on the specified commit hash.
+    ///
+    /// `GIT_REV=66569e6cc7b3c7a7edadeb80219aa23386ed7554`
+    //                  H  A  S  H
+    Hash([u8; 20]) = 0x_68_61_73_68,
+}
+
+#[cfg_attr(
+    not(target_arch = "wasm32"),
+    no_mangle,
+    used,
+    link_section = ".note.embed_commit.GIT_REV"
+)]
+pub static GIT_REV: Rev = match option_env!("GIT_REV") {
+    None => Rev::Unknown,
+    Some(hash) => match hash.as_bytes() {
+        b"dirty" => Rev::Dirty,
+        hash => Rev::Hash(match const_hex::const_decode_to_array(hash) {
+            Ok(ok) => ok,
+            Err(_) => panic!(
+                "invalid GIT_REV env var, value must be either \
+                unset, \"dirty\" or a 20-byte hex string (commit)"
+            ),
+        }),
+    },
+};
+
+#[cfg(target_arch = "wasm32")]
+#[no_mangle]
+pub extern "C" fn commit_hash() -> Rev {
+    unsafe { core::ptr::read_volatile(&GIT_REV as *const _) }
+}

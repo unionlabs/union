@@ -12,7 +12,7 @@ use cosmos_client::{
     wallet::{LocalSigner, WalletT},
     TxClient,
 };
-use cosmwasm_std::Addr;
+use cosmwasm_std::{to_hex, Addr};
 use futures::{future::OptionFuture, stream::FuturesOrdered, TryStreamExt};
 use hex_literal::hex;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
@@ -41,8 +41,11 @@ use unionlabs::{
     signer::CosmosSigner,
 };
 
+extern crate embed_commit as _;
+
 #[derive(clap::Parser)]
 enum App {
+    // Version,
     DeployFull {
         #[arg(long)]
         rpc_url: String,
@@ -290,6 +293,16 @@ async fn do_main() -> Result<()> {
     let app = App::parse();
 
     match app {
+        // App::Version => {
+        //     write_output(
+        //         None,
+        //         match embed_commit::commit_hash() {
+        //             embed_commit::Rev::Unknown => "unknown".to_owned(),
+        //             embed_commit::Rev::Dirty => "dirty".to_owned(),
+        //             embed_commit::Rev::Hash(hash) => to_hex(hash),
+        //         },
+        //     )?;
+        // }
         App::Addresses {
             deployer,
             lightclient,

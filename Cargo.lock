@@ -3692,6 +3692,7 @@ dependencies = [
  "cometbft-rpc",
  "cosmos-client",
  "cosmwasm-std 2.1.4",
+ "embed-commit",
  "frissitheto",
  "futures",
  "hex-literal",
@@ -4858,6 +4859,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "embed-commit"
+version = "0.0.0"
+dependencies = [
+ "bytemuck",
+ "const-hex",
+]
+
+[[package]]
 name = "encode_unicode"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5530,8 +5539,6 @@ dependencies = [
 name = "frissitheto"
 version = "0.0.0"
 dependencies = [
- "bytemuck",
- "const-hex",
  "cosmwasm-std 2.1.4",
  "depolama",
  "serde",

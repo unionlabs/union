@@ -17,8 +17,6 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-bytemuck = { version = "1.20", features = ["derive"] }
-const-hex    = "1.14.0"
 cosmwasm-std = { workspace = true }
 depolama     = { workspace = true }
 serde        = { workspace = true, features = ["derive"] }
