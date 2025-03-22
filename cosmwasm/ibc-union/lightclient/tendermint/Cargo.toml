@@ -23,6 +23,7 @@ sha2         = { workspace = true }
 thiserror    = { workspace = true }
 
 cometbft-types                = { workspace = true, features = ["hash"] }
+frissitheto                   = { workspace = true }
 ibc-union-light-client        = { workspace = true }
 ibc-union-msg                 = { workspace = true }
 ics23                         = { workspace = true }
@@ -30,7 +31,6 @@ serde                         = { workspace = true, features = ["derive"] }
 tendermint-light-client-types = { workspace = true, features = ["ethabi", "serde", "bincode"] }
 tendermint-verifier           = { workspace = true }
 unionlabs                     = { workspace = true }
-unionlabs-cosmwasm-upgradable = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }

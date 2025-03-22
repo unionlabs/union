@@ -1431,6 +1431,7 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "ethereum-light-client",
  "ethereum-light-client-types",
+ "frissitheto",
  "hex",
  "ibc-union-light-client",
  "ibc-union-msg",
@@ -1438,7 +1439,6 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -2445,6 +2445,7 @@ dependencies = [
  "ethereum-light-client",
  "ethereum-light-client-types",
  "evm-storage-verifier",
+ "frissitheto",
  "ibc-union-light-client",
  "ibc-union-msg",
  "ics23",
@@ -2455,7 +2456,6 @@ dependencies = [
  "tendermint-verifier",
  "thiserror 1.0.69",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -2882,9 +2882,23 @@ checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 
 [[package]]
 name = "bytemuck"
-version = "1.15.0"
+version = "1.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d6d68c57235a3a081186990eca2867354726650f42f7516ca50c28d6281fd15"
+checksum = "b6b1fc10dbac614ebc03540c9dbd60e83887fda27794998c6528f1782047d540"
+dependencies = [
+ "bytemuck_derive",
+]
+
+[[package]]
+name = "bytemuck_derive"
+version = "1.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcfcc3cd946cb52f0bbfdbbcfa2f4e24f75ebb6c0e1002f7c25904fada18b9ec"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.98",
+]
 
 [[package]]
 name = "byteorder"
@@ -3356,6 +3370,7 @@ dependencies = [
  "cometbls-groth16-verifier",
  "cometbls-light-client-types",
  "cosmwasm-std 2.1.4",
+ "frissitheto",
  "hex-literal",
  "ibc-union-light-client",
  "ibc-union-msg",
@@ -3365,7 +3380,6 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -3678,6 +3692,8 @@ dependencies = [
  "cometbft-rpc",
  "cosmos-client",
  "cosmwasm-std 2.1.4",
+ "embed-commit",
+ "frissitheto",
  "futures",
  "hex-literal",
  "ibc-union-light-client",
@@ -3695,7 +3711,6 @@ dependencies = [
  "ucs03-zkgm",
  "ucs03-zkgm-token-minter-api",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -4844,6 +4859,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "embed-commit"
+version = "0.0.0"
+dependencies = [
+ "bytemuck",
+ "const-hex",
+]
+
+[[package]]
 name = "encode_unicode"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5013,6 +5036,7 @@ dependencies = [
  "ethereum-sync-protocol",
  "ethereum-sync-protocol-types",
  "evm-storage-verifier",
+ "frissitheto",
  "hex-literal",
  "ibc-union-light-client",
  "ibc-union-msg",
@@ -5023,7 +5047,6 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -5088,6 +5111,7 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "ethereum-light-client",
  "ethermint-light-client-types",
+ "frissitheto",
  "ibc-union-light-client",
  "ibc-union-msg",
  "ics23",
@@ -5099,7 +5123,6 @@ dependencies = [
  "tendermint-verifier",
  "thiserror 1.0.69",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -5510,6 +5533,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.98",
+]
+
+[[package]]
+name = "frissitheto"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.1.4",
+ "depolama",
+ "serde",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -6515,6 +6548,7 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "depolama",
  "ethabi",
+ "frissitheto",
  "hex",
  "ibc-union-msg",
  "ibc-union-spec",
@@ -6523,7 +6557,6 @@ dependencies = [
  "strum 0.26.3",
  "thiserror 1.0.69",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -6533,6 +6566,7 @@ dependencies = [
  "cosmwasm-schema 2.1.4",
  "cosmwasm-std 2.1.4",
  "depolama",
+ "frissitheto",
  "ibc-union",
  "ibc-union-msg",
  "ibc-union-spec",
@@ -6542,7 +6576,6 @@ dependencies = [
  "serde-utils",
  "thiserror 1.0.69",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -8126,6 +8159,7 @@ dependencies = [
  "bcs 0.1.6",
  "cosmwasm-std 2.1.4",
  "evm-storage-verifier",
+ "frissitheto",
  "hex-literal",
  "ibc-union-light-client",
  "ibc-union-msg",
@@ -8135,7 +8169,6 @@ dependencies = [
  "serde-utils",
  "thiserror 1.0.69",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -11830,6 +11863,7 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "ethereum-light-client-types",
  "evm-storage-verifier",
+ "frissitheto",
  "hex-literal",
  "ibc-union-light-client",
  "ibc-union-msg",
@@ -11841,7 +11875,6 @@ dependencies = [
  "state-lens-light-client-types",
  "thiserror 1.0.69",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -11868,6 +11901,7 @@ dependencies = [
  "bincode 2.0.0-rc.3",
  "cometbls-light-client",
  "cosmwasm-std 2.1.4",
+ "frissitheto",
  "hex-literal",
  "ibc-union-light-client",
  "ibc-union-msg",
@@ -11881,7 +11915,6 @@ dependencies = [
  "state-lens-light-client-types",
  "thiserror 1.0.69",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -12265,6 +12298,7 @@ dependencies = [
  "base64 0.21.7",
  "cometbft-types",
  "cosmwasm-std 2.1.4",
+ "frissitheto",
  "ibc-union-light-client",
  "ibc-union-msg",
  "ics23",
@@ -12276,7 +12310,6 @@ dependencies = [
  "tendermint-verifier",
  "thiserror 1.0.69",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -13245,6 +13278,7 @@ dependencies = [
  "cosmwasm-std 2.1.4",
  "cw-storage-plus 2.0.0",
  "ethabi",
+ "frissitheto",
  "hex",
  "hex-literal",
  "ibc-union-msg",
@@ -13256,7 +13290,6 @@ dependencies = [
  "token-factory-api",
  "ucs03-zkgm-token-minter-api",
  "unionlabs",
- "unionlabs-cosmwasm-upgradable",
 ]
 
 [[package]]
@@ -13412,15 +13445,6 @@ dependencies = [
  "typenum",
  "unionlabs-primitives",
  "wasmparser",
-]
-
-[[package]]
-name = "unionlabs-cosmwasm-upgradable"
-version = "0.0.0"
-dependencies = [
- "cosmwasm-std 2.1.4",
- "serde",
- "thiserror 1.0.69",
 ]
 
 [[package]]

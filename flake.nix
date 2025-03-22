@@ -269,11 +269,14 @@
           goPkgs = import inputs.nixpkgs-go { inherit system; };
           jsPkgs = import inputs.nixpkgs-js { inherit system; };
           unstablePkgs = import inputs.nixpkgs-unstable { inherit system; };
+
+          gitRev = if (builtins.hasAttr "rev" self) then self.rev else "dirty";
         in
         {
           _module = {
             args = {
               inherit
+                gitRev
                 nixpkgs
                 dbg
                 get-flake
@@ -283,8 +286,6 @@
                 unstablePkgs
                 mkCi
                 ;
-
-              gitRev = if (builtins.hasAttr "rev" self) then self.rev else "dirty";
 
               pkgs = nixpkgs.legacyPackages.${system}.appendOverlays (
                 with inputs;
@@ -417,6 +418,14 @@
           packages = {
             default = mkCi false self'.packages.uniond;
             inherit (pkgs) solc;
+            sourceInfo = builtins.toFile "gitRev" (
+              builtins.toJSON (
+                builtins.removeAttrs self.sourceInfo [
+                  "narHash"
+                  "outPath"
+                ]
+              )
+            );
           };
 
           checks = {

@@ -9,7 +9,7 @@ use cosmwasm_std::StdError;
 use ibc_union_spec::ChannelId;
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
-use unionlabs_cosmwasm_upgradable::UpgradeError;
+use frissitheto::UpgradeError;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {

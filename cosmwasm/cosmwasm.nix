@@ -6,6 +6,7 @@
       crane,
       pkgs,
       dbg,
+      gitRev,
       ...
     }:
     let

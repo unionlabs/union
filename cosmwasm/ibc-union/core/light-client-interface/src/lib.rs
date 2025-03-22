@@ -15,7 +15,7 @@ use unionlabs::{
     primitives::Bytes,
     ErrorReporter,
 };
-use unionlabs_cosmwasm_upgradable::UpgradeError;
+use frissitheto::UpgradeError;
 
 use crate::{msg::InitMsg, state::IbcHost};
 

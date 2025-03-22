@@ -4,7 +4,7 @@ use ibc_union_light_client::{
     IbcClientError,
 };
 use serde::{Deserialize, Serialize};
-use unionlabs_cosmwasm_upgradable::UpgradeMsg;
+use frissitheto::UpgradeMsg;
 
 use crate::client::ArbitrumLightClient;
 

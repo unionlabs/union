@@ -12,7 +12,7 @@ use cosmos_client::{
     wallet::{LocalSigner, WalletT},
     TxClient,
 };
-use cosmwasm_std::Addr;
+use cosmwasm_std::{to_hex, Addr};
 use futures::{future::OptionFuture, stream::FuturesOrdered, TryStreamExt};
 use hex_literal::hex;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
@@ -40,6 +40,8 @@ use unionlabs::{
     primitives::{Bytes, H256},
     signer::CosmosSigner,
 };
+
+extern crate embed_commit as _;
 
 #[derive(clap::Parser)]
 enum App {

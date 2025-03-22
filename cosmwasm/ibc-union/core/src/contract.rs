@@ -36,7 +36,7 @@ use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
 };
-use unionlabs_cosmwasm_upgradable::{UpgradeError, UpgradeMsg};
+use frissitheto::{UpgradeError, UpgradeMsg};
 
 use crate::{
     state::{
