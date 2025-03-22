@@ -37,6 +37,7 @@
   "dependencies": {
     "@cosmjs/cosmwasm-stargate": "^0.33.1",
     "@cosmjs/stargate": "^0.33.1",
+    "@aptos-labs/ts-sdk": "1.34.0",
     "effect": "^3.13.12",
     "patch-package": "^8.0.0",
     "viem": "^2.23.12"
