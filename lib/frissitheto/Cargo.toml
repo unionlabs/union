@@ -1,5 +1,6 @@
 [package]
 description = "frissíthető is a library for upgradable cosmwasm contracts, enabling contract versioning and commit references."
+include     = ["README.md"]
 name        = "frissitheto"
 version     = "0.0.0"
 
@@ -9,11 +10,15 @@ license-file = { workspace = true }
 publish      = { workspace = true }
 repository   = { workspace = true }
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [lints]
 workspace = true
 
 [dependencies]
-const-hex = "1.14.0"
+bytemuck = { version = "1.20", features = ["derive"] }
+const-hex    = "1.14.0"
 cosmwasm-std = { workspace = true }
 depolama     = { workspace = true }
 serde        = { workspace = true, features = ["derive"] }

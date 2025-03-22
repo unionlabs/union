@@ -10,6 +10,7 @@
       lib,
       dbg,
       mkCi,
+      gitRev,
       ...
     }:
     let
@@ -446,6 +447,7 @@
               rust
               craneLib
               dbg
+              gitRev
               ;
           });
       };

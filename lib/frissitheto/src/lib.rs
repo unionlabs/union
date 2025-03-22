@@ -3,36 +3,9 @@
 
 use std::num::NonZeroU32;
 
+use bytemuck::CheckedBitPattern;
 use cosmwasm_std::{DepsMut, Response, StdError};
 use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(C)]
-pub enum Rev {
-    Dirty,
-    Hash([u8; 32]),
-}
-
-#[no_mangle]
-pub const extern "C" fn commit_hash() -> Rev {
-    const {
-        match option_env!("GIT_REV") {
-            None => Rev::Dirty,
-            Some(hash) => match hash.as_bytes() {
-                b"dirty" => {
-                    todo!()
-                }
-                hash => Rev::Hash(match const_hex::const_decode_to_array(hash) {
-                    Ok(ok) => ok,
-                    Err(_) => panic!(
-                        "invalid GIT_REV env var, value must be \
-                        either \"dirty\" or a 32-byte hex string"
-                    ),
-                }),
-            },
-        }
-    }
-}
 
 /// The migrate message to be used for contracts using `frissitheto`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -145,4 +118,44 @@ pub enum UpgradeError {
         current: NonZeroU32,
         new: NonZeroU32,
     },
+}
+
+/// The git rev of the code, as supplied at build time. On `wasm32` targets, this is available via the [`commit_hash`] export.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, CheckedBitPattern)]
+#[repr(C, u64)]
+#[rustfmt::skip]
+pub enum Rev {
+    /// The state of the build is unknown (i.e. `GIT_REV` was not passed).
+    //                  U  N  K  N  O  W  N
+    Unknown        = 0x_75_6E_6B_6E_6F_77_6E,
+    /// The build is dirty.
+    ///
+    /// `GIT_REV=dirty`
+    //                  D  I  R  T  Y
+    Dirty          = 0x_64_69_72_74_79,
+    /// The build was done on the specified commit hash.
+    ///
+    /// `GIT_REV=66569e6cc7b3c7a7edadeb80219aa23386ed7554`
+    //                  H  A  S  H
+    Hash([u8; 20]) = 0x_68_61_73_68,
+}
+
+#[cfg(target_arch = "wasm32")]
+#[no_mangle]
+pub const extern "C" fn commit_hash() -> Rev {
+    const {
+        match option_env!("GIT_REV") {
+            None => Rev::Unknown,
+            Some(hash) => match hash.as_bytes() {
+                b"dirty" => Rev::Dirty,
+                hash => Rev::Hash(match const_hex::const_decode_to_array(hash) {
+                    Ok(ok) => ok,
+                    Err(_) => panic!(
+                        "invalid GIT_REV env var, value must be \
+                        either \"dirty\" or a 32-byte hex string"
+                    ),
+                }),
+            },
+        }
+    }
 }

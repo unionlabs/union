@@ -6,6 +6,7 @@
   craneLib,
   rust,
   dbg,
+  gitRev,
 }:
 let
   CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
@@ -104,6 +105,10 @@ in
             maxSize
             ;
           contractFileNameWithoutExt = contract-basename;
+        };
+
+        extraEnv = {
+          GIT_REV = gitRev;
         };
       };
     in
