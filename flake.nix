@@ -418,7 +418,14 @@
           packages = {
             default = mkCi false self'.packages.uniond;
             inherit (pkgs) solc;
-            gitRev = builtins.toFile "gitRev" (builtins.toJSON (builtins.attrNames (self.sourceInfo)));
+            sourceInfo = builtins.toFile "gitRev" (
+              builtins.toJSON (
+                builtins.removeAttrs self.sourceInfo [
+                  "narHash"
+                  "outPath"
+                ]
+              )
+            );
           };
 
           checks = {
