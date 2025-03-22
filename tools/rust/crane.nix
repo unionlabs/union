@@ -353,38 +353,36 @@
               (crateAttrsWithArtifactsTest // cargoTestExtraAttrs)
           );
 
-          cargoBuildAttrs =
-            extraBuildEnv
-            // crateAttrs
-            // {
-              # we don't want to run cargo check/ cargo test on this derivation since we do that in a separate package
-              doCheck = false;
+          cargoBuildAttrs = crateAttrs // {
+            # we don't want to run cargo check/ cargo test on this derivation since we do that in a separate package
+            doCheck = false;
 
-              pnameSuffix = pnameSuffix';
-              cargoExtraArgs =
-                "${lib.optionalString (!dev) "-j1"} ${packageFilterArgs} ${cargoBuildExtraArgs}"
-                + (lib.optionalString (buildStdTarget != null)
-                  # the leading space is important here!
-                  " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}"
-                );
-              RUSTFLAGS = rustflags;
+            pnameSuffix = pnameSuffix';
+            cargoExtraArgs =
+              "${lib.optionalString (!dev) "-j1"} ${packageFilterArgs} ${cargoBuildExtraArgs}"
+              + (lib.optionalString (buildStdTarget != null)
+                # the leading space is important here!
+                " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}"
+              );
+            RUSTFLAGS = rustflags;
 
-              preBuild = ''
-                echo "cargoVendorDir: ${crateAttrs.cargoVendorDir}"
-                echo "rustToolchain: ${cargoBuildRustToolchain'}"
+            preBuild = ''
+              echo "cargoVendorDir: ${crateAttrs.cargoVendorDir}"
+              echo "rustToolchain: ${cargoBuildRustToolchain'}"
 
-                # find ${crateAttrs.cargoVendorDir} -maxdepth 1 -xtype d | grep -v '^${crateAttrs.cargoVendorDir}$' | sed -E 's@(.+)@ --remap-path-prefix=\1=/@g'
+              # find ${crateAttrs.cargoVendorDir} -maxdepth 1 -xtype d | grep -v '^${crateAttrs.cargoVendorDir}$' | sed -E 's@(.+)@ --remap-path-prefix=\1=/@g'
 
-                export RUSTFLAGS="$RUSTFLAGS $(find ${crateAttrs.cargoVendorDir} -maxdepth 1 -xtype d | grep -v '^${crateAttrs.cargoVendorDir}$' | sed -E 's@(.+)@ --remap-path-prefix=\1=@g' | tr '\n' ' ')  --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/alloc/src/= --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/std/src/= --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/core/src/="
+              export RUSTFLAGS="$RUSTFLAGS $(find ${crateAttrs.cargoVendorDir} -maxdepth 1 -xtype d | grep -v '^${crateAttrs.cargoVendorDir}$' | sed -E 's@(.+)@ --remap-path-prefix=\1=@g' | tr '\n' ' ')  --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/alloc/src/= --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/std/src/= --remap-path-prefix=${cargoBuildRustToolchain'}/lib/rustlib/src/rust/library/core/src/="
 
-                echo "$RUSTFLAGS"
-              '';
-            };
+              echo "$RUSTFLAGS"
+            '';
+          };
 
         in
         {
           packages."${pname'}${pnameSuffix'}" = cargoBuild.buildPackage (
             cargoBuildAttrs
+            // extraBuildEnv
             // {
               meta =
                 if (builtins.length crateDirFromRoot' == 1) then
