@@ -4,7 +4,7 @@ import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
 import { readErc20Meta } from "../evm/erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js"
 import { CosmWasmClientContext, CosmWasmClientSource } from "../cosmos/client.js"
-import { AptosPublicClientSource, AptosPublicClient } from "../aptos/client.js"
+import { AptosPublicClient, AptosPublicClientDestination } from "../aptos/client.js"
 import { readCw20TokenInfo } from "../cosmos/cw20.js"
 import { readFaTokenInfo } from "../aptos/fa.js"
 import { predictQuoteToken as predictCosmosQuoteToken } from "../cosmos/quote-token.js"
@@ -169,11 +169,22 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
   quoteAmount: bigint
 }) =>
   Effect.gen(function* () {
-    const sourceClient = (yield* AptosPublicClientSource).client
-    const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
-      Effect.provideService(CosmWasmClientContext, { client: sourceClient })
-    )
+    const sourceClient = (yield* AptosPublicClientDestination).client
+    // HACK: special cased for muno for now
+    const tokenMeta =
+    intent.baseToken === "muno"
+      ? {
+          symbol: "muno",
+          name: "muno",
+          decimals: 0
+        }
+      : yield* readCw20TokenInfo(intent.baseToken).pipe(
+          Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+        )
+
     const quoteToken = yield* predictAptosQuoteToken(toHex(intent.baseToken))
+
+    yield *Effect.log("quote token from aptos is", quoteToken, " for base token ", intent.baseToken)
 
     return FungibleAssetOrder([
       toHex(intent.sender),
