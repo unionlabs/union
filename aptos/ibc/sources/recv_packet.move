@@ -142,7 +142,7 @@ module ibc::recv_packet {
 
         if (!intent) {
             let commitment_key =
-                commitment_key = commitment::batch_packets_commitment_key(
+                commitment::batch_packets_commitment_key(
                     commitment::commit_packets(&packets)
                 );
 

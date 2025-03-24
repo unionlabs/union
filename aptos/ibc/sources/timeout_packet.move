@@ -72,7 +72,8 @@ module ibc::timeout_packet {
         packet_timeout_height: u64,
         packet_timeout_timestamp: u64,
         proof: vector<u8>,
-        proof_height: u64
+        proof_height: u64,
+        relayer: address
     ) {
         let packet =
             packet::new(
@@ -82,9 +83,9 @@ module ibc::timeout_packet {
                 packet_timeout_height,
                 packet_timeout_timestamp
             );
-        ibc::timeout_packet(packet, proof, proof_height);
+        ibc::timeout_packet(packet, proof, proof_height, relayer);
 
-        engine::dispatch<T>(helpers::pack_timeout_packet_params(packet, @ibc));
+        engine::dispatch<T>(helpers::pack_timeout_packet_params(packet, relayer));
 
         dispatcher::delete_storage<T>();
 

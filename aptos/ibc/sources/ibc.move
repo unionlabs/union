@@ -237,7 +237,7 @@ module ibc::ibc {
     }
 
     #[event]
-    struct IntentRecvPacket has drop, store {
+    struct IntentPacketRecv has drop, store {
         channel_id: u32,
         packet_hash: vector<u8>,
         maker: address,
@@ -726,9 +726,7 @@ module ibc::ibc {
     /// the client update data. The light client just needs to make sure altering this data can NEVER make it
     /// transition to an invalid state.
     public entry fun update_client(
-        client_id: u32,
-        client_message: vector<u8>,
-        relayer: address
+        client_id: u32, client_message: vector<u8>, relayer: address
     ) acquires IBCStore {
         update_client_impl(
             client_id,
@@ -1241,7 +1239,7 @@ module ibc::ibc {
             COMMITMENT_MAGIC
         );
 
-        event::emit(PacketSend { packet_hash, packet });
+        event::emit(PacketSend { channel_id: source_channel, packet_hash, packet });
 
         packet
     }
@@ -1252,8 +1250,16 @@ module ibc::ibc {
     /// * `packet`: The packet that will be acknowledged.
     /// * `acknowledgement`: The acknowledgement that is defined by the IBC app.
     public fun write_acknowledgement(
-        packet: packet::Packet, acknowledgement: vector<u8>
+        ibc_app: &signer, packet: packet::Packet, acknowledgement: vector<u8>
     ) acquires IBCStore {
+        assert!(
+            smart_table::borrow(
+                &borrow_global<IBCStore>(get_vault_addr()).channel_to_module,
+                packet::source_channel_id(&packet)
+            ) == &signer::address_of(ibc_app),
+            E_UNAUTHORIZED
+        );
+
         assert!(!vector::is_empty(&acknowledgement), E_ACKNOWLEDGEMENT_IS_EMPTY);
 
         ensure_channel_state(packet::destination_channel_id(&packet));
@@ -1287,12 +1293,16 @@ module ibc::ibc {
     }
 
     public(friend) fun timeout_packet(
-        packet: Packet, proof: vector<u8>, proof_height: u64
+        packet: Packet,
+        proof: vector<u8>,
+        proof_height: u64,
+        relayer: address
     ) acquires IBCStore {
         timeout_packet_impl(
             packet,
             proof,
             proof_height,
+            relayer,
             |client_type, client_id, proof_height| {
                 light_client::get_timestamp_at_height(
                     client_type, client_id, proof_height
@@ -1310,6 +1320,7 @@ module ibc::ibc {
         packet: Packet,
         proof: vector<u8>,
         proof_height: u64,
+        relayer: address,
         lc_timestamp_at_height: |String, u32, u64| u64,
         lc_verify_non_membership: |String, u32, u64, vector<u8>, vector<u8>| u64
     ) acquires IBCStore, Port {
@@ -1671,24 +1682,34 @@ module ibc::ibc {
     }
 
     public(friend) fun emit_recv_packet(
-        channel_id: u32,
+        packet: Packet,
         packet_hash: vector<u8>,
         maker: address,
         maker_msg: vector<u8>
     ) {
         event::emit(
-            PacketRecv { channel_id, packet_hash, maker, maker_msg }
+            PacketRecv {
+                channel_id: packet::destination_channel_id(&packet),
+                packet_hash,
+                maker,
+                maker_msg
+            }
         )
     }
 
     public(friend) fun emit_recv_intent_packet(
-        channel_id: u32,
+        packet: Packet,
         packet_hash: vector<u8>,
         maker: address,
         maker_msg: vector<u8>
     ) {
         event::emit(
-            IntentPacketRecv { channel_id, packet_hash, maker, maker_msg }
+            IntentPacketRecv {
+                channel_id: packet::destination_channel_id(&packet),
+                packet_hash,
+                maker,
+                maker_msg
+            }
         )
     }
 
@@ -1699,7 +1720,12 @@ module ibc::ibc {
         maker: address
     ) {
         event::emit(
-            PacketAck { packet, packet_hash, acknowledgement, maker }
+            PacketAck {
+                channel_id: packet::source_channel_id(&packet),
+                packet_hash,
+                acknowledgement,
+                maker
+            }
         );
     }
 
