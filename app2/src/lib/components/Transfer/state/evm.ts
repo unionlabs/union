@@ -90,15 +90,10 @@ export const evmNextState = async <P extends Parameters<typeof writeContract>[1]
       })
   })
 
-export function hasFailedExit(state: StateWithExit | { _tag: "Filling" }): boolean {
-  if (state._tag === "Filling") return false
-  return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
-}
+export const hasFailedExit = (state: TransactionSubmissionEvm) =>
+  state._tag !== "Filling" && state.state._tag === "Complete" && state.state.exit._tag === "Failure"
 
-export function isComplete(state: StateWithExit | { _tag: "Filling" }): boolean {
-  return (
-    state._tag === "TransactionReceipt" &&
-    state.state._tag === "Complete" &&
-    state.state.exit._tag === "Success"
-  )
-}
+export const isComplete = (state: TransactionSubmissionEvm) =>
+  state._tag === "TransactionReceipt" &&
+  state.state._tag === "Complete" &&
+  state.state.exit._tag === "Success"
