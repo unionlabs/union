@@ -88,6 +88,7 @@
 
       if (isComplete(ts)) {
         onApprove()
+        break;
       }
     }
 
