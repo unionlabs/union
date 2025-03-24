@@ -1,5 +1,3 @@
-#![feature(extract_if)]
-
 use std::{collections::BTreeMap, fmt::Display, str::FromStr};
 
 use cometbft_types::abci::event_attribute::EventAttribute;
@@ -122,23 +120,27 @@ fn pull_attr<T: FromStr<Err: Display>>(
     attrs: &mut Vec<EventAttribute>,
     key: &'static str,
 ) -> Result<Option<T>, Error> {
-    let mut found = attrs.extract_if(|attr| attr.key == key).peekable();
+    let mut matched = vec![];
 
-    match found.next() {
-        Some(attr) => {
-            if found.peek().is_none() {
-                attr.value
-                    .parse()
-                    .map_err(|e: T::Err| Error::WellKnownKeyParse {
-                        key,
-                        error: e.to_string(),
-                    })
-                    .map(Some)
-            } else {
-                Err(Error::DuplicateWellKnownKey { key })
-            }
+    attrs.retain(|attr| {
+        if attr.key == key {
+            matched.push(attr.value.clone());
+            false
+        } else {
+            true
         }
-        None => Ok(None),
+    });
+
+    match matched.len() {
+        0 => Ok(None),
+        1 => matched[0]
+            .parse()
+            .map_err(|e: T::Err| Error::WellKnownKeyParse {
+                key,
+                error: e.to_string(),
+            })
+            .map(Some),
+        _ => Err(Error::DuplicateWellKnownKey { key }),
     }
 }
 
