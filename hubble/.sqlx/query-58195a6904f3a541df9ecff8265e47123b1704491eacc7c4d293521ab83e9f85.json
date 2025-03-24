@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM v2_cosmos.blocks WHERE internal_chain_id = $1 AND height = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "58195a6904f3a541df9ecff8265e47123b1704491eacc7c4d293521ab83e9f85"
+}

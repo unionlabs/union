@@ -46,7 +46,7 @@ pub async fn insert_aptos_block(
     trace!("insert: {}", block.height);
     sqlx::query!(
         "
-        INSERT INTO v1_aptos.blocks (
+        INSERT INTO v2_aptos.blocks (
             internal_chain_id, 
             block_hash, 
             height, 
@@ -69,7 +69,7 @@ pub async fn insert_aptos_block(
         trace!("insert: {}/{}", block.height, transaction.version);
         sqlx::query!(
             "
-            INSERT INTO v1_aptos.transactions (
+            INSERT INTO v2_aptos.transactions (
                 internal_chain_id, 
                 height,
                 version,
@@ -98,7 +98,7 @@ pub async fn insert_aptos_block(
             );
             sqlx::query!(
                 "
-                INSERT INTO v1_aptos.events (
+                INSERT INTO v2_aptos.events (
                     internal_chain_id,
                     height,
                     version,
@@ -138,7 +138,7 @@ pub async fn delete_aptos_block_transactions_events(
     let height: i64 = height.try_into().unwrap();
     sqlx::query!(
         "
-        DELETE FROM v1_aptos.events WHERE internal_chain_id = $1 AND height = $2
+        DELETE FROM v2_aptos.events WHERE internal_chain_id = $1 AND height = $2
         ",
         internal_chain_id,
         height,
@@ -148,7 +148,7 @@ pub async fn delete_aptos_block_transactions_events(
 
     sqlx::query!(
         "
-        DELETE FROM v1_aptos.transactions WHERE internal_chain_id = $1 AND height = $2
+        DELETE FROM v2_aptos.transactions WHERE internal_chain_id = $1 AND height = $2
         ",
         internal_chain_id,
         height,
@@ -158,7 +158,7 @@ pub async fn delete_aptos_block_transactions_events(
 
     sqlx::query!(
         "
-        DELETE FROM v1_aptos.blocks WHERE internal_chain_id = $1 AND height = $2
+        DELETE FROM v2_aptos.blocks WHERE internal_chain_id = $1 AND height = $2
         ",
         internal_chain_id,
         height,
@@ -181,7 +181,7 @@ pub async fn active_contracts(
     let result = sqlx::query!(
         r#"
         SELECT    address
-        FROM      v1_aptos.contracts
+        FROM      v2_aptos.contracts
         WHERE     internal_chain_id = $1
         AND       $2 between start_height and end_height
         "#,

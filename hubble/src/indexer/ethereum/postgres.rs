@@ -70,16 +70,16 @@ pub async fn insert_batch_logs(
     match mode {
         InsertMode::Insert => {
             sqlx::query!("
-                INSERT INTO v1_evm.logs (chain_id, block_hash, data, height, time)
+                INSERT INTO v2_evm.logs (internal_chain_id, block_hash, data, height, time)
                 SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::bigint[]), unnest($5::timestamptz[])
                 ", &chain_ids, &hashes, &data, &height, &time)
             .execute(tx.as_mut()).await?;
         }
         InsertMode::Upsert => {
             sqlx::query!("
-                INSERT INTO v1_evm.logs (chain_id, block_hash, data, height, time)
+                INSERT INTO v2_evm.logs (internal_chain_id, block_hash, data, height, time)
                 SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::bigint[]), unnest($5::timestamptz[])
-                ON CONFLICT (chain_id, height) DO 
+                ON CONFLICT (internal_chain_id, height) DO 
                 UPDATE SET
                     data = excluded.data,
                     block_hash = excluded.block_hash,
@@ -111,7 +111,7 @@ pub async fn delete_eth_log(
     let height: i64 = height.try_into().unwrap();
     sqlx::query!(
         "
-        DELETE FROM v1_evm.logs WHERE chain_id = $1 AND height = $2
+        DELETE FROM v2_evm.logs WHERE internal_chain_id = $1 AND height = $2
         ",
         chain_id,
         height,
@@ -134,7 +134,7 @@ pub async fn active_contracts(
     let result = sqlx::query!(
         r#"
         SELECT    address
-        FROM      v1_evm.contracts
+        FROM      v2_evm.contracts
         WHERE     internal_chain_id = $1
         AND       $2 between start_height and end_height
         "#,
