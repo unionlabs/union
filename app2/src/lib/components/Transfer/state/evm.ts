@@ -90,8 +90,8 @@ export const evmNextState = async <P extends Parameters<typeof writeContract>[1]
       })
   })
 
-export function hasFailedExit(state: StateWithExit | { _tag: "Pending" }): boolean {
-  if (state._tag === "Pending") return false
+export function hasFailedExit(state: StateWithExit | { _tag: "Filling" }): boolean {
+  if (state._tag === "Filling") return false
   return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
 }
 
