@@ -26,6 +26,7 @@ schemars        = { workspace = true }
 semver          = "1"
 serde           = { workspace = true }
 thiserror       = { workspace = true }
+embed-commit       = { workspace = true }
 
 [dev-dependencies]
 cw-multi-test = "2.0.0"
