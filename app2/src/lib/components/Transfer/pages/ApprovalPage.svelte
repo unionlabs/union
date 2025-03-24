@@ -1,152 +1,98 @@
 <script lang="ts">
-import Button from "$lib/components/ui/Button.svelte"
-import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-import { Data, Effect, Exit, Option } from "effect"
-import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { ApprovalRequired } from "../transfer-step.ts"
-import { switchChain } from "$lib/services/transfer-ucs03-evm/chain.ts"
-import { writeContract, waitForTransactionReceipt, ViemPublicClient } from "@unionlabs/sdk/evm"
-import type { waitForTransferReceipt } from "$lib/services/transfer-ucs03-evm/transactions.ts"
-import type { Chain, Hash, PublicClient, WalletClient } from "viem"
+  import Button from "$lib/components/ui/Button.svelte"
+  import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+  import { Effect, Option } from "effect"
+  import { lockedTransferStore } from "../locked-transfer.svelte.ts"
+  import { ApprovalRequired } from "../transfer-step.ts"
+  import { createViemPublicClient} from "@unionlabs/sdk/evm"
+  import { custom, erc20Abi, http} from "viem"
+  import {
+    createViemWalletClient
+  } from "@unionlabs/sdk/evm"
+  import { getConnectorClient, type GetConnectorClientErrorType} from "@wagmi/core";
+  import {wagmiConfig} from "$lib/wallet/evm/wagmi-config.ts";
+  import {
+    ConnectorClientError,
+  } from "$lib/services/transfer";
+  import {
+    evmNextState,
+    hasFailedExit,
+    isComplete,
+    TransactionSubmissionEvm
+  } from "$lib/components/Transfer/state/evm.ts";
 
-type Props = {
-  stepIndex: number
-  onBack: () => void
-  onApprove: () => void
-  actionButtonText: string
-}
+  type Props = {
+    stepIndex: number
+    onBack: () => void
+    onApprove: () => void
+    actionButtonText: string
+  }
 
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
-/// BOUNDRY
 
-type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
+  const { stepIndex, onBack, onApprove, actionButtonText }: Props = $props()
 
-export type SwitchChainState = Data.TaggedEnum<{
-  InProgress: {}
-  Complete: { exit: EffectToExit<ReturnType<typeof switchChain>> } // TODO: yield requirements in SwitchChain
-}>
-export const SwitchChainState = Data.taggedEnum<SwitchChainState>()
+  const lts = lockedTransferStore.get()
 
-export type WriteContractState = Data.TaggedEnum<{
-  InProgress: {}
-  Complete: { exit: EffectToExit<ReturnType<typeof writeContract>> }
-}>
-export const WriteContractState = Data.taggedEnum<WriteContractState>()
+  // Get the step data from the locked transfer store
+  const step: Option.Option<ReturnType<typeof ApprovalRequired>> = $derived.by(() => {
+    if (Option.isNone(lts)) return Option.none()
 
-export type TransactionReceiptState = Data.TaggedEnum<{
-  InProgress: { readonly hash: Hash }
-  Complete: { exit: EffectToExit<ReturnType<typeof waitForTransferReceipt>> }
-}>
-export const TransactionReceiptState = Data.taggedEnum<TransactionReceiptState>()
+    const steps = lts.value.steps
+    if (stepIndex < 0 || stepIndex >= steps.length) return Option.none()
 
-export type TransactionSubmissionEvm = Data.TaggedEnum<{
-  Filling: {}
-  SwitchChain: { state: SwitchChainState }
-  WriteContract: { state: WriteContractState }
-  TransactionReceipt: { state: TransactionReceiptState }
-}>
-
-export const TransactionSubmissionEvm = Data.taggedEnum<TransactionSubmissionEvm>()
-
-export const nextState = async <P extends Parameters<typeof writeContract>[1]>(
-  ts: TransactionSubmissionEvm,
-  chain: Chain,
-  publicClient: PublicClient,
-  walletClient: WalletClient,
-  params: P
-): Promise<TransactionSubmissionEvm> =>
-  TransactionSubmissionEvm.$match(ts, {
-    Filling: () => TransactionSubmissionEvm.SwitchChain({ state: SwitchChainState.InProgress() }),
-    SwitchChain: ({ state }) =>
-      SwitchChainState.$match(state, {
-        InProgress: async () =>
-          TransactionSubmissionEvm.SwitchChain({
-            state: SwitchChainState.Complete({
-              exit: await Effect.runPromiseExit(switchChain(chain))
-            })
-          }),
-        Complete: ({ exit }) =>
-          exit._tag === "Failure"
-            ? TransactionSubmissionEvm.SwitchChain({ state: SwitchChainState.InProgress() })
-            : TransactionSubmissionEvm.WriteContract({ state: WriteContractState.InProgress() })
-      }),
-    WriteContract: ({ state }) =>
-      WriteContractState.$match(state, {
-        InProgress: async () =>
-          TransactionSubmissionEvm.WriteContract({
-            state: WriteContractState.Complete({
-              exit: await Effect.runPromiseExit(writeContract(walletClient, params))
-            })
-          }),
-        Complete: ({ exit }) =>
-          exit._tag === "Failure"
-            ? TransactionSubmissionEvm.WriteContract({ state: WriteContractState.InProgress() })
-            : TransactionSubmissionEvm.TransactionReceipt({
-                state: TransactionReceiptState.InProgress({ hash: exit.value })
-              })
-      }),
-    TransactionReceipt: ({ state }) =>
-      TransactionReceiptState.$match(state, {
-        InProgress: async ({ hash }) =>
-          TransactionSubmissionEvm.TransactionReceipt({
-            state: TransactionReceiptState.Complete({
-              exit: await Effect.runPromiseExit(
-                waitForTransactionReceipt(hash).pipe(
-                  Effect.provideService(ViemPublicClient, { client: publicClient })
-                )
-              )
-            })
-          }),
-        Complete: () => ts // There is no next state, return self
-      })
+    const step = steps[stepIndex]
+    return step._tag === "ApprovalRequired" ? Option.some(step) : Option.none()
   })
 
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
-/// END BOUNDRY
+  const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
 
-const { stepIndex, onBack, onApprove, actionButtonText }: Props = $props()
 
-const lts = lockedTransferStore.get()
 
-// Get the step data from the locked transfer store
-const step: Option.Option<ReturnType<typeof ApprovalRequired>> = $derived.by(() => {
-  if (Option.isNone(lts)) return Option.none()
+  let ts = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 
-  const steps = lts.value.steps
-  if (stepIndex < 0 || stepIndex >= steps.length) return Option.none()
+  export const submit = Effect.gen(function* () {
+    if (Option.isNone(step)) return
+    if (Option.isNone(lts)) return
 
-  const step = steps[stepIndex]
-  return step._tag === "ApprovalRequired" ? Option.some(step) : Option.none()
-})
+    const viemChain = lts.value.sourceChain.toViemChain()
+    if (Option.isNone(viemChain)) return
 
-const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
+    const publicClient = yield* createViemPublicClient({
+      chain: viemChain.value,
+      transport: http()
+    })
+
+    const connectorClient = yield* Effect.tryPromise({
+      try: () => getConnectorClient(wagmiConfig),
+      catch: err => new ConnectorClientError({ cause: err as GetConnectorClientErrorType })
+    })
+
+    const walletClient = yield* createViemWalletClient({
+      account: connectorClient.account,
+      chain: viemChain.value,
+      transport: custom(connectorClient)
+    })
+
+    const approvalParams = {
+      address: step.value.token,
+      abi: erc20Abi,
+      functionName: "approve",
+      args: [
+        lts.value.channel.source_port_id,
+        step.value.requiredAmount]
+    }
+
+    ts = yield* Effect.tryPromise(() => evmNextState(ts, viemChain.value, publicClient, walletClient, approvalParams))
+    while (!hasFailedExit(ts)) {
+      ts = yield* Effect.tryPromise(() => evmNextState(ts, viemChain.value, publicClient, walletClient, approvalParams))
+
+      if (isComplete(ts)) {
+        onApprove()
+      }
+    }
+
+    return ts
+  })
 </script>
 
 <div class="min-w-full p-4 flex flex-col justify-between h-full">
@@ -174,17 +120,17 @@ const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
         This is a one-time approval for this token.
       </p>
     </div>
-    
+
     <div class="flex justify-between mt-4">
       <Button
-        variant="secondary"
-        onclick={onBack}
+              variant="secondary"
+              onclick={onBack}
       >
         Back
       </Button>
       <Button
-        variant="primary"
-        onclick={onApprove}
+              variant="primary"
+              onclick={() => Effect.runPromise(submit)}
       >
         {actionButtonText}
       </Button>
