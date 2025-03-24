@@ -74,12 +74,15 @@
     })
 
     const approvalParams = {
+      chain: viemChain.value,
+      account: connectorClient.account,
       address: step.value.token,
       abi: erc20Abi,
       functionName: "approve",
       args: [
         lts.value.channel.source_port_id,
-        step.value.requiredAmount]
+        step.value.requiredAmount
+      ],
     }
 
     ts = yield* Effect.tryPromise(() => evmNextState(ts, viemChain.value, publicClient, walletClient, approvalParams))
