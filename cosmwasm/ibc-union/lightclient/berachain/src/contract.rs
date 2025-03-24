@@ -1,9 +1,9 @@
 use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use frissitheto::UpgradeMsg;
 use ibc_union_light_client::{
     msg::{InitMsg, QueryMsg},
     IbcClientError,
 };
-use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::client::BerachainLightClient;
 

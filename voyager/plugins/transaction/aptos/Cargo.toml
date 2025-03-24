@@ -19,6 +19,7 @@ move-core-types   = { workspace = true }
 
 aptos-move-ibc     = { workspace = true }
 concurrent-keyring = { workspace = true }
+embed-commit       = { workspace = true }
 enumorph           = { workspace = true }
 ibc-union-spec     = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }

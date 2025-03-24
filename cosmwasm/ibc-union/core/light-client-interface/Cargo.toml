@@ -12,21 +12,19 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-cosmwasm-schema               = { workspace = true }
-cosmwasm-std                  = { workspace = true }
-depolama                      = { workspace = true }
-ibc-union                     = { workspace = true, features = ["library"] }
-ibc-union-msg                 = { workspace = true }
-ibc-union-spec                = { workspace = true }
-macros                        = { workspace = true }
-schemars                      = { workspace = true }
-serde                         = { workspace = true }
-serde-utils                   = { workspace = true }
-thiserror                     = { workspace = true }
-unionlabs                     = { workspace = true }
-unionlabs-cosmwasm-upgradable = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true }
+depolama        = { workspace = true }
+frissitheto     = { workspace = true }
+ibc-union       = { workspace = true, features = ["library"] }
+ibc-union-msg   = { workspace = true }
+ibc-union-spec  = { workspace = true }
+macros          = { workspace = true }
+schemars        = { workspace = true }
+serde           = { workspace = true }
+serde-utils     = { workspace = true }
+thiserror       = { workspace = true }
+unionlabs       = { workspace = true }
 
 [features]
-default = ["dummy-instantiate"]
-
-dummy-instantiate = [] # exports a panicking instantiate entrypoint TODO: Remove? Unused
+default = []

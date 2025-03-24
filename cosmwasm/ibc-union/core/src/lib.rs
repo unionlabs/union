@@ -7,11 +7,11 @@ pub mod state;
 mod tests;
 
 use cosmwasm_std::{Addr, StdError};
+use frissitheto::UpgradeError;
 use ibc_union_msg::lightclient::Status;
 use ibc_union_spec::{ChannelId, ChannelState, ClientId, ConnectionState};
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
-use unionlabs_cosmwasm_upgradable::UpgradeError;
 
 #[derive(Error, Debug, PartialEq, strum::EnumDiscriminants)]
 #[strum_discriminants(

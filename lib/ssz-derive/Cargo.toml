@@ -20,3 +20,6 @@ proc-macro = true
 proc-macro2 = "1.0.23"
 quote       = "1.0.7"
 syn         = "1.0.42"
+
+[dev-dependencies]
+ssz = { workspace = true }

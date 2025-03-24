@@ -21,6 +21,7 @@ anyhow             = "1.0.93"
 axum               = { workspace = true, features = ["macros", "tokio", "json"] }
 clap               = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 derive_more        = { workspace = true }
+embed-commit       = { workspace = true }
 futures            = { workspace = true }
 ibc-classic-spec   = { workspace = true }
 ibc-union-spec     = { workspace = true, features = ["serde"] }

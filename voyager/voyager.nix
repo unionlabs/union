@@ -2,50 +2,40 @@
 {
   perSystem =
     {
-      self',
       pkgs,
-      system,
-      config,
       crane,
-      stdenv,
-      dbg,
-      mkCi,
       ...
     }:
     let
-      attrs = {
-        crateDirFromRoot = "voyager";
-        extraEnv = {
-          SQLX_OFFLINE = "1";
-        };
-      };
-
       voy-modules-list = builtins.filter (
         member:
         (pkgs.lib.hasPrefix "voyager/modules" member) || (pkgs.lib.hasPrefix "voyager/plugins" member)
       ) (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
 
-      voyager-modules-dev = crane.buildWorkspaceMember {
-        crateDirFromRoot = voy-modules-list;
-        pname = "voyager-modules";
-        version = "0.0.0";
-        dev = true;
-      };
-
-      voyager-modules = crane.buildWorkspaceMember {
-        crateDirFromRoot = voy-modules-list;
+      # TODO: Remove in favor of using .release
+      # TODO: Remove, build all modules and plugins individually
+      voyager-modules-dev = crane.buildWorkspaceMember voy-modules-list {
         pname = "voyager-modules";
         version = "0.0.0";
       };
 
-      voyager = crane.buildWorkspaceMember attrs;
-      voyager-dev =
-        pkgs.lib.warn "voyager-dev is not intended to be used in production" crane.buildWorkspaceMember
-          (attrs // { dev = true; });
+      voyager-modules = crane.buildWorkspaceMember voy-modules-list {
+        pname = "voyager-modules";
+        version = "0.0.0";
+      };
+
+      voyager = crane.buildWorkspaceMember "voyager" {
+        extraEnv = {
+          SQLX_OFFLINE = "1";
+        };
+      };
     in
+    # voyager-dev =
+    #   pkgs.lib.warn "voyager-dev is not intended to be used in production" crane.buildWorkspaceMember
+    #     (attrs // { dev = true; });
     {
       packages =
-        voyager.packages
+        voyager
         // {
           # voyager-modules-names = (
           #   builtins.toFile "voyager-modules-list.json" (
@@ -56,12 +46,10 @@
           #     )
           #   )
           # );
-          voyager-dev = mkCi false voyager-dev.packages.voyager;
+          # voyager-dev = mkCi false voyager-dev.packages.voyager;
         }
-        // voyager-modules-dev.packages
-        // voyager-modules.packages;
-      # we don't actually have any tests currently
-      # checks = voyager.checks // voyager-modules.checks;
+        // voyager-modules-dev
+        // voyager-modules;
     };
 
   flake.nixosModules.voyager =

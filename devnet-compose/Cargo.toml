@@ -12,10 +12,11 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-cliclack   = "0.2.5"
-console    = "0.15.8"
-itertools  = "0.12.1"
-serde      = { workspace = true, features = ["derive", "std"] }
-serde_json = { workspace = true }
-serde_with = { workspace = true, features = ["macros", "json"] }
-strum      = { version = "0.26.2", features = ["derive"] }
+cliclack     = "0.2.5"
+console      = "0.15.8"
+embed-commit = { workspace = true }
+itertools    = "0.12.1"
+serde        = { workspace = true, features = ["derive", "std"] }
+serde_json   = { workspace = true }
+serde_with   = { workspace = true, features = ["macros", "json"] }
+strum        = { version = "0.26.2", features = ["derive"] }

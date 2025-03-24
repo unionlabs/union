@@ -8,6 +8,7 @@ use cosmwasm_std::{
     CodeInfoResponse, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QueryRequest, Reply,
     Response, StdError, StdResult, SubMsg, SubMsgResult, Uint256, WasmMsg,
 };
+use frissitheto::UpgradeMsg;
 use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
@@ -18,7 +19,6 @@ use unionlabs::{
     ethereum::keccak256,
     primitives::{Bytes, H256},
 };
-use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::{
     com::{

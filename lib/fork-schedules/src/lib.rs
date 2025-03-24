@@ -65,13 +65,13 @@ impl ForkSchedule {
     /// ```rust
     /// # use fork_schedules::MAINNET;
     /// # use hex_literal::hex;
-    /// # use beacon_api_types::{custom_types::Version, phase0::Fork};
+    /// # use beacon_api_types::{custom_types::{Version, Epoch}, phase0::Fork};
     /// assert_eq!(
     ///     MAINNET.into_fork_schedule_list()[3],
     ///     Fork {
     ///         previous_version: Version(hex!("02000000").into()),
     ///         current_version: Version(hex!("03000000").into()),
-    ///         epoch: 194048,
+    ///         epoch: Epoch::new(194048),
     ///     }
     /// );
     /// ```
@@ -127,13 +127,13 @@ impl ForkSchedule {
     /// ```rust
     /// # use fork_schedules::{SEPOLIA, Forks};
     /// # use hex_literal::hex;
-    /// # use beacon_api_types::{custom_types::Version, phase0::Fork};
+    /// # use beacon_api_types::{custom_types::{Version, Epoch}, phase0::Fork};
     /// assert_eq!(
     ///     SEPOLIA.genesis(),
     ///     Fork {
     ///         previous_version: Version(hex!("90000069").into()),
     ///         current_version: Version(hex!("90000069").into()),
-    ///         epoch: 0
+    ///         epoch: Epoch::new(0)
     ///     }
     /// );
     /// ```
@@ -151,13 +151,13 @@ impl ForkSchedule {
     /// ```rust
     /// # use fork_schedules::{HOLESKY, Forks};
     /// # use hex_literal::hex;
-    /// # use beacon_api_types::{custom_types::Version, phase0::Fork};
+    /// # use beacon_api_types::{custom_types::{Version, Epoch}, phase0::Fork};
     /// assert_eq!(
     ///     HOLESKY.fork(Forks::Capella),
     ///     Some(Fork {
     ///         previous_version: Version(hex!("03017000").into()),
     ///         current_version: Version(hex!("04017000").into()),
-    ///         epoch: 256,
+    ///         epoch: Epoch::new(256),
     ///     })
     /// );
     /// ```

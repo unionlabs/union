@@ -15,6 +15,7 @@ workspace = true
 async-sqlite         = "0.2.2"
 base64               = { workspace = true }
 crossterm            = "0.27.0"
+embed-commit         = { workspace = true }
 futures-util         = "0.3"
 hex                  = { workspace = true }
 http-body-util       = "0.1"

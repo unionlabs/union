@@ -11,7 +11,6 @@ use alloc::{
 use core::fmt::Debug;
 
 use hex::FromHexError;
-use serde::{Deserialize, Serialize};
 
 pub const HEX_ENCODING_PREFIX: &str = "0x";
 
@@ -816,25 +815,6 @@ pub mod fmt {
 
             Ok(())
         }
-    }
-}
-
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
-#[serde(bound(
-    serialize = "T: AsRef<[u8]>",
-    deserialize = "T: TryFrom<Vec<u8>, Error: Debug + 'static>",
-))]
-pub struct Hex<T>(#[serde(with = "crate::hex_string")] pub T);
-
-impl<T: AsRef<[u8]>> Debug for Hex<T> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Hex({self})")
-    }
-}
-
-impl<T: AsRef<[u8]>> core::fmt::Display for Hex<T> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str(&to_hex(&self.0))
     }
 }
 

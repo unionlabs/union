@@ -15,6 +15,7 @@ workspace = true
 aptos-move-ibc              = { workspace = true }
 aptos-rest-client           = { workspace = true }
 cosmwasm-std                = { workspace = true }
+embed-commit                = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 movement-light-client-types = { workspace = true, features = ["serde"] }
 serde                       = { workspace = true, features = ["derive"] }

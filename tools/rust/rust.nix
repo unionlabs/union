@@ -51,9 +51,9 @@ _: {
       #   });
 
       rustSrc =
-        (dbg (mkToolchain {
+        (mkToolchain {
           components = [ availableComponents.rust-src ];
-        })).passthru.availableComponents.rust-src;
+        }).passthru.availableComponents.rust-src;
 
       mkToolchain =
         {
@@ -79,7 +79,7 @@ _: {
           channel ? defaultChannel,
         }:
         mkToolchain {
-          inherit targets;
+          inherit targets channel;
           components = with availableComponents; [
             rustc
             cargo

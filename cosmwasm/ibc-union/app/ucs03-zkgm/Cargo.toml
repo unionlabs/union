@@ -18,20 +18,21 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-alloy                         = { workspace = true, features = ["sol-types"] }
-cosmwasm-schema               = { workspace = true }
-cosmwasm-std                  = { workspace = true, features = ["cosmwasm_1_2"] }
-cw-storage-plus               = { workspace = true }
-ethabi                        = { workspace = true }
-ibc-union-msg                 = { workspace = true }
-ibc-union-spec                = { workspace = true, features = ["serde", "ethabi"] }
-serde                         = { workspace = true, features = ["derive"] }
-serde-json-wasm               = "1.0"
-thiserror                     = { workspace = true }
-token-factory-api             = { workspace = true }
-ucs03-zkgm-token-minter-api   = { workspace = true }
-unionlabs                     = { workspace = true, features = ["ethabi", "schemars"] }
-unionlabs-cosmwasm-upgradable = { workspace = true }
+alloy                       = { workspace = true, features = ["sol-types"] }
+cosmwasm-schema             = { workspace = true }
+cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2"] }
+cw-storage-plus             = { workspace = true }
+embed-commit                = { workspace = true }
+ethabi                      = { workspace = true }
+frissitheto                 = { workspace = true }
+ibc-union-msg               = { workspace = true }
+ibc-union-spec              = { workspace = true, features = ["serde", "ethabi"] }
+serde                       = { workspace = true, features = ["derive"] }
+serde-json-wasm             = "1.0"
+thiserror                   = { workspace = true }
+token-factory-api           = { workspace = true }
+ucs03-zkgm-token-minter-api = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi", "schemars"] }
 
 [dev-dependencies]
 hex         = { workspace = true }

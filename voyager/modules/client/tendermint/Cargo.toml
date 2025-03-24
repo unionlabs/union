@@ -12,6 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+embed-commit                  = { workspace = true }
 jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                        = { workspace = true }
 serde                         = { workspace = true, features = ["derive"] }

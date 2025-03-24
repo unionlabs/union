@@ -31,7 +31,7 @@
           // (
             let
               CGO_CFLAGS = "-I${self'.packages.libblst}/include -I${self'.packages.libblst.src}/src -I${self'.packages.libblst.src}/build -O";
-              CGO_LDFLAGS = "-z noexecstack -static -L${goPkgs.musl}/lib -L${dbg self'.packages.libwasmvm-2_2_1}/lib -s -w";
+              CGO_LDFLAGS = "-z noexecstack -static -L${goPkgs.musl}/lib -L${self'.packages.libwasmvm-2_2_1}/lib -s -w";
             in
             if pkgs.stdenv.isLinux then
               {

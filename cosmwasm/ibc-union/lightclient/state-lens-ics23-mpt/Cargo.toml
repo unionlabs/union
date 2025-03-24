@@ -17,8 +17,10 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 cometbls-light-client                   = { workspace = true, features = ["library"] }
 cosmwasm-std                            = { workspace = true, features = ["abort"] }
+embed-commit                            = { workspace = true }
 ethereum-light-client-types             = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 evm-storage-verifier                    = { workspace = true }
+frissitheto                             = { workspace = true }
 ibc-union-light-client                  = { workspace = true }
 ibc-union-msg                           = { workspace = true }
 ibc-union-spec                          = { workspace = true }
@@ -29,7 +31,6 @@ state-lens-ics23-mpt-light-client-types = { workspace = true, features = ["serde
 state-lens-light-client-types           = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 thiserror                               = { workspace = true }
 unionlabs                               = { workspace = true, features = ["ethabi", "stargate", "bincode"] }
-unionlabs-cosmwasm-upgradable           = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

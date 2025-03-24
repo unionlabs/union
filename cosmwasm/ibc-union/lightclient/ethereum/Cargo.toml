@@ -18,24 +18,25 @@ test-include = ["cosmwasm/ibc-union/lightclient/ethereum/src/test"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-alloy                         = { workspace = true, features = ["sol-types"] }
-ark-bls12-381                 = { version = "0.5.0" }
-ark-ec                        = { version = "0.5.0" }
-ark-serialize                 = { version = "0.5.0" }
-beacon-api-types              = { workspace = true }
-bincode                       = { workspace = true }
-cosmwasm-std                  = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
-depolama                      = { workspace = true }
-ethereum-light-client-types   = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-ethereum-sync-protocol        = { workspace = true }
-evm-storage-verifier          = { workspace = true }
-ibc-union-light-client        = { workspace = true }
-ibc-union-msg                 = { workspace = true }
-rlp                           = { workspace = true }
-serde                         = { workspace = true, features = ["derive"] }
-thiserror                     = { workspace = true }
-unionlabs                     = { workspace = true, features = ["ethabi"] }
-unionlabs-cosmwasm-upgradable = { workspace = true }
+alloy                       = { workspace = true, features = ["sol-types"] }
+ark-bls12-381               = { version = "0.5.0" }
+ark-ec                      = { version = "0.5.0" }
+ark-serialize               = { version = "0.5.0" }
+beacon-api-types            = { workspace = true }
+bincode                     = { workspace = true }
+cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
+depolama                    = { workspace = true }
+embed-commit                = { workspace = true }
+ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+ethereum-sync-protocol      = { workspace = true }
+evm-storage-verifier        = { workspace = true }
+frissitheto                 = { workspace = true }
+ibc-union-light-client      = { workspace = true }
+ibc-union-msg               = { workspace = true }
+rlp                         = { workspace = true }
+serde                       = { workspace = true, features = ["derive"] }
+thiserror                   = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
 base64                       = { workspace = true }
@@ -48,5 +49,4 @@ serde_json                   = { workspace = true }
 unionlabs                    = { workspace = true, features = ["std"] }
 
 [features]
-# enabling this feature disables exposing the entrypoints and setting `#[global_allocator]`
 library = []

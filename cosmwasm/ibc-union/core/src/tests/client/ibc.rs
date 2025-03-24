@@ -67,6 +67,7 @@ fn create_client_ok() {
                 storage_writes: Default::default(),
                 client_state_bytes: None,
             }),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -87,6 +88,7 @@ fn create_client_commitments_saved() {
                 storage_writes: Default::default(),
                 client_state_bytes: None,
             }),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -145,6 +147,7 @@ fn update_client_ok() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -192,6 +195,7 @@ fn update_client_ko() {
             }),
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
             LightClientQueryMsg::UpdateState { .. } => to_json_binary(&0),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -244,6 +248,7 @@ fn update_client_commitments_saved() {
                 storage_writes: Default::default(),
             }),
             LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 

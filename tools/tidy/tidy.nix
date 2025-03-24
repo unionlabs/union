@@ -5,23 +5,16 @@
       pkgs,
       rust,
       crane,
-      mkCi,
       ...
     }:
     let
-      inherit
-        ((crane.buildWorkspaceMember {
-          crateDirFromRoot = "tools/tidy";
-          dev = true;
-        }).packages
-        )
-        tidy
-        ;
+      inherit (crane.buildWorkspaceMember "tools/tidy" { }) tidy;
     in
     {
       checks.cargo-tidy = pkgs.stdenv.mkDerivation {
         name = "cargo-tidy";
         dontUnpack = true;
+        # TODO: Improve this source to only include Cargo.toml files
         src = pkgs.lib.cleanSourceWith {
           name = "cargo-tidy-source";
           src = self.outPath;

@@ -12,6 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+embed-commit             = { workspace = true }
 ibc-classic-spec         = { workspace = true }
 ibc-union-spec.workspace = true
 jsonrpsee                = { workspace = true, features = ["macros", "server", "tracing"] }

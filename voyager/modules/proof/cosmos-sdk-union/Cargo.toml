@@ -14,6 +14,7 @@ workspace = true
 [dependencies]
 clap                     = { workspace = true, features = ["derive"] }
 cometbft-rpc             = { workspace = true }
+embed-commit             = { workspace = true }
 ibc-union-spec.workspace = true
 jsonrpsee                = { workspace = true, features = ["macros", "server", "tracing"] }
 prost                    = { workspace = true }

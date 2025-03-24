@@ -8,6 +8,9 @@ license-file = { workspace = true }
 publish      = { workspace = true }
 repository   = { workspace = true }
 
+[package.metadata.crane]
+test-include = ["lib/cometbft-rpc/testdata"]
+
 [lints]
 workspace = true
 

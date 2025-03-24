@@ -17,6 +17,7 @@ test-include = ["unionvisor/src/testdata/"]
 [dependencies]
 clap               = { workspace = true, features = ["derive", "env", "default"] }
 color-eyre         = { workspace = true, features = ["default"] }
+embed-commit       = { workspace = true }
 fs_extra           = "1.3.0"
 serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }

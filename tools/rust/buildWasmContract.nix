@@ -6,6 +6,7 @@
   craneLib,
   rust,
   dbg,
+  gitRev,
 }:
 let
   CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
@@ -41,21 +42,16 @@ let
       checks,
       maxSize,
     }:
-    let
-      outputFilePath = "$out/lib/${contractFileNameWithoutExt}${dashesToUnderscores (mkFeaturesString features)}.wasm";
-    in
     ''
-      mkdir -p $out/lib
-      mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm ${outputFilePath}
+      # mkdir -p $out/lib
+      mv target/wasm32-unknown-unknown/release/${contractFileNameWithoutExt}.wasm $out
 
-      ${pkgs.binaryen}/bin/wasm-opt -O3 ${outputFilePath} -o ${outputFilePath}
+      ${pkgs.binaryen}/bin/wasm-opt -O3 $out -o $out
 
-      ${builtins.concatStringsSep "\n\n" (
-        map (check: check "${outputFilePath}") (allChecks checks maxSize)
-      )}
+      ${builtins.concatStringsSep "\n\n" (map (check: check "$out") (allChecks checks maxSize))}
 
       # gzip the binary to ensure it's not too large to upload
-      gzip -fk ${outputFilePath}
+      gzip -fk $out
     '';
   cargoBuildExtraArgs =
     features:
@@ -66,8 +62,8 @@ let
 in
 {
   buildWasmContract =
+    crateDirFromRoot:
     {
-      crateDirFromRoot,
       features ? null,
       # list of fns taking the file path as an argument and producing arbitrary shell script
       checks ? [ ],
@@ -81,11 +77,8 @@ in
 
       contract-basename = dashesToUnderscores (crateCargoToml crateDirFromRoot).package.name;
 
-      all = buildWorkspaceMember {
-        # extraEnv = {
-        #   nativeBuildInputs = [ pkgs.breakpointHook ];
-        # };
-        inherit crateDirFromRoot extraBuildInputs extraNativeBuildInputs;
+      all = buildWorkspaceMember crateDirFromRoot {
+        inherit extraBuildInputs extraNativeBuildInputs;
         buildStdTarget = CARGO_BUILD_TARGET;
         pnameSuffix = mkFeaturesString features;
 
@@ -106,68 +99,19 @@ in
           contractFileNameWithoutExt = contract-basename;
         };
       };
+
+      addPackageName =
+        old:
+        old
+        // {
+          pname = "${packageName}.wasm";
+          passthru = (old.passthru or { }) // {
+            inherit packageName;
+          };
+        };
     in
-    pkgs.stdenv.mkDerivation {
-      name = "${packageName}.wasm";
-      passthru.packageName = packageName;
-      src = all.packages.${packageName};
-      installPhase = ''
-        ls $src/lib/
-        cp "$src/lib/${dashesToUnderscores packageName}.wasm" $out
-      '';
+    (all.${packageName}.overrideAttrs addPackageName)
+    // {
+      release = all.${packageName}.release.overrideAttrs addPackageName;
     };
-
-  buildRemoteWasmContract =
-    {
-      src,
-      version,
-      package ? null,
-      features ? null,
-      contractFileNameWithoutExt ? package,
-      # list of fns taking the file path as an argument and producing arbitrary shell script
-      checks ? [ ],
-      maxSize ? DEFAULT_MAX_SIZE,
-    }:
-    let
-      craneLib' = craneLib.overrideToolchain (
-        rust.mkBuildStdToolchain { targets = [ CARGO_BUILD_TARGET ]; }
-      );
-
-      attrs = {
-        pname = contractFileNameWithoutExt;
-        inherit src version CARGO_BUILD_TARGET;
-
-        cargoVendorDir = craneLib.vendorMultipleCargoDeps {
-          inherit (craneLib.findCargoFiles src) cargoConfigs;
-          cargoLockList = [
-            "${src}/Cargo.lock"
-            ./rust-std-Cargo.lock
-          ];
-        };
-
-        doCheck = false;
-        pnameSuffix = mkFeaturesString features;
-        cargoCheckExtraArgs = "";
-        cargoExtraArgs =
-          (cargoBuildExtraArgs features)
-          + " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${CARGO_BUILD_TARGET} -j1 "
-          + (pkgs.lib.optionalString (package != null) " -p ${package}");
-        RUSTFLAGS = rustflags;
-
-        installPhaseCommand = cargoBuildInstallPhase {
-          inherit
-            features
-            contractFileNameWithoutExt
-            checks
-            maxSize
-            ;
-        };
-      };
-    in
-    craneLib'.buildPackage (
-      attrs
-      // {
-        cargoArtifacts = craneLib'.buildDepsOnly attrs;
-      }
-    );
 }

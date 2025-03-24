@@ -27,7 +27,7 @@ The upgradability of contracts on other chains, connections, token configuration
 
 | Component                                             | Description                                          | Language(s)           |
 | ----------------------------------------------------- | ---------------------------------------------------- | --------------------- |
-| [`uniond`](./uniond)                                  | The Union node implementation, using [`CometBLS`]    | [Go]                  |
+| [`uniond`](./uniond/README.md)                        | The Union node implementation, using [`CometBLS`]    | [Go]                  |
 | [`galoisd`](./galoisd)                                | The zero-knowledge prover implementation             | [Go] [Gnark]          |
 | [`voyager`](./voyager)                                | Modular hyper-performant cross-ecosystem relayer     | [Rust]                |
 | [`hubble`](./hubble)                                  | Multi-ecosystem, GMP-enabled chain indexer           | [Rust]                |

@@ -16,23 +16,7 @@
     let
       swapDotsWithUnderscores = pkgs.lib.replaceStrings [ "." ] [ "_" ];
 
-      unionvisorAll = crane.buildWorkspaceMember {
-        crateDirFromRoot = "unionvisor";
-        cargoTestExtraAttrs = {
-          cargoTestExtraArgs = "-- --test-threads 1";
-          preConfigureHooks = [
-            ''
-              cp -r ${self'.packages.uniond-release}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis
-            ''
-            ''
-              echo 'patching testdata'
-            ''
-            ''
-              patchShebangs $PWD/unionvisor/src/testdata
-            ''
-          ];
-        };
-      };
+      unionvisor = crane.buildWorkspaceMember "unionvisor" { };
 
       mkBundle =
         {
@@ -54,7 +38,7 @@
             }
             {
               name = "unionvisor";
-              path = "${unionvisorAll.packages.unionvisor}/bin/unionvisor";
+              path = "${unionvisor.unionvisor}/bin/unionvisor";
             }
           ]
           # add all `versions` to the bundle
@@ -100,10 +84,25 @@
         };
     in
     {
-      inherit (unionvisorAll) checks;
-      packages = {
-        inherit (unionvisorAll.packages) unionvisor;
-
+      checks.unionvisor-tests = crane.lib.cargoTest (
+        unionvisor.unionvisor.passthru.craneAttrs
+        // {
+          doCheck = true;
+          cargoTestExtraArgs = "-- --test-threads 1";
+          preConfigureHooks = [
+            ''
+              cp -r ${self'.packages.uniond-release}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis
+            ''
+            ''
+              echo 'patching testdata'
+            ''
+            ''
+              patchShebangs $PWD/unionvisor/src/testdata
+            ''
+          ];
+        }
+      );
+      packages = unionvisor // {
         bundle-union-1-image = mkUnionvisorImage self'.packages.bundle-union-1;
 
         bundle-union-1 = mkBundle {
