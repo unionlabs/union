@@ -71,12 +71,12 @@ export const nextState = async <P extends Parameters<typeof writeContract>[1]>(
     Filling: () => TransactionSubmissionEvm.SwitchChain({ state: SwitchChainState.InProgress() }),
     SwitchChain: ({ state }) =>
       SwitchChainState.$match(state, {
-        InProgress: async () => {
-          const exit = await Effect.runPromiseExit(switchChain(chain))
-          return TransactionSubmissionEvm.SwitchChain({
-            state: SwitchChainState.Complete({ exit })
-          })
-        },
+        InProgress: async () =>
+          TransactionSubmissionEvm.SwitchChain({
+            state: SwitchChainState.Complete({
+              exit: await Effect.runPromiseExit(switchChain(chain))
+            })
+          }),
         Complete: ({ exit }) =>
           exit._tag === "Failure"
             ? TransactionSubmissionEvm.SwitchChain({ state: SwitchChainState.InProgress() })
@@ -84,12 +84,12 @@ export const nextState = async <P extends Parameters<typeof writeContract>[1]>(
       }),
     WriteContract: ({ state }) =>
       WriteContractState.$match(state, {
-        InProgress: async () => {
-          const exit = await Effect.runPromiseExit(writeContract(walletClient, params))
-          return TransactionSubmissionEvm.WriteContract({
-            state: WriteContractState.Complete({ exit })
-          })
-        },
+        InProgress: async () =>
+          TransactionSubmissionEvm.WriteContract({
+            state: WriteContractState.Complete({
+              exit: await Effect.runPromiseExit(writeContract(walletClient, params))
+            })
+          }),
         Complete: ({ exit }) =>
           exit._tag === "Failure"
             ? TransactionSubmissionEvm.WriteContract({ state: WriteContractState.InProgress() })
@@ -99,16 +99,16 @@ export const nextState = async <P extends Parameters<typeof writeContract>[1]>(
       }),
     TransactionReceipt: ({ state }) =>
       TransactionReceiptState.$match(state, {
-        InProgress: async ({ hash }) => {
-          const exit = await Effect.runPromiseExit(
-            waitForTransactionReceipt(hash).pipe(
-              Effect.provideService(ViemPublicClient, { client: publicClient })
-            )
-          )
-          return TransactionSubmissionEvm.TransactionReceipt({
-            state: TransactionReceiptState.Complete({ exit })
-          })
-        },
+        InProgress: async ({ hash }) =>
+          TransactionSubmissionEvm.TransactionReceipt({
+            state: TransactionReceiptState.Complete({
+              exit: await Effect.runPromiseExit(
+                waitForTransactionReceipt(hash).pipe(
+                  Effect.provideService(ViemPublicClient, { client: publicClient })
+                )
+              )
+            })
+          }),
         Complete: () => ts // There is no next state, return self
       })
   })
