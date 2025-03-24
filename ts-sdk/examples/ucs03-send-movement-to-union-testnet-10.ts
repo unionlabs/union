@@ -1,7 +1,11 @@
 import { Effect } from "effect"
 
 import { AptosConfig, Network, Ed25519PrivateKey, Account } from "@aptos-labs/ts-sdk"
-import { AptosPublicClient, createAptosPublicClient, AptosWalletClient } from "../src/aptos/client.js"
+import {
+  AptosPublicClient,
+  createAptosPublicClient,
+  AptosWalletClient
+} from "../src/aptos/client.js"
 import { createAptosToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
 import { CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/client.js"
 import { Batch } from "../src/ucs03/instruction.js"
@@ -64,7 +68,7 @@ Effect.runPromiseExit(
       network: Network.CUSTOM
     })
     const publicClient = yield* createAptosPublicClient(config)
-    
+
     const privateKey = new Ed25519PrivateKey(PRIVATE_KEY)
     const account = Account.fromPrivateKey({ privateKey })
 
@@ -75,7 +79,6 @@ Effect.runPromiseExit(
       yield* Effect.log("creating batch")
       const batch = yield* createBatch
       yield* Effect.log("batch created", JSON.stringify(batch))
-  
 
       yield* Effect.log("sending batch")
       return yield* sendInstructionAptos(batch)

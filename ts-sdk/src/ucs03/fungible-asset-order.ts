@@ -156,8 +156,6 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
     ])
   })
 
-
-
 /**
  * Creates a fungible asset order from Aptos to Cosmos
  */
@@ -172,19 +170,19 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
     const sourceClient = (yield* AptosPublicClientDestination).client
     // HACK: special cased for muno for now
     const tokenMeta =
-    intent.baseToken === "muno"
-      ? {
-          symbol: "muno",
-          name: "muno",
-          decimals: 0
-        }
-      : yield* readCw20TokenInfo(intent.baseToken).pipe(
-          Effect.provideService(CosmWasmClientContext, { client: sourceClient })
-        )
+      intent.baseToken === "muno"
+        ? {
+            symbol: "muno",
+            name: "muno",
+            decimals: 0
+          }
+        : yield* readCw20TokenInfo(intent.baseToken).pipe(
+            Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+          )
 
     const quoteToken = yield* predictAptosQuoteToken(toHex(intent.baseToken))
 
-    yield *Effect.log("quote token from aptos is", quoteToken, " for base token ", intent.baseToken)
+    yield* Effect.log("quote token from aptos is", quoteToken, " for base token ", intent.baseToken)
 
     return FungibleAssetOrder([
       toHex(intent.sender),
@@ -199,8 +197,6 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
       intent.quoteAmount
     ])
   })
-
-
 
 /**
  * Creates a fungible asset order from Cosmos to Aptos

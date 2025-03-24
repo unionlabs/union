@@ -64,29 +64,29 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
     )
   })
 
-  export const sendInstructionAptos = (instruction: Instruction) =>
-    Effect.gen(function* () {
-      const walletClient = yield* AptosWalletClient
-      const sourceConfig = yield* AptosChannelSource
-      const module_name = "ibc_app"
-      const function_name = "send"
-      const function_arguments = [
-        sourceConfig.channelId,
-        0,
-        1000000000000,
-        generateSaltAptos(),
-        instruction.version,
-        instruction.opcode,
-        encodeAbi(instruction)
-      ]
-      
-      return yield* executeContractWithKey(
-        walletClient.client,
-        walletClient.account,
-        sourceConfig.ucs03address,
-        module_name,
-        function_name,
-        [], // type arguments
-        function_arguments
-      )
-    })
+export const sendInstructionAptos = (instruction: Instruction) =>
+  Effect.gen(function* () {
+    const walletClient = yield* AptosWalletClient
+    const sourceConfig = yield* AptosChannelSource
+    const module_name = "ibc_app"
+    const function_name = "send"
+    const function_arguments = [
+      sourceConfig.channelId,
+      0,
+      1000000000000,
+      generateSaltAptos(),
+      instruction.version,
+      instruction.opcode,
+      encodeAbi(instruction)
+    ]
+
+    return yield* executeContractWithKey(
+      walletClient.client,
+      walletClient.account,
+      sourceConfig.ucs03address,
+      module_name,
+      function_name,
+      [], // type arguments
+      function_arguments
+    )
+  })

@@ -10,7 +10,6 @@ export const generateSalt = () => {
   return toHex(rawSalt) as Hex
 }
 
-
 export const generateSaltAptos = () => {
   const rawSalt = new Uint8Array(14)
   for (let i = 0; i < rawSalt.length; i++) {

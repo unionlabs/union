@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { AptosConfig, Network } from "@aptos-labs/ts-sdk"
-import { AptosPublicClientDestination, createAptosPublicClient, AptosWalletClient } from "../src/aptos/client.js"
+import { AptosPublicClientDestination, createAptosPublicClient } from "../src/aptos/client.js"
 import { createCosmosToAptosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
 import {
   CosmWasmClientSource,
@@ -53,7 +53,6 @@ Effect.runPromiseExit(
       "https://rpc.rpc-node.union-testnet-10.union.build"
     )
 
-
     const rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1"
 
     const config = new AptosConfig({
@@ -61,7 +60,7 @@ Effect.runPromiseExit(
       network: Network.CUSTOM
     })
     const publicDestinationClient = yield* createAptosPublicClient(config)
-    
+
     // Create a wallet from mnemonic (in a real app, use a secure method to get this)
     const wallet = yield* Effect.tryPromise(() =>
       DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, { prefix: "union" })
