@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT    address\n        FROM      v1_aptos.contracts\n        WHERE     internal_chain_id = $1\n        AND       $2 between start_height and end_height\n        ",
+  "query": "\n        SELECT    address\n        FROM      v2_aptos.contracts\n        WHERE     internal_chain_id = $1\n        AND       $2 between start_height and end_height\n        ",
   "describe": {
     "columns": [
       {
@@ -19,5 +19,5 @@
       false
     ]
   },
-  "hash": "244f4afdfc50cf5cbc0204e0f03ff6091fbb6d347ab7446c5b5c9b02f26868b5"
+  "hash": "f4d337f0b95e1b9cbeb838d5899b2cb599e6f895f93c93c2e3eb108ad453e2a1"
 }

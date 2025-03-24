@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT    address\n        FROM      v1_evm.contracts\n        WHERE     internal_chain_id = $1\n        AND       $2 between start_height and end_height\n        ",
+  "query": "\n        SELECT    address\n        FROM      v2_cosmos.contracts\n        WHERE     internal_chain_id = $1\n        AND       $2 between start_height and end_height\n        ",
   "describe": {
     "columns": [
       {
@@ -19,5 +19,5 @@
       false
     ]
   },
-  "hash": "44cd3d60902061f6f33546e669cf41d59d8668a71863d50813c20c42b622d0ac"
+  "hash": "44e2eadca22f51f2f3cefd962fefc288ba26ba7904435f6fde233c714a480f9a"
 }

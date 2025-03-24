@@ -11,7 +11,7 @@ use crate::{
 
 type TransactionHash = String;
 
-/// DTO corresponding to the v1_cosmos.blocks table.
+/// DTO corresponding to the v2_cosmos.blocks table.
 #[derive(Clone)]
 pub struct PgBlock {
     pub chain_id: ChainId,
@@ -21,7 +21,7 @@ pub struct PgBlock {
     pub data: serde_json::Value,
 }
 
-/// DTO corresponding to the v1_cosmos.transactions table.
+/// DTO corresponding to the v2_cosmos.transactions table.
 #[derive(Clone)]
 pub struct PgTransaction {
     pub chain_id: ChainId,
@@ -34,7 +34,7 @@ pub struct PgTransaction {
     pub index: i32,
 }
 
-/// DTO corresponding to the v1_cosmos.events table.
+/// DTO corresponding to the v2_cosmos.events table.
 #[derive(Clone)]
 pub struct PgEvent {
     pub chain_id: ChainId,
@@ -66,7 +66,7 @@ pub async fn insert_batch_blocks(
         .multiunzip();
 
     sqlx::query!("
-        INSERT INTO v1_cosmos.blocks (chain_id, hash, data, height, time)
+        INSERT INTO v2_cosmos.blocks (internal_chain_id, hash, data, height, time)
         SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::bigint[]), unnest($5::timestamptz[])
         ", &chain_ids, &hashes, &data, &height, &time)
     .execute(tx.as_mut()).await?;
@@ -103,7 +103,7 @@ pub async fn insert_batch_transactions(
         .multiunzip();
 
     sqlx::query!("
-        INSERT INTO v1_cosmos.transactions (chain_id, block_hash, height, hash, data, index) 
+        INSERT INTO v2_cosmos.transactions (internal_chain_id, block_hash, height, hash, data, index) 
         SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::bigint[]), unnest($4::text[]), unnest($5::jsonb[]), unnest($6::int[])
         ", 
         &chain_ids, &block_hashes, &heights, &hashes, &data, &indexes)
@@ -154,7 +154,7 @@ pub async fn insert_batch_events(
         .multiunzip();
 
     sqlx::query!("
-        INSERT INTO v1_cosmos.events (chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time)
+        INSERT INTO v2_cosmos.events (internal_chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time)
         SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::bigint[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[])
         ",
         &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times)
@@ -172,7 +172,7 @@ pub async fn delete_tm_block_transactions_events(
 
     sqlx::query!(
         "
-        DELETE FROM v1_cosmos.events WHERE chain_id = $1 AND height = $2
+        DELETE FROM v2_cosmos.events WHERE internal_chain_id = $1 AND height = $2
         ",
         chain_id,
         height,
@@ -182,7 +182,7 @@ pub async fn delete_tm_block_transactions_events(
 
     sqlx::query!(
         "
-        DELETE FROM v1_cosmos.transactions WHERE chain_id = $1 AND height = $2
+        DELETE FROM v2_cosmos.transactions WHERE internal_chain_id = $1 AND height = $2
         ",
         chain_id,
         height,
@@ -192,7 +192,7 @@ pub async fn delete_tm_block_transactions_events(
 
     sqlx::query!(
         "
-        DELETE FROM v1_cosmos.blocks WHERE chain_id = $1 AND height = $2
+        DELETE FROM v2_cosmos.blocks WHERE internal_chain_id = $1 AND height = $2
         ",
         chain_id,
         height,
@@ -215,7 +215,7 @@ pub async fn active_contracts(
     let result = sqlx::query!(
         r#"
         SELECT    address
-        FROM      v1_cosmos.contracts
+        FROM      v2_cosmos.contracts
         WHERE     internal_chain_id = $1
         AND       $2 between start_height and end_height
         "#,
