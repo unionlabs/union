@@ -1,7 +1,16 @@
 import { Data, Effect, type Exit } from "effect"
 import { switchChain } from "$lib/services/transfer-ucs03-evm"
 import { ViemPublicClient, waitForTransactionReceipt, writeContract } from "@unionlabs/sdk/evm"
-import type { Chain, Hash, PublicClient, WalletClient } from "viem"
+import type {
+  Abi,
+  Chain,
+  ContractFunctionArgs,
+  ContractFunctionName,
+  Hash,
+  PublicClient,
+  WalletClient,
+  WriteContractParameters
+} from "viem"
 
 export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>
   ? Exit.Exit<A, E>
@@ -27,12 +36,23 @@ const {
   TransactionReceiptComplete
 } = TransactionSubmissionEvm
 
-export const evmNextState = async <P extends Parameters<typeof writeContract>[1]>(
+export const nextStateEvm = async <
+  TAbi extends Abi,
+  TFunctionName extends ContractFunctionName<TAbi, "nonpayable" | "payable"> = ContractFunctionName<
+    TAbi,
+    "nonpayable" | "payable"
+  >,
+  TArgs extends ContractFunctionArgs<
+    TAbi,
+    "nonpayable" | "payable",
+    TFunctionName
+  > = ContractFunctionArgs<TAbi, "nonpayable" | "payable", TFunctionName>
+>(
   ts: TransactionSubmissionEvm,
   chain: Chain,
   publicClient: PublicClient,
   walletClient: WalletClient,
-  params: P
+  params: WriteContractParameters<TAbi, TFunctionName, TArgs>
 ): Promise<TransactionSubmissionEvm> =>
   TransactionSubmissionEvm.$match(ts, {
     Filling: () => SwitchChainInProgress(),
