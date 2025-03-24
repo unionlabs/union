@@ -4,10 +4,10 @@ import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import { Data, Effect, Exit, Option } from "effect"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
 import { ApprovalRequired } from "../transfer-step.ts"
-import type { switchChain } from "$lib/services/transfer-ucs03-evm/chain.ts"
-import type { writeContract } from "@unionlabs/sdk/evm"
+import { switchChain } from "$lib/services/transfer-ucs03-evm/chain.ts"
+import { writeContract, waitForTransactionReceipt, ViemPublicClient } from "@unionlabs/sdk/evm"
 import type { waitForTransferReceipt } from "$lib/services/transfer-ucs03-evm/transactions.ts"
-import type { Hash } from "viem"
+import type { Chain, Hash, PublicClient, WalletClient } from "viem"
 
 type Props = {
   stepIndex: number
@@ -60,14 +60,22 @@ export type TransactionSubmissionEvm = Data.TaggedEnum<{
 
 export const TransactionSubmissionEvm = Data.taggedEnum<TransactionSubmissionEvm>()
 
-export const nextState = (ts: TransactionSubmissionEvm): TransactionSubmissionEvm =>
+export const nextState = async <P extends Parameters<typeof writeContract>[1]>(
+  ts: TransactionSubmissionEvm,
+  chain: Chain,
+  publicClient: PublicClient,
+  walletClient: WalletClient,
+  params: P
+): Promise<TransactionSubmissionEvm> =>
   TransactionSubmissionEvm.$match(ts, {
     Filling: () => TransactionSubmissionEvm.SwitchChain({ state: SwitchChainState.InProgress() }),
     SwitchChain: ({ state }) =>
       SwitchChainState.$match(state, {
-        InProgress: () => {
-          // TODO: switch the chain
-          return ts
+        InProgress: async () => {
+          const exit = await Effect.runPromiseExit(switchChain(chain))
+          return TransactionSubmissionEvm.SwitchChain({
+            state: SwitchChainState.Complete({ exit })
+          })
         },
         Complete: ({ exit }) =>
           exit._tag === "Failure"
@@ -76,9 +84,11 @@ export const nextState = (ts: TransactionSubmissionEvm): TransactionSubmissionEv
       }),
     WriteContract: ({ state }) =>
       WriteContractState.$match(state, {
-        InProgress: () => {
-          // TODO: Write the contract
-          return ts
+        InProgress: async () => {
+          const exit = await Effect.runPromiseExit(writeContract(walletClient, params))
+          return TransactionSubmissionEvm.WriteContract({
+            state: WriteContractState.Complete({ exit })
+          })
         },
         Complete: ({ exit }) =>
           exit._tag === "Failure"
@@ -89,9 +99,15 @@ export const nextState = (ts: TransactionSubmissionEvm): TransactionSubmissionEv
       }),
     TransactionReceipt: ({ state }) =>
       TransactionReceiptState.$match(state, {
-        InProgress: () => {
-          // TODO: wait for receipt
-          return ts
+        InProgress: async ({ hash }) => {
+          const exit = await Effect.runPromiseExit(
+            waitForTransactionReceipt(hash).pipe(
+              Effect.provideService(ViemPublicClient, { client: publicClient })
+            )
+          )
+          return TransactionSubmissionEvm.TransactionReceipt({
+            state: TransactionReceiptState.Complete({ exit })
+          })
         },
         Complete: () => ts // There is no next state, return self
       })
