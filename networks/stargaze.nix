@@ -3,7 +3,6 @@
   perSystem =
     {
       pkgs,
-      goPkgs,
       self',
       crane,
       system,
@@ -13,7 +12,7 @@
     }:
     {
       packages = {
-        starsd = goPkgs.pkgsStatic.buildGo123Module (
+        starsd = pkgs.pkgsStatic.buildGo123Module (
           {
             name = "starsd";
             src = inputs.stargaze;

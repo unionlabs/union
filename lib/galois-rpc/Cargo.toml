@@ -14,8 +14,8 @@ workspace = true
 [dependencies]
 cometbft-types        = { workspace = true, features = ["proto"] }
 protos                = { workspace = true, features = ["union+galois+api+v3", "client"] }
-serde-utils.workspace = true
 serde.workspace       = true
+serde-utils.workspace = true
 thiserror.workspace   = true
 unionlabs.workspace   = true
 

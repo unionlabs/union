@@ -4,7 +4,6 @@
   perSystem =
     args@{
       pkgs,
-      unstablePkgs,
       rust,
       system,
       dbg,
@@ -13,7 +12,7 @@
       ...
     }:
     let
-      fs = unstablePkgs.lib.fileset;
+      fs = pkgs.lib.fileset;
 
       # clean up the lib namespace for what we actually need
       lib = args.lib // {
@@ -21,7 +20,7 @@
         inherit (args.lib.trivial) importTOML concat;
       };
 
-      craneLib = (inputs.crane.mkLib unstablePkgs).overrideToolchain (_: rust.toolchains.nightly);
+      craneLib = (inputs.crane.mkLib pkgs).overrideToolchain (_: rust.toolchains.nightly);
 
       # get the crane metadata out of the Cargo.toml. returns an empty attrset if if the table is not present.
       #

@@ -2,7 +2,6 @@ _: {
   perSystem =
     {
       pkgs,
-      goPkgs,
       crane,
       ...
     }:
@@ -10,7 +9,7 @@ _: {
       packages = {
         inherit (crane.buildWorkspaceMember "tools/devnet-utils" { }) devnet-utils;
 
-        ignite-cli = goPkgs.buildGoModule {
+        ignite-cli = pkgs.buildGoModule {
           name = "ignite-cli";
           src = pkgs.fetchFromGitHub {
             owner = "ignite";

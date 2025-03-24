@@ -3,7 +3,6 @@
   perSystem =
     {
       pkgs,
-      goPkgs,
       self',
       crane,
       system,
@@ -13,7 +12,7 @@
     }:
     {
       packages = {
-        osmosisd = goPkgs.pkgsStatic.buildGo123Module (
+        osmosisd = pkgs.pkgsStatic.buildGo123Module (
           {
             name = "osmosisd";
             src = inputs.osmosis;

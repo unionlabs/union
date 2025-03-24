@@ -3,7 +3,6 @@
   perSystem =
     {
       pkgs,
-      goPkgs,
       self',
       crane,
       system,
@@ -13,7 +12,7 @@
     }:
     {
       packages = {
-        strided = goPkgs.pkgsStatic.buildGo123Module (
+        strided = pkgs.pkgsStatic.buildGo123Module (
           {
             name = "strided";
             src = inputs.stride;
@@ -39,12 +38,12 @@
               {
                 # Statically link if we're on linux
                 nativeBuildInputs = [
-                  goPkgs.musl
+                  pkgs.musl
                   libwasmvm-1_5_8
                 ];
                 ldflags = [
                   "-linkmode external"
-                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm-1_5_8}/lib'"
+                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm-1_5_8}/lib'"
                 ];
               }
             else

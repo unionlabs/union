@@ -3,12 +3,12 @@ _: {
     {
       lib,
       pkgs,
-      jsPkgs,
+      pkgsUnstable,
       ensureAtRepositoryRoot,
       ...
     }:
     let
-      deps = with jsPkgs; [
+      deps = with pkgsUnstable; [
         pkg-config
         python3
         nodePackages_latest.nodejs
@@ -17,7 +17,7 @@ _: {
     in
     {
       packages = {
-        zkgm-dev = jsPkgs.buildNpmPackage {
+        zkgm-dev = pkgsUnstable.buildNpmPackage {
           npmDepsHash = "sha256-zHh5qqZMYuXqyMFs5BgAMdQGwW6oNlEwrZIJZYyqSaw=";
           src = ./.;
           sourceRoot = "zkgm-dev";

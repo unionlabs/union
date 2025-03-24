@@ -3,7 +3,6 @@
   perSystem =
     {
       pkgs,
-      goPkgs,
       self',
       crane,
       system,
@@ -13,7 +12,7 @@
     }:
     {
       packages = {
-        babylond = goPkgs.pkgsStatic.buildGo123Module (
+        babylond = pkgs.pkgsStatic.buildGo123Module (
           {
             name = "babylond";
             src = inputs.babylon;
@@ -31,7 +30,7 @@
           // (
             let
               CGO_CFLAGS = "-I${self'.packages.libblst}/include -I${self'.packages.libblst.src}/src -I${self'.packages.libblst.src}/build -O";
-              CGO_LDFLAGS = "-z noexecstack -static -L${goPkgs.musl}/lib -L${self'.packages.libwasmvm-2_2_1}/lib -s -w";
+              CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${self'.packages.libwasmvm-2_2_1}/lib -s -w";
             in
             if pkgs.stdenv.isLinux then
               {
@@ -39,7 +38,7 @@
                 inherit CGO_LDFLAGS;
                 # Statically link if we're on linux
                 nativeBuildInputs = [
-                  goPkgs.musl
+                  pkgs.musl
                 ];
                 ldflags = [
                   "-linkmode external"

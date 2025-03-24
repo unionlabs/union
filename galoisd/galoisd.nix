@@ -5,14 +5,13 @@
       self',
       pkgs,
       proto,
-      goPkgs,
       ensureAtRepositoryRoot,
       mkCi,
       ...
     }:
     {
       packages = {
-        galoisd = goPkgs.pkgsStatic.buildGo123Module (
+        galoisd = pkgs.pkgsStatic.buildGo123Module (
           {
             name = "galoisd";
             src = ./.;
@@ -29,7 +28,7 @@
                 CGO_ENABLED = 1;
                 ldflags = [
                   "-linkmode external"
-                  "-extldflags '-z noexecstack -static -L${goPkgs.musl}/lib -s -w'"
+                  "-extldflags '-z noexecstack -static -L${pkgs.musl}/lib -s -w'"
                 ];
               }
             else
@@ -37,7 +36,7 @@
           )
         );
 
-        galoisd-library = goPkgs.pkgsStatic.buildGo123Module (
+        galoisd-library = pkgs.pkgsStatic.buildGo123Module (
           {
             name = "libgalois";
             src = ./.;
@@ -49,8 +48,8 @@
             if pkgs.stdenv.isLinux then
               {
                 nativeBuildInputs = [
-                  goPkgs.musl
-                  goPkgs.pkgsStatic.binutils
+                  pkgs.musl
+                  pkgs.pkgsStatic.binutils
                 ];
                 doCheck = false;
                 CGO_ENABLED = 1;

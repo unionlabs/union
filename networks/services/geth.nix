@@ -9,7 +9,7 @@ let
     text = ''
       ETH_DATADIR=/geth
 
-      geth init --datadir "$ETH_DATADIR" /${config}/genesis.json
+      geth init --state.scheme=hash --datadir "$ETH_DATADIR" /${config}/genesis.json
       geth account import --datadir "$ETH_DATADIR" \
         --password /dev/null ${config}/dev-key0.prv
       geth account import --datadir "$ETH_DATADIR" \
@@ -35,6 +35,7 @@ let
         --nodiscover \
         --syncmode=full \
         --gcmode=archive \
+        --state.scheme=hash \
         --nat=none
     '';
   };
