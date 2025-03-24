@@ -70,6 +70,7 @@ module zkgm::ibc_app {
     use zkgm::fungible_asset_order_ack::{Self};
     use zkgm::multiplex::{Self, Multiplex};
     use zkgm::acknowledgement::{Self};
+    use zkgm::lib;
 
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
@@ -113,7 +114,6 @@ module zkgm::ibc_app {
     const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
     const ACK_ERR_ONLYMAKER: vector<u8> = b"DEADC0DE";
     const E_UNAUTHORIZED: u64 = 1;
-    const E_INVALID_HOPS: u64 = 2;
     const E_INVALID_IBC_VERSION: u64 = 3;
     const E_INFINITE_GAME: u64 = 4;
     const E_UNSUPPORTED_VERSION: u64 = 5;
@@ -128,6 +128,10 @@ module zkgm::ibc_app {
     const E_ACK_EMPTY: u64 = 14;
     const E_ONLY_MAKER_OTHER: u64 = 15;
     const E_ONLY_MAKER_RECV_PACKET: u64 = 16;
+    const E_INVALID_BATCH_INSTRUCTION: u64 = 17;
+    const E_INVALID_FORWARD_INSTRUCTION: u64 = 18;
+    const E_INVALID_MULTIPLEX_SENDER: u64 = 19;
+    const E_INVALID_FORWARD_DESTINATION_CHANNEL_ID: u64 = 20;
 
     struct IbcAppWitness has drop, store, key {}
 
@@ -329,91 +333,6 @@ module zkgm::ibc_app {
         object::is_object(token)
     }
 
-    /// Find last set (most significant bit).
-    /// Returns the index of the most significant bit of `x`.
-    /// If `x` is zero, returns 256.
-    fun fls(x: u256): u256 {
-        if (x == 0) {
-            return 256
-        };
-
-        let r: u256 = 0;
-
-        // Check higher 128 bits
-        if (x > 0xffffffffffffffffffffffffffffffff) {
-            r = 128;
-            x = x >> 128;
-        };
-
-        // Check higher 64 bits
-        if (x > 0xffffffffffffffff) {
-            r = r + 64;
-            x = x >> 64;
-        };
-
-        // Check higher 32 bits
-        if (x > 0xffffffff) {
-            r = r + 32;
-            x = x >> 32;
-        };
-
-        // Check higher 16 bits
-        if (x > 0xffff) {
-            r = r + 16;
-            x = x >> 16;
-        };
-
-        // Check higher 8 bits
-        if (x > 0xff) {
-            r = r + 8;
-            x = x >> 8;
-        };
-
-        // Check higher 4 bits
-        if (x > 0xf) {
-            r = r + 4;
-            x = x >> 4;
-        };
-
-        // Check higher 2 bits
-        if (x > 0x3) {
-            r = r + 2;
-            x = x >> 2;
-        };
-
-        // Check higher 1 bit
-        if (x > 0x1) {
-            r = r + 1;
-        };
-
-        r
-    }
-
-    #[view]
-    public fun last_channel_from_path(path: u256): u32 {
-        if (path == 0) {
-            return 0
-        };
-        let current_hop_index = ((fls(path) / 32) as u8);
-        let last_channel = path >> (current_hop_index * 32);
-        (last_channel as u32)
-    }
-
-    #[view]
-    public fun update_channel_path(path: u256, next_channel_id: u32): u256 {
-        if (path == 0) {
-            return (next_channel_id as u256)
-        };
-        let next_hop_index = ((fls(path) / 32) as u8) + 1;
-        if (next_hop_index > 7) {
-            abort E_INVALID_HOPS
-        };
-
-        let next_channel = (((next_channel_id as u256) << (next_hop_index * 32)) as u256)
-            | path;
-        (next_channel as u256)
-    }
-
     fun is_valid_version(version_bytes: String): bool {
         version_bytes == string::utf8(VERSION)
     }
@@ -474,12 +393,11 @@ module zkgm::ibc_app {
         let l = vector::length(&instructions);
         let i = 0;
         while (i < l) {
-            verify_internal(
-                sender,
-                channel_id,
-                path,
-                *vector::borrow(&instructions, i)
-            );
+            let instruction = *vector::borrow(&instructions, i);
+            if (lib::is_allowed_batch_instruction(instruction::opcode(&instruction))) {
+                abort E_INVALID_BATCH_INSTRUCTION
+            };
+            verify_internal(sender, channel_id, path, instruction);
             i = i + 1;
         }
     }
@@ -490,25 +408,34 @@ module zkgm::ibc_app {
         path: u256,
         forward_packet: Forward
     ) acquires RelayStore, SignerRef {
+        let instruction = *forward::instruction(&forward_packet);
+        if (lib::is_allowed_forward_instruction(instruction::opcode(&instruction))) {
+            abort E_INVALID_FORWARD_INSTRUCTION
+        };
         verify_internal(
             sender,
             channel_id,
-            update_channel_path(path, forward::channel_id(&forward_packet)),
-            *forward::instruction(&forward_packet)
+            forward::path(&forward_packet),
+            instruction
         );
     }
 
     fun verify_multiplex(
-        _sender: &signer,
+        sender: &signer,
         _channel_id: u32,
         _path: u256,
-        _multiplex_packet: Multiplex
-    ) {}
+        multiplex_packet: Multiplex
+    ) {
+        if (from_bcs::to_address(*multiplex::sender(&multiplex_packet))
+            != signer::address_of(sender)) {
+            abort E_INVALID_MULTIPLEX_SENDER
+        };
+    }
 
     fun verify_fungible_asset_order(
         sender: &signer,
         channel_id: u32,
-        _path: u256,
+        path: u256,
         order: FungibleAssetOrder
     ) acquires RelayStore, SignerRef {
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
@@ -535,7 +462,26 @@ module zkgm::ibc_app {
             &store.token_origin, base_token, &0
         );
 
-        if (last_channel_from_path(origin) == channel_id) {
+        let (intermediate_channel_path, destination_channel_id) =
+            lib::pop_channel_from_path(origin);
+        let (wrapped_token, _) =
+            predict_wrapped_token(
+                intermediate_channel_path,
+                channel_id,
+                *fungible_asset_order::quote_token(&order)
+            );
+        let is_inverse_intermediate_path =
+            path == lib::reverse_channel_path(intermediate_channel_path);
+        let is_sending_back_to_same_channel = destination_channel_id == channel_id;
+        let is_unwrapping = base_token == wrapped_token;
+
+        if (is_inverse_intermediate_path
+            && is_sending_back_to_same_channel
+            && is_unwrapping) {
+            if (fungible_asset_order::base_token_path(&order) != origin) {
+                abort E_INVALID_ASSET_ORIGIN
+            };
+
             zkgm::fa_coin::burn_with_metadata(
                 &get_signer(),
                 signer::address_of(sender),
@@ -543,6 +489,10 @@ module zkgm::ibc_app {
                 asset
             );
         } else {
+            if (fungible_asset_order::base_token_path(&order) != 0) {
+                abort E_INVALID_ASSET_ORIGIN
+            };
+
             primary_fungible_store::transfer(
                 sender,
                 asset,
@@ -550,19 +500,14 @@ module zkgm::ibc_app {
                 (base_amount as u64)
             );
 
-            let balance_key = ChannelBalancePair { channel: channel_id, token: base_token };
-
-            let curr_balance = *smart_table::borrow(&store.channel_balance, balance_key);
-
-            smart_table::upsert(
-                &mut store.channel_balance,
-                balance_key,
-                curr_balance + (base_amount as u256)
+            increase_outstanding(
+                store,
+                channel_id,
+                path,
+                base_token,
+                base_amount
             );
-        };
-        if (fungible_asset_order::base_token_path(&order) != origin) {
-            abort E_INVALID_ASSET_ORIGIN
-        };
+        }
     }
 
     public fun on_recv_packet(
@@ -628,9 +573,11 @@ module zkgm::ibc_app {
             let decode_idx = 0x20;
             execute_forward(
                 ibc_packet,
+                relayer,
                 relayer_msg,
                 salt,
                 path,
+                instruction::version(&instruction),
                 forward::decode(instruction::operand(&instruction), &mut decode_idx)
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
@@ -639,6 +586,7 @@ module zkgm::ibc_app {
                 ibc_packet,
                 relayer,
                 relayer_msg,
+                path,
                 salt,
                 multiplex::decode(instruction::operand(&instruction))
             )
@@ -682,30 +630,68 @@ module zkgm::ibc_app {
 
     fun execute_forward(
         ibc_packet: Packet,
+        relayer: address,
         _relayer_msg: vector<u8>,
         salt: vector<u8>,
         path: u256,
+        version: u8,
         forward_packet: Forward
     ): (vector<u8>) acquires RelayStore {
-        let zkgm_pack =
-            zkgm_packet::new(
-                salt,
-                update_channel_path(
-                    path, ibc::packet::destination_channel_id(&ibc_packet)
-                ),
+        let (tail_path, previous_destination_channel_id) =
+            lib::dequeue_channel_from_path(forward::path(&forward_packet));
+        let (continuation_path, next_source_channel_id) =
+            lib::dequeue_channel_from_path(tail_path);
+
+        if (packet::destination_channel_id(&ibc_packet)
+            != previous_destination_channel_id) {
+            abort E_INVALID_FORWARD_DESTINATION_CHANNEL_ID
+        };
+
+        let next_instruction =
+            if (continuation_path == 0) {
                 *forward::instruction(&forward_packet)
-            );
+            } else {
+                instruction::new(
+                    version,
+                    OP_FORWARD,
+                    forward::encode(
+                        &forward::new(
+                            continuation_path,
+                            forward::timeout_height(&forward_packet),
+                            forward::timeout_timestamp(&forward_packet),
+                            *forward::instruction(&forward_packet)
+                        )
+                    )
+                )
+            };
+
         let sent_packet =
-            ibc::ibc::send_packet<IbcAppWitness>(
+            ibc::ibc::send_packet(
                 witness(),
-                forward::channel_id(&forward_packet),
+                next_source_channel_id,
                 forward::timeout_height(&forward_packet),
                 forward::timeout_timestamp(&forward_packet),
-                zkgm_packet::encode(&zkgm_pack)
+                zkgm_packet::encode(
+                    &zkgm_packet::new(
+                        lib::derive_forward_salt(salt),
+                        lib::update_channel_path(
+                            lib::update_channel_path(
+                                path, previous_destination_channel_id
+                            ),
+                            next_source_channel_id
+                        ),
+                        next_instruction
+                    )
+                )
             );
-        let packet_hash = commitment::commit_packet(&sent_packet);
+
+        let commitment_key =
+            commitment::batch_packets_commitment_key(
+                commitment::commit_packet(&sent_packet)
+            );
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        smart_table::upsert(&mut store.in_flight_packet, packet_hash, ibc_packet);
+        smart_table::upsert(&mut store.in_flight_packet, commitment_key, ibc_packet);
+
         ACK_EMPTY
     }
 
@@ -713,6 +699,7 @@ module zkgm::ibc_app {
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
+        path: u256,
         _salt: vector<u8>,
         multiplex_packet: Multiplex
     ): (vector<u8>) {
@@ -733,7 +720,8 @@ module zkgm::ibc_app {
             ibc::packet::new(
                 ibc::packet::source_channel_id(&ibc_packet),
                 ibc::packet::destination_channel_id(&ibc_packet),
-                multiplex::encode_multiplex_sender_and_calldata(
+                multiplex::encode_calldata(
+                    path,
                     *multiplex::sender(&multiplex_packet),
                     *multiplex::contract_calldata(&multiplex_packet)
                 ),
@@ -797,7 +785,7 @@ module zkgm::ibc_app {
                     fungible_asset_order::base_token_decimals(&order)
                 );
                 let value =
-                    update_channel_path(
+                    lib::update_channel_path(
                         path, ibc::packet::destination_channel_id(&ibc_packet)
                     );
                 smart_table::upsert(&mut store.token_origin, wrapped_address, value);
@@ -878,6 +866,7 @@ module zkgm::ibc_app {
             acknowledge_internal(
                 ibc_packet,
                 relayer,
+                zkgm_packet::path(&zkgm_packet),
                 zkgm_packet::salt(&zkgm_packet),
                 zkgm_packet::instruction(&zkgm_packet),
                 acknowledgement::tag(&zkgm_ack) == ACK_SUCCESS,
@@ -889,16 +878,18 @@ module zkgm::ibc_app {
     fun acknowledge_internal(
         ibc_packet: Packet,
         relayer: address,
+        path: u256,
         salt: vector<u8>,
         instruction: Instruction,
         success: bool,
         inner_ack: vector<u8>
-    ) acquires SignerRef {
+    ) acquires SignerRef, RelayStore {
         let version = instruction::version(&instruction);
         if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
             assert!(version == INSTR_VERSION_1, E_UNSUPPORTED_VERSION);
             acknowledge_fungible_asset_order(
                 ibc_packet,
+                path,
                 salt,
                 fungible_asset_order::decode(instruction::operand(&instruction)),
                 success,
@@ -910,6 +901,7 @@ module zkgm::ibc_app {
             acknowledge_batch(
                 ibc_packet,
                 relayer,
+                path,
                 salt,
                 batch::decode(instruction::operand(&instruction), &mut decode_idx),
                 success,
@@ -920,6 +912,7 @@ module zkgm::ibc_app {
             let decode_idx = 0x20;
             acknowledge_forward(
                 ibc_packet,
+                relayer,
                 salt,
                 forward::decode(instruction::operand(&instruction), &mut decode_idx),
                 success,
@@ -930,6 +923,7 @@ module zkgm::ibc_app {
             acknowledge_multiplex(
                 ibc_packet,
                 relayer,
+                path,
                 salt,
                 multiplex::decode(instruction::operand(&instruction)),
                 success,
@@ -943,6 +937,7 @@ module zkgm::ibc_app {
     fun acknowledge_multiplex(
         ibc_packet: Packet,
         relayer: address,
+        path: u256,
         _salt: vector<u8>,
         multiplex_packet: Multiplex,
         success: bool,
@@ -953,7 +948,8 @@ module zkgm::ibc_app {
                 ibc::packet::new(
                     ibc::packet::source_channel_id(&ibc_packet),
                     ibc::packet::destination_channel_id(&ibc_packet),
-                    multiplex::encode_multiplex_sender_and_calldata(
+                    multiplex::encode_calldata(
+                        path,
                         *multiplex::contract_address(&multiplex_packet),
                         *multiplex::contract_calldata(&multiplex_packet)
                     ),
@@ -978,11 +974,12 @@ module zkgm::ibc_app {
     fun acknowledge_batch(
         ibc_packet: Packet,
         relayer: address,
+        path: u256,
         salt: vector<u8>,
         batch_packet: Batch,
         success: bool,
         inner_ack: vector<u8>
-    ) acquires SignerRef {
+    ) acquires SignerRef, RelayStore {
         let instructions = batch::instructions(&batch_packet);
         let l = vector::length(&instructions);
         let idx = 0x40;
@@ -998,6 +995,7 @@ module zkgm::ibc_app {
             acknowledge_internal(
                 ibc_packet,
                 relayer,
+                path,
                 salt,
                 *vector::borrow(&instructions, i),
                 success,
@@ -1009,6 +1007,7 @@ module zkgm::ibc_app {
 
     fun acknowledge_forward(
         _ibc_packet: Packet,
+        _relayer: address,
         _salt: vector<u8>,
         _forward_packet: Forward,
         _success: bool,
@@ -1017,12 +1016,17 @@ module zkgm::ibc_app {
 
     fun acknowledge_fungible_asset_order(
         ibc_packet: Packet,
+        path: u256,
         _salt: vector<u8>,
         transfer_packet: FungibleAssetOrder,
         success: bool,
         inner_ack: vector<u8>
-    ) acquires SignerRef {
+    ) acquires SignerRef, RelayStore {
         if (success) {
+            let base_token =
+                from_bcs::to_address(
+                    *fungible_asset_order::base_token(&transfer_packet)
+                );
             let asset_order_ack = fungible_asset_order_ack::decode(&inner_ack);
             if (fungible_asset_order_ack::fill_type(&asset_order_ack)
                 == FILL_TYPE_PROTOCOL) {
@@ -1033,21 +1037,23 @@ module zkgm::ibc_app {
                     from_bcs::to_address(
                         *fungible_asset_order_ack::market_maker(&asset_order_ack)
                     );
-                let base_token =
-                    from_bcs::to_address(
-                        *fungible_asset_order::base_token(&transfer_packet)
-                    );
                 let asset = get_metadata(base_token);
-                if (last_channel_from_path(
-                    fungible_asset_order::base_token_path(&transfer_packet)
-                ) == ibc::packet::source_channel_id(&ibc_packet)) {
+                if (fungible_asset_order::base_token_path(&transfer_packet) != 0) {
                     zkgm::fa_coin::mint_with_metadata(
                         &get_signer(),
                         market_maker,
                         (fungible_asset_order::base_amount(&transfer_packet) as u64),
                         asset
                     );
+
                 } else {
+                    decrease_outstanding(
+                        borrow_global_mut<RelayStore>(get_vault_addr()),
+                        packet::source_channel_id(&ibc_packet),
+                        fungible_asset_order::base_token_path(&transfer_packet),
+                        base_token,
+                        fungible_asset_order::base_amount(&transfer_packet)
+                    );
                     primary_fungible_store::transfer(
                         &get_signer(),
                         asset,
@@ -1059,13 +1065,13 @@ module zkgm::ibc_app {
                 abort E_INVALID_FILL_TYPE
             }
         } else {
-            refund(ibc::packet::source_channel_id(&ibc_packet), transfer_packet);
+            refund(ibc::packet::source_channel_id(&ibc_packet), path, transfer_packet);
         };
     }
 
     fun refund(
-        source_channel_id: u32, asset_order_packet: FungibleAssetOrder
-    ) acquires SignerRef {
+        source_channel_id: u32, path: u256, asset_order_packet: FungibleAssetOrder
+    ) acquires SignerRef, RelayStore {
         let sender =
             from_bcs::to_address(*fungible_asset_order::sender(&asset_order_packet));
         let base_token =
@@ -1073,9 +1079,7 @@ module zkgm::ibc_app {
 
         let asset = get_metadata(base_token);
 
-        if (last_channel_from_path(
-            fungible_asset_order::base_token_path(&asset_order_packet)
-        ) == source_channel_id) {
+        if (fungible_asset_order::base_token_path(&asset_order_packet) != 0) {
             zkgm::fa_coin::mint_with_metadata(
                 &get_signer(),
                 sender,
@@ -1083,11 +1087,19 @@ module zkgm::ibc_app {
                 asset
             );
         } else {
+            let base_amount = fungible_asset_order::base_amount(&asset_order_packet);
+            decrease_outstanding(
+                borrow_global_mut<RelayStore>(get_vault_addr()),
+                source_channel_id,
+                path,
+                base_token,
+                base_amount
+            );
             primary_fungible_store::transfer(
                 &get_signer(),
                 asset,
                 sender,
-                (fungible_asset_order::base_amount(&asset_order_packet) as u64)
+                ((base_amount) as u64)
             );
         }
     }
@@ -1096,51 +1108,42 @@ module zkgm::ibc_app {
         // Decode the packet data
         let store = borrow_global_mut<RelayStore>(get_vault_addr());
 
-        let packet_hash = commitment::commit_packet(&ibc_packet);
-        let parent =
-            smart_table::borrow_mut_with_default(
-                &mut store.in_flight_packet,
-                packet_hash,
-                packet::default()
-            );
+        let zkgm_packet = zkgm_packet::decode(packet::data(&ibc_packet));
 
-        if (packet::timeout_timestamp(parent) != 0
-            || packet::timeout_height(parent) != 0) {
-            let ack = acknowledgement::new(ACK_FAILURE, ACK_EMPTY);
-            ibc::ibc::write_acknowledgement(
-                witness(),
-                *parent,
-                acknowledgement::encode(&ack)
-            );
-            smart_table::upsert(
-                &mut store.in_flight_packet, packet_hash, packet::default()
-            );
-        } else {
-            let packet_data = ibc::packet::data(&ibc_packet);
+        if (lib::is_forwarded_packet(zkgm_packet::salt(&zkgm_packet))) {
+            let packet_hash = commitment::commit_packet(&ibc_packet);
+            let parent =
+                smart_table::borrow_mut_with_default(
+                    &mut store.in_flight_packet,
+                    packet_hash,
+                    packet::default()
+                );
+            if (packet::timeout_timestamp(parent) != 0
+                || packet::timeout_height(parent) != 0) {
+                return;
+            }
+        };
 
-            let zkgm_packet = zkgm_packet::decode(packet_data);
-
-            timeout_internal(
-                ibc_packet,
-                relayer,
-                zkgm_packet::salt(&zkgm_packet),
-                zkgm_packet::instruction(&zkgm_packet)
-            );
-        }
+        timeout_internal(
+            ibc_packet,
+            relayer,
+            zkgm_packet::path(&zkgm_packet),
+            zkgm_packet::instruction(&zkgm_packet)
+        );
     }
 
     fun timeout_internal(
         ibc_packet: Packet,
         relayer: address,
-        salt: vector<u8>,
+        path: u256,
         instruction: Instruction
-    ) acquires SignerRef {
+    ) acquires SignerRef, RelayStore {
         let version = instruction::version(&instruction);
         if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
             assert!(version == INSTR_VERSION_1, E_UNSUPPORTED_VERSION);
             timeout_fungible_asset_order(
                 ibc_packet,
-                salt,
+                path,
                 fungible_asset_order::decode(instruction::operand(&instruction))
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
@@ -1149,7 +1152,7 @@ module zkgm::ibc_app {
             timeout_batch(
                 ibc_packet,
                 relayer,
-                salt,
+                path,
                 batch::decode(instruction::operand(&instruction), &mut decode_idx)
             )
         } else if (instruction::opcode(&instruction) == OP_FORWARD) {
@@ -1157,7 +1160,7 @@ module zkgm::ibc_app {
             let decode_idx = 0x20;
             timeout_forward(
                 ibc_packet,
-                salt,
+                relayer,
                 forward::decode(instruction::operand(&instruction), &mut decode_idx)
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
@@ -1165,7 +1168,7 @@ module zkgm::ibc_app {
             timeout_multiplex(
                 ibc_packet,
                 relayer,
-                salt,
+                path,
                 multiplex::decode(instruction::operand(&instruction))
             )
         } else {
@@ -1174,17 +1177,17 @@ module zkgm::ibc_app {
     }
 
     fun timeout_fungible_asset_order(
-        ibc_packet: Packet, _salt: vector<u8>, transfer_packet: FungibleAssetOrder
-    ) acquires SignerRef {
-        refund(ibc::packet::source_channel_id(&ibc_packet), transfer_packet);
+        ibc_packet: Packet, path: u256, transfer_packet: FungibleAssetOrder
+    ) acquires SignerRef, RelayStore {
+        refund(ibc::packet::source_channel_id(&ibc_packet), path, transfer_packet);
     }
 
     fun timeout_batch(
         ibc_packet: Packet,
         relayer: address,
-        salt: vector<u8>,
+        path: u256,
         batch_packet: Batch
-    ) acquires SignerRef {
+    ) acquires SignerRef, RelayStore {
         let instructions = batch::instructions(&batch_packet);
         let l = vector::length(&instructions);
         let i = 0;
@@ -1192,20 +1195,27 @@ module zkgm::ibc_app {
             timeout_internal(
                 ibc_packet,
                 relayer,
-                salt,
+                path,
                 *vector::borrow(&instructions, i)
             );
         };
     }
 
     fun timeout_forward(
-        _ibc_packet: Packet, _salt: vector<u8>, _forward_packet: Forward
-    ) {}
+        ibc_packet: Packet, relayer: address, forward_packet: Forward
+    ) acquires SignerRef, RelayStore {
+        timeout_internal(
+            ibc_packet,
+            relayer,
+            forward::path(&forward_packet),
+            *forward::instruction(&forward_packet)
+        );
+    }
 
     fun timeout_multiplex(
         ibc_packet: Packet,
         relayer: address,
-        _salt: vector<u8>,
+        path: u256,
         multiplex_packet: Multiplex
     ) {
         if (!multiplex::eureka(&multiplex_packet)) {
@@ -1213,7 +1223,8 @@ module zkgm::ibc_app {
                 ibc::packet::new(
                     ibc::packet::source_channel_id(&ibc_packet),
                     ibc::packet::destination_channel_id(&ibc_packet),
-                    multiplex::encode_multiplex_sender_and_calldata(
+                    multiplex::encode_calldata(
+                        path,
                         *multiplex::contract_address(&multiplex_packet),
                         *multiplex::contract_calldata(&multiplex_packet)
                     ),
@@ -1277,6 +1288,42 @@ module zkgm::ibc_app {
         abort E_INFINITE_GAME
     }
 
+    fun increase_outstanding(
+        store: &mut RelayStore,
+        source_channel_id: u32,
+        path: u256,
+        token: address,
+        amount: u256
+    ) {
+        let balance_key = ChannelBalancePair { channel: source_channel_id, token };
+
+        let curr_balance = *smart_table::borrow(&store.channel_balance, balance_key);
+
+        smart_table::upsert(
+            &mut store.channel_balance,
+            balance_key,
+            curr_balance + (amount as u256)
+        );
+    }
+
+    fun decrease_outstanding(
+        store: &mut RelayStore,
+        source_channel_id: u32,
+        path: u256,
+        token: address,
+        amount: u256
+    ) {
+        let balance_key = ChannelBalancePair { channel: source_channel_id, token };
+
+        let curr_balance = *smart_table::borrow(&store.channel_balance, balance_key);
+
+        smart_table::upsert(
+            &mut store.channel_balance,
+            balance_key,
+            curr_balance - (amount as u256)
+        );
+    }
+
     public fun on_packet<T: key>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
         ibc::helpers::on_packet(
             witness(),
@@ -1319,37 +1366,6 @@ module zkgm::ibc_app {
         );
     }
 
-    #[test]
-    fun test_fls() {
-        assert!(fls(0) == 256, 1);
-        assert!(fls(22) == 4, 23);
-        assert!(fls(32) == 5, 33);
-        assert!(fls(444) == 8, 33);
-        assert!(fls(6671) == 12, 33);
-        assert!(fls(33334411) == 24, 33);
-    }
-
-    #[test]
-    public fun test_last_channel_from_path() {
-        assert!(last_channel_from_path(0) == 0, 1);
-        assert!(last_channel_from_path(244) == 244, 1);
-        assert!(last_channel_from_path(9294967296) == 2, 1);
-        assert!(
-            last_channel_from_path(
-                115792089237316195423570985008687907853269984665640564039457584007913129639935
-            ) == 4294967295,
-            1
-        );
-    }
-
-    #[test]
-    public fun test_update_Channel_path() {
-        assert!(update_channel_path(0, 0) == 0, 1);
-        assert!(update_channel_path(0, 34) == 34, 1);
-        assert!(update_channel_path(12414123, 111) == 476753783979, 1);
-        assert!(update_channel_path(44, 22) == 94489280556, 1);
-    }
-
     #[test(admin = @zkgm, ibc = @ibc)]
     public fun test_predict_token(admin: &signer, ibc: &signer) acquires SignerRef {
         dispatcher::init_module_for_testing(ibc);
@@ -1363,11 +1379,6 @@ module zkgm::ibc_app {
             predict_wrapped_token(path, destination_channel_id, token);
         let deployed_token_addr =
             deploy_token(salt, string::utf8(b""), string::utf8(b""), 18);
-
-        std::debug::print(&string::utf8(b"wrapped address is: "));
-        std::debug::print(&wrapped_address);
-        std::debug::print(&string::utf8(b"deployed_token_addr is: "));
-        std::debug::print(&deployed_token_addr);
 
         assert!(wrapped_address == deployed_token_addr, 101);
         assert!(is_deployed(deployed_token_addr), 102);

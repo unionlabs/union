@@ -256,9 +256,7 @@ module ibc::commitment {
         keccak256(packet_commitment_path(channel_id, sequence))
     }
 
-    public(friend) fun batch_packets_commitment_key(
-        batch_hash: vector<u8>
-    ): vector<u8> {
+    public fun batch_packets_commitment_key(batch_hash: vector<u8>): vector<u8> {
         keccak256(batch_packets_commitment_path(batch_hash))
     }
 
