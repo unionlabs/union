@@ -2,9 +2,12 @@ import { Effect } from "effect"
 import { ucs03abi } from "../evm/abi/ucs03.js"
 import { ViemWalletClient } from "../evm/client.js"
 import { writeContract } from "../evm/contract.js"
+import { executeContractWithKey } from "../aptos/contract.js"
+import { AptosWalletClient } from "../aptos/client.js"
 import { type Instruction, encodeAbi } from "./instruction.js"
-import { generateSalt } from "../utils/index.js"
+import { generateSalt, generateSaltAptos } from "../utils/index.js"
 import { EvmChannelSource } from "../evm/channel.js"
+import { AptosChannelSource } from "../aptos/channel.js"
 import { executeContract } from "../cosmos/contract.js"
 import { SigningCosmWasmClientContext } from "../cosmos/client.js"
 import { CosmosChannelSource } from "../cosmos/channel.js"
@@ -60,3 +63,30 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
       }
     )
   })
+
+  export const sendInstructionAptos = (instruction: Instruction) =>
+    Effect.gen(function* () {
+      const walletClient = yield* AptosWalletClient
+      const sourceConfig = yield* AptosChannelSource
+      const module_name = "ibc_app"
+      const function_name = "send"
+      const function_arguments = [
+        sourceConfig.channelId,
+        0,
+        1000000000000,
+        generateSaltAptos(),
+        instruction.version,
+        instruction.opcode,
+        encodeAbi(instruction)
+      ]
+      
+      return yield* executeContractWithKey(
+        walletClient.client,
+        walletClient.account,
+        sourceConfig.ucs03address,
+        module_name,
+        function_name,
+        [], // type arguments
+        function_arguments
+      )
+    })

@@ -1,6 +1,6 @@
 import { Context, Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
-import { Aptos, type AptosConfig, type AptosApiError } from "@aptos-labs/ts-sdk"
+import { Aptos, type AptosConfig, type AptosApiError, Account as AptosAccount } from "@aptos-labs/ts-sdk"
 
 export class AptosPublicClientSource extends Context.Tag("AptosPublicClientSource")<
   AptosPublicClientSource,
@@ -21,17 +21,16 @@ export class AptosPublicClient extends Context.Tag("AptosPublicClient")<
   { readonly client: Aptos }
 >() {}
 
-// /**
-//  * A wallet client that can be used for signing transactions
-//  */
-// export class AptosWalletClient extends Context.Tag("AptosWalletClient")<
-// AptosWalletClient,
-//   {
-//     readonly client: WalletClient
-//     readonly account: Account
-//     readonly chain: Chain
-//   }
-// >() {}
+/**
+ * A wallet client that can be used for signing transactions
+ */
+export class AptosWalletClient extends Context.Tag("AptosWalletClient")<
+AptosWalletClient,
+  {
+    readonly client: Aptos
+    readonly account: AptosAccount
+  }
+>() {}
 
 export class AptosError extends Data.TaggedError("AptosError")<{
   cause: AptosApiError
