@@ -194,8 +194,8 @@ module ibc::state_lens_ics23_mpt_lc {
     }
 
     public fun update_client(
-        client_id: u32, client_msg: vector<u8>
-    ): (vector<u8>, vector<vector<u8>>, vector<u64>) acquires State {
+        client_id: u32, client_msg: vector<u8>, _relayer: address
+    ): (vector<u8>, vector<u8>, u64) acquires State {
         let header = decode_header(client_msg);
 
         let state = borrow_global_mut<State>(get_client_address(client_id));
@@ -249,8 +249,8 @@ module ibc::state_lens_ics23_mpt_lc {
 
         (
             bcs::to_bytes(&state.client_state),
-            vector[encode_consensus_state(&consensus_state)],
-            vector[new_height]
+            encode_consensus_state(&consensus_state),
+            new_height
         )
     }
 

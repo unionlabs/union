@@ -222,20 +222,20 @@ module ibc::cometbls_lc {
             );
         };
 
-        // assert!(
-        //     groth16_verifier::verify_zkp(
-        //         &state.client_state.chain_id,
-        //         &consensus_state.next_validators_hash,
-        //         light_header_as_input_hash(&header.signed_header),
-        //         &header.zero_knowledge_proof
-        //     ),
-        //     E_INVALID_ZKP
-        // );
+        assert!(
+            groth16_verifier::verify_zkp(
+                &state.client_state.chain_id,
+                &consensus_state.next_validators_hash,
+                light_header_as_input_hash(&header.signed_header),
+                &header.zero_knowledge_proof
+            ),
+            E_INVALID_ZKP
+        );
     }
 
     public(friend) fun update_client(
-        client_id: u32, client_msg: vector<u8>
-    ): (vector<u8>, vector<vector<u8>>, vector<u64>) acquires State {
+        client_id: u32, client_msg: vector<u8>, _relayer: address
+    ): (vector<u8>, vector<u8>, u64) acquires State {
         let header = decode_header(client_msg);
 
         let state = borrow_global_mut<State>(get_client_address(client_id));
@@ -272,8 +272,8 @@ module ibc::cometbls_lc {
 
         (
             encode_client_state(&state.client_state),
-            vector[encode_consensus_state(&new_consensus_state)],
-            vector[new_height]
+            encode_consensus_state(&new_consensus_state),
+            new_height
         )
     }
 

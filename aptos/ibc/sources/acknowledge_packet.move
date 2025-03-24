@@ -70,22 +70,19 @@ module ibc::acknowledge_packet {
 
     use std::vector;
 
+    const E_NOT_ENOUGH_PACKETS: u64 = 34001;
+
     public entry fun acknowledge_packet<T: key + store + drop>(
-        port_id: address,
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
-        packet_datas: vector<vector<u8>>,
+        packet_data: vector<vector<u8>>,
         packet_timeout_heights: vector<u64>,
         packet_timeout_timestamps: vector<u64>,
         acknowledgements: vector<vector<u8>>,
-        maker: address,
         proof: vector<u8>,
-        proof_height: u64
+        proof_height: u64,
+        relayer: address
     ) {
-        let port = ibc::get_port_id<T>();
-        // assert!(port == port_id, E_UNAUTHORIZED);
-        assert!(port == port_id, 2);
-
         let packets: vector<Packet> = vector::empty();
         let i = 0;
         while (i < vector::length(&packet_source_channels)) {
@@ -94,7 +91,7 @@ module ibc::acknowledge_packet {
                 packet::new(
                     *vector::borrow(&packet_source_channels, i),
                     *vector::borrow(&packet_destination_channels, i),
-                    *vector::borrow(&packet_datas, i),
+                    *vector::borrow(&packet_data, i),
                     *vector::borrow(&packet_timeout_heights, i),
                     *vector::borrow(&packet_timeout_timestamps, i)
                 )
@@ -102,31 +99,18 @@ module ibc::acknowledge_packet {
             i = i + 1;
         };
         let l = vector::length(&packets);
-        // assert!(l > 0, E_NOT_ENOUGH_PACKETS);
-        assert!(l > 0, 1);
+        assert!(l > 0, E_NOT_ENOUGH_PACKETS);
 
-        let first_packet = *vector::borrow(&packets, 0);
-        let source_channel_id = packet::source_channel_id(&first_packet);
-        let destination_channel_id = packet::destination_channel_id(&first_packet);
+        let source_channel_id = packet::source_channel_id(vector::borrow(&packets, 0));
 
         let channel = ibc::ensure_channel_state(source_channel_id);
         let client_id = ibc::ensure_connection_state(channel::connection_id(&channel));
 
-        let commitment_key;
-        let commitment_value;
-        if (l == 1) {
-            commitment_key = commitment::batch_receipts_commitment_key(
-                commitment::commit_packet(&first_packet)
-            );
-            commitment_value = commitment::commit_ack(
-                *vector::borrow(&acknowledgements, 0)
-            );
-        } else {
-            commitment_key = commitment::batch_receipts_commitment_key(
+        let commitment_key =
+            commitment::batch_receipts_commitment_key(
                 commitment::commit_packets(&packets)
             );
-            commitment_value = commitment::commit_acks(acknowledgements);
-        };
+        let commitment_value = commitment::commit_acks(acknowledgements);
 
         let err =
             ibc::verify_commitment(
@@ -144,22 +128,21 @@ module ibc::acknowledge_packet {
         let i = 0;
         while (i < l) {
             let packet = *vector::borrow(&packets, i);
-            let commitment_key =
-                commitment::batch_packets_commitment_key(
-                    commitment::commit_packet(&packet)
-                );
-            ibc::remove_commitment(commitment_key);
-
+            ibc::mark_packet_as_acknowledged(&packet);
             let acknowledgement = *vector::borrow(&acknowledgements, i);
-            // onAcknowledgementPacket(...)
 
             let param =
-                helpers::pack_acknowledge_packet_params(packet, acknowledgement, @ibc);
+                helpers::pack_acknowledge_packet_params(packet, acknowledgement, relayer);
             engine::dispatch<T>(param);
 
             dispatcher::delete_storage<T>();
 
-            ibc::emit_acknowledge_packet(packet, acknowledgement, maker);
+            ibc::emit_acknowledge_packet(
+                packet,
+                commitment::commit_packet(&packet),
+                acknowledgement,
+                relayer
+            );
 
             i = i + 1;
         }

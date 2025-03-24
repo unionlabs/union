@@ -134,28 +134,20 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public(friend) fun check_for_misbehaviour(
-        client_type: String, client_id: u32, header: vector<u8>
-    ): bool {
-        if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
-            return cometbls_lc::check_for_misbehaviour(client_id, header)
-        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return state_lens_ics23_mpt_lc::check_for_misbehaviour(client_id, header)
-        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            return state_lens_ics23_ics23_lc::check_for_misbehaviour(client_id, header)
-        };
-        abort E_UNKNOWN_CLIENT_TYPE
-    }
-
     public(friend) fun update_client(
-        client_type: String, client_id: u32, client_msg: vector<u8>
-    ): (vector<u8>, vector<vector<u8>>, vector<u64>) {
+        client_type: String,
+        client_id: u32,
+        client_msg: vector<u8>,
+        relayer: address
+    ): (vector<u8>, vector<u8>, u64) {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
-            return cometbls_lc::update_client(client_id, client_msg)
+            return cometbls_lc::update_client(client_id, client_msg, relayer)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return state_lens_ics23_mpt_lc::update_client(client_id, client_msg)
+            return state_lens_ics23_mpt_lc::update_client(client_id, client_msg, relayer)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            return state_lens_ics23_ics23_lc::update_client(client_id, client_msg)
+            return state_lens_ics23_ics23_lc::update_client(
+                client_id, client_msg, relayer
+            )
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }

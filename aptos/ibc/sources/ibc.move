@@ -88,6 +88,7 @@ module ibc::ibc {
 
     const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
     const COMMITMENT_MAGIC: vector<u8> = x"0100000000000000000000000000000000000000000000000000000000000000";
+    const COMMITMENT_MAGIC_ACK: vector<u8> = x"0200000000000000000000000000000000000000000000000000000000000000";
 
     const CLIENT_TYPE_COMETBLS: vector<u8> = b"cometbls";
 
@@ -144,7 +145,7 @@ module ibc::ibc {
     const E_PACKET_NOT_RECEIVED: u64 = 1041;
     const E_ACK_ALREADY_EXIST: u64 = 1042;
     const E_TIMEOUT_MUST_BE_SET: u64 = 1044;
-    const E_PACKET_SEQUENCE_ACK_SEQUENCE_MISMATCH: u64 = 1045;
+    const E_PACKET_ALREADY_ACKNOWLEDGED: u64 = 1045;
 
     #[event]
     struct CreateClient has copy, drop, store {
@@ -164,8 +165,7 @@ module ibc::ibc {
     #[event]
     struct UpdateClient has copy, drop, store {
         client_id: u32,
-        client_type: String,
-        counterparty_height: u64
+        height: u64
     }
 
     #[event]
@@ -237,33 +237,39 @@ module ibc::ibc {
     }
 
     #[event]
-    struct RecvIntentPacket has drop, store {
-        packet: Packet,
+    struct IntentRecvPacket has drop, store {
+        channel_id: u32,
+        packet_hash: vector<u8>,
         maker: address,
         maker_msg: vector<u8>
     }
 
     #[event]
     struct PacketRecv has drop, store {
-        packet: Packet,
+        channel_id: u32,
+        packet_hash: vector<u8>,
         maker: address,
         maker_msg: vector<u8>
     }
 
     #[event]
     struct PacketSend has drop, store {
+        channel_id: u32,
         packet_hash: vector<u8>,
         packet: Packet
     }
 
     #[event]
-    struct TimeoutPacket has drop, store {
-        packet: Packet
+    struct PacketTimeout has drop, store {
+        channel_id: u32,
+        packet_hash: vector<u8>,
+        maker: address
     }
 
     #[event]
     struct PacketAck has drop, store {
-        packet: Packet,
+        channel_id: u32,
+        packet_hash: vector<u8>,
         acknowledgement: vector<u8>,
         maker: address
     }
@@ -720,7 +726,30 @@ module ibc::ibc {
     /// the client update data. The light client just needs to make sure altering this data can NEVER make it
     /// transition to an invalid state.
     public entry fun update_client(
-        client_id: u32, client_message: vector<u8>
+        client_id: u32,
+        client_message: vector<u8>,
+        relayer: address
+    ) acquires IBCStore {
+        update_client_impl(
+            client_id,
+            client_message,
+            relayer,
+            |client_type, client_id, client_message, relayer| {
+                light_client::update_client(
+                    client_type,
+                    client_id,
+                    client_message,
+                    relayer
+                )
+            }
+        );
+    }
+
+    inline fun update_client_impl(
+        client_id: u32,
+        client_message: vector<u8>,
+        relayer: address,
+        lc_update_client: |String, u32, vector<u8>, address| (vector<u8>, vector<u8>, u64)
     ) acquires IBCStore {
         let client_type = client_id_to_type(client_id);
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
@@ -733,22 +762,13 @@ module ibc::ibc {
             E_CLIENT_NOT_FOUND
         );
 
-        if (light_client::check_for_misbehaviour(client_type, client_id, client_message)) {
-            event::emit(SubmitMisbehaviour { client_id, client_type: client_type });
-            return
-        };
-
-        let (client_state, consensus_states, heights) =
-            light_client::update_client(client_type, client_id, client_message);
-
-        let heights_len = vector::length(&heights);
-
-        assert!(
-            !vector::is_empty(&consensus_states)
-                && !vector::is_empty(&heights)
-                && heights_len == vector::length(&consensus_states),
-            E_INVALID_UPDATE
-        );
+        let (client_state, consensus_state, update_height) =
+            lc_update_client(
+                client_type,
+                client_id,
+                client_message,
+                relayer
+            );
 
         table::upsert(
             &mut store.commitments,
@@ -756,22 +776,14 @@ module ibc::ibc {
             client_state
         );
 
-        let i = 0;
-        while (i < heights_len) {
-            let height = *vector::borrow(&heights, i);
+        table::upsert(
+            &mut store.commitments,
+            commitment::consensus_state_commitment_key(client_id, update_height),
+            hash::sha2_256(consensus_state)
+        );
 
-            table::upsert(
-                &mut store.commitments,
-                commitment::consensus_state_commitment_key(client_id, height),
-                hash::sha2_256(*vector::borrow(&consensus_states, i))
-            );
+        event::emit(UpdateClient { client_id, height: update_height });
 
-            event::emit(
-                UpdateClient { client_id, client_type, counterparty_height: height }
-            );
-
-            i = i + 1;
-        };
     }
 
     /// Report a misbehaviour to the client such as the target chain being forked, a finalized state being reverted, etc.
@@ -1275,9 +1287,7 @@ module ibc::ibc {
     }
 
     public(friend) fun timeout_packet(
-        packet: Packet,
-        proof: vector<u8>,
-        proof_height: u64
+        packet: Packet, proof: vector<u8>, proof_height: u64
     ) acquires IBCStore {
         timeout_packet_impl(
             packet,
@@ -1309,10 +1319,9 @@ module ibc::ibc {
         let client_id = ensure_connection_state(channel::connection_id(&channel));
         let client_type = client_id_to_type(client_id);
 
-        let commitment_key =
-            commitment::batch_receipts_commitment_key(
-                commitment::commit_packet(&packet)
-            );
+        let packet_hash = commitment::commit_packet(&packet);
+        let commitment_key = commitment::batch_receipts_commitment_key(packet_hash);
+
         let err =
             lc_verify_non_membership(
                 client_type,
@@ -1322,6 +1331,7 @@ module ibc::ibc {
                 commitment_key
             );
         assert!(err == 0, err);
+        mark_packet_as_acknowledged(&packet);
 
         if (packet::timeout_timestamp(&packet) != 0) {
             let proof_timestamp =
@@ -1341,16 +1351,23 @@ module ibc::ibc {
             );
         };
 
-        let commitment_key =
-            commitment::batch_packets_commitment_key(
-                commitment::commit_packet(&packet)
-            );
-        table::remove(
-            &mut borrow_global_mut<IBCStore>(get_vault_addr()).commitments,
-            commitment_key
+        event::emit(
+            PacketTimeout { channel_id: source_channel, packet_hash, maker: relayer }
         );
+    }
 
-        event::emit(TimeoutPacket { packet });
+    public(friend) fun mark_packet_as_acknowledged(packet: &Packet) acquires IBCStore {
+        let store = borrow_global_mut<IBCStore>(get_vault_addr());
+        let commitment_key =
+            commitment::batch_packets_commitment_key(commitment::commit_packet(packet));
+        let commitment = table::borrow_mut(&mut store.commitments, commitment_key);
+        if (commitment == &COMMITMENT_MAGIC_ACK) {
+            abort E_PACKET_ALREADY_ACKNOWLEDGED
+        } else if (commitment != &COMMITMENT_MAGIC) {
+            abort E_PACKET_COMMITMENT_NOT_FOUND
+        };
+
+        *commitment = COMMITMENT_MAGIC_ACK;
     }
 
     // Initializes the IBCStore resource in the signer's account
@@ -1654,21 +1671,36 @@ module ibc::ibc {
     }
 
     public(friend) fun emit_recv_packet(
-        packet: Packet, maker: address, maker_msg: vector<u8>
+        channel_id: u32,
+        packet_hash: vector<u8>,
+        maker: address,
+        maker_msg: vector<u8>
     ) {
-        event::emit(PacketRecv { packet, maker, maker_msg })
+        event::emit(
+            PacketRecv { channel_id, packet_hash, maker, maker_msg }
+        )
     }
 
     public(friend) fun emit_recv_intent_packet(
-        packet: Packet, maker: address, maker_msg: vector<u8>
+        channel_id: u32,
+        packet_hash: vector<u8>,
+        maker: address,
+        maker_msg: vector<u8>
     ) {
-        event::emit(RecvIntentPacket { packet, maker, maker_msg })
+        event::emit(
+            IntentPacketRecv { channel_id, packet_hash, maker, maker_msg }
+        )
     }
 
     public(friend) fun emit_acknowledge_packet(
-        packet: Packet, acknowledgement: vector<u8>, maker: address
+        packet: Packet,
+        packet_hash: vector<u8>,
+        acknowledgement: vector<u8>,
+        maker: address
     ) {
-        event::emit(PacketAck { packet, acknowledgement, maker });
+        event::emit(
+            PacketAck { packet, packet_hash, acknowledgement, maker }
+        );
     }
 
     #[test_only]

@@ -73,6 +73,10 @@ module ibc::recv_packet {
 
     const COMMITMENT_MAGIC: vector<u8> = x"0100000000000000000000000000000000000000000000000000000000000000";
 
+    const E_NOT_ENOUGH_PACKETS: u64 = 34002;
+    const E_HEIGHT_TIMEOUT: u64 = 34003;
+    const E_TIMESTAMP_TIMEOUT: u64 = 34004;
+
     /// Receives and processes an IBC packet
     ///
     /// Note that any sanity check failures will result in this function to be aborted in order for caller's
@@ -127,9 +131,7 @@ module ibc::recv_packet {
         intent: bool
     ) {
         let l = vector::length(&packets);
-        // assert!(l > 0, E_NOT_ENOUGH_PACKETS);
-
-        assert!(l > 0, 2);
+        assert!(l > 0, E_NOT_ENOUGH_PACKETS);
 
         let first_packet = *vector::borrow(&packets, 0);
         let source_channel = packet::source_channel_id(&first_packet);
@@ -139,16 +141,10 @@ module ibc::recv_packet {
         let client_id = ibc::ensure_connection_state(channel::connection_id(&channel));
 
         if (!intent) {
-            let commitment_key;
-            if (l == 1) {
-                commitment_key = commitment::batch_packets_commitment_key(
-                    commitment::commit_packet(&first_packet)
-                )
-            } else {
+            let commitment_key =
                 commitment_key = commitment::batch_packets_commitment_key(
                     commitment::commit_packets(&packets)
-                )
-            };
+                );
 
             let err =
                 ibc::verify_commitment(
@@ -171,8 +167,7 @@ module ibc::recv_packet {
             if (packet::timeout_height(&packet) != 0) {
                 assert!(
                     block::get_current_block_height() < packet::timeout_height(&packet),
-                    // E_HEIGHT_TIMEOUT
-                    1
+                    E_HEIGHT_TIMEOUT
                 );
             };
 
@@ -180,37 +175,39 @@ module ibc::recv_packet {
             if (packet::timeout_timestamp(&packet) != 0) {
                 assert!(
                     current_timestamp < packet::timeout_timestamp(&packet),
-                    // E_TIMESTAMP_TIMEOUT
-                    1
+                    E_TIMESTAMP_TIMEOUT
                 );
             };
 
-            let commitment_key =
-                commitment::batch_receipts_commitment_key(
-                    commitment::commit_packet(&packet)
-                );
+            let packet_hash = commitment::commit_packet(&packet);
+            let commitment_key = commitment::batch_receipts_commitment_key(packet_hash);
 
             if (!set_packet_receive(commitment_key)) {
                 let maker_msg = *vector::borrow(&maker_msgs, i);
                 let acknowledgement =
                     if (intent) {
                         let param =
-                            helpers::pack_recv_intent_packet_params(packet, @ibc, b"");
+                            helpers::pack_recv_intent_packet_params(
+                                packet, maker, maker_msg
+                            );
                         engine::dispatch<T>(param);
 
                         let ack = dispatcher::get_return_value<T>();
 
                         dispatcher::delete_storage<T>();
-                        ibc::emit_recv_intent_packet(packet, maker, maker_msg);
+                        ibc::emit_recv_intent_packet(
+                            packet, packet_hash, maker, maker_msg
+                        );
                         ack
                     } else {
-                        let param = helpers::pack_recv_packet_params(packet, @ibc, b"");
+                        let param =
+                            helpers::pack_recv_packet_params(packet, maker, maker_msg);
                         engine::dispatch<T>(param);
 
                         let ack = dispatcher::get_return_value<T>();
 
                         dispatcher::delete_storage<T>();
-                        ibc::emit_recv_packet(packet, maker, maker_msg);
+                        ibc::emit_recv_packet(packet, packet_hash, maker, maker_msg);
                         ack
                     };
                 if (vector::length(&acknowledgement) > 0) {
