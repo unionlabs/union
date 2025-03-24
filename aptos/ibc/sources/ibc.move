@@ -86,7 +86,6 @@ module ibc::ibc {
     friend ibc::acknowledge_packet;
     friend ibc::timeout_packet;
 
-    const IBC_APP_SEED: vector<u8> = b"ibc-union-app-v1";
     const COMMITMENT_MAGIC: vector<u8> = x"0100000000000000000000000000000000000000000000000000000000000000";
     const COMMITMENT_MAGIC_ACK: vector<u8> = x"0200000000000000000000000000000000000000000000000000000000000000";
 
@@ -1202,13 +1201,13 @@ module ibc::ibc {
     /// * `timeout_timestamp`: The timestamp when this packet will time out. `0` means none, but note that both `timeout_height`
     ///   and `timeout_timestamp` cannot be `0`.
     /// * `data`: The app defined arbitrary data that will be relayed to the counterparty chain as is.
-    public fun send_packet(
-        ibc_app: &signer,
+    public fun send_packet<T: key + store + drop>(
+        _witness: T,
         source_channel: u32,
         timeout_height: u64,
         timeout_timestamp: u64,
         data: vector<u8>
-    ): packet::Packet acquires IBCStore {
+    ): packet::Packet acquires IBCStore, Port {
         if (timeout_timestamp == 0 && timeout_height == 0) {
             abort E_TIMEOUT_MUST_BE_SET
         };
@@ -1219,7 +1218,7 @@ module ibc::ibc {
 
         assert!(
             smart_table::borrow(&mut store.channel_to_module, source_channel)
-                == &signer::address_of(ibc_app),
+                == &get_port_id<T>(),
             E_UNAUTHORIZED
         );
 
@@ -1249,14 +1248,14 @@ module ibc::ibc {
     ///
     /// * `packet`: The packet that will be acknowledged.
     /// * `acknowledgement`: The acknowledgement that is defined by the IBC app.
-    public fun write_acknowledgement(
-        ibc_app: &signer, packet: packet::Packet, acknowledgement: vector<u8>
-    ) acquires IBCStore {
+    public fun write_acknowledgement<T: key + store + drop>(
+        _witness: T, packet: packet::Packet, acknowledgement: vector<u8>
+    ) acquires IBCStore, Port {
         assert!(
             smart_table::borrow(
                 &borrow_global<IBCStore>(get_vault_addr()).channel_to_module,
                 packet::source_channel_id(&packet)
-            ) == &signer::address_of(ibc_app),
+            ) == &get_port_id<T>(),
             E_UNAUTHORIZED
         );
 
@@ -1493,14 +1492,6 @@ module ibc::ibc {
         let commitment =
             table::borrow_with_default(&store.commitments, key, &vector::empty<u8>());
         *commitment
-    }
-
-    fun authorize_app(ibc_app: &signer, port_id: address) {
-        assert!(
-            object::create_object_address(&port_id, IBC_APP_SEED)
-                == signer::address_of(ibc_app),
-            E_UNAUTHORIZED
-        );
     }
 
     // Function to generate a client identifier
@@ -2999,10 +2990,10 @@ module ibc::ibc {
         let channel_id = open_channel();
         let data = x"cafebabe";
 
-        let packet = send_packet(ibc_app, channel_id, 10, 0, data);
+        let packet = send_packet<TestApp>(TestApp {}, channel_id, 10, 0, data);
 
         // send_packet works when either of the timeout params are set
-        send_packet(ibc_app, channel_id, 0, 10, data);
+        send_packet<TestApp>(TestApp {}, channel_id, 0, 10, data);
 
         assert!(
             packet == packet::new(channel_id, 2, data, 10, 0),
@@ -3026,7 +3017,7 @@ module ibc::ibc {
     #[test(ibc_app = @0xdeadbeef)]
     #[expected_failure(abort_code = E_TIMEOUT_MUST_BE_SET)]
     fun send_packet_fails_when_timeout_not_set(ibc_app: &signer) acquires IBCStore {
-        send_packet(ibc_app, 1, 0, 0, x"deadbeef");
+        send_packet<TestApp>(TestApp {}, 1, 0, 0, x"deadbeef");
     }
 
     #[test(alice = @ibc, ibc_app = @0xdeadbeef)]
@@ -3036,7 +3027,7 @@ module ibc::ibc {
     ) acquires IBCStore {
         init_module_for_tests(alice);
 
-        send_packet(ibc_app, 1, 0, 10, x"deadbeef");
+        send_packet<TestApp>(TestApp {}, 1, 0, 10, x"deadbeef");
     }
 
     #[test(alice = @ibc, ibc_app = @0xdeadbeef)]
@@ -3050,7 +3041,7 @@ module ibc::ibc {
 
         let channel_id = open_channel();
 
-        send_packet(alice, channel_id, 0, 10, x"deadbeef");
+        send_packet<TestApp>(TestApp {}, channel_id, 0, 10, x"deadbeef");
     }
 
     #[test(alice = @ibc, ibc_app = @0xdeadbeef)]
@@ -3064,7 +3055,7 @@ module ibc::ibc {
 
         let timeout_height = 10;
 
-        let packet = send_packet(ibc_app, channel_id, timeout_height, 0, data);
+        let packet = send_packet<TestApp>(TestApp {}, channel_id, timeout_height, 0, data);
 
         let proof = x"cafebabe";
         let proof_height = timeout_height + 10;

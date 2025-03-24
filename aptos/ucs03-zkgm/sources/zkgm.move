@@ -131,7 +131,7 @@ module zkgm::ibc_app {
 
     struct IbcAppWitness has drop, store, key {}
 
-    public(friend) fun new_ucs_relay_proof(): IbcAppWitness {
+    public(friend) fun witness(): IbcAppWitness {
         IbcAppWitness {}
     }
 
@@ -173,8 +173,61 @@ module zkgm::ibc_app {
         relayer: address
     }
 
-    struct Port<phantom T: key + store + drop> has key, copy, drop, store {
-        port_id: address
+    public entry fun call(
+        sender: &signer,
+        channel_id: u32,
+        contract_address: address,
+        contract_calldata: vector<u8>,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        salt: vector<u8>
+    ) {
+        let data = vector::empty<u8>();
+        vector::append(&mut data, bcs::to_bytes(&signer::address_of(sender)));
+        vector::append(&mut data, bcs::to_bytes(&salt));
+        let multiplex =
+            multiplex::new(
+                bcs::to_bytes(&signer::address_of(sender)),
+                true,
+                bcs::to_bytes(&contract_address),
+                contract_calldata
+            );
+        let operand = multiplex::encode(&multiplex);
+        let zkgm_pack =
+            zkgm_packet::new(
+                data,
+                0,
+                instruction::new(INSTR_VERSION_0, OP_MULTIPLEX, operand)
+            );
+        ibc::ibc::send_packet(
+            witness(),
+            channel_id,
+            timeout_height,
+            timeout_timestamp,
+            zkgm_packet::encode(&zkgm_pack)
+        );
+    }
+
+    public entry fun send(
+        sender: &signer,
+        channel_id: u32,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        salt: vector<u8>,
+        version: u8,
+        opcode: u8,
+        operand: vector<u8>
+    ) acquires SignerRef, RelayStore {
+        let instruction = instruction::new(version, opcode, operand);
+        verify_internal(sender, channel_id, 0, instruction);
+        let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
+        ibc::ibc::send_packet(
+            witness(),
+            channel_id,
+            timeout_height,
+            timeout_timestamp,
+            zkgm_packet::encode(&zkgm_pack)
+        );
     }
 
     #[view]
@@ -192,17 +245,16 @@ module zkgm::ibc_app {
         object::create_object_address(&@zkgm, IBC_APP_SEED)
     }
 
-    public fun get_signer(): signer acquires SignerRef {
-        let vault = borrow_global<SignerRef>(get_vault_addr());
-        object::generate_signer_for_extending(&vault.self_ref)
+    #[view]
+    public fun predict_wrapped_token(
+        path: u256, destination_channel_id: u32, token: vector<u8>
+    ): (address, vector<u8>) {
+        let salt = hash::sha3_256(serialize_salt(path, destination_channel_id, token));
+
+        let wrapped_address = object::create_object_address(&get_vault_addr(), salt);
+        (wrapped_address, salt)
     }
 
-    public fun get_self_address(): address acquires SignerRef {
-        let vault = borrow_global<SignerRef>(get_vault_addr());
-        vault.self_address
-    }
-
-    // Initialize the RelayStore and SignerRef
     fun init_module(account: &signer) {
         assert!(signer::address_of(account) == @zkgm, E_UNAUTHORIZED);
 
@@ -232,31 +284,17 @@ module zkgm::ibc_app {
                 string::utf8(b"on_packet")
             );
 
-        ibc::register_application<IbcAppWitness>(account, cb, new_ucs_relay_proof());
+        ibc::register_application<IbcAppWitness>(account, cb, witness());
     }
 
-    // Initialize the RelayStore and SignerRef
-    fun init_module_for_testing(account: &signer) {
-        assert!(signer::address_of(account) == @zkgm, E_UNAUTHORIZED);
+    fun get_signer(): signer acquires SignerRef {
+        let vault = borrow_global<SignerRef>(get_vault_addr());
+        object::generate_signer_for_extending(&vault.self_ref)
+    }
 
-        let vault_constructor_ref = &object::create_named_object(account, IBC_APP_SEED);
-        let vault_signer = &object::generate_signer(vault_constructor_ref);
-
-        let store = RelayStore {
-            in_flight_packet: smart_table::new(),
-            channel_balance: smart_table::new(),
-            token_origin: smart_table::new()
-        };
-
-        move_to(vault_signer, store);
-
-        move_to(
-            vault_signer,
-            SignerRef {
-                self_ref: object::generate_extend_ref(vault_constructor_ref),
-                self_address: signer::address_of(account)
-            }
-        );
+    fun get_self_address(): address acquires SignerRef {
+        let vault = borrow_global<SignerRef>(get_vault_addr());
+        vault.self_address
     }
 
     fun serialize_salt(
@@ -269,17 +307,7 @@ module zkgm::ibc_app {
         data
     }
 
-    #[view]
-    public fun predict_wrapped_token(
-        path: u256, destination_channel_id: u32, token: vector<u8>
-    ): (address, vector<u8>) {
-        let salt = hash::sha3_256(serialize_salt(path, destination_channel_id, token));
-
-        let wrapped_address = object::create_object_address(&get_vault_addr(), salt);
-        (wrapped_address, salt)
-    }
-
-    public fun deploy_token(
+    fun deploy_token(
         salt: vector<u8>,
         name: string::String,
         symbol: string::String,
@@ -297,14 +325,14 @@ module zkgm::ibc_app {
         zkgm::fa_coin::get_metadata_address(salt)
     }
 
-    public fun is_deployed(token: address): bool {
+    fun is_deployed(token: address): bool {
         object::is_object(token)
     }
 
     /// Find last set (most significant bit).
     /// Returns the index of the most significant bit of `x`.
     /// If `x` is zero, returns 256.
-    public fun fls(x: u256): u256 {
+    fun fls(x: u256): u256 {
         if (x == 0) {
             return 256
         };
@@ -386,161 +414,8 @@ module zkgm::ibc_app {
         (next_channel as u256)
     }
 
-    public fun is_valid_version(version_bytes: String): bool {
+    fun is_valid_version(version_bytes: String): bool {
         version_bytes == string::utf8(VERSION)
-    }
-
-    public entry fun transfer(
-        sender: &signer,
-        channel_id: u32,
-        receiver: vector<u8>,
-        base_token: address,
-        base_amount: u256,
-        quote_token: vector<u8>,
-        quote_amount: u256,
-        timeout_height: u64,
-        timeout_timestamp: u64,
-        salt: vector<u8>
-    ) acquires RelayStore, SignerRef {
-        let store = borrow_global_mut<RelayStore>(get_vault_addr());
-        if (base_amount == 0) {
-            abort E_INVALID_AMOUNT
-        };
-
-        let asset = get_metadata(base_token);
-        let name = zkgm::fa_coin::name_with_metadata(asset);
-        let symbol = zkgm::fa_coin::symbol_with_metadata(asset);
-
-        let origin = *smart_table::borrow_with_default(
-            &store.token_origin, base_token, &0
-        );
-
-        let (wrapped_address, _salt) = predict_wrapped_token(0, channel_id, quote_token);
-
-        if (last_channel_from_path(origin) == channel_id
-            && base_token == wrapped_address) {
-            zkgm::fa_coin::burn_with_metadata(
-                &get_signer(),
-                signer::address_of(sender),
-                (base_amount as u64),
-                asset
-            );
-        } else {
-            origin = 0;
-
-            primary_fungible_store::transfer(
-                sender,
-                asset,
-                signer::address_of(&get_signer()),
-                (base_amount as u64)
-            );
-
-            let balance_key = ChannelBalancePair { channel: channel_id, token: base_token };
-
-            let curr_balance =
-                *smart_table::borrow_mut_with_default(
-                    &mut store.channel_balance, balance_key, 0
-                );
-
-            smart_table::upsert(
-                &mut store.channel_balance,
-                balance_key,
-                curr_balance + (base_amount as u256)
-            );
-        };
-
-        let fungible_asset_order =
-            fungible_asset_order::new(
-                bcs::to_bytes(&signer::address_of(sender)),
-                receiver,
-                bcs::to_bytes(&base_token),
-                base_amount,
-                symbol,
-                name,
-                zkgm::fa_coin::decimals_with_metadata(asset),
-                origin,
-                quote_token,
-                quote_amount
-            );
-        let operand = fungible_asset_order::encode(&fungible_asset_order);
-        let zkgm_pack =
-            zkgm_packet::new(
-                salt,
-                0,
-                instruction::new(
-                    INSTR_VERSION_1,
-                    OP_FUNGIBLE_ASSET_ORDER,
-                    operand
-                )
-            );
-
-        ibc::ibc::send_packet(
-            &get_signer(),
-            get_self_address(),
-            channel_id,
-            timeout_height,
-            timeout_timestamp,
-            zkgm_packet::encode(&zkgm_pack)
-        );
-    }
-
-    public entry fun call(
-        sender: &signer,
-        channel_id: u32,
-        contract_address: address,
-        contract_calldata: vector<u8>,
-        timeout_height: u64,
-        timeout_timestamp: u64,
-        salt: vector<u8>
-    ) acquires SignerRef {
-        let data = vector::empty<u8>();
-        vector::append(&mut data, bcs::to_bytes(&signer::address_of(sender)));
-        vector::append(&mut data, bcs::to_bytes(&salt));
-        let multiplex =
-            multiplex::new(
-                bcs::to_bytes(&signer::address_of(sender)),
-                true,
-                bcs::to_bytes(&contract_address),
-                contract_calldata
-            );
-        let operand = multiplex::encode(&multiplex);
-        let zkgm_pack =
-            zkgm_packet::new(
-                data,
-                0,
-                instruction::new(INSTR_VERSION_0, OP_MULTIPLEX, operand)
-            );
-        ibc::ibc::send_packet(
-            &get_signer(),
-            get_self_address(),
-            channel_id,
-            timeout_height,
-            timeout_timestamp,
-            zkgm_packet::encode(&zkgm_pack)
-        );
-    }
-
-    public entry fun send(
-        sender: &signer,
-        channel_id: u32,
-        timeout_height: u64,
-        timeout_timestamp: u64,
-        salt: vector<u8>,
-        version: u8,
-        opcode: u8,
-        operand: vector<u8>
-    ) acquires SignerRef, RelayStore {
-        let instruction = instruction::new(version, opcode, operand);
-        verify_internal(sender, channel_id, 0, instruction);
-        let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
-        ibc::ibc::send_packet(
-            &get_signer(),
-            get_self_address(),
-            channel_id,
-            timeout_height,
-            timeout_timestamp,
-            zkgm_packet::encode(&zkgm_pack)
-        );
     }
 
     fun verify_internal(
@@ -714,9 +589,7 @@ module zkgm::ibc_app {
         } else {
             let new_ack = acknowledgement::new(ACK_SUCCESS, acknowledgement);
             let return_value = acknowledgement::encode(&new_ack);
-            dispatcher::set_return_value<IbcAppWitness>(
-                new_ucs_relay_proof(), return_value
-            );
+            dispatcher::set_return_value<IbcAppWitness>(witness(), return_value);
         }
     }
 
@@ -813,7 +686,7 @@ module zkgm::ibc_app {
         salt: vector<u8>,
         path: u256,
         forward_packet: Forward
-    ): (vector<u8>) acquires RelayStore, SignerRef {
+    ): (vector<u8>) acquires RelayStore {
         let zkgm_pack =
             zkgm_packet::new(
                 salt,
@@ -823,9 +696,8 @@ module zkgm::ibc_app {
                 *forward::instruction(&forward_packet)
             );
         let sent_packet =
-            ibc::ibc::send_packet(
-                &get_signer(),
-                get_self_address(),
+            ibc::ibc::send_packet<IbcAppWitness>(
+                witness(),
                 forward::channel_id(&forward_packet),
                 forward::timeout_height(&forward_packet),
                 forward::timeout_timestamp(&forward_packet),
@@ -996,7 +868,7 @@ module zkgm::ibc_app {
             );
         if (packet::timeout_timestamp(parent) != 0
             || packet::timeout_height(parent) != 0) {
-            ibc::ibc::write_acknowledgement(*parent, acknowledgement);
+            ibc::ibc::write_acknowledgement(witness(), *parent, acknowledgement);
             smart_table::upsert(
                 &mut store.in_flight_packet, packet_hash, packet::default()
             );
@@ -1235,7 +1107,11 @@ module zkgm::ibc_app {
         if (packet::timeout_timestamp(parent) != 0
             || packet::timeout_height(parent) != 0) {
             let ack = acknowledgement::new(ACK_FAILURE, ACK_EMPTY);
-            ibc::ibc::write_acknowledgement(*parent, acknowledgement::encode(&ack));
+            ibc::ibc::write_acknowledgement(
+                witness(),
+                *parent,
+                acknowledgement::encode(&ack)
+            );
             smart_table::upsert(
                 &mut store.in_flight_packet, packet_hash, packet::default()
             );
@@ -1358,7 +1234,7 @@ module zkgm::ibc_app {
         }
     }
 
-    public fun on_channel_open_init(
+    fun on_channel_open_init(
         _connection_id: u32, _channel_id: u32, version: String
     ) {
         if (!is_valid_version(version)) {
@@ -1366,7 +1242,7 @@ module zkgm::ibc_app {
         };
     }
 
-    public fun on_channel_open_try(
+    fun on_channel_open_try(
         _connection_id: u32,
         _channel_id: u32,
         _counterparty_channel_id: u32,
@@ -1381,21 +1257,21 @@ module zkgm::ibc_app {
         };
     }
 
-    public fun on_channel_open_ack(
+    fun on_channel_open_ack(
         _channel_id: u32, _counterparty_channel_id: u32, _counterparty_version: String
     ) {}
 
-    public fun on_channel_open_confirm(_channel_id: u32) {}
+    fun on_channel_open_confirm(_channel_id: u32) {}
 
-    public fun on_channel_close_init(_channel_id: u32) {
+    fun on_channel_close_init(_channel_id: u32) {
         abort E_INFINITE_GAME
     }
 
-    public fun on_channel_close_confirm(_channel_id: u32) {
+    fun on_channel_close_confirm(_channel_id: u32) {
         abort E_INFINITE_GAME
     }
 
-    public fun on_recv_intent_packet(
+    fun on_recv_intent_packet(
         _packet: Packet, _relayer: address, _relayer_msg: vector<u8>
     ) {
         abort E_INFINITE_GAME
@@ -1403,7 +1279,7 @@ module zkgm::ibc_app {
 
     public fun on_packet<T: key>(_store: Object<T>): u64 acquires RelayStore, SignerRef {
         ibc::helpers::on_packet(
-            new_ucs_relay_proof(),
+            witness(),
             |conn, chan, ver| on_channel_open_init(conn, chan, ver),
             |conn, chan, count_chan, ver, count_ver| on_channel_open_try(
                 conn, chan, count_chan, ver, count_ver
@@ -1417,6 +1293,30 @@ module zkgm::ibc_app {
             |chan| on_channel_close_init(chan),
             |chan| on_channel_close_confirm(chan)
         )
+    }
+
+    #[test_only]
+    fun init_module_for_testing(account: &signer) {
+        assert!(signer::address_of(account) == @zkgm, E_UNAUTHORIZED);
+
+        let vault_constructor_ref = &object::create_named_object(account, IBC_APP_SEED);
+        let vault_signer = &object::generate_signer(vault_constructor_ref);
+
+        let store = RelayStore {
+            in_flight_packet: smart_table::new(),
+            channel_balance: smart_table::new(),
+            token_origin: smart_table::new()
+        };
+
+        move_to(vault_signer, store);
+
+        move_to(
+            vault_signer,
+            SignerRef {
+                self_ref: object::generate_extend_ref(vault_constructor_ref),
+                self_address: signer::address_of(account)
+            }
+        );
     }
 
     #[test]
