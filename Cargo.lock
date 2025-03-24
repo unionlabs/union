@@ -4410,6 +4410,7 @@ dependencies = [
  "cw-utils",
  "cw2",
  "cw20",
+ "embed-commit",
  "schemars",
  "semver 1.0.22",
  "serde",
