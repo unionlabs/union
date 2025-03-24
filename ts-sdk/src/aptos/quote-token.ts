@@ -30,6 +30,7 @@ export const predictQuoteToken = (baseToken: Hex) =>
       function_arguments
     )
 
-    // Extract the address from the result tuple
-    return result[0]
+    const wrapped_token = result[0] as Hex
+
+    return wrapped_token
   })

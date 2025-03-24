@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { AptosPublicClient, createAptosPublicClient } from "../src/aptos/client.ts"
-import { readFaName, readFaDecimals, readFaSymbol, readFaMetadata } from "../src/aptos/fa.ts"
+import { readFaName, readFaDecimals, readFaSymbol, readFaMetadata, readFaTokenInfo } from "../src/aptos/fa.ts"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
 import { AptosConfig, Network } from "@aptos-labs/ts-sdk"
 
@@ -44,9 +44,9 @@ Effect.runPromiseExit(
     )
     yield* Effect.log("Result Symbol:", result_symbol)
 
-    const result_metadata = yield* readFaMetadata(real_token_address).pipe(
+    const result_tokenIfo = yield* readFaTokenInfo(real_token_address).pipe(
       Effect.provideService(AptosPublicClient, { client: publicClient })
     )
-    yield* Effect.log("Result Metadata:", result_metadata)
+    yield* Effect.log("Result Token Info:", result_tokenIfo)
   })
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

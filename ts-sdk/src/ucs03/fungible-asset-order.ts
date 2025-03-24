@@ -4,8 +4,11 @@ import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
 import { readErc20Meta } from "../evm/erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js"
 import { CosmWasmClientContext, CosmWasmClientSource } from "../cosmos/client.js"
+import { AptosPublicClientSource, AptosPublicClient } from "../aptos/client.js"
 import { readCw20TokenInfo } from "../cosmos/cw20.js"
+import { readFaTokenInfo } from "../aptos/fa.js"
 import { predictQuoteToken as predictCosmosQuoteToken } from "../cosmos/quote-token.js"
+import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-token.js"
 import { FungibleAssetOrder } from "./instruction.js"
 
 export type FungibleAssetOrderIntent = {
@@ -136,6 +139,72 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
     const sourceClient = (yield* CosmWasmClientSource).client
     const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
       Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+    )
+    const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
+
+    return FungibleAssetOrder([
+      toHex(intent.sender),
+      toHex(intent.receiver),
+      toHex(intent.baseToken),
+      intent.baseAmount,
+      tokenMeta.symbol,
+      tokenMeta.name,
+      tokenMeta.decimals,
+      0n, // channel if unwrapping
+      quoteToken,
+      intent.quoteAmount
+    ])
+  })
+
+
+
+/**
+ * Creates a fungible asset order from Aptos to Cosmos
+ */
+export const createCosmosToAptosFungibleAssetOrder = (intent: {
+  sender: string
+  receiver: string
+  baseToken: string
+  baseAmount: bigint
+  quoteAmount: bigint
+}) =>
+  Effect.gen(function* () {
+    const sourceClient = (yield* AptosPublicClientSource).client
+    const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
+      Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+    )
+    const quoteToken = yield* predictAptosQuoteToken(toHex(intent.baseToken))
+
+    return FungibleAssetOrder([
+      toHex(intent.sender),
+      toHex(intent.receiver),
+      toHex(intent.baseToken),
+      intent.baseAmount,
+      tokenMeta.symbol,
+      tokenMeta.name,
+      tokenMeta.decimals,
+      0n, // channel if unwrapping
+      quoteToken,
+      intent.quoteAmount
+    ])
+  })
+
+
+
+/**
+ * Creates a fungible asset order from Cosmos to Aptos
+ */
+export const createAptosToCosmosFungibleAssetOrder = (intent: {
+  sender: string
+  receiver: string
+  baseToken: string
+  baseAmount: bigint
+  quoteAmount: bigint
+}) =>
+  Effect.gen(function* () {
+    const sourceClient = (yield* AptosPublicClient).client
+    const tokenMeta = yield* readFaTokenInfo(intent.baseToken).pipe(
+      Effect.provideService(AptosPublicClient, { client: sourceClient })
     )
     const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
 
