@@ -2,7 +2,6 @@ _: {
   perSystem =
     {
       pkgs,
-      unstablePkgs,
       ensureAtRepositoryRoot,
       ...
     }:
@@ -10,7 +9,7 @@ _: {
       apps = {
         ts-sdk-publish = {
           type = "app";
-          program = unstablePkgs.writeShellApplication {
+          program = pkgs.writeShellApplication {
             name = "ts-sdk-publish";
             text = ''
               ${ensureAtRepositoryRoot}
@@ -36,7 +35,7 @@ _: {
         };
         ts-sdk-check = {
           type = "app";
-          program = unstablePkgs.writeShellApplication {
+          program = pkgs.writeShellApplication {
             name = "ts-sdk-check";
             text = ''
               ${ensureAtRepositoryRoot}

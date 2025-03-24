@@ -2,19 +2,16 @@
 {
   pkgs,
   rust,
-  jsPkgs,
+  pkgsUnstable,
   movefmt,
 }:
-let
-  unstablePkgs = jsPkgs;
-in
 {
-  package = unstablePkgs.treefmt;
+  package = pkgs.treefmt;
   projectRootFile = "treefmt.nix";
   programs = {
     gofmt = {
       enable = true;
-      package = unstablePkgs.go_1_23;
+      package = pkgs.go_1_23;
     };
     rustfmt = {
       enable = true;
@@ -23,31 +20,31 @@ in
     taplo.enable = true;
     biome = {
       enable = true;
-      package = unstablePkgs.biome;
+      package = pkgs.biome;
     };
     yamlfmt = {
       enable = true;
-      package = unstablePkgs.yamlfmt;
+      package = pkgs.yamlfmt;
     };
     mdformat = {
       enable = true;
-      package = unstablePkgs.mdformat;
+      package = pkgs.mdformat;
     };
     shellcheck = {
       enable = true;
-      package = unstablePkgs.shellcheck;
+      package = pkgs.shellcheck;
     };
     nixfmt-rfc-style = {
       enable = true;
-      package = unstablePkgs.nixfmt-rfc-style;
+      package = pkgs.nixfmt-rfc-style;
     };
     statix = {
       enable = true;
-      package = unstablePkgs.statix;
+      package = pkgs.statix;
     };
     deadnix = {
       enable = true;
-      package = unstablePkgs.deadnix;
+      package = pkgs.deadnix;
     };
   };
   settings = {

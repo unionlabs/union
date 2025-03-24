@@ -3,7 +3,6 @@ _: {
     {
       self',
       lib,
-      unstablePkgs,
       pkgs,
       system,
       config,

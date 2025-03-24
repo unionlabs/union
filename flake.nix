@@ -5,14 +5,9 @@
       url = "github:hellwolf/solc.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
-    # Track a separate nixpkgs for latest solc
-    nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # Track a separate nixpkgs for unstable nixos
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-24.11";
     # Track a separate nixpkgs for JS/TS toolchains
-    nixpkgs-js.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Remove when lnav is updated on upstream nixpkgs
     nixpkgs-lnav.url = "github:cor/nixpkgs/lnav-v0.12.2-beta";
     process-compose.url = "github:F1bonacc1/process-compose";
@@ -20,29 +15,18 @@
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
-    arion = {
-      url = "github:hercules-ci/arion?rev=6a1f03329c400327b3b2e0ed5e1efff11037ba67";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    treefmt-nix = {
-      url = "github:numtide/treefmt-nix";
-    };
+    arion.url = "github:hercules-ci/arion/v0.2.2.0";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
     foundry = {
       url = "github:shazow/foundry.nix/main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    crane = {
-      url = "github:ipetkov/crane";
-    };
+    rust-overlay.url = "github:oxalica/rust-overlay";
+    crane.url = "github:ipetkov/crane";
     env-utils = {
       url = "github:oceanlewis/env-utils";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     ibc-go = {
       url = "github:unionlabs/ibc-go-union?rev=bfabb646cf7384bd33ee672f51a0e1325f545c10";
       flake = false;
@@ -139,8 +123,6 @@
     inputs@{
       self,
       nixpkgs,
-      nixpkgs-solc,
-      nixpkgs-go,
       flake-parts,
       nix-filter,
       foundry,
@@ -256,9 +238,7 @@
             last = pkgs.lib.lists.last complete;
           };
 
-          goPkgs = import inputs.nixpkgs-go { inherit system; };
-          jsPkgs = import inputs.nixpkgs-js { inherit system; };
-          unstablePkgs = import inputs.nixpkgs-unstable { inherit system; };
+          pkgsUnstable = import inputs.nixpkgs-unstable { inherit system; };
 
           gitRev = if (builtins.hasAttr "rev" self) then self.rev else "dirty";
         in
@@ -271,9 +251,7 @@
                 dbg
                 get-flake
                 uniondBundleVersions
-                goPkgs
-                jsPkgs
-                unstablePkgs
+                pkgsUnstable
                 mkCi
                 ;
 
@@ -285,38 +263,6 @@
                   foundry.overlay
                   (_: super: {
                     inherit (self'.packages) devnet-utils;
-
-                    go-ethereum = super.go-ethereum.override {
-                      buildGoModule =
-                        args:
-                        super.buildGoModule (
-                          args
-                          // rec {
-                            version = "1.13.12";
-                            src = pkgs.fetchFromGitHub {
-                              owner = "ethereum";
-                              repo = "go-ethereum";
-                              rev = "v${version}";
-                              sha256 = "sha256-2olJV7Z01kuXlUGyI0v4YNW07/RfYiDUhBncCIS4s0A=";
-                            };
-                            vendorHash = "sha256-gcLVQTBpOE0DHz7/p7PENhwghftJKUDm88/4jaQ1VYw=";
-                            subPackages = [
-                              "cmd/abidump"
-                              "cmd/abigen"
-                              "cmd/bootnode"
-                              "cmd/clef"
-                              "cmd/devp2p"
-                              "cmd/era"
-                              "cmd/ethkey"
-                              "cmd/evm"
-                              "cmd/geth"
-                              "cmd/p2psim"
-                              "cmd/rlpdump"
-                              "cmd/utils"
-                            ];
-                          }
-                        );
-                    };
 
                     writeShellApplicationWithArgs = import ./tools/writeShellApplicationWithArgs.nix {
                       pkgs = super;
@@ -423,7 +369,7 @@
               name = "spellcheck";
               dontUnpack = true;
               src = ./.;
-              buildInputs = [ jsPkgs.typos ];
+              buildInputs = [ pkgsUnstable.typos ];
               doCheck = true;
               checkPhase = ''
                 cd $src/.
@@ -471,7 +417,7 @@
                 self'.packages.tdc
                 yq
               ])
-              ++ (with jsPkgs; [
+              ++ (with pkgsUnstable; [
                 bun
                 deno
                 nixd
@@ -485,7 +431,7 @@
                 nodePackages_latest.typescript-language-server
                 nodePackages_latest.vscode-langservers-extracted
               ])
-              ++ (with unstablePkgs; [
+              ++ (with pkgs; [
                 wasm-tools
                 postgresql
                 go_1_23
@@ -498,7 +444,7 @@
                   [
                     pkgs.solc
                     pkgs.foundry-bin
-                    goPkgs.sqlx-cli
+                    pkgs.sqlx-cli
                     self'.packages.hasura-cli
                     self'.packages.ignite-cli
                   ]
@@ -533,7 +479,7 @@
             inherit (self'.packages) movefmt;
             inherit
               pkgs
-              jsPkgs
+              pkgsUnstable
               rust
               ;
           };

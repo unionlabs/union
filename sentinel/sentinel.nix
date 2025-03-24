@@ -3,13 +3,13 @@
   perSystem =
     {
       pkgs,
-      jsPkgs,
+      pkgsUnstable,
       ensureAtRepositoryRoot,
       lib,
       ...
     }:
     let
-      deps = with jsPkgs; [
+      deps = with pkgsUnstable; [
         python3
         pkg-config
         nodePackages_latest.nodejs
@@ -19,7 +19,7 @@
     in
     {
       packages = {
-        sentinel = jsPkgs.buildNpmPackage {
+        sentinel = pkgsUnstable.buildNpmPackage {
           npmDepsHash = "sha256-/mC0aghYGdOx8xrUzk22oxo0Puh4t7IyjwGCFWl6LGY=";
           src = ./.;
           sourceRoot = "sentinel";

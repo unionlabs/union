@@ -1,7 +1,7 @@
 _: {
   perSystem =
     {
-      jsPkgs,
+      pkgsUnstable,
       lib,
       self',
       ...
@@ -11,7 +11,7 @@ _: {
     in
     {
       packages = {
-        ts-sdk = jsPkgs.buildNpmPackage {
+        ts-sdk = pkgsUnstable.buildNpmPackage {
           pname = packageJson.name;
           inherit (packageJson) version;
           src = ./.;
@@ -25,11 +25,11 @@ _: {
       };
       apps.publish-ts-sdk = {
         type = "app";
-        program = jsPkgs.writeShellApplication {
+        program = pkgsUnstable.writeShellApplication {
           name = "publish-ts-sdk";
           text = ''
             cd ${self'.packages.ts-sdk}/lib/node_modules/@unionlabs/sdk
-            ${jsPkgs.nodejs}/bin/npm publish --access='public' --no-git-tagsh
+            ${pkgsUnstable.nodejs}/bin/npm publish --access='public' --no-git-tagsh
           '';
         };
 

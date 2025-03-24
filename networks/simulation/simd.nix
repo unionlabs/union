@@ -2,7 +2,6 @@ _: {
   perSystem =
     {
       pkgs,
-      goPkgs,
       self',
       crane,
       system,
@@ -12,7 +11,7 @@ _: {
     }:
     {
       packages = {
-        simd = goPkgs.pkgsStatic.buildGo123Module (
+        simd = pkgs.pkgsStatic.buildGo123Module (
           {
             name = "simd";
             src = pkgs.fetchFromGitHub {
@@ -39,11 +38,11 @@ _: {
               {
                 # Statically link if we're on linux
                 nativeBuildInputs = [
-                  goPkgs.musl
+                  pkgs.musl
                   libwasmvm
                 ];
                 ldflags = [
-                  "-extldflags '-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib'"
+                  "-extldflags '-z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm}/lib'"
                 ];
               }
             else

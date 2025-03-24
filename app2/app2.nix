@@ -3,12 +3,12 @@ _: {
     {
       lib,
       pkgs,
-      jsPkgs,
+      pkgsUnstable,
       ensureAtRepositoryRoot,
       ...
     }:
     let
-      deps = with jsPkgs; [
+      deps = with pkgsUnstable; [
         python3
         stdenv.cc
         pkg-config
@@ -19,7 +19,7 @@ _: {
     in
     {
       packages = {
-        app2 = jsPkgs.buildNpmPackage {
+        app2 = pkgsUnstable.buildNpmPackage {
           npmDepsHash = "sha256-cgmgvbMV9lIFG4YEA5W2Vk3uvjUIp2BNWcQrEmrortE=";
           src = ./.;
           sourceRoot = "app2";
