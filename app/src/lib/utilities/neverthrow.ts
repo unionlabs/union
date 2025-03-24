@@ -1,8 +1,8 @@
 import { ResultAsync } from "neverthrow"
 
-export const fetchJson = (url: string) =>
+export const fetchJson = (url: string, options?: RequestInit) =>
   ResultAsync.fromPromise(
-    fetch(url).then(response => {
+    fetch(url, options).then(response => {
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`)
       }

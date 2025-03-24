@@ -54,16 +54,17 @@ export type AptosWalletId = (typeof aptosWalletsInformation)[number]["id"]
  */
 
 export function getAptosWallet(walletId: AptosWalletId = "petra") {
-  // handle okx wallet special case since it's nested
-  if (
-    walletId === "okxwallet" &&
-    Object.hasOwn(window, "okxwallet") &&
-    Object.hasOwn(window.okxwallet, "aptos")
-  ) {
+  if (walletId === "okxwallet" && window.okxwallet?.aptos) {
     return window.okxwallet.aptos
   }
-  if (Object.hasOwn(window, walletId)) return window[walletId] as AptosBrowserWallet
-  if (Object.hasOwn(window, "aptos")) return window.aptos
+
+  if (walletId === "petra" && window.aptos) {
+    return window.aptos // ✅ Use Aptos Wallet Standard API
+  }
+
+  if (window[walletId]) {
+    return window[walletId] as AptosBrowserWallet
+  }
 
   window.open("https://petra.app/", "_blank", "noopener noreferrer")
 }
@@ -120,7 +121,11 @@ export function createAptosStore(
 
       const isConnected = await wallet?.isConnected()
       if (isConnected || aptosWallet.connectionStatus !== "disconnected") {
-        await wallet?.disconnect()
+        try {
+          await wallet?.disconnect()
+        } catch (err) {
+          console.warn("Petra threw an error during disconnect", err)
+        }
 
         update(_ => ({
           chain: "aptos",
