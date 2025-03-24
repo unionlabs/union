@@ -1,102 +1,90 @@
 <script lang="ts">
-  import Button from "$lib/components/ui/Button.svelte"
-  import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-  import { Effect, Option } from "effect"
-  import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-  import { ApprovalRequired } from "../transfer-step.ts"
-  import { createViemPublicClient} from "@unionlabs/sdk/evm"
-  import { custom, erc20Abi, http} from "viem"
-  import {
-    createViemWalletClient
-  } from "@unionlabs/sdk/evm"
-  import { getConnectorClient, type GetConnectorClientErrorType} from "@wagmi/core";
-  import {wagmiConfig} from "$lib/wallet/evm/wagmi-config.ts";
-  import {
-    ConnectorClientError,
-  } from "$lib/services/transfer";
-  import {
-    evmNextState,
-    hasFailedExit,
-    isComplete,
-    TransactionSubmissionEvm
-  } from "$lib/components/Transfer/state/evm.ts";
+import Button from "$lib/components/ui/Button.svelte"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import { Effect, Option } from "effect"
+import { lockedTransferStore } from "../locked-transfer.svelte.ts"
+import { ApprovalRequired } from "../transfer-step.ts"
+import { createViemPublicClient } from "@unionlabs/sdk/evm"
+import { custom, erc20Abi, http } from "viem"
+import { createViemWalletClient } from "@unionlabs/sdk/evm"
+import { getConnectorClient, type GetConnectorClientErrorType } from "@wagmi/core"
+import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.ts"
+import { ConnectorClientError } from "$lib/services/transfer"
+import {
+  nextStateEvm,
+  hasFailedExit,
+  isComplete,
+  TransactionSubmissionEvm
+} from "$lib/components/Transfer/state/evm.ts"
 
-  type Props = {
-    stepIndex: number
-    onBack: () => void
-    onApprove: () => void
-    actionButtonText: string
-  }
+type Props = {
+  stepIndex: number
+  onBack: () => void
+  onApprove: () => void
+  actionButtonText: string
+}
 
+const { stepIndex, onBack, onApprove, actionButtonText }: Props = $props()
 
-  const { stepIndex, onBack, onApprove, actionButtonText }: Props = $props()
+const lts = lockedTransferStore.get()
 
-  const lts = lockedTransferStore.get()
+// Get the step data from the locked transfer store
+const step: Option.Option<ReturnType<typeof ApprovalRequired>> = $derived.by(() => {
+  if (Option.isNone(lts)) return Option.none()
 
-  // Get the step data from the locked transfer store
-  const step: Option.Option<ReturnType<typeof ApprovalRequired>> = $derived.by(() => {
-    if (Option.isNone(lts)) return Option.none()
+  const steps = lts.value.steps
+  if (stepIndex < 0 || stepIndex >= steps.length) return Option.none()
 
-    const steps = lts.value.steps
-    if (stepIndex < 0 || stepIndex >= steps.length) return Option.none()
+  const step = steps[stepIndex]
+  return step._tag === "ApprovalRequired" ? Option.some(step) : Option.none()
+})
 
-    const step = steps[stepIndex]
-    return step._tag === "ApprovalRequired" ? Option.some(step) : Option.none()
+const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
+
+let ts = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
+
+export const submit = Effect.gen(function* () {
+  if (Option.isNone(step) || Option.isNone(lts)) return
+
+  const viemChain = lts.value.sourceChain.toViemChain()
+  if (Option.isNone(viemChain)) return
+
+  const publicClient = yield* createViemPublicClient({
+    chain: viemChain.value,
+    transport: http()
   })
 
-  const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
-
-
-
-  let ts = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
-
-  export const submit = Effect.gen(function* () {
-    if (Option.isNone(step)) return
-    if (Option.isNone(lts)) return
-
-    const viemChain = lts.value.sourceChain.toViemChain()
-    if (Option.isNone(viemChain)) return
-
-    const publicClient = yield* createViemPublicClient({
-      chain: viemChain.value,
-      transport: http()
-    })
-
-    const connectorClient = yield* Effect.tryPromise({
-      try: () => getConnectorClient(wagmiConfig),
-      catch: err => new ConnectorClientError({ cause: err as GetConnectorClientErrorType })
-    })
-
-    const walletClient = yield* createViemWalletClient({
-      account: connectorClient.account,
-      chain: viemChain.value,
-      transport: custom(connectorClient)
-    })
-
-    const approvalParams = {
-      chain: viemChain.value,
-      account: connectorClient.account,
-      address: step.value.token,
-      abi: erc20Abi,
-      functionName: "approve",
-      args: [
-        lts.value.channel.source_port_id,
-        step.value.requiredAmount
-      ],
-    }
-
-    ts = yield* Effect.tryPromise(() => evmNextState(ts, viemChain.value, publicClient, walletClient, approvalParams))
-    while (!hasFailedExit(ts)) {
-      ts = yield* Effect.tryPromise(() => evmNextState(ts, viemChain.value, publicClient, walletClient, approvalParams))
-
-      if (isComplete(ts)) {
-        onApprove()
-        break;
-      }
-    }
-
-    return ts
+  const connectorClient = yield* Effect.tryPromise({
+    try: () => getConnectorClient(wagmiConfig),
+    catch: err => new ConnectorClientError({ cause: err as GetConnectorClientErrorType })
   })
+
+  const walletClient = yield* createViemWalletClient({
+    account: connectorClient.account,
+    chain: viemChain.value,
+    transport: custom(connectorClient)
+  })
+
+  do {
+    ts = yield* Effect.tryPromise(() =>
+      nextStateEvm(ts, viemChain.value, publicClient, walletClient, {
+        chain: viemChain.value,
+        account: connectorClient.account,
+        address: step.value.token,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [lts.value.channel.source_port_id, step.value.requiredAmount]
+      })
+    )
+
+    if (isComplete(ts)) {
+      onApprove()
+      break
+    }
+  } while (!hasFailedExit(ts))
+
+  return ts
+})
 </script>
 
 <div class="min-w-full p-4 flex flex-col justify-between h-full">
