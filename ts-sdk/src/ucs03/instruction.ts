@@ -1,5 +1,6 @@
 import { encodeAbiParameters, type Hex } from "viem"
 import { batchAbi, forwardAbi, fungibleAssetOrderAbi, multiplexAbi } from "../evm/abi/index.js"
+import * as M from "effect/Match"
 
 export type Instruction = Forward | Multiplex | Batch | FungibleAssetOrder
 
@@ -56,41 +57,41 @@ export const FungibleAssetOrder = (
   operand
 })
 
-export const encodeAbi = (instruction: Instruction): Hex => {
-  switch (instruction.opcode) {
-    case 0: {
-      // Forward
-      return encodeAbiParameters(forwardAbi, [
-        instruction.operand[0],
-        instruction.operand[1],
-        instruction.operand[2],
+// type InstructionToHex = (_: Instruction) => Hex
+export const encodeAbi: (_: Instruction) => Hex = M.type<Instruction>().pipe(
+  M.when(
+    i => i.opcode === 0,
+    i =>
+      encodeAbiParameters(forwardAbi, [
+        i.operand[0],
+        i.operand[1],
+        i.operand[2],
         {
-          opcode: instruction.operand[3].opcode,
-          version: instruction.operand[3].version,
-          operand: encodeAbi(instruction.operand[3])
+          opcode: i.operand[3].opcode,
+          version: i.operand[3].version,
+          operand: encodeAbi(i.operand[3])
         }
       ])
-    }
-    case 1: {
-      // Multiplex
-      return encodeAbiParameters(multiplexAbi, instruction.operand)
-    }
-    case 2: {
-      // Batch - recursively encode each instruction
-      return encodeAbiParameters(batchAbi, [
-        instruction.operand.map(instr => ({
+  ),
+  M.when(
+    i => i.opcode === 1,
+    i => encodeAbiParameters(multiplexAbi, i.operand)
+  ),
+  M.when(
+    i => i.opcode === 2,
+    i =>
+      encodeAbiParameters(batchAbi, [
+        i.operand.map(instr => ({
           version: instr.version,
           opcode: instr.opcode,
           operand: encodeAbi(instr)
         }))
       ])
-    }
-    case 3: {
-      // FungibleAssetOrder
-      return encodeAbiParameters(fungibleAssetOrderAbi, instruction.operand)
-    }
-    default: {
-      throw new Error(`impossible`)
-    }
-  }
-}
+  ),
+  M.when(
+    i => i.opcode === 3, // FungibleAssetOrder
+    i => encodeAbiParameters(fungibleAssetOrderAbi, i.operand)
+  ),
+  // M.exhautive
+  M.orElseAbsurd // check why not exhaustive
+)
