@@ -1,9 +1,13 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-import { Option } from "effect"
+import { Data, Effect, Exit, Option } from "effect"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
 import { ApprovalRequired } from "../transfer-step.ts"
+import type { switchChain } from "$lib/services/transfer-ucs03-evm/chain.ts"
+import type { writeContract } from "@unionlabs/sdk/evm"
+import type { waitForTransferReceipt } from "$lib/services/transfer-ucs03-evm/transactions.ts"
+import type { Hash } from "viem"
 
 type Props = {
   stepIndex: number
@@ -11,6 +15,105 @@ type Props = {
   onApprove: () => void
   actionButtonText: string
 }
+
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+/// BOUNDRY
+
+type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
+
+export type SwitchChainState = Data.TaggedEnum<{
+  InProgress: {}
+  Complete: { exit: EffectToExit<ReturnType<typeof switchChain>> } // TODO: yield requirements in SwitchChain
+}>
+export const SwitchChainState = Data.taggedEnum<SwitchChainState>()
+
+export type WriteContractState = Data.TaggedEnum<{
+  InProgress: {}
+  Complete: { exit: EffectToExit<ReturnType<typeof writeContract>> }
+}>
+export const WriteContractState = Data.taggedEnum<WriteContractState>()
+
+export type TransactionReceiptState = Data.TaggedEnum<{
+  InProgress: { readonly hash: Hash }
+  Complete: { exit: EffectToExit<ReturnType<typeof waitForTransferReceipt>> }
+}>
+export const TransactionReceiptState = Data.taggedEnum<TransactionReceiptState>()
+
+export type TransactionSubmissionEvm = Data.TaggedEnum<{
+  Filling: {}
+  SwitchChain: { state: SwitchChainState }
+  WriteContract: { state: WriteContractState }
+  TransactionReceipt: { state: TransactionReceiptState }
+}>
+
+export const TransactionSubmissionEvm = Data.taggedEnum<TransactionSubmissionEvm>()
+
+export const nextState = (ts: TransactionSubmissionEvm): TransactionSubmissionEvm =>
+  TransactionSubmissionEvm.$match(ts, {
+    Filling: () => TransactionSubmissionEvm.SwitchChain({ state: SwitchChainState.InProgress() }),
+    SwitchChain: ({ state }) =>
+      SwitchChainState.$match(state, {
+        InProgress: () => {
+          // TODO: switch the chain
+          return ts
+        },
+        Complete: ({ exit }) =>
+          exit._tag === "Failure"
+            ? TransactionSubmissionEvm.SwitchChain({ state: SwitchChainState.InProgress() })
+            : TransactionSubmissionEvm.WriteContract({ state: WriteContractState.InProgress() })
+      }),
+    WriteContract: ({ state }) =>
+      WriteContractState.$match(state, {
+        InProgress: () => {
+          // TODO: Write the contract
+          return ts
+        },
+        Complete: ({ exit }) =>
+          exit._tag === "Failure"
+            ? TransactionSubmissionEvm.WriteContract({ state: WriteContractState.InProgress() })
+            : TransactionSubmissionEvm.TransactionReceipt({
+                state: TransactionReceiptState.InProgress({ hash: exit.value })
+              })
+      }),
+    TransactionReceipt: ({ state }) =>
+      TransactionReceiptState.$match(state, {
+        InProgress: () => {
+          // TODO: wait for receipt
+          return ts
+        },
+        Complete: () => ts // There is no next state, return self
+      })
+  })
+
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
+/// END BOUNDRY
 
 const { stepIndex, onBack, onApprove, actionButtonText }: Props = $props()
 
