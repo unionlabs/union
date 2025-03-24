@@ -167,7 +167,7 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
   quoteAmount: bigint
 }) =>
   Effect.gen(function* () {
-    const sourceClient = (yield* AptosPublicClientDestination).client
+    const sourceClient = (yield* CosmWasmClientSource).client
     // HACK: special cased for muno for now
     const tokenMeta =
       intent.baseToken === "muno"
