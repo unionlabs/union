@@ -1,0 +1,35 @@
+[package]
+name    = "mpt-trusted-light-client-types"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy                       = { workspace = true, features = ["sol-types"], optional = true }
+bincode                     = { workspace = true, features = ["alloc", "derive"], optional = true }
+ethereum-light-client-types = { workspace = true }
+ibc-union-spec              = { workspace = true }
+rlp                         = { workspace = true, features = ["derive"] }
+serde                       = { workspace = true, optional = true, features = ["derive"] }
+sha3                        = { workspace = true }
+unionlabs                   = { workspace = true, features = ["rlp"] }
+
+[features]
+bincode = [
+  "dep:bincode",
+  "unionlabs/bincode",
+  "ethereum-light-client-types/bincode",
+  "ibc-union-spec/bincode",
+]
+ethabi = ["dep:alloy", "ethereum-light-client-types/ethabi", "ibc-union-spec/ethabi"]
+serde = ["dep:serde", "ethereum-light-client-types/serde", "ibc-union-spec/serde"]
+
+[dev-dependencies]
+hex-literal = { workspace = true }

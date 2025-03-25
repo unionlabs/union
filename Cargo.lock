@@ -8556,6 +8556,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "mpt-trusted-light-client-types"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.0-rc.3",
+ "ethereum-light-client-types",
+ "hex-literal",
+ "ibc-union-spec",
+ "rlp",
+ "serde",
+ "sha3 0.10.8",
+ "unionlabs",
+]
+
+[[package]]
 name = "multer"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

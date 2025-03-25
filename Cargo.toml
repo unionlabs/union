@@ -77,6 +77,7 @@ members = [
   "lib/ethereum-light-client-types",
   "lib/ethermint-light-client-types",
   "lib/movement-light-client-types",
+  "lib/mpt-trusted-light-client-types",
   "lib/linea-light-client-types",
   "lib/scroll-light-client-types",
   "lib/state-lens-ics23-mpt-light-client-types",
@@ -293,7 +294,8 @@ reconnecting-jsonrpc-ws-client = { path = "lib/reconnecting-jsonrpc-ws-client", 
 ibc-classic-spec = { path = "lib/ibc-classic-spec", default-features = false }
 ibc-union-spec   = { path = "lib/ibc-union-spec", default-features = false }
 
-movement-light-client-types = { path = "lib/movement-light-client-types", default-features = false }
+movement-light-client-types    = { path = "lib/movement-light-client-types", default-features = false }
+mpt-trusted-light-client-types = { path = "lib/mpt-trusted-light-client-types", default-features = false }
 
 cosmos-sdk-event = { path = "lib/cosmos-sdk-event", default-features = false }
 
