@@ -12,16 +12,16 @@ export type TransactionSubmissionCosmos = Data.TaggedEnum<{
   Filling: {}
   SwitchChainInProgress: {}
   SwitchChainComplete: { exit: EffectToExit<ReturnType<typeof switchChain>> }
-  WriteContractInProgress: {}
-  WriteContractComplete: { exit: EffectToExit<ReturnType<typeof executeContract>> }
+  ExecuteContractInProgress: {}
+  ExecuteContractComplete: { exit: EffectToExit<ReturnType<typeof executeContract>> }
 }>
 
 export const TransactionSubmissionCosmos = Data.taggedEnum<TransactionSubmissionCosmos>()
 const {
   SwitchChainInProgress,
   SwitchChainComplete,
-  WriteContractInProgress,
-  WriteContractComplete,
+  ExecuteContractInProgress,
+  ExecuteContractComplete,
 } = TransactionSubmissionCosmos
 
 export const nextStateCosmos = async (
@@ -40,16 +40,19 @@ export const nextStateCosmos = async (
         exit: await Effect.runPromiseExit(switchChain(chain))
       }),
     SwitchChainComplete: ({exit}) =>
-      exit._tag === "Failure" ? SwitchChainInProgress() : WriteContractInProgress(),
-    WriteContractInProgress: async () =>
-      WriteContractComplete({
+      exit._tag === "Failure" ? SwitchChainInProgress() : ExecuteContractInProgress(),
+    ExecuteContractInProgress: async () =>
+      ExecuteContractComplete({
         exit: await Effect.runPromiseExit(executeContract(signingClient, senderAddress, contractAddress, msg, funds))
       }),
-    WriteContractComplete: () => ts
+    ExecuteContractComplete: ({ exit }) =>
+      exit._tag === "Failure"
+        ? ExecuteContractInProgress()
+        : ts
   })
 
 export const hasFailedExit = (state: TransactionSubmissionCosmos) =>
   "exit" in state && state.exit._tag === "Failure"
 
 export const isComplete = (state: TransactionSubmissionCosmos) =>
-  state._tag === "WriteContractComplete" && state.exit._tag === "Success"
+  state._tag === "ExecuteContractComplete" && state.exit._tag === "Success"
