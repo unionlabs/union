@@ -310,6 +310,23 @@ contract CometblsClient is
         return false;
     }
 
+    function checkOverwriteMisbehavior(
+        uint64 untrustedTimestamp,
+        bytes32 untrustedAppHash,
+        bytes32 untrustedNextValidatorsHash,
+        ConsensusState storage overwrittenConsensusState
+    ) internal returns (bool) {
+        if (
+            untrustedTimestamp != overwrittenConsensusState.timestamp
+                || untrustedAppHash != overwrittenConsensusState.appHash
+                || untrustedNextValidatorsHash
+                    != overwrittenConsensusState.nextValidatorsHash
+        ) {
+            return true;
+        }
+        return false;
+    }
+
     function verifyHeader(
         Header calldata header,
         ConsensusState storage consensusState,
@@ -387,7 +404,6 @@ contract CometblsClient is
         returns (ConsensusStateUpdate memory)
     {
         ClientState storage clientState = clientStates[clientId];
-
         if (clientState.frozenHeight > 0) {
             revert CometblsClientLib.ErrClientFrozen();
         }
@@ -406,11 +422,25 @@ contract CometblsClient is
         }
 
         consensusState = consensusStates[clientId][untrustedHeightNumber];
-        consensusState.timestamp = untrustedTimestamp;
-        consensusState.appHash = header.signedHeader.appHash;
-        consensusState.nextValidatorsHash =
-            header.signedHeader.nextValidatorsHash;
-
+        // Verify misbehavior on overwrite
+        if (consensusState.timestamp != 0) {
+            if (
+                checkOverwriteMisbehavior(
+                    untrustedTimestamp,
+                    header.signedHeader.appHash,
+                    header.signedHeader.nextValidatorsHash,
+                    consensusState
+                )
+            ) {
+                clientState.frozenHeight = 1;
+            }
+            // Noop
+        } else {
+            consensusState.timestamp = untrustedTimestamp;
+            consensusState.appHash = header.signedHeader.appHash;
+            consensusState.nextValidatorsHash =
+                header.signedHeader.nextValidatorsHash;
+        }
         return ConsensusStateUpdate({
             clientStateCommitment: clientState.commit(),
             consensusStateCommitment: consensusState.commit(),
