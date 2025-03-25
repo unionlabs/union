@@ -94,6 +94,7 @@ members = [
   "cosmwasm/ibc-union/lightclient/ethermint",
   "cosmwasm/ibc-union/lightclient/tendermint",
   "cosmwasm/ibc-union/lightclient/movement",
+  "cosmwasm/ibc-union/lightclient/mpt-trusted",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-smt",
 

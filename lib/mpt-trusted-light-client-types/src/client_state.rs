@@ -7,4 +7,5 @@ pub struct ClientState {
     pub chain_id: U256,
     pub latest_height: u64,
     pub ibc_contract_address: H160,
+    pub whitelisted_relayers: Vec<String>,
 }

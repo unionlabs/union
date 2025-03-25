@@ -8556,6 +8556,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "mpt-trusted-light-client"
+version = "0.0.0"
+dependencies = [
+ "base64 0.21.7",
+ "cosmwasm-std 2.1.4",
+ "embed-commit",
+ "ethereum-light-client",
+ "ethereum-light-client-types",
+ "evm-storage-verifier",
+ "frissitheto",
+ "hex",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "mpt-trusted-light-client-types",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "unionlabs",
+]
+
+[[package]]
 name = "mpt-trusted-light-client-types"
 version = "0.0.0"
 dependencies = [
@@ -8563,10 +8584,7 @@ dependencies = [
  "bincode 2.0.0-rc.3",
  "ethereum-light-client-types",
  "hex-literal",
- "ibc-union-spec",
- "rlp",
  "serde",
- "sha3 0.10.8",
  "unionlabs",
 ]
 
