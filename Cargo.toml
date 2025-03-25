@@ -155,6 +155,7 @@ members = [
   "voyager/plugins/client-update/tendermint",
   "voyager/plugins/client-update/ethermint",
   "voyager/plugins/client-update/state-lens",
+  "voyager/plugins/client-update/mpt-trusted",
 
   "voyager/plugins/periodic-client-update",
 

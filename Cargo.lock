@@ -14595,6 +14595,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-update-plugin-mpt-trusted"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "beacon-api",
+ "beacon-api-types",
+ "bitvec 1.0.1",
+ "embed-commit",
+ "enumorph",
+ "ethereum-light-client-types",
+ "ethereum-sync-protocol-types",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "mpt-trusted-light-client-types",
+ "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-update-plugin-state-lens"
 version = "0.0.0"
 dependencies = [

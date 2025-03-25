@@ -139,6 +139,12 @@ impl ClientType {
     /// [Aptos]: https://github.com/aptos-labs/aptos-core
     pub const STATE_LENS_ICS23_SMT: &'static str = "state-lens/ics23/smt";
 
+    /// A client tracking an EVM-compatible chain utilizing [MPT] as the storage layer. The consensus
+    /// level verification is trusted, hence no beacon chain configuration is needed.
+    ///
+    /// [MPT]: https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie
+    pub const MPT_TRUSTED: &'static str = "mpt-trusted";
+
     // lots more to come - near, linea, polygon - stay tuned
 }
 
