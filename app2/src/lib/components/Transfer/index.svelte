@@ -8,20 +8,6 @@ import FillingPage from "./pages/FillingPage.svelte"
 import ApprovalPage from "./pages/ApprovalPage.svelte"
 import SubmitPage from "./pages/SubmitPage.svelte"
 import { lockedTransferStore } from "./locked-transfer.svelte.ts"
-import {
-  hasFailedExit as hasCosmosFailedExit,
-  isComplete as isCosmosComplete
-} from "$lib/services/transfer-ucs03-cosmos"
-import {
-  hasFailedExit as hasEvmFailedExit,
-  isComplete as isEvmComplete
-} from "$lib/services/transfer-ucs03-evm"
-import {
-  hasFailedExit as hasAptosFailedExit,
-  isComplete as isAptosComplete
-} from "$lib/services/transfer-ucs03-aptos"
-import ChainAsset from "$lib/components/Transfer/ChainAsset/index.svelte"
-import type { TransferStateUnion } from "$lib/components/Transfer/validation.ts"
 import { Effect, Option } from "effect"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
@@ -32,7 +18,6 @@ import {
   ViemPublicClientSource,
   readErc20Allowance
 } from "@unionlabs/sdk/evm"
-import { Data } from "effect"
 
 import {
   CosmWasmClientDestination,
@@ -49,74 +34,6 @@ import {
   SubmitInstruction,
   getStepDescription
 } from "./transfer-step.ts"
-
-function getStatus(
-  state: TransferStateUnion
-): "empty" | "filling" | "processing" | "failed" | "complete" {
-  if (state._tag === "Empty") {
-    return "empty"
-  }
-
-  if (state._tag === "Evm") {
-    if (state.state._tag === "Filling") return "filling"
-    if (hasEvmFailedExit(state.state)) return "failed"
-    if (isEvmComplete(state.state)) return "complete"
-    return "processing"
-  }
-
-  if (state._tag === "Cosmos") {
-    if (state.state._tag === "Filling") return "filling"
-    if (hasCosmosFailedExit(state.state)) return "failed"
-    if (isCosmosComplete(state.state)) return "complete"
-    return "processing"
-  }
-
-  if (state._tag === "Aptos") {
-    if (state.state._tag === "Filling") return "filling"
-    if (hasAptosFailedExit(state.state)) return "failed"
-    if (isAptosComplete(state.state)) return "complete"
-    return "processing"
-  }
-
-  return "empty"
-}
-
-// Simplified step name extractor
-function getStepName(state: TransferStateUnion): string | null {
-  if (state._tag === "Empty") {
-    return null
-  }
-
-  if (state._tag === "Evm") {
-    return state.state._tag
-  }
-
-  if (state._tag === "Aptos") {
-    return state.state._tag
-  }
-
-  if (state._tag === "Cosmos") {
-    return state.state._tag
-  }
-
-  return null
-}
-
-let isButtonEnabled = $derived(
-  getStatus(transfer.state) === "filling" ||
-    getStatus(transfer.state) === "failed" ||
-    getStatus(transfer.state) === "complete"
-)
-
-let buttonText = $derived(
-  {
-    empty: "Select",
-    filling: "Submit",
-    processing: "Submitting...",
-    failed: "Retry",
-    complete: "Submit"
-  }[getStatus(transfer.state)]
-)
 
 let transferIntents = $derived.by(() => {
   if (transfer.validation._tag !== "Success") return Option.none()
@@ -437,7 +354,6 @@ function handleActionButtonClick() {
   {/if}
 </Card>
 
-
 <!-- Debug info can be hidden in production -->
 {#if Option.isSome(lockedTransferStore.get()) || Option.isSome(transferSteps)}
   <div class="mt-4">
@@ -489,12 +405,5 @@ function handleActionButtonClick() {
 <pre>{JSON.stringify(lockedTransferStore.get(), null, 2)}</pre>
 
 {#if transfer.state._tag !== "Empty"}
-  {#if getStatus(transfer.state) === "filling"}
-    <div>Select assets and amounts to begin transfer.</div>
-  {:else if getStatus(transfer.state) === "processing"}
-    <div>Processing {getStepName(transfer.state) ?? "step"}...</div>
-  {:else if getStatus(transfer.state) === "complete"}
-    <div style="color: green;">Transfer completed successfully!</div>
-  {/if}
   <pre>{JSON.stringify(transfer.state, null, 2)}</pre>
 {/if}
