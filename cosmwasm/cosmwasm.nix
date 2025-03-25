@@ -100,9 +100,10 @@ _: {
           };
           bech32_prefix = "union";
           lightclients = [
-            # "arbitrum"
+            "arbitrum"
             # "berachain"
             "ethereum"
+            "trusted-mpt"
             # "ethermint"
             # "tendermint-bls"
             # "movement"
@@ -155,7 +156,7 @@ _: {
         {
           name = "babylon-testnet";
           rpc_url = "https://babylon-testnet-rpc.polkachu.com";
-          private_key = ''"$1"'';
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
           gas_config = {
             type = "static";
             gas_price = "0.003";

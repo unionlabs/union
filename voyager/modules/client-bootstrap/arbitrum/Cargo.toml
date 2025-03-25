@@ -1,5 +1,5 @@
 [package]
-name    = "voyager-client-module-ethereum"
+name    = "voyager-client-bootstrap-module-arbitrum"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -12,8 +12,12 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+alloy                       = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+arbitrum-client             = { workspace = true }
+arbitrum-light-client-types = { workspace = true, features = ["serde"] }
+arbitrum-types              = { workspace = true }
 embed-commit                = { workspace = true }
-ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
+ibc-union-spec.workspace    = true
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }
@@ -22,3 +26,6 @@ tracing                     = { workspace = true }
 unionlabs                   = { workspace = true }
 voyager-message             = { workspace = true }
 voyager-vm                  = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }

@@ -1,0 +1,21 @@
+[package]
+authors.workspace      = true
+edition.workspace      = true
+license-file.workspace = true
+name                   = "arbitrum-client"
+publish.workspace      = true
+repository.workspace   = true
+version                = "0.0.0"
+
+[dependencies]
+alloy          = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+arbitrum-types = { workspace = true }
+tracing        = { workspace = true, features = ["attributes"] }
+unionlabs      = { workspace = true, features = ["ethabi"] }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+tokio              = { workspace = true, features = ["full"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }

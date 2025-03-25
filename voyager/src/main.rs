@@ -516,6 +516,14 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         }
                     }
                 }
+                RpcCmd::LatestHeight { on, finalized } => {
+                    let height = voyager_client.query_latest_height(on, finalized).await?;
+                    print_json(&height);
+                }
+                RpcCmd::LatestTimestamp { on, finalized } => {
+                    let timestamp = voyager_client.query_latest_timestamp(on, finalized).await?;
+                    print_json(&timestamp);
+                }
             }
         }
         Command::Msg(msg) => match msg {

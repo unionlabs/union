@@ -1,4 +1,4 @@
-use arbitrum_light_client_types::{ClientState, ConsensusState, Header};
+use arbitrum_light_client_types::{ClientStateV1, ConsensusState, Header};
 use cosmwasm_std::{Addr, Empty};
 use ethereum_light_client::client::EthereumLightClient;
 use ethereum_light_client_types::StorageProof;
@@ -21,7 +21,7 @@ impl IbcClient for ArbitrumLightClient {
 
     type Misbehaviour = Header;
 
-    type ClientState = ClientState;
+    type ClientState = ClientStateV1;
 
     type ConsensusState = ConsensusState;
 
@@ -74,6 +74,7 @@ impl IbcClient for ArbitrumLightClient {
                 header.l1_height.height(),
             )
             .map_err(Into::<Error>::into)?;
+
         arbitrum_verifier::verify_header(&client_state, &header, l1_consensus_state.state_root)
             .map_err(Error::HeaderVerify)?;
 
@@ -83,10 +84,16 @@ impl IbcClient for ArbitrumLightClient {
             timestamp: 1_000_000_000 * header.l2_header.timestamp,
         };
 
+        client_state.latest_height = header
+            .l2_header
+            .number
+            .try_into()
+            .map_err(|()| Error::L2HeightTooLarge(header.l2_header.number))?;
+
         let state_update = StateUpdate::new(header.l1_height.height(), consensus_state);
 
-        if client_state.l1_latest_slot < header.l1_height.height() {
-            client_state.l1_latest_slot = header.l1_height.height();
+        if client_state.l1_latest_height < header.l1_height.height() {
+            client_state.l1_latest_height = header.l1_height.height();
             Ok(state_update.overwrite_client_state(client_state))
         } else {
             Ok(state_update)
@@ -126,7 +133,7 @@ impl IbcClient for ArbitrumLightClient {
     }
 
     fn get_latest_height(client_state: &Self::ClientState) -> u64 {
-        client_state.l1_latest_slot
+        client_state.latest_height
     }
 
     fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {

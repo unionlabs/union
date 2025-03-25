@@ -1,0 +1,14 @@
+[package]
+authors.workspace      = true
+edition.workspace      = true
+license-file.workspace = true
+name                   = "arbitrum-types"
+publish.workspace      = true
+repository.workspace   = true
+version                = "0.0.0"
+
+[dependencies]
+alloy = { workspace = true, features = ["sol-types"] }
+
+[lints]
+workspace = true
