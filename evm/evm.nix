@@ -190,7 +190,7 @@ _: {
         }
         {
           network = "sepolia";
-          rpc-url = "https://rpc-sepolia.rockx.com";
+          rpc-url = "https://0xrpc.io/sep";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key)"'';
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
         }
@@ -256,6 +256,83 @@ _: {
             '';
           }
         );
+
+      get-deployed-heights =
+        { rpc-url, ... }:
+        pkgs.writeShellApplication {
+          name = "get-deployed-heights";
+          runtimeInputs = [
+            self'.packages.forge
+            pkgs.moreutils
+          ];
+          runtimeEnv = {
+            ETH_RPC_URL = rpc-url;
+          };
+          text = ''
+            ${ensureAtRepositoryRoot}
+
+            DEPLOYMENTS_FILE="deployments/deployments-testnet-10.json"
+            export DEPLOYMENTS_FILE
+
+            CHAIN_ID="$(cast chain-id)"
+            export CHAIN_ID
+
+            echo "chain id: $CHAIN_ID"
+
+            jq \
+              '. |= map(if .chain_id == $chain_id then .deployments.core.height = ($height | tonumber) else . end)' \
+              "$DEPLOYMENTS_FILE" \
+              --arg chain_id "$CHAIN_ID" \
+              --arg height "$(( "$(
+                cast logs 'Initialized(uint64)' \
+                  --address "$(
+                    cast impl "$(
+                        jq -r \
+                          '.[] | select(.chain_id == $chain_id) | .deployments.core.address' \
+                          "$DEPLOYMENTS_FILE" \
+                          --arg chain_id "$CHAIN_ID"
+                      )"
+                  )" \
+                  --json \
+                | jq -r '.[0].blockNumber'
+              )" ))" \
+            | sponge "$DEPLOYMENTS_FILE" 
+
+            for key in lightclient app ; do
+              echo "key: $key"
+              jq -r \
+                '.[] | select(.chain_id == $chain_id) | .deployments[$key] | keys[]' \
+                "$DEPLOYMENTS_FILE" \
+                --arg chain_id "$CHAIN_ID" \
+                --arg key "$key" \
+                | while read -r subkey ; do
+                  echo "$key: $subkey"
+                  jq \
+                    '. |= map(if .chain_id == $chain_id then .deployments[$key][$subkey].height = ($height | tonumber) else . end)' \
+                    "$DEPLOYMENTS_FILE" \
+                    --arg chain_id "$CHAIN_ID" \
+                    --arg subkey "$subkey" \
+                    --arg key "$key" \
+                    --arg height "$(( "$(
+                      cast logs 'Initialized(uint64)' \
+                        --address "$(
+                          cast impl "$(
+                              jq -r \
+                                '.[] | select(.chain_id == $chain_id) | .deployments[$key][$subkey].address' \
+                                "$DEPLOYMENTS_FILE" \
+                                --arg chain_id "$CHAIN_ID" \
+                                --arg subkey "$subkey" \
+                                --arg key "$key"
+                            )"
+                        )" \
+                        --json \
+                      | jq -r '.[0].blockNumber'
+                    )" ))" \
+                  | sponge "$DEPLOYMENTS_FILE" 
+                done
+            done
+          '';
+        };
 
       eth-deploy-full =
         {
@@ -813,6 +890,12 @@ _: {
             builtins.map (args: {
               name = "eth-upgrade-${args.network}-cometbls-client";
               value = eth-upgrade ({ protocol = "CometblsClient"; } // args);
+            }) networks
+          )
+          // builtins.listToAttrs (
+            builtins.map (args: {
+              name = "eth-get-deployed-heights-${args.network}";
+              value = get-deployed-heights args;
             }) networks
           )
           // builtins.listToAttrs (

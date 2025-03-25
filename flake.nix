@@ -292,6 +292,7 @@
                           meta = {
                             description = "Static binary of compiler for Ethereum smart contract language Solidity";
                             homepage = "https://github.com/ethereum/solidity";
+                            mainProgram = "solc";
                             license = super.lib.licenses.gpl3;
                           };
                         }
