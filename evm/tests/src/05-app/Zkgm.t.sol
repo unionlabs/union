@@ -2224,6 +2224,10 @@ contract ZkgmTests is Test {
     function test_tintForwardSalt_ok(
         bytes32 salt
     ) public {
+        vm.assume(
+            salt
+                < 0xffff000000000000000000000000000000000000000000000000000000000000
+        );
         assertFalse(ZkgmLib.isForwardedPacket(salt));
         assertTrue(ZkgmLib.isForwardedPacket(ZkgmLib.tintForwardSalt(salt)));
     }

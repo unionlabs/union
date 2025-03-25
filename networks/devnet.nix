@@ -276,7 +276,7 @@
           }
           # For some reason, blockscout backend segfault on non-x86 arch
           // (
-            if pkgs.stdenv.isx86_64 then
+            if pkgs.stdenv.isx86_64 && (builtins.getEnv "NO_BLOCKSCOUT" == null) then
               {
                 blockscout-backend = import ./services/blockscout/backend.nix {
                   inherit lib pkgs;

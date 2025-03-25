@@ -67,7 +67,22 @@ library Protocols {
     }
 }
 
-abstract contract UnionBase is Script {
+abstract contract VersionedScript is Script {
+    using LibString for *;
+
+    constructor() {
+        assertGitRevIsPresent();
+    }
+
+    function assertGitRevIsPresent() internal {
+        if (!vm.envExists("BYPASS_GITREV") && VersionedLib.gitRev().eq("dirty"))
+        {
+            revert("git hash must be injected prior to script interactions");
+        }
+    }
+}
+
+abstract contract UnionBase is VersionedScript {
     function deployDeployer() internal returns (Deployer) {
         return new Deployer();
     }
@@ -572,7 +587,7 @@ contract DeployDeployerAndIBC is UnionScript {
     }
 }
 
-contract GetDeployed is Script {
+contract GetDeployed is VersionedScript {
     using LibString for *;
     using stdJson for string;
 
@@ -832,7 +847,7 @@ contract GetDeployed is Script {
     }
 }
 
-contract DryUpgradeUCS03 is Script {
+contract DryUpgradeUCS03 is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -865,7 +880,7 @@ contract DryUpgradeUCS03 is Script {
     }
 }
 
-contract UpgradeUCS03 is Script {
+contract UpgradeUCS03 is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -899,7 +914,7 @@ contract UpgradeUCS03 is Script {
     }
 }
 
-contract UpgradeUCS00 is Script {
+contract UpgradeUCS00 is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -933,7 +948,7 @@ contract UpgradeUCS00 is Script {
     }
 }
 
-contract DryUpgradeIBCHandler is Script {
+contract DryUpgradeIBCHandler is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -966,7 +981,7 @@ contract DryUpgradeIBCHandler is Script {
     }
 }
 
-contract UpgradeIBCHandler is Script {
+contract UpgradeIBCHandler is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1000,7 +1015,7 @@ contract UpgradeIBCHandler is Script {
     }
 }
 
-contract DryUpgradeCometblsClient is Script {
+contract DryUpgradeCometblsClient is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1040,7 +1055,7 @@ contract DryUpgradeCometblsClient is Script {
     }
 }
 
-contract UpgradeCometblsClient is Script {
+contract UpgradeCometblsClient is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1081,7 +1096,7 @@ contract UpgradeCometblsClient is Script {
     }
 }
 
-contract UpgradeStateLensIcs23MptClient is Script {
+contract UpgradeStateLensIcs23MptClient is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1123,7 +1138,7 @@ contract UpgradeStateLensIcs23MptClient is Script {
     }
 }
 
-contract UpgradeStateLensIcs23Ics23Client is Script {
+contract UpgradeStateLensIcs23Ics23Client is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1165,7 +1180,7 @@ contract UpgradeStateLensIcs23Ics23Client is Script {
     }
 }
 
-contract UpgradeStateLensIcs23SmtClient is Script {
+contract UpgradeStateLensIcs23SmtClient is VersionedScript {
     using LibString for *;
 
     address immutable deployer;

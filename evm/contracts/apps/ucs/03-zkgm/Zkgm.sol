@@ -19,6 +19,7 @@ import "../../Base.sol";
 import "../../../core/04-channel/IBCPacket.sol";
 import "../../../core/05-port/IIBCModule.sol";
 import "../../../core/24-host/IBCCommitment.sol";
+import "../../../internal/Versioned.sol";
 
 import "./IEurekaModule.sol";
 import "./IZkgmERC20.sol";
@@ -47,6 +48,7 @@ contract UCS03Zkgm is
     UUPSUpgradeable,
     OwnableUpgradeable,
     PausableUpgradeable,
+    Versioned,
     IZkgm
 {
     using ZkgmLib for *;

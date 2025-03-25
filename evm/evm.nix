@@ -8,6 +8,7 @@ _: {
       ensureAtRepositoryRoot,
       system,
       mkCi,
+      gitRev,
       ...
     }:
     let
@@ -116,6 +117,10 @@ _: {
               ];
             }
           }/* $out/
+        '';
+        fixupPhase = ''
+          substitute $out/contracts/internal/Versioned.sol $out/contracts/internal/Versioned.sol \
+              --replace-fail 'dirty' '${gitRev}'
         '';
       };
       # Foundry FS permissions must be explicitly set in the config file
@@ -296,7 +301,7 @@ _: {
                   --json \
                 | jq -r '.[0].blockNumber'
               )" ))" \
-            | sponge "$DEPLOYMENTS_FILE" 
+            | sponge "$DEPLOYMENTS_FILE"
 
             for key in lightclient app ; do
               echo "key: $key"
@@ -328,7 +333,7 @@ _: {
                         --json \
                       | jq -r '.[0].blockNumber'
                     )" ))" \
-                  | sponge "$DEPLOYMENTS_FILE" 
+                  | sponge "$DEPLOYMENTS_FILE"
                 done
             done
           '';
@@ -504,9 +509,10 @@ _: {
               OWNER="${pkgs.lib.optionalString dry "$argc_owner_pk"}" \
               PRIVATE_KEY=${private-key} \
               FOUNDRY_LIBS='["libs"]' \
-              FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
-                --rpc-url ${rpc-url} \
-                --broadcast
+              FOUNDRY_PROFILE="script" \
+                forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
+                  --rpc-url ${rpc-url} \
+                  --broadcast
 
               rm -rf "$OUT"
               popd

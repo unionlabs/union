@@ -11,6 +11,7 @@ import "../core/24-host/IBCStore.sol";
 import "../core/24-host/IBCCommitment.sol";
 import "../lib/ICS23.sol";
 import "../lib/MPTVerifier.sol";
+import "../internal/Versioned.sol";
 
 struct Header {
     uint64 l1Height;
@@ -94,7 +95,8 @@ contract StateLensIcs23MptClient is
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable,
-    PausableUpgradeable
+    PausableUpgradeable,
+    Versioned
 {
     using StateLensIcs23MptLib for *;
 

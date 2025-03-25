@@ -10,6 +10,7 @@ import "../core/02-client/ILightClient.sol";
 import "../core/24-host/IBCStore.sol";
 import "../core/24-host/IBCCommitment.sol";
 import "../lib/ICS23.sol";
+import "../internal/Versioned.sol";
 
 struct Header {
     uint64 l1Height;
@@ -97,7 +98,8 @@ contract StateLensIcs23SmtClient is
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable,
-    PausableUpgradeable
+    PausableUpgradeable,
+    Versioned
 {
     using StateLensIcs23SmtLib for *;
 

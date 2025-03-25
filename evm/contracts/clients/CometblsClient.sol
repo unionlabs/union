@@ -12,6 +12,7 @@ import "../lib/Common.sol";
 import "../lib/ICS23.sol";
 import "../lib/CometblsZKVerifier.sol";
 import "../lib/ICS23Verifier.sol";
+import "../internal/Versioned.sol";
 
 struct SignedHeader {
     uint64 height;
@@ -198,7 +199,8 @@ contract CometblsClient is
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable,
-    PausableUpgradeable
+    PausableUpgradeable,
+    Versioned
 {
     using CometblsClientLib for *;
 

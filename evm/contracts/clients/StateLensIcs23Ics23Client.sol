@@ -12,6 +12,7 @@ import "../core/24-host/IBCCommitment.sol";
 import "../lib/ICS23.sol";
 import "../lib/Common.sol";
 import "../lib/ICS23Verifier.sol";
+import "../internal/Versioned.sol";
 
 struct TendermintConsensusState {
     uint64 timestamp;
@@ -83,7 +84,8 @@ contract StateLensIcs23Ics23Client is
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable,
-    PausableUpgradeable
+    PausableUpgradeable,
+    Versioned
 {
     using StateLensIcs23Ics23Lib for *;
 

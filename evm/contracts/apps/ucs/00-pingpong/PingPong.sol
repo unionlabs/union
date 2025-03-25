@@ -54,7 +54,8 @@ contract PingPong is
     UUPSUpgradeable,
     OwnableUpgradeable,
     PausableUpgradeable,
-    IEurekaModule
+    IEurekaModule,
+    Versioned
 {
     using PingPongLib for *;
 
