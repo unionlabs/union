@@ -138,6 +138,7 @@ members = [
   "voyager/modules/client-bootstrap/movement",
   "voyager/modules/client-bootstrap/tendermint",
   "voyager/modules/client-bootstrap/ethermint",
+  "voyager/modules/client-bootstrap/mpt-trusted",
   "voyager/modules/client-bootstrap/state-lens/ics23-mpt",
   "voyager/modules/client-bootstrap/state-lens/ics23-smt",
   "voyager/modules/client-bootstrap/state-lens/ics23-ics23",

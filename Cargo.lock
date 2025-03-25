@@ -14214,6 +14214,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-mpt-trusted"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "embed-commit",
+ "jsonrpsee",
+ "mpt-trusted-light-client-types",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-state-lens-ics23-ics23"
 version = "0.0.0"
 dependencies = [

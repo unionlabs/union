@@ -38,7 +38,7 @@ impl IbcClient for MptTrustedLightClient {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         Ok(ethereum_light_client::client::verify_membership(
             key,
-            consensus_state.ibc_storage_root,
+            consensus_state.storage_root,
             storage_proof,
             value,
         )
@@ -54,7 +54,7 @@ impl IbcClient for MptTrustedLightClient {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         Ok(ethereum_light_client::client::verify_non_membership(
             key,
-            consensus_state.ibc_storage_root,
+            consensus_state.storage_root,
             storage_proof,
         )
         .map_err(Into::<Error>::into)?)
@@ -87,7 +87,7 @@ impl IbcClient for MptTrustedLightClient {
             header.height,
             ConsensusState {
                 state_root: header.state_root,
-                ibc_storage_root: header.ibc_account_proof.storage_root,
+                storage_root: header.ibc_account_proof.storage_root,
                 timestamp: header.timestamp,
             },
         );

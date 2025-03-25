@@ -4,7 +4,7 @@ use unionlabs::primitives::H256;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
     pub state_root: H256,
-    pub ibc_storage_root: H256,
+    pub storage_root: H256,
     pub timestamp: u64,
 }
 
@@ -29,7 +29,7 @@ pub mod ethabi {
         fn from(value: ConsensusState) -> Self {
             Self {
                 state_root: value.state_root.get().into(),
-                ibc_storage_root: value.ibc_storage_root.get().into(),
+                ibc_storage_root: value.storage_root.get().into(),
                 timestamp: value.timestamp,
             }
         }
@@ -39,7 +39,7 @@ pub mod ethabi {
         fn from(value: SolConsensusState) -> Self {
             Self {
                 state_root: H256::new(value.state_root.0),
-                ibc_storage_root: H256::new(value.ibc_storage_root.0),
+                storage_root: H256::new(value.ibc_storage_root.0),
                 timestamp: value.timestamp,
             }
         }
