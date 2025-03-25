@@ -1,8 +1,8 @@
 import { Effect } from "effect"
 import { ucs03abi } from "../evm/abi/ucs03.js"
 import { ViemWalletClient } from "../evm/client.js"
-import { writeContract } from "../evm/contract.js"
-import { executeContractWithKey } from "../aptos/contract.js"
+import { writeContract as writeContractEvm } from "../evm/contract.js"
+import { writeContract as writeContractAptos } from "../aptos/contract.js"
 import { AptosWalletClient } from "../aptos/client.js"
 import { type Instruction, encodeAbi } from "./instruction.js"
 import { generateSalt } from "../utils/index.js"
@@ -19,7 +19,7 @@ export const sendInstructionEvm = (instruction: Instruction) =>
     const walletClient = yield* ViemWalletClient
     const sourceConfig = yield* EvmChannelSource
 
-    return yield* writeContract(walletClient.client, {
+    return yield* writeContractEvm(walletClient.client, {
       account: walletClient.account,
       abi: ucs03abi,
       chain: walletClient.chain,
@@ -80,7 +80,7 @@ export const sendInstructionAptos = (instruction: Instruction) =>
       encodeAbi(instruction)
     ]
 
-    return yield* executeContractWithKey(
+    return yield* writeContractAptos(
       walletClient.client,
       walletClient.account,
       sourceConfig.ucs03address,
