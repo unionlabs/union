@@ -34,7 +34,7 @@ nix run .#voyager-queue
 
 6. Start voyager
 ```
-cargo b "voyager*" && RUST_LOG=voyager=info ./target/debug/voyager -c voyager/config.jsonc start
+cargo b -p "voyager*" && RUST_LOG=voyager=info ./target/debug/voyager -c voyager/config.jsonc start
 ```
 
 7. Fetch blocks
@@ -106,7 +106,7 @@ printf "union162nwv92cfwthfcnlqmh30gmnem2u3uv56ap9y7e0vuqtdnz2qjeq2ckrsf" | xxd 
   - `port_id` is the hexified address of the `ucs03 (zkgm)` contract on `Union`.
   - `counterparty_port_id` is the `ucs03 (zkgm)` contract on `EVM` as is. 
 ```
-./target/debug/voyager -c ../voyager-config-testnet-10.jsonc q e '{"@type":"call","@value":{"@type":"submit_tx","@value":{"chain_id":"union-devnet-1","datagrams":[{"ibc_spec_id":"ibc-union","datagram":{"@type":"channel_open_init","@value":{"port_id":"0x756e696f6e3136326e77763932636677746866636e6c716d683330676d6e656d327533757635366170397937653076757174646e7a32716a657132636b727366","counterparty_port_id":"0x05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5","connection_id":1,"version":"ucs03-zkgm-0"}}}]}}}'
+./target/debug/voyager -c ./voyager/config.jsonc q e '{"@type":"call","@value":{"@type":"submit_tx","@value":{"chain_id":"union-devnet-1","datagrams":[{"ibc_spec_id":"ibc-union","datagram":{"@type":"channel_open_init","@value":{"port_id":"0x756e696f6e3136326e77763932636677746866636e6c716d683330676d6e656d327533757635366170397937653076757174646e7a32716a657132636b727366","counterparty_port_id":"0x05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5","connection_id":1,"version":"ucs03-zkgm-0"}}}]}}}'
 ```
 
 - Follow the transactions and logs again to see the `channel_id`.
