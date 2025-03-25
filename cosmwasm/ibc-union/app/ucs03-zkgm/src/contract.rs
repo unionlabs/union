@@ -269,15 +269,26 @@ fn timeout_packet(
         // Find the parent packet that initiated the forward
         let commitment_key = BatchPacketsPath::from_packets(&[packet.clone()]).key();
 
-        if IN_FLIGHT_PACKET
-            .may_load(deps.storage, commitment_key.into_bytes().into())?
-            .is_some()
+        if let Some(parent_packet) =
+            IN_FLIGHT_PACKET.may_load(deps.storage, commitment_key.into_bytes().into())?
         {
             // Erase the parent packet
             IN_FLIGHT_PACKET.remove(deps.storage, commitment_key.into_bytes().into());
 
-            // Don't write any acknowledgement, the IBC stack will prevent replay and the parent will timeout.
-            return Ok(Response::new());
+            let config = CONFIG.load(deps.storage)?;
+            return Ok(Response::new().add_message(wasm_execute(
+                &config.ibc_host,
+                &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
+                    packet: parent_packet,
+                    acknowledgement: Ack {
+                        tag: TAG_ACK_FAILURE,
+                        inner_ack: Default::default(),
+                    }
+                    .abi_encode_params()
+                    .into(),
+                }),
+                vec![],
+            )?));
         }
     }
     timeout_internal(

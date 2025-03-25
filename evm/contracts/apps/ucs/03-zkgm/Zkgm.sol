@@ -695,6 +695,7 @@ contract UCS03Zkgm is
             bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
             IBCPacket memory parent = inFlightPacket[packetHash];
             if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
+                delete inFlightPacket[packetHash];
                 ibcHandler.writeAcknowledgement(parent, ack);
                 return;
             }
@@ -926,6 +927,19 @@ contract UCS03Zkgm is
             bytes32 packetHash = IBCPacketLib.commitPacket(ibcPacket);
             IBCPacket memory parent = inFlightPacket[packetHash];
             if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
+                // If the forwarded packet times out, we write a failure ACK for
+                // the parent such that we ensure refund happens as the parent
+                // wouldn't timeout itself.
+                delete inFlightPacket[packetHash];
+                ibcHandler.writeAcknowledgement(
+                    parent,
+                    ZkgmLib.encodeAck(
+                        Ack({
+                            tag: ZkgmLib.ACK_FAILURE,
+                            innerAck: ZkgmLib.ACK_EMPTY
+                        })
+                    )
+                );
                 return;
             }
         }
