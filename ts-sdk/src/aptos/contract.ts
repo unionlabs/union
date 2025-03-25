@@ -5,7 +5,7 @@ import { extractErrorDetails } from "../utils/extract-error-details.js"
 /**
  * Error type for Aptos contract query failures
  */
-export class QueryContractError extends Data.TaggedError("QueryContractError")<{
+export class readContractError extends Data.TaggedError("readContractError")<{
   cause: unknown
 }> {}
 
@@ -17,7 +17,7 @@ export class ExecuteContractError extends Data.TaggedError("ExecuteContractError
 }> {}
 
 // TODO: add comments
-export const queryContract = <T = unknown>(
+export const readContract = <T = unknown>(
   client: Aptos,
   contractAddress: string,
   module_name: string,
@@ -36,7 +36,7 @@ export const queryContract = <T = unknown>(
       })
       return result as [T]
     },
-    catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) })
+    catch: error => new readContractError({ cause: extractErrorDetails(error as Error) })
   }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
 
 // TODO: add comments - fix it when integrating with app2
@@ -61,7 +61,7 @@ export const queryContract = <T = unknown>(
 //     catch: error => new ExecuteContractError({ cause: extractErrorDetails(error as Error) })
 //   })
 
-export const executeContractWithKey = (
+export const writeContract = (
   client: Aptos,
   signer: AptosAccount,
   contractAddress: string,

@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { queryContract } from "./contract.js"
+import { readContract } from "./contract.js"
 import { AptosPublicClientDestination } from "./client.js"
 import { AptosChannelDestination } from "./channel.js"
 import { MoveVector } from "@aptos-labs/ts-sdk"
@@ -21,7 +21,7 @@ export const predictQuoteToken = (baseToken: Hex) =>
 
     yield* Effect.log("Predicting quote token for base token:", baseToken)
 
-    const result = yield* queryContract(
+    const result = yield* readContract(
       client,
       contract_address,
       module_name,

@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { AptosPublicClient, createAptosPublicClient } from "../src/aptos/client.ts"
-import { queryContract, executeContractWithKey } from "../src/aptos/contract.ts"
+import { readContract, writeContract } from "../src/aptos/contract.ts"
 import { waitForTransactionReceipt } from "../src/aptos/receipts.ts"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
 import { AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
@@ -38,7 +38,7 @@ Effect.runPromiseExit(
     const base_token = MoveVector.U8(token_address)
     const functionArguments = [0, destination_channel_id, base_token]
 
-    const result = yield* queryContract(
+    const result = yield* readContract(
       publicClient,
       zkgm_address,
       module_name,
@@ -60,7 +60,7 @@ Effect.runPromiseExit(
     const balance_typeArguments = ["0x1::fungible_asset::Metadata"]
     const balance_functionArguments = [account.accountAddress.toString(), result[0]]
 
-    const result_balance = yield* queryContract(
+    const result_balance = yield* readContract(
       publicClient,
       contract_address,
       balance_module_name,
@@ -79,7 +79,7 @@ Effect.runPromiseExit(
 
     yield* Effect.log("transfer_functionArguments:", transfer_functionArguments)
 
-    const result_execute = yield* executeContractWithKey(
+    const result_execute = yield* writeContract(
       publicClient,
       account,
       contract_address,

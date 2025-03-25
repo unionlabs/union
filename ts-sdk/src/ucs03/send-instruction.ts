@@ -5,7 +5,7 @@ import { writeContract } from "../evm/contract.js"
 import { executeContractWithKey } from "../aptos/contract.js"
 import { AptosWalletClient } from "../aptos/client.js"
 import { type Instruction, encodeAbi } from "./instruction.js"
-import { generateSalt, generateSaltAptos } from "../utils/index.js"
+import { generateSalt } from "../utils/index.js"
 import { EvmChannelSource } from "../evm/channel.js"
 import { AptosChannelSource } from "../aptos/channel.js"
 import { executeContract } from "../cosmos/contract.js"
@@ -29,7 +29,7 @@ export const sendInstructionEvm = (instruction: Instruction) =>
         sourceConfig.channelId,
         0n,
         1000000000000n,
-        generateSalt(),
+        generateSalt("evm"),
         {
           opcode: instruction.opcode,
           version: instruction.version,
@@ -53,7 +53,7 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
           channel_id: sourceConfig.channelId,
           timeout_height: 10000000,
           timeout_timestamp: 0,
-          salt: generateSalt(),
+          salt: generateSalt("cosmos"),
           instruction: encodeAbiParameters(instructionAbi, [
             instruction.version,
             instruction.opcode,
@@ -74,7 +74,7 @@ export const sendInstructionAptos = (instruction: Instruction) =>
       sourceConfig.channelId,
       0,
       1000000000000,
-      generateSaltAptos(),
+      generateSalt("aptos"),
       instruction.version,
       instruction.opcode,
       encodeAbi(instruction)

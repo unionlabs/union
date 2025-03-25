@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { queryContract } from "./contract.js"
+import { readContract } from "./contract.js"
 import { AptosPublicClient } from "./client.js"
 
 export type Hex = `0x${string}`
@@ -26,7 +26,7 @@ export const readFaBalance = (contractAddress: string, address: string) =>
     const type_arguments = ["0x1::fungible_asset::Metadata"]
     const function_arguments = [address, contractAddress]
 
-    const result = yield* queryContract(
+    const result = yield* readContract(
       client,
       contract_address,
       balance_module_name,
@@ -49,7 +49,7 @@ export const readFaName = (contractAddress: string) =>
     const type_arguments = ["0x1::fungible_asset::Metadata"]
     const function_arguments = [contractAddress]
 
-    const result = yield* queryContract(
+    const result = yield* readContract(
       client,
       contract_address,
       module_name,
@@ -72,7 +72,7 @@ export const readFaDecimals = (contractAddress: string) =>
     const type_arguments = ["0x1::fungible_asset::Metadata"]
     const function_arguments = [contractAddress]
 
-    const result = yield* queryContract(
+    const result = yield* readContract(
       client,
       contract_address,
       module_name,
@@ -95,7 +95,7 @@ export const readFaSymbol = (contractAddress: string) =>
     const type_arguments = ["0x1::fungible_asset::Metadata"]
     const function_arguments = [contractAddress]
 
-    const result = yield* queryContract(
+    const result = yield* readContract(
       client,
       contract_address,
       module_name,
@@ -118,7 +118,7 @@ export const readFaTokenInfo = (contractAddress: string) =>
     const type_arguments = ["0x1::fungible_asset::Metadata"]
     const function_arguments = [contractAddress]
 
-    const result = yield* queryContract(
+    const result = yield* readContract(
       client,
       contract_address,
       module_name,

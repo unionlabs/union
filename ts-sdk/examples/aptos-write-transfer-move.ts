@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { AptosPublicClient, createAptosPublicClient } from "../src/aptos/client.ts"
-import { executeContractWithKey } from "../src/aptos/contract.ts"
+import { writeContract } from "../src/aptos/contract.ts"
 import { waitForTransactionReceipt } from "../src/aptos/receipts.ts"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
 import { AptosConfig, Network } from "@aptos-labs/ts-sdk"
@@ -37,7 +37,7 @@ Effect.runPromiseExit(
 
     yield* Effect.log("transfer_functionArguments:", transfer_functionArguments)
 
-    const result_execute = yield* executeContractWithKey(
+    const result_execute = yield* writeContract(
       publicClient,
       account,
       contract_address,
