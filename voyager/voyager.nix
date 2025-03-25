@@ -4,7 +4,6 @@
     {
       pkgs,
       crane,
-      dbg,
       ...
     }:
     let
@@ -53,14 +52,20 @@
       config,
       ...
     }:
-    with lib;
     let
+      inherit (lib) mkOption mkEnableOption types;
+      mkMergeTopLevel =
+        names: attrs:
+        lib.getAttrs names (
+          lib.mapAttrs (_k: v: lib.mkMerge v) (lib.foldAttrs (n: a: [ n ] ++ a) [ ] attrs)
+        );
       cfg = config.services.voyager;
     in
     {
       options.services.voyager = {
         enable = mkEnableOption "Voyager services";
         instances = mkOption {
+          default = [ ];
           type = types.listOf (
             types.submodule {
               options = {
@@ -201,91 +206,22 @@
                       };
                     };
                   };
-                modules =
-                  let
-                    moduleConfigType =
-                      infoOptions:
-                      mkOption {
-                        type = types.listOf (
-                          types.submodule {
-                            options = {
-                              enabled = mkOption {
-                                type = types.bool;
-                                default = true;
-                              };
-                              path = mkOption {
-                                type = types.path;
-                              };
-                              config = mkOption {
-                                type = types.attrs;
-                                default = { };
-                              };
-                              info = mkOption {
-                                type = types.submodule {
-                                  options = infoOptions;
-                                };
-                              };
-                            };
-                          }
-                        );
-                      };
-                  in
-                  mkOption {
-                    type = types.submodule {
-                      options = {
-                        client = moduleConfigType {
-                          client_type = mkOption { type = types.str; };
-                          consensus_type = mkOption { type = types.str; };
-                          ibc_interface = mkOption { type = types.str; };
-                          ibc_spec_id = mkOption { type = types.str; };
-                        };
-                        client_bootstrap = moduleConfigType {
-                          chain_id = mkOption { type = types.str; };
-                          client_type = mkOption { type = types.str; };
-                        };
-                        consensus = moduleConfigType {
-                          chain_id = mkOption { type = types.str; };
-                          consensus_type = mkOption { type = types.str; };
-                        };
-                        proof = moduleConfigType {
-                          chain_id = mkOption { type = types.str; };
-                          ibc_spec_id = mkOption { type = types.str; };
-                        };
-                        state = moduleConfigType {
-                          chain_id = mkOption { type = types.str; };
-                          ibc_spec_id = mkOption { type = types.str; };
-                        };
-                      };
-                    };
-                  };
-                plugins = mkOption {
-                  type = types.listOf (
-                    types.submodule {
-                      options = {
-                        enabled = mkOption {
-                          type = types.bool;
-                          default = true;
-                        };
-                        path = mkOption { type = types.path; };
-                        config = mkOption { type = types.attrs; };
-                      };
-                    }
-                  );
-                };
+                modules = mkOption { type = types.attrs; };
+                plugins = mkOption { type = types.listOf types.attrs; };
               };
             }
           );
         };
       };
 
-      config = attrsets.mergeAttrsList (
-        flip map cfg.instances (
+      config = mkMergeTopLevel [ "systemd" "environment" "users" ] (
+        map (
           instance:
           let
-            configJson = pkgs.writeText "config.json" (
+            configJson = pkgs.writeText "config-${instance.name}.json" (
               builtins.toJSON (
-                recursiveUpdate
-                  (filterAttrsRecursive (_n: v: v != null) {
+                lib.recursiveUpdate
+                  (lib.filterAttrsRecursive (_n: v: v != null) {
                     inherit (instance)
                       equivalent_chain_ids
                       modules
@@ -300,45 +236,50 @@
               )
             );
           in
-          mkIf cfg.enable
-          && instance.enable {
-            environment.systemPackages = [
+          {
+            environment.systemPackages = lib.mkIf (cfg.enable && instance.enable) [
               (pkgs.writeShellApplication {
                 name = "voyager-${instance.name}";
                 runtimeInputs = [ instance.package ];
                 text = ''
-                  ${getExe instance.package} --config-file-path ${configJson} "$@"
+                  ${lib.getExe instance.package} --config-file-path ${configJson} "$@"
                 '';
               })
             ];
-            systemd.services = {
-              "voyager-${instance.name}" = {
-                wantedBy = [ "multi-user.target" ];
-                description = "Voyager ${instance.name}";
-                serviceConfig = {
-                  Type = "simple";
-                  ExecStart = ''
-                    ${getExe instance.package} \
-                      --config-file-path ${configJson} \
-                      -l ${instance.settings.log-format} ${
-                        optionalString (
-                          instance.settings.stack-size != null
-                        ) "--stack-size ${toString instance.settings.stack-size}"
-                      } \
-                      start
-                  '';
-                  Restart = mkForce "always";
-                  RestartSec = 10;
-                  RuntimeMaxSec = instance.settings.runtime-max-secs;
-                };
-                environment = {
-                  RUST_LOG = "${instance.settings.log-level}";
-                  RUST_LOG_FORMAT = "${instance.settings.log-format}";
-                };
+            systemd.services."voyager-${instance.name}" = lib.mkIf (cfg.enable && instance.enable) {
+              wantedBy = [ "multi-user.target" ];
+              description = "Voyager ${instance.name}";
+              serviceConfig = {
+                Type = "simple";
+                User = instance.name;
+                ExecStart = ''
+                  ${lib.getExe instance.package} \
+                    --config-file-path ${configJson} \
+                    -l ${instance.settings.log-format} ${
+                      lib.optionalString (
+                        instance.settings.stack-size != null
+                      ) "--stack-size ${toString instance.settings.stack-size}"
+                    } \
+                    start
+                '';
+                Restart = lib.mkForce "always";
+                RestartSec = 10;
+                RuntimeMaxSec = instance.settings.runtime-max-secs;
+              };
+              environment = {
+                RUST_LOG = "${instance.settings.log-level}";
+                RUST_LOG_FORMAT = "${instance.settings.log-format}";
               };
             };
+            users = {
+              users.${instance.name} = {
+                isSystemUser = true;
+                group = instance.name;
+              };
+              groups.${instance.name} = { };
+            };
           }
-        )
+        ) cfg.instances
       );
     };
 }
