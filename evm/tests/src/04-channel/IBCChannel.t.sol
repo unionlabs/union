@@ -72,6 +72,7 @@ contract IBCChannelTests is Test {
             0,
             msg_.counterpartyPortId,
             msg_.connectionId,
+            msg_.version,
             msg_.version
         );
         vm.resumeGasMetering();
@@ -147,6 +148,7 @@ contract IBCChannelTests is Test {
             msg_.channel.counterpartyPortId,
             msg_.channel.counterpartyChannelId,
             msg_.channel.connectionId,
+            msg_.counterpartyVersion,
             msg_.counterpartyVersion
         );
         vm.resumeGasMetering();

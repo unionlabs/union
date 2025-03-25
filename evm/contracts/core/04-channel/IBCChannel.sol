@@ -15,7 +15,8 @@ library IBCChannelLib {
         uint32 indexed channelId,
         bytes counterpartyPortId,
         uint32 connectionId,
-        string indexed version
+        string indexed versionIndex,
+        string version
     );
     event ChannelOpenTry(
         address indexed portId,
@@ -23,7 +24,8 @@ library IBCChannelLib {
         bytes counterpartyPortId,
         uint32 counterpartyChannelId,
         uint32 connectionId,
-        string indexed counterpartyVersion
+        string indexed counterpartyVersionIndex,
+        string counterpartyVersion
     );
     event ChannelOpenAck(
         address indexed portId,
@@ -82,6 +84,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             channelId,
             channel.counterpartyPortId,
             msg_.connectionId,
+            msg_.version,
             msg_.version
         );
         return channelId;
@@ -134,6 +137,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
             msg_.channel.counterpartyPortId,
             msg_.channel.counterpartyChannelId,
             msg_.channel.connectionId,
+            msg_.counterpartyVersion,
             msg_.counterpartyVersion
         );
         return channelId;
