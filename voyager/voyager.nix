@@ -284,7 +284,7 @@
         };
       };
 
-      config = attrsets.mergeAttrsList (
+      config = mkMerge (
         flip map cfg.instances (
           instance:
           let
@@ -306,8 +306,7 @@
               )
             );
           in
-          mkIf cfg.enable
-          && instance.enable {
+          mkIf (cfg.enable && instance.enable) {
             environment.systemPackages = [
               (pkgs.writeShellApplication {
                 name = "voyager-${instance.name}";
@@ -317,32 +316,32 @@
                 '';
               })
             ];
-            systemd.services = {
-              "voyager-${instance.name}" = {
-                wantedBy = [ "multi-user.target" ];
-                description = "Voyager ${instance.name}";
-                serviceConfig = {
-                  Type = "simple";
-                  ExecStart = ''
-                    ${getExe instance.package} \
-                      --config-file-path ${configJson} \
-                      -l ${instance.settings.log-format} ${
-                        optionalString (
-                          instance.settings.stack-size != null
-                        ) "--stack-size ${toString instance.settings.stack-size}"
-                      } \
-                      start
-                  '';
-                  Restart = mkForce "always";
-                  RestartSec = 10;
-                  RuntimeMaxSec = instance.settings.runtime-max-secs;
-                };
-                environment = {
-                  RUST_LOG = "${instance.settings.log-level}";
-                  RUST_LOG_FORMAT = "${instance.settings.log-format}";
-                };
-              };
-            };
+            # systemd.services = {
+            #   "voyager-${instance.name}" = {
+            #     wantedBy = [ "multi-user.target" ];
+            #     description = "Voyager ${instance.name}";
+            #     serviceConfig = {
+            #       Type = "simple";
+            #       ExecStart = ''
+            #         ${getExe instance.package} \
+            #           --config-file-path ${configJson} \
+            #           -l ${instance.settings.log-format} ${
+            #             optionalString (
+            #               instance.settings.stack-size != null
+            #             ) "--stack-size ${toString instance.settings.stack-size}"
+            #           } \
+            #           start
+            #       '';
+            #       Restart = mkForce "always";
+            #       RestartSec = 10;
+            #       RuntimeMaxSec = instance.settings.runtime-max-secs;
+            #     };
+            #     environment = {
+            #       RUST_LOG = "${instance.settings.log-level}";
+            #       RUST_LOG_FORMAT = "${instance.settings.log-format}";
+            #     };
+            #   };
+            # };
           }
         )
       );
