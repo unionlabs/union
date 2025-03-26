@@ -150,7 +150,7 @@ impl Plugin for Module {
             name: plugin_name(&config.chain_id),
             interest_filter: UpdateHook::filter(
                 &config.chain_id,
-                &ClientType::new(ClientType::ETHEREUM),
+                &ClientType::new(ClientType::MPT_TRUSTED),
             ),
         }
     }
@@ -200,6 +200,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
+        println!("FETCH  update BRO?????");
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate {
                 from_height,

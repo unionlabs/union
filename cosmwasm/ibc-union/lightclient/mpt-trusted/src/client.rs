@@ -67,7 +67,7 @@ impl IbcClient for MptTrustedLightClient {
         _relayer: Addr,
     ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
         let ClientState::V1(mut client_state) = ctx.read_self_client_state()?;
-        if client_state
+        if !client_state
             .whitelisted_relayers
             .contains(&caller.to_string())
         {

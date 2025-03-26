@@ -132,6 +132,7 @@ members = [
   "voyager/modules/client/state-lens/ics23-mpt",
   "voyager/modules/client/state-lens/ics23-ics23",
   "voyager/modules/client/state-lens/ics23-smt",
+  "voyager/modules/client/trusted-mpt",
 
   "voyager/modules/client-bootstrap/cometbls",
   "voyager/modules/client-bootstrap/ethereum",
@@ -148,6 +149,7 @@ members = [
   "voyager/modules/consensus/ethereum",
   "voyager/modules/consensus/movement",
   "voyager/modules/consensus/tendermint",
+  "voyager/modules/consensus/trusted-mpt",
 
   "voyager/plugins/client-update/berachain",
   "voyager/plugins/client-update/cometbls",

@@ -14486,6 +14486,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-module-trusted-mpt"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "ethereum-light-client-types",
+ "jsonrpsee",
+ "mpt-trusted-light-client-types",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-update-plugin-berachain"
 version = "0.0.0"
 dependencies = [
@@ -14767,6 +14784,21 @@ dependencies = [
  "jsonrpsee",
  "serde",
  "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-consensus-module-trusted-mpt"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "embed-commit",
+ "jsonrpsee",
+ "serde",
  "tokio",
  "tracing",
  "unionlabs",
