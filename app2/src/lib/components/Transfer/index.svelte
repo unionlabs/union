@@ -381,7 +381,10 @@
           tokenAddresses.map(tokenAddress =>
             Effect.gen(function* () {
 
-
+              
+              // TODO: 
+              // const allowance = yield* readCw20Allowance(contractAddress, walletAddress, spender).pipe(withClient)
+              // use it like this when deployed new ts-sdk
               const result = yield* Effect.tryPromise({
                 try: () => cosmwasmClient.queryContractSmart(fromHex(tokenAddress, "string"), {
                   allowance: {
