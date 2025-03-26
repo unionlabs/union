@@ -603,6 +603,17 @@ contract ZkgmTests is Test {
         );
     }
 
+    function test_tintForwardSalt_ok(
+        bytes32 salt
+    ) public {
+        vm.assume(
+            salt
+                < 0xffff000000000000000000000000000000000000000000000000000000000000
+        );
+        assertFalse(ZkgmLib.isForwardedPacket(salt));
+        assertTrue(ZkgmLib.isForwardedPacket(ZkgmLib.tintForwardSalt(salt)));
+    }
+
     function test_onChanOpenInit_ok(
         address caller,
         uint32 connectionId,
@@ -1264,6 +1275,7 @@ contract ZkgmTests is Test {
         bytes memory relayerMsg,
         bytes memory expectedAck
     ) internal {
+        vm.prank(address(handler));
         assertEq(
             zkgm.onRecvPacket(caller, packet, relayer, relayerMsg),
             ZkgmLib.encodeAck(
@@ -1413,7 +1425,6 @@ contract ZkgmTests is Test {
         vm.assume(destinationChannelId != 0);
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
-        vm.prank(address(handler));
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1457,7 +1468,6 @@ contract ZkgmTests is Test {
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
         assertFalse(ZkgmLib.isDeployed(quoteToken));
-        vm.prank(address(handler));
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1502,7 +1512,6 @@ contract ZkgmTests is Test {
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
         assertEq(zkgm.tokenOrigin(quoteToken), 0);
-        vm.prank(address(handler));
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1550,7 +1559,6 @@ contract ZkgmTests is Test {
         vm.assume(destinationChannelId != 0);
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
-        vm.prank(address(handler));
         vm.expectEmit();
         emit IERC20.Transfer(address(0), address(this), baseAmount);
         expectOnRecvTransferSuccess(
@@ -1599,7 +1607,6 @@ contract ZkgmTests is Test {
         vm.assume(destinationChannelId != 0);
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
-        vm.prank(address(handler));
         if (quoteAmount > 0) {
             vm.expectEmit();
             emit IERC20.Transfer(address(0), address(this), quoteAmount);
@@ -1672,7 +1679,6 @@ contract ZkgmTests is Test {
             quoteToken,
             baseAmount
         );
-        vm.prank(address(handler));
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1723,7 +1729,6 @@ contract ZkgmTests is Test {
             quoteToken,
             baseAmount
         );
-        vm.prank(address(handler));
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1974,7 +1979,6 @@ contract ZkgmTests is Test {
         erc20.mint(address(zkgm), baseAmount);
         vm.expectEmit();
         emit IERC20.Transfer(address(zkgm), relayer, baseAmount);
-        vm.prank(address(handler));
         internalOnAckOrder(
             caller,
             sourceChannelId,
@@ -2030,7 +2034,6 @@ contract ZkgmTests is Test {
         vm.assume(quoteAmount > 0);
         vm.expectEmit();
         emit IERC20.Transfer(address(0), relayer, baseAmount);
-        vm.prank(address(handler));
         internalOnAckOrder(
             caller,
             sourceChannelId,
@@ -2092,7 +2095,6 @@ contract ZkgmTests is Test {
         );
         vm.expectEmit();
         emit IERC20.Transfer(address(zkgm), sender, baseAmount);
-        vm.prank(address(handler));
         internalOnAckOrder(
             caller,
             sourceChannelId,
@@ -2144,7 +2146,8 @@ contract ZkgmTests is Test {
         zkgm.doIncreaseOutstanding(
             sourceChannelId, path, address(erc20), baseAmount
         );
-        vm.prank(address(handler));
+        vm.expectEmit();
+        emit IERC20.Transfer(address(zkgm), sender, baseAmount);
         internalOnAckOrder(
             caller,
             sourceChannelId,
@@ -2195,7 +2198,6 @@ contract ZkgmTests is Test {
         vm.assume(quoteAmount > 0);
         vm.expectEmit();
         emit IERC20.Transfer(address(0), sender, baseAmount);
-        vm.prank(address(handler));
         internalOnAckOrder(
             caller,
             sourceChannelId,
@@ -2219,16 +2221,5 @@ contract ZkgmTests is Test {
                 Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
             )
         );
-    }
-
-    function test_tintForwardSalt_ok(
-        bytes32 salt
-    ) public {
-        vm.assume(
-            salt
-                < 0xffff000000000000000000000000000000000000000000000000000000000000
-        );
-        assertFalse(ZkgmLib.isForwardedPacket(salt));
-        assertTrue(ZkgmLib.isForwardedPacket(ZkgmLib.tintForwardSalt(salt)));
     }
 }
