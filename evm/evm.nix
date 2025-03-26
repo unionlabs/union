@@ -40,8 +40,8 @@ _: {
       openzeppelin = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-contracts";
-        rev = "v5.2.0";
-        hash = "sha256-glfHJdT6ZUv1FEGNp13VEgGkDyJnzT3d3BD+PSeFzRE=";
+        rev = "v5.3.0-rc.0";
+        hash = "sha256-rCuoPQpHgJ7MjoJ9tNmL/YpW2d6EB+QM3nv6E8X3GV0=";
       };
       openzeppelin-upgradeable = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";

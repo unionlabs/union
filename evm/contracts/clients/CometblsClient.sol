@@ -208,8 +208,6 @@ contract CometblsClient is
 
     mapping(uint32 => ClientState) private clientStates;
     mapping(uint32 => mapping(uint64 => ConsensusState)) private consensusStates;
-    mapping(uint32 => mapping(uint64 => ProcessedMoment)) private
-        processedMoments;
 
     constructor() {
         _disableInitializers();

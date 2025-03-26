@@ -603,6 +603,17 @@ contract ZkgmTests is Test {
         );
     }
 
+    function test_tintForwardSalt_ok(
+        bytes32 salt
+    ) public {
+        vm.assume(
+            salt
+                < 0xffff000000000000000000000000000000000000000000000000000000000000
+        );
+        assertFalse(ZkgmLib.isForwardedPacket(salt));
+        assertTrue(ZkgmLib.isForwardedPacket(ZkgmLib.tintForwardSalt(salt)));
+    }
+
     function test_onChanOpenInit_ok(
         address caller,
         uint32 connectionId,
@@ -1247,14 +1258,22 @@ contract ZkgmTests is Test {
         address caller,
         IBCPacket memory packet,
         address relayer,
-        bytes memory relayerMsg
+        bytes memory relayerMsg,
+        bool onlyMaker
     ) internal {
-        assertEq(
-            zkgm.onRecvPacket(caller, packet, relayer, relayerMsg),
-            ZkgmLib.encodeAck(
-                Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
-            )
-        );
+        if (onlyMaker) {
+            vm.expectRevert(ZkgmLib.ErrOnlyMaker.selector);
+        }
+        bytes memory ack =
+            zkgm.onRecvPacket(caller, packet, relayer, relayerMsg);
+        if (!onlyMaker) {
+            assertEq(
+                ack,
+                ZkgmLib.encodeAck(
+                    Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
+                )
+            );
+        }
     }
 
     function expectAckSuccess(
@@ -1264,6 +1283,7 @@ contract ZkgmTests is Test {
         bytes memory relayerMsg,
         bytes memory expectedAck
     ) internal {
+        vm.prank(address(handler));
         assertEq(
             zkgm.onRecvPacket(caller, packet, relayer, relayerMsg),
             ZkgmLib.encodeAck(
@@ -1313,7 +1333,8 @@ contract ZkgmTests is Test {
                 timeoutTimestamp: 0
             }),
             relayer,
-            relayerMsg
+            relayerMsg,
+            false
         );
     }
 
@@ -1325,8 +1346,10 @@ contract ZkgmTests is Test {
         bytes32 salt,
         address relayer,
         bytes memory relayerMsg,
-        FungibleAssetOrder memory order
+        FungibleAssetOrder memory order,
+        bool onlyMaker
     ) internal {
+        vm.prank(address(handler));
         expectAckFailure(
             caller,
             IBCPacket({
@@ -1347,7 +1370,8 @@ contract ZkgmTests is Test {
                 timeoutTimestamp: 0
             }),
             relayer,
-            relayerMsg
+            relayerMsg,
+            onlyMaker
         );
     }
 
@@ -1360,6 +1384,33 @@ contract ZkgmTests is Test {
         address relayer,
         bytes memory relayerMsg,
         FungibleAssetOrder memory order
+    ) internal {
+        expectOnRecvTransferSuccessCustomAck(
+            caller,
+            sourceChannelId,
+            destinationChannelId,
+            path,
+            salt,
+            relayer,
+            relayerMsg,
+            order,
+            FungibleAssetOrderAck({
+                fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
+                marketMaker: ZkgmLib.ACK_EMPTY
+            })
+        );
+    }
+
+    function expectOnRecvTransferSuccessCustomAck(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 path,
+        bytes32 salt,
+        address relayer,
+        bytes memory relayerMsg,
+        FungibleAssetOrder memory order,
+        FungibleAssetOrderAck memory expectedAck
     ) internal {
         expectAckSuccess(
             caller,
@@ -1382,12 +1433,7 @@ contract ZkgmTests is Test {
             }),
             relayer,
             relayerMsg,
-            ZkgmLib.encodeFungibleAssetOrderAck(
-                FungibleAssetOrderAck({
-                    fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
-                    marketMaker: ZkgmLib.ACK_EMPTY
-                })
-            )
+            ZkgmLib.encodeFungibleAssetOrderAck(expectedAck)
         );
     }
 
@@ -1413,7 +1459,6 @@ contract ZkgmTests is Test {
         vm.assume(destinationChannelId != 0);
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
-        vm.prank(address(handler));
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1457,7 +1502,6 @@ contract ZkgmTests is Test {
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
         assertFalse(ZkgmLib.isDeployed(quoteToken));
-        vm.prank(address(handler));
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1502,7 +1546,6 @@ contract ZkgmTests is Test {
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
         assertEq(zkgm.tokenOrigin(quoteToken), 0);
-        vm.prank(address(handler));
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1550,7 +1593,6 @@ contract ZkgmTests is Test {
         vm.assume(destinationChannelId != 0);
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
-        vm.prank(address(handler));
         vm.expectEmit();
         emit IERC20.Transfer(address(0), address(this), baseAmount);
         expectOnRecvTransferSuccess(
@@ -1599,7 +1641,6 @@ contract ZkgmTests is Test {
         vm.assume(destinationChannelId != 0);
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
-        vm.prank(address(handler));
         if (quoteAmount > 0) {
             vm.expectEmit();
             emit IERC20.Transfer(address(0), address(this), quoteAmount);
@@ -1672,7 +1713,6 @@ contract ZkgmTests is Test {
             quoteToken,
             baseAmount
         );
-        vm.prank(address(handler));
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1723,7 +1763,6 @@ contract ZkgmTests is Test {
             quoteToken,
             baseAmount
         );
-        vm.prank(address(handler));
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1779,7 +1818,6 @@ contract ZkgmTests is Test {
             quoteToken,
             baseAmount
         );
-        vm.prank(address(handler));
         expectOnRecvTransferFailure(
             caller,
             sourceChannelId,
@@ -1799,7 +1837,8 @@ contract ZkgmTests is Test {
                 baseAmount: baseAmount,
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: baseAmount
-            })
+            }),
+            false
         );
     }
 
@@ -1834,7 +1873,6 @@ contract ZkgmTests is Test {
             quoteToken,
             baseAmount
         );
-        vm.prank(address(handler));
         expectOnRecvTransferFailure(
             caller,
             sourceChannelId,
@@ -1854,7 +1892,105 @@ contract ZkgmTests is Test {
                 baseAmount: baseAmount,
                 quoteToken: abi.encodePacked(quoteToken),
                 quoteAmount: baseAmount
+            }),
+            false
+        );
+    }
+
+    function test_onRecvPacket_marketMakerFill_ok(
+        address marketMaker,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        bytes32 salt,
+        bytes memory sender,
+        bytes memory baseToken,
+        string memory baseTokenSymbol,
+        string memory baseTokenName,
+        uint8 baseTokenDecimals,
+        uint256 baseAmount,
+        uint256 quoteAmount
+    ) public {
+        vm.assume(marketMaker != address(0));
+        vm.assume(sourceChannelId != 0);
+        vm.assume(destinationChannelId != 0);
+        if (quoteAmount > 0) {
+            erc20.mint(marketMaker, quoteAmount);
+            vm.prank(marketMaker);
+            erc20.approve(address(zkgm), quoteAmount);
+            vm.expectEmit();
+            emit IERC20.Transfer(marketMaker, address(this), quoteAmount);
+        }
+        address quoteToken = address(erc20);
+        expectOnRecvTransferSuccessCustomAck(
+            marketMaker,
+            sourceChannelId,
+            destinationChannelId,
+            0,
+            salt,
+            relayer,
+            relayerMsg,
+            FungibleAssetOrder({
+                sender: sender,
+                receiver: abi.encodePacked(address(this)),
+                baseToken: baseToken,
+                baseTokenPath: 0,
+                baseTokenSymbol: baseTokenSymbol,
+                baseTokenName: baseTokenName,
+                baseTokenDecimals: baseTokenDecimals,
+                baseAmount: baseAmount,
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            }),
+            FungibleAssetOrderAck({
+                fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
+                marketMaker: relayerMsg
             })
+        );
+    }
+
+    function test_onRecvPacket_marketMakerFill_noAllowance_reverts_onlyMaker(
+        address marketMaker,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        bytes32 salt,
+        bytes memory sender,
+        bytes memory baseToken,
+        string memory baseTokenSymbol,
+        string memory baseTokenName,
+        uint8 baseTokenDecimals,
+        uint256 baseAmount,
+        uint256 quoteAmount
+    ) public {
+        vm.assume(quoteAmount > 0);
+        vm.assume(marketMaker != address(0));
+        vm.assume(sourceChannelId != 0);
+        vm.assume(destinationChannelId != 0);
+        address quoteToken = address(erc20);
+        expectOnRecvTransferFailure(
+            marketMaker,
+            sourceChannelId,
+            destinationChannelId,
+            0,
+            salt,
+            relayer,
+            relayerMsg,
+            FungibleAssetOrder({
+                sender: sender,
+                receiver: abi.encodePacked(address(this)),
+                baseToken: baseToken,
+                baseTokenPath: 0,
+                baseTokenSymbol: baseTokenSymbol,
+                baseTokenName: baseTokenName,
+                baseTokenDecimals: baseTokenDecimals,
+                baseAmount: baseAmount,
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            }),
+            true
         );
     }
 
@@ -1974,7 +2110,6 @@ contract ZkgmTests is Test {
         erc20.mint(address(zkgm), baseAmount);
         vm.expectEmit();
         emit IERC20.Transfer(address(zkgm), relayer, baseAmount);
-        vm.prank(address(handler));
         internalOnAckOrder(
             caller,
             sourceChannelId,
@@ -2030,7 +2165,6 @@ contract ZkgmTests is Test {
         vm.assume(quoteAmount > 0);
         vm.expectEmit();
         emit IERC20.Transfer(address(0), relayer, baseAmount);
-        vm.prank(address(handler));
         internalOnAckOrder(
             caller,
             sourceChannelId,
@@ -2092,7 +2226,6 @@ contract ZkgmTests is Test {
         );
         vm.expectEmit();
         emit IERC20.Transfer(address(zkgm), sender, baseAmount);
-        vm.prank(address(handler));
         internalOnAckOrder(
             caller,
             sourceChannelId,
@@ -2144,7 +2277,8 @@ contract ZkgmTests is Test {
         zkgm.doIncreaseOutstanding(
             sourceChannelId, path, address(erc20), baseAmount
         );
-        vm.prank(address(handler));
+        vm.expectEmit();
+        emit IERC20.Transfer(address(zkgm), sender, baseAmount);
         internalOnAckOrder(
             caller,
             sourceChannelId,
@@ -2195,7 +2329,6 @@ contract ZkgmTests is Test {
         vm.assume(quoteAmount > 0);
         vm.expectEmit();
         emit IERC20.Transfer(address(0), sender, baseAmount);
-        vm.prank(address(handler));
         internalOnAckOrder(
             caller,
             sourceChannelId,
@@ -2219,16 +2352,5 @@ contract ZkgmTests is Test {
                 Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
             )
         );
-    }
-
-    function test_tintForwardSalt_ok(
-        bytes32 salt
-    ) public {
-        vm.assume(
-            salt
-                < 0xffff000000000000000000000000000000000000000000000000000000000000
-        );
-        assertFalse(ZkgmLib.isForwardedPacket(salt));
-        assertTrue(ZkgmLib.isForwardedPacket(ZkgmLib.tintForwardSalt(salt)));
     }
 }
