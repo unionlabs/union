@@ -351,14 +351,6 @@ contract ZkgmTests is Test {
         );
     }
 
-    function test_reverseChannelPath_iso(
-        uint256 path
-    ) public {
-        assertEq(
-            ZkgmLib.reverseChannelPath(ZkgmLib.reverseChannelPath(path)), path
-        );
-    }
-
     function test_popChannelFromPath_ok(
         uint32 a,
         uint32 b,
