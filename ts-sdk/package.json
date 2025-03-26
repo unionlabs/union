@@ -6,6 +6,7 @@
   "author": "@unionlabs",
   "scripts": {
     "build": "tsc",
+    "check": "tsc --noEmit",
     "test": "vitest run",
     "test-watch": "vitest",
     "postinstall": "patch-package"
@@ -30,6 +31,7 @@
     "dist/**/*.d.ts.map"
   ],
   "devDependencies": {
+    "@effect/vitest": "~0.19.10",
     "biome": "^0.3.3",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8"

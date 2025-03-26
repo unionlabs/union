@@ -24,7 +24,7 @@ const createBatch = Effect.gen(function* () {
     quoteAmount: 0n
   })
 
-  return Batch([mainTransfer, feeTransfer])
+  return Batch({ opcode: 2, version: 0, operand: [mainTransfer, feeTransfer] })
 })
 
 Effect.runPromiseExit(

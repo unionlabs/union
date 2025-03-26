@@ -2,7 +2,7 @@ import { Option } from "effect"
 import type { LockedTransfer } from "./locked-transfer.ts"
 
 // Create a store for the locked transfer
-class LockedTransferStore {
+export class LockedTransferStore {
   transfer = $state<Option.Option<LockedTransfer>>(Option.none())
 
   lock(lockedTransfer: LockedTransfer) {
