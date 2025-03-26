@@ -30,7 +30,7 @@
     createCosmWasmClient,
     CosmosChannelDestination, CosmWasmClientSource
   } from "@unionlabs/sdk/cosmos"
-  import {fromHex, http} from "viem"
+  import {fromHex, toHex, http} from "viem"
   import { truncate } from "$lib/utils/format.ts"
   import {
     type TransferStep,
@@ -329,43 +329,91 @@
 
   const checkAllowances = (ti: typeof transferIntents) =>
     Effect.gen(function* () {
-      if (Option.isNone(ti)) return Option.none()
-      if (Option.isNone(wallets.evmAddress)) return Option.none()
-      if (Option.isNone(transfer.sourceChain)) return Option.none()
-      if (Option.isNone(transfer.ucs03address)) return Option.none()
+      console.info("Checking allowances");
+      if (Option.isNone(ti)) return Option.none();
+      if (Option.isNone(transfer.sourceChain)) return Option.none();
+      if (Option.isNone(transfer.ucs03address)) return Option.none();
 
-      const viemChain = transfer.sourceChain.value.toViemChain()
-      if(Option.isNone(viemChain)) return Option.none()
+      const sourceChain = transfer.sourceChain.value;
+      const chainType = sourceChain.rpc_type;
+      const spenderAddress = transfer.ucs03address.value;
 
-      const publicClientSource = yield* createViemPublicClient({
-        chain: viemChain.value,
-        transport: http()
-      })
+      console.info("Checking allowances: source chain", sourceChain, "chain type", chainType, "spender", spenderAddress);
 
-      // Get unique token addresses from the transfer intents
-      const tokenAddresses = [...new Set(ti.value.map(intent => intent.baseToken))]
-
-      // The UCS03 contract address that needs the allowance
-      const spenderAddress = transfer.ucs03address.value
-
-      // Check allowance for each token
-      const allowanceChecks = yield* Effect.all(
-        tokenAddresses.map(tokenAddress =>
-          Effect.gen(function* () {
-            const allowance = yield* readErc20Allowance(
-              tokenAddress,
-              wallets.evmAddress.value,
-              spenderAddress
-            )
-            return { token: tokenAddress, allowance }
-          }).pipe(Effect.provideService(ViemPublicClient, { client: publicClientSource }))
-        )
-      )
+      // Get the sender's address for the source chain.
+      const sender = wallets.getAddressForChain(sourceChain);
 
 
+      console.info("Checking allowances: sender", sender.value);
+      if (Option.isNone(sender)) return Option.none();
 
-      return Option.some(allowanceChecks)
-    })
+      console.info("sender:   ", fromHex(sender.value, "string"));
+
+      // Get unique token addresses from the transfer intents.
+      const tokenAddresses = [...new Set(ti.value.map(intent => intent.baseToken))];
+
+
+      console.info("tokenAddresses:   ", tokenAddresses);
+
+      console.info("chainType:   ", chainType);
+
+      if (chainType === "evm") {
+        // For EVM chains use the existing logic.
+        const viemChain = sourceChain.toViemChain();
+        if (Option.isNone(viemChain)) return Option.none();
+        const publicClientSource = yield* createViemPublicClient({
+          chain: viemChain.value,
+          transport: http()
+        });
+        
+        const allowanceChecks = yield* Effect.all(
+          tokenAddresses.map(tokenAddress =>
+            Effect.gen(function* () {
+              const allowance = yield* readErc20Allowance(
+                tokenAddress,
+                sender.value, // EVM sender address
+                spenderAddress
+              );
+              return { token: tokenAddress, allowance };
+            }).pipe(Effect.provideService(ViemPublicClient, { client: publicClientSource }))
+          )
+        );
+        return Option.some(allowanceChecks);
+      } else if (chainType === "cosmos") {
+        // For Cosmos chains use a CosmWasm client to query CW20 allowances.
+        const rpcUrl = sourceChain.getRpcUrl("rpc");
+        if (Option.isNone(rpcUrl)) return Option.none();
+        const cosmwasmClient = yield* createCosmWasmClient(rpcUrl.value);
+
+        // Query each token (assumed to be a CW20 contract) for the allowance.
+        const allowanceChecks = yield* Effect.all(
+          tokenAddresses.map(tokenAddress =>
+            Effect.gen(function* () {
+
+
+              const result = yield* Effect.tryPromise({
+                try: () => cosmwasmClient.queryContractSmart(fromHex(tokenAddress, "string"), {
+                  allowance: {
+                    owner: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv", // TODO: the sender.value address is in Hex format
+                    // And converting it to bech32 format is not working (fromHex(sender.value, "string"))
+                    spender: spenderAddress
+                  }
+                }),
+                catch: (e) => console.info("Error: ", e)
+              })
+
+              return { token: tokenAddress, allowance: BigInt(result.allowance) };
+            }).pipe(Effect.provideService(CosmWasmClientSource, { client: cosmwasmClient }),
+            Effect.tapErrorCause(cause => Effect.logError("Predict failed with cause", cause)))
+          )
+        );
+        return Option.some(allowanceChecks);
+      } else {
+        // Unsupported chain type.
+        return Option.none();
+      }
+    });
+
 
   function goToNextPage() {
     if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
