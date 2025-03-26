@@ -338,24 +338,15 @@
       const chainType = sourceChain.rpc_type;
       const spenderAddress = transfer.ucs03address.value;
 
-      console.info("Checking allowances: source chain", sourceChain, "chain type", chainType, "spender", spenderAddress);
-
       // Get the sender's address for the source chain.
       const sender = wallets.getAddressForChain(sourceChain);
 
 
-      console.info("Checking allowances: sender", sender.value);
       if (Option.isNone(sender)) return Option.none();
 
-      console.info("sender:   ", fromHex(sender.value, "string"));
 
       // Get unique token addresses from the transfer intents.
       const tokenAddresses = [...new Set(ti.value.map(intent => intent.baseToken))];
-
-
-      console.info("tokenAddresses:   ", tokenAddresses);
-
-      console.info("chainType:   ", chainType);
 
       if (chainType === "evm") {
         // For EVM chains use the existing logic.
