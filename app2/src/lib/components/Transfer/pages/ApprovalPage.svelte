@@ -5,17 +5,14 @@ import { Effect, Option } from "effect"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
 import { ApprovalRequired } from "../transfer-step.ts"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
-import { custom, erc20Abi, http } from "viem"
-import { createViemWalletClient } from "@unionlabs/sdk/evm"
-import { getConnectorClient, type GetConnectorClientErrorType } from "@wagmi/core"
-import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.ts"
-import { ConnectorClientError } from "$lib/services/transfer"
+import { erc20Abi, http } from "viem"
 import {
   nextStateEvm,
   hasFailedExit,
   isComplete,
   TransactionSubmissionEvm
 } from "$lib/components/Transfer/state/evm.ts"
+import {getWalletClient} from "$lib/services/evm/clients.ts";
 
 type Props = {
   stepIndex: number
@@ -43,7 +40,7 @@ const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
 
 let ts = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 
-export const submit = Effect.gen(function* () {
+const submit = Effect.gen(function* () {
   if (Option.isNone(step) || Option.isNone(lts)) return
 
   const viemChain = lts.value.sourceChain.toViemChain()
@@ -54,28 +51,20 @@ export const submit = Effect.gen(function* () {
     transport: http()
   })
 
-  const connectorClient = yield* Effect.tryPromise({
-    try: () => getConnectorClient(wagmiConfig),
-    catch: err => new ConnectorClientError({ cause: err as GetConnectorClientErrorType })
-  })
-
-  const walletClient = yield* createViemWalletClient({
-    account: connectorClient.account,
-    chain: viemChain.value,
-    transport: custom(connectorClient)
-  })
+  const walletClient = yield* getWalletClient(lts.value.sourceChain)
 
   do {
-    ts = yield* Effect.tryPromise(() =>
-      nextStateEvm(ts, viemChain.value, publicClient, walletClient, {
+    ts = yield* Effect.tryPromise({
+      try: () => nextStateEvm(ts, viemChain.value, publicClient, walletClient, {
         chain: viemChain.value,
-        account: connectorClient.account,
+        account: walletClient.account,
         address: step.value.token,
         abi: erc20Abi,
         functionName: "approve",
         args: [lts.value.channel.source_port_id, step.value.requiredAmount]
-      })
-    )
+      }),
+      catch: (error) => error instanceof Error ? error : new Error('Unknown error')
+    })
 
     if (isComplete(ts)) {
       onApprove()

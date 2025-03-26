@@ -10,7 +10,6 @@ let { children } = $props()
 
 $effect(() => {
   transfer.getQuoteToken().pipe(Effect.runPromise)
-  transfer.getWethQuoteToken().pipe(Effect.runPromise)
 })
 
 $effect(() => {

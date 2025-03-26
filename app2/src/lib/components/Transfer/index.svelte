@@ -1,302 +1,447 @@
 <script lang="ts">
-import Card from "$lib/components/ui/Card.svelte"
-import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
-import { LockedTransfer } from "./locked-transfer"
-import ShowData from "$lib/components/Transfer/ShowData.svelte"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import FillingPage from "./pages/FillingPage.svelte"
-import ApprovalPage from "./pages/ApprovalPage.svelte"
-import SubmitPage from "./pages/SubmitPage.svelte"
-import { lockedTransferStore } from "./locked-transfer.svelte.ts"
-import { Effect, Option } from "effect"
-import { wallets } from "$lib/stores/wallets.svelte"
-import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
-import type { Instruction } from "@unionlabs/sdk/ucs03"
-import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03"
-import {
-  createViemPublicClient,
-  ViemPublicClient,
-  ViemPublicClientSource,
-  readErc20Allowance
-} from "@unionlabs/sdk/evm"
+  import Card from "$lib/components/ui/Card.svelte"
+  import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
+  import { LockedTransfer } from "./locked-transfer"
+  import ShowData from "$lib/components/Transfer/ShowData.svelte"
+  import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+  import FillingPage from "./pages/FillingPage.svelte"
+  import ApprovalPage from "./pages/ApprovalPage.svelte"
+  import SubmitPage from "./pages/SubmitPage.svelte"
+  import { lockedTransferStore } from "./locked-transfer.svelte.ts"
+  import {Effect, Match, Option} from "effect"
+  import { wallets } from "$lib/stores/wallets.svelte"
+  import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
+  import {
+    createCosmosToCosmosFungibleAssetOrder,
+    createCosmosToEvmFungibleAssetOrder,
+    createEvmToEvmFungibleAssetOrder,
+    type Instruction
+  } from "@unionlabs/sdk/ucs03"
+  import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03"
+  import {
+    createViemPublicClient,
+    ViemPublicClient,
+    ViemPublicClientSource,
+    readErc20Allowance, EvmChannelDestination, ViemPublicClientDestination
+  } from "@unionlabs/sdk/evm"
 
-import {
-  CosmWasmClientDestination,
-  createCosmWasmClient,
-  CosmosChannelDestination
-} from "@unionlabs/sdk/cosmos"
-import { sepolia } from "viem/chains"
-import { http } from "viem"
-import { truncate } from "$lib/utils/format.ts"
-import {
-  type TransferStep,
-  Filling,
-  ApprovalRequired,
-  SubmitInstruction,
-  getStepDescription
-} from "./transfer-step.ts"
+  import {
+    CosmWasmClientDestination,
+    createCosmWasmClient,
+    CosmosChannelDestination, CosmWasmClientSource
+  } from "@unionlabs/sdk/cosmos"
+  import {fromHex, http} from "viem"
+  import { truncate } from "$lib/utils/format.ts"
+  import {
+    type TransferStep,
+    Filling,
+    ApprovalRequired,
+    SubmitInstruction,
+    getStepDescription
+  } from "./transfer-step.ts"
+  import {hexAddressToBech32} from "@unionlabs/client";
+  import type {CosmWasmClient} from "@cosmjs/cosmwasm-stargate";
 
-let transferIntents = $derived.by(() => {
-  if (transfer.validation._tag !== "Success") return Option.none()
-  if (Option.isNone(wallets.evmAddress)) return Option.none()
+  let showDetails = $state(false)
+  let currentPage = $state(0)
+  let instruction: Option.Option<Instruction> = $state(Option.none())
+  let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
 
-  const transferValue = transfer.validation.value
+  //This should now handle cosmos, evm and aptos (when aptos is implemented)
+  let transferIntents = $derived.by(() => {
+    if (transfer.validation._tag !== "Success") return Option.none()
+    const transferValue = transfer.validation.value
 
-  const wethDenom =
-    transferValue.sourceChain.universal_chain_id in WETH_DENOMS
-      ? Option.some(WETH_DENOMS[transferValue.sourceChain.universal_chain_id])
-      : Option.none()
+    const sender = wallets.getAddressForChain(transferValue.sourceChain)
+    if (Option.isNone(sender)) return Option.none()
 
-  if (Option.isNone(wethDenom)) return Option.none()
-  return Option.some([
-    {
-      sender: wallets.evmAddress.value,
-      receiver: transferValue.receiver,
-      baseToken: transferValue.baseToken,
-      baseAmount: transferValue.baseAmount,
-      quoteAmount: transferValue.baseAmount
-    },
-    {
-      sender: wallets.evmAddress.value,
-      receiver: transferValue.receiver,
-      baseToken: wethDenom.value,
-      baseAmount: 500n,
-      quoteAmount: 0n
+    const wethDenom =
+      transferValue.sourceChain.universal_chain_id in WETH_DENOMS
+        ? Option.some(WETH_DENOMS[transferValue.sourceChain.universal_chain_id])
+        : Option.none()
+
+    if (Option.isNone(wethDenom)) return Option.none()
+    return Option.some([
+      {
+        sender: sender.value,
+        receiver: transferValue.receiver,
+        baseToken: transferValue.baseToken,
+        baseAmount: transferValue.baseAmount,
+        quoteAmount: transferValue.baseAmount
+      },
+      {
+        sender: sender.value,
+        receiver: transferValue.receiver,
+        baseToken: wethDenom.value,
+        baseAmount: 500n,
+        quoteAmount: 0n
+      }
+    ])
+  })
+
+  let requiredApprovals = $derived.by(() => {
+    if (Option.isNone(transferIntents) || Option.isNone(allowances)) return Option.none()
+
+    // Create a map of token to required amount from transfer intents
+    const requiredAmounts = new Map<string, bigint>()
+    for (const intent of transferIntents.value) {
+      const currentAmount = requiredAmounts.get(intent.baseToken) || 0n
+      requiredAmounts.set(intent.baseToken, intent.baseAmount)
     }
-  ])
-})
 
-let instruction: Option.Option<Instruction> = $state(Option.none())
-let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
-let requiredApprovals = $derived.by(() => {
-  if (Option.isNone(transferIntents) || Option.isNone(allowances)) return Option.none()
+    // Filter for tokens that need approval (allowance < required amount)
+    const tokensNeedingApproval = allowances.value
+      .filter(({ token, allowance }) => {
+        const requiredAmount = requiredAmounts.get(token) || 0n
+        return allowance < requiredAmount
+      })
+      .map(({ token }) => ({
+        token,
+        requiredAmount: requiredAmounts.get(token) || 0n
+      }))
 
-  // Create a map of token to required amount from transfer intents
-  const requiredAmounts = new Map<string, bigint>()
-  for (const intent of transferIntents.value) {
-    const currentAmount = requiredAmounts.get(intent.baseToken) || 0n
-    requiredAmounts.set(intent.baseToken, intent.baseAmount)
-  }
+    return tokensNeedingApproval.length > 0 ? Option.some(tokensNeedingApproval) : Option.none()
+  })
 
-  // Filter for tokens that need approval (allowance < required amount)
-  const tokensNeedingApproval = allowances.value
-    .filter(({ token, allowance }) => {
-      const requiredAmount = requiredAmounts.get(token) || 0n
-      return allowance < requiredAmount
-    })
-    .map(({ token }) => ({
-      token,
-      requiredAmount: requiredAmounts.get(token) || 0n
-    }))
+  // Derive the steps based on required approvals and instruction
+  let transferSteps = $derived.by(() => {
+    const steps: Array<TransferStep> = [Filling()]
 
-  return tokensNeedingApproval.length > 0 ? Option.some(tokensNeedingApproval) : Option.none()
-})
-
-// Derive the steps based on required approvals and instruction
-let transferSteps = $derived.by(() => {
-  const steps: Array<TransferStep> = [Filling()]
-
-  // Add approval steps if needed
-  if (Option.isSome(requiredApprovals)) {
-    // Find the allowance for each token that needs approval
-    for (const approval of requiredApprovals.value) {
-      if (Option.isSome(allowances)) {
-        const tokenAllowance = allowances.value.find(a => a.token === approval.token)
-        if (tokenAllowance) {
-          steps.push(
-            ApprovalRequired({
-              token: approval.token,
-              requiredAmount: approval.requiredAmount,
-              currentAllowance: tokenAllowance.allowance
-            })
-          )
+    // Add approval steps if needed
+    if (Option.isSome(requiredApprovals)) {
+      // Find the allowance for each token that needs approval
+      for (const approval of requiredApprovals.value) {
+        if (Option.isSome(allowances)) {
+          const tokenAllowance = allowances.value.find(a => a.token === approval.token)
+          if (tokenAllowance) {
+            steps.push(
+              ApprovalRequired({
+                token: approval.token,
+                requiredAmount: approval.requiredAmount,
+                currentAllowance: tokenAllowance.allowance
+              })
+            )
+          }
         }
       }
     }
-  }
 
-  // Add the instruction submission step if we have an instruction
-  if (Option.isSome(instruction)) {
-    steps.push(SubmitInstruction({ instruction: instruction.value }))
-  }
-
-  return steps.length > 0 ? Option.some(steps) : Option.none()
-})
-
-$effect(() => {
-  if (Option.isNone(transferIntents)) return
-
-  intentsToBatch(transferIntents).pipe(
-    Effect.tap(batch => (instruction = batch)),
-    Effect.runPromiseExit
-  )
-
-  checkAllowances(transferIntents).pipe(
-    Effect.tap(result => (allowances = result)),
-    Effect.runPromiseExit
-  )
-})
-
-const intentsToBatch = (ti: typeof transferIntents) =>
-  Effect.gen(function* () {
-    if (Option.isNone(ti)) return Option.none()
-
-    const publicClientSource = yield* createViemPublicClient({
-      chain: sepolia, // todo
-      transport: http()
-    })
-
-    const cosmwasmClientDestination = yield* createCosmWasmClient(
-      "https://rpc.rpc-node.union-testnet-10.union.build"
-    )
-
-    const batch = yield* Effect.gen(function* () {
-      const t1 = yield* createEvmToCosmosFungibleAssetOrder(ti.value[0])
-      const t2 = yield* createEvmToCosmosFungibleAssetOrder(ti.value[1])
-      return Batch([t1, t2])
-    }).pipe(
-      Effect.provideService(ViemPublicClientSource, { client: publicClientSource }),
-      Effect.provideService(CosmWasmClientDestination, { client: cosmwasmClientDestination }),
-      Effect.provideService(CosmosChannelDestination, {
-        ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
-        channelId: 1
-      })
-    )
-
-    return Option.some(batch)
-  })
-
-const checkAllowances = (ti: typeof transferIntents) =>
-  Effect.gen(function* () {
-    if (Option.isNone(ti)) return Option.none()
-    if (Option.isNone(wallets.evmAddress)) return Option.none()
-
-    const publicClientSource = yield* createViemPublicClient({
-      chain: sepolia, // todo
-      transport: http()
-    })
-
-    // Get unique token addresses from the transfer intents
-    const tokenAddresses = [...new Set(ti.value.map(intent => intent.baseToken))]
-
-    // The UCS03 contract address that needs the allowance
-    const spenderAddress = "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962" // Replace with actual UCS03 contract address
-
-    // Check allowance for each token
-    const allowanceChecks = yield* Effect.all(
-      tokenAddresses.map(tokenAddress =>
-        Effect.gen(function* () {
-          const allowance = yield* readErc20Allowance(
-            tokenAddress,
-            wallets.evmAddress.value,
-            spenderAddress
-          )
-          return { token: tokenAddress, allowance }
-        }).pipe(Effect.provideService(ViemPublicClient, { client: publicClientSource }))
-      )
-    )
-
-    return Option.some(allowanceChecks)
-  })
-
-let showDetails = $state(false)
-let currentPage = $state(0)
-
-function goToNextPage() {
-  if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
-    currentPage++
-  }
-}
-
-function goToPreviousPage() {
-  if (currentPage > 0) {
-    currentPage--
-
-    // If we're going back to the filling page (page 0), unlock the transfer
-    if (currentPage === 0) {
-      lockedTransferStore.unlock()
+    // Add the instruction submission step if we have an instruction
+    if (Option.isSome(instruction)) {
+      steps.push(SubmitInstruction({ instruction: instruction.value }))
     }
-  }
-}
 
-// Determine which button text to show based on current page and state
-let actionButtonText = $derived.by(() => {
-  if (Option.isNone(transferSteps)) return "Submit"
+    return steps.length > 0 ? Option.some(steps) : Option.none()
+  })
 
-  const currentStep = transferSteps.value[currentPage]
+  $effect(() => {
+    if (Option.isNone(transferIntents)) return
 
-  if (currentPage === transferSteps.value.length - 1) {
-    return "Complete"
-  }
+    intentsToBatch(transferIntents).pipe(
+      Effect.tap(batch => (instruction = batch)),
+      Effect.runPromiseExit
+    )
 
-  if (currentStep._tag === "Filling") {
-    return "Continue"
-  }
+    checkAllowances(transferIntents).pipe(
+      Effect.tap(result => (allowances = result)),
+      Effect.runPromiseExit
+    )
+  })
 
-  if (currentStep._tag === "ApprovalRequired") {
-    return "Approve"
-  }
+  const intentsToBatch = (ti: typeof transferIntents) =>
+    Effect.gen(function* () {
+      console.log("batch: Starting intentsToBatch")
 
-  if (currentStep._tag === "SubmitInstruction") {
-    return "Submit"
-  }
+      if (Option.isNone(ti)) {
+        return Option.none()
+      }
+      if (Option.isNone(transfer.sourceChain)) {
+        return Option.none()
+      }
+      if (Option.isNone(transfer.channel)) {
+        return Option.none()
+      }
+      if (Option.isNone(transfer.destinationChain)) {
+        return Option.none()
+      }
+      if (Option.isNone(transfer.ucs03address)) {
+        return Option.none()
+      }
+      console.log("batch: Starting intentsToBatch")
 
-  return "Next"
-})
+      // Get chain types
+      const source = transfer.sourceChain.value.rpc_type
+      const destination = transfer.destinationChain.value.rpc_type
+      console.log(`batch: Source chain type: ${source}, Destination chain type: ${destination}`)
 
-// Handle the action button click based on current page
-function handleActionButtonClick() {
-  if (Option.isNone(transferSteps)) return
+      // Set up all potential clients
+      let publicClientSource: ViemPublicClient | undefined = undefined;
+      let publicClientDestination: ViemPublicClient | undefined = undefined;
+      let cosmwasmClientSource: CosmWasmClient | undefined = undefined;
+      let cosmwasmClientDestination: CosmWasmClient | undefined = undefined;
 
-  const currentStep = transferSteps.value[currentPage]
+      // Set up EVM source client if needed
+      if (source === "evm") {
+        console.log("batch: Setting up EVM source client")
+        const viemChainSource = transfer.sourceChain.value.toViemChain()
+        if (Option.isNone(viemChainSource)) {
+          console.log("batch: Failed to convert source chain to Viem chain, returning None")
+          return Option.none()
+        }
 
-  if (currentStep._tag === "Filling") {
-    // Lock the transfer values before proceeding
-    if (Option.isNone(lockedTransferStore.get())) {
-      const newLockedTransfer = LockedTransfer.fromTransfer(
-        transfer.sourceChain,
-        transfer.destinationChain,
-        transfer.channel,
-        transferSteps
-      )
-
-      // If we couldn't create a locked transfer, don't proceed
-      if (Option.isNone(newLockedTransfer)) {
-        console.error("Failed to lock transfer values")
-        return
+        console.log(`batch: Creating Viem public client for source chain: ${viemChainSource.value.name}`)
+        publicClientSource = yield* createViemPublicClient({
+          chain: viemChainSource.value,
+          transport: http()
+        })
       }
 
-      lockedTransferStore.lock(newLockedTransfer.value)
+      // Set up EVM destination client if needed
+      if (destination === "evm") {
+        console.log("batch: Setting up EVM destination client")
+        const viemChainDestination = transfer.destinationChain.value.toViemChain()
+        if (Option.isNone(viemChainDestination)) {
+          console.log("batch: Failed to convert destination chain to Viem chain, returning None")
+          return Option.none()
+        }
+
+        console.log(`batch: Creating Viem public client for destination chain: ${viemChainDestination.value.name}`)
+        publicClientDestination = yield* createViemPublicClient({
+          chain: viemChainDestination.value,
+          transport: http()
+        })
+      }
+
+      // Set up Cosmos source client if needed
+      if (source === "cosmos") {
+        console.log("batch: Setting up Cosmos source client")
+        const cosmwasmRpcSource = transfer.sourceChain.value.getRpcUrl("rpc")
+        if (Option.isNone(cosmwasmRpcSource)) {
+          console.log("batch: Failed to get Cosmos RPC URL for source chain, returning None")
+          return Option.none()
+        }
+
+        console.log(`batch: Creating CosmWasm client for source chain with RPC: ${cosmwasmRpcSource.value}`)
+        cosmwasmClientSource = yield* createCosmWasmClient(cosmwasmRpcSource.value)
+      }
+
+      // Set up Cosmos destination client if needed
+      if (destination === "cosmos") {
+        console.log("batch: Setting up Cosmos destination client")
+        const cosmwasmRpcDestination = transfer.destinationChain.value.getRpcUrl("rpc")
+        if (Option.isNone(cosmwasmRpcDestination)) {
+          console.log("batch: Failed to get Cosmos RPC URL for destination chain, returning None")
+          return Option.none()
+        }
+
+        console.log(`batch: Creating CosmWasm client for destination chain with RPC: ${cosmwasmRpcDestination.value}`)
+        cosmwasmClientDestination = yield* createCosmWasmClient(cosmwasmRpcDestination.value)
+      }
+
+      // Create the batch using pattern matching
+      console.log(`batch: Creating batch effect for ${source} -> ${destination}`)
+      const batchEffect = Effect.gen(function* () {
+        console.log(`batch: Inside batch effect generator for ${source} -> ${destination}`)
+        console.log(`batch: Transfer intent value:`, ti.value)
+
+        const orders = yield* Match.value([source, destination]).pipe(
+          Match.when(["evm", "cosmos"], () => {
+            console.log("batch: Matched EVM -> Cosmos pattern", ti.value)
+            return Effect.all([
+              Effect.tap(
+                createEvmToCosmosFungibleAssetOrder(ti.value[0]),
+                order => Effect.sync(() => console.log("batch: First order created", order))
+              ),
+              Effect.tap(
+                createEvmToCosmosFungibleAssetOrder(ti.value[1]),
+                order => Effect.sync(() => console.log("batch: Second order created", order))
+              )
+            ]).pipe(
+              Effect.tap(orders => Effect.sync(() => console.log("batch: All orders created", orders))),
+              Effect.catchAll(error => {
+                console.error("batch: Error creating orders", error.cause);
+                return Effect.fail(error);
+              })
+            );
+          }),
+          Match.when(["evm", "evm"], () => {
+            console.log("batch: Matched EVM -> EVM pattern")
+            return Effect.all([
+              createEvmToEvmFungibleAssetOrder(ti.value[0]),
+              createEvmToEvmFungibleAssetOrder(ti.value[1])
+            ])
+          }),
+          Match.when(["cosmos", "evm"], () => {
+            console.log("batch: Matched Cosmos -> EVM pattern")
+            return createCosmosToEvmFungibleAssetOrder(ti.value[0])
+          }),
+          Match.when(["cosmos", "cosmos"], () => {
+            console.log("batch: Matched Cosmos -> Cosmos pattern")
+            return createCosmosToCosmosFungibleAssetOrder(ti.value[0])
+          }),
+          Match.orElse(() => {
+            console.log(`batch: No match found for ${source} -> ${destination}, throwing error`)
+            throw new Error(`Unsupported source/destination combination: ${source} -> ${destination}`)
+          })
+        )
+
+        // Handle both array and single order cases
+        console.log(`batch: Orders created:`, orders)
+        const batch = Array.isArray(orders) ? Batch(orders) : Batch([orders])
+        console.log(`batch: Batch created:`, batch)
+        return batch
+      }).pipe(
+        // Provide all services and let Effect handle dependency resolution
+        Effect.provideService(ViemPublicClientSource, { client: publicClientSource }),
+        Effect.provideService(ViemPublicClientDestination, { client: publicClientDestination }),
+        Effect.provideService(CosmWasmClientSource, { client: cosmwasmClientSource }),
+        Effect.provideService(CosmWasmClientDestination, { client: cosmwasmClientDestination }),
+        Effect.provideService(CosmosChannelDestination, {
+          ucs03address: fromHex(transfer.channel.value.destination_port_id, "string"),
+          channelId: transfer.channel.value.destination_channel_id
+        }),
+
+        Effect.provideService(EvmChannelDestination, {
+          ucs03address: transfer.channel.value.source_port_id,
+          channelId: transfer.channel.value.source_channel_id,
+        })
+      )
+
+        const batchResult = yield* batchEffect
+        return Option.some(batchResult)
+    })
+
+
+  const checkAllowances = (ti: typeof transferIntents) =>
+    Effect.gen(function* () {
+      if (Option.isNone(ti)) return Option.none()
+      if (Option.isNone(wallets.evmAddress)) return Option.none()
+      if (Option.isNone(transfer.sourceChain)) return Option.none()
+      if (Option.isNone(transfer.ucs03address)) return Option.none()
+
+      const viemChain = transfer.sourceChain.value.toViemChain()
+      if(Option.isNone(viemChain)) return Option.none()
+
+      const publicClientSource = yield* createViemPublicClient({
+        chain: viemChain.value,
+        transport: http()
+      })
+
+      // Get unique token addresses from the transfer intents
+      const tokenAddresses = [...new Set(ti.value.map(intent => intent.baseToken))]
+
+      // The UCS03 contract address that needs the allowance
+      const spenderAddress = transfer.ucs03address.value
+
+      // Check allowance for each token
+      const allowanceChecks = yield* Effect.all(
+        tokenAddresses.map(tokenAddress =>
+          Effect.gen(function* () {
+            const allowance = yield* readErc20Allowance(
+              tokenAddress,
+              wallets.evmAddress.value,
+              spenderAddress
+            )
+            return { token: tokenAddress, allowance }
+          }).pipe(Effect.provideService(ViemPublicClient, { client: publicClientSource }))
+        )
+      )
+
+
+
+      return Option.some(allowanceChecks)
+    })
+
+  function goToNextPage() {
+    if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
+      currentPage++
     }
-    goToNextPage()
-    return
   }
 
-  if (currentStep._tag === "ApprovalRequired") {
-    // Here you would handle the approval action
-    // For now, just go to next page
-    goToNextPage()
-    return
+  function goToPreviousPage() {
+    if (currentPage > 0) {
+      currentPage--
+
+      // If we're going back to the filling page (page 0), unlock the transfer
+      if (currentPage === 0) {
+        lockedTransferStore.unlock()
+      }
+    }
   }
 
-  if (currentStep._tag === "SubmitInstruction") {
-    // Here you would handle the submit action
-    transfer.submit()
-    return
+  // Determine which button text to show based on current page and state
+  let actionButtonText = $derived.by(() => {
+    if (Option.isNone(transferSteps)) return "Submit"
+
+    const currentStep = transferSteps.value[currentPage]
+
+    if (currentPage === transferSteps.value.length - 1) {
+      return "Complete"
+    }
+
+    if (currentStep._tag === "Filling") {
+      return "Continue"
+    }
+
+    if (currentStep._tag === "ApprovalRequired") {
+      return "Approve"
+    }
+
+    if (currentStep._tag === "SubmitInstruction") {
+      return "Submit"
+    }
+
+    return "Next"
+  })
+
+  // Handle the action button click based on current page
+  function handleActionButtonClick() {
+    if (Option.isNone(transferSteps)) return
+
+    const currentStep = transferSteps.value[currentPage]
+
+    if (currentStep._tag === "Filling") {
+      // Lock the transfer values before proceeding
+      if (Option.isNone(lockedTransferStore.get())) {
+        const newLockedTransfer = LockedTransfer.fromTransfer(
+          transfer.sourceChain,
+          transfer.destinationChain,
+          transfer.channel,
+          transferSteps
+        )
+
+        if (Option.isNone(newLockedTransfer)) {
+          console.error("Failed to lock transfer values")
+          return
+        }
+
+        lockedTransferStore.lock(newLockedTransfer.value)
+      }
+      goToNextPage()
+      return
+    }
+
+    if (currentStep._tag === "ApprovalRequired") {
+      goToNextPage()
+      return
+    }
+
+    if (currentStep._tag === "SubmitInstruction") {
+      return
+    }
   }
-}
 </script>
 
 <Card divided class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden">
   <div class="p-4 w-full">
-    <StepProgressBar 
-      class="w-full"
-      currentStep={currentPage + 1} 
-      totalSteps={ 
+    <StepProgressBar
+            class="w-full"
+            currentStep={currentPage + 1}
+            totalSteps={
         lockedTransferStore.get().pipe(
           Option.map(lts => lts.steps.length),
           Option.getOrElse(() => transferSteps.pipe(Option.map(ts => ts.length), Option.getOrElse(() => 1))))}
-      stepDescriptions={lockedTransferStore.get().pipe(
+            stepDescriptions={lockedTransferStore.get().pipe(
         Option.map(lts => lts.steps.map(getStepDescription)),
         Option.orElse(() => transferSteps.pipe(
           Option.map(ts => ts.map(getStepDescription))
@@ -305,18 +450,18 @@ function handleActionButtonClick() {
       )}
     />
   </div>
-  
+
   <!-- Sliding pages container -->
   <div class="relative flex-1 overflow-hidden">
     <!-- Pages wrapper with horizontal sliding -->
-    <div 
-      class="absolute inset-0 flex transition-transform duration-300 ease-in-out"
-      style="transform: translateX(-{currentPage * 100}%);"
+    <div
+            class="absolute inset-0 flex transition-transform duration-300 ease-in-out"
+            style="transform: translateX(-{currentPage * 100}%);"
     >
       <!-- Page 1: Filling -->
-      <FillingPage 
-        onContinue={handleActionButtonClick}
-        actionButtonText={actionButtonText}
+      <FillingPage
+              onContinue={handleActionButtonClick}
+              actionButtonText={actionButtonText}
       />
 
       <!-- Dynamic pages for each step -->
@@ -324,24 +469,24 @@ function handleActionButtonClick() {
         {#each lockedTransferStore.get().value.steps.slice(1) as step, i}
           {#if step._tag === "ApprovalRequired"}
             <ApprovalPage
-              stepIndex={i + 1}
-              onBack={goToPreviousPage}
-              onApprove={handleActionButtonClick}
-              actionButtonText={actionButtonText}
+                    stepIndex={i + 1}
+                    onBack={goToPreviousPage}
+                    onApprove={handleActionButtonClick}
+                    actionButtonText={actionButtonText}
             />
           {:else if step._tag === "SubmitInstruction"}
             <SubmitPage
-              stepIndex={i + 1}
-              onBack={goToPreviousPage}
-              onSubmit={handleActionButtonClick}
-              actionButtonText={actionButtonText}
+                    stepIndex={i + 1}
+                    onBack={goToPreviousPage}
+                    onSubmit={handleActionButtonClick}
+                    actionButtonText={actionButtonText}
             />
           {/if}
         {/each}
       {/if}
     </div>
   </div>
-  
+
   {#if showDetails}
     <ShowData/>
   {/if}
@@ -400,3 +545,4 @@ function handleActionButtonClick() {
 {#if transfer.state._tag !== "Empty"}
   <pre>{JSON.stringify(transfer.state, null, 2)}</pre>
 {/if}
+
