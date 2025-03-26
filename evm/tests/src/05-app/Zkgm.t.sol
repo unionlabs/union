@@ -303,6 +303,18 @@ contract ZkgmTests is Test {
         );
     }
 
+    function test_reverseChannelPath_2_ok(uint32 a, uint32 b) public {
+        // channel ids are non-zero
+        vm.assume(a > 0);
+        vm.assume(b > 0);
+        uint256 channelPath =
+            ZkgmLib.updateChannelPath(ZkgmLib.updateChannelPath(0, a), b);
+        assertEq(
+            ZkgmLib.reverseChannelPath(channelPath),
+            uint256(b) | uint256(a) << 32
+        );
+    }
+
     function test_reverseChannelPath_ok(
         uint32 a,
         uint32 b,
@@ -1026,6 +1038,8 @@ contract ZkgmTests is Test {
             baseTokenMeta,
             baseAmount
         );
+        vm.expectEmit();
+        emit IERC20.Transfer(receiver, address(0), quoteAmount);
         vm.prank(receiver);
         zkgm.doVerify(
             destinationChannelId,
