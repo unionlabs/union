@@ -3,10 +3,10 @@ use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
 };
-use mpt_trusted_light_client_types::{ClientState, ClientStateV1, ConsensusState};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::instrument;
+use trusted_mpt_light_client_types::{ClientState, ClientStateV1, ConsensusState};
 use unionlabs::{ibc::core::client::height::Height, primitives::H160};
 use voyager_message::{
     core::{ChainId, ClientType},
@@ -65,7 +65,7 @@ impl ClientBootstrapModule for Module {
         let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
         info.ensure_chain_id(chain_id.to_string())?;
-        info.ensure_client_type(ClientType::MPT_TRUSTED)?;
+        info.ensure_client_type(ClientType::TRUSTED_MPT)?;
 
         Ok(Self {
             chain_id,

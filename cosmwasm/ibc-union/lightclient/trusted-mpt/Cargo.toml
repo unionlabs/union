@@ -1,5 +1,5 @@
 [package]
-name    = "mpt-trusted-light-client"
+name    = "trusted-mpt-light-client"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -23,9 +23,9 @@ evm-storage-verifier           = { workspace = true }
 frissitheto                    = { workspace = true }
 ibc-union-light-client         = { workspace = true }
 ibc-union-msg                  = { workspace = true }
-mpt-trusted-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 serde                          = { workspace = true, features = ["derive"] }
 thiserror                      = { workspace = true }
+trusted-mpt-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 unionlabs                      = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]

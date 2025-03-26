@@ -1,5 +1,5 @@
 [package]
-name    = "mpt-trusted-light-client-types"
+name    = "trusted-mpt-light-client-types"
 version = "0.0.0"
 
 authors      = { workspace = true }

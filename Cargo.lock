@@ -8556,39 +8556,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mpt-trusted-light-client"
-version = "0.0.0"
-dependencies = [
- "base64 0.21.7",
- "cosmwasm-std 2.1.4",
- "embed-commit",
- "ethereum-light-client",
- "ethereum-light-client-types",
- "evm-storage-verifier",
- "frissitheto",
- "hex",
- "ibc-union-light-client",
- "ibc-union-msg",
- "mpt-trusted-light-client-types",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "unionlabs",
-]
-
-[[package]]
-name = "mpt-trusted-light-client-types"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "bincode 2.0.0-rc.3",
- "ethereum-light-client-types",
- "hex-literal",
- "serde",
- "unionlabs",
-]
-
-[[package]]
 name = "multer"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13591,6 +13558,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "trusted-mpt-light-client"
+version = "0.0.0"
+dependencies = [
+ "base64 0.21.7",
+ "cosmwasm-std 2.1.4",
+ "embed-commit",
+ "ethereum-light-client",
+ "ethereum-light-client-types",
+ "evm-storage-verifier",
+ "frissitheto",
+ "hex",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "trusted-mpt-light-client-types",
+ "unionlabs",
+]
+
+[[package]]
+name = "trusted-mpt-light-client-types"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.0-rc.3",
+ "ethereum-light-client-types",
+ "hex-literal",
+ "serde",
+ "unionlabs",
+]
+
+[[package]]
 name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14214,23 +14214,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-bootstrap-module-mpt-trusted"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "embed-commit",
- "jsonrpsee",
- "mpt-trusted-light-client-types",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-client-bootstrap-module-state-lens-ics23-ics23"
 version = "0.0.0"
 dependencies = [
@@ -14311,6 +14294,23 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-bootstrap-module-trusted-mpt"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "embed-commit",
+ "jsonrpsee",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "trusted-mpt-light-client-types",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14492,11 +14492,11 @@ dependencies = [
  "embed-commit",
  "ethereum-light-client-types",
  "jsonrpsee",
- "mpt-trusted-light-client-types",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
+ "trusted-mpt-light-client-types",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14629,30 +14629,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-update-plugin-mpt-trusted"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "beacon-api",
- "beacon-api-types",
- "bitvec 1.0.1",
- "embed-commit",
- "enumorph",
- "ethereum-light-client-types",
- "ethereum-sync-protocol-types",
- "futures",
- "jsonrpsee",
- "macros",
- "mpt-trusted-light-client-types",
- "serde",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-client-update-plugin-state-lens"
 version = "0.0.0"
 dependencies = [
@@ -14691,6 +14667,30 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-trusted-mpt"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "beacon-api",
+ "beacon-api-types",
+ "bitvec 1.0.1",
+ "embed-commit",
+ "enumorph",
+ "ethereum-light-client-types",
+ "ethereum-sync-protocol-types",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "tokio",
+ "tracing",
+ "trusted-mpt-light-client-types",
  "unionlabs",
  "voyager-message",
  "voyager-vm",

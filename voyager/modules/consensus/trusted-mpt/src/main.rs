@@ -1,9 +1,6 @@
 #![warn(clippy::unwrap_used)]
 
-use alloy::{
-    eips::BlockNumberOrTag,
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
-};
+use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -28,6 +25,8 @@ async fn main() {
 pub struct Module {
     pub chain_id: ChainId,
 
+    pub finality_lag: u64,
+
     pub provider: DynProvider,
 }
 
@@ -36,6 +35,9 @@ pub struct Module {
 pub struct Config {
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
+
+    /// Consider the `latest_height - finality_lag` to be the latest height
+    pub finality_lag: u64,
 
     #[serde(default)]
     pub max_cache_size: u32,
@@ -56,7 +58,11 @@ impl ConsensusModule for Module {
 
         info.ensure_chain_id(chain_id.to_string())?;
 
-        Ok(Self { chain_id, provider })
+        Ok(Self {
+            chain_id,
+            provider,
+            finality_lag: config.finality_lag,
+        })
     }
 }
 
@@ -68,7 +74,7 @@ impl ConsensusModuleServer for Module {
         self.provider
             .get_block_number()
             .await
-            .map(|h| Height::new(h - 3))
+            .map(|h| Height::new(h - self.finality_lag))
             .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
     }
 

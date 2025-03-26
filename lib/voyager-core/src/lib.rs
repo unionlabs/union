@@ -143,7 +143,7 @@ impl ClientType {
     /// level verification is trusted, hence no beacon chain configuration is needed.
     ///
     /// [MPT]: https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie
-    pub const MPT_TRUSTED: &'static str = "mpt-trusted";
+    pub const TRUSTED_MPT: &'static str = "trusted-mpt";
 
     // lots more to come - near, linea, polygon - stay tuned
 }

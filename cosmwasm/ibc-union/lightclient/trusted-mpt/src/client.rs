@@ -4,7 +4,7 @@ use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
-use mpt_trusted_light_client_types::{ClientState, ConsensusState, Header};
+use trusted_mpt_light_client_types::{ClientState, ConsensusState, Header};
 use unionlabs::encoding::Bincode;
 
 use crate::errors::Error;

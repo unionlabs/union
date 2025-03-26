@@ -59,7 +59,7 @@ _: {
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
             "ethereum"
-            "mpt-trusted"
+            "trusted-mpt"
           ];
         }
         {
@@ -263,9 +263,9 @@ _: {
           client-type = "ethereum";
         }
         {
-          name = "mpt-trusted";
-          dir = "mpt-trusted";
-          client-type = "mpt-trusted";
+          name = "trusted-mpt";
+          dir = "trusted-mpt";
+          client-type = "trusted-mpt";
         }
         {
           name = "ethermint";

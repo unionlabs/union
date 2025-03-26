@@ -77,17 +77,28 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-consensus-module-ethereum",
+        "path": "./target/debug/voyager-consensus-module-trusted-mpt",
         "info": {
           "chain_id": "32382",
           "consensus_type": "ethereum"
         },
         "config": {
-          "chain_spec": "minimal",
-          "rpc_url": "http://localhost:8545",
-          "beacon_rpc_url": "http://localhost:9596"
+          "rpc_url": "http://localhost:8545"
         }
       }
+      // {
+      //   "enabled": true,
+      //   "path": "./target/debug/voyager-consensus-module-ethereum",
+      //   "info": {
+      //     "chain_id": "32382",
+      //     "consensus_type": "ethereum"
+      //   },
+      //   "config": {
+      //     "chain_spec": "minimal",
+      //     "rpc_url": "http://localhost:8545",
+      //     "beacon_rpc_url": "http://localhost:9596"
+      //   }
+      // }
     ],
     "client": [
       {
@@ -97,6 +108,16 @@
           "client_type": "cometbls",
           "consensus_type": "cometbls",
           "ibc_interface": "ibc-solidity",
+          "ibc_spec_id": "ibc-union"
+        }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-client-module-trusted-mpt",
+        "info": {
+          "client_type": "mpt-trusted",
+          "consensus_type": "ethereum",
+          "ibc_interface": "ibc-cosmwasm",
           "ibc_spec_id": "ibc-union"
         }
       },
@@ -151,16 +172,29 @@
         "config": {
           "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
           "rpc_url": "http://localhost:8545",
-          "chain_spec": "minimal",
-          "beacon_rpc_url": "http://localhost:9596"
+          "whitelisted_relayers": ["union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"]
         },
         "enabled": true,
         "info": {
           "chain_id": "32382",
-          "client_type": "ethereum"
+          "client_type": "mpt-trusted"
         },
-        "path": "./target/debug/voyager-client-bootstrap-module-ethereum"
+        "path": "./target/debug/voyager-client-bootstrap-module-mpt-trusted"
       }
+      // {
+      //   "config": {
+      //     "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
+      //     "rpc_url": "http://localhost:8545",
+      //     "chain_spec": "minimal",
+      //     "beacon_rpc_url": "http://localhost:9596"
+      //   },
+      //   "enabled": true,
+      //   "info": {
+      //     "chain_id": "32382",
+      //     "client_type": "ethereum"
+      //   },
+      //   "path": "./target/debug/voyager-client-bootstrap-module-ethereum"
+      // }
     ]
   },
   "plugins": [
@@ -291,15 +325,24 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-ethereum",
+      "path": "./target/debug/voyager-client-update-plugin-mpt-trusted",
       "config": {
         "chain_id": "32382",
-        "chain_spec": "minimal",
         "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
-        "rpc_url": "http://localhost:8545",
-        "beacon_rpc_url": "http://localhost:9596"
+        "rpc_url": "http://localhost:8545"
       }
     }
+    // {
+    //   "enabled": true,
+    //   "path": "./target/debug/voyager-client-update-plugin-ethereum",
+    //   "config": {
+    //     "chain_id": "32382",
+    //     "chain_spec": "minimal",
+    //     "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
+    //     "rpc_url": "http://localhost:8545",
+    //     "beacon_rpc_url": "http://localhost:9596"
+    //   }
+    // }
   ],
   "voyager": {
     "cache": {

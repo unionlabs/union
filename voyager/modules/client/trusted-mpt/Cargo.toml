@@ -15,11 +15,11 @@ workspace = true
 embed-commit                   = { workspace = true }
 ethereum-light-client-types    = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 jsonrpsee                      = { workspace = true, features = ["macros", "server", "tracing"] }
-mpt-trusted-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 serde                          = { workspace = true, features = ["derive"] }
 serde_json                     = { workspace = true }
 tokio                          = { workspace = true }
 tracing                        = { workspace = true }
+trusted-mpt-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 unionlabs                      = { workspace = true, features = ["bincode"] }
 voyager-message                = { workspace = true }
 voyager-vm                     = { workspace = true }

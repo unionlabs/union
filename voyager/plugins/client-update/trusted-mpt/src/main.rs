@@ -9,9 +9,9 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
-use mpt_trusted_light_client_types::Header;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
+use trusted_mpt_light_client_types::Header;
 use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
 use voyager_message::{
     call::Call,
@@ -150,7 +150,7 @@ impl Plugin for Module {
             name: plugin_name(&config.chain_id),
             interest_filter: UpdateHook::filter(
                 &config.chain_id,
-                &ClientType::new(ClientType::MPT_TRUSTED),
+                &ClientType::new(ClientType::TRUSTED_MPT),
             ),
         }
     }
@@ -175,7 +175,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 .map(|mut op| {
                     UpdateHook::new(
                         &self.chain_id,
-                        &ClientType::new(ClientType::MPT_TRUSTED),
+                        &ClientType::new(ClientType::TRUSTED_MPT),
                         |fetch| {
                             Call::Plugin(PluginMessage::new(
                                 self.plugin_name(),

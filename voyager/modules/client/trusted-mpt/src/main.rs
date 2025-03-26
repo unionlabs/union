@@ -4,10 +4,10 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
-use mpt_trusted_light_client_types::{ClientState, ConsensusState, Header};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::instrument;
+use trusted_mpt_light_client_types::{ClientState, ConsensusState, Header};
 use unionlabs::{
     self,
     encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
@@ -41,7 +41,7 @@ impl ClientModule for Module {
     type Config = Config;
 
     async fn new(_config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
-        info.ensure_client_type(ClientType::MPT_TRUSTED)?;
+        info.ensure_client_type(ClientType::TRUSTED_MPT)?;
         info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
         info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM)?;
 
