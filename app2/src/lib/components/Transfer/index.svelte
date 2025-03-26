@@ -375,26 +375,27 @@
         const rpcUrl = sourceChain.getRpcUrl("rpc");
         if (Option.isNone(rpcUrl)) return Option.none();
         const cosmwasmClient = yield* createCosmWasmClient(rpcUrl.value);
+        // TODO: also for native tokens there are not any allowances, so for native token scenerio
+        // We should not call this function
 
         // Query each token (assumed to be a CW20 contract) for the allowance.
         const allowanceChecks = yield* Effect.all(
           tokenAddresses.map(tokenAddress =>
             Effect.gen(function* () {
-
-              
               // TODO: 
               // const allowance = yield* readCw20Allowance(contractAddress, walletAddress, spender).pipe(withClient)
               // use it like this when deployed new ts-sdk
+              const owner = yield *sourceChain.toCosmosDisplay(sender.value);
               const result = yield* Effect.tryPromise({
                 try: () => cosmwasmClient.queryContractSmart(fromHex(tokenAddress, "string"), {
                   allowance: {
-                    owner: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv", // TODO: the sender.value address is in Hex format
-                    // And converting it to bech32 format is not working (fromHex(sender.value, "string"))
+                    owner: owner, 
                     spender: spenderAddress
                   }
                 }),
                 catch: (e) => console.info("Error: ", e)
               })
+              console.info("allowance result: ", result)
 
               return { token: tokenAddress, allowance: BigInt(result.allowance) };
             }).pipe(Effect.provideService(CosmWasmClientSource, { client: cosmwasmClient }),
