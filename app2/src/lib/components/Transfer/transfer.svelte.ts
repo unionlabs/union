@@ -1,37 +1,33 @@
-import { Data, Effect, Option } from "effect"
-import type { TransferStep } from "./transfer-step"
-import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
-import type { QuoteData, Token, WethTokenData } from "$lib/schema/token.ts"
-import { tokensStore } from "$lib/stores/tokens.svelte.ts"
-import { TransferSubmission as CosmosTransferSubmission } from "$lib/services/transfer-ucs03-cosmos"
-import { TransferSubmission as EvmTransferSubmission } from "$lib/services/transfer-ucs03-evm"
-import { TransferSubmission as AptosTransferSubmission } from "$lib/services/transfer-ucs03-aptos"
-import { chains } from "$lib/stores/chains.svelte.ts"
-import { type Address, fromHex, type Hex } from "viem"
-import { channels } from "$lib/stores/channels.svelte.ts"
-import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
-import type { Channel } from "$lib/schema/channel.ts"
+import {Data, Effect, Option} from "effect"
+import {RawTransferSvelte} from "./raw-transfer.svelte.ts"
+import type {QuoteData, Token} from "$lib/schema/token.ts"
+import {tokensStore} from "$lib/stores/tokens.svelte.ts"
+import {TransferSubmission as CosmosTransferSubmission} from "$lib/services/transfer-ucs03-cosmos"
+import {TransferSubmission as EvmTransferSubmission} from "$lib/services/transfer-ucs03-evm"
+import {TransferSubmission as AptosTransferSubmission} from "$lib/services/transfer-ucs03-aptos"
+import {chains} from "$lib/stores/chains.svelte.ts"
+import {type Address, fromHex, type Hex} from "viem"
+import {channels} from "$lib/stores/channels.svelte.ts"
+import {getChannelInfoSafe} from "$lib/services/transfer-ucs03-evm/channel.ts"
+import type {Channel} from "$lib/schema/channel.ts"
 import {
   getDerivedReceiverSafe,
   getParsedAmountSafe,
   getQuoteToken as getQuoteTokenEffect,
-  getWethQuoteToken as getWethQuoteTokenEffect
 } from "$lib/services/shared"
-import { cosmosStore } from "$lib/wallet/cosmos"
-import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
+import {sortedBalancesStore} from "$lib/stores/sorted-balances.svelte.ts"
 import {
   TransferState,
   type TransferStateUnion,
   validateTransfer,
   type ValidationResult
 } from "$lib/components/Transfer/validation.ts"
-import { handleAptosSubmit } from "$lib/components/Transfer/handlers/aptos.ts"
-import { handleCosmosSubmit } from "$lib/components/Transfer/handlers/cosmos.ts"
-import { handleEvmSubmit } from "$lib/components/Transfer/handlers/evm.ts"
-import type { AptosTransfer, CosmosTransfer, EVMTransfer } from "$lib/schema/transfer-args.ts"
+import {WETH_DENOMS} from "$lib/constants/weth-denoms.ts";
 
 export class Transfer {
+  //Url state where we keep raw strings to derive transfer data.
   raw = new RawTransferSvelte()
+
   _stateOverride = $state<TransferStateUnion | null>(null)
   state = $derived.by<TransferStateUnion>(() => {
     if (this._stateOverride !== null) {
@@ -78,8 +74,8 @@ export class Transfer {
         Option.fromNullable(
           Option.isSome(sortedBalancesStore.sortedBalances)
             ? sortedBalancesStore.sortedBalances.value.find(
-                v => v.chain.universal_chain_id === sc.universal_chain_id
-              )
+              v => v.chain.universal_chain_id === sc.universal_chain_id
+            )
             : undefined
         ).pipe(Option.flatMap(c => c.tokens))
       )
@@ -143,13 +139,20 @@ export class Transfer {
     return Option.some(hexAddress)
   })
 
+  wethQuoteToken = $derived.by(() => {
+    if (Option.isNone(this.sourceChain)) return Option.none()
+    return this.sourceChain.value.universal_chain_id in WETH_DENOMS
+      ? Option.some(WETH_DENOMS[this.sourceChain.value.universal_chain_id])
+      : Option.none()
+  })
+
   quoteToken = $state<Option.Option<typeof QuoteData.Type>>(Option.none())
-  wethQuoteToken = $state<Option.Option<typeof WethTokenData.Type>>(Option.none())
 
   getQuoteToken = () => {
     class MissingArgumentError extends Data.TaggedError("MissingArgumentError")<{
       field: string
-    }> {}
+    }> {
+    }
 
     const setQuoteToken = (value: Option.Option<typeof QuoteData.Type>) =>
       Effect.sync(() => {
@@ -158,19 +161,19 @@ export class Transfer {
 
     const checkRequiredFields = Effect.all([
       Option.match(this.baseToken, {
-        onNone: () => Effect.fail(new MissingArgumentError({ field: "baseToken" })),
+        onNone: () => Effect.fail(new MissingArgumentError({field: "baseToken"})),
         onSome: token => Effect.succeed(token.denom)
       }),
       Option.match(this.sourceChain, {
-        onNone: () => Effect.fail(new MissingArgumentError({ field: "sourceChain" })),
+        onNone: () => Effect.fail(new MissingArgumentError({field: "sourceChain"})),
         onSome: Effect.succeed
       }),
       Option.match(this.destinationChain, {
-        onNone: () => Effect.fail(new MissingArgumentError({ field: "destinationChain" })),
+        onNone: () => Effect.fail(new MissingArgumentError({field: "destinationChain"})),
         onSome: Effect.succeed
       }),
       Option.match(this.channel, {
-        onNone: () => Effect.fail(new MissingArgumentError({ field: "channel" })),
+        onNone: () => Effect.fail(new MissingArgumentError({field: "channel"})),
         onSome: Effect.succeed
       })
     ])
@@ -178,7 +181,7 @@ export class Transfer {
     return checkRequiredFields.pipe(
       Effect.flatMap(([denom, sourceChain, destinationChain, channel]) => {
         const denomValue = denom as `0x${string}`
-        return setQuoteToken(Option.some({ type: "QUOTE_LOADING" } as const)).pipe(
+        return setQuoteToken(Option.some({type: "QUOTE_LOADING"} as const)).pipe(
           Effect.flatMap(() =>
             getQuoteTokenEffect(sourceChain, denomValue, channel, destinationChain)
           ),
@@ -187,7 +190,7 @@ export class Transfer {
       }),
       Effect.catchAll(error => {
         if (error instanceof MissingArgumentError) {
-          return setQuoteToken(Option.some({ type: "QUOTE_MISSING_ARGUMENTS" } as const)).pipe(
+          return setQuoteToken(Option.some({type: "QUOTE_MISSING_ARGUMENTS"} as const)).pipe(
             Effect.as(null)
           )
         }
@@ -202,70 +205,6 @@ export class Transfer {
             )
           ),
           Effect.as(null)
-        )
-      })
-    )
-  }
-
-  getWethQuoteToken = () => {
-    class MissingArgumentError extends Data.TaggedError("MissingArgumentError")<{
-      field: string
-    }> {}
-
-    const setWethQuoteToken = (value: Option.Option<typeof WethTokenData.Type>) =>
-      Effect.sync(() => {
-        this.wethQuoteToken = value
-      })
-
-    const checkRequiredFields = Effect.all([
-      Option.match(this.sourceChain, {
-        onNone: () => Effect.fail(new MissingArgumentError({ field: "sourceChain" })),
-        onSome: Effect.succeed
-      }),
-      Option.match(this.destinationChain, {
-        onNone: () => Effect.fail(new MissingArgumentError({ field: "destinationChain" })),
-        onSome: Effect.succeed
-      }),
-      Option.match(this.ucs03address, {
-        onNone: () => Effect.fail(new MissingArgumentError({ field: "ucs03address" })),
-        onSome: Effect.succeed
-      }),
-      Option.match(this.channel, {
-        onNone: () => Effect.fail(new MissingArgumentError({ field: "channel" })),
-        onSome: Effect.succeed
-      })
-    ])
-
-    return checkRequiredFields.pipe(
-      Effect.flatMap(([sourceChain, destinationChain, ucs03address, channel]) => {
-        if (sourceChain.rpc_type !== "evm") {
-          return setWethQuoteToken(Option.some({ type: "NOT_EVM" } as const)).pipe(Effect.as(null))
-        }
-
-        return setWethQuoteToken(Option.some({ type: "WETH_LOADING" } as const)).pipe(
-          Effect.flatMap(() =>
-            getWethQuoteTokenEffect(sourceChain, ucs03address, channel, destinationChain)
-          ),
-          Effect.tap(result => setWethQuoteToken(Option.some(result)))
-        )
-      }),
-      Effect.catchAll(error => {
-        if (error instanceof MissingArgumentError) {
-          return setWethQuoteToken(Option.some({ type: "WETH_MISSING_ARGUMENTS" } as const)).pipe(
-            Effect.as(null)
-          )
-        }
-
-        return Effect.logError(`WETH Quote Error: ${JSON.stringify(error)}`).pipe(
-          Effect.flatMap(() =>
-            setWethQuoteToken(
-              Option.some({
-                type: "WETH_ERROR",
-                cause: error
-              } as const)
-            )
-          ),
-          Effect.as(Option.none())
         )
       })
     )
@@ -288,10 +227,7 @@ export class Transfer {
         ? quoteTokenValue.quote_token.toLowerCase()
         : undefined
 
-    const maybeWethQuoteToken =
-      wethQuoteTokenValue && "wethQuoteToken" in wethQuoteTokenValue
-        ? (wethQuoteTokenValue as { wethQuoteToken: string }).wethQuoteToken
-        : undefined
+    const maybeWethQuoteToken = wethQuoteTokenValue || undefined
 
     return {
       sourceChain: sourceChainValue,
@@ -312,48 +248,6 @@ export class Transfer {
   })
 
   validation = $derived.by<ValidationResult>(() => validateTransfer(this.args))
-
-  submit = async () => {
-    const validation = this.validation
-    if (validation._tag !== "Success") {
-      console.warn("Validation failed, errors:", validation.messages)
-      return
-    }
-
-    const typedArgs = validation.value
-
-    console.info("Validated args:", typedArgs)
-
-    const updateState = (state: TransferStateUnion) => {
-      this._stateOverride = state
-    }
-
-    switch (typedArgs.sourceChain.rpc_type) {
-      case "evm":
-        await handleEvmSubmit(this.state, typedArgs as EVMTransfer, updateState)
-        break
-      case "cosmos":
-        await handleCosmosSubmit(
-          this.state,
-          typedArgs as CosmosTransfer,
-          cosmosStore.connectedWallet,
-          updateState
-        )
-        break
-      case "aptos":
-        await handleAptosSubmit(
-          this.state,
-          typedArgs as AptosTransfer,
-          typedArgs.sourceChain,
-          updateState
-        )
-        break
-      default: {
-        console.error(`Unsupported RPC type: ${typedArgs.sourceChain.rpc_type}`)
-        updateState(TransferState.Empty())
-      }
-    }
-  }
 }
 
 export const transfer = new Transfer()

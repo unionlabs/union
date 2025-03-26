@@ -28,5 +28,6 @@ export const AddressEvmZkgm = AddressEvmCanonical
 export const AddressAptosCanonical = AddressCanonicalBytes.pipe(
   Schema.brand("AddressAptosCanonical")
 )
+export type AddressAptosCanonical = typeof AddressAptosCanonical.Type
 export const AddressAptosDisplay = AddressAptosCanonical
 export const AddressAptosZkgm = AddressAptosCanonical
