@@ -60,23 +60,38 @@
         ? Option.some(WETH_DENOMS[transferValue.sourceChain.universal_chain_id])
         : Option.none()
 
-    if (Option.isNone(wethDenom)) return Option.none()
-    return Option.some([
-      {
-        sender: sender.value,
-        receiver: transferValue.receiver,
-        baseToken: transferValue.baseToken,
-        baseAmount: transferValue.baseAmount,
-        quoteAmount: transferValue.baseAmount
-      },
-      {
-        sender: sender.value,
-        receiver: transferValue.receiver,
-        baseToken: wethDenom.value,
-        baseAmount: 500n,
-        quoteAmount: 0n
-      }
-    ])
+
+    if (transferValue.sourceChain.rpc_type == "evm"){
+      if (Option.isNone(wethDenom)) return Option.none()
+      return Option.some([
+        {
+          sender: sender.value,
+          receiver: transferValue.receiver,
+          baseToken: transferValue.baseToken,
+          baseAmount: transferValue.baseAmount,
+          quoteAmount: transferValue.baseAmount
+        },
+        {
+          sender: sender.value,
+          receiver: transferValue.receiver,
+          baseToken: wethDenom.value,
+          baseAmount: 500n,
+          quoteAmount: 0n
+        }
+      ])
+    } 
+
+    if (transferValue.sourceChain.rpc_type == "cosmos"){
+      return Option.some([
+        {
+          sender: sender.value,
+          receiver: transferValue.receiver,
+          baseToken: transferValue.baseToken,
+          baseAmount: transferValue.baseAmount,
+          quoteAmount: transferValue.baseAmount
+        }
+      ])
+    }
   })
 
   let requiredApprovals = $derived.by(() => {
