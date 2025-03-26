@@ -256,13 +256,13 @@ library ZkgmLib {
     function reverseChannelPath(
         uint256 path
     ) internal pure returns (uint256) {
-        return uint256(uint32(path >> 0)) << 224
-            | uint256(uint32(path >> 32)) << 192
-            | uint256(uint32(path >> 64)) << 160
-            | uint256(uint32(path >> 96)) << 128
-            | uint256(uint32(path >> 128)) << 96
-            | uint256(uint32(path >> 160)) << 64
-            | uint256(uint32(path >> 192)) << 32 | uint256(uint32(path >> 224)) << 0;
+        uint256 reversedPath = 0;
+        do {
+            (uint256 tail, uint32 head) = popChannelFromPath(path);
+            reversedPath = updateChannelPath(reversedPath, head);
+            path = tail;
+        } while (path != 0);
+        return reversedPath;
     }
 
     function isAllowedBatchInstruction(

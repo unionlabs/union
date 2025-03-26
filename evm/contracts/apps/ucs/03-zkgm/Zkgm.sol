@@ -197,7 +197,7 @@ contract UCS03Zkgm is
         bool isUnwrapping =
             abi.encodePacked(order.baseToken).eq(abi.encodePacked(wrappedToken));
         // If we take the same path starting from the same channel using the
-        // wrapped asset, we unwrapp.
+        // wrapped asset, we unwrap.
         if (
             isInverseIntermediatePath && isSendingBackToSameChannel
                 && isUnwrapping
