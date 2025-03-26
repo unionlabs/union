@@ -1306,7 +1306,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
             let packet = EXECUTING_PACKET.load(deps.storage)?;
             EXECUTING_PACKET.remove(deps.storage);
             match reply.result {
-                SubMsgResult::Ok(msg) => {
+                SubMsgResult::Ok(_) => {
                     // If the execution succedeed one of the acks is guaranteed to exist.
                     let execution_ack = (|| -> Result<Bytes, ContractError> {
                         match EXECUTING_PACKET_IS_BATCH.may_load(deps.storage)? {
@@ -1354,21 +1354,19 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                             inner_ack: Vec::from(execution_ack).into(),
                         }
                         .abi_encode_params();
-                        Ok(Response::new()
-                            .add_events(msg.events)
-                            .add_message(wasm_execute(
-                                &ibc_host,
-                                &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
-                                    MsgWriteAcknowledgement {
-                                        packet,
-                                        acknowledgement: zkgm_ack.into(),
-                                    },
-                                ),
-                                vec![],
-                            )?))
+                        Ok(Response::new().add_message(wasm_execute(
+                            &ibc_host,
+                            &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
+                                MsgWriteAcknowledgement {
+                                    packet,
+                                    acknowledgement: zkgm_ack.into(),
+                                },
+                            ),
+                            vec![],
+                        )?))
                     } else {
                         // Async acknowledgement, we don't write anything
-                        Ok(Response::new().add_events(msg.events))
+                        Ok(Response::new())
                     }
                 }
                 // Something went horribly wrong.
