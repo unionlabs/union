@@ -585,8 +585,11 @@ contract UCS03Zkgm is
             // revert for another MM to get a chance to fill. If we revert now
             // the entire packet would be considered to be "failed" and refunded
             // at origin, which we want to avoid.
-            if (!IERC20(quoteToken).transferFrom(caller, receiver, quoteAmount))
-            {
+            if (
+                !IERC20(quoteToken).trySafeTransferFrom(
+                    caller, receiver, quoteAmount
+                )
+            ) {
                 return ZkgmLib.ACK_ERR_ONLYMAKER;
             }
         }
