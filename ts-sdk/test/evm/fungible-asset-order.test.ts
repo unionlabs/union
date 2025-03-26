@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest"
-import { Effect } from "effect"
+import { assert, describe, it, expect } from "@effect/vitest"
+import { Context, Effect, Exit, Layer } from "effect"
 import { ViemPublicClientSource, ViemPublicClientDestination } from "../../src/evm/client.js"
 import { CosmWasmClientSource, CosmWasmClientDestination } from "../../src/cosmos/client.js"
 import { EvmChannelDestination } from "../../src/evm/channel.js"
@@ -26,8 +26,8 @@ const mockCw20TokenInfo = {
   total_supply: "1000000000"
 }
 
-const mockEvmQuoteToken = "0xMockQuoteToken" as const
-const mockCosmosQuoteToken = "cosmos1mockquotetoken"
+const mockEvmQuoteToken = "0x123" as const
+const mockCosmosQuoteToken = "0x123" as const
 
 // Mock clients
 const mockViemPublicClientSource = {
@@ -80,40 +80,98 @@ const mockCosmWasmClientDestination = {
 
 // Test data
 const evmIntent = {
-  sender: "0xSender" as const,
-  receiver: "0xReceiver" as const,
-  baseToken: "0xBaseToken" as const,
-  baseAmount: BigInt(1000000000000000000n), // 1 token with 18 decimals
-  quoteAmount: BigInt(500000000000000000n) // 0.5 token with 18 decimals
-}
+  sender: "0x123" as const,
+  receiver: "0x123" as const,
+  baseToken: "0x123" as const,
+  baseAmount: 1000000000000000000n, // 1 token with 18 decimals
+  quoteAmount: 500000000000000000n // 0.5 token with 18 decimals
+} as const
 
 const cosmosIntent = {
   sender: "cosmos1sender",
-  receiver: "cosmos1receiver",
+  receiver: "0x123",
   baseToken: "cosmos1basetoken",
   baseAmount: BigInt(1000000), // 1 token with 6 decimals
   quoteAmount: BigInt(500000) // 0.5 token with 6 decimals
-}
+} as const
+
+const EvmToEvm = Layer.mergeAll(
+  // @ts-expect-error
+  Layer.succeed(ViemPublicClientSource, mockViemPublicClientSource),
+  // @ts-expect-error
+  Layer.succeed(ViemPublicClientDestination, mockViemPublicClientDestination),
+  Layer.succeed(EvmChannelDestination, {
+    ucs03address: "0xUCS03Address",
+    channelId: 1
+  })
+)
+
+const EvmToCosmos = Layer.mergeAll(
+  // @ts-expect-error
+  Layer.succeed(ViemPublicClientSource, mockViemPublicClientSource),
+  // @ts-expect-error
+  Layer.succeed(CosmWasmClientDestination, mockCosmWasmClientDestination),
+  Layer.succeed(CosmosChannelDestination, {
+    ucs03address: "cosmos1ucs03address",
+    channelId: 1
+  })
+)
+
+const CosmosToEvm = Layer.mergeAll(
+  // @ts-expect-error
+  Layer.succeed(CosmWasmClientSource, mockCosmWasmClientSource),
+  // @ts-expect-error
+  Layer.succeed(ViemPublicClientDestination, mockViemPublicClientDestination),
+  Layer.succeed(EvmChannelDestination, {
+    ucs03address: "0xUCS03Address",
+    channelId: 1
+  })
+)
+
+const CosmosToCosmos = Layer.mergeAll(
+  // @ts-expect-error
+  Layer.succeed(CosmWasmClientSource, mockCosmWasmClientSource),
+  // @ts-expect-error
+  Layer.succeed(CosmWasmClientDestination, mockCosmWasmClientDestination),
+  Layer.succeed(CosmosChannelDestination, {
+    ucs03address: "cosmos1ucs03address",
+    channelId: 1
+  })
+)
+
+const EvmToEvmError = Layer.mergeAll(
+  EvmToEvm,
+  Layer.succeed(ViemPublicClientSource, ({
+    client: {
+      readContract: async () => {
+        throw new Error("Mock error")
+      }
+    }
+  }) as unknown as Context.Tag.Service<ViemPublicClientSource>)
+)
+
+const CosmosToCosmosError = Layer.mergeAll(
+  CosmosToCosmos,
+  Layer.succeed(
+    CosmWasmClientSource,
+    {
+      client: {
+        queryContractSmart: async () => {
+          throw new Error("Mock error")
+        }
+      }
+    } as unknown as Context.Tag.Service<CosmWasmClientSource>
+  )
+)
 
 describe("Fungible Asset Order Tests", () => {
-  describe("EVM to EVM", () => {
-    it("should create a fungible asset order from EVM to EVM", async () => {
-      const result = await Effect.runPromise(
-        createEvmToEvmFungibleAssetOrder(evmIntent).pipe(
-          //@ts-ignore: its a mock
-          Effect.provideService(ViemPublicClientSource, mockViemPublicClientSource),
-          //@ts-ignore: its a mock
-          Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination),
-          Effect.provideService(EvmChannelDestination, {
-            ucs03address: "0xUCS03Address",
-            channelId: 1
-          })
-        )
-      )
-
-      expect(result).toEqual({
+  it.layer(EvmToEvm)("EVM to EVM", (it) => {
+    it.effect("should create a fungible asset order from EVM to EVM", () => Effect.gen(function* () {
+      const result = yield* createEvmToEvmFungibleAssetOrder(evmIntent)
+      assert.deepStrictEqual(result, {
+        _tag: "FungibleAssetOrder",
         opcode: 3,
-        version: 1,
+        version: 0,
         operand: [
           evmIntent.sender,
           evmIntent.receiver,
@@ -127,30 +185,19 @@ describe("Fungible Asset Order Tests", () => {
           evmIntent.quoteAmount
         ]
       })
-    })
+    }))
   })
 
-  describe("EVM to Cosmos", () => {
-    it("should create a fungible asset order from EVM to Cosmos", async () => {
-      const result = await Effect.runPromise(
-        createEvmToCosmosFungibleAssetOrder(evmIntent).pipe(
-          //@ts-ignore: its a mock
-          Effect.provideService(ViemPublicClientSource, mockViemPublicClientSource),
-          //@ts-ignore: its a mock
-          Effect.provideService(CosmWasmClientDestination, mockCosmWasmClientDestination),
-          Effect.provideService(CosmosChannelDestination, {
-            ucs03address: "cosmos1ucs03address",
-            channelId: 1
-          })
-        )
-      )
-
-      expect(result).toEqual({
+  it.layer(EvmToCosmos)("EVM to Cosmos", (it) => {
+    it.effect("should create a fungible asset order from EVM to Cosmos", () => Effect.gen(function* () {
+      const result = yield* createEvmToCosmosFungibleAssetOrder(evmIntent)
+      assert.deepStrictEqual(result, {
+        _tag: "FungibleAssetOrder",
         opcode: 3,
-        version: 1,
+        version: 0,
         operand: [
           evmIntent.sender,
-          "0x30785265636569766572",
+          "0x3078313233",
           evmIntent.baseToken,
           evmIntent.baseAmount,
           mockErc20Meta.symbol,
@@ -161,31 +208,19 @@ describe("Fungible Asset Order Tests", () => {
           evmIntent.quoteAmount
         ]
       })
-    })
+    }))
   })
 
-  describe("Cosmos to EVM", () => {
-    it("should create a fungible asset order from Cosmos to EVM", async () => {
-      const result = await Effect.runPromise(
-        // @ts-ignore
-        createCosmosToEvmFungibleAssetOrder(cosmosIntent).pipe(
-          //@ts-ignore: its a mock
-          Effect.provideService(CosmWasmClientSource, mockCosmWasmClientSource),
-          //@ts-ignore: its a mock
-          Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination),
-          Effect.provideService(EvmChannelDestination, {
-            ucs03address: "0xUCS03Address",
-            channelId: 1
-          })
-        )
-      )
-
-      expect(result).toEqual({
+  it.layer(CosmosToEvm)("Cosmos to EVM", (it) => {
+    it.effect("should create a fungible asset order from Cosmos to EVM", () => Effect.gen(function* () {
+      const result = yield* createCosmosToEvmFungibleAssetOrder(cosmosIntent)
+      assert.deepStrictEqual(result, {
+        _tag: "FungibleAssetOrder",
         opcode: 3,
-        version: 1,
+        version: 0,
         operand: [
           toHex(cosmosIntent.sender),
-          "cosmos1receiver",
+          "0x123",
           toHex(cosmosIntent.baseToken),
           cosmosIntent.baseAmount,
           mockCw20TokenInfo.symbol,
@@ -196,28 +231,16 @@ describe("Fungible Asset Order Tests", () => {
           cosmosIntent.quoteAmount
         ]
       })
-    })
+    }))
   })
 
-  describe("Cosmos to Cosmos", () => {
-    it("should create a fungible asset order from Cosmos to Cosmos", async () => {
-      const result = await Effect.runPromise(
-        // @ts-ignore
-        createCosmosToCosmosFungibleAssetOrder(cosmosIntent).pipe(
-          //@ts-ignore: its a mock
-          Effect.provideService(CosmWasmClientSource, mockCosmWasmClientSource),
-          //@ts-ignore: its a mock
-          Effect.provideService(CosmWasmClientDestination, mockCosmWasmClientDestination),
-          Effect.provideService(CosmosChannelDestination, {
-            ucs03address: "cosmos1ucs03address",
-            channelId: 1
-          })
-        )
-      )
-
-      expect(result).toEqual({
+  it.layer(CosmosToCosmos)("Cosmos to Cosmos", (it) => {
+    it.effect("should create a fungible asset order from Cosmos to Cosmos", () => Effect.gen(function* () {
+      const result = yield* createCosmosToCosmosFungibleAssetOrder(cosmosIntent)
+      assert.deepStrictEqual(result, {
+        _tag: "FungibleAssetOrder",
         opcode: 3,
-        version: 1,
+        version: 0,
         operand: [
           toHex(cosmosIntent.sender),
           toHex(cosmosIntent.receiver),
@@ -231,59 +254,22 @@ describe("Fungible Asset Order Tests", () => {
           cosmosIntent.quoteAmount
         ]
       })
-    })
+    }))
   })
 
   describe("Error handling", () => {
-    it("should handle errors when creating EVM to EVM fungible asset order", async () => {
-      const errorClient = {
-        client: {
-          readContract: async () => {
-            throw new Error("Mock error")
-          }
-        }
-      }
-
-      const result = await Effect.runPromiseExit(
-        createEvmToEvmFungibleAssetOrder(evmIntent).pipe(
-          //@ts-ignore: its a mock
-          Effect.provideService(ViemPublicClientSource, errorClient),
-          //@ts-ignore: its a mock
-          Effect.provideService(ViemPublicClientDestination, mockViemPublicClientDestination),
-          Effect.provideService(EvmChannelDestination, {
-            ucs03address: "0xUCS03Address",
-            channelId: 1
-          })
-        )
-      )
-
-      expect(result._tag).toBe("Failure")
+    it.layer(EvmToEvmError)((it) => {
+      it.effect("should handle errors when creating EVM to EVM fungible asset order", () => Effect.gen(function* () {
+        const result = yield* Effect.exit(createEvmToEvmFungibleAssetOrder(evmIntent))
+        assert.isTrue(Exit.isFailure(result))
+      }))
     })
 
-    it("should handle errors when creating Cosmos to Cosmos fungible asset order", async () => {
-      const errorClient = {
-        client: {
-          queryContractSmart: async () => {
-            throw new Error("Mock error")
-          }
-        }
-      }
-
-      const result = await Effect.runPromiseExit(
-        //@ts-ignore: its a mock
-        createCosmosToCosmosFungibleAssetOrder(cosmosIntent).pipe(
-          //@ts-ignore: its a mock
-          Effect.provideService(CosmWasmClientSource, errorClient),
-          //@ts-ignore: its a mock
-          Effect.provideService(CosmWasmClientDestination, mockCosmWasmClientDestination),
-          Effect.provideService(CosmosChannelDestination, {
-            ucs03address: "cosmos1ucs03address",
-            channelId: 1
-          })
-        )
-      )
-
-      expect(result._tag).toBe("Failure")
+    it.layer(CosmosToCosmosError)((it) => {
+      it.effect("should handle errors when creating Cosmos to Cosmos fungible asset order", () => Effect.gen(function* () {
+        const result = yield* Effect.exit(createCosmosToCosmosFungibleAssetOrder(cosmosIntent))
+        expect(Exit.isFailure(result)).toBe(true)
+      }))
     })
   })
 })

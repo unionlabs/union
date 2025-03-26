@@ -1,96 +1,163 @@
-import { encodeAbiParameters, type Hex } from "viem"
+import { encodeAbiParameters } from "viem"
 import { batchAbi, forwardAbi, fungibleAssetOrderAbi, multiplexAbi } from "../evm/abi/index.js"
+import { Data, Schema as S } from 'effect'
+import { Hex } from "../schema/hex.js"
+import { Uint64 } from "../schema/uint64.js"
+import type { NonEmptyReadonlyArray } from "effect/Array"
+import { TaggedStruct } from "../utils/TaggedStruct.js"
 
-export type Instruction = Forward | Multiplex | Batch | FungibleAssetOrder
+const Version = S.NonNegativeInt
+type Version = typeof Version.Type
 
-export type Forward = {
-  opcode: 0
-  version: 0
-  operand: [bigint, bigint, bigint, Instruction]
-}
-export const Forward = (
-  path: bigint,
-  timeoutHeight: bigint,
-  timeoutTimestamp: bigint,
-  instruction: Instruction
-): Forward => ({
-  opcode: 0,
-  version: 0,
-  operand: [path, timeoutHeight, timeoutTimestamp, instruction]
+const OpCode = S.NonNegativeInt
+type OpCode = typeof OpCode.Type
+
+const Operand = S.Union(
+  // [`0x${string}`, bigint, { version: number; opcode: number; operand: `0x${string}`; }]
+  S.Tuple(Hex, Uint64, S.Struct({ version: Version, opcode: OpCode, operand: Hex })),
+  // [number, number, `0x${string}`]
+  S.Tuple(S.Number, S.Number, Hex),
+  // [bigint, bigint, bigint, { version: number; opcode: number; operand: `0x${string}`; }]
+  S.Tuple(Uint64, Uint64, Uint64, S.Struct({ version: Version, opcode: OpCode, operand: Hex })),
+  // [`0x${string}`, boolean, `0x${string}`, `0x${string}`]
+  S.Tuple(Hex, S.Boolean, Hex, Hex),
+  // [readonly { version: number; opcode: number; operand: `0x${string}`; }[]]
+  S.Tuple(S.Array(S.Struct({ version: Version, opcode: OpCode, operand: Hex }))),
+  // [`0x${string}`, `0x${string}`, `0x${string}`, bigint, string, string, number, bigint, `0x${string}`, bigint]
+  S.Tuple(Hex, Hex, Hex, Uint64, S.String, S.String, S.Uint8, Uint64, Hex, Uint64),
+  // [bigint, `0x${string}`]
+  S.Tuple(Uint64, Hex),
+  // [readonly `0x${string}`[]]
+  S.Tuple(S.NonEmptyArray(Hex)),
+)
+type Operand = typeof Operand.Type
+
+export class Forward extends S.TaggedClass<Forward>()('Forward', {
+  opcode: S.Literal(0),
+  version: S.Literal(0),
+  operand: S.Tuple(
+    S.PositiveBigIntFromSelf.annotations({
+      description: "Path"
+    }),
+    S.PositiveBigIntFromSelf.annotations({
+      description: "Timeout Height"
+    }),
+    S.PositiveBigIntFromSelf.annotations({
+      description: "Timeout Timestamp"
+    }),
+    S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema)
+  )
+}) { }
+
+export class Multiplex extends S.TaggedClass<Multiplex>()('Multiplex', {
+  // NOTE: example of conveninece default constructor; lost in `TaggedEnum`
+  opcode: S.Literal(1).pipe(
+    S.propertySignature,
+    S.withConstructorDefault(() => 1 as const)
+  ),
+  version: S.Literal(0).pipe(
+    S.propertySignature,
+    S.withConstructorDefault(() => 0 as const)
+  ),
+  operand: Operand.pipe(
+    S.itemsCount(4)
+  ),
+}) { }
+
+export class Batch extends S.TaggedClass<Batch>()('Batch', {
+  opcode: S.Literal(2).pipe(
+    S.propertySignature,
+    S.withConstructorDefault(() => 2 as const)
+  ),
+  version: S.Literal(0).pipe(
+    S.propertySignature,
+    S.withConstructorDefault(() => 0 as const)
+  ),
+  operand: S.NonEmptyArray(S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema)),
+}) { }
+
+// export class FungibleAssetOrder extends S.TaggedClass<FungibleAssetOrder>()('FungibleAssetOrder', {
+//   opcode: S.Literal(3).pipe(
+//     S.propertySignature,
+//     S.withConstructorDefault(() => 3 as const)
+//   ),
+//   version: S.Literal(0).pipe(
+//     S.propertySignature,
+//     S.withConstructorDefault(() => 0 as const)
+//   ),
+// 
+//   operand: Operand,
+// }) { }
+
+export const FungibleAssetOrder = TaggedStruct('FungibleAssetOrder', {
+  opcode: S.Literal(3).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 3 as const,
+      decoding: () => 3 as const,
+    })
+  ),
+  version: S.Literal(0).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 0 as const,
+      decoding: () => 0 as const,
+    })
+  ),
+
+  operand: Operand,
 })
+type FungibleAssetOrder = typeof FungibleAssetOrder.Type
 
-export type Multiplex = {
-  opcode: 1
-  version: 0
-  operand: Parameters<typeof encodeAbiParameters<typeof multiplexAbi>>[1]
-}
-export const Multiplex = (
-  operand: Parameters<typeof encodeAbiParameters<typeof multiplexAbi>>[1]
-): Multiplex => ({
-  opcode: 1,
-  version: 0,
-  operand
+export type Schema =
+  | Forward
+  | Multiplex
+  | Batch
+  | FungibleAssetOrder
+
+type SchemaEncoded =
+  | { readonly _tag: "Forward", readonly opcode: 0, readonly version: 0, readonly operand: readonly [bigint, bigint, bigint, SchemaEncoded] }
+  | typeof Multiplex.Encoded
+  | { readonly _tag: "Batch", readonly opcode: 2, readonly version: 0, readonly operand: NonEmptyReadonlyArray<SchemaEncoded> }
+  | typeof FungibleAssetOrder.Encoded
+
+export const Schema = S.Union(
+  Forward,
+  Multiplex,
+  Batch,
+  FungibleAssetOrder,
+)
+
+export const Instruction = Data.taggedEnum<Instruction>()
+export type Instruction = typeof Schema.Type
+
+export const {
+  $match: match,
+  $is: is,
+  Forward: ForwardRaw,
+  Multiplex: MultiplexRaw,
+  Batch: BatchRaw,
+  FungibleAssetOrder: FungibleAssetOrderRaw,
+} = Instruction
+
+export const encodeAbi: (_: Instruction) => Hex = Instruction.$match({
+  Forward: ({ operand }) => encodeAbiParameters(forwardAbi, [
+    operand[0],
+    operand[1],
+    operand[2],
+    {
+      opcode: operand[3].opcode,
+      version: operand[3].version,
+      operand: encodeAbi(operand[3])
+    }
+  ]),
+  Multiplex: ({ operand }) => encodeAbiParameters(multiplexAbi, operand),
+  Batch: ({ operand }) => encodeAbiParameters(batchAbi, [
+    operand.map((i: Schema) => ({
+      version: i.version,
+      opcode: i.opcode,
+      operand: encodeAbi(i)
+    }))
+  ]),
+  FungibleAssetOrder: ({ operand }) => encodeAbiParameters(fungibleAssetOrderAbi, operand),
 })
-
-export type Batch = {
-  opcode: 2
-  version: 0
-  operand: Array<Instruction>
-}
-export const Batch = (instructions: Array<Instruction>): Batch => ({
-  opcode: 2,
-  version: 0,
-  operand: instructions
-})
-
-export type FungibleAssetOrder = {
-  opcode: 3
-  version: 1
-  operand: Parameters<typeof encodeAbiParameters<typeof fungibleAssetOrderAbi>>[1]
-}
-export const FungibleAssetOrder = (
-  operand: Parameters<typeof encodeAbiParameters<typeof fungibleAssetOrderAbi>>[1]
-): FungibleAssetOrder => ({
-  opcode: 3,
-  version: 1,
-  operand
-})
-
-export const encodeAbi = (instruction: Instruction): Hex => {
-  switch (instruction.opcode) {
-    case 0: {
-      // Forward
-      return encodeAbiParameters(forwardAbi, [
-        instruction.operand[0],
-        instruction.operand[1],
-        instruction.operand[2],
-        {
-          opcode: instruction.operand[3].opcode,
-          version: instruction.operand[3].version,
-          operand: encodeAbi(instruction.operand[3])
-        }
-      ])
-    }
-    case 1: {
-      // Multiplex
-      return encodeAbiParameters(multiplexAbi, instruction.operand)
-    }
-    case 2: {
-      // Batch - recursively encode each instruction
-      return encodeAbiParameters(batchAbi, [
-        instruction.operand.map(instr => ({
-          version: instr.version,
-          opcode: instr.opcode,
-          operand: encodeAbi(instr)
-        }))
-      ])
-    }
-    case 3: {
-      // FungibleAssetOrder
-      return encodeAbiParameters(fungibleAssetOrderAbi, instruction.operand)
-    }
-    default: {
-      throw new Error(`impossible`)
-    }
-  }
-}
