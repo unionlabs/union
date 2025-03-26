@@ -1343,21 +1343,19 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                             inner_ack: Vec::from(execution_ack).into(),
                         }
                         .abi_encode_params();
-                        Ok(Response::new()
-                            .add_events(msg.events)
-                            .add_message(wasm_execute(
-                                &ibc_host,
-                                &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
-                                    MsgWriteAcknowledgement {
-                                        packet,
-                                        acknowledgement: zkgm_ack.into(),
-                                    },
-                                ),
-                                vec![],
-                            )?))
+                        Ok(Response::new().add_message(wasm_execute(
+                            &ibc_host,
+                            &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
+                                MsgWriteAcknowledgement {
+                                    packet,
+                                    acknowledgement: zkgm_ack.into(),
+                                },
+                            ),
+                            vec![],
+                        )?))
                     } else {
                         // Async acknowledgement, we don't write anything
-                        Ok(Response::new().add_events(msg.events))
+                        Ok(Response::new())
                     }
                 }
                 // Something went horribly wrong.
