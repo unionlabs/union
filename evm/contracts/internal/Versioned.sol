@@ -1,3 +1,5 @@
+pragma solidity ^0.8.27;
+
 library VersionedLib {
     function gitRev() internal pure returns (string memory) {
         return "dirty";
