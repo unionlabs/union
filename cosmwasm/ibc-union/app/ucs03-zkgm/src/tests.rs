@@ -161,7 +161,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reverse_channel_path_ok() {
+    fn test_reverse_channel_path_complete_ok() {
         let a = ChannelId!(1);
         let b = ChannelId!(2);
         let c = ChannelId!(3);
@@ -198,7 +198,7 @@ mod tests {
         )
         .unwrap();
 
-        let reversed = reverse_channel_path(path);
+        let reversed = reverse_channel_path(path).unwrap();
 
         let expected = U256::from(h.raw())
             | U256::from(g.raw()) << 32
@@ -213,9 +213,13 @@ mod tests {
     }
 
     #[test]
-    fn test_reverse_channel_path_iso() {
-        let path = U256::from(0x1234567890abcdef_u64);
-        assert_eq!(reverse_channel_path(reverse_channel_path(path)), path);
+    fn test_reverse_channel_path_partial_ok() {
+        let a = ChannelId!(1);
+        let b = ChannelId!(2);
+        let path = update_channel_path(update_channel_path(U256::ZERO, a).unwrap(), b).unwrap();
+        let reversed = reverse_channel_path(path).unwrap();
+        let expected = U256::from(b.raw()) | U256::from(a.raw()) << 32;
+        assert_eq!(reversed, expected);
     }
 
     #[test]

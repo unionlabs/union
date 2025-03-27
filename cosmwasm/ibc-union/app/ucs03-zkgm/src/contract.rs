@@ -1203,7 +1203,7 @@ fn execute_fungible_asset_order(
         decrease_channel_balance(
             deps,
             packet.destination_channel_id,
-            reverse_channel_path(path),
+            reverse_channel_path(path)?,
             quote_token_str.clone(),
             base_amount.into(),
         )?;
@@ -1609,7 +1609,7 @@ fn verify_fungible_asset_order(
     };
 
     // Check if we're taking same path starting from same channel using wrapped asset
-    let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_path);
+    let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_path)?;
     let is_sending_back_to_same_channel = destination_channel_id == Some(channel_id);
 
     if is_inverse_intermediate_path && is_sending_back_to_same_channel && is_unwrapping {
@@ -1987,16 +1987,19 @@ pub fn make_path_from_channel(channel_id: ChannelId, index: usize) -> U256 {
     U256::from(channel_id.raw()) << (32 * index)
 }
 
-pub fn reverse_channel_path(path: U256) -> U256 {
-    U256::ZERO
-        | get_channel_from_path(path, 0).map_or(U256::ZERO, |id| make_path_from_channel(id, 7))
-        | get_channel_from_path(path, 1).map_or(U256::ZERO, |id| make_path_from_channel(id, 6))
-        | get_channel_from_path(path, 2).map_or(U256::ZERO, |id| make_path_from_channel(id, 5))
-        | get_channel_from_path(path, 3).map_or(U256::ZERO, |id| make_path_from_channel(id, 4))
-        | get_channel_from_path(path, 4).map_or(U256::ZERO, |id| make_path_from_channel(id, 3))
-        | get_channel_from_path(path, 5).map_or(U256::ZERO, |id| make_path_from_channel(id, 2))
-        | get_channel_from_path(path, 6).map_or(U256::ZERO, |id| make_path_from_channel(id, 1))
-        | get_channel_from_path(path, 7).map_or(U256::ZERO, |id| make_path_from_channel(id, 0))
+pub fn reverse_channel_path(mut path: U256) -> Result<U256, ContractError> {
+    let mut reversed_channel_path = U256::ZERO;
+    loop {
+        let (tail, head) = pop_channel_from_path(path);
+        if let Some(channel_id) = head {
+            reversed_channel_path = update_channel_path(reversed_channel_path, channel_id)?;
+        }
+        if tail == U256::ZERO {
+            break;
+        }
+        path = tail;
+    }
+    Ok(reversed_channel_path)
 }
 
 pub fn tint_forward_salt(salt: H256) -> H256 {
