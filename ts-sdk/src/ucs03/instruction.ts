@@ -76,19 +76,6 @@ export class Batch extends S.TaggedClass<Batch>()('Batch', {
   operand: S.NonEmptyArray(S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema)),
 }) { }
 
-// export class FungibleAssetOrder extends S.TaggedClass<FungibleAssetOrder>()('FungibleAssetOrder', {
-//   opcode: S.Literal(3).pipe(
-//     S.propertySignature,
-//     S.withConstructorDefault(() => 3 as const)
-//   ),
-//   version: S.Literal(0).pipe(
-//     S.propertySignature,
-//     S.withConstructorDefault(() => 0 as const)
-//   ),
-// 
-//   operand: Operand,
-// }) { }
-
 export const FungibleAssetOrder = TaggedStruct('FungibleAssetOrder', {
   opcode: S.Literal(3).pipe(
     S.optional,

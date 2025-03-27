@@ -15,7 +15,7 @@ _: {
           pname = packageJson.name;
           inherit (packageJson) version;
           src = ./.;
-          npmDepsHash = "sha256-LMNhQFd1LSgpIxpkKehhXjuaAZDPftBgfEf2/dOfmv4=";
+          npmDepsHash = "sha256-z8Nnv3AnXcA0NBtKtyCAU/LQ18vRQykTvrb5J++ufOI=";
           doCheck = true;
           checkPhase = ''
             npm run test

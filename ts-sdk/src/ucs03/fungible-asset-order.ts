@@ -180,30 +180,32 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
     const tokenMeta =
       intent.baseToken === "muno"
         ? {
-            symbol: "muno",
-            name: "muno",
-            decimals: 0
-          }
+          symbol: "muno",
+          name: "muno",
+          decimals: 0
+        }
         : yield* readCw20TokenInfo(intent.baseToken).pipe(
-            Effect.provideService(CosmWasmClientContext, { client: sourceClient })
-          )
+          Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+        )
 
     const quoteToken = yield* predictAptosQuoteToken(toHex(intent.baseToken))
 
     yield* Effect.log("quote token from aptos is", quoteToken, " for base token ", intent.baseToken)
 
-    return FungibleAssetOrder([
-      toHex(intent.sender),
-      toHex(intent.receiver),
-      toHex(intent.baseToken),
-      intent.baseAmount,
-      tokenMeta.symbol,
-      tokenMeta.name,
-      tokenMeta.decimals,
-      0n, // channel if unwrapping
-      quoteToken,
-      intent.quoteAmount
-    ])
+    return yield* S.decode(FungibleAssetOrder)({
+      operand: [
+        toHex(intent.sender),
+        toHex(intent.receiver),
+        toHex(intent.baseToken),
+        intent.baseAmount,
+        tokenMeta.symbol,
+        tokenMeta.name,
+        tokenMeta.decimals,
+        0n, // channel if unwrapping
+        quoteToken,
+        intent.quoteAmount
+      ]
+    })
   })
 
 /**
@@ -223,16 +225,18 @@ export const createAptosToCosmosFungibleAssetOrder = (intent: {
     )
     const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
 
-    return FungibleAssetOrder([
-      toHex(intent.sender),
-      toHex(intent.receiver),
-      toHex(intent.baseToken),
-      intent.baseAmount,
-      tokenMeta.symbol,
-      tokenMeta.name,
-      tokenMeta.decimals,
-      0n, // channel if unwrapping
-      quoteToken,
-      intent.quoteAmount
-    ])
+    return yield* S.decode(FungibleAssetOrder)({
+      operand: [
+        toHex(intent.sender),
+        toHex(intent.receiver),
+        toHex(intent.baseToken),
+        intent.baseAmount,
+        tokenMeta.symbol,
+        tokenMeta.name,
+        tokenMeta.decimals,
+        0n, // channel if unwrapping
+        quoteToken,
+        intent.quoteAmount
+      ]
+    })
   })
