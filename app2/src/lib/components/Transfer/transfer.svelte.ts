@@ -80,8 +80,8 @@ export class Transfer {
       Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
         Option.fromNullable(
           getChannelInfoSafe(
-            sourceChain.chain_id,
-            destinationChain.chain_id,
+            sourceChain.universal_chain_id,
+            destinationChain.universal_chain_id,
             channelsData
           )
         )
@@ -90,6 +90,7 @@ export class Transfer {
   })
 
   ucs03address = $derived.by<Option.Option<Address>>(() => {
+    console.log('channels ', channels.data)
     return Option.all([
       this.sourceChain,
       this.channel,
@@ -144,7 +145,7 @@ export class Transfer {
       receiver: derivedReceiver,
       timeoutHeight: "0",
       timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
-      wethQuoteToken: wethQuoteToken || undefined
+      wethQuoteToken: wethQuoteToken
     }
   })
 
