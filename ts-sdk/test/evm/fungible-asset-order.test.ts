@@ -1,5 +1,5 @@
 import { assert, describe, it, expect } from "@effect/vitest"
-import { Context, Effect, Exit, Layer } from "effect"
+import { type Context, Effect, Exit, Layer } from "effect"
 import { ViemPublicClientSource, ViemPublicClientDestination } from "../../src/evm/client.js"
 import { CosmWasmClientSource, CosmWasmClientDestination } from "../../src/cosmos/client.js"
 import { EvmChannelDestination } from "../../src/evm/channel.js"
@@ -141,135 +141,144 @@ const CosmosToCosmos = Layer.mergeAll(
 
 const EvmToEvmError = Layer.mergeAll(
   EvmToEvm,
-  Layer.succeed(ViemPublicClientSource, ({
+  Layer.succeed(ViemPublicClientSource, {
     client: {
       readContract: async () => {
         throw new Error("Mock error")
       }
     }
-  }) as unknown as Context.Tag.Service<ViemPublicClientSource>)
+  } as unknown as Context.Tag.Service<ViemPublicClientSource>)
 )
 
 const CosmosToCosmosError = Layer.mergeAll(
   CosmosToCosmos,
-  Layer.succeed(
-    CosmWasmClientSource,
-    {
-      client: {
-        queryContractSmart: async () => {
-          throw new Error("Mock error")
-        }
+  Layer.succeed(CosmWasmClientSource, {
+    client: {
+      queryContractSmart: async () => {
+        throw new Error("Mock error")
       }
-    } as unknown as Context.Tag.Service<CosmWasmClientSource>
-  )
+    }
+  } as unknown as Context.Tag.Service<CosmWasmClientSource>)
 )
 
 describe("Fungible Asset Order Tests", () => {
-  it.layer(EvmToEvm)("EVM to EVM", (it) => {
-    it.effect("should create a fungible asset order from EVM to EVM", () => Effect.gen(function* () {
-      const result = yield* createEvmToEvmFungibleAssetOrder(evmIntent)
-      assert.deepStrictEqual(result, {
-        _tag: "FungibleAssetOrder",
-        opcode: 3,
-        version: 0,
-        operand: [
-          evmIntent.sender,
-          evmIntent.receiver,
-          evmIntent.baseToken,
-          evmIntent.baseAmount,
-          mockErc20Meta.symbol,
-          mockErc20Meta.name,
-          mockErc20Meta.decimals,
-          0n,
-          mockEvmQuoteToken,
-          evmIntent.quoteAmount
-        ]
+  it.layer(EvmToEvm)("EVM to EVM", it => {
+    it.effect("should create a fungible asset order from EVM to EVM", () =>
+      Effect.gen(function* () {
+        const result = yield* createEvmToEvmFungibleAssetOrder(evmIntent)
+        assert.deepStrictEqual(result, {
+          _tag: "FungibleAssetOrder",
+          opcode: 3,
+          version: 0,
+          operand: [
+            evmIntent.sender,
+            evmIntent.receiver,
+            evmIntent.baseToken,
+            evmIntent.baseAmount,
+            mockErc20Meta.symbol,
+            mockErc20Meta.name,
+            mockErc20Meta.decimals,
+            0n,
+            mockEvmQuoteToken,
+            evmIntent.quoteAmount
+          ]
+        })
       })
-    }))
+    )
   })
 
-  it.layer(EvmToCosmos)("EVM to Cosmos", (it) => {
-    it.effect("should create a fungible asset order from EVM to Cosmos", () => Effect.gen(function* () {
-      const result = yield* createEvmToCosmosFungibleAssetOrder(evmIntent)
-      assert.deepStrictEqual(result, {
-        _tag: "FungibleAssetOrder",
-        opcode: 3,
-        version: 0,
-        operand: [
-          evmIntent.sender,
-          "0x3078313233",
-          evmIntent.baseToken,
-          evmIntent.baseAmount,
-          mockErc20Meta.symbol,
-          mockErc20Meta.name,
-          mockErc20Meta.decimals,
-          0n,
-          mockCosmosQuoteToken,
-          evmIntent.quoteAmount
-        ]
+  it.layer(EvmToCosmos)("EVM to Cosmos", it => {
+    it.effect("should create a fungible asset order from EVM to Cosmos", () =>
+      Effect.gen(function* () {
+        const result = yield* createEvmToCosmosFungibleAssetOrder(evmIntent)
+        assert.deepStrictEqual(result, {
+          _tag: "FungibleAssetOrder",
+          opcode: 3,
+          version: 0,
+          operand: [
+            evmIntent.sender,
+            "0x3078313233",
+            evmIntent.baseToken,
+            evmIntent.baseAmount,
+            mockErc20Meta.symbol,
+            mockErc20Meta.name,
+            mockErc20Meta.decimals,
+            0n,
+            mockCosmosQuoteToken,
+            evmIntent.quoteAmount
+          ]
+        })
       })
-    }))
+    )
   })
 
-  it.layer(CosmosToEvm)("Cosmos to EVM", (it) => {
-    it.effect("should create a fungible asset order from Cosmos to EVM", () => Effect.gen(function* () {
-      const result = yield* createCosmosToEvmFungibleAssetOrder(cosmosIntent)
-      assert.deepStrictEqual(result, {
-        _tag: "FungibleAssetOrder",
-        opcode: 3,
-        version: 0,
-        operand: [
-          toHex(cosmosIntent.sender),
-          "0x123",
-          toHex(cosmosIntent.baseToken),
-          cosmosIntent.baseAmount,
-          mockCw20TokenInfo.symbol,
-          mockCw20TokenInfo.name,
-          mockCw20TokenInfo.decimals,
-          0n,
-          mockEvmQuoteToken,
-          cosmosIntent.quoteAmount
-        ]
+  it.layer(CosmosToEvm)("Cosmos to EVM", it => {
+    it.effect("should create a fungible asset order from Cosmos to EVM", () =>
+      Effect.gen(function* () {
+        const result = yield* createCosmosToEvmFungibleAssetOrder(cosmosIntent)
+        assert.deepStrictEqual(result, {
+          _tag: "FungibleAssetOrder",
+          opcode: 3,
+          version: 0,
+          operand: [
+            toHex(cosmosIntent.sender),
+            "0x123",
+            toHex(cosmosIntent.baseToken),
+            cosmosIntent.baseAmount,
+            mockCw20TokenInfo.symbol,
+            mockCw20TokenInfo.name,
+            mockCw20TokenInfo.decimals,
+            0n,
+            mockEvmQuoteToken,
+            cosmosIntent.quoteAmount
+          ]
+        })
       })
-    }))
+    )
   })
 
-  it.layer(CosmosToCosmos)("Cosmos to Cosmos", (it) => {
-    it.effect("should create a fungible asset order from Cosmos to Cosmos", () => Effect.gen(function* () {
-      const result = yield* createCosmosToCosmosFungibleAssetOrder(cosmosIntent)
-      assert.deepStrictEqual(result, {
-        _tag: "FungibleAssetOrder",
-        opcode: 3,
-        version: 0,
-        operand: [
-          toHex(cosmosIntent.sender),
-          toHex(cosmosIntent.receiver),
-          toHex(cosmosIntent.baseToken),
-          cosmosIntent.baseAmount,
-          mockCw20TokenInfo.symbol,
-          mockCw20TokenInfo.name,
-          mockCw20TokenInfo.decimals,
-          0n,
-          mockCosmosQuoteToken,
-          cosmosIntent.quoteAmount
-        ]
+  it.layer(CosmosToCosmos)("Cosmos to Cosmos", it => {
+    it.effect("should create a fungible asset order from Cosmos to Cosmos", () =>
+      Effect.gen(function* () {
+        const result = yield* createCosmosToCosmosFungibleAssetOrder(cosmosIntent)
+        assert.deepStrictEqual(result, {
+          _tag: "FungibleAssetOrder",
+          opcode: 3,
+          version: 0,
+          operand: [
+            toHex(cosmosIntent.sender),
+            toHex(cosmosIntent.receiver),
+            toHex(cosmosIntent.baseToken),
+            cosmosIntent.baseAmount,
+            mockCw20TokenInfo.symbol,
+            mockCw20TokenInfo.name,
+            mockCw20TokenInfo.decimals,
+            0n,
+            mockCosmosQuoteToken,
+            cosmosIntent.quoteAmount
+          ]
+        })
       })
-    }))
+    )
   })
 
   describe("Error handling", () => {
-    it.layer(EvmToEvmError)((it) => {
-      it.effect("should handle errors when creating EVM to EVM fungible asset order", () => Effect.gen(function* () {
-        const result = yield* Effect.exit(createEvmToEvmFungibleAssetOrder(evmIntent))
-        assert.isTrue(Exit.isFailure(result))
-      }))
+    it.layer(EvmToEvmError)(it => {
+      it.effect("should handle errors when creating EVM to EVM fungible asset order", () =>
+        Effect.gen(function* () {
+          const result = yield* Effect.exit(createEvmToEvmFungibleAssetOrder(evmIntent))
+          assert.isTrue(Exit.isFailure(result))
+        })
+      )
     })
 
-    it.layer(CosmosToCosmosError)((it) => {
-      it.effect("should handle errors when creating Cosmos to Cosmos fungible asset order", () => Effect.gen(function* () {
-        const result = yield* Effect.exit(createCosmosToCosmosFungibleAssetOrder(cosmosIntent))
-        expect(Exit.isFailure(result)).toBe(true)
-      }))
+    it.layer(CosmosToCosmosError)(it => {
+      it.effect("should handle errors when creating Cosmos to Cosmos fungible asset order", () =>
+        Effect.gen(function* () {
+          const result = yield* Effect.exit(createCosmosToCosmosFungibleAssetOrder(cosmosIntent))
+          expect(Exit.isFailure(result)).toBe(true)
+        })
+      )
     })
   })
 })

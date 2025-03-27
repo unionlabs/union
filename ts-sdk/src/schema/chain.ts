@@ -1,10 +1,7 @@
 import { VIEM_CHAINS } from "../constants/viem-chains.js"
 import { Data, Effect, Option, Schema as S } from "effect"
 import type { Chain as ViemChain } from "viem"
-import type {
-  AddressCosmosCanonical,
-  AddressCosmosDisplay
-} from "./address.ts"
+import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
 import { bech32, bytes } from "@scure/base"
 
 export const ChainId = S.String.pipe(S.brand("ChainId"))
@@ -25,11 +22,11 @@ export class ChainFeatures extends S.Class<ChainFeatures>("ChainFeatures")({
   packet_list: S.Boolean,
   transfer_submission: S.Boolean,
   transfer_list: S.Boolean
-}) { }
+}) {}
 
 export class ChainReference extends S.Class<Chain>("ChainReference")({
   universal_chain_id: UniversalChainId
-}) { }
+}) {}
 
 export const RpcProtocolType = S.Literal("rpc", "rest", "grpc")
 export type RpcProtocolType = typeof RpcProtocolType.Type
@@ -37,7 +34,7 @@ export type RpcProtocolType = typeof RpcProtocolType.Type
 export class Rpc extends S.Class<Rpc>("Rpc")({
   type: RpcProtocolType,
   url: S.String
-}) { }
+}) {}
 
 export class Explorer extends S.Class<Explorer>("Explorer")({
   address_url: S.String,
@@ -47,22 +44,22 @@ export class Explorer extends S.Class<Explorer>("Explorer")({
   home_url: S.String,
   name: S.String,
   tx_url: S.String
-}) { }
+}) {}
 
 export class NoRpcError extends Data.TaggedError("NoRpcError")<{
   chain: Chain
   type: RpcProtocolType
-}> { }
+}> {}
 
 export class NotACosmosChainError extends Data.TaggedError("NotACosmosChainError")<{
   chain: Chain
-}> { }
+}> {}
 
 export class CosmosAddressEncodeError extends Data.TaggedError("CosmosAddressEncodeError")<{
   cause: unknown
   address: string
   prefix: string
-}> { }
+}> {}
 
 export class Chain extends S.Class<Chain>("Chain")({
   chain_id: ChainId,

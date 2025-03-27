@@ -8,9 +8,7 @@ export const AddressCanonicalBytes = Hex.pipe(S.brand("CanonicalBytes"))
 export type AddressCanonicalBytes = typeof AddressCanonicalBytes.Type
 
 // Cosmos Address Types
-export const AddressCosmosCanonical = AddressCanonicalBytes.pipe(
-  S.brand("AddressCosmosCanonical")
-)
+export const AddressCosmosCanonical = AddressCanonicalBytes.pipe(S.brand("AddressCosmosCanonical"))
 export type AddressCosmosCanonical = typeof AddressCosmosCanonical.Type
 
 export const AddressCosmosDisplay = Bech32.pipe(S.brand("AddressCosmosDisplay"))
@@ -25,8 +23,6 @@ export const AddressEvmDisplay = HexChecksum.pipe(S.brand("AddressEvmDisplay"))
 export const AddressEvmZkgm = AddressEvmCanonical
 
 // Aptos Address Types
-export const AddressAptosCanonical = AddressCanonicalBytes.pipe(
-  S.brand("AddressAptosCanonical")
-)
+export const AddressAptosCanonical = AddressCanonicalBytes.pipe(S.brand("AddressAptosCanonical"))
 export const AddressAptosDisplay = AddressAptosCanonical
 export const AddressAptosZkgm = AddressAptosCanonical

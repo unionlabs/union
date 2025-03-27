@@ -106,13 +106,13 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
     const tokenMeta =
       intent.baseToken === "muno"
         ? {
-          symbol: "muno",
-          name: "muno",
-          decimals: 0
-        }
+            symbol: "muno",
+            name: "muno",
+            decimals: 0
+          }
         : yield* readCw20TokenInfo(intent.baseToken).pipe(
-          Effect.provideService(CosmWasmClientContext, { client: sourceClient })
-        )
+            Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+          )
     const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
     return yield* S.decode(FungibleAssetOrder)({
@@ -180,13 +180,13 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
     const tokenMeta =
       intent.baseToken === "muno"
         ? {
-          symbol: "muno",
-          name: "muno",
-          decimals: 0
-        }
+            symbol: "muno",
+            name: "muno",
+            decimals: 0
+          }
         : yield* readCw20TokenInfo(intent.baseToken).pipe(
-          Effect.provideService(CosmWasmClientContext, { client: sourceClient })
-        )
+            Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+          )
 
     const quoteToken = yield* predictAptosQuoteToken(toHex(intent.baseToken))
 

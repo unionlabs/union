@@ -55,9 +55,7 @@ const CosmosTransferS = S.Struct({
 })
 type CosmosTransferS = typeof CosmosTransferS.Type
 
-export class CosmosTransfer extends S.Class<CosmosTransfer>("CosmosTransfer")(
-  CosmosTransferS
-) {}
+export class CosmosTransfer extends S.Class<CosmosTransfer>("CosmosTransfer")(CosmosTransferS) {}
 
 const AptosTransferS = S.Struct({
   ...BaseTransferFields,
@@ -70,9 +68,7 @@ const AptosTransferS = S.Struct({
 })
 type AptosTransferS = typeof AptosTransferS.Type
 
-export class AptosTransfer extends S.Class<AptosTransfer>("AptosTransfer")(
-  AptosTransferS
-) {}
+export class AptosTransfer extends S.Class<AptosTransfer>("AptosTransfer")(AptosTransferS) {}
 
 export const TransferS = S.Union(EVMTransfer, CosmosTransfer, AptosTransfer).annotations({
   identifier: "Transfer",
@@ -91,9 +87,7 @@ export const ValidTransferS = S.Struct({
 })
 export type ValidTransferS = typeof ValidTransferS.Type
 
-export class ValidTransfer extends S.Class<ValidTransfer>("ValidTransfer")(
-  ValidTransferS
-) {}
+export class ValidTransfer extends S.Class<ValidTransfer>("ValidTransfer")(ValidTransferS) {}
 
 // Then create the union of those partial schemas
 const PartialTransferUnionS = S.Union(

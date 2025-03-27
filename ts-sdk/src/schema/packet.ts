@@ -9,9 +9,7 @@ import { ClientId } from "./client.js"
 import { PortId } from "./port.js"
 import { Height } from "./height.js"
 
-export const PacketHash = S.String.pipe(S.pattern(/^0x[0-9a-f]{64}$/)).pipe(
-  S.brand("PacketHash")
-)
+export const PacketHash = S.String.pipe(S.pattern(/^0x[0-9a-f]{64}$/)).pipe(S.brand("PacketHash"))
 export type PacketHash = typeof PacketHash.Type
 
 export class PacketListItem extends S.Class<PacketListItem>("PacketListItem")({
