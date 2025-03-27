@@ -605,7 +605,3 @@
 <h2>locked transfer</h2>
 <pre>{JSON.stringify(lockedTransferStore.get(), null, 2)}</pre>
 
-{#if transfer.state._tag !== "Empty"}
-  <pre>{JSON.stringify(transfer.state, null, 2)}</pre>
-{/if}
-
