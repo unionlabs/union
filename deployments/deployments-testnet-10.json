@@ -16,6 +16,26 @@
           "address": "union12de3l5lxkc2xj5ujt6w080xx8d4pqsurza7rlapl3kqukualtuaq5ey8r8",
           "height": 3021
         },
+        "ethermint": {
+          "address": "union1t335sjsatede7nu4szsc8st34x7v5t7qlr6y3m3ctactxsuaujxs3ld8xq",
+          "height": 133169
+        },
+        "movement": {
+          "address": "union1cdcyqflg55j57230n63h0qxng7xe5x258tckxm77j034wprwpdtsk3dk0t",
+          "height": 133175
+        },
+        "state-lens/ics23/mpt": {
+          "address": "union15g5t8dwsccurc5v0krrxnzvtd6pawh7d8mpwcgfz8mm5jq9srk3svwlqkt",
+          "height": 133179
+        },
+        "state-lens/ics23/smt": {
+          "address": "union10mgmvryltmdy0szzmcp28sdp5wn9zeejrlmlx2qzz2n3ktkmk75qk9zlf6",
+          "height": 133185
+        },
+        "tendermint": {
+          "address": "union10u2cn5mkq2eymewt4rsldk0h5qvq6w5qzetrw9xygjxlqc3vgjrsyzu58y",
+          "height": 133190
+        },
         "trusted/evm/mpt": {
           "address": "union133gpl5ca3037jga3d2t0pjajtlagr4explm06ts8svlsw7dwyqvs9v7x4m",
           "height": 131127
@@ -50,6 +70,10 @@
         "tendermint": {
           "address": "bbn10u2cn5mkq2eymewt4rsldk0h5qvq6w5qzetrw9xygjxlqc3vgjrsm9r56y",
           "height": 606194
+        },
+        "trusted/evm/mpt": {
+          "address": "bbn133gpl5ca3037jga3d2t0pjajtlagr4explm06ts8svlsw7dwyqvs6tpxgm",
+          "height": 606846
         }
       },
       "app": {
