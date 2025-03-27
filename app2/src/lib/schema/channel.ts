@@ -1,8 +1,8 @@
 import { Schema } from "effect"
 import { PortId } from "$lib/schema/port.ts"
-import {UniversalChainId} from "$lib/schema/chain.ts"
+import { UniversalChainId } from "$lib/schema/chain.ts"
 import { ConnectionId } from "$lib/schema/connection.ts"
-import {ClientId} from "$lib/schema/client.ts";
+import { ClientId } from "$lib/schema/client.ts"
 
 export const ChannelId = Schema.Int.pipe(Schema.brand("ChannelId"))
 export type ChannelId = typeof ChannelId.Type

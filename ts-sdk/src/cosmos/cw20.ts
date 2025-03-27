@@ -19,7 +19,6 @@ export interface Cw20BalanceResponse {
   balance: string
 }
 
-
 /**
  * Interface for CW20 token balance response
  */
@@ -59,14 +58,18 @@ export const readCw20Balance = (contractAddress: string, address: string) =>
     return response.balance
   })
 
-  /**
+/**
  * Read the allowance of a CW20 token for a specific addresses
  * @param contractAddress The address of the CW20 token contract
  * @param ownerAddress The owner of the token
  * @param spenderAddress The spender who will spend the token
  * @returns An Effect that resolves to the token allowance
  */
-export const readCw20Allowance = (contractAddress: string, ownerAddress: string, spenderAddress: string) =>
+export const readCw20Allowance = (
+  contractAddress: string,
+  ownerAddress: string,
+  spenderAddress: string
+) =>
   Effect.gen(function* () {
     const client = (yield* CosmWasmClientContext).client
 
@@ -79,7 +82,6 @@ export const readCw20Allowance = (contractAddress: string, ownerAddress: string,
 
     return response.allowance
   })
-
 
 /**
  * Increase the allowance of a CW20 token for a specific spender.
@@ -95,20 +97,15 @@ export const writeCw20IncreaseAllowance = (
   contractAddress: string,
   senderAddress: string,
   spenderAddress: string,
-  amount: string,
+  amount: string
 ) =>
   Effect.gen(function* () {
     const client = (yield* SigningCosmWasmClientContext).client
 
-    return yield* executeContract(
-      client,
-      senderAddress,
-      contractAddress,
-      {
-        increase_allowance: {
-          spender: spenderAddress,
-          amount
-        }
+    return yield* executeContract(client, senderAddress, contractAddress, {
+      increase_allowance: {
+        spender: spenderAddress,
+        amount
       }
-    )
+    })
   })

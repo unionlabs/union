@@ -1,11 +1,10 @@
 import { Effect, Option, Schema } from "effect"
-import type { ChainId, UniversalChainId } from "$lib/schema/chain"
+import type { UniversalChainId } from "$lib/schema/chain"
 import { TokenRawDenom, Tokens } from "$lib/schema/token"
 import { isTokenBlacklisted } from "$lib/constants/tokens"
 import { createQueryGraphql, fetchDecodeGraphql } from "$lib/utils/queries"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import { graphql } from "gql.tada"
-import type { ChannelId } from "$lib/schema/channel"
 
 export const tokensQuery = (universalChainId: UniversalChainId) =>
   Effect.gen(function* () {

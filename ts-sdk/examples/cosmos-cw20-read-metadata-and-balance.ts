@@ -20,10 +20,11 @@ Effect.runPromiseExit(
     // Read CW20 token balance
     const balance = yield* readCw20Balance(contractAddress, walletAddress).pipe(withClient)
 
-
     const spender = "stars14qemq0vw6y3gc3u3e0aty2e764u4gs5lddqqxv"
     // Read CW20 token allowance
-    const allowance = yield* readCw20Allowance(contractAddress, walletAddress, spender).pipe(withClient)
+    const allowance = yield* readCw20Allowance(contractAddress, walletAddress, spender).pipe(
+      withClient
+    )
 
     // Combine the results
     return {

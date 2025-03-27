@@ -1,11 +1,14 @@
 import { Effect } from "effect"
-import { CosmWasmClientContext, createCosmWasmClient, createSigningCosmWasmClient, SigningCosmWasmClientContext } from "../src/cosmos/client.ts"
-import { readCw20TokenInfo, readCw20Balance, readCw20Allowance, writeCw20IncreaseAllowance } from "../src/cosmos/cw20.ts"
+import {
+  CosmWasmClientContext,
+  createCosmWasmClient,
+  createSigningCosmWasmClient,
+  SigningCosmWasmClientContext
+} from "../src/cosmos/client.ts"
+import { readCw20Allowance, writeCw20IncreaseAllowance } from "../src/cosmos/cw20.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { SigningCosmWasmClientOptions } from "@cosmjs/cosmwasm-stargate" 
-import { bech32, hex, bytes } from "@scure/base"
-import { Decimal } from "@cosmjs/math";
-import { executeContract } from "../src/cosmos/contract.ts"
+import type { SigningCosmWasmClientOptions } from "@cosmjs/cosmwasm-stargate"
+import { bytes } from "@scure/base"
 import { GasPrice } from "@cosmjs/stargate"
 
 const PRIVATE_KEY =
@@ -28,29 +31,30 @@ Effect.runPromiseExit(
     const options: SigningCosmWasmClientOptions = {
       gasPrice: GasPrice.fromString("0.025muno")
     }
-    
-    const client = yield* createSigningCosmWasmClient(
-      RPC_URL,
-      wallet,
-      options
-    )
+
+    const client = yield* createSigningCosmWasmClient(RPC_URL, wallet, options)
     const cosmwasm_client = yield* createCosmWasmClient(RPC_URL)
 
-    const contractAddress = "union13pxktu2hk8pseksaaka54ngxyfmpjljrleh3cc8sxvq4dxalvttqdmdgv5";
+    const contractAddress = "union13pxktu2hk8pseksaaka54ngxyfmpjljrleh3cc8sxvq4dxalvttqdmdgv5"
     const spender = "union1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqz669ee"
 
     const allowance = yield* readCw20Allowance(contractAddress, firstAccount.address, spender).pipe(
-      Effect.provideService(CosmWasmClientContext, { client: cosmwasm_client }),
+      Effect.provideService(CosmWasmClientContext, { client: cosmwasm_client })
     )
     console.info("Current allowance:", allowance.toString())
 
     yield* writeCw20IncreaseAllowance(contractAddress, firstAccount.address, spender, "1").pipe(
-      Effect.provideService(SigningCosmWasmClientContext, { client: client, address: firstAccount.address }),
+      Effect.provideService(SigningCosmWasmClientContext, {
+        client: client,
+        address: firstAccount.address
+      })
     )
 
-    const allowance_after = yield* readCw20Allowance(contractAddress, firstAccount.address, spender).pipe(
-      Effect.provideService(CosmWasmClientContext, { client: cosmwasm_client }),
-    )
+    const allowance_after = yield* readCw20Allowance(
+      contractAddress,
+      firstAccount.address,
+      spender
+    ).pipe(Effect.provideService(CosmWasmClientContext, { client: cosmwasm_client }))
 
     console.info("allowance after increasing:", allowance_after.toString())
   })

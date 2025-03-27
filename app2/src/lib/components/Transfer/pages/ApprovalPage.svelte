@@ -12,7 +12,7 @@ import {
   isComplete,
   TransactionSubmissionEvm
 } from "$lib/components/Transfer/state/evm.ts"
-import {getWalletClient} from "$lib/services/evm/clients.ts";
+import { getWalletClient } from "$lib/services/evm/clients.ts"
 
 type Props = {
   stepIndex: number
@@ -55,15 +55,16 @@ const submit = Effect.gen(function* () {
 
   do {
     ts = yield* Effect.tryPromise({
-      try: () => nextStateEvm(ts, viemChain.value, publicClient, walletClient, {
-        chain: viemChain.value,
-        account: walletClient.account,
-        address: step.value.token,
-        abi: erc20Abi,
-        functionName: "approve",
-        args: [lts.value.channel.source_port_id, step.value.requiredAmount]
-      }),
-      catch: (error) => error instanceof Error ? error : new Error('Unknown error')
+      try: () =>
+        nextStateEvm(ts, viemChain.value, publicClient, walletClient, {
+          chain: viemChain.value,
+          account: walletClient.account,
+          address: step.value.token,
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [lts.value.channel.source_port_id, step.value.requiredAmount]
+        }),
+      catch: error => (error instanceof Error ? error : new Error("Unknown error"))
     })
 
     if (isComplete(ts)) {
