@@ -2455,6 +2455,16 @@ contract ZkgmTests is Test {
         );
     }
 
+    function test_onAckPacket_onlyIBC(
+        address caller,
+        IBCPacket memory packet,
+        address relayer,
+        bytes memory ack
+    ) public {
+        vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
+        zkgm.onAcknowledgementPacket(caller, packet, ack, relayer);
+    }
+
     function test_onAckPacket_transferNative_unwrap_successAck_protocolFill_noop(
         address caller,
         uint32 sourceChannelId,
@@ -2778,5 +2788,35 @@ contract ZkgmTests is Test {
                 Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
             )
         );
+    }
+
+    function test_onTimeout_onlyIBC(
+        address caller,
+        IBCPacket memory packet,
+        address relayer
+    ) public {
+        vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
+        zkgm.onTimeoutPacket(caller, packet, relayer);
+    }
+
+    function test_onRecvIntentPacket_onlyIBC(
+        address caller,
+        IBCPacket memory packet,
+        address relayer,
+        bytes memory relayerMsg
+    ) public {
+        vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
+        zkgm.onRecvIntentPacket(caller, packet, relayer, relayerMsg);
+    }
+
+    function test_onRecvIntentPacket_notImplemented(
+        address caller,
+        IBCPacket memory packet,
+        address relayer,
+        bytes memory relayerMsg
+    ) public {
+        vm.expectRevert(IBCAppLib.ErrNotImplemented.selector);
+        vm.prank(address(handler));
+        zkgm.onRecvIntentPacket(caller, packet, relayer, relayerMsg);
     }
 }
