@@ -6,7 +6,6 @@ import Button from "$lib/components/ui/Button.svelte"
 import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { Option } from "effect"
 
 type Props = {
   onContinue: () => void
@@ -14,6 +13,7 @@ type Props = {
 }
 
 const { onContinue, actionButtonText }: Props = $props()
+
 </script>
 
 <div class="min-w-full p-4 flex flex-col justify-between h-full">
@@ -25,7 +25,7 @@ const { onContinue, actionButtonText }: Props = $props()
 
   <div class="flex flex-col items-end">
     <div class="flex items-center mr-5 text-zinc-400">
-      {#if transfer.args.receiver && transfer.validation._tag === "Success" && transfer.args.destinationChain}
+      {#if transfer.args.receiver && transfer.args.destinationChain}
         <p class="text-xs mb-2"><AddressComponent truncate address={transfer.raw.receiver} chain={transfer.args.destinationChain}/></p>
       {:else}
         <p class="text-xs mb-2"> No receiver</p>
