@@ -5,7 +5,7 @@ import { holesky } from "viem/chains"
 import { CosmosDestinationConfig } from "../src/cosmos/quote-token.js"
 import { createEvmToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
 import { CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/client.js"
-import { Batch, encodeAbi } from "../src/ucs03/instruction.js"
+import { Instruction } from "../src/ucs03"
 
 const createBatch = Effect.gen(function* () {
   const mainTransfer = yield* createEvmToCosmosFungibleAssetOrder({
@@ -24,7 +24,7 @@ const createBatch = Effect.gen(function* () {
     quoteAmount: 0n
   })
 
-  return Batch([mainTransfer, feeTransfer])
+  return new Instruction.Batch({ operand: [mainTransfer, feeTransfer] })
 })
 
 Effect.runPromiseExit(
@@ -46,6 +46,6 @@ Effect.runPromiseExit(
     )
 
     console.log(batch)
-    console.log(encodeAbi(batch))
+    console.log(Instruction.encodeAbi(batch))
   })
 )

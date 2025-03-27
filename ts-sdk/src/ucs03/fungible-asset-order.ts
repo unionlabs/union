@@ -1,5 +1,5 @@
 import { toHex, type Address, type Hex } from "viem"
-import { Effect } from "effect"
+import { Effect, Schema as S } from "effect"
 import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
 import { readErc20Meta } from "../evm/erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js"
@@ -36,18 +36,21 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
     )
     const quoteToken = yield* predictEvmQuoteToken(intent.baseToken)
 
-    return FungibleAssetOrder([
-      intent.sender,
-      intent.receiver,
-      intent.baseToken,
-      intent.baseAmount,
-      tokenMeta.symbol,
-      tokenMeta.name,
-      tokenMeta.decimals,
-      0n, // channel if unwrapping
-      quoteToken,
-      intent.quoteAmount
-    ])
+    return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
+      operand: [
+        intent.sender,
+        intent.receiver,
+        intent.baseToken,
+        intent.baseAmount,
+        tokenMeta.symbol,
+        tokenMeta.name,
+        tokenMeta.decimals,
+        0n, // channel if unwrapping
+        quoteToken,
+        intent.quoteAmount
+      ]
+    })
   })
 
 /**
@@ -71,18 +74,21 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
     const quoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
     yield* Effect.log("quote token", quoteToken)
 
-    return FungibleAssetOrder([
-      intent.sender,
-      toHex(intent.receiver),
-      intent.baseToken,
-      intent.baseAmount,
-      tokenMeta.symbol,
-      tokenMeta.name,
-      tokenMeta.decimals,
-      0n, // channel if unwrapping
-      quoteToken,
-      intent.quoteAmount
-    ])
+    return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
+      operand: [
+        intent.sender,
+        toHex(intent.receiver),
+        intent.baseToken,
+        intent.baseAmount,
+        tokenMeta.symbol,
+        tokenMeta.name,
+        tokenMeta.decimals,
+        0n, // channel if unwrapping
+        quoteToken,
+        intent.quoteAmount
+      ]
+    })
   }).pipe(Effect.withLogSpan("create fungible asset order"))
 
 /**
@@ -111,18 +117,21 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
           )
     const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
-    return FungibleAssetOrder([
-      toHex(intent.sender),
-      intent.receiver,
-      toHex(intent.baseToken),
-      intent.baseAmount,
-      tokenMeta.symbol,
-      tokenMeta.name,
-      tokenMeta.decimals,
-      0n, // channel if unwrapping
-      quoteToken,
-      intent.quoteAmount
-    ])
+    return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
+      operand: [
+        toHex(intent.sender),
+        intent.receiver,
+        toHex(intent.baseToken),
+        intent.baseAmount,
+        tokenMeta.symbol,
+        tokenMeta.name,
+        tokenMeta.decimals,
+        0n, // channel if unwrapping
+        quoteToken,
+        intent.quoteAmount
+      ]
+    })
   })
 
 /**
@@ -142,18 +151,21 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
     )
     const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
 
-    return FungibleAssetOrder([
-      toHex(intent.sender),
-      toHex(intent.receiver),
-      toHex(intent.baseToken),
-      intent.baseAmount,
-      tokenMeta.symbol,
-      tokenMeta.name,
-      tokenMeta.decimals,
-      0n, // channel if unwrapping
-      quoteToken,
-      intent.quoteAmount
-    ])
+    return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
+      operand: [
+        toHex(intent.sender),
+        toHex(intent.receiver),
+        toHex(intent.baseToken),
+        intent.baseAmount,
+        tokenMeta.symbol,
+        tokenMeta.name,
+        tokenMeta.decimals,
+        0n, // channel if unwrapping
+        quoteToken,
+        intent.quoteAmount
+      ]
+    })
   })
 
 /**
@@ -184,18 +196,21 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
 
     yield* Effect.log("quote token from aptos is", quoteToken, " for base token ", intent.baseToken)
 
-    return FungibleAssetOrder([
-      toHex(intent.sender),
-      toHex(intent.receiver),
-      toHex(intent.baseToken),
-      intent.baseAmount,
-      tokenMeta.symbol,
-      tokenMeta.name,
-      tokenMeta.decimals,
-      0n, // channel if unwrapping
-      quoteToken,
-      intent.quoteAmount
-    ])
+    return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
+      operand: [
+        toHex(intent.sender),
+        toHex(intent.receiver),
+        toHex(intent.baseToken),
+        intent.baseAmount,
+        tokenMeta.symbol,
+        tokenMeta.name,
+        tokenMeta.decimals,
+        0n, // channel if unwrapping
+        quoteToken,
+        intent.quoteAmount
+      ]
+    })
   })
 
 /**
@@ -215,16 +230,19 @@ export const createAptosToCosmosFungibleAssetOrder = (intent: {
     )
     const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
 
-    return FungibleAssetOrder([
-      toHex(intent.sender),
-      toHex(intent.receiver),
-      toHex(intent.baseToken),
-      intent.baseAmount,
-      tokenMeta.symbol,
-      tokenMeta.name,
-      tokenMeta.decimals,
-      0n, // channel if unwrapping
-      quoteToken,
-      intent.quoteAmount
-    ])
+    return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
+      operand: [
+        toHex(intent.sender),
+        toHex(intent.receiver),
+        toHex(intent.baseToken),
+        intent.baseAmount,
+        tokenMeta.symbol,
+        tokenMeta.name,
+        tokenMeta.decimals,
+        0n, // channel if unwrapping
+        quoteToken,
+        intent.quoteAmount
+      ]
+    })
   })
