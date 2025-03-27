@@ -1,6 +1,9 @@
 #![warn(clippy::unwrap_used)]
 
-use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
+use alloy::{
+    eips::BlockNumberOrTag,
+    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -70,11 +73,12 @@ impl ConsensusModule for Module {
 impl ConsensusModuleServer for Module {
     /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
-    async fn query_latest_height(&self, _: &Extensions, _finalized: bool) -> RpcResult<Height> {
+    async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
+        let lag = if finalized { self.finality_lag } else { 0 };
         self.provider
             .get_block_number()
             .await
-            .map(|h| Height::new(h - self.finality_lag))
+            .map(|h| Height::new(h - lag))
             .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
     }
 
@@ -83,13 +87,19 @@ impl ConsensusModuleServer for Module {
     async fn query_latest_timestamp(
         &self,
         e: &Extensions,
-        _finalized: bool,
+        finalized: bool,
     ) -> RpcResult<Timestamp> {
-        let latest_block_number = self.query_latest_height(e, false).await?;
+        let block = if finalized {
+            self.query_latest_height(e, finalized)
+                .await?
+                .height()
+                .into()
+        } else {
+            BlockNumberOrTag::Latest
+        };
         let latest_timestamp = self
             .provider
-            // .get_block(BlockNumberOrTag::Latest.into())
-            .get_block(latest_block_number.height().into())
+            .get_block(block.into())
             .hashes()
             .await
             .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?

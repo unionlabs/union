@@ -1,5 +1,4 @@
 use cosmwasm_std::Addr;
-use ethereum_light_client::client::EthereumLightClient;
 use ibc_union_light_client::IbcClientError;
 
 use crate::client::MptTrustedLightClient;
@@ -11,9 +10,6 @@ pub enum Error {
 
     #[error("the caller {0} is not authorized to update this client")]
     Unauthorized(Addr),
-
-    #[error(transparent)]
-    EvmIbcClient(#[from] IbcClientError<EthereumLightClient>),
 
     #[error("invalid contract address proof")]
     InvalidContractAddressProof(#[source] evm_storage_verifier::error::Error),
