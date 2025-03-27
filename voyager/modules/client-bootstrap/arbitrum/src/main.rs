@@ -15,7 +15,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{instrument, warn};
+use tracing::{debug, instrument, warn};
 use unionlabs::{
     bounded::BoundedU8, ibc::core::client::height::Height, primitives::H160, result_unwrap,
     ErrorReporter,
@@ -38,6 +38,8 @@ pub struct Module {
     pub chain_id: ChainId,
     pub l1_chain_id: ChainId,
 
+    pub union_chain_id: ChainId,
+
     pub l1_contract_address: H160,
 
     /// The address of the `IBCHandler` smart contract.
@@ -51,6 +53,8 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub l1_chain_id: ChainId,
+
+    pub union_chain_id: ChainId,
 
     pub l1_contract_address: H160,
 
@@ -103,6 +107,7 @@ impl ClientBootstrapModule for Module {
         Ok(Self {
             l1_chain_id: config.l1_chain_id,
             chain_id: l1_chain_id,
+            union_chain_id: config.union_chain_id,
             ibc_handler_address: config.ibc_handler_address,
             l1_contract_address: config.l1_contract_address,
             l1_provider,
@@ -135,11 +140,13 @@ impl ClientBootstrapModuleServer for Module {
 
         let l1_client_state_meta = voyager_client
             .client_state_meta::<IbcUnion>(
-                self.l1_chain_id.clone(),
+                self.union_chain_id.clone(),
                 QueryHeight::Latest,
                 config.l1_client_id,
             )
             .await?;
+
+        debug!(?l1_client_state_meta);
 
         let l2_height_at_l1_latest_height =
             arbitrum_client::finalized_execution_block_of_l1_height(
@@ -208,7 +215,7 @@ impl ClientBootstrapModuleServer for Module {
 
         let l1_client_state_meta = voyager_client
             .client_state_meta::<IbcUnion>(
-                self.l1_chain_id.clone(),
+                self.union_chain_id.clone(),
                 QueryHeight::Latest,
                 config.l1_client_id,
             )

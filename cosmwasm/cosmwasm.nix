@@ -104,11 +104,11 @@ _: {
             # "berachain"
             "ethereum"
             "trusted-mpt"
-            # "ethermint"
-            # "tendermint-bls"
-            # "movement"
-            # "state-lens-ics23-mpt"
-            # "state-lens-ics23-smt"
+            "ethermint"
+            "tendermint-bls"
+            "movement"
+            "state-lens-ics23-mpt"
+            "state-lens-ics23-smt"
           ];
         }
         {
@@ -171,6 +171,7 @@ _: {
           lightclients = [
             "cometbls"
             "tendermint"
+            "trusted-mpt"
             "state-lens-ics23-mpt"
           ];
         }
