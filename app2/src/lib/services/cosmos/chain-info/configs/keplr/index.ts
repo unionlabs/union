@@ -1,10 +1,10 @@
 import type { ChainInfo } from "@keplr-wallet/types"
 
 export const unionKeplrChainInfo: ChainInfo = {
-  chainId: "union-testnet-9",
+  chainId: "union-testnet-10",
   chainName: "uniontestnet",
-  rest: "https://rest.testnet-9.union.build",
-  rpc: "https://rpc.testnet-9.union.build",
+  rest: "https://rest.testnet-10.union.build",
+  rpc: "https://rpc.testnet-10.union.build",
   bip44: {
     coinType: 118
   },
