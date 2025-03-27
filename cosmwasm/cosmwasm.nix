@@ -57,7 +57,10 @@ _: {
             ucs03 = ucs03-configs.cw20;
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
-          lightclients = [ "ethereum" ];
+          lightclients = [
+            "ethereum"
+            "trusted-mpt"
+          ];
         }
         {
           name = "union-testnet-9";
@@ -258,6 +261,11 @@ _: {
           name = "ethereum";
           dir = "ethereum";
           client-type = "ethereum";
+        }
+        {
+          name = "trusted-mpt";
+          dir = "trusted-mpt";
+          client-type = "trusted/evm/mpt";
         }
         {
           name = "ethermint";

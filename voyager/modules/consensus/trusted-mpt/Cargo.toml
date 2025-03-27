@@ -1,0 +1,26 @@
+[package]
+name    = "voyager-consensus-module-trusted-mpt"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy           = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+embed-commit    = { workspace = true }
+jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
+serde           = { workspace = true, features = ["derive"] }
+tokio           = { workspace = true }
+tracing         = { workspace = true }
+unionlabs       = { workspace = true }
+voyager-message = { workspace = true }
+voyager-vm      = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
