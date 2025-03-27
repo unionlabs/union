@@ -1,16 +1,16 @@
-import {Option} from "effect"
-import {RawTransferSvelte} from "./raw-transfer.svelte.ts"
-import type {Token} from "$lib/schema/token.ts"
-import {tokensStore} from "$lib/stores/tokens.svelte.ts"
-import {chains} from "$lib/stores/chains.svelte.ts"
-import {type Address, fromHex, type Hex} from "viem"
-import {channels} from "$lib/stores/channels.svelte.ts"
-import {getChannelInfoSafe} from "$lib/services/transfer-ucs03-evm/channel.ts"
-import type {Channel} from "$lib/schema/channel.ts"
-import {getDerivedReceiverSafe, getParsedAmountSafe,} from "$lib/services/shared"
-import {sortedBalancesStore} from "$lib/stores/sorted-balances.svelte.ts"
-import {validateTransfer, type ValidationResult} from "$lib/components/Transfer/validation.ts"
-import {WETH_DENOMS} from "$lib/constants/weth-denoms.ts";
+import { Option } from "effect"
+import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
+import type { Token } from "$lib/schema/token.ts"
+import { tokensStore } from "$lib/stores/tokens.svelte.ts"
+import { chains } from "$lib/stores/chains.svelte.ts"
+import { type Address, fromHex, type Hex } from "viem"
+import { channels } from "$lib/stores/channels.svelte.ts"
+import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
+import type { Channel } from "$lib/schema/channel.ts"
+import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
+import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
+import { validateTransfer, type ValidationResult } from "$lib/components/Transfer/validation.ts"
+import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
 
 export class Transfer {
   raw = new RawTransferSvelte()
@@ -41,8 +41,8 @@ export class Transfer {
         Option.fromNullable(
           Option.isSome(sortedBalancesStore.sortedBalances)
             ? sortedBalancesStore.sortedBalances.value.find(
-              v => v.chain.universal_chain_id === sc.universal_chain_id
-            )
+                v => v.chain.universal_chain_id === sc.universal_chain_id
+              )
             : undefined
         ).pipe(Option.flatMap(c => c.tokens))
       )
@@ -72,11 +72,7 @@ export class Transfer {
   derivedReceiver = $derived(getDerivedReceiverSafe(this.raw.receiver))
 
   channel = $derived.by<Option.Option<Channel>>(() => {
-    return Option.all([
-      channels.data,
-      this.sourceChain,
-      this.destinationChain
-    ]).pipe(
+    return Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
         Option.fromNullable(
           getChannelInfoSafe(
@@ -90,11 +86,13 @@ export class Transfer {
   })
 
   ucs03address = $derived.by<Option.Option<Address>>(() => {
-    console.log('channels ', channels.data)
+    console.log("channels ", channels.data)
     return Option.all([
       this.sourceChain,
       this.channel,
-      Option.fromNullable(this.channel.pipe(Option.map(c => c.source_port_id)).pipe(Option.getOrUndefined))
+      Option.fromNullable(
+        this.channel.pipe(Option.map(c => c.source_port_id)).pipe(Option.getOrUndefined)
+      )
     ]).pipe(
       Option.map(([sourceChain, channel]) => {
         return sourceChain.rpc_type === "cosmos"

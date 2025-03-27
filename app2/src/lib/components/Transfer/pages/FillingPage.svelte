@@ -13,7 +13,6 @@ type Props = {
 }
 
 const { onContinue, actionButtonText }: Props = $props()
-
 </script>
 
 <div class="min-w-full p-4 flex flex-col justify-between h-full">

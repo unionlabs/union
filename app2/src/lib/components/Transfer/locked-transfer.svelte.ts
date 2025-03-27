@@ -16,7 +16,7 @@ class LockedTransferStore {
   get() {
     return this.transfer
   }
-  
+
   isLocked() {
     return Option.isSome(this.transfer)
   }

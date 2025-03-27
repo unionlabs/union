@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import { Channel, type Channels } from "$lib/schema/channel.ts"
 import { ChannelValidationError } from "$lib/services/transfer-ucs03-evm/errors.ts"
-import type {UniversalChainId} from "$lib/schema/chain.ts";
+import type { UniversalChainId } from "$lib/schema/chain.ts"
 
 export const getChannelInfoEffect = (
   source_universal_chain_id: UniversalChainId,
@@ -53,7 +53,9 @@ export const getChannelInfoSafe = (
   channels: typeof Channels.Type
 ): typeof Channel.Type | null => {
   const result = Effect.runSync(
-    Effect.either(getChannelInfoEffect(source_universal_chain_id, destination_universal_chain_id, channels))
+    Effect.either(
+      getChannelInfoEffect(source_universal_chain_id, destination_universal_chain_id, channels)
+    )
   )
 
   return result._tag === "Right" ? result.right : null

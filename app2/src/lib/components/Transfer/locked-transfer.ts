@@ -1,4 +1,4 @@
-import { Data, Option } from "effect"
+import { Option } from "effect"
 import type { Chain } from "$lib/schema/chain"
 import type { Channel } from "$lib/schema/channel"
 import type { TransferStep } from "./transfer-step"
