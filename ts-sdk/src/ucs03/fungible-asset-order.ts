@@ -37,6 +37,7 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
     const quoteToken = yield* predictEvmQuoteToken(intent.baseToken)
 
     return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
       operand: [
         intent.sender,
         intent.receiver,
@@ -74,6 +75,7 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
     yield* Effect.log("quote token", quoteToken)
 
     return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
       operand: [
         intent.sender,
         toHex(intent.receiver),
@@ -116,6 +118,7 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
     const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
     return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
       operand: [
         toHex(intent.sender),
         intent.receiver,
@@ -149,6 +152,7 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
     const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
 
     return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
       operand: [
         toHex(intent.sender),
         toHex(intent.receiver),
@@ -193,6 +197,7 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
     yield* Effect.log("quote token from aptos is", quoteToken, " for base token ", intent.baseToken)
 
     return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
       operand: [
         toHex(intent.sender),
         toHex(intent.receiver),
@@ -226,6 +231,7 @@ export const createAptosToCosmosFungibleAssetOrder = (intent: {
     const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
 
     return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
       operand: [
         toHex(intent.sender),
         toHex(intent.receiver),
