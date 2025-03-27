@@ -265,7 +265,7 @@ _: {
         {
           name = "trusted-mpt";
           dir = "trusted-mpt";
-          client-type = "trusted-mpt";
+          client-type = "trusted/evm/mpt";
         }
         {
           name = "ethermint";
