@@ -1,6 +1,6 @@
-import {Data, Effect, Option} from "effect"
+import { Option } from "effect"
 import {RawTransferSvelte} from "./raw-transfer.svelte.ts"
-import type {QuoteData, Token} from "$lib/schema/token.ts"
+import type { Token} from "$lib/schema/token.ts"
 import {tokensStore} from "$lib/stores/tokens.svelte.ts"
 import {TransferSubmission as CosmosTransferSubmission} from "$lib/services/transfer-ucs03-cosmos"
 import {TransferSubmission as EvmTransferSubmission} from "$lib/services/transfer-ucs03-evm"
@@ -13,7 +13,6 @@ import type {Channel} from "$lib/schema/channel.ts"
 import {
   getDerivedReceiverSafe,
   getParsedAmountSafe,
-  getQuoteToken as getQuoteTokenEffect,
 } from "$lib/services/shared"
 import {sortedBalancesStore} from "$lib/stores/sorted-balances.svelte.ts"
 import {
@@ -146,86 +145,15 @@ export class Transfer {
       : Option.none()
   })
 
-  quoteToken = $state<Option.Option<typeof QuoteData.Type>>(Option.none())
-
-  getQuoteToken = () => {
-    class MissingArgumentError extends Data.TaggedError("MissingArgumentError")<{
-      field: string
-    }> {
-    }
-
-    const setQuoteToken = (value: Option.Option<typeof QuoteData.Type>) =>
-      Effect.sync(() => {
-        this.quoteToken = value
-      })
-
-    const checkRequiredFields = Effect.all([
-      Option.match(this.baseToken, {
-        onNone: () => Effect.fail(new MissingArgumentError({field: "baseToken"})),
-        onSome: token => Effect.succeed(token.denom)
-      }),
-      Option.match(this.sourceChain, {
-        onNone: () => Effect.fail(new MissingArgumentError({field: "sourceChain"})),
-        onSome: Effect.succeed
-      }),
-      Option.match(this.destinationChain, {
-        onNone: () => Effect.fail(new MissingArgumentError({field: "destinationChain"})),
-        onSome: Effect.succeed
-      }),
-      Option.match(this.channel, {
-        onNone: () => Effect.fail(new MissingArgumentError({field: "channel"})),
-        onSome: Effect.succeed
-      })
-    ])
-
-    return checkRequiredFields.pipe(
-      Effect.flatMap(([denom, sourceChain, destinationChain, channel]) => {
-        const denomValue = denom as `0x${string}`
-        return setQuoteToken(Option.some({type: "QUOTE_LOADING"} as const)).pipe(
-          Effect.flatMap(() =>
-            getQuoteTokenEffect(sourceChain, denomValue, channel, destinationChain)
-          ),
-          Effect.tap(result => setQuoteToken(Option.some(result)))
-        )
-      }),
-      Effect.catchAll(error => {
-        if (error instanceof MissingArgumentError) {
-          return setQuoteToken(Option.some({type: "QUOTE_MISSING_ARGUMENTS"} as const)).pipe(
-            Effect.as(null)
-          )
-        }
-
-        return Effect.logError(`Quote Token Error: ${JSON.stringify(error)}`).pipe(
-          Effect.flatMap(() =>
-            setQuoteToken(
-              Option.some({
-                type: "QUOTE_ERROR",
-                cause: error
-              } as const)
-            )
-          ),
-          Effect.as(null)
-        )
-      })
-    )
-  }
-
   args = $derived.by(() => {
     const sourceChainValue = Option.getOrNull(this.sourceChain)
     const destinationChainValue = Option.getOrNull(this.destinationChain)
     const channelValue = Option.getOrNull(this.channel)
     const baseTokenValue = Option.getOrNull(this.baseToken)
     const parsedAmountValue = Option.getOrNull(this.parsedAmount)
-    const quoteTokenValue = Option.getOrNull(this.quoteToken)
     const derivedReceiverValue = Option.getOrNull(this.derivedReceiver)
     const ucs03addressValue = Option.getOrNull(this.ucs03address)
     const wethQuoteTokenValue = Option.getOrNull(this.wethQuoteToken)
-
-    const maybeQuoteToken =
-      quoteTokenValue &&
-      (quoteTokenValue.type === "UNWRAPPED" || quoteTokenValue.type === "NEW_WRAPPED")
-        ? quoteTokenValue.quote_token.toLowerCase()
-        : undefined
 
     const maybeWethQuoteToken = wethQuoteTokenValue || undefined
 
@@ -238,7 +166,6 @@ export class Transfer {
       ucs03address: ucs03addressValue,
       baseToken: baseTokenValue?.denom,
       baseAmount: parsedAmountValue,
-      quoteToken: maybeQuoteToken,
       quoteAmount: parsedAmountValue,
       receiver: derivedReceiverValue,
       timeoutHeight: "0",
