@@ -36,7 +36,7 @@ pub enum TokenMinterInitMsg {
     Native,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Send a custom instruction across chains.

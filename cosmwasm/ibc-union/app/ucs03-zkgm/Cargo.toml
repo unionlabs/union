@@ -34,7 +34,12 @@ token-factory-api           = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi", "schemars"] }
 
+
 [dev-dependencies]
-hex         = { workspace = true }
-hex-literal = { workspace = true }
-serde_json  = { workspace = true }
+cw-multi-test     = { version = "2.3", features = ["cosmwasm_2_2"] }
+cw20              = "2.0.0"
+cw20-base         = { workspace = true }
+cw20-token-minter = { workspace = true }
+hex               = { workspace = true }
+hex-literal       = { workspace = true }
+serde_json        = { workspace = true }

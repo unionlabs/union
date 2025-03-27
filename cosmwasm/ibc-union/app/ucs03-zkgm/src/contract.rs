@@ -1243,7 +1243,7 @@ fn execute_fungible_asset_order(
                     &env.contract.address,
                     &ExecuteMsg::InternalBatch {
                         messages: vec![
-                            // Make sure the marker provide the funds
+                            // Make sure the market maker provide the funds
                             make_wasm_msg(
                                 LocalTokenMsg::Escrow {
                                     from: caller.to_string(),
@@ -1311,6 +1311,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                     let execution_ack = (|| -> Result<Bytes, ContractError> {
                         match EXECUTING_PACKET_IS_BATCH.may_load(deps.storage)? {
                             Some(expected_acks) => {
+                                EXECUTING_PACKET_IS_BATCH.remove(deps.storage);
                                 let acks = BATCH_EXECUTION_ACKS.load(deps.storage)?;
                                 BATCH_EXECUTION_ACKS.remove(deps.storage);
                                 // Ensure all acknowledgements has been written
@@ -1449,11 +1450,11 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                 SubMsgResult::Err(error) => Err(ContractError::MultiplexError { error }),
             }
         }
-        MM_FILL_REPLY_ID => match reply.result {
-            SubMsgResult::Ok(_) => {
-                let market_maker = MARKET_MAKER.load(deps.storage)?;
-                MARKET_MAKER.remove(deps.storage);
-                Ok(Response::new().add_message(wasm_execute(
+        MM_FILL_REPLY_ID => {
+            let market_maker = MARKET_MAKER.load(deps.storage)?;
+            MARKET_MAKER.remove(deps.storage);
+            match reply.result {
+                SubMsgResult::Ok(_) => Ok(Response::new().add_message(wasm_execute(
                     env.contract.address,
                     &ExecuteMsg::InternalWriteAck {
                         ack: FungibleAssetOrderAck {
@@ -1464,19 +1465,19 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                         .into(),
                     },
                     vec![],
-                )?))
-            }
-            // Leave a chance for another MM to fill by telling the top level handler to revert.
-            SubMsgResult::Err(error) => Ok(Response::new()
-                .add_attribute("maker_execution_failure", error)
-                .add_message(wasm_execute(
-                    env.contract.address,
-                    &ExecuteMsg::InternalWriteAck {
-                        ack: ACK_ERR_ONLY_MAKER.into(),
-                    },
-                    vec![],
                 )?)),
-        },
+                // Leave a chance for another MM to fill by telling the top level handler to revert.
+                SubMsgResult::Err(error) => Ok(Response::new()
+                    .add_attribute("maker_execution_failure", error)
+                    .add_message(wasm_execute(
+                        env.contract.address,
+                        &ExecuteMsg::InternalWriteAck {
+                            ack: ACK_ERR_ONLY_MAKER.into(),
+                        },
+                        vec![],
+                    )?)),
+            }
+        }
         // For any other reply ID, we don't know how to handle it, so we return an error.
         // This is a safety measure to ensure we don't silently ignore unexpected replies,
         // which could indicate a bug in the contract or an attempt to exploit it.

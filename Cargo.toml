@@ -275,6 +275,8 @@ ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-feature
 
 frissitheto = { path = "lib/frissitheto", default-features = false }
 
+cw20-base                   = { path = "cosmwasm/cw20-base", default-features = false }
+cw20-token-minter           = { path = "cosmwasm/cw20-token-minter", default-features = false }
 ucs03-zkgm                  = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
 ucs03-zkgm-token-minter-api = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
 
