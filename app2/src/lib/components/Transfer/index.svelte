@@ -31,7 +31,7 @@
     CosmosChannelDestination, CosmWasmClientSource
   } from "@unionlabs/sdk/cosmos"
   import {fromHex, toHex, http} from "viem"
-  import { truncate } from "$lib/utils/format.ts"
+  import { truncate, isValidBech32Address } from "$lib/utils/format.ts"
   import {
     type TransferStep,
     Filling,
@@ -375,19 +375,25 @@
         const rpcUrl = sourceChain.getRpcUrl("rpc");
         if (Option.isNone(rpcUrl)) return Option.none();
         const cosmwasmClient = yield* createCosmWasmClient(rpcUrl.value);
-        // TODO: also for native tokens there are not any allowances, so for native token scenerio
-        // We should not call this function
 
         // Query each token (assumed to be a CW20 contract) for the allowance.
         const allowanceChecks = yield* Effect.all(
           tokenAddresses.map(tokenAddress =>
             Effect.gen(function* () {
+              const decodedAddr = fromHex(tokenAddress, "string")
+
+              console.info("Checking allowance for token", decodedAddr);
+              if (!isValidBech32Address(decodedAddr)) {
+                console.error("Invalid token address", tokenAddress);
+                return Option.none()
+              }
+
               // TODO: 
               // const allowance = yield* readCw20Allowance(contractAddress, walletAddress, spender).pipe(withClient)
               // use it like this when deployed new ts-sdk
               const owner = yield *sourceChain.toCosmosDisplay(sender.value);
               const result = yield* Effect.tryPromise({
-                try: () => cosmwasmClient.queryContractSmart(fromHex(tokenAddress, "string"), {
+                try: () => cosmwasmClient.queryContractSmart(decodedAddr, {
                   allowance: {
                     owner: owner, 
                     spender: spenderAddress
