@@ -39,7 +39,7 @@ npm update # <- important part, this ignores aarch64-only cache.
 [cosmjs]: https://github.com/cosmos/cosmjs
 [gql.tada]: https://github.com/0no-co/gql.tada
 [graphql]: https://graphql.org
-[graphql.union.build]: https://graphql.union.build
+[graphql.union.build]:  https://cloud.hasura.io/project/09471d14-40f8-4cc2-a661-509034916c34/console
 [ipfs]: https://ipfs.tech
 [sveltekit]: https://kit.svelte.dev/
 [tailwind]: https://tailwindcss.com
