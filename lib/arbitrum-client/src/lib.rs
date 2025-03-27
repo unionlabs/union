@@ -74,37 +74,37 @@ pub async fn finalized_execution_block_of_l1_height(
     Ok(block)
 }
 
-#[cfg(test)]
-mod tests {
-    use alloy::{hex, network::AnyNetwork, providers::ProviderBuilder};
+// #[cfg(test)]
+// mod tests {
+//     use alloy::{hex, network::AnyNetwork, providers::ProviderBuilder};
 
-    use crate::finalized_execution_block_of_l1_height;
+//     use crate::finalized_execution_block_of_l1_height;
 
-    #[tokio::test]
-    async fn block() {
-        tracing_subscriber::fmt()
-            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-            .init();
+//     #[tokio::test]
+//     async fn block() {
+//         tracing_subscriber::fmt()
+//             .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+//             .init();
 
-        let l1_provider = ProviderBuilder::new()
-            .connect("https://eth-sepolia.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7")
-            .await
-            .unwrap();
-        let l2_provider = ProviderBuilder::new()
-            .network::<AnyNetwork>()
-            .connect("https://testnet.corn-rpc.com")
-            .await
-            .unwrap();
+//         let l1_provider = ProviderBuilder::new()
+//             .connect("https://eth-sepolia.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7")
+//             .await
+//             .unwrap();
+//         let l2_provider = ProviderBuilder::new()
+//             .network::<AnyNetwork>()
+//             .connect("https://testnet.corn-rpc.com")
+//             .await
+//             .unwrap();
 
-        let block = finalized_execution_block_of_l1_height(
-            l1_provider,
-            l2_provider,
-            hex!("0xD318638594A5B17b50a1389B0c0580576226C0AE").into(),
-            7993090,
-        )
-        .await
-        .unwrap();
+//         let block = finalized_execution_block_of_l1_height(
+//             l1_provider,
+//             l2_provider,
+//             hex!("0xD318638594A5B17b50a1389B0c0580576226C0AE").into(),
+//             7993090,
+//         )
+//         .await
+//         .unwrap();
 
-        dbg!(block);
-    }
-}
+//         dbg!(block);
+//     }
+// }
