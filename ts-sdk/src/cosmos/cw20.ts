@@ -1,6 +1,6 @@
 import { Effect } from "effect"
-import { CosmWasmClientContext } from "./client.js"
-import { queryContract } from "./contract.js"
+import { CosmWasmClientContext, SigningCosmWasmClientContext } from "./client.js"
+import { queryContract, executeContract } from "./contract.js"
 
 /**
  * Interface for CW20 token metadata
@@ -78,4 +78,37 @@ export const readCw20Allowance = (contractAddress: string, ownerAddress: string,
     })
 
     return response.allowance
+  })
+
+
+/**
+ * Increase the allowance of a CW20 token for a specific spender.
+ *
+ * @param contractAddress The address of the CW20 token contract.
+ * @param senderAddress The address of the token owner (the one increasing the allowance).
+ * @param spenderAddress The address of the spender who is allowed to spend the tokens.
+ * @param amount The amount by which to increase the allowance (as a string).
+ * @param expires Optional expiration for the increased allowance.
+ * @returns An Effect that resolves to the execution result.
+ */
+export const writeCw20IncreaseAllowance = (
+  contractAddress: string,
+  senderAddress: string,
+  spenderAddress: string,
+  amount: string,
+) =>
+  Effect.gen(function* () {
+    const client = (yield* SigningCosmWasmClientContext).client
+
+    return yield* executeContract(
+      client,
+      senderAddress,
+      contractAddress,
+      {
+        increase_allowance: {
+          spender: spenderAddress,
+          amount
+        }
+      }
+    )
   })
