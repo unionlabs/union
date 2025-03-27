@@ -1,51 +1,19 @@
-import { Option } from "effect"
+import {Option} from "effect"
 import {RawTransferSvelte} from "./raw-transfer.svelte.ts"
-import type { Token} from "$lib/schema/token.ts"
+import type {Token} from "$lib/schema/token.ts"
 import {tokensStore} from "$lib/stores/tokens.svelte.ts"
-import {TransferSubmission as CosmosTransferSubmission} from "$lib/services/transfer-ucs03-cosmos"
-import {TransferSubmission as EvmTransferSubmission} from "$lib/services/transfer-ucs03-evm"
-import {TransferSubmission as AptosTransferSubmission} from "$lib/services/transfer-ucs03-aptos"
 import {chains} from "$lib/stores/chains.svelte.ts"
 import {type Address, fromHex, type Hex} from "viem"
 import {channels} from "$lib/stores/channels.svelte.ts"
 import {getChannelInfoSafe} from "$lib/services/transfer-ucs03-evm/channel.ts"
 import type {Channel} from "$lib/schema/channel.ts"
-import {
-  getDerivedReceiverSafe,
-  getParsedAmountSafe,
-} from "$lib/services/shared"
+import {getDerivedReceiverSafe, getParsedAmountSafe,} from "$lib/services/shared"
 import {sortedBalancesStore} from "$lib/stores/sorted-balances.svelte.ts"
-import {
-  TransferState,
-  type TransferStateUnion,
-  validateTransfer,
-  type ValidationResult
-} from "$lib/components/Transfer/validation.ts"
+import {validateTransfer, type ValidationResult} from "$lib/components/Transfer/validation.ts"
 import {WETH_DENOMS} from "$lib/constants/weth-denoms.ts";
 
 export class Transfer {
-  //Url state where we keep raw strings to derive transfer data.
   raw = new RawTransferSvelte()
-
-  _stateOverride = $state<TransferStateUnion | null>(null)
-  state = $derived.by<TransferStateUnion>(() => {
-    if (this._stateOverride !== null) {
-      return this._stateOverride
-    }
-
-    if (Option.isSome(this.sourceChain)) {
-      const sourceChainValue = this.sourceChain.value
-      if (sourceChainValue.rpc_type === "evm") {
-        return TransferState.Evm(EvmTransferSubmission.Filling())
-      }
-      if (sourceChainValue.rpc_type === "aptos") {
-        return TransferState.Aptos(AptosTransferSubmission.Filling())
-      }
-      return TransferState.Cosmos(CosmosTransferSubmission.Filling())
-    }
-
-    return TransferState.Empty()
-  })
 
   sourceChain = $derived(
     chains.data.pipe(
@@ -104,38 +72,35 @@ export class Transfer {
   derivedReceiver = $derived(getDerivedReceiverSafe(this.raw.receiver))
 
   channel = $derived.by<Option.Option<Channel>>(() => {
-    if (
-      Option.isNone(channels.data) ||
-      Option.isNone(this.sourceChain) ||
-      Option.isNone(this.destinationChain)
-    ) {
-      return Option.none()
-    }
-
-    return Option.fromNullable(
-      getChannelInfoSafe(
-        this.sourceChain.value.chain_id,
-        this.destinationChain.value.chain_id,
-        channels.data.value
+    return Option.all([
+      channels.data,
+      this.sourceChain,
+      this.destinationChain
+    ]).pipe(
+      Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
+        Option.fromNullable(
+          getChannelInfoSafe(
+            sourceChain.chain_id,
+            destinationChain.chain_id,
+            channelsData
+          )
+        )
       )
     )
   })
 
   ucs03address = $derived.by<Option.Option<Address>>(() => {
-    if (
-      Option.isNone(this.sourceChain) ||
-      Option.isNone(this.channel) ||
-      !this.channel.value.source_port_id
-    ) {
-      return Option.none()
-    }
-
-    const hexAddress: Hex =
-      this.sourceChain.value.rpc_type === "cosmos"
-        ? (fromHex(<`0x${string}`>`${this.channel.value.source_port_id}`, "string") as Hex)
-        : (this.channel.value.source_port_id as Hex)
-
-    return Option.some(hexAddress)
+    return Option.all([
+      this.sourceChain,
+      this.channel,
+      Option.fromNullable(this.channel.pipe(Option.map(c => c.source_port_id)).pipe(Option.getOrUndefined))
+    ]).pipe(
+      Option.map(([sourceChain, channel]) => {
+        return sourceChain.rpc_type === "cosmos"
+          ? (fromHex(<`0x${string}`>`${channel.source_port_id}`, "string") as Hex)
+          : (channel.source_port_id as Hex)
+      })
+    )
   })
 
   wethQuoteToken = $derived.by(() => {
@@ -146,31 +111,40 @@ export class Transfer {
   })
 
   args = $derived.by(() => {
-    const sourceChainValue = Option.getOrNull(this.sourceChain)
-    const destinationChainValue = Option.getOrNull(this.destinationChain)
-    const channelValue = Option.getOrNull(this.channel)
-    const baseTokenValue = Option.getOrNull(this.baseToken)
-    const parsedAmountValue = Option.getOrNull(this.parsedAmount)
-    const derivedReceiverValue = Option.getOrNull(this.derivedReceiver)
-    const ucs03addressValue = Option.getOrNull(this.ucs03address)
-    const wethQuoteTokenValue = Option.getOrNull(this.wethQuoteToken)
-
-    const maybeWethQuoteToken = wethQuoteTokenValue || undefined
+    const {
+      sourceChain,
+      destinationChain,
+      channel,
+      baseToken,
+      parsedAmount,
+      derivedReceiver,
+      ucs03address,
+      wethQuoteToken
+    } = {
+      sourceChain: Option.getOrNull(this.sourceChain),
+      destinationChain: Option.getOrNull(this.destinationChain),
+      channel: Option.getOrNull(this.channel),
+      baseToken: Option.getOrNull(this.baseToken),
+      parsedAmount: Option.getOrNull(this.parsedAmount),
+      derivedReceiver: Option.getOrNull(this.derivedReceiver),
+      ucs03address: Option.getOrNull(this.ucs03address),
+      wethQuoteToken: Option.getOrNull(this.wethQuoteToken)
+    }
 
     return {
-      sourceChain: sourceChainValue,
-      destinationChain: destinationChainValue,
-      sourceRpcType: sourceChainValue?.rpc_type,
-      destinationRpcType: destinationChainValue?.rpc_type,
-      sourceChannelId: channelValue?.source_channel_id,
-      ucs03address: ucs03addressValue,
-      baseToken: baseTokenValue?.denom,
-      baseAmount: parsedAmountValue,
-      quoteAmount: parsedAmountValue,
-      receiver: derivedReceiverValue,
+      sourceChain,
+      destinationChain,
+      sourceRpcType: sourceChain?.rpc_type,
+      destinationRpcType: destinationChain?.rpc_type,
+      sourceChannelId: channel?.source_channel_id,
+      ucs03address,
+      baseToken: baseToken?.denom,
+      baseAmount: parsedAmount,
+      quoteAmount: parsedAmount,
+      receiver: derivedReceiver,
       timeoutHeight: "0",
       timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
-      wethQuoteToken: maybeWethQuoteToken
+      wethQuoteToken: wethQuoteToken || undefined
     }
   })
 
