@@ -384,7 +384,7 @@
 
               console.info("Checking allowance for token", decodedAddr);
               if (!isValidBech32Address(decodedAddr)) {
-                console.error("Invalid token address", tokenAddress);
+                console.error("It's native token, returning none. Token:", tokenAddress);
                 return Option.none()
               }
 
