@@ -229,7 +229,8 @@ maybe_sol_attr! {
                 uint32 indexed channel_id,
                 bytes counterparty_port_id,
                 uint32 connection_id,
-                string indexed version
+                string indexed version_index,
+                string version
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
@@ -241,7 +242,8 @@ maybe_sol_attr! {
                 bytes counterparty_port_id,
                 uint32 counterparty_channel_id,
                 uint32 connection_id,
-                string indexed counterparty_version
+                string indexed counterparty_version_index,
+                string counterparty_version
             );
             #[cfg_attr(
                 feature = "serde", derive(serde::Serialize, serde::Deserialize),
