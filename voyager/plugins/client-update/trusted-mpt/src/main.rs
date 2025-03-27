@@ -200,7 +200,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
-        println!("FETCH  update BRO?????");
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate {
                 from_height,
@@ -234,14 +233,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 impl Module {
     /// Fetch a client update from the provided trusted height (`update_from`) to at least the
     /// desired new height (`update_to`).
-    ///
-    /// Note that this will generate updates as close to the tip of the chain as possible, as long
-    /// as that height is > `update_to`. Due to the nature of ethereum finality, it is not possible
-    /// to update to a *specific* height in the same way as is possible in chains with single slot
-    /// finality (such as tendermint or cometbls). While it would be possible to update to a height
-    /// *closer* to `update_to`, the extra complexity brought by that is unlikely to be worth the
-    /// slightly smaller update generated, especially since in practice the light client will likely
-    /// always be up to date with the tip of the (finalized) chain.
     #[instrument(
         skip_all,
         fields(

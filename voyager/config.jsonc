@@ -115,7 +115,7 @@
         "enabled": true,
         "path": "./target/debug/voyager-client-module-trusted-mpt",
         "info": {
-          "client_type": "mpt-trusted",
+          "client_type": "trusted-mpt",
           "consensus_type": "ethereum",
           "ibc_interface": "ibc-cosmwasm",
           "ibc_spec_id": "ibc-union"
@@ -177,9 +177,9 @@
         "enabled": true,
         "info": {
           "chain_id": "32382",
-          "client_type": "mpt-trusted"
+          "client_type": "trusted-mpt"
         },
-        "path": "./target/debug/voyager-client-bootstrap-module-mpt-trusted"
+        "path": "./target/debug/voyager-client-bootstrap-module-trusted-mpt"
       }
       // {
       //   "config": {
@@ -325,7 +325,7 @@
     },
     {
       "enabled": true,
-      "path": "./target/debug/voyager-client-update-plugin-mpt-trusted",
+      "path": "./target/debug/voyager-client-update-plugin-trusted-mpt",
       "config": {
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
