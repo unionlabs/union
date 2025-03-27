@@ -395,7 +395,6 @@
                 }),
                 catch: (e) => console.info("Error: ", e)
               })
-              console.info("allowance result: ", result)
 
               return { token: tokenAddress, allowance: BigInt(result.allowance) };
             }).pipe(Effect.provideService(CosmWasmClientSource, { client: cosmwasmClient }),

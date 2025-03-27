@@ -62,30 +62,31 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
   })
 
 export const tokenWrappingQuery = ({
-  base_token,
-  destination_channel_id,
-  source_chain_id
-}: { base_token: TokenRawDenom; destination_channel_id: ChannelId; source_chain_id: ChainId }) =>
+  denom,
+  universal_chain_id
+}: { denom: TokenRawDenom; universal_chain_id: UniversalChainId }) =>
   fetchDecodeGraphql(
     Schema.Struct({
-      v1_ibc_union_tokens: Schema.Array(
+      v2_tokens: Schema.Array(
         Schema.Struct({
-          wrapping: Schema.Array(Schema.Struct({ unwrapped_address_hex: TokenRawDenom }))
+          wrapping: Schema.Array(Schema.Struct({ unwrapped_denom: TokenRawDenom }))
         })
       )
     }),
     graphql(/* GraphQL */ `
-        query QueryTokenWrapping($source_chain_id: String!, $base_token: String!, $destination_channel_id: Int!) {
-            v1_ibc_union_tokens(where: {_and: {chain: {chain_id: {_eq: $source_chain_id}}, denom: {_eq: $base_token}, wrapping: {_and: {index: {_eq: 0}, destination_channel_id: {_eq: $destination_channel_id}}}}}) {
-                wrapping {
-                    unwrapped_address_hex
-                }
+        query($denom: String!, $universal_chain_id: String!) {
+          v2_tokens(args: {
+            p_denom: $denom,
+            p_universal_chain_id: $universal_chain_id
+          }) {
+            wrapping {
+              unwrapped_denom
             }
+          }
         }
     `),
     {
-      base_token,
-      destination_channel_id,
-      source_chain_id
+      denom,
+      universal_chain_id
     }
   )
