@@ -1,10 +1,11 @@
 import { Effect } from "effect"
 import { Channel, type Channels } from "$lib/schema/channel.ts"
 import { ChannelValidationError } from "$lib/services/transfer-ucs03-evm/errors.ts"
+import type {UniversalChainId} from "$lib/schema/chain.ts";
 
 export const getChannelInfoEffect = (
-  source_universal_chain_id: string,
-  destination_universal_chain_id: string,
+  source_universal_chain_id: UniversalChainId,
+  destination_universal_chain_id: UniversalChainId,
   channels: typeof Channels.Type
 ): Effect.Effect<typeof Channel.Type, ChannelValidationError> =>
   Effect.gen(function* () {
@@ -47,12 +48,12 @@ export const getChannelInfoEffect = (
   })
 
 export const getChannelInfoSafe = (
-  source_chain_id: string,
-  destination_chain_id: string,
+  source_universal_chain_id: UniversalChainId,
+  destination_universal_chain_id: UniversalChainId,
   channels: typeof Channels.Type
 ): typeof Channel.Type | null => {
   const result = Effect.runSync(
-    Effect.either(getChannelInfoEffect(source_chain_id, destination_chain_id, channels))
+    Effect.either(getChannelInfoEffect(source_universal_chain_id, destination_universal_chain_id, channels))
   )
 
   return result._tag === "Right" ? result.right : null
