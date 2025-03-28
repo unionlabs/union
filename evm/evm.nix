@@ -212,6 +212,12 @@ _: {
           # extra-args = ''--verify --verifier-url https://api.routescan.io/v2/network/testnet/evm/21000001/etherscan --verifier etherscan --etherscan-api-key "$1"'';
         }
         {
+          network = "bob";
+          rpc-url = "https://rpc.gobob.xyz";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          extra-args = ''--verify --verifier-url https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/60808/public --verifier etherscan --etherscan-api-key "$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+        }
+        {
           network = "0g-testnet";
           rpc-url = "https://evmrpc-testnet.0g.ai";
           private-key = ''"$1"'';
