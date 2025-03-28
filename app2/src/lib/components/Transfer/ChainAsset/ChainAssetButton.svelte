@@ -1,32 +1,32 @@
 <script lang="ts">
-import { cn } from "$lib/utils/index.js"
-import { Option } from "effect"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.js"
-import Label from "$lib/components/ui/Label.svelte"
-import { chainLogoMap } from "$lib/constants/chain-logos.ts"
-import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
-import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
+  import {cn} from "$lib/utils/index.js"
+  import {Option} from "effect"
+  import {transfer} from "$lib/components/Transfer/transfer.svelte.js"
+  import Label from "$lib/components/ui/Label.svelte"
+  import {chainLogoMap} from "$lib/constants/chain-logos.ts"
+  import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
+  import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
 
-type Props = {
-  type: "source" | "destination"
-  onClick: () => void
-}
-
-const { type, onClick }: Props = $props()
-
-const selectedChain = $derived.by(() => {
-  if (type === "source") {
-    return transfer.sourceChain
+  type Props = {
+    type: "source" | "destination"
+    onClick: () => void
   }
-  return transfer.destinationChain
-})
 
-const isChainLoading = $derived.by(() => {
-  if (type === "source") {
-    return transfer.raw.source && Option.isNone(transfer.sourceChain)
-  }
-  return transfer.raw.destination && Option.isNone(transfer.destinationChain)
-})
+  const {type, onClick}: Props = $props()
+
+  const selectedChain = $derived.by(() => {
+    if (type === "source") {
+      return transfer.sourceChain
+    }
+    return transfer.destinationChain
+  })
+
+  const isChainLoading = $derived.by(() => {
+    if (type === "source") {
+      return transfer.raw.source && Option.isNone(transfer.sourceChain)
+    }
+    return transfer.raw.destination && Option.isNone(transfer.destinationChain)
+  })
 </script>
 
 <div class="w-full">
@@ -67,11 +67,16 @@ const isChainLoading = $derived.by(() => {
         <div class="flex gap-2 items-center justify-between p-2 flex-1 w-full">
 
           <!--LOGO-->
-          <div class="flex items-center">
-            <div class="w-8 h-8 flex items-center justify-center overflow-hidden">
-              <img src={chainLogoMap.get(selectedChain.value.universal_chain_id).color} alt="">
-            </div>
-          </div>
+          {#if selectedChain.value.universal_chain_id}
+            {@const chainLogo = chainLogoMap.get(selectedChain.value.universal_chain_id)}
+            {#if chainLogo?.color}
+              <div class="flex items-center">
+                <div class="w-8 h-8 flex items-center justify-center overflow-hidden">
+                  <img src={chainLogo.color} alt="">
+                </div>
+              </div>
+            {/if}
+          {/if}
 
           {#if type === "source" && transfer.raw.asset && Option.isNone(transfer.baseToken)}
             <!-- Asset Loading (only for source) -->
@@ -89,7 +94,7 @@ const isChainLoading = $derived.by(() => {
                 {transfer.baseToken.value.representations[0]?.symbol ?? transfer.baseToken.value.denom}
               </p>
               {#if Option.isSome(transfer.sourceChain)}
-                <p class="text-xs text-zinc-400">{ type === "source" ? transfer.sourceChain.value.display_name :  transfer.destinationChain.value.display_name }</p>
+                <p class="text-xs text-zinc-400">{ type === "source" ? transfer.sourceChain.value.display_name : transfer.destinationChain.value.display_name }</p>
               {/if}
 
             </div>
