@@ -11,9 +11,13 @@ import { getConnectorClient, type GetConnectorClientErrorType, http } from "@wag
 import { createViemPublicClient, createViemWalletClient } from "@unionlabs/sdk/evm"
 import { ConnectorClientError } from "$lib/services/transfer"
 import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.ts"
-import { custom } from "viem"
+import {custom, encodeAbiParameters, fromHex} from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
-import {TransactionSubmissionCosmos} from "$lib/components/Transfer/state/cosmos.ts";
+import {nextStateCosmos, TransactionSubmissionCosmos} from "$lib/components/Transfer/state/cosmos.ts";
+import {wallets} from "$lib/stores/wallets.svelte.ts";
+import {getCosmWasmClient} from "$lib/services/cosmos/clients.ts";
+import {cosmosStore} from "$lib/wallet/cosmos";
+import {instructionAbi} from "@unionlabs/sdk/evm/abi";
 
 const { stepIndex, onBack, onSubmit, actionButtonText }: Props = $props()
 
@@ -97,12 +101,47 @@ export const submit = Effect.gen(function* () {
           onSubmit()
           break
         }
-      } while (!hasFailedExit(ets))  // Added missing closing brace for do-while loop
+      } while (!hasFailedExit(ets))
 
       return Effect.succeed(ets)
     })),
     Match.when("cosmos", () => Effect.gen(function* () {
-      yield* Effect.log("substrate chain")
+      const signingClient = yield* getCosmWasmClient(lts.value.sourceChain, cosmosStore.connectedWallet)
+
+      const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
+
+      console.log( 'breeee', {msg: step.value.instruction})
+      do {
+        cts = yield* Effect.tryPromise(() =>
+          nextStateCosmos(
+            cts,
+            lts.value.sourceChain,
+            signingClient,
+            sender,
+            fromHex(lts.value.channel.source_port_id, "string"),
+            {
+              send: {
+                channel_id: lts.value.channel.source_channel_id,
+                timeout_height: 10000000,
+                timeout_timestamp: 0,
+                salt: generateSalt(),
+                instruction: encodeAbiParameters(instructionAbi, [
+                  step.value.instruction.version,
+                  step.value.instruction.opcode,
+                  encodeAbi(step.value.instruction)
+                ])
+              }
+            },
+            [{ denom: "muno", amount: "1" }]
+          )
+        )
+
+        if (isComplete(cts)) {
+          onSubmit()
+          break
+        }
+      } while (!hasFailedExit(cts))
+
       return Effect.succeed(cts)
     })),
     Match.orElse(() => Effect.gen(function* () {
