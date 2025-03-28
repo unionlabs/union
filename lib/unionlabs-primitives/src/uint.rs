@@ -145,7 +145,7 @@ impl fmt::LowerHex for U256 {
 impl U256 {
     pub const MAX: Self = Self::from_limbs([u64::MAX; 4]);
     pub const ZERO: Self = Self::from_limbs([0; 4]);
-    pub const ONE: Self = Self::from_limbs([1, 0, 0, 1]);
+    pub const ONE: Self = Self::from_limbs([1, 0, 0, 0]);
 
     // one day...
     // pub const fn from_const_str<const STR: &'static str>() -> Self {}
