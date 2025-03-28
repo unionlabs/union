@@ -196,13 +196,13 @@ _: {
         {
           network = "sepolia";
           rpc-url = "https://0xrpc.io/sep";
-          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key)"'';
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
         }
         {
           network = "holesky";
           rpc-url = "https://1rpc.io/holesky";
-          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key)"'';
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
         }
         {
