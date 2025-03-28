@@ -1,7 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { Effect, Option } from "effect"
+import {Effect, Match, Option} from "effect"
 import { SubmitInstruction } from "../transfer-step.ts"
 import { hasFailedExit, isComplete } from "$lib/components/Transfer/state/evm.ts"
 import { generateSalt } from "@unionlabs/sdk/utils"
@@ -13,6 +13,7 @@ import { ConnectorClientError } from "$lib/services/transfer"
 import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.ts"
 import { custom } from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
+import {TransactionSubmissionCosmos} from "$lib/components/Transfer/state/cosmos.ts";
 
 const { stepIndex, onBack, onSubmit, actionButtonText }: Props = $props()
 
@@ -39,59 +40,76 @@ type Props = {
   actionButtonText: string
 }
 
-let ts = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
+let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
+let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
 
 export const submit = Effect.gen(function* () {
   if (Option.isNone(step) || Option.isNone(lts)) return
 
-  const viemChain = lts.value.sourceChain.toViemChain()
-  if (Option.isNone(viemChain)) return
+  const sourceChainRpcType = lts.value.sourceChain.rpc_type
 
-  const publicClient = yield* createViemPublicClient({
-    chain: viemChain.value,
-    transport: http()
-  })
+  yield* Match.value(sourceChainRpcType).pipe(
+    Match.when("evm", () => Effect.gen(function* () {
+      const viemChain = lts.value.sourceChain.toViemChain()
+      if (Option.isNone(viemChain)) return Effect.succeed(null)
 
-  const connectorClient = yield* Effect.tryPromise({
-    try: () => getConnectorClient(wagmiConfig),
-    catch: err => new ConnectorClientError({ cause: err as GetConnectorClientErrorType })
-  })
-
-  const walletClient = yield* createViemWalletClient({
-    account: connectorClient.account,
-    chain: viemChain.value,
-    transport: custom(connectorClient)
-  })
-
-  do {
-    ts = yield* Effect.tryPromise(() =>
-      nextStateEvm(ts, viemChain.value, publicClient, walletClient, {
+      const publicClient = yield* createViemPublicClient({
         chain: viemChain.value,
-        account: connectorClient.account,
-        address: lts.value.channel.source_port_id,
-        abi: ucs03ZkgmAbi,
-        functionName: "send",
-        args: [
-          lts.value.channel.source_channel_id,
-          0n,
-          1000000000000n,
-          generateSalt(),
-          {
-            opcode: step.value.instruction.opcode,
-            version: step.value.instruction.version,
-            operand: encodeAbi(step.value.instruction)
-          }
-        ]
+        transport: http()
       })
-    )
 
-    if (isComplete(ts)) {
-      onSubmit()
-      break
-    }
-  } while (!hasFailedExit(ts))
+      const connectorClient = yield* Effect.tryPromise({
+        try: () => getConnectorClient(wagmiConfig),
+        catch: err => new ConnectorClientError({ cause: err as GetConnectorClientErrorType })
+      })
 
-  return ts
+      const walletClient = yield* createViemWalletClient({
+        account: connectorClient.account,
+        chain: viemChain.value,
+        transport: custom(connectorClient)
+      })
+
+      do {
+        ets = yield* Effect.tryPromise({
+          try: () =>
+            nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
+              chain: viemChain.value,
+              account: connectorClient.account,
+              address: lts.value.channel.source_port_id,
+              abi: ucs03ZkgmAbi,
+              functionName: "send",
+              args: [
+                lts.value.channel.source_channel_id,
+                0n,
+                1000000000000n,
+                generateSalt(),
+                {
+                  opcode: step.value.instruction.opcode,
+                  version: step.value.instruction.version,
+                  operand: encodeAbi(step.value.instruction)
+                }
+              ]
+            }),
+          catch: error => (error instanceof Error ? error : new Error("Unknown error"))
+        })
+
+        if (isComplete(ets)) {
+          onSubmit()
+          break
+        }
+      } while (!hasFailedExit(ets))  // Added missing closing brace for do-while loop
+
+      return Effect.succeed(ets)
+    })),
+    Match.when("cosmos", () => Effect.gen(function* () {
+      yield* Effect.log("substrate chain")
+      return Effect.succeed(cts)
+    })),
+    Match.orElse(() => Effect.gen(function* () {
+      yield* Effect.log("unknown chain type")
+      return Effect.succeed('no')
+    }))
+  )
 })
 </script>
 
