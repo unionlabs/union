@@ -1374,10 +1374,7 @@ fn channel_open_confirm(
     Ok(Response::new()
         .add_event(Event::new(events::channel::OPEN_CONFIRM).add_attributes([
             (events::attribute::PORT_ID, port_id.to_string()),
-            (
-                events::attribute::CHANNEL_ID,
-                counterparty_channel_id.to_string(),
-            ),
+            (events::attribute::CHANNEL_ID, channel_id.to_string()),
             (
                 events::attribute::COUNTERPARTY_PORT_ID,
                 hex::encode(&channel.counterparty_port_id),
@@ -1386,13 +1383,16 @@ fn channel_open_confirm(
                 events::attribute::COUNTERPARTY_CHANNEL_ID,
                 counterparty_channel_id.to_string(),
             ),
-            ("connection_id", channel.connection_id.to_string()),
+            (
+                events::attribute::CONNECTION_ID,
+                channel.connection_id.to_string(),
+            ),
         ]))
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
                 caller: info.sender.into_string(),
-                channel_id: counterparty_channel_id,
+                channel_id,
                 relayer: relayer.into(),
             }),
             vec![],
