@@ -1,5 +1,5 @@
 [package]
-name    = "voyager-client-module-ethereum"
+name    = "voyager-client-module-arbitrum"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -12,8 +12,9 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+arbitrum-light-client-types = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 embed-commit                = { workspace = true }
-ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
+ethereum-light-client-types = { workspace = true, features = ["serde", "bincode"] }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }

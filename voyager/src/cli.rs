@@ -252,6 +252,18 @@ pub enum RpcCmd {
         #[arg(long, short = 'd', default_value_t = false)]
         decode: bool,
     },
+    LatestHeight {
+        #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId,
+        #[arg(long, short = 'f', default_value_t = false)]
+        finalized: bool,
+    },
+    LatestTimestamp {
+        #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId,
+        #[arg(long, short = 'f', default_value_t = false)]
+        finalized: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]

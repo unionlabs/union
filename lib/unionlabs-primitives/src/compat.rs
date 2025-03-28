@@ -63,7 +63,7 @@ pub mod generic_array_compat {
 
 #[cfg(feature = "alloy-primitives-compat")]
 pub mod alloy_primitives_compat {
-    use crate::{encoding::Encoding, Bytes, FixedBytes, H160};
+    use crate::{encoding::Encoding, Bytes, FixedBytes, H160, U256};
 
     impl<EBytes: Encoding> TryFrom<Bytes<EBytes>> for alloy_primitives::Address {
         type Error = crate::fixed_bytes::FixedBytesError;
@@ -116,6 +116,18 @@ pub mod alloy_primitives_compat {
     impl<E: Encoding> From<Bytes<E>> for alloy_primitives::Bytes {
         fn from(value: Bytes<E>) -> Self {
             value.to_vec().into()
+        }
+    }
+
+    impl From<alloy_primitives::U256> for U256 {
+        fn from(value: alloy_primitives::U256) -> Self {
+            U256::from_be_bytes(value.to_be_bytes())
+        }
+    }
+
+    impl From<U256> for alloy_primitives::U256 {
+        fn from(value: U256) -> Self {
+            alloy_primitives::U256::from_be_bytes(value.to_be_bytes())
         }
     }
 }

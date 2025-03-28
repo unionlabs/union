@@ -4,5 +4,8 @@ pub mod header;
 pub mod l2_header;
 
 pub use crate::{
-    client_state::ClientState, consensus_state::ConsensusState, header::Header, l2_header::L2Header,
+    client_state::{ClientState, ClientStateV1},
+    consensus_state::ConsensusState,
+    header::Header,
+    l2_header::L2Header,
 };

@@ -617,9 +617,11 @@ async fn do_main() -> Result<()> {
                     .await??
                     .unwrap()
                     .entries
-                    .pop()
+                    .first()
+                    .as_ref()
                     .unwrap()
                     .updated
+                    .as_ref()
                     .unwrap()
                     .block_height,
             );
@@ -630,9 +632,9 @@ async fn do_main() -> Result<()> {
                     .await??
                     .unwrap()
                     .entries
-                    .pop()
+                    .first()
                 {
-                    let height = entry.updated.unwrap().block_height;
+                    let height = entry.updated.as_ref().unwrap().block_height;
 
                     info!(
                         "lightclient contract for client type \

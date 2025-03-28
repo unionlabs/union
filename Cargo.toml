@@ -42,6 +42,8 @@ members = [
   "lib/scroll-api",
   "lib/scroll-codec",
   "lib/scroll-rpc",
+  "lib/arbitrum-types",
+  "lib/arbitrum-client",
   "lib/serde-utils",
   "lib/ssz",
   "lib/ssz/tests-generator",
@@ -124,6 +126,7 @@ members = [
   "voyager/modules/proof/ethereum",
   "voyager/modules/proof/movement",
 
+  "voyager/modules/client/arbitrum",
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
   "voyager/modules/client/movement",
@@ -134,6 +137,7 @@ members = [
   "voyager/modules/client/state-lens/ics23-smt",
   "voyager/modules/client/trusted-mpt",
 
+  "voyager/modules/client-bootstrap/arbitrum",
   "voyager/modules/client-bootstrap/cometbls",
   "voyager/modules/client-bootstrap/ethereum",
   "voyager/modules/client-bootstrap/movement",
@@ -144,6 +148,7 @@ members = [
   "voyager/modules/client-bootstrap/state-lens/ics23-smt",
   "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
 
+  "voyager/modules/consensus/arbitrum",
   "voyager/modules/consensus/berachain",
   "voyager/modules/consensus/cometbls",
   "voyager/modules/consensus/ethereum",
@@ -151,6 +156,7 @@ members = [
   "voyager/modules/consensus/tendermint",
   "voyager/modules/consensus/trusted-mpt",
 
+  "voyager/plugins/client-update/arbitrum",
   "voyager/plugins/client-update/berachain",
   "voyager/plugins/client-update/cometbls",
   "voyager/plugins/client-update/ethereum",
@@ -240,7 +246,9 @@ depolama = { path = "lib/depolama", default-features = false }
 
 state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
 
+arbitrum-client             = { path = "lib/arbitrum-client", default-features = false }
 arbitrum-light-client-types = { path = "lib/arbitrum-light-client-types", default-features = false }
+arbitrum-types              = { path = "lib/arbitrum-types", default-features = false }
 arbitrum-verifier           = { path = "lib/arbitrum-verifier", default-features = false }
 
 cometbls-groth16-verifier   = { path = "lib/cometbls-groth16-verifier", default-features = false }
@@ -387,7 +395,7 @@ tracing-subscriber       = { version = "0.3", default-features = false, features
 typenum                  = { version = "1.17.0", default-features = false }
 
 [patch."crates-io"]
-arbitrary       = { git = "https://github.com/unionlabs/arbitrary" }
+# arbitrary       = { git = "https://github.com/unionlabs/arbitrary" }
 serde-json-wasm = { git = "https://github.com/benluelo/serde-json-wasm", branch = "impl-collect-str" }
 # parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
 

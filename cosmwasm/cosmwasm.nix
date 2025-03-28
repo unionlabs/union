@@ -100,14 +100,15 @@ _: {
           };
           bech32_prefix = "union";
           lightclients = [
-            # "arbitrum"
+            "arbitrum"
             # "berachain"
             "ethereum"
-            # "ethermint"
-            # "tendermint-bls"
-            # "movement"
-            # "state-lens-ics23-mpt"
-            # "state-lens-ics23-smt"
+            "trusted-mpt"
+            "ethermint"
+            "tendermint-bls"
+            "movement"
+            "state-lens-ics23-mpt"
+            "state-lens-ics23-smt"
           ];
         }
         {
@@ -155,7 +156,7 @@ _: {
         {
           name = "babylon-testnet";
           rpc_url = "https://babylon-testnet-rpc.polkachu.com";
-          private_key = ''"$1"'';
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
           gas_config = {
             type = "static";
             gas_price = "0.003";
@@ -170,6 +171,7 @@ _: {
           lightclients = [
             "cometbls"
             "tendermint"
+            "trusted-mpt"
             "state-lens-ics23-mpt"
           ];
         }

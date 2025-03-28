@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use arbitrum_light_client_types::{ClientState, Header};
+use arbitrum_light_client_types::{ClientStateV1, Header};
 use evm_storage_verifier::{verify_account_storage_root, verify_storage_proof};
 use sha3::{Digest, Keccak256};
 use unionlabs::{
@@ -21,7 +21,7 @@ pub enum Error {
 }
 
 pub fn verify_header(
-    client_state: &ClientState,
+    client_state: &ClientStateV1,
     header: &Header,
     l1_state_root: H256,
 ) -> Result<(), Error> {
@@ -78,7 +78,7 @@ pub fn verify_header(
     // Verify that the ibc account root is part of the L1 root
     verify_account_storage_root(
         header.l2_header.state_root,
-        &client_state.l2_ibc_contract_address,
+        &client_state.ibc_contract_address,
         &header.l2_ibc_account_proof.proof,
         &header.l2_ibc_account_proof.storage_root,
     )

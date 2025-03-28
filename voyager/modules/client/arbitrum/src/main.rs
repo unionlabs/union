@@ -1,4 +1,5 @@
-use ethereum_light_client_types::{ClientState, ConsensusState, Header, StorageProof};
+use arbitrum_light_client_types::{ClientState, ConsensusState, Header};
+use ethereum_light_client_types::StorageProof;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -40,8 +41,8 @@ impl ClientModule for Module {
     type Config = Config;
 
     async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
-        info.ensure_client_type(ClientType::ETHEREUM)?;
-        info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
+        info.ensure_client_type(ClientType::ARBITRUM)?;
+        info.ensure_consensus_type(ConsensusType::ARBITRUM)?;
         info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM)?;
 
         Ok(Self {})

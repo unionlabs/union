@@ -5,7 +5,11 @@ use ibc_union_light_client::{
 };
 use ibc_union_msg::lightclient::Status;
 use trusted_mpt_light_client_types::{ClientState, ConsensusState, Header};
-use unionlabs::encoding::Bincode;
+use unionlabs::{
+    encoding::Bincode,
+    ethereum::ibc_commitment_key,
+    primitives::{H256, U256},
+};
 
 use crate::errors::Error;
 
@@ -36,13 +40,11 @@ impl IbcClient for MptTrustedLightClient {
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        Ok(ethereum_light_client::client::verify_membership(
-            key,
-            consensus_state.storage_root,
-            storage_proof,
-            value,
+
+        Ok(
+            verify_membership(key, consensus_state.storage_root, storage_proof, value)
+                .map_err(Into::<Error>::into)?,
         )
-        .map_err(Into::<Error>::into)?)
     }
 
     fn verify_non_membership(
@@ -52,12 +54,10 @@ impl IbcClient for MptTrustedLightClient {
         storage_proof: Self::StorageProof,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        Ok(ethereum_light_client::client::verify_non_membership(
-            key,
-            consensus_state.storage_root,
-            storage_proof,
+        Ok(
+            verify_non_membership(key, consensus_state.storage_root, storage_proof)
+                .map_err(Into::<Error>::into)?,
         )
-        .map_err(Into::<Error>::into)?)
     }
 
     fn verify_header(
@@ -136,5 +136,72 @@ impl IbcClient for MptTrustedLightClient {
     fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
         let ClientState::V1(client_state) = client_state;
         client_state.chain_id.to_string()
+    }
+}
+
+pub fn verify_membership(
+    key: Vec<u8>,
+    storage_root: H256,
+    storage_proof: StorageProof,
+    value: Vec<u8>,
+) -> Result<(), Error> {
+    check_commitment_key(
+        H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
+        storage_proof.key,
+    )?;
+
+    let value = H256::try_from(&value).map_err(|_| Error::InvalidCommitmentValueLength(value))?;
+
+    let proof_value = H256::from(storage_proof.value.to_be_bytes());
+
+    if value != proof_value {
+        return Err(Error::StoredValueMismatch {
+            expected: value,
+            stored: proof_value,
+        });
+    }
+
+    evm_storage_verifier::verify_storage_proof(
+        storage_root,
+        storage_proof.key,
+        &rlp::encode(&storage_proof.value),
+        storage_proof.proof,
+    )
+    .map_err(Error::VerifyStorageProof)
+}
+
+/// Verifies that no value is committed at `path` in the counterparty light client's storage.
+pub fn verify_non_membership(
+    key: Vec<u8>,
+    storage_root: H256,
+    storage_proof: StorageProof,
+) -> Result<(), Error> {
+    check_commitment_key(
+        H256::try_from(&key).map_err(|_| Error::InvalidCommitmentKeyLength(key))?,
+        storage_proof.key,
+    )?;
+
+    if evm_storage_verifier::verify_storage_absence(
+        storage_root,
+        storage_proof.key,
+        &storage_proof.proof,
+    )
+    .map_err(Error::VerifyStorageAbsence)?
+    {
+        Ok(())
+    } else {
+        Err(Error::CounterpartyStorageNotNil)
+    }
+}
+pub fn check_commitment_key(path: H256, key: U256) -> Result<(), Error> {
+    let expected_commitment_key = ibc_commitment_key(path);
+
+    if expected_commitment_key != key {
+        Err(Error::InvalidCommitmentKey {
+            expected: expected_commitment_key,
+            found: key,
+        })
+    } else {
+        Ok(())
     }
 }

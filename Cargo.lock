@@ -1432,6 +1432,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "arbitrum-client"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "arbitrum-types",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "unionlabs",
+]
+
+[[package]]
 name = "arbitrum-light-client"
 version = "0.0.0"
 dependencies = [
@@ -1465,6 +1477,13 @@ dependencies = [
  "serde",
  "sha3 0.10.8",
  "unionlabs",
+]
+
+[[package]]
+name = "arbitrum-types"
+version = "0.0.0"
+dependencies = [
+ "alloy",
 ]
 
 [[package]]
@@ -13564,13 +13583,13 @@ dependencies = [
  "base64 0.21.7",
  "cosmwasm-std 2.1.4",
  "embed-commit",
- "ethereum-light-client",
  "ethereum-light-client-types",
  "evm-storage-verifier",
  "frissitheto",
  "hex",
  "ibc-union-light-client",
  "ibc-union-msg",
+ "rlp",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -14135,6 +14154,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-arbitrum"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "arbitrum-client",
+ "arbitrum-light-client-types",
+ "arbitrum-types",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-cometbls"
 version = "0.0.0"
 dependencies = [
@@ -14317,6 +14356,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-module-arbitrum"
+version = "0.0.0"
+dependencies = [
+ "arbitrum-light-client-types",
+ "embed-commit",
+ "ethereum-light-client-types",
+ "jsonrpsee",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-module-cometbls"
 version = "0.0.0"
 dependencies = [
@@ -14345,7 +14401,6 @@ dependencies = [
 name = "voyager-client-module-ethereum"
 version = "0.0.0"
 dependencies = [
- "beacon-api-types",
  "embed-commit",
  "ethereum-light-client-types",
  "jsonrpsee",
@@ -14497,6 +14552,29 @@ dependencies = [
  "tokio",
  "tracing",
  "trusted-mpt-light-client-types",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-arbitrum"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "arbitrum-client",
+ "arbitrum-light-client-types",
+ "arbitrum-types",
+ "arbitrum-verifier",
+ "embed-commit",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "tokio",
+ "tracing",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -14691,6 +14769,24 @@ dependencies = [
  "tokio",
  "tracing",
  "trusted-mpt-light-client-types",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-consensus-module-arbitrum"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "arbitrum-client",
+ "arbitrum-types",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "serde",
+ "tokio",
+ "tracing",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -16313,8 +16409,3 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "arbitrary"
-version = "1.3.2"
-source = "git+https://github.com/unionlabs/arbitrary#b5796f1a0066dc5707d7681a80e19b99a910987d"

@@ -1,6 +1,6 @@
 use ibc_union_spec::ClientId;
 use unionlabs::{
-    bounded::BoundedU32,
+    bounded::BoundedU8,
     ibc::core::client::height::Height,
     primitives::{H160, U256},
 };
@@ -8,17 +8,32 @@ use unionlabs::{
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
-pub struct ClientState {
-    pub l1_client_id: ClientId,
+pub enum ClientState {
+    V1(ClientStateV1),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct ClientStateV1 {
     pub chain_id: U256,
-    pub l1_latest_slot: u64,
+
+    /// Latest height of the L2
+    pub latest_height: u64,
+
+    /// Client id of the client tracking the L1 that the chain this client tracks settles on
+    pub l1_client_id: ClientId,
+    pub l1_latest_height: u64,
+    /// Rollup contract on the L1
     pub l1_contract_address: H160,
+
+    // various config params
     pub l1_next_node_num_slot: U256,
     pub l1_nodes_slot: U256,
-    // this is a u32 because protobuf sucks
-    pub l1_next_node_num_slot_offset_bytes: BoundedU32<0, 24>,
-    // TODO: Rename this in the protos
+    pub l1_next_node_num_slot_offset_bytes: BoundedU8<0, 24>,
     pub l1_nodes_confirm_data_offset: U256,
+
     pub frozen_height: Height,
-    pub l2_ibc_contract_address: H160,
+
+    pub ibc_contract_address: H160,
 }

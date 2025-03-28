@@ -5,12 +5,40 @@
     "deployments": {
       "core": {
         "address": "union1yajlxpen7eca7nsq6fyy2jam9w497x2x3umyr9xjx6fgav32ww7qqy5r79",
-        "height": 3020
+        "height": 3018
       },
       "lightclient": {
+        "arbitrum": {
+          "address": "union1wd2phywsdxf7k5g55s9dng6g8psnxrvty65a5asxsjwztqf68eyqdh9se2",
+          "height": 127944
+        },
         "ethereum": {
           "address": "union12de3l5lxkc2xj5ujt6w080xx8d4pqsurza7rlapl3kqukualtuaq5ey8r8",
-          "height": 3023
+          "height": 3021
+        },
+        "ethermint": {
+          "address": "union1t335sjsatede7nu4szsc8st34x7v5t7qlr6y3m3ctactxsuaujxs3ld8xq",
+          "height": 133169
+        },
+        "movement": {
+          "address": "union1cdcyqflg55j57230n63h0qxng7xe5x258tckxm77j034wprwpdtsk3dk0t",
+          "height": 133175
+        },
+        "state-lens/ics23/mpt": {
+          "address": "union15g5t8dwsccurc5v0krrxnzvtd6pawh7d8mpwcgfz8mm5jq9srk3svwlqkt",
+          "height": 133179
+        },
+        "state-lens/ics23/smt": {
+          "address": "union10mgmvryltmdy0szzmcp28sdp5wn9zeejrlmlx2qzz2n3ktkmk75qk9zlf6",
+          "height": 133185
+        },
+        "tendermint": {
+          "address": "union10u2cn5mkq2eymewt4rsldk0h5qvq6w5qzetrw9xygjxlqc3vgjrsyzu58y",
+          "height": 133190
+        },
+        "trusted/evm/mpt": {
+          "address": "union133gpl5ca3037jga3d2t0pjajtlagr4explm06ts8svlsw7dwyqvs9v7x4m",
+          "height": 131127
         }
       },
       "app": {
@@ -21,6 +49,40 @@
       }
     },
     "channels": [1]
+  },
+  {
+    "chain_id": "bbn-test-5",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "core": {
+        "address": "bbn1yajlxpen7eca7nsq6fyy2jam9w497x2x3umyr9xjx6fgav32ww7qlrtrr9",
+        "height": 606175
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "bbn1y25ylxmven2ggl8wx5dv8jzx89narhjg2ffsdq66re6vndmnamhsc86zq8",
+          "height": 606181
+        },
+        "state-lens/ics23/mpt": {
+          "address": "bbn15g5t8dwsccurc5v0krrxnzvtd6pawh7d8mpwcgfz8mm5jq9srk3snfqqtt",
+          "height": 606186
+        },
+        "tendermint": {
+          "address": "bbn10u2cn5mkq2eymewt4rsldk0h5qvq6w5qzetrw9xygjxlqc3vgjrsm9r56y",
+          "height": 606194
+        },
+        "trusted/evm/mpt": {
+          "address": "bbn133gpl5ca3037jga3d2t0pjajtlagr4explm06ts8svlsw7dwyqvs6tpxgm",
+          "height": 606846
+        }
+      },
+      "app": {
+        "ucs03": {
+          "address": "bbn15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljlspm2re6",
+          "height": 606202
+        }
+      }
+    }
   },
   {
     "chain_id": "11155111",
@@ -93,6 +155,44 @@
         "ucs03": {
           "address": "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
           "height": 3525179
+        }
+      }
+    },
+    "channels": []
+  },
+  {
+    "chain_id": "21000001",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": "0x795A17269e7aae13BA246E93104f5FCf4ada163b",
+      "deployer": "0xa76897C61d710C07De4D541C77c209578d64CEB9",
+      "sender": "0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2",
+      "core": {
+        "address": "0x06a409cbED33CaA9bf8181eF3afF2C504E1CfB95",
+        "height": 168386
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x8df982115d392D1b28B1f30Ba0834817f8b518dc",
+          "height": 168387
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0xb66972c8dF9A185e0f0D34620F86dcb0DFeB1F3A",
+          "height": 168387
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0xd03953Ff5730Bd08684D529dC67630a0Ad0DfC67",
+          "height": 168388
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x4163d3a8D115a7a68124f91B73855FBCEe76a8c6",
+          "height": 168390
+        },
+        "ucs03": {
+          "address": "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
+          "height": 168390
         }
       }
     },
