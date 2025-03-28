@@ -51,7 +51,7 @@ export const getCosmWasmClient = (chain: Chain, connectedWallet: CosmosWalletId)
 
     return yield* Effect.tryPromise({
       try: () =>
-        SigningCosmWasmClient.connectWithSigner(rpcUrl.value.toString(), offlineSigner, {
+        SigningCosmWasmClient.connectWithSigner("https://rpc.rpc-node.union-testnet-10.union.build", offlineSigner, {
           gasPrice
         }),
       catch: err =>
@@ -65,7 +65,7 @@ export const getCosmosPublicClient = (rpc: URL | string) =>
   Effect.tryPromise({
     try: () => {
       const rpcString = typeof rpc === "string" ? rpc : rpc.toString()
-      return CosmWasmClient.connect(rpcString)
+      return CosmWasmClient.connect("https://rpc.rpc-node.union-testnet-10.union.build")
     },
     catch: err =>
       new CosmWasmError({
