@@ -4420,23 +4420,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw20-base"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6de8c32e100f1fca306972d86b617234a5e6b00594ea2b48716fd6804d4d95d"
-dependencies = [
- "cosmwasm-schema 2.2.2",
- "cosmwasm-std 2.2.2",
- "cw-storage-plus 2.0.0",
- "cw2",
- "cw20",
- "schemars",
- "semver 1.0.22",
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "cw20-token-minter"
 version = "0.0.0"
 dependencies = [
@@ -4445,7 +4428,7 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
  "cw20",
- "cw20-base 2.0.0",
+ "cw20-base",
  "embed-commit",
  "hex-literal",
  "ibc-union-spec",
@@ -13730,7 +13713,7 @@ dependencies = [
  "cw-multi-test",
  "cw-storage-plus 2.0.0",
  "cw20",
- "cw20-base 0.0.0",
+ "cw20-base",
  "cw20-token-minter",
  "embed-commit",
  "ethabi",
