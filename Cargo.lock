@@ -13588,7 +13588,7 @@ name = "trusted-mpt-light-client"
 version = "0.0.0"
 dependencies = [
  "base64 0.21.7",
- "cosmwasm-std 2.1.4",
+ "cosmwasm-std 2.2.2",
  "embed-commit",
  "ethereum-light-client-types",
  "evm-storage-verifier",
