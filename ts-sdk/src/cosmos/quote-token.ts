@@ -12,7 +12,7 @@ export const predictQuoteToken = (baseToken: string) =>
     const result = yield* queryContract<{ wrapped_token: Hex }>(client, config.ucs03address, {
       predict_wrapped_token: {
         path: "0",
-        channel_id: config.channelId,
+        channel: config.channelId,
         token: baseToken
       }
     })
