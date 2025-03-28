@@ -12,16 +12,29 @@ _: {
     let
       mkRootDrv =
         name:
-        (derivation {
-          inherit name system;
-          builder = "${pkgs.bash}/bin/bash";
-          args = [
-            (builtins.toFile "builder.sh" ''
-              echo "this object (${name}) only has subattributes"
-              exit 1
-            '')
+        builtins.removeAttrs
+          (derivation {
+            inherit name system;
+            builder = "${pkgs.bash}/bin/bash";
+            args = [
+              (builtins.toFile "builder.sh" ''
+                echo "this object (${name}) only has subattributes"
+
+
+
+                exit 1
+              '')
+            ];
+          })
+          [
+            "all"
+            "out"
+            "name"
+            "args"
+            "drvAttrs"
+            "outputName"
+            "system"
           ];
-        });
 
       bytecode-base = pkgs.stdenv.mkDerivation {
         name = "base-bytecode";
