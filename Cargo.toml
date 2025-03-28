@@ -64,6 +64,7 @@ members = [
 
   "lib/ibc-solidity",
 
+  "lib/bob-verifier",
   "lib/arbitrum-verifier",
   "lib/cometbls-groth16-verifier",
   "lib/ethereum-sync-protocol",
@@ -72,6 +73,7 @@ members = [
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
+  "lib/bob-light-client-types",
   "lib/arbitrum-light-client-types",
   "lib/berachain-light-client-types",
   "lib/cometbls-light-client-types",
@@ -245,6 +247,9 @@ fork-schedules   = { path = "lib/fork-schedules", default-features = false }
 depolama = { path = "lib/depolama", default-features = false }
 
 state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
+
+bob-light-client-types = { path = "lib/bob-light-client-types", default-features = false }
+bob-verifier           = { path = "lib/bob-verifier", default-features = false }
 
 arbitrum-client             = { path = "lib/arbitrum-client", default-features = false }
 arbitrum-light-client-types = { path = "lib/arbitrum-light-client-types", default-features = false }

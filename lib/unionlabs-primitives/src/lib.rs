@@ -27,6 +27,7 @@ pub use crate::{
 };
 
 pub type H64<E = HexPrefixed> = FixedBytes<8, E>;
+pub type H72<E = HexPrefixed> = FixedBytes<9, E>;
 pub type H160<E = HexPrefixed> = FixedBytes<20, E>;
 pub type H256<E = HexPrefixed> = FixedBytes<32, E>;
 pub type H384<E = HexPrefixed> = FixedBytes<48, E>;
