@@ -208,7 +208,7 @@ _: {
         {
           network = "corn-testnet";
           rpc-url = "https://testnet.corn-rpc.com";
-          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key)"'';
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           # extra-args = ''--verify --verifier-url https://api.routescan.io/v2/network/testnet/evm/21000001/etherscan --verifier etherscan --etherscan-api-key "$1"'';
         }
         {
