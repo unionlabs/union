@@ -538,7 +538,7 @@ fn test_on_recv_packet_save_packet() {
         packet,
         EXECUTING_PACKET.load(deps.as_mut().storage).unwrap()
     );
-    assert!(matches!(result, Ok(_)));
+    assert!(result.is_ok());
 }
 
 #[test]
@@ -557,7 +557,7 @@ fn test_on_recv_packet_nonreentrant() {
         relayer_msg: Default::default(),
     });
     let result = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone());
-    assert!(matches!(result, Ok(_)));
+    assert!(result.is_ok());
     let result = execute(deps.as_mut(), env, info, msg.clone());
     assert_eq!(result, Err(ContractError::AlreadyExecuting));
 }
@@ -654,6 +654,7 @@ fn mock_app() -> App {
         .build(|_, _, _| {})
 }
 
+#[allow(dead_code)]
 struct TestState {
     app: App,
     ibc_host_code_id: u64,
@@ -671,7 +672,7 @@ impl TestState {
         self.app
             .wrap()
             .query_wasm_smart::<cw20::BalanceResponse>(
-                std::str::from_utf8(&token).unwrap(),
+                std::str::from_utf8(token).unwrap(),
                 &cw20_base::msg::QueryMsg::Balance {
                     address: address.to_string(),
                 },
@@ -790,6 +791,7 @@ fn test_recv_packet_invalid_failure_ack() {
     )
 }
 
+#[allow(dead_code)]
 struct IncomingOrderBuilder {
     caller: Addr,
     relayer: Addr,
@@ -809,6 +811,7 @@ struct IncomingOrderBuilder {
     receiver: Addr,
 }
 
+#[allow(dead_code)]
 impl IncomingOrderBuilder {
     fn new(quote_token: Bytes) -> Self {
         // host
@@ -949,7 +952,7 @@ fn test_recv_packet_native_new_wrapped() {
         .query_wasm_smart::<PredictWrappedTokenResponse>(
             st.zkgm.clone(),
             &QueryMsg::PredictWrappedToken {
-                path: path.to_string().into(),
+                path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
             },
@@ -1005,7 +1008,7 @@ fn test_recv_packet_native_new_wrapped_relative_supply() {
         .query_wasm_smart::<PredictWrappedTokenResponse>(
             st.zkgm.clone(),
             &QueryMsg::PredictWrappedToken {
-                path: path.to_string().into(),
+                path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
             },
@@ -1014,7 +1017,7 @@ fn test_recv_packet_native_new_wrapped_relative_supply() {
         .wrapped_token;
     let quote_token_addr = Addr::unchecked(std::str::from_utf8(&quote_token).unwrap());
     assert!(st.app.contract_data(&quote_token_addr).is_err());
-    let (order, msg, packet) = IncomingOrderBuilder::new(quote_token.clone())
+    let (order, msg, _) = IncomingOrderBuilder::new(quote_token.clone())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
@@ -1046,15 +1049,14 @@ fn test_recv_packet_native_new_wrapped_split_fee() {
         .query_wasm_smart::<PredictWrappedTokenResponse>(
             st.zkgm.clone(),
             &QueryMsg::PredictWrappedToken {
-                path: path.to_string().into(),
+                path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
             },
         )
         .unwrap()
         .wrapped_token;
-    let quote_token_addr = Addr::unchecked(std::str::from_utf8(&quote_token).unwrap());
-    let (order, msg, packet) = IncomingOrderBuilder::new(quote_token.clone())
+    let (order, msg, _) = IncomingOrderBuilder::new(quote_token.clone())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
@@ -1094,14 +1096,14 @@ fn test_recv_packet_native_new_wrapped_origin_set() {
         .query_wasm_smart::<PredictWrappedTokenResponse>(
             st.zkgm.clone(),
             &QueryMsg::PredictWrappedToken {
-                path: path.to_string().into(),
+                path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
             },
         )
         .unwrap()
         .wrapped_token;
-    let (order, msg, packet) = IncomingOrderBuilder::new(quote_token.clone())
+    let (_, msg, _) = IncomingOrderBuilder::new(quote_token.clone())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
@@ -1138,7 +1140,7 @@ fn test_recv_packet_native_base_dont_cover_quote_only_maker() {
         .query_wasm_smart::<PredictWrappedTokenResponse>(
             st.zkgm.clone(),
             &QueryMsg::PredictWrappedToken {
-                path: path.to_string().into(),
+                path: path.to_string(),
                 channel_id: destination_channel_id,
                 token: base_token.clone(),
             },
