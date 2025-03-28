@@ -61,6 +61,7 @@ export const getWalletClient = (chain: Chain) =>
     return yield* Effect.try({
       try: () =>
         createWalletClient({
+          account: connectorClient.account,
           chain: viemChain.value,
           transport: custom(connectorClient.transport)
         }),

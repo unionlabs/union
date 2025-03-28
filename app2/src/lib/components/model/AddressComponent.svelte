@@ -3,6 +3,7 @@ import type { HTMLAttributes } from "svelte/elements"
 import type { Chain } from "$lib/schema/chain"
 import type { AddressCanonicalBytes } from "$lib/schema/address"
 import { cn } from "$lib/utils"
+import { truncate } from "$lib/utils/format"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import { Effect, Option } from "effect"
@@ -11,11 +12,27 @@ type Props = HTMLAttributes<HTMLDivElement> & {
   address: AddressCanonicalBytes
   chain: Chain
   class?: string
+  truncate?: boolean
+  truncateChars?: number
+  truncatePosition?: "start" | "middle" | "end"
 }
 
-const { address, chain, class: className = "", ...rest }: Props = $props()
+const {
+  address,
+  chain,
+  class: className = "",
+  truncate: shouldTruncate = false,
+  truncateChars = 12,
+  truncatePosition = "middle",
+  ...rest
+}: Props = $props()
 
-const displayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address)))
+const fullDisplayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address)))
+const displayAddress = $derived(
+  shouldTruncate
+    ? truncate(fullDisplayAddress, truncateChars, truncatePosition)
+    : fullDisplayAddress
+)
 
 // Find the explorer URL for this address
 const getExplorerUrl = () => {
@@ -63,7 +80,7 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
         <div>
           <span class="text-white">Display:</span>
           <LongMonoWord class="inline">
-            {displayAddress}
+            {fullDisplayAddress}
           </LongMonoWord>
         </div>
         <div>

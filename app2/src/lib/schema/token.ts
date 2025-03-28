@@ -2,7 +2,6 @@ import { Schema } from "effect"
 import { Hex } from "$lib/schema/hex"
 import { UniversalChainId } from "./chain.ts"
 import { ChannelId } from "./channel.ts"
-import { AddressEvmCanonical } from "$lib/schema/address.ts"
 
 export const TokenRawDenom = Hex.pipe(Schema.brand("TokenRawDenom"))
 export type TokenRawDenom = typeof TokenRawDenom.Type
@@ -63,7 +62,7 @@ export type Tokens = typeof Tokens.Type
 export const RawTokenBalance = Schema.Option(TokenRawAmount).pipe(Schema.brand("RawTokenBalance"))
 export type RawTokenBalance = typeof RawTokenBalance.Type
 
-export const EvmWethToken = AddressEvmCanonical.pipe(
+export const EvmWethToken = TokenRawDenom.pipe(
   Schema.annotations({
     message: () =>
       "WETH token must be a valid Evm canonical address (e.g., 0x followed by 40 hex chars)"

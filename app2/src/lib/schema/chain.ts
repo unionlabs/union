@@ -105,11 +105,11 @@ export class Chain extends Schema.Class<Chain>("Chain")({
     })
   }
 
-  getRpcUrl(type: RpcProtocolType): Option.Option<URL> {
+  getRpcUrl(type: RpcProtocolType): Option.Option<string> {
     return Option.fromNullable(this.rpcs.find(rpc => rpc.type === type)?.url)
   }
 
-  requireRpcUrl(type: RpcProtocolType): Effect.Effect<URL, NoRpcError> {
+  requireRpcUrl(type: RpcProtocolType): Effect.Effect<string, NoRpcError> {
     return Option.match(this.getRpcUrl(type), {
       onNone: () => Effect.fail(new NoRpcError({ chain: this, type })),
       onSome: Effect.succeed

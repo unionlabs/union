@@ -45,8 +45,8 @@ export class AmountParsingError extends Data.TaggedError("AmountParsingError")<{
 }> {}
 
 export class ChannelValidationError extends Data.TaggedError("ChannelValidationError")<{
-  source_chain_id: string
-  destination_chain_id: string
+  source_universal_chain_id: string
+  destination_universal_chain_id: string
   cause?: unknown | undefined
 }> {}
 

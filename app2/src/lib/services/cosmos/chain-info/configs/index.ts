@@ -22,14 +22,14 @@ interface LeapExtendedInfo extends LeapChainInfo {
 }
 
 export const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
-  "union-testnet-9": unionKeplrChainInfo,
+  "union-testnet-10": unionKeplrChainInfo,
   "stride-internal-1": strideKeplrChainInfo,
   "elgafar-1": elgafarKeplrChainInfo,
   "bbn-test-5": babylonKeplrChaininfo
 }
 
 export const leapChainInfoMap: Record<string, LeapExtendedInfo> = {
-  "union-testnet-9": unionLeapChainInfo,
+  "union-testnet-10": unionLeapChainInfo,
   "stride-internal-1": strideLeapChainInfo,
   "elgafar-1": elgafarLeapChainInfo,
   "bbn-test-5": babylonLeapChaininfo

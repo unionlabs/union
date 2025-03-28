@@ -13,9 +13,6 @@ const BaseTransferFields = {
   baseAmount: TokenRawAmount.annotations({
     message: () => "baseAmount must be a valid bigint string (e.g., '1000000')"
   }),
-  quoteToken: TokenRawDenom.annotations({
-    message: () => "quoteToken must be a non-empty string (e.g., token address or symbol)"
-  }),
   quoteAmount: TokenRawAmount.annotations({
     message: () => "quoteAmount must be a valid bigint string (e.g., '1000000')"
   }),

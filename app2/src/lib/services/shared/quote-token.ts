@@ -25,13 +25,12 @@ export const getQuoteToken = (
 ) =>
   Effect.gen(function* () {
     // TODO: make safer
-    const { v1_ibc_union_tokens } = yield* tokenWrappingQuery({
-      base_token,
-      destination_channel_id: channel.source_channel_id,
-      source_chain_id: sourceChain.chain_id
+    const { v2_tokens } = yield* tokenWrappingQuery({
+      denom: base_token,
+      universal_chain_id: sourceChain.universal_chain_id
     })
 
-    const quote_token = v1_ibc_union_tokens[0]?.wrapping[0]?.unwrapped_address_hex
+    const quote_token = v2_tokens[0]?.wrapping[0]?.unwrapped_denom
     if (quote_token) {
       return { type: "UNWRAPPED" as const, quote_token }
     }

@@ -74,12 +74,14 @@ const displayDenom = $derived(
 <Tooltip>
   {#snippet trigger()}
     <div class="flex items-center gap-2 font-semibold">
+      {#if amount}
       <span>
         {Option.match(displayAmount, {
           onNone: () => amount === undefined ? "" : amount.toString(),
           onSome: value => value
         })}
       </span>
+      {/if}
       <Truncate value={displayDenom} maxLength={10} showCopy={false} />
     </div>
   {/snippet}
