@@ -11,8 +11,8 @@ interface LeapExtendedInfo extends LeapChainInfo {
 export const unionLeapChainInfo: LeapExtendedInfo = {
   chainId: "union-testnet-10",
   chainName: "uniontestnet",
-  rest: "https://rest.testnet-10.union.build",
-  rpc: "https://rpc.testnet-10.union.build",
+  rest: "https://rest.union-testnet-10.union.chain.cooking",
+  rpc: "https://rpc.union-testnet-10.union.chain.cooking",
   bip44: {
     coinType: 118
   },
