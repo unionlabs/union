@@ -1,0 +1,19 @@
+---
+title: UCS00 - Ping Pong
+---
+
+A simple "hello world!"-style protocol for testing **Message Passing (GMP)** between two chains.
+
+```
+Chain A: Sends "Ping" to Chain B
+Chain B: Receives "Ping" from Chain A
+Chain B: Sends "Pong" to Chain A
+Chain A: Receives "Pong" from Chain B
+Chain A: Sends "Ping" to Chain B
+Chain B: Receives "Ping" from Chain A
+Chain B: Sends "Pong" to Chain A
+Chain A: Receives "Pong" from Chain B
+Chain A: Sends "Ping" to Chain B
+... etc
+```
+
