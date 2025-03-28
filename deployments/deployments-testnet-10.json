@@ -49,8 +49,7 @@
         }
       }
     },
-    "channels": [1],
-    "channels_experimental": []
+    "channels": [1]
   },
   {
     "universal_chain_id": "babylon.bbn-test-5",
@@ -86,7 +85,6 @@
         }
       }
     },
-    "channels": [],
     "channels_experimental": [3]
   },
   {
@@ -126,8 +124,7 @@
         }
       }
     },
-    "channels": [1],
-    "channels_experimental": []
+    "channels": [1]
   },
   {
     "universal_chain_id": "ethereum.17000",
@@ -165,9 +162,7 @@
           "height": 3525179
         }
       }
-    },
-    "channels": [],
-    "channels_experimental": []
+    }
   },
   {
     "universal_chain_id": "corn.21000001",
@@ -206,7 +201,6 @@
         }
       }
     },
-    "channels": [],
     "channels_experimental": [3]
   },
   {
@@ -245,8 +239,6 @@
           "height": 15157453
         }
       }
-    },
-    "channels": [],
-    "channels_experimental": []
+    }
   }
 ]
