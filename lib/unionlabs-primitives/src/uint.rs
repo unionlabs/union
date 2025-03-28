@@ -4,7 +4,7 @@ use core::{
     fmt::{self, Display},
     iter::Sum,
     num::NonZeroU32,
-    ops::{Add, AddAssign, BitAnd, Div, Rem},
+    ops::{Add, AddAssign, BitAnd, Div, Mul, Rem},
     str::FromStr,
 };
 
@@ -376,6 +376,14 @@ impl Add for U256 {
 
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
+    }
+}
+
+impl Mul for U256 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self(self.0 * rhs.0)
     }
 }
 
