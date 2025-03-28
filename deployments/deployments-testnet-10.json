@@ -197,5 +197,43 @@
       }
     },
     "channels": []
+  },
+  {
+    "chain_id": "60808",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": "0x795A17269e7aae13BA246E93104f5FCf4ada163b",
+      "deployer": "0xa76897C61d710C07De4D541C77c209578d64CEB9",
+      "sender": "0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2",
+      "core": {
+        "address": "0x06a409cbED33CaA9bf8181eF3afF2C504E1CfB95",
+        "height": 15157452
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x8df982115d392D1b28B1f30Ba0834817f8b518dc",
+          "height": 15157452
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0xb66972c8dF9A185e0f0D34620F86dcb0DFeB1F3A",
+          "height": 15157452
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0xd03953Ff5730Bd08684D529dC67630a0Ad0DfC67",
+          "height": 15157452
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x4163d3a8D115a7a68124f91B73855FBCEe76a8c6",
+          "height": 15157453
+        },
+        "ucs03": {
+          "address": "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
+          "height": 15157453
+        }
+      }
+    },
+    "channels": []
   }
 ]
