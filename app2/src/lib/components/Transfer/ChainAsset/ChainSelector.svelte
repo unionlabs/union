@@ -1,26 +1,26 @@
 <script lang="ts">
-import { Option } from "effect"
-import { chains } from "$lib/stores/chains.svelte.ts"
-import { cn } from "$lib/utils"
-import { tokensStore } from "$lib/stores/tokens.svelte.ts"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import type { Chain } from "$lib/schema/chain.ts"
-import { chainLogoMap } from "$lib/constants/chain-logos.ts"
+  import {Option} from "effect"
+  import {chains} from "$lib/stores/chains.svelte.ts"
+  import {cn} from "$lib/utils"
+  import {tokensStore} from "$lib/stores/tokens.svelte.ts"
+  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
+  import type {Chain} from "$lib/schema/chain.ts"
+  import {chainLogoMap} from "$lib/constants/chain-logos.ts"
 
-type Props = {
-  type: "source" | "destination"
-  onSelect: () => void
-}
-
-const { type, onSelect }: Props = $props()
-
-function selectChain(chain: Chain) {
-  transfer.raw.updateField(type, chain.chain_id)
-  if (type === "source") {
-    tokensStore.fetchTokens(chain.universal_chain_id)
+  type Props = {
+    type: "source" | "destination"
+    onSelect: () => void
   }
-  onSelect()
-}
+
+  const {type, onSelect}: Props = $props()
+
+  function selectChain(chain: Chain) {
+    transfer.raw.updateField(type, chain.chain_id)
+    if (type === "source") {
+      tokensStore.fetchTokens(chain.universal_chain_id)
+    }
+    onSelect()
+  }
 </script>
 
 <div class="p-4">
@@ -38,9 +38,14 @@ function selectChain(chain: Chain) {
                 onclick={() => selectChain(chain)}
         >
 
-          <span class="w-5 h-5 flex items-center justify-center overflow-hidden">
-                   <img src={chainLogoMap.get(chain.universal_chain_id).color} alt="">
-          </span>
+          {#if chain.universal_chain_id}
+            {@const chainLogo = chainLogoMap.get(chain.universal_chain_id)}
+            {#if chainLogo?.color}
+              <span class="w-5 h-5 flex items-center justify-center overflow-hidden">
+                <img src={chainLogo.color} alt="">
+              </span>
+            {/if}
+          {/if}
 
           <span class="text-xs text-center truncate w-fit">{chain.display_name.split(" ")[0]}</span>
         </button>
