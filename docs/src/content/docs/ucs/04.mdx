@@ -1,3 +1,22 @@
 ---
 title: UCS04 - Universal Chain ID
 ---
+
+Chain IDs as reported by chains themselves are unfortunately not universally unique. For example, ID `1` is used for both Ethereum and Aptos.
+
+To disambiguate, UCS04 defines `universal_chain_id` as `<chain_family_name>.<chain_id>`.
+
+## Universal Chain IDs
+
+### Union
+
+- `union.union-1`
+- `union.union-testnet-10`
+- `union.union-testnet-9`
+
+### Ethereum
+
+- `ethereum.1`
+- `ethereum.17000`
+- `ethereum.11155111`
+
