@@ -5,9 +5,37 @@ _: {
       crane,
       pkgs,
       dbg,
+      system,
+      ensureAtRepositoryRoot,
       ...
     }:
     let
+      mkRootDrv =
+        name:
+        builtins.removeAttrs
+          (derivation {
+            inherit name system;
+            builder = "${pkgs.bash}/bin/bash";
+            args = [
+              (builtins.toFile "builder.sh" ''
+                echo "this object (${name}) only has subattributes"
+
+
+
+                exit 1
+              '')
+            ];
+          })
+          [
+            "all"
+            "out"
+            "name"
+            "args"
+            "drvAttrs"
+            "outputName"
+            "system"
+          ];
+
       bytecode-base = pkgs.stdenv.mkDerivation {
         name = "base-bytecode";
         dontUnpack = true;
@@ -427,12 +455,12 @@ _: {
           map (
             lc:
             let
-              name = "migrate-lightclient-${args.name}-${lc}";
+              name = "migrate-lightclient-${lc}";
             in
             {
               inherit name;
               value = pkgs.writeShellApplication {
-                inherit name;
+                name = "${args.name}-${name}";
                 runtimeInputs = [
                   ibc-union-contract-addresses
                   cosmwasm-deployer
@@ -466,12 +494,12 @@ _: {
           map (
             app:
             let
-              name = "migrate-app-${args.name}-${app}";
+              name = "migrate-app-${app}";
             in
             {
               inherit name;
               value = pkgs.writeShellApplication {
-                inherit name;
+                name = "${args.name}-${name}";
                 runtimeInputs = [
                   ibc-union-contract-addresses
                   cosmwasm-deployer
@@ -506,11 +534,11 @@ _: {
         ))
         // (
           let
-            name = "migrate-core-${args.name}";
+            name = "migrate-core";
           in
           {
             ${name} = pkgs.writeShellApplication {
-              inherit name;
+              name = "${args.name}-${name}";
               runtimeInputs = [
                 ibc-union-contract-addresses
                 cosmwasm-deployer
@@ -591,19 +619,30 @@ _: {
 
       cw20-token-minter = crane.buildWasmContract "cosmwasm/cw20-token-minter" { };
 
-      deployments-json-entry =
+      update-deployments-json =
         { name, rpc_url, ... }:
         pkgs.writeShellApplication {
-          name = "${name}-deployments-json-entry";
+          name = "${name}-update-deployments-json";
           runtimeInputs = [
             cosmwasm-deployer
-            pkgs.jq
             ibc-union-contract-addresses
+            pkgs.jq
+            pkgs.curl
+            pkgs.moreutils
           ];
           text = ''
+            ${ensureAtRepositoryRoot}
+
+            DEPLOYMENTS_FILE="deployments/deployments-testnet-10.json"
+            export DEPLOYMENTS_FILE
+
             ADDRESSES=$(ibc-union-contract-addresses "$1")
+            echo "addresses: $ADDRESSES"
+
             HEIGHTS=$(cosmwasm-deployer init-heights --rpc-url "${rpc_url}" --addresses <(echo "$ADDRESSES"))
-            echo "$ADDRESSES" | jq \
+            echo "heights: $HEIGHTS"
+
+            DEPLOYMENTS=$(echo "$ADDRESSES" | jq \
               --argjson heights "$HEIGHTS" \
               '. as $in | {
                 core: {
@@ -644,7 +683,21 @@ _: {
                     end
                   )
                 ),
-              }'
+              }')
+
+            echo "deployments: $DEPLOYMENTS"
+
+            CHAIN_ID="$(curl ${rpc_url}/status | jq .result.node_info.network -r)"
+            export CHAIN_ID
+
+            echo "chain id: $CHAIN_ID"
+
+            jq \
+              '. |= map(if .chain_id == $chain_id then .deployments = $deployments else . end)' \
+              "$DEPLOYMENTS_FILE" \
+              --arg chain_id "$CHAIN_ID" \
+              --argjson deployments "$DEPLOYMENTS" \
+            | sponge "$DEPLOYMENTS_FILE"
           '';
         };
     in
@@ -660,38 +713,26 @@ _: {
             ibc-union
             multicall
             ;
-          cosmwasm-scripts =
+          cosmwasm-scripts = dbg (
             {
               inherit ibc-union-contract-addresses;
             }
-            // (
-              (builtins.listToAttrs (
-                map (args: {
-                  name = "chain-deployments-json-${args.name}";
-                  value = chain-deployments-json args;
-                }) networks
-              ))
-              // (builtins.listToAttrs (
-                map (args: {
-                  name = "deploy-full-${args.name}";
-                  value = deploy-full args;
-                }) networks
-              ))
-              // (builtins.listToAttrs (
-                map (args: {
-                  name = "deployments-json-entry-${args.name}";
-                  value = deployments-json-entry args;
-                }) networks
-              ))
-              // (builtins.listToAttrs (
-                map (args: {
-                  name = "finalize-deployment-${args.name}";
-                  value = finalize-deployment args;
-                }) (builtins.filter (network: network ? multisig_address) networks)
-              ))
-            )
-            // (builtins.foldl' (a: b: a // b) { } (map chain-migration-scripts networks))
-            // derivation { name = "cosmwasm-scripts"; };
+            // (builtins.listToAttrs (
+              map (chain: {
+                inherit (chain) name;
+                value =
+                  {
+                    chain-deployments-json = chain-deployments-json chain;
+                    deploy-full = deploy-full chain;
+                    update-deployments-json = update-deployments-json chain;
+                    finalize-deployment = finalize-deployment chain;
+                  }
+                  // (chain-migration-scripts chain)
+                  // (mkRootDrv chain.name);
+              }) networks
+            ))
+            // (mkRootDrv "cosmwasm-scripts")
+          );
         }
         //
           # all light clients
