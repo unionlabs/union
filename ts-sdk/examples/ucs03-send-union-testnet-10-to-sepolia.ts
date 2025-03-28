@@ -16,19 +16,25 @@ import {
 import { Batch, encodeAbi } from "../src/ucs03/instruction.js"
 import { sendInstructionCosmos } from "../src/ucs03/send-instruction.js"
 import { EvmChannelDestination } from "../src/evm/channel.js"
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { CosmosChannelSource } from "../src/cosmos/channel.ts"
 import { Decimal } from "@cosmjs/math"
+import { bytes } from "@scure/base"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
 
-const MNEMONIC = process.env.MNEMONIC || "memo memo memo"
+export function hexToBytes(hexString: string): Uint8Array {
+  return bytes("hex", hexString.indexOf("0x") === 0 ? hexString.slice(2) : hexString)
+}
 
-const SENDER = "union1d95n4r6dnrfrps59szhl8mk7yqewsuzyw0zh5q"
-const RECEIVER = "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA"
+const PRIVATE_KEY =
+  process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+const SENDER = "0xef435e8e6c537610febccaee85b668db1ecafe02"
+const RECEIVER = "0x5CF094a64E99A85AA7866DB5B2A51827C7D224aF"
 const UCS03_ADDRESS = "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6" // UCS03 contract on testnet 10
 
 // Define token transfers
@@ -37,14 +43,15 @@ const TRANSFERS = [
     sender: SENDER,
     receiver: RECEIVER,
     baseToken: "muno",
-    baseAmount: 100n,
-    quoteAmount: 100n
+    baseAmount: 1n,
+    quoteAmount: 1n
   }
 ] as const
 
 const createBatch = Effect.gen(function* () {
   yield* Effect.log("creating transfer 1")
   const transfer1 = yield* createCosmosToEvmFungibleAssetOrder(TRANSFERS[0])
+  console.info("transfer1", transfer1)
 
   return Batch([transfer1])
 }).pipe(Effect.withLogSpan("batch creation"))
@@ -118,7 +125,7 @@ Effect.runPromiseExit(
 
     // Create a wallet from mnemonic (in a real app, use a secure method to get this)
     const wallet = yield* Effect.tryPromise(() =>
-      DirectSecp256k1HdWallet.fromMnemonic(MNEMONIC, { prefix: "union" })
+      DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "union")
     )
 
     // Get the first account address

@@ -106,7 +106,9 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
         : yield* readCw20TokenInfo(intent.baseToken).pipe(
             Effect.provideService(CosmWasmClientContext, { client: sourceClient })
           )
-    const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
+    // const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
+    const quoteToken = "0x2B4Cb88fEf7D93D676fb76b14530f2B92F5b58Ca"
+    console.info("quote token", quoteToken)
 
     return FungibleAssetOrder([
       toHex(intent.sender),

@@ -57,6 +57,7 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
             encodeAbi(instruction)
           ])
         }
-      }
+      },
+      [{ denom: "muno", amount: "1" }]
     )
   })
