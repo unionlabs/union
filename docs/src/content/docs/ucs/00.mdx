@@ -1,0 +1,26 @@
+---
+title: UCS00 - Ping Pong
+---
+
+A simple "hello world!"-style protocol for testing **Message Passing (GMP)** between two chains.
+
+```
+Chain A: Sends "Ping" to Chain B
+Chain B: Receives "Ping" from Chain A
+Chain B: Sends "Pong" to Chain A
+Chain A: Receives "Pong" from Chain B
+Chain A: Sends "Ping" to Chain B
+Chain B: Receives "Ping" from Chain A
+Chain B: Sends "Pong" to Chain A
+Chain A: Receives "Pong" from Chain B
+Chain A: Sends "Ping" to Chain B
+... etc
+```
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+
+<LinkCard title="UCS00 - EVM reference implementation" description="Canonical UCS00 implementation in Solidity" href="https://github.com/unionlabs/union/blob/main/evm/contracts/apps/ucs/00-pingpong/PingPong.sol" />
+
+<LinkCard title="UCS00 - CosmWasm reference implementation" description="Canonical UCS00 implementation in Rust" href="https://github.com/unionlabs/union/tree/main/cosmwasm/ibc-union/app/ucs00-pingpong" />
+

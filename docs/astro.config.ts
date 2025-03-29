@@ -262,6 +262,12 @@ export default defineConfig({
               }
             },
             {
+              label: "Standards",
+              autogenerate: {
+                directory: "/ucs"
+              }
+            },
+            {
               label: "Infrastructure",
               items: [
                 {
