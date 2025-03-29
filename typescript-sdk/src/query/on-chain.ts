@@ -3,7 +3,7 @@ import type { Prettify } from "../types.ts"
 import { Base64, Hex, Json } from "ox"
 import { ResultAsync, err, ok, type Result } from "neverthrow"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
-import { cosmosRpcs, type CosmosChainId } from "#cosmos/client.ts"
+import { cosmosRpcs, type CosmosChainId } from "../cosmos/client.ts"
 
 type rpcUrlArgument = { rpcUrl: string }
 export type RpcQueryPath = "height" | "block" | "transaction" | "net_info" | "health"

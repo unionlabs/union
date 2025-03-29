@@ -2,9 +2,9 @@
 import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { hexToBytes } from "#convert.ts"
-import { createUnionClient } from "#mod.ts"
-import { raise } from "#utilities/index.ts"
+import { hexToBytes } from "../src/convert.ts"
+import { createUnionClient } from "../src/mod.ts"
+import { raise } from "../src/utilities/index.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 /* `bun playground/union-to-union.ts --private-key "..."` --estimate-gas */

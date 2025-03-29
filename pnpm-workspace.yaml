@@ -1,0 +1,8 @@
+packages:
+  - 'ts-sdk'
+  - 'typescript-sdk'
+  - 'app2'
+
+# Prevent dependencies from being hoisted
+neverHoist:
+  - "**/docs/**"

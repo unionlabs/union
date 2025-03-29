@@ -3,10 +3,10 @@ import "scripts/patch"
 import { parseArgs } from "node:util"
 import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
-import { raise } from "#utilities/index.ts"
+import { raise } from "../src/utilities/index.ts"
 import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
-import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
 
 /* `bun playground/arbitrum-to-union.ts --private-key "..."` */
 

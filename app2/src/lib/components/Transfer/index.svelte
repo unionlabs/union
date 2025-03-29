@@ -22,8 +22,7 @@ import type { TransferStateUnion } from "$lib/components/Transfer/validation.ts"
 import { Effect, Option } from "effect"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
-import type { Instruction } from "@unionlabs/sdk/ucs03"
-import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03"
+import { createEvmToCosmosFungibleAssetOrder, Instruction } from "@unionlabs/sdk/ucs03"
 import {
   createViemPublicClient,
   ViemPublicClient,
@@ -235,10 +234,14 @@ const intentsToBatch = (ti: typeof transferIntents) =>
     const batch = yield* Effect.gen(function* () {
       const t1 = yield* createEvmToCosmosFungibleAssetOrder(ti.value[0])
       const t2 = yield* createEvmToCosmosFungibleAssetOrder(ti.value[1])
-      return Batch([t1, t2])
+      return new Instruction.Batch({ operand: [t1, t2] })
     }).pipe(
-      Effect.provideService(ViemPublicClientSource, { client: publicClientSource }),
-      Effect.provideService(CosmWasmClientDestination, { client: cosmwasmClientDestination }),
+      Effect.provideService(ViemPublicClientSource, {
+        client: publicClientSource
+      }),
+      Effect.provideService(CosmWasmClientDestination, {
+        client: cosmwasmClientDestination
+      }),
       Effect.provideService(CosmosChannelDestination, {
         ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
         channelId: 1
@@ -274,7 +277,11 @@ const checkAllowances = (ti: typeof transferIntents) =>
             spenderAddress
           )
           return { token: tokenAddress, allowance }
-        }).pipe(Effect.provideService(ViemPublicClient, { client: publicClientSource }))
+        }).pipe(
+          Effect.provideService(ViemPublicClient, {
+            client: publicClientSource
+          })
+        )
       )
     )
 
@@ -286,38 +293,38 @@ let showDetails = $state(false)
 
 <Card class="max-w-sm relative flex flex-col justify-between min-h-[400px]">
   <div class=" flex flex-col gap-4">
-    <ChainAsset type="source"/>
-    <ChainAsset type="destination"/>
-    <Amount type="source"/>
+    <ChainAsset type="source" />
+    <ChainAsset type="destination" />
+    <Amount type="source" />
   </div>
 
   <div class="flex flex-col items-end">
     <div class="flex items-center mr-5 text-zinc-400">
       {#if transfer.args.receiver}
-        <p class="text-xs mb-2">{truncate(transfer.raw.receiver, 5, "middle")}</p>
+        <p class="text-xs mb-2">
+          {truncate(transfer.raw.receiver, 5, "middle")}
+        </p>
       {:else}
-        <p class="text-xs mb-2"> No receiver</p>
+        <p class="text-xs mb-2">No receiver</p>
       {/if}
-      <AngleArrowIcon class="rotate-270"/>
+      <AngleArrowIcon class="rotate-270" />
     </div>
     <div class="w-full items-end flex gap-2">
       <Button
-              class="flex-1"
-              variant="primary"
-              onclick={transfer.submit}
-              disabled={!isButtonEnabled || transfer.validation._tag !== "Success"}
+        class="flex-1"
+        variant="primary"
+        onclick={transfer.submit}
+        disabled={!isButtonEnabled || transfer.validation._tag !== "Success"}
       >
         {buttonText}
       </Button>
-      <Receiver/>
-
+      <Receiver />
     </div>
   </div>
   {#if showDetails}
-    <ShowData/>
+    <ShowData />
   {/if}
 </Card>
-
 
 {#if Option.isSome(transferSteps)}
   <div class="mt-4">
@@ -330,7 +337,7 @@ let showDetails = $state(false)
               Approve token: <span class="font-mono">{step.token}</span>
               <div class="text-sm">
                 Current allowance: {step.currentAllowance.toString()}
-                <br/>
+                <br />
                 Required amount: {step.requiredAmount.toString()}
               </div>
             </div>
@@ -343,7 +350,6 @@ let showDetails = $state(false)
     </ol>
   </div>
 {/if}
-
 
 <h2>transfer intents</h2>
 <pre>{JSON.stringify(transferIntents, null, 2)}</pre>

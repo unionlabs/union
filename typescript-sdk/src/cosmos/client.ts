@@ -14,7 +14,7 @@ import type {
   TransferAssetParameters,
   TransferAssetsParametersLegacy
 } from "../types.ts"
-import { isValidBech32ContractAddress } from "#mod.ts"
+import { isValidBech32ContractAddress } from "../utilities/address.ts"
 
 export const cosmosChainId = [
   "elgafar-1",

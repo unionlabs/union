@@ -11,7 +11,11 @@ const FungibleAssetOrder = (
 })
 
 const Batch = (
-  instructions: Array<{ version: number; opcode: number; operand: `0x${string}` }>
+  instructions: Array<{
+    version: number
+    opcode: number
+    operand: `0x${string}`
+  }>
 ) => ({
   opcode: 2,
   version: 0,
@@ -34,8 +38,8 @@ const fungibleAssetOrder = FungibleAssetOrder([
 const batch = Batch([fungibleAssetOrder, fungibleAssetOrder])
 </script>
 
-<div class="font-mono break-words">{JSON.stringify(fungibleAssetOrder, null, 2)}</div>
+<div class="font-mono break-words">
+  {JSON.stringify(fungibleAssetOrder, null, 2)}
+</div>
 
 <div class="font-mono break-words">{JSON.stringify(batch, null, 2)}</div>
-
-

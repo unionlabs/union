@@ -1,7 +1,7 @@
-diff --git a/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js b/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js
-index 29ec063..28a5c02 100644
---- a/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js
-+++ b/node_modules/@cosmjs/tendermint-rpc/build/comet38/adaptor/responses.js
+diff --git a/build/comet38/adaptor/responses.js b/build/comet38/adaptor/responses.js
+index 29ec063eb897202ea10f381f10020ba567038a04..28a5c02ae003ebbed05dce8805c22d0d64739819 100644
+--- a/build/comet38/adaptor/responses.js
++++ b/build/comet38/adaptor/responses.js
 @@ -72,7 +72,7 @@ function decodePubkey(data) {
      if ("Sum" in data) {
          // we don't need to check type because we're checking algorithm
@@ -28,10 +28,10 @@ index 29ec063..28a5c02 100644
              default:
                  throw new Error(`unknown pubkey type: ${data.type}`);
          }
-diff --git a/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js b/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
-index 19df9de..0015044 100644
---- a/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
-+++ b/node_modules/@cosmjs/tendermint-rpc/build/tendermint37/adaptor/responses.js
+diff --git a/build/tendermint37/adaptor/responses.js b/build/tendermint37/adaptor/responses.js
+index 19df9de6589102d5d47f3ec380b11ac0cd37fed4..c73c4caee417380d484f46fa786fe137dc841534 100644
+--- a/build/tendermint37/adaptor/responses.js
++++ b/build/tendermint37/adaptor/responses.js
 @@ -72,7 +72,7 @@ function decodePubkey(data) {
      if ("Sum" in data) {
          // we don't need to check type because we're checking algorithm
@@ -58,10 +58,10 @@ index 19df9de..0015044 100644
              default:
                  throw new Error(`unknown pubkey type: ${data.type}`);
          }
-diff --git a/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js b/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
-index 257b104..dbf2240 100644
---- a/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
-+++ b/node_modules/@cosmjs/tendermint-rpc/build/tendermintclient.js
+diff --git a/build/tendermintclient.js b/build/tendermintclient.js
+index 257b104030c72bbf351e0806faeed98ebd1ebd5e..dbf2240c68313ebad5d0e3cdb7c434b4c81eed72 100644
+--- a/build/tendermintclient.js
++++ b/build/tendermintclient.js
 @@ -28,7 +28,7 @@ async function connectComet(endpoint) {
      if (version.startsWith("0.37.")) {
          out = tm37Client;

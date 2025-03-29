@@ -3,12 +3,12 @@ import "scripts/patch.ts"
 import { http } from "viem"
 import { sepolia } from "viem/chains"
 import { parseArgs } from "node:util"
-import { raise } from "#utilities/index.ts"
+import { raise } from "../src/utilities/index.ts"
 import { consola } from "../scripts/logger.ts"
-import { hexToBytes } from "#convert.ts"
+import { hexToBytes } from "../src/convert.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
 
 /* `bun playground/union-to-sepolia.ts --private-key "..."` --estimate-gas */
 
