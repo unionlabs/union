@@ -2815,6 +2815,40 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e31ea183f6ee62ac8b8a8cf7feddd766317adfb13ff469de57ce033efd6a790"
 
 [[package]]
+name = "bob-light-client-types"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.0-rc.3",
+ "ethereum-light-client-types",
+ "hex-literal",
+ "ibc-union-spec",
+ "rlp",
+ "serde",
+ "serde-utils",
+ "sha3 0.10.8",
+ "unionlabs",
+]
+
+[[package]]
+name = "bob-verifier"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bob-light-client-types",
+ "error_reporter",
+ "evm-storage-verifier",
+ "hex",
+ "hex-literal",
+ "ibc-union-spec",
+ "rlp",
+ "sha3 0.10.8",
+ "ssz",
+ "thiserror 1.0.69",
+ "unionlabs",
+]
+
+[[package]]
 name = "borsh"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

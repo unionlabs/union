@@ -10,6 +10,8 @@ use crate::{
 pub enum Slot<'a> {
     /// (base slot, index)
     Array(&'a Slot<'a>, U256),
+    /// (base slot, size, index)
+    StructArray(&'a Slot<'a>, u32, U256),
     /// (base slot, mapping key)
     Mapping(&'a Slot<'a>, MappingKey<'a>),
     Offset(U256),
@@ -23,9 +25,11 @@ impl Slot<'_> {
     pub fn slot(&self) -> U256 {
         match self {
             // keccak256(p)
-            Slot::Array(p, idx) => {
-                U256::from_be_bytes(*keccak256(p.slot().to_be_bytes()).get()) + *idx
+            Slot::StructArray(p, size, idx) => {
+                U256::from_be_bytes(*keccak256(p.slot().to_be_bytes()).get())
+                    + U256::from(*size) * *idx
             }
+            Slot::Array(p, idx) => Slot::StructArray(p, 1, *idx).slot(),
             // keccak256(h(k) . p)
             Slot::Mapping(p, k) => {
                 let mut hasher = Keccak256::new();

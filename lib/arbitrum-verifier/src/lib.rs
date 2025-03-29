@@ -75,7 +75,7 @@ pub fn verify_header(
     )
     .map_err(Error::InvalidNodeConfirmDataProof)?;
 
-    // Verify that the ibc account root is part of the L1 root
+    // Verify that the ibc account root is part of the L2 root
     verify_account_storage_root(
         header.l2_header.state_root,
         &client_state.ibc_contract_address,
