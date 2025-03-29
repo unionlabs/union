@@ -152,15 +152,18 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public(friend) fun report_misbehaviour(
-        client_type: String, client_id: u32, misbehaviour: vector<u8>
+    public(friend) fun misbehaviour(
+        client_type: String,
+        client_id: u32,
+        misbehaviour: vector<u8>,
+        relayer: address
     ) {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
-            cometbls_lc::report_misbehaviour(client_id, misbehaviour)
+            cometbls_lc::misbehaviour(client_id, misbehaviour, relayer)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            state_lens_ics23_mpt_lc::report_misbehaviour(client_id, misbehaviour)
+            state_lens_ics23_mpt_lc::misbehaviour(client_id, misbehaviour, relayer)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            state_lens_ics23_ics23_lc::report_misbehaviour(client_id, misbehaviour)
+            state_lens_ics23_ics23_lc::misbehaviour(client_id, misbehaviour, relayer)
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }

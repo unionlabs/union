@@ -254,8 +254,8 @@ module ibc::state_lens_ics23_mpt_lc {
         )
     }
 
-    public fun report_misbehaviour(
-        _client_id: u32, _misbehaviour: vector<u8>
+    public fun misbehaviour(
+        _client_id: u32, _misbehaviour: vector<u8>, _relayer: address
     ) {}
 
     public fun verify_membership(

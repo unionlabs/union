@@ -278,8 +278,8 @@ module ibc::cometbls_lc {
     }
 
     // Checks whether `misbehaviour` is valid and freezes the client
-    public(friend) fun report_misbehaviour(
-        client_id: u32, misbehaviour: vector<u8>
+    public(friend) fun misbehaviour(
+        client_id: u32, misbehaviour: vector<u8>, _relayer: address
     ) acquires State {
         let Misbehaviour { header_a, header_b } = decode_misbehaviour(misbehaviour);
 

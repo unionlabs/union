@@ -64,13 +64,12 @@ module ibc::ibc {
     use std::vector;
     use aptos_std::smart_table::{Self, SmartTable};
     use aptos_std::table::{Self, Table};
-    use aptos_std::aptos_hash;
+    use aptos_std::aptos_hash::keccak256;
     use std::from_bcs;
     use std::event;
     use std::bcs;
     use std::object;
     use std::string::{String};
-    use std::hash;
     use std::option::{Self, Option};
     use std::string_utils;
     use ibc::commitment;
@@ -175,43 +174,6 @@ module ibc::ibc {
     }
 
     #[event]
-    struct ChannelOpenInit has copy, drop, store {
-        port_id: String,
-        channel_id: u32,
-        counterparty_port_id: vector<u8>,
-        connection_id: u32,
-        version: String
-    }
-
-    #[event]
-    struct ChannelOpenTry has copy, drop, store {
-        port_id: String,
-        channel_id: u32,
-        counterparty_port_id: vector<u8>,
-        counterparty_channel_id: u32,
-        connection_id: u32,
-        version: String
-    }
-
-    #[event]
-    struct ChannelOpenAck has copy, drop, store {
-        port_id: String,
-        channel_id: u32,
-        counterparty_port_id: vector<u8>,
-        counterparty_channel_id: u32,
-        connection_id: u32
-    }
-
-    #[event]
-    struct ChannelOpenConfirm has copy, drop, store {
-        port_id: String,
-        channel_id: u32,
-        counterparty_port_id: vector<u8>,
-        counterparty_channel_id: u32,
-        connection_id: u32
-    }
-
-    #[event]
     struct ConnectionOpenTry has copy, drop, store {
         connection_id: u32,
         client_id: u32,
@@ -233,6 +195,43 @@ module ibc::ibc {
         client_id: u32,
         counterparty_client_id: u32,
         counterparty_connection_id: u32
+    }
+
+    #[event]
+    struct ChannelOpenInit has copy, drop, store {
+        port_id: String,
+        channel_id: u32,
+        counterparty_port_id: vector<u8>,
+        connection_id: u32,
+        version: String
+    }
+
+    #[event]
+    struct ChannelOpenTry has copy, drop, store {
+        port_id: String,
+        channel_id: u32,
+        counterparty_port_id: vector<u8>,
+        counterparty_channel_id: u32,
+        connection_id: u32,
+        counterparty_version: String
+    }
+
+    #[event]
+    struct ChannelOpenAck has copy, drop, store {
+        port_id: String,
+        channel_id: u32,
+        counterparty_port_id: vector<u8>,
+        counterparty_channel_id: u32,
+        connection_id: u32
+    }
+
+    #[event]
+    struct ChannelOpenConfirm has copy, drop, store {
+        port_id: String,
+        channel_id: u32,
+        counterparty_port_id: vector<u8>,
+        counterparty_channel_id: u32,
+        connection_id: u32
     }
 
     #[event]
@@ -280,9 +279,8 @@ module ibc::ibc {
     }
 
     #[event]
-    struct SubmitMisbehaviour has drop, store {
-        client_id: u32,
-        client_type: String
+    struct Misbehaviour has drop, store {
+        client_id: u32
     }
 
     struct Port<phantom T: key + store + drop> has key, copy, drop, store {
@@ -343,13 +341,13 @@ module ibc::ibc {
     public entry fun create_client(
         sender: &signer,
         client_type: String,
-        client_state: vector<u8>,
-        consensus_state: vector<u8>
+        client_state_bytes: vector<u8>,
+        consensus_state_bytes: vector<u8>
     ) acquires IBCStore, SignerRef {
         create_client_impl(
             client_type,
-            client_state,
-            consensus_state,
+            client_state_bytes,
+            consensus_state_bytes,
             |client_type, ibc_signer, client_id, client_state_bytes, consensus_state_bytes
             | light_client::create_client(
                 sender,
@@ -407,7 +405,7 @@ module ibc::ibc {
         table::upsert(
             &mut store.commitments,
             commitment::client_state_commitment_key(client_id),
-            client_state
+            keccak256(client_state)
         );
 
         let latest_height = lc_latest_height_fn(client_type, client_id);
@@ -415,7 +413,7 @@ module ibc::ibc {
         table::upsert(
             &mut store.commitments,
             commitment::consensus_state_commitment_key(client_id, latest_height),
-            consensus_state
+            keccak256(consensus_state)
         );
 
         event::emit(CreateClient { client_id, client_type, counterparty_chain_id });
@@ -445,11 +443,7 @@ module ibc::ibc {
         commit_connection(connection_id, connection);
 
         event::emit(
-            ConnectionOpenInit {
-                connection_id: connection_id,
-                client_id: client_id,
-                counterparty_client_id: counterparty_client_id
-            }
+            ConnectionOpenInit { connection_id, client_id, counterparty_client_id }
         )
     }
 
@@ -530,7 +524,7 @@ module ibc::ibc {
                 proof_height,
                 proof_init,
                 commitment::connection_commitment_key(counterparty_connection_id),
-                aptos_hash::keccak256(connection_end::encode(&expected_connection))
+                keccak256(connection_end::encode(&expected_connection))
             );
         assert!(err == 0, err);
 
@@ -613,7 +607,7 @@ module ibc::ibc {
                 proof_height,
                 proof_try,
                 commitment::connection_commitment_key(counterparty_connection_id),
-                aptos_hash::keccak256(connection_end::encode(&expected_connection))
+                keccak256(connection_end::encode(&expected_connection))
             );
         assert!(err == 0, err);
 
@@ -700,7 +694,7 @@ module ibc::ibc {
                 proof_height,
                 proof_ack,
                 commitment::connection_commitment_key(counterparty_connection_id),
-                aptos_hash::keccak256(connection_end::encode(&expected_connection))
+                keccak256(connection_end::encode(&expected_connection))
             );
         assert!(err == 0, err);
 
@@ -759,7 +753,7 @@ module ibc::ibc {
             E_CLIENT_NOT_FOUND
         );
 
-        let (client_state, consensus_state, update_height) =
+        let (client_state, consensus_state, height) =
             lc_update_client(
                 client_type,
                 client_id,
@@ -770,16 +764,16 @@ module ibc::ibc {
         table::upsert(
             &mut store.commitments,
             commitment::client_state_commitment_key(client_id),
-            client_state
+            keccak256(client_state)
         );
 
         table::upsert(
             &mut store.commitments,
-            commitment::consensus_state_commitment_key(client_id, update_height),
-            hash::sha2_256(consensus_state)
+            commitment::consensus_state_commitment_key(client_id, height),
+            keccak256(consensus_state)
         );
 
-        event::emit(UpdateClient { client_id, height: update_height });
+        event::emit(UpdateClient { client_id, height });
 
     }
 
@@ -791,22 +785,24 @@ module ibc::ibc {
     /// * `client_id`: The light client which will verify and act upon the misbehaviour.
     /// * `misbehaviour`: Light client defined misbehaviour data. It's the responsibility of the caller to gather and encode
     ///   the correct data. The light client MUST detect any invalid misbehaviors and ignore those.
-    public entry fun submit_misbehaviour(
-        client_id: u32, misbehaviour: vector<u8>
+    public entry fun misbehaviour(
+        client_id: u32, client_message: vector<u8>, relayer: address
     ) acquires IBCStore {
-        submit_misbehaviour_impl(
+        misbehaviour_impl(
             client_id,
-            misbehaviour,
-            |client_type, client_id, misbehaviour| {
-                light_client::report_misbehaviour(client_type, client_id, misbehaviour);
+            client_message,
+            relayer,
+            |client_type, client_id, misbehaviour, relayer| {
+                light_client::misbehaviour(client_type, client_id, misbehaviour, relayer);
             }
         )
     }
 
-    inline fun submit_misbehaviour_impl(
+    inline fun misbehaviour_impl(
         client_id: u32,
         misbehaviour: vector<u8>,
-        lc_report_misbehaviour: |String, u32, vector<u8>|
+        relayer: address,
+        lc_report_misbehaviour: |String, u32, vector<u8>, address|
     ) acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
 
@@ -820,15 +816,14 @@ module ibc::ibc {
 
         let client_type = client_id_to_type(client_id);
 
-        lc_report_misbehaviour(client_type, client_id, misbehaviour);
+        lc_report_misbehaviour(client_type, client_id, misbehaviour, relayer);
 
-        event::emit(SubmitMisbehaviour { client_id, client_type });
+        event::emit(Misbehaviour { client_id });
     }
 
     /// Execute the init phase of the channel handshake. `T` is the witness type of the target module that is
     /// previously been registered to this contract.
     ///
-    /// * `port_id`: The address of the IBC app on this chain that will use this channel.
     /// * `counterparty_port_id`: The port ID of the IBC app that runs on the counterparty chain.
     /// * `connection_id`: The ID of the connection that this channel will use. The light client that is used
     ///   during the connection handshake will be used to verify all the packets flowing through this channel.
@@ -946,7 +941,7 @@ module ibc::ibc {
                 proof_height,
                 proof_init,
                 commitment::channel_commitment_key(counterparty_channel_id),
-                aptos_hash::keccak256(channel::encode(&expected_channel))
+                keccak256(channel::encode(&expected_channel))
             );
         assert!(err == 0, err);
 
@@ -957,17 +952,6 @@ module ibc::ibc {
         smart_table::upsert(&mut store.channel_to_module, channel_id, port_id);
 
         let port_id = address_to_string(port_id);
-
-        event::emit(
-            ChannelOpenTry {
-                port_id,
-                channel_id,
-                counterparty_channel_id,
-                counterparty_port_id,
-                connection_id,
-                version: counterparty_version
-            }
-        );
 
         let channel =
             channel::new(
@@ -989,7 +973,7 @@ module ibc::ibc {
                 counterparty_port_id,
                 counterparty_channel_id,
                 connection_id,
-                version
+                counterparty_version
             }
         );
 
@@ -1072,7 +1056,7 @@ module ibc::ibc {
                 proof_height,
                 proof_try,
                 commitment::channel_commitment_key(counterparty_channel_id),
-                aptos_hash::keccak256(channel::encode(&expected_channel))
+                keccak256(channel::encode(&expected_channel))
             );
         assert!(err == 0, err);
 
@@ -1165,7 +1149,7 @@ module ibc::ibc {
                 commitment::channel_commitment_key(
                     channel::counterparty_channel_id(&channel)
                 ),
-                aptos_hash::keccak256(channel::encode(&expected_channel))
+                keccak256(channel::encode(&expected_channel))
             );
         assert!(err == 0, err);
 
@@ -1619,7 +1603,7 @@ module ibc::ibc {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let key = commitment::channel_commitment_key(channel_id);
 
-        let encoded = aptos_hash::keccak256(channel::encode(&channel));
+        let encoded = keccak256(channel::encode(&channel));
         table::upsert(&mut store.commitments, key, encoded);
     }
 
@@ -1627,7 +1611,7 @@ module ibc::ibc {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let key = commitment::connection_commitment_key(connection_id);
 
-        let encoded = aptos_hash::keccak256(connection_end::encode(&connection));
+        let encoded = keccak256(connection_end::encode(&connection));
         table::upsert(&mut store.commitments, key, encoded);
     }
 
@@ -1645,7 +1629,7 @@ module ibc::ibc {
             height,
             proof,
             commitment::channel_commitment_key(channel_id),
-            aptos_hash::keccak256(channel::encode(&channel))
+            keccak256(channel::encode(&channel))
         )
     }
 
@@ -1761,13 +1745,14 @@ module ibc::ibc {
         );
 
         assert!(
-            get_commitment(commitment::client_state_commitment_key(1)) == client_state,
+            get_commitment(commitment::client_state_commitment_key(1))
+                == keccak256(client_state),
             1
         );
 
         assert!(
             get_commitment(commitment::consensus_state_commitment_key(1, 10))
-                == consensus_state,
+                == keccak256(consensus_state),
             1
         );
 
@@ -1856,7 +1841,7 @@ module ibc::ibc {
 
         assert!(
             get_commitment(commitment::connection_commitment_key(1))
-                == aptos_hash::keccak256(connection_end::encode(&connection)),
+                == keccak256(connection_end::encode(&connection)),
             1
         );
 
@@ -1906,10 +1891,7 @@ module ibc::ibc {
                         ),
                     1
                 );
-                assert!(
-                    value == aptos_hash::keccak256(counterparty_connection),
-                    1
-                );
+                assert!(value == keccak256(counterparty_connection), 1);
 
                 0
             }
@@ -1927,7 +1909,7 @@ module ibc::ibc {
 
         assert!(
             get_commitment(commitment::connection_commitment_key(1))
-                == aptos_hash::keccak256(connection_end::encode(&connection)),
+                == keccak256(connection_end::encode(&connection)),
             1
         );
 
@@ -1996,10 +1978,7 @@ module ibc::ibc {
                         ),
                     1
                 );
-                assert!(
-                    value == aptos_hash::keccak256(counterparty_connection),
-                    1
-                );
+                assert!(value == keccak256(counterparty_connection), 1);
 
                 0
             }
@@ -2017,7 +1996,7 @@ module ibc::ibc {
 
         assert!(
             get_commitment(commitment::connection_commitment_key(connection_id))
-                == aptos_hash::keccak256(connection_end::encode(&connection)),
+                == keccak256(connection_end::encode(&connection)),
             1
         );
 
@@ -2139,10 +2118,7 @@ module ibc::ibc {
                         ),
                     1
                 );
-                assert!(
-                    value == aptos_hash::keccak256(counterparty_connection),
-                    1
-                );
+                assert!(value == keccak256(counterparty_connection), 1);
 
                 0
             }
@@ -2160,7 +2136,7 @@ module ibc::ibc {
 
         assert!(
             get_commitment(commitment::connection_commitment_key(connection_id))
-                == aptos_hash::keccak256(connection_end::encode(&connection)),
+                == keccak256(connection_end::encode(&connection)),
             1
         );
 
@@ -2347,7 +2323,7 @@ module ibc::ibc {
         assert!(smart_table::borrow(&store.channels, channel_id) == &channel, 1);
         assert!(
             get_commitment(commitment::channel_commitment_key(channel_id))
-                == aptos_hash::keccak256(channel::encode(&channel)),
+                == keccak256(channel::encode(&channel)),
             1
         );
 
@@ -2466,10 +2442,7 @@ module ibc::ibc {
                             == commitment::channel_commitment_key(counterparty_channel_id),
                         1
                     );
-                    assert!(
-                        value == aptos_hash::keccak256(counterparty_channel),
-                        1
-                    );
+                    assert!(value == keccak256(counterparty_channel), 1);
 
                     0
                 }
@@ -2491,7 +2464,7 @@ module ibc::ibc {
         assert!(smart_table::borrow(&store.channels, channel_id) == &channel, 1);
         assert!(
             get_commitment(commitment::channel_commitment_key(channel_id))
-                == aptos_hash::keccak256(channel::encode(&channel)),
+                == keccak256(channel::encode(&channel)),
             1
         );
 
@@ -2503,7 +2476,7 @@ module ibc::ibc {
                     channel_id,
                     counterparty_channel_id,
                     connection_id,
-                    version
+                    counterparty_version
                 }
             ),
             1
@@ -2666,10 +2639,7 @@ module ibc::ibc {
                     key == commitment::channel_commitment_key(counterparty_channel_id),
                     1
                 );
-                assert!(
-                    value == aptos_hash::keccak256(counterparty_channel),
-                    1
-                );
+                assert!(value == keccak256(counterparty_channel), 1);
 
                 0
             }
@@ -2688,7 +2658,7 @@ module ibc::ibc {
         assert!(smart_table::borrow(&store.channels, channel_id) == &channel, 1);
         assert!(
             get_commitment(commitment::channel_commitment_key(channel_id))
-                == aptos_hash::keccak256(channel::encode(&channel)),
+                == keccak256(channel::encode(&channel)),
             1
         );
 
@@ -2820,10 +2790,7 @@ module ibc::ibc {
                     key == commitment::channel_commitment_key(counterparty_channel_id),
                     1
                 );
-                assert!(
-                    value == aptos_hash::keccak256(counterparty_channel),
-                    1
-                );
+                assert!(value == keccak256(counterparty_channel), 1);
 
                 0
             }
@@ -2842,7 +2809,7 @@ module ibc::ibc {
         assert!(smart_table::borrow(&store.channels, channel_id) == &channel, 1);
         assert!(
             get_commitment(commitment::channel_commitment_key(channel_id))
-                == aptos_hash::keccak256(channel::encode(&channel)),
+                == keccak256(channel::encode(&channel)),
             1
         );
 
@@ -2918,7 +2885,7 @@ module ibc::ibc {
     }
 
     #[test(alice = @ibc)]
-    fun submit_misbehaviour_works(alice: &signer) acquires IBCStore, SignerRef {
+    fun misbehaviour_works(alice: &signer) acquires IBCStore, SignerRef {
         init_module_for_tests(alice);
 
         let counterparty_chain_id = string::utf8(b"union");
@@ -2936,30 +2903,30 @@ module ibc::ibc {
             |_s, _s2| 10
         );
 
-        submit_misbehaviour_impl(
+        misbehaviour_impl(
             1,
             x"deadbeef",
-            |client_type, client_id, misbehaviour| {
+            @ibc,
+            |client_type, client_id, misbehaviour, relayer| {
                 assert!(client_type == string::utf8(CLIENT_TYPE), 1);
                 assert!(client_id == 1, 1);
                 assert!(misbehaviour == x"deadbeef", 1);
+                assert!(relayer == @ibc, 1);
             }
         );
 
         assert!(
-            event::was_event_emitted(
-                &SubmitMisbehaviour { client_id: 1, client_type: string::utf8(CLIENT_TYPE) }
-            ),
+            event::was_event_emitted(&Misbehaviour { client_id: 1 }),
             1
         );
     }
 
     #[test(alice = @ibc)]
     #[expected_failure(abort_code = E_CLIENT_NOT_FOUND)]
-    fun submit_misbehaviour_fails_when_no_client(alice: &signer) acquires IBCStore {
+    fun misbehaviour_fails_when_no_client(alice: &signer) acquires IBCStore {
         init_module_for_tests(alice);
 
-        submit_misbehaviour_impl(1, x"deadbeef", |_0, _1, _2| {});
+        misbehaviour_impl(1, x"deadbeef", @ibc, |_0, _1, _2, _3| {});
     }
 
     #[test_only]
@@ -3009,14 +2976,14 @@ module ibc::ibc {
         );
 
         assert!(
-            event::was_event_emitted(&PacketSend { packet_hash, packet }),
+            event::was_event_emitted(&PacketSend { channel_id, packet_hash, packet }),
             1
         );
     }
 
     #[test(ibc_app = @0xdeadbeef)]
     #[expected_failure(abort_code = E_TIMEOUT_MUST_BE_SET)]
-    fun send_packet_fails_when_timeout_not_set(ibc_app: &signer) acquires IBCStore {
+    fun send_packet_fails_when_timeout_not_set(ibc_app: &signer) acquires IBCStore, Port {
         send_packet<TestApp>(TestApp {}, 1, 0, 0, x"deadbeef");
     }
 
@@ -3024,24 +2991,10 @@ module ibc::ibc {
     #[expected_failure(location = smart_table, abort_code = 65537)]
     fun send_packet_fails_when_channel_dont_exist(
         alice: &signer, ibc_app: &signer
-    ) acquires IBCStore {
+    ) acquires IBCStore, Port {
         init_module_for_tests(alice);
 
         send_packet<TestApp>(TestApp {}, 1, 0, 10, x"deadbeef");
-    }
-
-    #[test(alice = @ibc, ibc_app = @0xdeadbeef)]
-    #[expected_failure(abort_code = E_UNAUTHORIZED)]
-    fun send_packet_fails_when_channel_now_owned(
-        alice: &signer, ibc_app: &signer
-    ) acquires IBCStore, Port, SignerRef {
-        init_module_for_tests(alice);
-        dispatcher::init_module_for_tests(alice);
-        register_test_app(alice, ibc_app);
-
-        let channel_id = open_channel();
-
-        send_packet<TestApp>(TestApp {}, channel_id, 0, 10, x"deadbeef");
     }
 
     #[test(alice = @ibc, ibc_app = @0xdeadbeef)]
@@ -3059,11 +3012,13 @@ module ibc::ibc {
 
         let proof = x"cafebabe";
         let proof_height = timeout_height + 10;
+        let packet_hash = commitment::commit_packet(&packet);
 
         timeout_packet_impl(
             packet,
             proof,
             proof_height,
+            @ibc,
             |client_type, client_id, proof_height_| {
                 assert!(client_type == string::utf8(CLIENT_TYPE), 1);
                 assert!(client_id == 1, 1);
@@ -3077,10 +3032,7 @@ module ibc::ibc {
                 assert!(proof_height == proof_height_, 1);
                 assert!(proof == proof_, 1);
                 assert!(
-                    path
-                        == commitment::batch_receipts_commitment_key(
-                            commitment::commit_packet(&packet)
-                        ),
+                    path == commitment::batch_receipts_commitment_key(packet_hash),
                     1
                 );
 
@@ -3089,18 +3041,16 @@ module ibc::ibc {
         );
 
         assert!(
-            vector::is_empty(
-                &get_commitment(
-                    commitment::batch_packets_commitment_key(
-                        commitment::commit_packet(&packet)
-                    )
-                )
-            ),
+            get_commitment(
+                commitment::batch_packets_commitment_key(packet_hash)
+            ) == COMMITMENT_MAGIC_ACK,
             1
         );
 
         assert!(
-            event::was_event_emitted(&TimeoutPacket { packet }),
+            event::was_event_emitted(
+                &PacketTimeout { channel_id, packet_hash, maker: @ibc }
+            ),
             1
         );
     }

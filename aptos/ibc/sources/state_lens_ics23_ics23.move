@@ -213,8 +213,8 @@ module ibc::state_lens_ics23_ics23_lc {
     }
 
     // Checks whether `misbehaviour` is valid and freezes the client
-    public(friend) fun report_misbehaviour(
-        _client_id: u32, _misbehaviour: vector<u8>
+    public(friend) fun misbehaviour(
+        _client_id: u32, _misbehaviour: vector<u8>, _relayer: address
     ) {}
 
     public(friend) fun verify_membership(

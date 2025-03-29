@@ -12,12 +12,11 @@ module zkgm::lib {
     const OP_BATCH: u8 = 0x02;
     const OP_FUNGIBLE_ASSET_ORDER: u8 = 0x03;
 
-    const FORWARD_SALT_MAGIC: u256 = 0xC0DE00000000000000000000000000000000000000000000000000000000BABE;
+    const FORWARD_SALT_MAGIC: u256 =
+        0xC0DE00000000000000000000000000000000000000000000000000000000BABE;
 
     // TODO(aeryz): test this well
-    public(friend) fun is_forwarded_packet(
-        salt: vector<u8>
-    ): bool {
+    public(friend) fun is_forwarded_packet(salt: vector<u8>): bool {
         let salt = from_bcs::to_u256(salt);
 
         (salt & FORWARD_SALT_MAGIC) == FORWARD_SALT_MAGIC
@@ -83,23 +82,18 @@ module zkgm::lib {
         r
     }
 
-    public(friend) fun dequeue_channel_from_path(
-        path: u256
-    ): (u256, u32) {
+    public(friend) fun dequeue_channel_from_path(path: u256): (u256, u32) {
         (path >> 32, (path as u32))
     }
 
-    public(friend) fun reverse_channel_path(
-        path: u256
-    ): u256 {
-        (((path >> 0) as u32) as u256) << 224
-        | (((path >> 32) as u32) as u256) << 192
-        | (((path >> 64) as u32) as u256) << 160
-        | (((path >> 96) as u32) as u256) << 128
-        | (((path >> 128) as u32) as u256) << 96
-        | (((path >> 160) as u32) as u256) << 64
-        | (((path >> 192) as u32) as u256) << 32
-        | (((path >> 224) as u32) as u256) << 0
+    public(friend) fun reverse_channel_path(path: u256): u256 {
+        (((path >> 0) as u32) as u256) << 224 | (((path >> 32) as u32) as u256) << 192
+            | (((path >> 64) as u32) as u256) << 160
+            | (((path >> 96) as u32) as u256) << 128
+            | (((path >> 128) as u32) as u256) << 96
+            | (((path >> 160) as u32) as u256) << 64
+            | (((path >> 192) as u32) as u256) << 32
+            | (((path >> 224) as u32) as u256) << 0
     }
 
     public(friend) fun pop_channel_from_path(path: u256): (u256, u32) {
@@ -108,13 +102,13 @@ module zkgm::lib {
         };
         let current_hop_index = fls(path) / 32;
         let clear_shift = (((8 - current_hop_index) * 32) as u8);
-        (
-            (path << clear_shift) >> clear_shift,
-            ((path >> ((current_hop_index * 32) as u8)) as u32)
-        )
+        ((path << clear_shift) >> clear_shift,
+        ((path >> ((current_hop_index * 32) as u8)) as u32))
     }
 
-    public(friend) fun update_channel_path(path: u256, next_channel_id: u32): u256 {
+    public(friend) fun update_channel_path(
+        path: u256, next_channel_id: u32
+    ): u256 {
         if (path == 0) {
             return (next_channel_id as u256)
         };
@@ -133,19 +127,29 @@ module zkgm::lib {
     }
 
     public(friend) fun is_allowed_forward_instruction(opcode: u8): bool {
-        opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER || opcode == OP_BATCH
+        opcode == OP_MULTIPLEX
+            || opcode == OP_FUNGIBLE_ASSET_ORDER
+            || opcode == OP_BATCH
     }
 
     public(friend) fun tint_forward_salt(salt: vector<u8>): vector<u8> {
         let salt = from_bcs::to_u256(salt);
-        let salt = FORWARD_SALT_MAGIC | (salt & (FORWARD_SALT_MAGIC ^ 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF));
+        let salt =
+            FORWARD_SALT_MAGIC
+                | (
+                    salt
+                        & (
+                            FORWARD_SALT_MAGIC
+                                ^
+                                0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+                        )
+                );
         bcs::to_bytes(&salt)
     }
 
     public(friend) fun derive_forward_salt(salt: vector<u8>): vector<u8> {
         tint_forward_salt(aptos_hash::keccak256(salt))
     }
-
 
     #[test]
     public fun test_update_channel_path() {
@@ -154,7 +158,6 @@ module zkgm::lib {
         assert!(update_channel_path(12414123, 111) == 476753783979, 1);
         assert!(update_channel_path(44, 22) == 94489280556, 1);
     }
-
 
     #[test]
     fun test_fls() {
