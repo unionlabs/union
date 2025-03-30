@@ -1370,7 +1370,7 @@ fn channel_open_confirm(
         },
     )?;
     channel.state = ChannelState::Open;
-    save_channel(deps.branch(), counterparty_channel_id, &channel)?;
+    save_channel(deps.branch(), channel_id, &channel)?;
     Ok(Response::new()
         .add_event(Event::new(events::channel::OPEN_CONFIRM).add_attributes([
             (events::attribute::PORT_ID, port_id.to_string()),
