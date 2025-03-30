@@ -89,9 +89,10 @@ pub enum AnyGasFillerConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case", deny_unknown_fields)]
+#[serde(rename_all = "snake_case")]
 pub struct FeemarketGasFillerConfig {
     pub max_gas: u64,
+    #[serde(with = "::serde_utils::string_opt")]
     pub gas_multiplier: Option<f64>,
     pub fee_denom: Option<String>,
 }

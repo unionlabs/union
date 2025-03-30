@@ -15367,6 +15367,7 @@ dependencies = [
  "prost 0.12.6",
  "protos",
  "serde",
+ "serde-utils",
  "serde_json",
  "sha2 0.10.8",
  "thiserror 1.0.69",
