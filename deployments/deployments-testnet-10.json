@@ -49,12 +49,9 @@
         }
       }
     },
-    "channels": [
-      {
-        "id": 1,
-        "tags": ["canonical"]
-      }
-    ]
+    "1": {
+      "tags": ["canonical"]
+    }
   },
   {
     "universal_chain_id": "babylon.bbn-test-5",
@@ -90,12 +87,11 @@
         }
       }
     },
-    "channels": [
-      {
-        "id": 3,
+    "channels": {
+      "3": {
         "tags": ["experimental"]
       }
-    ]
+    }
   },
   {
     "universal_chain_id": "ethereum.11155111",
@@ -134,12 +130,11 @@
         }
       }
     },
-    "channels": [
-      {
-        "id": 1,
+    "channels": {
+      "1": {
         "tags": ["canonical"]
       }
-    ]
+    }
   },
   {
     "universal_chain_id": "ethereum.17000",
@@ -216,12 +211,11 @@
         }
       }
     },
-    "channels": [
-      {
-        "id": 3,
+    "channels": {
+      "3": {
         "tags": ["experimental"]
       }
-    ]
+    }
   },
   {
     "universal_chain_id": "bob.60808",
