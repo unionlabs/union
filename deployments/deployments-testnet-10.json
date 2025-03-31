@@ -1,5 +1,6 @@
 [
   {
+    "universal_chain_id": "union.union-testnet-10",
     "chain_id": "union-testnet-10",
     "ibc_interface": "ibc-cosmwasm",
     "deployments": {
@@ -48,9 +49,14 @@
         }
       }
     },
-    "channels": [1]
+    "channels": {
+      "1": {
+        "tags": ["canonical"]
+      }
+    }
   },
   {
+    "universal_chain_id": "babylon.bbn-test-5",
     "chain_id": "bbn-test-5",
     "ibc_interface": "ibc-cosmwasm",
     "deployments": {
@@ -82,9 +88,15 @@
           "height": 606202
         }
       }
+    },
+    "channels": {
+      "3": {
+        "tags": ["experimental"]
+      }
     }
   },
   {
+    "universal_chain_id": "ethereum.11155111",
     "chain_id": "11155111",
     "ibc_interface": "ibc-solidity",
     "deployments": {
@@ -120,9 +132,14 @@
         }
       }
     },
-    "channels": [1]
+    "channels": {
+      "1": {
+        "tags": ["canonical"]
+      }
+    }
   },
   {
+    "universal_chain_id": "ethereum.17000",
     "chain_id": "17000",
     "ibc_interface": "ibc-solidity",
     "deployments": {
@@ -157,10 +174,10 @@
           "height": 3525179
         }
       }
-    },
-    "channels": []
+    }
   },
   {
+    "universal_chain_id": "corn.21000001",
     "chain_id": "21000001",
     "ibc_interface": "ibc-solidity",
     "deployments": {
@@ -196,9 +213,14 @@
         }
       }
     },
-    "channels": []
+    "channels": {
+      "3": {
+        "tags": ["experimental"]
+      }
+    }
   },
   {
+    "universal_chain_id": "bob.60808",
     "chain_id": "60808",
     "ibc_interface": "ibc-solidity",
     "deployments": {
@@ -233,7 +255,6 @@
           "height": 15157453
         }
       }
-    },
-    "channels": []
+    }
   }
 ]
