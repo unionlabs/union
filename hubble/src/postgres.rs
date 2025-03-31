@@ -96,7 +96,7 @@ pub async fn schedule_replication_reset(
     reason: &str,
 ) -> sqlx::Result<()> {
     sqlx::query!(
-        "CALL public.replication_schedule_reset_chain($1, $2, $3);",
+        "CALL sync.replication_schedule_reset_chain($1, $2, $3);",
         BigDecimal::from(chain_id),
         &height,
         reason

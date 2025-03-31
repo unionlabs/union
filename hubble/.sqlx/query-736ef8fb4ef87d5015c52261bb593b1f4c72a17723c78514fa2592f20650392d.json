@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "CALL public.replication_schedule_reset_chain($1, $2, $3);",
+  "query": "CALL sync.replication_schedule_reset_chain($1, $2, $3);",
   "describe": {
     "columns": [],
     "parameters": {
@@ -12,5 +12,5 @@
     },
     "nullable": []
   },
-  "hash": "22f5dcc43fb08266c21ec0f3579e5ea8ee579eeea7ecd845721e84cf93afa336"
+  "hash": "736ef8fb4ef87d5015c52261bb593b1f4c72a17723c78514fa2592f20650392d"
 }
