@@ -41,10 +41,12 @@ impl IbcClient for MptTrustedLightClient {
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
-        Ok(
-            verify_membership(key, consensus_state.storage_root, storage_proof, value)
-                .map_err(Into::<Error>::into)?,
-        )
+        Ok(verify_membership(
+            key,
+            consensus_state.storage_root,
+            storage_proof,
+            value,
+        )?)
     }
 
     fn verify_non_membership(
@@ -54,10 +56,11 @@ impl IbcClient for MptTrustedLightClient {
         storage_proof: Self::StorageProof,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        Ok(
-            verify_non_membership(key, consensus_state.storage_root, storage_proof)
-                .map_err(Into::<Error>::into)?,
-        )
+        Ok(verify_non_membership(
+            key,
+            consensus_state.storage_root,
+            storage_proof,
+        )?)
     }
 
     fn verify_header(

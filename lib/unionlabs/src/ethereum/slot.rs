@@ -33,12 +33,13 @@ impl Slot<'_> {
             // keccak256(h(k) . p)
             Slot::Mapping(p, k) => {
                 let mut hasher = Keccak256::new();
+
                 match &k {
                     MappingKey::String(string) => hasher.update(string.as_bytes()),
                     MappingKey::Uint256(k) => hasher.update(k.to_be_bytes()),
                     MappingKey::Uint64(k) => hasher.update(U256::from(*k).to_be_bytes()),
                     MappingKey::Bytes32(k) => hasher.update(k.get()),
-                };
+                }
 
                 U256::from_be_bytes(
                     hasher

@@ -1,5 +1,3 @@
-#![feature(async_closure)]
-
 use std::{collections::BTreeMap, num::NonZeroU64, ops::Deref, path::PathBuf};
 
 use anyhow::{bail, Context, Result};
@@ -998,7 +996,7 @@ fn write_output(path: Option<PathBuf>, data: impl Serialize) -> Result<()> {
 
 enum AnyGasFiller {
     Static(StaticGasFiller),
-    Feemarket(FeemarketGasFiller),
+    Feemarket(Box<FeemarketGasFiller>),
 }
 
 impl AnyGasFiller {
@@ -1011,7 +1009,7 @@ impl AnyGasFiller {
                 max_gas: args.max_gas,
                 min_gas: args.min_gas,
             }),
-            GasFillerType::Feemarket => Self::Feemarket(
+            GasFillerType::Feemarket => Self::Feemarket(Box::new(
                 FeemarketGasFiller::new(
                     rpc_url,
                     args.max_gas,
@@ -1019,7 +1017,7 @@ impl AnyGasFiller {
                     args.fee_denom,
                 )
                 .await?,
-            ),
+            )),
         })
     }
 }

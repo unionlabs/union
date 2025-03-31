@@ -330,10 +330,10 @@ fn restrict_name(name: String) -> String {
 
 /// Restricts the token symbol by the following rules:
 /// 1. symbol.len() > 12:
-///     Since the symbol can be `factory/ADDR/real_denom`, we try to get the `real_denom` part.
-///     Then do sanity check to the characters. And postfix to match the length 3.
+///    Since the symbol can be `factory/ADDR/real_denom`, we try to get the `real_denom` part.
+///    Then do sanity check to the characters. And postfix to match the length 3.
 /// 2. symbol.len() <= 12:
-///     We only do sanity checks and postfix to match the length 3.
+///    We only do sanity checks and postfix to match the length 3.
 fn restrict_symbol(symbol: String) -> String {
     if symbol.len() > 12 {
         // truncate the symbol to get the last 12 chars

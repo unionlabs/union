@@ -195,16 +195,18 @@ impl<Enc: Encoding> bincode::Encode for Bytes<Enc> {
 }
 
 #[cfg(feature = "bincode")]
-impl<Enc: Encoding> bincode::Decode for Bytes<Enc> {
-    fn decode<D: bincode::de::Decoder>(
+impl<Context, Enc: Encoding> bincode::Decode<Context> for Bytes<Enc> {
+    fn decode<D: bincode::de::Decoder<Context = Context>>(
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {
-        Ok(Self::from(<Vec<u8> as bincode::Decode>::decode(decoder)?))
+        Ok(Self::from(<Vec<u8> as bincode::Decode<Context>>::decode(
+            decoder,
+        )?))
     }
 }
 
 #[cfg(feature = "bincode")]
-impl<'de, Enc: Encoding> bincode::BorrowDecode<'de> for Bytes<Enc> {
+impl<'de, Context, Enc: Encoding> bincode::BorrowDecode<'de, Context> for Bytes<Enc> {
     fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {

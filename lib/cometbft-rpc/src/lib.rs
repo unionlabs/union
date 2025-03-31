@@ -66,11 +66,11 @@ impl Client {
 
                 ClientInner::Ws(client)
             }
-            Some(("http" | "https", _)) => ClientInner::Http(
+            Some(("http" | "https", _)) => ClientInner::Http(Box::new(
                 HttpClientBuilder::default()
                     .max_response_size(100 * 1024 * 1024)
                     .build(url)?,
-            ),
+            )),
             _ => return Err(JsonRpcError::Custom(format!("invalid url {url}"))),
         };
 
@@ -339,7 +339,7 @@ impl Client {
 
 #[derive(Debug, Clone)]
 enum ClientInner {
-    Http(HttpClient),
+    Http(Box<HttpClient>),
     Ws(reconnecting_jsonrpc_ws_client::Client),
 }
 

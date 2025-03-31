@@ -377,7 +377,9 @@ impl<Enc: Encoding, const BYTES: usize> bincode::Encode for FixedBytes<BYTES, En
 }
 
 #[cfg(feature = "bincode")]
-impl<Enc: Encoding, const BYTES: usize> bincode::Decode for FixedBytes<BYTES, Enc> {
+impl<Context, Enc: Encoding, const BYTES: usize> bincode::Decode<Context>
+    for FixedBytes<BYTES, Enc>
+{
     fn decode<D: bincode::de::Decoder>(
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {
@@ -386,7 +388,9 @@ impl<Enc: Encoding, const BYTES: usize> bincode::Decode for FixedBytes<BYTES, En
 }
 
 #[cfg(feature = "bincode")]
-impl<'de, Enc: Encoding, const BYTES: usize> bincode::BorrowDecode<'de> for FixedBytes<BYTES, Enc> {
+impl<'de, Context, Enc: Encoding, const BYTES: usize> bincode::BorrowDecode<'de, Context>
+    for FixedBytes<BYTES, Enc>
+{
     fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {

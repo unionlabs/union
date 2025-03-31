@@ -144,7 +144,7 @@ pub async fn insert_batch_events(
                 e.chain_id.db,
                 e.block_hash,
                 block_height,
-                e.transaction_hash.map(Into::into),
+                e.transaction_hash,
                 e.block_index,
                 e.transaction_index,
                 e.data,

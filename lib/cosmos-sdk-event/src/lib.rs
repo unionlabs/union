@@ -1,5 +1,3 @@
-#![feature(extract_if)]
-
 use std::{collections::BTreeMap, fmt::Display, str::FromStr};
 
 use cometbft_types::abci::event_attribute::EventAttribute;
@@ -122,7 +120,7 @@ fn pull_attr<T: FromStr<Err: Display>>(
     attrs: &mut Vec<EventAttribute>,
     key: &'static str,
 ) -> Result<Option<T>, Error> {
-    let mut found = attrs.extract_if(|attr| attr.key == key).peekable();
+    let mut found = attrs.extract_if(.., |attr| attr.key == key).peekable();
 
     match found.next() {
         Some(attr) => {

@@ -43,18 +43,18 @@ macro_rules! bounded_int {
             }
 
             #[cfg(feature = "bincode")]
-            impl<const MIN: $ty, const MAX: $ty> bincode::Decode for $Struct<MIN, MAX> {
-                fn decode<D: bincode::de::Decoder>(
+            impl<Context, const MIN: $ty, const MAX: $ty> bincode::Decode<Context> for $Struct<MIN, MAX> {
+                fn decode<D: bincode::de::Decoder<Context = Context>>(
                     decoder: &mut D,
                 ) -> Result<Self, bincode::error::DecodeError> {
-                    Self::new(<$ty as bincode::Decode>::decode(decoder)?)
+                    Self::new(<$ty as bincode::Decode<Context>>::decode(decoder)?)
                         .map_err(|err| bincode::error::DecodeError::OtherString(err.to_string()))
                 }
             }
 
             #[cfg(feature = "bincode")]
-            impl<'de, const MIN: $ty, const MAX: $ty> bincode::BorrowDecode<'de> for $Struct<MIN, MAX> {
-                fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
+            impl<'de, Context, const MIN: $ty, const MAX: $ty> bincode::BorrowDecode<'de, Context> for $Struct<MIN, MAX> {
+                fn borrow_decode<D: bincode::de::BorrowDecoder<'de, Context = Context>>(
                     decoder: &mut D,
                 ) -> Result<Self, bincode::error::DecodeError> {
                     bincode::Decode::decode(decoder)

@@ -354,7 +354,7 @@ pub fn execute(
                 deps.branch(),
                 info,
                 packets,
-                acknowledgements.into_iter().map(Into::into).collect(),
+                acknowledgements.into_iter().collect(),
                 proof.to_vec(),
                 proof_height,
                 relayer,
@@ -416,7 +416,7 @@ pub fn execute(
         ),
         ExecuteMsg::BatchSend(MsgBatchSend { packets }) => batch_send(deps, packets),
         ExecuteMsg::BatchAcks(MsgBatchAcks { packets, acks }) => {
-            batch_acks(deps, packets, acks.into_iter().map(Into::into).collect())
+            batch_acks(deps, packets, acks.into_iter().collect())
         }
         ExecuteMsg::MigrateState(MsgMigrateState {
             client_id,

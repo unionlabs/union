@@ -76,8 +76,8 @@ pub mod u256_big_endian_hex {
 }
 
 #[cfg(feature = "bincode")]
-impl bincode::Decode for U256 {
-    fn decode<D: bincode::de::Decoder>(
+impl<Context> bincode::Decode<Context> for U256 {
+    fn decode<D: bincode::de::Decoder<Context = Context>>(
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {
         use bincode::{

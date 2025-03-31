@@ -1,14 +1,13 @@
 use enumorph::Enumorph;
 use sha3::{Digest, Keccak256};
-use unionlabs::{
-    ethereum::keccak256,
-    primitives::{Bytes, H256, U256},
-};
+use unionlabs::primitives::{Bytes, H256, U256};
 use voyager_core::IbcStorePathKey;
 
+#[cfg(feature = "ethabi")]
+use crate::Packet;
 use crate::{
     types::{ChannelId, ClientId, ConnectionId},
-    Channel, Connection, IbcUnion, Packet,
+    Channel, Connection, IbcUnion,
 };
 
 pub const IBC_UNION_COSMWASM_COMMITMENT_PREFIX: [u8; 1] = [0x00];
@@ -40,7 +39,11 @@ pub const PACKET_ACKS: U256 = U256::from_limbs([5, 0, 0, 0]);
 #[must_use]
 pub fn commit_packets(packets: &[Packet]) -> H256 {
     use alloy_sol_types::SolValue;
-    keccak256(packets.abi_encode())
+
+    Keccak256::new()
+        .chain_update(packets.abi_encode())
+        .finalize()
+        .into()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Enumorph)]
@@ -240,7 +243,10 @@ impl BatchPacketsPath {
     pub fn from_packets(packets: &[Packet]) -> Self {
         use alloy_sol_types::SolValue;
         Self {
-            batch_hash: keccak256(packets.abi_encode()),
+            batch_hash: Keccak256::new()
+                .chain_update(packets.abi_encode())
+                .finalize()
+                .into(),
         }
     }
 
