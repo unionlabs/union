@@ -92,6 +92,12 @@
     "channels": {
       "3": {
         "tags": ["experimental"]
+      },
+      "4": {
+        "tags": ["experimental"]
+      },
+      "5": {
+        "tags": ["experimental"]
       }
     }
   },
@@ -216,6 +222,9 @@
     "channels": {
       "3": {
         "tags": ["experimental"]
+      },
+      "4": {
+        "tags": ["experimental"]
       }
     }
   },
@@ -254,6 +263,11 @@
           "address": "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
           "height": 15157453
         }
+      }
+    },
+    "channels": {
+      "3": {
+        "tags": ["experimental"]
       }
     }
   }
