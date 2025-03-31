@@ -49,8 +49,10 @@
         }
       }
     },
-    "1": {
-      "tags": ["canonical"]
+    "channels": {
+      "1": {
+        "tags": ["canonical"]
+      }
     }
   },
   {
