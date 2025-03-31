@@ -1,0 +1,27 @@
+---
+title: UCS04 - Universal Chain ID
+---
+
+Chain IDs as reported by chains themselves are unfortunately not universally unique. For example, ID `1` is used for both Ethereum and Aptos.
+
+To disambiguate, UCS04 defines `universal_chain_id` as `<chain_family_name>.<chain_id>`. `<chain_family_name>` is hard to formally define. It loosely means "The short lowercase display name of the mainnet of the network".
+
+These IDs are used across all Union products. In addition to disambiguation, they have the additional advantage that chains are easier to recognize in logs, chats, and config files.
+
+## Universal Chain IDs
+
+This is a list of all `universal_chain_id`s currently recognized by Union. To add yours, [open a PR for the `universal-chain-ids.json`](https://github.com/unionlabs/union/blob/main/deployments/universal-chain-ids.json).
+
+import universalChainIds from "~root/deployments/universal-chain-ids.json"
+
+{Object.entries(universalChainIds).map(([key, value]) => (
+<div>
+  <h3>{key}</h3>
+  {value.map((id) => (
+    <li key={key}>
+      <code>{key}.{id}</code>
+    </li>
+  ))}
+</div>
+))}
+
