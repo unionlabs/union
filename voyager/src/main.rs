@@ -140,6 +140,18 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
         None => Err(anyhow!("config file must be specified")),
     };
 
+    let get_rest_url = |rest_url: Option<String>| match (get_voyager_config(), rest_url) {
+        (Ok(config), None) => format!("http://{}", config.voyager.rest_laddr),
+        (_, Some(rest_url)) => rest_url,
+        (Err(_), None) => format!("http://{}", default_rest_laddr()),
+    };
+
+    let get_rpc_url = |rpc_url: Option<String>| match (get_voyager_config(), rpc_url) {
+        (Ok(config), None) => format!("http://{}", config.voyager.rpc_laddr),
+        (_, Some(rpc_url)) => rpc_url,
+        (Err(_), None) => format!("http://{}", default_rpc_laddr()),
+    };
+
     match args.command {
         Command::Config(cmd) => match cmd {
             ConfigCmd::Print => {
@@ -285,6 +297,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
             match cli_msg {
                 QueueCmd::Enqueue { op, rest_url } => {
+                    let rest_url = get_rest_url(rest_url);
+
                     send_enqueue(&rest_url, op).await?;
                 }
                 // NOTE: Temporarily disabled until i figure out a better way to implement this with the new queue design
@@ -345,6 +359,9 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             rpc_url,
             rest_url,
         } => {
+            let rpc_url = get_rpc_url(rpc_url);
+            let rest_url = get_rest_url(rest_url);
+
             let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(rpc_url)?;
 
             let start_height = match height {
@@ -373,8 +390,10 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 print_json(&op);
             }
         }
-        Command::Rpc { cmd, rpc_url: url } => {
-            let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(url)?;
+        Command::Rpc { cmd, rpc_url } => {
+            let rpc_url = get_rpc_url(rpc_url);
+
+            let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(rpc_url)?;
 
             let ibc_handlers = [
                 (IbcClassic::ID, IbcSpecHandler::new::<IbcClassic>()),
@@ -541,6 +560,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 client_state_config,
                 consensus_state_config,
             } => {
+                let rest_url = get_rest_url(rest_url);
+
                 let voyager_config = get_voyager_config()?;
 
                 let ctx = Context::new(
@@ -588,6 +609,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 enqueue,
                 rest_url,
             } => {
+                let rest_url = get_rest_url(rest_url);
+
                 let voyager_config = get_voyager_config()?;
 
                 let ctx = Context::new(
