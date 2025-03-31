@@ -1,8 +1,10 @@
 {
   "aptos": ["1", "2"],
   "arbitrum": ["421614"],
+  "bob": ["60808"],
   "babylon": ["bbn-test-5"],
   "berachain": ["80084"],
+  "corn": ["21000001"],
   "ethereum": ["11155111", "17000", "1"],
   "movement": ["250"],
   "osmosis": ["osmo-test-5"],
