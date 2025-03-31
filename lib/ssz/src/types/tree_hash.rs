@@ -49,14 +49,14 @@ fn chunk_count_basic_list_or_vector<N>(size: u8) -> usize
 where
     N: Unsigned,
 {
-    (N::USIZE * (size as usize) + 31) / 32_usize
+    (N::USIZE * (size as usize)).div_ceil(32_usize)
 }
 
 /// A helper function providing common functionality for finding the Merkle root of some bytes that
 /// represent a bitfield.
 #[must_use]
 pub fn bitfield_bytes_tree_hash_root<N: Unsigned>(bytes: &[u8]) -> H256 {
-    let byte_size = (N::USIZE + 7) / 8;
+    let byte_size = N::USIZE.div_ceil(8);
     let leaf_count = byte_size.div_ceil(BYTES_PER_CHUNK);
 
     let mut hasher = MerkleHasher::with_leaves(leaf_count);

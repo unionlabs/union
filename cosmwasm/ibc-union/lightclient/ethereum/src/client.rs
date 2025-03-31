@@ -184,7 +184,6 @@ impl IbcClient for EthereumLightClient {
                 header,
             ),
         }
-        .map_err(Into::into)
     }
 
     fn misbehaviour(

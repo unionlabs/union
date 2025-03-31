@@ -1469,7 +1469,7 @@ name = "arbitrum-light-client-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "ethereum-light-client-types",
  "hex-literal",
  "ibc-union-spec",
@@ -2418,7 +2418,7 @@ dependencies = [
 name = "beacon-api-types"
 version = "0.0.0"
 dependencies = [
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "hex-literal",
  "serde",
  "serde-utils",
@@ -2495,7 +2495,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "ethereum-light-client-types",
  "ibc-union-spec",
  "serde",
@@ -2550,8 +2550,9 @@ dependencies = [
 
 [[package]]
 name = "bincode"
-version = "2.0.0-rc.3"
-source = "git+https://github.com/bincode-org/bincode#29d8d84d3269f6e9b122c0ef6d8ea300dee3048f"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36eaf5d7b090263e8150820482d5d93cd964a81e4019913c972f4edcc6edb740"
 dependencies = [
  "bincode_derive",
  "serde",
@@ -2560,8 +2561,9 @@ dependencies = [
 
 [[package]]
 name = "bincode_derive"
-version = "2.0.0-rc.3"
-source = "git+https://github.com/bincode-org/bincode#29d8d84d3269f6e9b122c0ef6d8ea300dee3048f"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf95709a440f45e986983918d0e8a1f30a9b1df04918fc828670606804ac3c09"
 dependencies = [
  "virtue",
 ]
@@ -2819,7 +2821,7 @@ name = "bob-light-client-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "ethereum-light-client-types",
  "hex-literal",
  "ibc-union-spec",
@@ -2959,9 +2961,9 @@ dependencies = [
 
 [[package]]
 name = "bytemuck_derive"
-version = "1.8.0"
+version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcfcc3cd946cb52f0bbfdbbcfa2f4e24f75ebb6c0e1002f7c25904fada18b9ec"
+checksum = "7ecc273b49b3205b83d648f0690daa588925572cc5063745bfe547fe7ec8e1a1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3413,7 +3415,7 @@ dependencies = [
 name = "cometbft-types"
 version = "0.0.0"
 dependencies = [
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "cometbft-types",
  "hex-literal",
  "prost 0.12.6",
@@ -3468,7 +3470,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bcs 0.1.6",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "cometbls-light-client-types",
  "hex",
  "hex-literal",
@@ -5281,7 +5283,7 @@ dependencies = [
  "base64 0.21.7",
  "beacon-api",
  "beacon-api-types",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "cosmwasm-std 2.2.2",
  "depolama",
  "embed-commit",
@@ -5308,7 +5310,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "ethereum-light-client-types",
  "ethereum-sync-protocol-types",
  "hex-literal",
@@ -5339,7 +5341,7 @@ name = "ethereum-sync-protocol-types"
 version = "0.0.0"
 dependencies = [
  "beacon-api-types",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "serde",
  "unionlabs-primitives",
 ]
@@ -5383,7 +5385,7 @@ dependencies = [
 name = "ethermint-light-client-types"
 version = "0.0.0"
 dependencies = [
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "serde",
  "tendermint-light-client-types",
  "unionlabs-primitives",
@@ -6822,7 +6824,7 @@ name = "ibc-union"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "depolama",
@@ -6872,7 +6874,7 @@ name = "ibc-union-spec"
 version = "0.0.0"
 dependencies = [
  "alloy-sol-types",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "enumorph",
  "ibc-solidity",
  "ibc-union-spec",
@@ -8532,7 +8534,7 @@ name = "movement-light-client-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "ethereum-light-client-types",
  "hex-literal",
  "serde",
@@ -12349,7 +12351,7 @@ name = "state-lens-ics23-mpt-light-client-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "hex-literal",
  "protos",
  "serde",
@@ -12365,7 +12367,7 @@ version = "0.0.0"
 dependencies = [
  "aptos-verifier",
  "bcs 0.1.6",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "cometbls-light-client",
  "cosmwasm-std 2.2.2",
  "embed-commit",
@@ -12390,7 +12392,7 @@ name = "state-lens-ics23-smt-light-client-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "hex-literal",
  "protos",
  "serde",
@@ -12405,7 +12407,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bcs 0.1.6",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "hex-literal",
  "ibc-union-spec",
  "serde",
@@ -12792,7 +12794,7 @@ name = "tendermint-light-client-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "cometbft-types",
  "hex-literal",
  "protos",
@@ -13643,7 +13645,7 @@ name = "trusted-mpt-light-client-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "ethereum-light-client-types",
  "hex-literal",
  "serde",
@@ -13939,7 +13941,7 @@ dependencies = [
  "alloy",
  "base64 0.21.7",
  "bcs 0.1.6",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "bip32",
  "borsh",
  "bs58 0.4.0",
@@ -13985,7 +13987,7 @@ dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
  "base64 0.21.7",
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "generic-array 0.14.7",
  "hex",
  "primitive-types 0.12.2",
@@ -14046,9 +14048,9 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
 name = "unty"
-version = "0.0.3"
+version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1a88342087869553c259588a3ec9ca73ce9b2d538b7051ba5789ff236b6c129"
+checksum = "6d49784317cd0d1ee7ec5c716dd598ec5b4483ea832a2dced265471cc0f690ae"
 
 [[package]]
 name = "ureq"
@@ -14963,7 +14965,7 @@ dependencies = [
 name = "voyager-event-source-plugin-cosmos-sdk"
 version = "0.0.0"
 dependencies = [
- "bincode 2.0.0-rc.3",
+ "bincode 2.0.1",
  "clap 4.5.32",
  "cometbft-rpc",
  "cosmos-sdk-event",

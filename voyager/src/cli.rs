@@ -104,6 +104,7 @@ pub enum ConfigCmd {
 type Pg64 = BoundedI64<1, { i64::MAX }>;
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum QueueCmd {
     /// Enqueue a new op to the queue of an already running voyager instance.
     #[command(alias = "e")]

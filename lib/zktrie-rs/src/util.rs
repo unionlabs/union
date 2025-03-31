@@ -65,8 +65,8 @@ pub fn hash_elems_with_domain<H: HashScheme>(
         return hash_elems_with_domain::<H>(domain, &base_h, &elems[0], &[]);
     }
 
-    let mut tmp = Vec::with_capacity((l + 1) / 2);
-    for i in 0..(l + 1) / 2 {
+    let mut tmp = Vec::with_capacity(l.div_ceil(2));
+    for i in 0..l.div_ceil(2) {
         if (i + 1) * 2 > l {
             tmp.push(elems[i * 2]);
         } else {

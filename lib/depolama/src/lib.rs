@@ -420,7 +420,7 @@ impl<T: Storage> StorageExt for T {
     }
 }
 
-impl<'a> StorageExt for dyn Storage + 'a {
+impl StorageExt for dyn Storage + '_ {
     #[inline]
     fn read<S: Store>(&self, k: &S::Key) -> StdResult<S::Value> {
         self.maybe_read::<S>(k)?

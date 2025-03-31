@@ -12,5 +12,5 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-bytemuck  = { version = "1.20", default-features = false, features = ["derive"] }
+bytemuck  = { version = "1.22", default-features = false, features = ["derive"] }
 const-hex = { version = "1.14.0", default-features = false }

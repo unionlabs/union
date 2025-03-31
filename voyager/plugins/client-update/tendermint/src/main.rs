@@ -84,7 +84,7 @@ impl Plugin for Module {
 
         let chain_revision = chain_id
             .split('-')
-            .last()
+            .next_back()
             .ok_or_else(|| ChainIdParseError {
                 found: chain_id.clone(),
                 source: None,

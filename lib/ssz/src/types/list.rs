@@ -434,7 +434,7 @@ mod test {
         // Very large list type that would not fit in memory.
         type LargeList = List<u64, U1099511627776>;
 
-        let iter = iter::repeat(1).take(5);
+        let iter = iter::repeat_n(1, 5);
         let wonky_iter = WonkyIterator {
             hint: U1099511627776::USIZE / 2,
             iter: iter.clone(),

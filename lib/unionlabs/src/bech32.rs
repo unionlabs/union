@@ -158,15 +158,15 @@ where
 }
 
 #[cfg(feature = "bincode")]
-impl<Data, Hrp> bincode::Decode for Bech32<Data, Hrp>
+impl<Context, Data, Hrp> bincode::Decode<Context> for Bech32<Data, Hrp>
 where
     Data: TryFrom<Vec<u8>>,
     Hrp: From<String>,
 {
-    fn decode<D: bincode::de::Decoder>(
+    fn decode<D: bincode::de::Decoder<Context = Context>>(
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {
-        <String as bincode::Decode>::decode(decoder).and_then(|s| {
+        <String as bincode::Decode<Context>>::decode(decoder).and_then(|s| {
             s.parse::<Self>()
                 .map_err(|e| bincode::error::DecodeError::OtherString(e.to_string()))
         })
@@ -174,7 +174,7 @@ where
 }
 
 #[cfg(feature = "bincode")]
-impl<'de, Data, Hrp> bincode::BorrowDecode<'de> for Bech32<Data, Hrp>
+impl<'de, Context, Data, Hrp> bincode::BorrowDecode<'de, Context> for Bech32<Data, Hrp>
 where
     Data: TryFrom<Vec<u8>>,
     Hrp: From<String>,

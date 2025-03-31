@@ -76,7 +76,7 @@ where
 #[cfg(feature = "bincode")]
 impl<T> Decode<Bincode> for T
 where
-    T: bincode::Decode,
+    T: bincode::Decode<()>,
 {
     type Error = bincode::error::DecodeError;
 

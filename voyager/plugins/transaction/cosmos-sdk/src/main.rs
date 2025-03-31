@@ -916,11 +916,7 @@ fn process_msgs(
                     ibc_union_spec::datagram::Datagram::PacketRecv(msg_packet_recv) => {
                         let packet_recv = ibc_union_msg::msg::ExecuteMsg::PacketRecv(
                             ibc_union_msg::msg::MsgPacketRecv {
-                                packets: msg_packet_recv
-                                    .packets
-                                    .into_iter()
-                                    .map(Into::into)
-                                    .collect(),
+                                packets: msg_packet_recv.packets.into_iter().collect(),
                                 relayer_msgs: msg_packet_recv.relayer_msgs,
                                 proof: msg_packet_recv.proof,
                                 proof_height: msg_packet_recv.proof_height,
@@ -940,11 +936,7 @@ fn process_msgs(
                     ) => {
                         let packet_recv = ibc_union_msg::msg::ExecuteMsg::PacketAck(
                             ibc_union_msg::msg::MsgPacketAcknowledgement {
-                                packets: msg_packet_acknowledgement
-                                    .packets
-                                    .into_iter()
-                                    .map(Into::into)
-                                    .collect(),
+                                packets: msg_packet_acknowledgement.packets.into_iter().collect(),
                                 acknowledgements: msg_packet_acknowledgement.acknowledgements,
                                 proof: msg_packet_acknowledgement.proof,
                                 proof_height: msg_packet_acknowledgement.proof_height,
