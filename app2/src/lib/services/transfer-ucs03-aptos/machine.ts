@@ -7,8 +7,7 @@ import {
 import { Effect } from "effect"
 import { switchChainAptos } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions-aptos.ts"
-import type { Chain } from "@unionlabs/sdk/schema"
-import type { ValidTransfer } from "@unionlabs/sdk/schema"
+import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
 
 /**
  * This state machine is dedicated to Aptos transfers.

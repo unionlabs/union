@@ -4,7 +4,7 @@ import {
   transferListPageGtQuery,
   transferListPageLtQuery
 } from "$lib/queries/transfer-list.svelte"
-import { Effect, Fiber, Option } from "effect"
+import { Effect, Option } from "effect"
 import { onMount } from "svelte"
 import { transferList } from "$lib/stores/transfers.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"

@@ -1,4 +1,4 @@
-import { Effect, Data } from "effect"
+import { Data, Effect } from "effect"
 import { fromHex, type FromHexErrorType } from "viem"
 
 export class FromHexError extends Data.TaggedError("FromHexError")<{

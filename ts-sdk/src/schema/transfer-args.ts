@@ -55,7 +55,9 @@ const CosmosTransferSchema = S.Struct({
 })
 type CosmosTransferSchema = typeof CosmosTransferSchema.Type
 
-export class CosmosTransfer extends S.Class<CosmosTransfer>("CosmosTransfer")(CosmosTransferSchema) {}
+export class CosmosTransfer extends S.Class<CosmosTransfer>("CosmosTransfer")(
+  CosmosTransferSchema
+) {}
 
 const AptosTransferSchema = S.Struct({
   ...BaseTransferFields,

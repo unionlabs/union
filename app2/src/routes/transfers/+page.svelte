@@ -1,13 +1,13 @@
 <script lang="ts">
 import {
+  transferCountForAddressesQuery,
   transferListLatestAddressQuery,
   transferListPageGtAddressQuery,
-  transferListPageLtAddressQuery,
-  transferCountForAddressesQuery
+  transferListPageLtAddressQuery
 } from "$lib/queries/transfer-list-address.svelte"
-import { DateTime, Effect, Fiber, Option } from "effect"
+import { Effect, Fiber, Option } from "effect"
 import { onMount } from "svelte"
-import { transferListAddress, transferCount } from "$lib/stores/transfers.svelte"
+import { transferCount, transferListAddress } from "$lib/stores/transfers.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
@@ -18,7 +18,6 @@ import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
-import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
 
 let transferFiber: Fiber.Fiber<any, any>
 let countFiber: Fiber.Fiber<any, any>

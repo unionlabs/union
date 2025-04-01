@@ -1,4 +1,5 @@
 import { bech32 } from "@scure/base"
+
 type Bech32Address<T extends string = string> = `${T}1${string}`
 /**
  * Truncates a string based on the given parameters

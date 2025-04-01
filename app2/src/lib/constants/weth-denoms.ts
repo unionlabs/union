@@ -1,5 +1,4 @@
-import { UniversalChainId } from "@unionlabs/sdk/schema"
-import { TokenRawDenom } from "@unionlabs/sdk/schema"
+import { TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
 
 export const WETH_DENOMS: Record<UniversalChainId, TokenRawDenom> = {
   [UniversalChainId.make("ethereum.11155111")]: TokenRawDenom.make(

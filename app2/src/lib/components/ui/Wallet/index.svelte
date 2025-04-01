@@ -1,5 +1,5 @@
 <script lang="ts">
-import { sepoliaStore, evmWalletsInformation } from "$lib/wallet/evm/index.js"
+import { evmWalletsInformation, sepoliaStore } from "$lib/wallet/evm/index.js"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.js"
 import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.js"
 import Connection from "$lib/components/ui/Wallet/connect/connection.svelte"

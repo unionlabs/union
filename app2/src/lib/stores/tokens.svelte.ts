@@ -1,7 +1,6 @@
 import { Effect, type Fiber, Option } from "effect"
-import type { Tokens } from "@unionlabs/sdk/schema"
+import type { Tokens, UniversalChainId } from "@unionlabs/sdk/schema"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
-import type { UniversalChainId } from "@unionlabs/sdk/schema"
 import { tokensQuery } from "$lib/queries/tokens.svelte"
 import { SvelteMap } from "svelte/reactivity"
 

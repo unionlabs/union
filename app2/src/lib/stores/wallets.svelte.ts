@@ -1,11 +1,11 @@
 import { Option } from "effect"
 import type {
-  AddressEvmCanonical,
   AddressAptosCanonical,
+  AddressCanonicalBytes,
   AddressCosmosCanonical,
-  AddressCanonicalBytes
+  AddressEvmCanonical,
+  Chain
 } from "@unionlabs/sdk/schema"
-import type { Chain } from "@unionlabs/sdk/schema"
 
 class WalletsStore {
   evmAddress: Option.Option<typeof AddressEvmCanonical.Type> = $state(Option.none())

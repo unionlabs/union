@@ -1,9 +1,9 @@
 <script lang="ts">
+import type { Snippet } from "svelte"
 import { onMount } from "svelte"
 import Card from "./Card.svelte"
 import type { HTMLAttributes } from "svelte/elements"
 import { cn } from "$lib/utils"
-import type { Snippet } from "svelte"
 import { fade, scale } from "svelte/transition"
 
 type Props = HTMLAttributes<HTMLDivElement> & {

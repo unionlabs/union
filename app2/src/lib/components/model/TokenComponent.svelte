@@ -1,9 +1,7 @@
 <script lang="ts">
-import type { Chain, UniversalChainId } from "@unionlabs/sdk/schema"
-import type { TokenRawDenom, TokenRawAmount } from "@unionlabs/sdk/schema"
-import { Effect, Option } from "effect"
+import type { Chain, TokenRawAmount, TokenRawDenom } from "@unionlabs/sdk/schema"
+import { Option } from "effect"
 import Truncate from "$lib/components/ui/Truncate.svelte"
-import { tokensQuery } from "$lib/queries/tokens.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 

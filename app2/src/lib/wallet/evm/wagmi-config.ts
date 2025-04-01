@@ -11,12 +11,12 @@ import { coinbaseWallet, injected, metaMask, walletConnect } from "@wagmi/connec
 import {
   arbitrumSepolia,
   berachainTestnetbArtio,
+  bob,
+  bobSepolia,
+  cornTestnet,
   holesky,
   scrollSepolia,
-  sepolia,
-  bobSepolia,
-  bob,
-  cornTestnet
+  sepolia
 } from "@wagmi/core/chains"
 import { TESTNET_APP_INFO } from "$lib/config/app"
 

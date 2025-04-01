@@ -2,8 +2,8 @@ import * as S from "effect/Schema"
 import { PortId } from "./port.js"
 import { UniversalChainId } from "./chain.js"
 import { ConnectionId } from "./connection.js"
-import {Schema} from "effect";
-import {ClientId} from "./client.js";
+import { Schema } from "effect"
+import { ClientId } from "./client.js"
 
 export const ChannelId = S.Int.pipe(S.brand("ChannelId"))
 export type ChannelId = typeof ChannelId.Type

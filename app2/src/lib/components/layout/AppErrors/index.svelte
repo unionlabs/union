@@ -1,13 +1,10 @@
 <script lang="ts">
 import { Option } from "effect"
 import { chains } from "$lib/stores/chains.svelte"
-import { tokensStore } from "$lib/stores/tokens.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import Card from "$lib/components/ui/Card.svelte"
 import Label from "$lib/components/ui/Label.svelte"
-import { cn } from "$lib/utils"
 
-import { totalErrorCount, tokenErrors } from "$lib/stores/app-errors.svelte"
+import { tokenErrors, totalErrorCount } from "$lib/stores/app-errors.svelte"
 </script>
 
 {#if totalErrorCount() > 0}

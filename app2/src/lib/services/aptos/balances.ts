@@ -1,6 +1,6 @@
 import { Data, Effect, Option } from "effect"
-import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "@unionlabs/sdk/schema"
 import type { Chain } from "@unionlabs/sdk/schema"
+import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "@unionlabs/sdk/schema"
 // You can import a retry schedule specific for Aptos; here we assume one exists.
 import { aptosBalanceRetrySchedule } from "$lib/constants/schedules"
 import { getPublicClient } from "$lib/services/aptos/clients"

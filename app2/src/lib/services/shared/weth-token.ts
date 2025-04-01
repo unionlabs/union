@@ -1,8 +1,7 @@
 import { Effect } from "effect"
 import type { Hex } from "viem"
-import type { Channel } from "@unionlabs/sdk/schema"
+import type { Chain, Channel } from "@unionlabs/sdk/schema"
 import { getPublicClient } from "$lib/services/evm/clients.ts"
-import type { Chain } from "@unionlabs/sdk/schema"
 
 export const getWethQuoteToken = (
   sourceChain: Chain,

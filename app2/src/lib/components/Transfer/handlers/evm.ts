@@ -1,13 +1,13 @@
 import {
+  ApprovalReceiptState,
+  ApprovalSubmitState as EvmApprovalSubmitState,
   hasFailedExit as hasEvmFailedExit,
   isComplete as isEvmComplete,
   nextState as evmNextState,
-  TransferSubmission as EvmTransferSubmission,
   SwitchChainState as EvmSwitchChainState,
-  ApprovalSubmitState as EvmApprovalSubmitState,
-  ApprovalReceiptState,
-  TransferSubmitState as EvmTransferSubmitState,
-  TransferReceiptState as EvmTransferReceiptState
+  TransferReceiptState as EvmTransferReceiptState,
+  TransferSubmission as EvmTransferSubmission,
+  TransferSubmitState as EvmTransferSubmitState
 } from "$lib/services/transfer-ucs03-evm"
 import { TransferState, type TransferStateUnion } from "$lib/components/Transfer/validation.ts"
 import type { EVMTransfer } from "@unionlabs/sdk/schema"

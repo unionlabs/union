@@ -13,33 +13,35 @@ import { wallets } from "$lib/stores/wallets.svelte"
 import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
 import {
   createCosmosToCosmosFungibleAssetOrder,
-  createCosmosToEvmFungibleAssetOrder, createEvmToCosmosFungibleAssetOrder,
-  createEvmToEvmFungibleAssetOrder, type Instruction,
+  createCosmosToEvmFungibleAssetOrder,
+  createEvmToCosmosFungibleAssetOrder,
+  createEvmToEvmFungibleAssetOrder,
+  type Instruction
 } from "@unionlabs/sdk/ucs03"
 import { Batch } from "@unionlabs/sdk/ucs03/instruction.ts"
 import {
   createViemPublicClient,
-  ViemPublicClient,
-  ViemPublicClientSource,
-  readErc20Allowance,
   EvmChannelDestination,
-  ViemPublicClientDestination
+  readErc20Allowance,
+  ViemPublicClient,
+  ViemPublicClientDestination,
+  ViemPublicClientSource
 } from "@unionlabs/sdk/evm"
 
 import {
-  CosmWasmClientDestination,
-  createCosmWasmClient,
   CosmosChannelDestination,
-  CosmWasmClientSource
+  CosmWasmClientDestination,
+  CosmWasmClientSource,
+  createCosmWasmClient
 } from "@unionlabs/sdk/cosmos"
 import { fromHex, http, isHex } from "viem"
 import { truncate } from "$lib/utils/format.ts"
 import {
-  type TransferStep,
-  Filling,
   ApprovalRequired,
-  SubmitInstruction,
+  Filling,
   getStepDescription,
+  SubmitInstruction,
+  type TransferStep,
   WaitForIndex
 } from "./transfer-step.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
@@ -503,7 +505,6 @@ let actionButtonText = $derived.by(() => {
 
   return "Next"
 })
-
 
 function handleActionButtonClick() {
   if (Option.isNone(transferSteps)) return

@@ -1,7 +1,6 @@
 <script lang="ts">
 import type { HTMLAttributes } from "svelte/elements"
-import type { Chain } from "@unionlabs/sdk/schema"
-import type { TransactionHash } from "@unionlabs/sdk/schema"
+import type { Chain, TransactionHash } from "@unionlabs/sdk/schema"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 

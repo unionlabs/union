@@ -1,11 +1,10 @@
 <script lang="ts">
 import { cn } from "$lib/utils/index.js"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.js"
-import type { Token } from "@unionlabs/sdk/schema"
+import type { Chain, Token } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { formatUnits } from "viem"
-import type { Chain } from "@unionlabs/sdk/schema"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import SharpArrowLeft from "$lib/components/icons/SharpArrowLeft.svelte"
 

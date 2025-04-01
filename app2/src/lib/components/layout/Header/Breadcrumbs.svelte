@@ -2,8 +2,7 @@
 <script lang="ts">
 import { page } from "$app/state"
 import { navigation } from "../Sidebar/navigation.ts"
-import { Option } from "effect"
-import { fade, fly, slide } from "svelte/transition"
+import { fade, fly } from "svelte/transition"
 import { quintOut } from "svelte/easing"
 import { flip } from "svelte/animate"
 

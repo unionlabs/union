@@ -1,6 +1,5 @@
 import { Option } from "effect"
-import type { Chain } from "@unionlabs/sdk/schema"
-import type { Channel } from "@unionlabs/sdk/schema"
+import type { Chain, Channel } from "@unionlabs/sdk/schema"
 import type { TransferStep } from "./transfer-step.ts"
 
 /**

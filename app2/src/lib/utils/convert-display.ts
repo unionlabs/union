@@ -2,9 +2,9 @@ import { bech32 } from "@scure/base"
 import { Effect, Option, pipe, Schema } from "effect"
 import {
   AddressAptosDisplay,
+  type AddressCanonicalBytes,
   AddressCosmosDisplay,
-  AddressEvmDisplay,
-  type AddressCanonicalBytes
+  AddressEvmDisplay
 } from "@unionlabs/sdk/schema"
 
 // Helper to convert Uint8Array to AddressCanonicalBytes

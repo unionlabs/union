@@ -1,6 +1,6 @@
 <script lang="ts">
-import { statistics, dailyTransfers } from "$lib/stores/statistics.svelte"
-import { statisticsQuery, dailyTransfersQuery } from "$lib/queries/statistics.svelte"
+import { dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
+import { dailyTransfersQuery, statisticsQuery } from "$lib/queries/statistics.svelte"
 import { Option } from "effect"
 import { onMount } from "svelte"
 import Card from "$lib/components/ui/Card.svelte"

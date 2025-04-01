@@ -2,7 +2,8 @@ import { Data, Effect, Either, ParseResult, Schema } from "effect"
 import {
   type AptosTransfer,
   type CosmosTransfer,
-  type EVMTransfer, TransferSchema,
+  type EVMTransfer,
+  TransferSchema
 } from "@unionlabs/sdk/schema"
 import type { TransferSubmission as EvmTransferSubmission } from "$lib/services/transfer-ucs03-evm"
 import type { TransferSubmission as CosmosTransferSubmission } from "$lib/services/transfer-ucs03-cosmos"

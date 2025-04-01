@@ -6,7 +6,7 @@ import {
   TransferSubmitState
 } from "./state.js"
 import { Effect } from "effect"
-import type { Chain as ViemChain, Address } from "viem"
+import type { Address, Chain as ViemChain } from "viem"
 import { switchChain } from "./chain.js"
 import { submitTransfer, waitForReceipt } from "./transactions.js"
 import type { Chain } from "@unionlabs/sdk/schema"

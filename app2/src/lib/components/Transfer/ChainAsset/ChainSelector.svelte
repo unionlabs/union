@@ -21,7 +21,6 @@ function selectChain(chain: Chain) {
   }
   onSelect()
 }
-
 </script>
 
 <div class="p-4">

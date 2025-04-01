@@ -1,8 +1,8 @@
-import { Statistics, DailyTransfers } from "@unionlabs/sdk/schema"
+import { DailyTransfers, Statistics } from "@unionlabs/sdk/schema"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
-import { statistics, dailyTransfers } from "$lib/stores/statistics.svelte"
+import { dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
 
 export const statisticsQuery = createQueryGraphql({
   schema: Schema.Struct({ v2_stats_count: Statistics }),

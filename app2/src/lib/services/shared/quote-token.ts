@@ -1,16 +1,14 @@
 import { Effect, Schedule } from "effect"
-import { type Address, fromHex } from "viem"
 import type { Hex } from "viem"
+import { type Address, fromHex } from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
-import type { Channel } from "@unionlabs/sdk/schema"
-import type { Chain } from "@unionlabs/sdk/schema"
+import type { Chain, Channel, TokenRawDenom } from "@unionlabs/sdk/schema"
 import { getCosmosPublicClient } from "$lib/services/cosmos/clients.ts"
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import { MoveVector } from "@aptos-labs/ts-sdk"
 import { getPublicClient as getAptosClient } from "$lib/services/aptos/clients"
 import { getPublicClient } from "../evm/clients.ts"
-import type { TokenRawDenom } from "@unionlabs/sdk/schema"
 
 const retryPolicy = Schedule.recurs(2).pipe(
   Schedule.compose(Schedule.exponential(200)),

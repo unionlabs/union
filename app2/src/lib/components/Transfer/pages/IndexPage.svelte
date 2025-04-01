@@ -3,7 +3,6 @@ import { Option } from "effect"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
 import { ApprovalRequired } from "../transfer-step.ts"
 import Button from "$lib/components/ui/Button.svelte"
-import { onMount } from "svelte"
 
 type Props = {
   hash: string

@@ -1,4 +1,4 @@
-import { Data, type Exit, type Effect } from "effect"
+import { Data, type Effect, type Exit } from "effect"
 import type { Hash } from "viem"
 import type { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 import type { switchChain } from "./chain.ts"

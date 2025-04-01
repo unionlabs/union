@@ -5,7 +5,7 @@ import {
   packetListPageGtQuery,
   packetListPageLtQuery
 } from "$lib/queries/packet-list.svelte"
-import { Effect, Schema, Option } from "effect"
+import { Effect, Option, Schema } from "effect"
 import { onMount } from "svelte"
 import { packetList } from "$lib/stores/packets.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"

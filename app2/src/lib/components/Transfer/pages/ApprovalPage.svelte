@@ -7,9 +7,9 @@ import { ApprovalRequired } from "../transfer-step.ts"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
 import { erc20Abi, http } from "viem"
 import {
-  nextStateEvm,
   hasFailedExit,
   isComplete,
+  nextStateEvm,
   TransactionSubmissionEvm
 } from "$lib/components/Transfer/state/evm.ts"
 import { getWalletClient } from "$lib/services/evm/clients.ts"
