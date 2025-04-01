@@ -86,5 +86,5 @@ rustc-ice*
 .docs
 profiles/
 contracts.json
-ts-sdk/build
+dist/
 *.tsbuildinfo
