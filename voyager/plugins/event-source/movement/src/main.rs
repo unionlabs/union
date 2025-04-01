@@ -317,7 +317,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     })
                     .filter(|(typ, _, _)| typ.name.0.as_str() != "CreateLensClient")
                     .map(|(typ, data, hash)| {
-                        let event = match dbg!(typ).name.0.as_str() {
+                        let event_type = typ.name.0.as_str();
+                        let event = match event_type {
                             "CreateClient" => from_raw_event::<ibc::CreateClient>(data),
                             "UpdateClient" => from_raw_event::<ibc::UpdateClient>(data),
                             "ConnectionOpenInit" => from_raw_event::<ibc::ConnectionOpenInit>(data),
@@ -337,6 +338,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             "TimeoutPacket" => from_raw_event::<ibc::TimeoutPacket>(data),
                             unknown => panic!("unknown event `{unknown}`"),
                         };
+
+                        // Log movement events
+                        info!(event_type = %event_type, tx_hash = %hash, height = %height, "Movement event detected");
+                        
                         // TODO: Check the type before deserializing
                         call(PluginMessage::new(
                             self.plugin_name(),
@@ -402,6 +407,154 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 tx_hash,
                 height,
             }) => {
+                // Log additional details based on event type
+                match &event {
+                    events::IbcEvent::CreateClient(event) => {
+                        info!(
+                            client_id = %event.client_id,
+                            client_type = %event.client_type,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement CreateClient event"
+                        );
+                    },
+                    events::IbcEvent::UpdateClient(event) => {
+                        info!(
+                            client_id = %event.client_id,
+                            client_type = %event.client_type,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement UpdateClient event"
+                        );
+                    },
+                    events::IbcEvent::ConnectionOpenInit(event) => {
+                        info!(
+                            client_id = %event.client_id,
+                            connection_id = %event.connection_id,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement ConnectionOpenInit event"
+                        );
+                    },
+                    events::IbcEvent::ConnectionOpenTry(event) => {
+                        info!(
+                            client_id = %event.client_id,
+                            connection_id = %event.connection_id,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement ConnectionOpenTry event"
+                        );
+                    },
+                    events::IbcEvent::ConnectionOpenAck(event) => {
+                        info!(
+                            client_id = %event.client_id,
+                            connection_id = %event.connection_id,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement ConnectionOpenAck event"
+                        );
+                    },
+                    events::IbcEvent::ConnectionOpenConfirm(event) => {
+                        info!(
+                            client_id = %event.client_id,
+                            connection_id = %event.connection_id,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement ConnectionOpenConfirm event"
+                        );
+                    },
+                    events::IbcEvent::ChannelOpenInit(event) => {
+                        info!(
+                            port_id = %event.port_id,
+                            channel_id = %event.channel_id,
+                            connection_id = %event.connection_id,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement ChannelOpenInit event"
+                        );
+                    },
+                    events::IbcEvent::ChannelOpenTry(event) => {
+                        info!(
+                            port_id = %event.port_id,
+                            channel_id = %event.channel_id,
+                            connection_id = %event.connection_id,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement ChannelOpenTry event"
+                        );
+                    },
+                    events::IbcEvent::ChannelOpenAck(event) => {
+                        info!(
+                            port_id = %event.port_id,
+                            channel_id = %event.channel_id,
+                            connection_id = %event.connection_id,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement ChannelOpenAck event"
+                        );
+                    },
+                    events::IbcEvent::ChannelOpenConfirm(event) => {
+                        info!(
+                            port_id = %event.port_id,
+                            channel_id = %event.channel_id,
+                            connection_id = %event.connection_id,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement ChannelOpenConfirm event"
+                        );
+                    },
+                    events::IbcEvent::WriteAcknowledgement(event) => {
+                        info!(
+                            packet_sequence = %event.packet.sequence,
+                            source_port = %event.packet.source_port,
+                            source_channel = %event.packet.source_channel,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement WriteAcknowledgement event"
+                        );
+                    },
+                    events::IbcEvent::RecvPacket(event) => {
+                        info!(
+                            packet_sequence = %event.packet.sequence,
+                            source_port = %event.packet.source_port,
+                            source_channel = %event.packet.source_channel,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement RecvPacket event"
+                        );
+                    },
+                    events::IbcEvent::SendPacket(event) => {
+                        info!(
+                            packet_sequence = %event.sequence,
+                            source_port = %event.source_port,
+                            source_channel = %event.source_channel,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement SendPacket event"
+                        );
+                    },
+                    events::IbcEvent::AcknowledgePacket(event) => {
+                        info!(
+                            packet_sequence = %event.packet.sequence,
+                            source_port = %event.packet.source_port,
+                            source_channel = %event.packet.source_channel,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement AcknowledgePacket event"
+                        );
+                    },
+                    events::IbcEvent::TimeoutPacket(event) => {
+                        info!(
+                            packet_sequence = %event.packet.sequence,
+                            source_port = %event.packet.source_port,
+                            source_channel = %event.packet.source_channel,
+                            height = %height,
+                            tx_hash = %tx_hash,
+                            "Movement TimeoutPacket event"
+                        );
+                    },
+                }
+                
                 let (full_event, client_id): (FullEvent, ClientId) = match event {
                     events::IbcEvent::CreateClient(event) => (
                         CreateClient {
