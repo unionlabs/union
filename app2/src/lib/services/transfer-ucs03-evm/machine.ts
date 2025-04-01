@@ -10,7 +10,7 @@ import { Effect, Option } from "effect"
 import { switchChain } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
-import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
+import type { ValidTransfer } from "@unionlabs/sdk/schema"
 import { SwitchChainError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import type { SwitchChainErrorType } from "viem"
 

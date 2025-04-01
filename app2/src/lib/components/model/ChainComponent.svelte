@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { HTMLAttributes } from "svelte/elements"
-import { Chain } from "$lib/schema/chain"
+import { Chain } from "@unionlabs/sdk/schema"
 import { cn } from "$lib/utils"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 

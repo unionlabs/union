@@ -4,8 +4,8 @@ import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import Input from "$lib/components/ui/Input.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
-import type { Token } from "$lib/schema/token.ts"
 import TransferAsset from "$lib/components/Transfer/ChainAsset/TransferAsset.svelte"
+import {Token} from "@unionlabs/sdk/schema";
 
 type Props = {
   onSelect: () => void

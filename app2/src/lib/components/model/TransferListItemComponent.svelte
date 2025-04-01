@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { TransferListItem } from "$lib/schema/transfer-list"
+import type { TransferListItem } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
-import { getChain, UniversalChainId } from "$lib/schema/chain"
+import { getChain, UniversalChainId } from "@unionlabs/sdk/schema"
 import ChainComponent from "./ChainComponent.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import Label from "../ui/Label.svelte"

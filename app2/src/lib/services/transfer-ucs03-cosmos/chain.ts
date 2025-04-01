@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import { SwitchChainError } from "./errors.ts"
 import { getCosmosWalletClient } from "$lib/services/cosmos/clients.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
 import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 
 export const switchChain = (chain: Chain) =>

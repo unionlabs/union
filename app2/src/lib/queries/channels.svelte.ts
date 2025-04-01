@@ -2,7 +2,7 @@ import { createQueryGraphql } from "$lib/utils/queries.ts"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 import { chains } from "$lib/stores/chains.svelte.ts"
-import { Channels } from "$lib/schema/channel.ts"
+import { Channels } from "@unionlabs/sdk/schema"
 import { channels } from "$lib/stores/channels.svelte.ts"
 
 export const channelsQuery = () =>

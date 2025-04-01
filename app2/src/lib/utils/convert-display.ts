@@ -5,7 +5,7 @@ import {
   AddressCosmosDisplay,
   AddressEvmDisplay,
   type AddressCanonicalBytes
-} from "$lib/schema/address"
+} from "@unionlabs/sdk/schema"
 
 // Helper to convert Uint8Array to AddressCanonicalBytes
 const bytesToCanonicalHex = (bytes: Uint8Array): AddressCanonicalBytes =>

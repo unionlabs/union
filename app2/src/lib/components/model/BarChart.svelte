@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Option } from "effect"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
-import type { DailyTransfer } from "$lib/schema/statistics"
+import type { DailyTransfer } from "@unionlabs/sdk/schema"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { onMount } from "svelte"

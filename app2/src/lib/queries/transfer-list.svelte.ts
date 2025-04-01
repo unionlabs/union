@@ -5,8 +5,8 @@ import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 import { transferList } from "$lib/stores/transfers.svelte"
 import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
-import { TransferList } from "$lib/schema/transfer-list"
-import type { SortOrder } from "$lib/schema/sort-order"
+import { TransferList } from "@unionlabs/sdk/schema"
+import type { SortOrder } from "@unionlabs/sdk/schema"
 
 export let transferListLatestQuery = (limit = LIMIT) =>
   createQueryGraphql({

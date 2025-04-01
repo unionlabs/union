@@ -1,7 +1,7 @@
 import { Effect, Option } from "effect"
 import { parseUnits } from "viem"
 import { AmountParsingError } from "$lib/services/transfer-ucs03-evm/errors.ts"
-import type { Token } from "$lib/schema/token.ts"
+import type { Token } from "@unionlabs/sdk/schema"
 
 export const parseAmountEffect = (amount: string, token: Token) =>
   Effect.gen(function* () {

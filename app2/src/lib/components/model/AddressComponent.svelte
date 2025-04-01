@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { HTMLAttributes } from "svelte/elements"
-import type { Chain } from "$lib/schema/chain"
-import type { AddressCanonicalBytes } from "$lib/schema/address"
+import type { Chain } from "@unionlabs/sdk/schema"
+import type { AddressCanonicalBytes } from "@unionlabs/sdk/schema"
 import { cn } from "$lib/utils"
 import { truncate } from "$lib/utils/format"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"

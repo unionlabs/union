@@ -3,8 +3,8 @@ import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 import { packetList } from "$lib/stores/packets.svelte"
 import { packetListItemFragment } from "$lib/queries/fragments/packet-list-item"
-import { PacketList } from "$lib/schema/packet"
-import type { SortOrder } from "$lib/schema/sort-order"
+import { PacketList } from "@unionlabs/sdk/schema"
+import type { SortOrder } from "@unionlabs/sdk/schema"
 
 export const LIMIT = 10
 

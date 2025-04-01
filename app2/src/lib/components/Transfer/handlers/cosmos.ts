@@ -8,7 +8,7 @@ import {
   TransferSubmitState
 } from "$lib/services/transfer-ucs03-cosmos"
 import { TransferState, type TransferStateUnion } from "$lib/components/Transfer/validation.ts"
-import type { CosmosTransfer } from "$lib/schema/transfer-args.ts"
+import type { CosmosTransfer } from "@unionlabs/sdk/schema"
 
 export async function handleCosmosSubmit(
   currentState: TransferStateUnion,

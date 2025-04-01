@@ -1,7 +1,7 @@
 import { Data, Effect } from "effect"
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
 // import { someWalletLibraryOrBrowserObject } from "some-aptos-wallet-lib"
-import type { Chain } from "$lib/schema/chain"
+import type { Chain } from "@unionlabs/sdk/schema"
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Errors

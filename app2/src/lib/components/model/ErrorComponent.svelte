@@ -6,7 +6,7 @@ import type { NoViemChainError } from "$lib/services/evm/clients"
 import type { ReadContractError, FetchNativeBalanceError } from "$lib/services/evm/balances"
 import type { CreatePublicClientError } from "$lib/services/transfer/errors"
 import type { QueryBankBalanceError, Base64EncodeError } from "$lib/services/cosmos/balances"
-import type { NoRpcError } from "$lib/schema/chain"
+import type { NoRpcError } from "@unionlabs/sdk/schema"
 import { slide } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
 

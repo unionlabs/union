@@ -8,8 +8,8 @@ import {
 } from "$lib/services/transfer-ucs03-aptos"
 import { SwitchChainState as EvmSwitchChainState } from "$lib/services/transfer-ucs03-evm"
 import { TransferState, type TransferStateUnion } from "$lib/components/Transfer/validation.ts"
-import type { AptosTransfer } from "$lib/schema/transfer-args.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { AptosTransfer } from "@unionlabs/sdk/schema"
+import type { Chain } from "@unionlabs/sdk/schema"
 
 export async function handleAptosSubmit(
   currentState: TransferStateUnion,

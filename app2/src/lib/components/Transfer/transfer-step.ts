@@ -1,6 +1,6 @@
 import { Data } from "effect"
 import type { Instruction } from "@unionlabs/sdk/ucs03"
-import type { TokenRawDenom } from "$lib/schema/token"
+import type { TokenRawDenom } from "@unionlabs/sdk/schema"
 
 /**
  * Defines the different steps in a transfer process

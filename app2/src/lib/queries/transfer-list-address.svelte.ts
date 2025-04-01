@@ -3,9 +3,9 @@ import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 import { transferListAddress, transferCount } from "$lib/stores/transfers.svelte"
 import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
-import { TransferCount, TransferList } from "$lib/schema/transfer-list"
-import type { SortOrder } from "$lib/schema/sort-order"
-import type { AddressCanonicalBytes } from "$lib/schema/address"
+import { TransferCount, TransferList } from "@unionlabs/sdk/schema"
+import type { SortOrder } from "@unionlabs/sdk/schema"
+import type { AddressCanonicalBytes } from "@unionlabs/sdk/schema"
 
 export const LIMIT = 10
 

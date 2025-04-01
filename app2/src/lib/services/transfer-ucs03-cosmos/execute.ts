@@ -1,5 +1,5 @@
 import type { CosmosWalletId } from "$lib/wallet/cosmos"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
 import { Effect } from "effect"
 import { CosmWasmError } from "$lib/services/transfer-ucs03-cosmos/errors.ts"
 import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"

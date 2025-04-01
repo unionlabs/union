@@ -4,7 +4,7 @@ import { chains } from "$lib/stores/chains.svelte.ts"
 import { cn } from "$lib/utils"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 
 type Props = {

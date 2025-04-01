@@ -9,7 +9,7 @@ import { Effect } from "effect"
 import type { Chain as ViemChain, Address } from "viem"
 import { switchChain } from "./chain.js"
 import { submitTransfer, waitForReceipt } from "./transactions.js"
-import type { Chain } from "$lib/schema/chain.js"
+import type { Chain } from "@unionlabs/sdk/schema"
 
 export type TransactionParams = {
   chain: ViemChain

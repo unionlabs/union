@@ -8,7 +8,7 @@ import {
   switchChain as _switchChain,
   watchAccount
 } from "@wagmi/core"
-import { AddressEvmCanonical } from "$lib/schema/address"
+import { AddressEvmCanonical } from "@unionlabs/sdk/schema"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { Effect, Option } from "effect"
 import type { Hex } from "viem"

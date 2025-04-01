@@ -30,7 +30,7 @@ const BaseTransferFields = {
   timeoutTimestamp: S.String
 }
 
-const EvmTransferS = S.Struct({
+const EvmTransferSchema = S.Struct({
   ...BaseTransferFields,
   sourceRpcType: S.Literal("evm").annotations({
     message: () => "sourceRpcType must be 'evm'"
@@ -40,11 +40,11 @@ const EvmTransferS = S.Struct({
     S.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )
 })
-type EvmTransferS = typeof EvmTransferS.Type
+type EvmTransferSchema = typeof EvmTransferSchema.Type
 
-export class EVMTransfer extends S.Class<EVMTransfer>("EVMTransfer")(EvmTransferS) {}
+export class EVMTransfer extends S.Class<EVMTransfer>("EVMTransfer")(EvmTransferSchema) {}
 
-const CosmosTransferS = S.Struct({
+const CosmosTransferSchema = S.Struct({
   ...BaseTransferFields,
   sourceRpcType: S.Literal("cosmos").annotations({
     message: () => "sourceRpcType must be 'cosmos'"
@@ -53,11 +53,11 @@ const CosmosTransferS = S.Struct({
     S.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )
 })
-type CosmosTransferS = typeof CosmosTransferS.Type
+type CosmosTransferSchema = typeof CosmosTransferSchema.Type
 
-export class CosmosTransfer extends S.Class<CosmosTransfer>("CosmosTransfer")(CosmosTransferS) {}
+export class CosmosTransfer extends S.Class<CosmosTransfer>("CosmosTransfer")(CosmosTransferSchema) {}
 
-const AptosTransferS = S.Struct({
+const AptosTransferSchema = S.Struct({
   ...BaseTransferFields,
   sourceRpcType: S.Literal("aptos").annotations({
     message: () => "sourceRpcType must be 'aptos'"
@@ -66,20 +66,20 @@ const AptosTransferS = S.Struct({
     S.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )
 })
-type AptosTransferS = typeof AptosTransferS.Type
+type AptosTransferSchema = typeof AptosTransferSchema.Type
 
-export class AptosTransfer extends S.Class<AptosTransfer>("AptosTransfer")(AptosTransferS) {}
+export class AptosTransfer extends S.Class<AptosTransfer>("AptosTransfer")(AptosTransferSchema) {}
 
-export const TransferS = S.Union(EVMTransfer, CosmosTransfer, AptosTransfer).annotations({
+export const TransferSchema = S.Union(EVMTransfer, CosmosTransfer, AptosTransfer).annotations({
   identifier: "Transfer",
   title: "Transfer",
   description: "transfer arguments"
 })
-export type TransferS = typeof TransferS.Type
+export type TransferS = typeof TransferSchema.Type
 
 export const ValidTransferS = S.Struct({
   isValid: S.Literal(true),
-  args: TransferS
+  args: TransferSchema
 }).annotations({
   identifier: "ValidTransfer",
   title: "Valid Transfer",
@@ -91,9 +91,9 @@ export class ValidTransfer extends S.Class<ValidTransfer>("ValidTransfer")(Valid
 
 // Then create the union of those partial schemas
 const PartialTransferUnionS = S.Union(
-  S.partial(EvmTransferS),
-  S.partial(CosmosTransferS),
-  S.partial(AptosTransferS)
+  S.partial(EvmTransferSchema),
+  S.partial(CosmosTransferSchema),
+  S.partial(AptosTransferSchema)
 )
 type PartialTransferUnionS = typeof PartialTransferUnionS.Type
 

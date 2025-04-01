@@ -1,6 +1,6 @@
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { Effect, Fiber, Option } from "effect"
-import type { TransferList, TransferCount } from "$lib/schema/transfer-list"
+import type { TransferList, TransferCount } from "@unionlabs/sdk/schema"
 
 class TransferListStore {
   data = $state(Option.none<typeof TransferList.Type>())

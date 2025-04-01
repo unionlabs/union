@@ -10,7 +10,7 @@ import Sections from "$lib/components/ui/Sections.svelte"
 import StatisticComponent from "$lib/components/model/StatisticComponent.svelte"
 import BarChart from "$lib/components/model/BarChart.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
-import type { DailyTransfer } from "$lib/schema/statistics"
+import type { DailyTransfer } from "@unionlabs/sdk/schema"
 
 // State for tracking the currently hovered day
 let hoveredDay = $state<Option.Option<DailyTransfer>>(Option.none())

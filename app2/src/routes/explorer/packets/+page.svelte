@@ -15,7 +15,7 @@ import { chains } from "$lib/stores/chains.svelte"
 import PacketListPagination from "$lib/components/ui/PacketListPagination.svelte"
 import { page } from "$app/state"
 import { goto } from "$app/navigation"
-import { SortOrder } from "$lib/schema/sort-order"
+import { SortOrder } from "@unionlabs/sdk/schema"
 
 import { settingsStore } from "$lib/stores/settings.svelte"
 import PacketListItemComponent from "$lib/components/model/PacketListItemComponent.svelte"

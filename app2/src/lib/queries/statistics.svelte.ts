@@ -1,4 +1,4 @@
-import { Statistics, DailyTransfers } from "$lib/schema/statistics"
+import { Statistics, DailyTransfers } from "@unionlabs/sdk/schema"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"

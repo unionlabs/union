@@ -1,6 +1,6 @@
 import { Effect, Option, Schema } from "effect"
-import type { UniversalChainId } from "$lib/schema/chain"
-import { TokenRawDenom, Tokens } from "$lib/schema/token"
+import type { UniversalChainId } from "@unionlabs/sdk/schema"
+import { TokenRawDenom, Tokens } from "@unionlabs/sdk/schema"
 import { isTokenBlacklisted } from "$lib/constants/tokens"
 import { createQueryGraphql, fetchDecodeGraphql } from "$lib/utils/queries"
 import { tokensStore } from "$lib/stores/tokens.svelte"

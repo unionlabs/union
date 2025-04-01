@@ -15,7 +15,7 @@ import {
   CreateWalletClientError,
   ConnectorClientError
 } from "../transfer/errors.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
 
 export class PublicSourceViemClient extends Context.Tag("PublicSourceViemClient")<
   PublicSourceViemClient,

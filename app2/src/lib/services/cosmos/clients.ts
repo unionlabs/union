@@ -2,7 +2,7 @@ import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate
 import { Effect, Option } from "effect"
 import { cosmosStore, type CosmosWalletId } from "$lib/wallet/cosmos"
 import type { CosmosWallet } from "$lib/services/cosmos/types.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
 import { getCosmosOfflineSigner } from "$lib/services/transfer-ucs03-cosmos/offline-signer.ts"
 import { GasPrice } from "@cosmjs/stargate"
 import { getGasPriceForChain } from "$lib/services/cosmos/chain-info"

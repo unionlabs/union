@@ -1,6 +1,6 @@
 import { Option, Schema } from "effect"
 import { createQueryGraphql } from "$lib/utils/queries"
-import { TransferDetails } from "$lib/schema/transfer-details"
+import { TransferDetails } from "@unionlabs/sdk/schema"
 import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import { graphql } from "gql.tada"
 
