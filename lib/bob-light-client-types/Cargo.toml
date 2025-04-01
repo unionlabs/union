@@ -2,9 +2,9 @@
 name    = "bob-light-client-types"
 version = "0.0.0"
 
-license-file = "LICENSE"
 authors      = { workspace = true }
 edition      = { workspace = true }
+license-file = "LICENSE"
 publish      = { workspace = true }
 repository   = { workspace = true }
 

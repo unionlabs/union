@@ -2889,7 +2889,7 @@ checksum = "3e31ea183f6ee62ac8b8a8cf7feddd766317adfb13ff469de57ce033efd6a790"
 
 [[package]]
 name = "bob-light-client"
-version = "0.0.1"
+version = "0.0.0"
 dependencies = [
  "bob-light-client-types",
  "bob-verifier",
