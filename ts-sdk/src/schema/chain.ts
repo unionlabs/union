@@ -133,7 +133,7 @@ export class Chain extends S.Class<Chain>("Chain")({
 export const Chains = S.Array(Chain)
 export type Chains = typeof Chains.Type
 
-export const get = (
+export const getChain = (
   chains: typeof Chains.Type,
   universalChainId: UniversalChainId
 ): Option.Option<Chain> =>

@@ -90,15 +90,17 @@ onMount(() => {
                     />
                   {:else}
                     <div>{transfer.source_chain.chain_id}</div>
-                    <div class="font-mono text-sm text-zinc-500">{transfer.sender_canonical}</div>
+                    <div class="font-mono text-sm text-zinc-500">
+                      {transfer.sender_canonical}
+                    </div>
                   {/if}
                 </div>
               </div>
-              
+
               <div class="flex flex-col items-center gap-1">
                 <SharpRightArrowIcon class="w-8 h-8 text-zinc-400" />
               </div>
-              
+
               <div class="flex flex-col items-start">
                 {#if settingsStore.showQuoteTokens && Option.isSome(destChain)}
                   <TokenComponent
@@ -116,58 +118,82 @@ onMount(() => {
                   />
                 {:else}
                   <div>{transfer.destination_chain.chain_id}</div>
-                  <div class="font-mono text-sm text-zinc-500">{transfer.receiver_canonical}</div>
+                  <div class="font-mono text-sm text-zinc-500">
+                    {transfer.receiver_canonical}
+                  </div>
                 {/if}
               </div>
             {/if}
-            </div>
-              <div class="text-sm text-zinc-500 flex flex-col items-center">
-                <DateTimeComponent value={transfer.transfer_send_timestamp} showSeconds={false} />
-                {#if Option.isSome(transfer.transfer_recv_timestamp)}
-                  <DateTimeComponent value={transfer.transfer_recv_timestamp.value} showSeconds={false} />
-                {/if}
-              </div>
           </div>
-
-
+          <div class="text-sm text-zinc-500 flex flex-col items-center">
+            <DateTimeComponent
+              value={transfer.transfer_send_timestamp}
+              showSeconds={false}
+            />
+            {#if Option.isSome(transfer.transfer_recv_timestamp)}
+              <DateTimeComponent
+                value={transfer.transfer_recv_timestamp.value}
+                showSeconds={false}
+              />
+            {/if}
+          </div>
+        </div>
 
         {#if transfer.traces.length > 0}
           <div class="relative">
             <Label>Transfer Timeline</Label>
             <div class="mt-4 space-y-8">
               {#each transfer.traces as trace, i}
-                {@const chain = getChain(chainsList, trace.chain.universal_chain_id)}
+                {@const chain = getChain(
+                  chainsList,
+                  trace.chain.universal_chain_id,
+                )}
                 <!-- Timeline line -->
-                <div class="absolute left-2 top-8 z-10 bottom-0 w-0.5 bg-zinc-200 dark:bg-zinc-700" ></div>
-                
+                <div
+                  class="absolute left-2 top-8 z-10 bottom-0 w-0.5 bg-zinc-200 dark:bg-zinc-700"
+                ></div>
+
                 <!-- Timeline item -->
                 <div class="relative flex items-start gap-4 ml-6">
                   <!-- Timeline dot -->
                   <div class="absolute z-20 -left-[1.5rem]">
-                    <div class="h-4 w-4 rounded-full bg-zinc-300 dark:bg-zinc-600 ring-4 ring-white dark:ring-zinc-900" ></div>
+                    <div
+                      class="h-4 w-4 rounded-full bg-zinc-300 dark:bg-zinc-600 ring-4 ring-white dark:ring-zinc-900"
+                    ></div>
                   </div>
-                  
+
                   <!-- Content -->
-                  <div class="flex-1 bg-zinc-50 dark:bg-zinc-900 px-4 rounded-lg">
+                  <div
+                    class="flex-1 bg-zinc-50 dark:bg-zinc-900 px-4 rounded-lg"
+                  >
                     <div class="flex items-center gap-2">
-                      <span class="font-medium text-zinc-900 dark:text-zinc-100">
+                      <span
+                        class="font-medium text-zinc-900 dark:text-zinc-100"
+                      >
                         {trace.type}
                       </span>
                       {#if Option.isSome(chain)}
                         <ChainComponent chain={chain.value} />
                       {:else}
-                        <span class="font-mono text-sm">{trace.chain.universal_chain_id}</span>
+                        <span class="font-mono text-sm"
+                          >{trace.chain.universal_chain_id}</span
+                        >
                       {/if}
                     </div>
-                    
+
                     {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(trace.block_hash)}
-                      <div class="flex flex-col gap-1 text-sm text-zinc-600 dark:text-zinc-400">
+                      <div
+                        class="flex flex-col gap-1 text-sm text-zinc-600 dark:text-zinc-400"
+                      >
                         <div>
                           <DateTimeComponent value={trace.timestamp.value} />
                           <span>at height {trace.height.value}</span>
                         </div>
                         <div class="flex gap-2">
-                          <span class="font-medium">Tx:</span> <TransactionHashComponent hash={trace.transaction_hash.value} />
+                          <span class="font-medium">Tx:</span>
+                          <TransactionHashComponent
+                            hash={trace.transaction_hash.value}
+                          />
                         </div>
                         <div class="flex gap-2">
                           <span class="font-medium">Block:</span>
@@ -184,12 +210,10 @@ onMount(() => {
       </div>
     {/if}
   </Card>
-  
+
   <!-- Packet Details Card -->
   <Card divided>
-    <div class="p-4">
-      Packet Details
-    </div>
-    <PacketComponent/>
+    <div class="p-4">Packet Details</div>
+    <PacketComponent />
   </Card>
 </Sections>
