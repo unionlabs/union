@@ -4,9 +4,9 @@ import { lockedTransferStore } from "../locked-transfer.svelte.ts"
 import { Effect, Match, Option } from "effect"
 import { SubmitInstruction } from "../transfer-step.ts"
 import {
-  hasFailedExit,
+  hasFailedExit as evmHasFailedExit,
   isComplete as evmIsComplete,
-  nextStateEvm as evmHasFailedExit,
+  nextStateEvm,
   TransactionSubmissionEvm
 } from "$lib/components/Transfer/state/evm.ts"
 import { generateSalt } from "@unionlabs/sdk/utils"
