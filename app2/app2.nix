@@ -42,6 +42,10 @@ _: {
             pnpm --filter=app2 build
             runHook postBuild
           '';
+          checkPhase = ''
+            pnpm --filter=app2 check
+          '';
+          doCheck = false; # TODO(ehegnes): enable checks
           installPhase = ''
             mkdir -p $out
             cp -r ./app2/build/* $out
