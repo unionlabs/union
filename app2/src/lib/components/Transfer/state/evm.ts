@@ -84,5 +84,9 @@ export const nextStateEvm = async <
 export const hasFailedExit = (state: TransactionSubmissionEvm) =>
   "exit" in state && state.exit._tag === "Failure"
 
-export const isComplete = (state: TransactionSubmissionEvm) =>
-  state._tag === "TransactionReceiptComplete" && state.exit._tag === "Success"
+export const isComplete = (state: TransactionSubmissionEvm): string | false => {
+  if (state._tag === "TransactionReceiptComplete" && state.exit._tag === "Success") {
+    return state.exit.value.transactionHash;
+  }
+  return false;
+}

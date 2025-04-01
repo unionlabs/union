@@ -20,7 +20,7 @@
   import {createEvmToCosmosFungibleAssetOrder, Batch} from "@unionlabs/sdk/ucs03"
   import {
     createViemPublicClient,
-    ViemPublicClient,
+    ViemPublicClient
     ViemPublicClientSource,
     readErc20Allowance,
     EvmChannelDestination,
@@ -40,9 +40,11 @@
     Filling,
     ApprovalRequired,
     SubmitInstruction,
-    getStepDescription
+    getStepDescription, WaitForIndex
   } from "./transfer-step.ts"
   import {isValidBech32ContractAddress} from "@unionlabs/client";
+  import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte";
+  import {testFeeMarketResponse} from "$lib/utils/feemarket.ts";
 
   let showDetails = $state(false)
   let currentPage = $state(0)
@@ -53,6 +55,12 @@
   let transferIntents = $derived.by(() => {
     if (transfer.validation._tag !== "Success") return Option.none()
     const transferValue = transfer.validation.value
+
+    const rpc_url = transferValue.sourceChain.getRpcUrl("rest")
+    console.log('Lukas:', rpc_url)
+    if(Option.isSome(rpc_url)) {
+      testFeeMarketResponse("https://rest.union-testnet-10.union.chain.cooking", "muno")
+    }
 
     const sender = wallets.getAddressForChain(transferValue.sourceChain)
 
@@ -148,6 +156,7 @@
     // Add the instruction submission step if we have an instruction
     if (Option.isSome(instruction)) {
       steps.push(SubmitInstruction({instruction: instruction.value}))
+      steps.push(WaitForIndex())
     }
 
     return steps.length > 0 ? Option.some(steps) : Option.none()
@@ -155,7 +164,6 @@
 
   $effect(() => {
     if (Option.isNone(transferIntents)) return
-
     intentsToBatch(transferIntents).pipe(
       Effect.tap(batch => (instruction = batch)),
       Effect.runPromiseExit
@@ -493,12 +501,11 @@
   })
 
   // Handle the action button click based on current page
-  function handleActionButtonClick() {
+  let txHash = $state()
+  function handleActionButtonClick(hash: string) {
     if (Option.isNone(transferSteps)) return
 
     const currentStep = transferSteps.value[currentPage]
-
-    console.log('step:', currentStep)
 
     if (currentStep._tag === "Filling") {
       // Lock the transfer values before proceeding
@@ -527,6 +534,8 @@
     }
 
     if (currentStep._tag === "SubmitInstruction") {
+      txHash = hash
+      goToNextPage()
       return
     }
   }
@@ -583,7 +592,14 @@
             <SubmitPage
                     stepIndex={i + 1}
                     onBack={goToPreviousPage}
-                    onSubmit={handleActionButtonClick}
+                    onSubmit={(hash) => handleActionButtonClick(hash)}
+                    {actionButtonText}
+            />
+          {:else if step._tag === "WaitForIndex"}
+            <IndexPage
+                    stepIndex={i + 1}
+                    hash={txHash}
+                    onBack={goToPreviousPage}
                     {actionButtonText}
             />
           {/if}
