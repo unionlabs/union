@@ -93,6 +93,7 @@ members = [
 
   "cosmwasm/ibc-union/lightclient/arbitrum",
   "cosmwasm/ibc-union/lightclient/berachain",
+  "cosmwasm/ibc-union/lightclient/bob",
   "cosmwasm/ibc-union/lightclient/cometbls",
   "cosmwasm/ibc-union/lightclient/ethereum",
   "cosmwasm/ibc-union/lightclient/ethermint",

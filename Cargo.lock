@@ -2888,6 +2888,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e31ea183f6ee62ac8b8a8cf7feddd766317adfb13ff469de57ce033efd6a790"
 
 [[package]]
+name = "bob-light-client"
+version = "0.0.0"
+dependencies = [
+ "bob-light-client-types",
+ "bob-verifier",
+ "cosmwasm-std 2.2.2",
+ "embed-commit",
+ "ethereum-light-client",
+ "ethereum-light-client-types",
+ "evm-storage-verifier",
+ "frissitheto",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "ics23",
+ "serde",
+ "thiserror 1.0.69",
+ "unionlabs",
+]
+
+[[package]]
 name = "bob-light-client-types"
 version = "0.0.0"
 dependencies = [

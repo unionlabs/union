@@ -273,6 +273,11 @@ _: {
       # directory => {}
       all-lightclients = [
         {
+          name = "bob";
+          dir = "bob";
+          client-type = "bob";
+        }
+        {
           name = "arbitrum";
           dir = "arbitrum";
           client-type = "arbitrum";

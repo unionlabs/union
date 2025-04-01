@@ -49,10 +49,7 @@ pub fn verify_header(
 
     // Verify that the provided l2 header hash matches the block hash within the
     // output root proof.
-    verify_l2_header_is_related_to_output_root_proof(
-        &header.output_root_proof,
-        header.l2_header.clone(),
-    )?;
+    verify_l2_header_is_related_to_output_root_proof(&header.output_root_proof, &header.l2_header)?;
 
     let output_root_proof_hash = compute_output_root_proof_hash(&header.output_root_proof);
 
@@ -105,7 +102,7 @@ pub fn compute_output_root_proof_hash(output_root_proof: &OutputRootProof) -> H2
 
 pub fn verify_l2_header_is_related_to_output_root_proof(
     output_root_proof: &OutputRootProof,
-    l2_header: L2Header,
+    l2_header: &L2Header,
 ) -> Result<(), Error> {
     let block_hash = l2_header.hash();
     if block_hash == output_root_proof.latest_block_hash {

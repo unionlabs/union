@@ -4,7 +4,7 @@ version = "0.0.0"
 
 authors      = { workspace = true }
 edition      = { workspace = true }
-license-file = { workspace = true }
+license-file = "LICENSE"
 publish      = { workspace = true }
 repository   = { workspace = true }
 
