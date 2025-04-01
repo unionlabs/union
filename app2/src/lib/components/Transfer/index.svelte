@@ -505,10 +505,8 @@ let actionButtonText = $derived.by(() => {
   return "Next"
 })
 
-// Handle the action button click based on current page
-let txHash = $state()
 
-function handleActionButtonClick(hash: string) {
+function handleActionButtonClick() {
   if (Option.isNone(transferSteps)) return
 
   const currentStep = transferSteps.value[currentPage]
@@ -540,7 +538,6 @@ function handleActionButtonClick(hash: string) {
   }
 
   if (currentStep._tag === "SubmitInstruction") {
-    txHash = hash
     goToNextPage()
     return
   }
@@ -598,13 +595,12 @@ function handleActionButtonClick(hash: string) {
             <SubmitPage
                     stepIndex={i + 1}
                     onBack={goToPreviousPage}
-                    onSubmit={(hash) => handleActionButtonClick(hash)}
+                    onSubmit={handleActionButtonClick}
                     {actionButtonText}
             />
           {:else if step._tag === "WaitForIndex"}
             <IndexPage
                     stepIndex={i + 1}
-                    hash={txHash}
                     onBack={goToPreviousPage}
                     {actionButtonText}
             />
