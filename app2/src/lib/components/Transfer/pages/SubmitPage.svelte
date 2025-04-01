@@ -5,7 +5,6 @@ import { Effect, Match, Option } from "effect"
 import { SubmitInstruction } from "../transfer-step.ts"
 import { hasFailedExit, isComplete } from "$lib/components/Transfer/state/evm.ts"
 import { generateSalt } from "@unionlabs/sdk/utils"
-import { encodeAbi } from "@unionlabs/sdk/ucs03"
 import { nextStateEvm, TransactionSubmissionEvm } from "$lib/components/Transfer/state/evm.ts"
 import { getConnectorClient, type GetConnectorClientErrorType, http } from "@wagmi/core"
 import { createViemPublicClient, createViemWalletClient } from "@unionlabs/sdk/evm"
@@ -21,6 +20,7 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
+import {encodeAbi} from "@unionlabs/sdk/ucs03/instruction.ts";
 
 const { stepIndex, onBack, onSubmit, actionButtonText }: Props = $props()
 

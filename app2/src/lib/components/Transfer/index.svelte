@@ -13,11 +13,10 @@ import { wallets } from "$lib/stores/wallets.svelte"
 import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
 import {
   createCosmosToCosmosFungibleAssetOrder,
-  createCosmosToEvmFungibleAssetOrder,
-  createEvmToEvmFungibleAssetOrder,
-  type Instruction
+  createCosmosToEvmFungibleAssetOrder, createEvmToCosmosFungibleAssetOrder,
+  createEvmToEvmFungibleAssetOrder, type Instruction,
 } from "@unionlabs/sdk/ucs03"
-import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03"
+import { Batch } from "@unionlabs/sdk/ucs03/instruction.ts"
 import {
   createViemPublicClient,
   ViemPublicClient,
