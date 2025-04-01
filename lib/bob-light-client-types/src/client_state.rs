@@ -18,7 +18,6 @@ pub struct ClientStateV1 {
     /// Client id of the client tracking the L1 that the chain this client tracks settles on
     pub l1_client_id: ClientId,
 
-    pub l2_finalization_period_seconds: u64,
     pub l2_oracle_address: H160,
     pub l2_oracle_l2_outputs_slot: U256,
 

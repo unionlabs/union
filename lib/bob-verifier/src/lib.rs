@@ -11,6 +11,11 @@ use unionlabs::{
     primitives::{H256, U256},
 };
 
+// Constant value from the L2OutputOracle of gobob.xyz mainnet
+// See: https://docs.gobob.xyz/learn/reference/contracts/#ethereum-l1
+// See: https://etherscan.io/address/0xdDa53E23f8a32640b04D7256e651C1db98dB11C1#readProxyContract
+pub const FINALIZATION_PERIOD_SECONDS: u64 = 604800;
+
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
 pub enum Error {
     #[error("invalid l2 oracle account proof")]
@@ -30,10 +35,10 @@ pub fn verify_header(
     header: &Header,
     l1_state_root: H256,
     current_timestamp: u64,
+    l2_finalization_period_seconds: u64,
 ) -> Result<(), Error> {
     // Verify that the header is finalized.
-    let finalization_timestamp =
-        header.l2_header.timestamp + client_state.l2_finalization_period_seconds;
+    let finalization_timestamp = header.l2_header.timestamp + l2_finalization_period_seconds;
     if current_timestamp < finalization_timestamp {
         return Err(Error::HeaderNotFinalized);
     }
@@ -79,7 +84,7 @@ pub fn verify_header(
     Ok(())
 }
 
-fn compute_output_proposal_slot(l2_outputs_slot: U256, index: u32) -> U256 {
+pub fn compute_output_proposal_slot(l2_outputs_slot: U256, index: u32) -> U256 {
     let offset = Slot::Offset(l2_outputs_slot);
     // The size in slots of the OutputProposal structures, (sizeof(bytes32) + 2*sizeof(u128) / sizeof(u256)) = 2
     // https://github.com/ethereum-optimism/optimism/blob/99a53381019d3571359d989671ccf70f8d69dfd9/packages/contracts-bedrock/src/libraries/Types.sol#L13
@@ -126,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_update_ok() {
-        // OutputProposal slot is 3
+        // Outputs slot is 3
         // OutputIndex 700 = L2 Block 15141600 (0xE70AE0)
         // Slot index = 87903029871075914254377627908054574944891091886930582284385770809450030038483
         // We pick L1 Block 22151979 (0x152032B)
@@ -134,7 +139,6 @@ mod tests {
             chain_id: 0u32.into(),
             latest_height: 0,
             l1_client_id: ClientId!(1),
-            l2_finalization_period_seconds: 0,
             l2_oracle_address: hex!("dDa53E23f8a32640b04D7256e651C1db98dB11C1").into(),
             l2_oracle_l2_outputs_slot: 3u32.into(),
             frozen_height: 0,
@@ -212,12 +216,27 @@ mod tests {
         )
         .unwrap();
 
-        verify_header(
+        let l1_state_root =
+            hex!("67bca5ce21aa5c48991a9aa2705371bd015fab01402dbcd2818c0b2cb19d5a6b").into();
+
+        let r1 = verify_header(
             &client_state,
             &header,
-            hex!("67bca5ce21aa5c48991a9aa2705371bd015fab01402dbcd2818c0b2cb19d5a6b").into(),
-            header.l2_header.timestamp,
-        )
-        .unwrap();
+            l1_state_root,
+            header.l2_header.timestamp + FINALIZATION_PERIOD_SECONDS,
+            FINALIZATION_PERIOD_SECONDS,
+        );
+
+        assert_eq!(r1, Ok(()));
+
+        let r2 = verify_header(
+            &client_state,
+            &header,
+            l1_state_root,
+            header.l2_header.timestamp + FINALIZATION_PERIOD_SECONDS - 1,
+            FINALIZATION_PERIOD_SECONDS,
+        );
+
+        assert_eq!(r2, Err(Error::HeaderNotFinalized));
     }
 }

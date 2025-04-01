@@ -2890,6 +2890,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e31ea183f6ee62ac8b8a8cf7feddd766317adfb13ff469de57ce033efd6a790"
 
 [[package]]
+name = "bob-client"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bob-types",
+ "hex-literal",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.19",
+ "unionlabs",
+]
+
+[[package]]
 name = "bob-light-client"
 version = "0.0.0"
 dependencies = [
@@ -2922,6 +2935,15 @@ dependencies = [
  "serde",
  "serde-utils",
  "sha3 0.10.8",
+ "unionlabs",
+]
+
+[[package]]
+name = "bob-types"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "hex-literal",
  "unionlabs",
 ]
 
@@ -14597,6 +14619,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-bob"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bob-client",
+ "bob-light-client-types",
+ "bob-types",
+ "bob-verifier",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-cometbls"
 version = "0.0.0"
 dependencies = [
@@ -14783,6 +14826,23 @@ name = "voyager-client-module-arbitrum"
 version = "0.0.0"
 dependencies = [
  "arbitrum-light-client-types",
+ "embed-commit",
+ "ethereum-light-client-types",
+ "jsonrpsee",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-module-bob"
+version = "0.0.0"
+dependencies = [
+ "bob-light-client-types",
  "embed-commit",
  "ethereum-light-client-types",
  "jsonrpsee",
@@ -15037,6 +15097,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-update-plugin-bob"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bob-client",
+ "bob-light-client-types",
+ "bob-types",
+ "bob-verifier",
+ "embed-commit",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-update-plugin-cometbls"
 version = "0.0.0"
 dependencies = [
@@ -15241,6 +15326,26 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-consensus-module-bob"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bob-client",
+ "bob-light-client-types",
+ "bob-types",
+ "bob-verifier",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "serde",
+ "tokio",
+ "tracing",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
