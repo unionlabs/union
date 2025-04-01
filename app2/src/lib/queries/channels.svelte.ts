@@ -16,11 +16,14 @@ export const channelsQuery = () =>
               destination_connection_id
               destination_port_id
               destination_universal_chain_id
+              sort_order
               source_channel_id
               source_client_id
               source_connection_id
               source_port_id
               source_universal_chain_id
+              version
+              tags
           }
       }
   `),

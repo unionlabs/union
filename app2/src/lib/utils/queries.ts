@@ -23,7 +23,7 @@ export type FetchDecodeGraphqlError = UnknownException | ParseError | TimeoutExc
 export const fetchDecodeGraphql = <S, E, D, V extends object | undefined>(
   schema: Schema.Schema<S, E>,
   document: TadaDocumentNode<D, V>,
-  variables: V
+  variables?: V
 ) =>
   Effect.gen(function* () {
     const data = yield* Effect.tryPromise(() => request(URLS().GRAPHQL, document, variables))
