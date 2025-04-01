@@ -45,7 +45,6 @@ import {
 } from "./transfer-step.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
 import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
-import { testFeeMarketResponse } from "$lib/utils/feemarket.ts"
 
 let showDetails = $state(false)
 let currentPage = $state(0)
@@ -56,12 +55,6 @@ let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $st
 let transferIntents = $derived.by(() => {
   if (transfer.validation._tag !== "Success") return Option.none()
   const transferValue = transfer.validation.value
-
-  const rpc_url = transferValue.sourceChain.getRpcUrl("rest")
-  console.log("Lukas:", rpc_url)
-  if (Option.isSome(rpc_url)) {
-    testFeeMarketResponse("https://rest.union-testnet-10.union.chain.cooking", "muno")
-  }
 
   const sender = wallets.getAddressForChain(transferValue.sourceChain)
 
