@@ -15,7 +15,8 @@ import {
   scrollSepolia,
   sepolia,
   bobSepolia,
-  bob
+  bob,
+  cornTestnet
 } from "@wagmi/core/chains"
 import { TESTNET_APP_INFO } from "$lib/config/app"
 
@@ -26,7 +27,8 @@ export const chains = [
   arbitrumSepolia,
   scrollSepolia,
   bobSepolia,
-  bob
+  bob,
+  cornTestnet
 ] as const
 
 export function getChainFromWagmi(chainId: number) {
@@ -111,6 +113,15 @@ export const wagmiConfig = createConfig({
         name: "unstable_connector-injected-bob"
       }),
       http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" })
+    ]),
+    [cornTestnet.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-corn-testnet",
+        name: "unstable_connector-injected-corn-testnet"
+      }),
+      http(bob.rpcUrls.default.http.at(0), { name: "default Corn Testnet RPC" })
     ])
   },
   storage: createWagmiStorage({
