@@ -129,7 +129,7 @@ pub async fn update_token_source(
 pub async fn get_internal_chain_id_by_chain_id(
     tx: &mut sqlx::Transaction<'_, Postgres>,
 ) -> sqlx::Result<HashMap<String, i32>> {
-    let rows = sqlx::query!("SELECT chain_id, id FROM hubble.chains")
+    let rows = sqlx::query!("SELECT chain_id, id FROM config.chains")
         .fetch_all(tx.as_mut())
         .await?;
 

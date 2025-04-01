@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO \"hubble\".chains (chain_id) VALUES ($1) RETURNING id",
+  "query": "SELECT id FROM config.chains WHERE chain_id = $1 LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -18,5 +18,5 @@
       false
     ]
   },
-  "hash": "f8902f91d4ce561a2a590a7d71947f317b831e67660accb967edf662b71f289f"
+  "hash": "688713a3ec655f552b3540000b0389958567e61320f5eba1f7049da0bd5dd261"
 }
