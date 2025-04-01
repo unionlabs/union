@@ -8,7 +8,7 @@ import { Effect } from "effect"
 import { switchChain } from "./chain.ts"
 import { submitTransfer } from "./transactions.ts"
 import { approveTransfer } from "./approval.ts"
-import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
+import type { ValidTransfer } from "@unionlabs/sdk/schema"
 import type { CosmosWalletId } from "$lib/wallet/cosmos"
 
 export async function nextState(

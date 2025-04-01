@@ -1,21 +1,21 @@
 import { Context, Data, Effect, Option } from "effect"
 import {
   createPublicClient,
-  createWalletClient,
-  http,
-  custom,
   type CreatePublicClientErrorType,
+  createWalletClient,
   type CreateWalletClientErrorType,
+  custom,
+  http,
   type PublicClient
 } from "viem"
 import { getConnectorClient, type GetConnectorClientErrorType } from "@wagmi/core"
 import { wagmiConfig } from "$lib/wallet/evm/wagmi-config"
 import {
+  ConnectorClientError,
   CreatePublicClientError,
-  CreateWalletClientError,
-  ConnectorClientError
+  CreateWalletClientError
 } from "../transfer/errors.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
 
 export class PublicSourceViemClient extends Context.Tag("PublicSourceViemClient")<
   PublicSourceViemClient,
@@ -61,6 +61,7 @@ export const getWalletClient = (chain: Chain) =>
     return yield* Effect.try({
       try: () =>
         createWalletClient({
+          account: connectorClient.account,
           chain: viemChain.value,
           transport: custom(connectorClient.transport)
         }),

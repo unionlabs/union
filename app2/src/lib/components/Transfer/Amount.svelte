@@ -71,7 +71,7 @@ function setMaxAmount() {
   <div class="w-full">
     {#if Option.isSome(chainWallet)}
     {#if type === "source"}
-      <div class="flex w-full justify-between items-center text-xs gap-1">
+      <div class="flex w-full justify-between items-center text-xs gap-1 pb-1">
         <div class="flex gap-1">
           <Label>BALANCE:</Label>
           {#if !transfer.raw.source || !transfer.raw.asset}

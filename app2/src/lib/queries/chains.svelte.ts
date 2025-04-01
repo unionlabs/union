@@ -1,4 +1,4 @@
-import { Chains } from "$lib/schema/chain"
+import { Chains } from "@unionlabs/sdk/schema"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"

@@ -2,10 +2,10 @@ import { bech32 } from "@scure/base"
 import { Effect, Option, pipe, Schema } from "effect"
 import {
   AddressAptosDisplay,
+  type AddressCanonicalBytes,
   AddressCosmosDisplay,
-  AddressEvmDisplay,
-  type AddressCanonicalBytes
-} from "$lib/schema/address"
+  AddressEvmDisplay
+} from "@unionlabs/sdk/schema"
 
 // Helper to convert Uint8Array to AddressCanonicalBytes
 const bytesToCanonicalHex = (bytes: Uint8Array): AddressCanonicalBytes =>

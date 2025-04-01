@@ -16,10 +16,10 @@ interface LeapExtendedInfo extends LeapChainInfo {
 
 //Keplr
 export const unionKeplrChainInfo: KeplrChainInfo = {
-  chainId: "union-testnet-9",
+  chainId: "union-testnet-10",
   chainName: "uniontestnet",
-  rest: "https://rest.testnet-9.union.build",
-  rpc: "https://rpc.testnet-9.union.build",
+  rest: "https://rest.union-testnet-10.union.chain.cooking",
+  rpc: "https://rpc.union-testnet-10.union.chain.cooking",
   bip44: {
     coinType: 118
   },
@@ -241,10 +241,10 @@ export const elgafarKeplrChainInfo: KeplrChainInfo = {
 
 //Leap
 export const unionLeapChainInfo: LeapExtendedInfo = {
-  chainId: "union-testnet-9",
+  chainId: "union-testnet-10",
   chainName: "uniontestnet",
-  rest: "https://rest.testnet-9.union.build",
-  rpc: "https://rpc.testnet-9.union.build",
+  rest: "https://rpc.union-testnet-10.union.chain.cooking",
+  rpc: "https://rpc.union-testnet-10.union.chain.cooking",
   bip44: {
     coinType: 118
   },
@@ -452,14 +452,14 @@ export const babylonLeapChaininfo: LeapExtendedInfo = {
 
 //Maps
 const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
-  "union-testnet-9": unionKeplrChainInfo,
+  "union-testnet-10": unionKeplrChainInfo,
   "stride-internal-1": strideKeplrChainInfo,
   "elgafar-1": elgafarKeplrChainInfo,
   "bbn-test-5": babylonKeplrChaininfo
 }
 
 const leapChainInfoMap: Record<string, LeapChainInfo> = {
-  "union-testnet-9": unionLeapChainInfo,
+  "union-testnet-10": unionLeapChainInfo,
   "stride-internal-1": strideLeapChainInfo,
   "elgafar-1": elgafarLeapChainInfo,
   "bbn-test-5": babylonLeapChaininfo

@@ -1,6 +1,6 @@
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { Effect, Fiber, Option } from "effect"
-import type { PacketList, PacketCount, PacketDetails } from "$lib/schema/packet"
+import type { PacketCount, PacketDetails, PacketList } from "@unionlabs/sdk/schema"
 
 class PacketListStore {
   data = $state(Option.none<typeof PacketList.Type>())

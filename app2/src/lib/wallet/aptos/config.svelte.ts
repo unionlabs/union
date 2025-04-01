@@ -2,7 +2,7 @@ import type { Hex } from "viem"
 import { Option } from "effect"
 
 import type { AptosBrowserWallet } from "@unionlabs/client"
-import { AddressAptosCanonical } from "$lib/schema/address.ts"
+import { AddressAptosCanonical } from "@unionlabs/sdk/schema"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 
 export const aptosWalletsInformation = (

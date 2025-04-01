@@ -1,15 +1,14 @@
 import { Effect, type Fiber, Option, Queue } from "effect"
-import type { TokenRawDenom } from "$lib/schema/token"
-import type { Chain, UniversalChainId } from "$lib/schema/chain"
-import { RawTokenBalance } from "$lib/schema/token"
+import type { Chain, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
+import {
+  type AddressCanonicalBytes,
+  AddressCosmosCanonical,
+  AddressEvmCanonical,
+  RawTokenBalance
+} from "@unionlabs/sdk/schema"
 import { fetchEvmBalance, type FetchEvmBalanceError } from "$lib/services/evm/balances"
 import { fetchCosmosBalance, type FetchCosmosBalanceError } from "$lib/services/cosmos/balances"
 import { SvelteMap } from "svelte/reactivity"
-import {
-  AddressEvmCanonical,
-  AddressCosmosCanonical,
-  type AddressCanonicalBytes
-} from "$lib/schema/address"
 import { fetchAptosBalance, type FetchAptosBalanceError } from "$lib/services/aptos/balances"
 
 // Composite key type for the maps

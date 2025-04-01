@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { PacketListItem } from "$lib/schema/packet"
+import type { PacketListItem } from "@unionlabs/sdk/schema"
+import { getChain } from "@unionlabs/sdk/schema"
 import { chains } from "$lib/stores/chains.svelte"
-import { getChain } from "$lib/schema/chain"
 import { Option } from "effect"
 import ChainComponent from "./ChainComponent.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"

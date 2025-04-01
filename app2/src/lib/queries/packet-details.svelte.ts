@@ -2,7 +2,7 @@ import { createQueryGraphql } from "$lib/utils/queries"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 import { packetDetails } from "$lib/stores/packets.svelte"
-import { PacketDetails, type PacketHash } from "$lib/schema/packet"
+import { PacketDetails, type PacketHash } from "@unionlabs/sdk/schema"
 
 export const packetDetailsQuery = (packetHash: PacketHash) =>
   createQueryGraphql({

@@ -1,17 +1,12 @@
 <script lang="ts">
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { Effect, Option } from "effect"
+import { Option } from "effect"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import Button from "$lib/components/ui/Button.svelte"
 
 let { children } = $props()
-
-$effect(() => {
-  transfer.getQuoteToken().pipe(Effect.runPromise)
-  transfer.getWethQuoteToken().pipe(Effect.runPromise)
-})
 
 $effect(() => {
   if (Option.isSome(transfer.sourceChain)) {

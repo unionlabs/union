@@ -8,12 +8,12 @@ import {
   switchChain as _switchChain,
   watchAccount
 } from "@wagmi/core"
-import { AddressEvmCanonical } from "$lib/schema/address"
+import { AddressEvmCanonical } from "@unionlabs/sdk/schema"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { Effect, Option } from "effect"
 import type { Hex } from "viem"
 
-import { wagmiConfig, type ConfiguredChainId } from "./wagmi-config.ts"
+import { type ConfiguredChainId, wagmiConfig } from "./wagmi-config.ts"
 import { sepolia } from "@wagmi/core/chains"
 
 export type Wallet = GetAccountReturnType

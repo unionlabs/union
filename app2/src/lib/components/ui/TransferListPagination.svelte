@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Option } from "effect"
-import type { TransferList } from "$lib/schema/transfer-list"
+import type { TransferList } from "@unionlabs/sdk/schema"
 import Button from "./Button.svelte"
 import DateTimeComponent from "./DateTimeComponent.svelte"
 

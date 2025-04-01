@@ -1,3 +1,6 @@
+import { bech32 } from "@scure/base"
+
+type Bech32Address<T extends string = string> = `${T}1${string}`
 /**
  * Truncates a string based on the given parameters
  * @param {string} str - The string to truncate
@@ -11,7 +14,7 @@ export function truncate(str: string, showChars: number, position: string): stri
     return str
   }
 
-  const ellipsis = "..."
+  const ellipsis = "…"
 
   switch (position.toLowerCase()) {
     case "start":
@@ -27,5 +30,20 @@ export function truncate(str: string, showChars: number, position: string): stri
     default:
       // Show ellipsis at the end (default)
       return str.slice(0, showChars) + ellipsis
+  }
+}
+
+// TODO: This needs to be tested
+/**
+ * check if a string is a valid bech32 address
+ */
+export function isValidBech32Address(address: unknown): address is Bech32Address {
+  if (typeof address !== "string") return false
+
+  try {
+    bech32.decode(address as Bech32Address)
+    return true
+  } catch {
+    return false
   }
 }

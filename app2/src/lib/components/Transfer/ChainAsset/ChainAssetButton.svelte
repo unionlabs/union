@@ -30,7 +30,7 @@ const isChainLoading = $derived.by(() => {
 </script>
 
 <div class="w-full">
-  <Label>{type === "source" ? "From" : "To"}</Label>
+  <Label class="pb-1">{type === "source" ? "From" : "To"}</Label>
   <button
           onclick={onClick}
           class={cn(
@@ -67,11 +67,16 @@ const isChainLoading = $derived.by(() => {
         <div class="flex gap-2 items-center justify-between p-2 flex-1 w-full">
 
           <!--LOGO-->
-          <div class="flex items-center">
-            <div class="w-8 h-8 flex items-center justify-center overflow-hidden">
-              <img src={chainLogoMap.get(selectedChain.value.universal_chain_id).color} alt="">
-            </div>
-          </div>
+          {#if selectedChain.value.universal_chain_id}
+            {@const chainLogo = chainLogoMap.get(selectedChain.value.universal_chain_id)}
+            {#if chainLogo?.color}
+              <div class="flex items-center">
+                <div class="w-8 h-8 flex items-center justify-center overflow-hidden">
+                  <img src={chainLogo.color} alt="">
+                </div>
+              </div>
+            {/if}
+          {/if}
 
           {#if type === "source" && transfer.raw.asset && Option.isNone(transfer.baseToken)}
             <!-- Asset Loading (only for source) -->
@@ -85,11 +90,11 @@ const isChainLoading = $derived.by(() => {
               type === "destination" ? "truncate" : "truncate",
               "flex flex-col items-start w-full"
               )}>
-              <p  class="text-sm leading-4">
+              <p class="leading-4 font-bold">
                 {transfer.baseToken.value.representations[0]?.symbol ?? transfer.baseToken.value.denom}
               </p>
               {#if Option.isSome(transfer.sourceChain)}
-                <p class="text-xs text-zinc-400">{transfer.sourceChain.value.display_name}</p>
+                <p class="text-xs text-zinc-400">{ type === "source" ? transfer.sourceChain.value.display_name : transfer.destinationChain.value.display_name }</p>
               {/if}
 
             </div>

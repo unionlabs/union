@@ -1,7 +1,5 @@
 <script lang="ts">
 import Modal from "./ui/Modal.svelte"
-import { settingsStore } from "$lib/stores/settings.svelte"
-import Button from "./ui/Button.svelte"
 import AppErrors from "$lib/components/layout/AppErrors/index.svelte"
 
 type Props = {

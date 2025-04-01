@@ -1,7 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { TransferSubmission, nextState, hasFailedExit, isComplete } from "$lib/services/transfer"
+import { hasFailedExit, isComplete, nextState, TransferSubmission } from "$lib/services/transfer"
 import { chains } from "$lib/stores/chains.svelte"
 import { Option } from "effect"
 import { sepolia } from "viem/chains"

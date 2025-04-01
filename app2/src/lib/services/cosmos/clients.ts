@@ -2,7 +2,7 @@ import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate
 import { Effect, Option } from "effect"
 import { cosmosStore, type CosmosWalletId } from "$lib/wallet/cosmos"
 import type { CosmosWallet } from "$lib/services/cosmos/types.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
 import { getCosmosOfflineSigner } from "$lib/services/transfer-ucs03-cosmos/offline-signer.ts"
 import { GasPrice } from "@cosmjs/stargate"
 import { getGasPriceForChain } from "$lib/services/cosmos/chain-info"
@@ -51,9 +51,13 @@ export const getCosmWasmClient = (chain: Chain, connectedWallet: CosmosWalletId)
 
     return yield* Effect.tryPromise({
       try: () =>
-        SigningCosmWasmClient.connectWithSigner(rpcUrl.value.toString(), offlineSigner, {
-          gasPrice
-        }),
+        SigningCosmWasmClient.connectWithSigner(
+          "https://rpc.rpc-node.union-testnet-10.union.build",
+          offlineSigner,
+          {
+            gasPrice
+          }
+        ),
       catch: err =>
         new CosmWasmError({
           cause: String(err)
@@ -65,7 +69,7 @@ export const getCosmosPublicClient = (rpc: URL | string) =>
   Effect.tryPromise({
     try: () => {
       const rpcString = typeof rpc === "string" ? rpc : rpc.toString()
-      return CosmWasmClient.connect(rpcString)
+      return CosmWasmClient.connect("https://rpc.rpc-node.union-testnet-10.union.build")
     },
     catch: err =>
       new CosmWasmError({

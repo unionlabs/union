@@ -2,7 +2,7 @@
 import { cn } from "$lib/utils"
 import type { HTMLAttributes } from "svelte/elements"
 import type { Snippet } from "svelte"
-import { scale, fade } from "svelte/transition"
+import { fade } from "svelte/transition"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   children: Snippet

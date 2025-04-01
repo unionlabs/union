@@ -4,7 +4,7 @@ import { chains } from "$lib/stores/chains.svelte.ts"
 import { cn } from "$lib/utils"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 
 type Props = {
@@ -38,11 +38,16 @@ function selectChain(chain: Chain) {
                 onclick={() => selectChain(chain)}
         >
 
-          <span class="w-5 h-5 flex items-center justify-center overflow-hidden">
-                   <img src={chainLogoMap.get(chain.universal_chain_id).color} alt="">
-          </span>
+          {#if chain.universal_chain_id}
+            {@const chainLogo = chainLogoMap.get(chain.universal_chain_id)}
+            {#if chainLogo?.color}
+              <span class="w-5 h-5 flex items-center justify-center overflow-hidden">
+                <img src={chainLogo.color} alt="">
+              </span>
+            {/if}
+          {/if}
 
-          <span class="text-xs text-center truncate w-fit">{chain.display_name.split(" ")[0]}</span>
+          <span class="text-xs text-center truncate w-fit">{chain.display_name}</span>
         </button>
       {/each}
     </div>

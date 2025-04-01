@@ -1,4 +1,4 @@
-import { TokenRawDenom } from "$lib/schema/token"
+import { TokenRawDenom } from "@unionlabs/sdk/schema"
 
 /**
  * List of token denoms that should be excluded from display and processing

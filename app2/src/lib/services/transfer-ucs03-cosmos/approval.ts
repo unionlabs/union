@@ -1,8 +1,7 @@
 import { Effect } from "effect"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
 import type { CosmosWalletId } from "$lib/wallet/cosmos"
 import { executeCosmWasmInstructions } from "$lib/services/transfer-ucs03-cosmos/execute.ts"
-import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
 import { fromHex, isHex } from "viem"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
 

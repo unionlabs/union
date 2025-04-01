@@ -1,6 +1,5 @@
 <script lang="ts">
 import { packetDetailsQuery } from "$lib/queries/packet-details.svelte"
-import { Effect } from "effect"
 import { onMount } from "svelte"
 import { packetDetails } from "$lib/stores/packets.svelte"
 import Card from "$lib/components/ui/Card.svelte"

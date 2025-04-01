@@ -11,6 +11,9 @@ import { coinbaseWallet, injected, metaMask, walletConnect } from "@wagmi/connec
 import {
   arbitrumSepolia,
   berachainTestnetbArtio,
+  bob,
+  bobSepolia,
+  cornTestnet,
   holesky,
   scrollSepolia,
   sepolia
@@ -22,7 +25,10 @@ export const chains = [
   holesky,
   berachainTestnetbArtio,
   arbitrumSepolia,
-  scrollSepolia
+  scrollSepolia,
+  bobSepolia,
+  bob,
+  cornTestnet
 ] as const
 
 export function getChainFromWagmi(chainId: number) {
@@ -89,6 +95,33 @@ export const wagmiConfig = createConfig({
         name: "unstable_connector-injected-scroll-sepolia"
       }),
       http(scrollSepolia.rpcUrls.default.http.at(0), { name: "default Scroll Sepolia RPC" })
+    ]),
+    [bobSepolia.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-bob-sepolia",
+        name: "unstable_connector-injected-bob-sepolia"
+      }),
+      http(bobSepolia.rpcUrls.default.http.at(0), { name: "default Bob Sepolia RPC" })
+    ]),
+    [bob.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-bob",
+        name: "unstable_connector-injected-bob"
+      }),
+      http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" })
+    ]),
+    [cornTestnet.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-corn-testnet",
+        name: "unstable_connector-injected-corn-testnet"
+      }),
+      http(bob.rpcUrls.default.http.at(0), { name: "default Corn Testnet RPC" })
     ])
   },
   storage: createWagmiStorage({

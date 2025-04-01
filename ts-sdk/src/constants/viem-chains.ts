@@ -3,7 +3,10 @@ import {
   berachainTestnetbArtio,
   holesky,
   scrollSepolia,
-  sepolia
+  sepolia,
+  bob,
+  bobSepolia,
+  cornTestnet
 } from "viem/chains"
 
 export const VIEM_CHAINS = [
@@ -11,5 +14,8 @@ export const VIEM_CHAINS = [
   holesky,
   berachainTestnetbArtio,
   arbitrumSepolia,
-  scrollSepolia
+  scrollSepolia,
+  bob,
+  bobSepolia,
+  cornTestnet
 ]

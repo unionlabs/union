@@ -1,4 +1,4 @@
-import { Data, type Exit, type Effect } from "effect"
+import { Data, type Effect, type Exit } from "effect"
 import type { submitTransfer } from "./transactions.ts"
 import type { switchChain } from "./chain.ts"
 import type { approveTransfer } from "$lib/services/transfer-ucs03-cosmos/approval.ts"

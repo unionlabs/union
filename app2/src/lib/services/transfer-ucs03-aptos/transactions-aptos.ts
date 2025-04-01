@@ -4,8 +4,7 @@ import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
 import { getPublicClient } from "../aptos/clients.ts"
 import { getAccount } from "$lib/services/transfer-ucs03-aptos/account.ts"
 import { generateSaltAptos } from "$lib/services/shared"
-import type { Chain } from "$lib/schema/chain.ts"
-import type { ValidTransfer } from "$lib/schema/transfer-args.ts"
+import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
 
 export const submitTransfer = (_chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {

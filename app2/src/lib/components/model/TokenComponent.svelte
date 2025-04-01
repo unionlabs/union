@@ -1,9 +1,7 @@
 <script lang="ts">
-import type { Chain, UniversalChainId } from "$lib/schema/chain"
-import type { TokenRawDenom, TokenRawAmount } from "$lib/schema/token"
-import { Effect, Option } from "effect"
+import type { Chain, TokenRawAmount, TokenRawDenom } from "@unionlabs/sdk/schema"
+import { Option } from "effect"
 import Truncate from "$lib/components/ui/Truncate.svelte"
-import { tokensQuery } from "$lib/queries/tokens.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 
@@ -74,12 +72,14 @@ const displayDenom = $derived(
 <Tooltip>
   {#snippet trigger()}
     <div class="flex items-center gap-2 font-semibold">
+      {#if amount}
       <span>
         {Option.match(displayAmount, {
           onNone: () => amount === undefined ? "" : amount.toString(),
           onSome: value => value
         })}
       </span>
+      {/if}
       <Truncate value={displayDenom} maxLength={10} showCopy={false} />
     </div>
   {/snippet}

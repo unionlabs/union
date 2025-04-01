@@ -1,6 +1,6 @@
 <script lang="ts">
-import { statistics, dailyTransfers } from "$lib/stores/statistics.svelte"
-import { statisticsQuery, dailyTransfersQuery } from "$lib/queries/statistics.svelte"
+import { dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
+import { dailyTransfersQuery, statisticsQuery } from "$lib/queries/statistics.svelte"
 import { Option } from "effect"
 import { onMount } from "svelte"
 import Card from "$lib/components/ui/Card.svelte"
@@ -10,7 +10,7 @@ import Sections from "$lib/components/ui/Sections.svelte"
 import StatisticComponent from "$lib/components/model/StatisticComponent.svelte"
 import BarChart from "$lib/components/model/BarChart.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
-import type { DailyTransfer } from "$lib/schema/statistics"
+import type { DailyTransfer } from "@unionlabs/sdk/schema"
 
 // State for tracking the currently hovered day
 let hoveredDay = $state<Option.Option<DailyTransfer>>(Option.none())

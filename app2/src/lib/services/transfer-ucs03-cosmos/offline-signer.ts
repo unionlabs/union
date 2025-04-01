@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import type { CosmosWalletId } from "$lib/wallet/cosmos"
 import { OfflineSignerError } from "$lib/services/transfer-ucs03-cosmos/errors.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
 import type { OfflineSigner } from "$lib/services/cosmos/types.ts"
 import { getCosmosWalletClient } from "$lib/services/cosmos/clients.ts"
 

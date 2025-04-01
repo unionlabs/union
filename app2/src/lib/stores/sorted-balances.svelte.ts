@@ -1,7 +1,11 @@
 import { Option } from "effect"
-import type { Chain } from "$lib/schema/chain"
-import type { AddressCanonicalBytes } from "$lib/schema/address"
-import type { Tokens, TokenRawDenom, TokenRawAmount } from "$lib/schema/token"
+import type {
+  AddressCanonicalBytes,
+  Chain,
+  TokenRawAmount,
+  TokenRawDenom,
+  Tokens
+} from "@unionlabs/sdk/schema"
 import { balancesStore, type BalancesStore } from "./balances.svelte"
 import { chains } from "./chains.svelte"
 import { tokensStore } from "./tokens.svelte"

@@ -1,12 +1,17 @@
 import { Data, Effect, Option, Schema } from "effect"
 import { fetchDecode } from "$lib/utils/queries"
-import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "$lib/schema/token"
-import type { Chain, NoRpcError } from "$lib/schema/chain"
-import { type AddressCosmosCanonical, AddressCosmosDisplay } from "$lib/schema/address"
+import type { Chain, NoRpcError } from "@unionlabs/sdk/schema"
+import {
+  type AddressCosmosCanonical,
+  AddressCosmosDisplay,
+  RawTokenBalance,
+  TokenRawAmount,
+  type TokenRawDenom
+} from "@unionlabs/sdk/schema"
 import { FetchHttpClient, type HttpClientError } from "@effect/platform"
-import { fromHexString, type FromHexError } from "$lib/utils/hex"
+import { type FromHexError, fromHexString } from "$lib/utils/hex"
 import { cosmosBalanceRetrySchedule } from "$lib/constants/schedules"
-import { toBase64, type Base64EncodeError } from "$lib/utils/base64"
+import { type Base64EncodeError, toBase64 } from "$lib/utils/base64"
 import { withTracerDisabledWhen } from "@effect/platform/HttpClient"
 import type { ParseError } from "effect/ParseResult"
 

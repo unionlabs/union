@@ -1,6 +1,6 @@
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { Effect, Fiber, Option } from "effect"
-import type { Statistics, DailyTransfers } from "$lib/schema/statistics"
+import type { DailyTransfers, Statistics } from "@unionlabs/sdk/schema"
 
 class StatisticsStore {
   data = $state(Option.none<Statistics>())

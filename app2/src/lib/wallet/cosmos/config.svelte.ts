@@ -2,7 +2,7 @@ import { bech32AddressToHex } from "@unionlabs/client"
 import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { Effect, Option } from "effect"
-import { AddressCosmosCanonical } from "$lib/schema/address"
+import { AddressCosmosCanonical } from "@unionlabs/sdk/schema"
 
 export const cosmosWalletsInformation = [
   {
@@ -146,7 +146,7 @@ class CosmosStore {
 
     try {
       await walletApi.experimentalSuggestChain(chainInfo)
-      await walletApi.enable(["union-testnet-9"])
+      await walletApi.enable(["union-testnet-10"])
     } catch (e) {
       console.log(e)
       this.connectionStatus = "disconnected"
@@ -154,7 +154,7 @@ class CosmosStore {
       return
     }
 
-    const account = await walletApi.getKey("union-testnet-9")
+    const account = await walletApi.getKey("union-testnet-10")
     this.connectionStatus = "connected"
     this.address = account?.bech32Address
     this.rawAddress = account?.address
@@ -194,10 +194,10 @@ class CosmosStore {
 
     try {
       // Try to enable the chain
-      await walletApi.enable(["union-testnet-9"])
+      await walletApi.enable(["union-testnet-10"])
 
       // Get account information
-      const account = await walletApi.getKey("union-testnet-9")
+      const account = await walletApi.getKey("union-testnet-10")
 
       if (account?.bech32Address) {
         this.connectionStatus = "connected"
@@ -225,9 +225,9 @@ class CosmosStore {
 
     if (cosmosWalletId && window[cosmosWalletId]) {
       if (cosmosWalletId === "keplr") {
-        await window[cosmosWalletId]?.disable("union-testnet-9")
+        await window[cosmosWalletId]?.disable("union-testnet-10")
       } else if (cosmosWalletId === "leap") {
-        await window[cosmosWalletId]?.disconnect("union-testnet-9")
+        await window[cosmosWalletId]?.disconnect("union-testnet-10")
       }
 
       this.connectedWallet = undefined

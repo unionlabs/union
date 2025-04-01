@@ -1,6 +1,6 @@
 import { Option } from "effect"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
-import type { TransferDetails } from "$lib/schema/transfer-details"
+import type { TransferDetails } from "@unionlabs/sdk/schema"
 
 class TransferDetailsStore {
   data = $state(Option.none<TransferDetails>())

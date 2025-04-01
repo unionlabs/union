@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Option } from "effect"
-import type { PacketList } from "$lib/schema/packet"
+import type { PacketList } from "@unionlabs/sdk/schema"
 import Button from "./Button.svelte"
 import DateTimeComponent from "./DateTimeComponent.svelte"
 

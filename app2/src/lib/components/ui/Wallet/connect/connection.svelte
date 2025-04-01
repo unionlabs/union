@@ -4,7 +4,7 @@ import { type CosmosWalletId } from "$lib/wallet/cosmos"
 import { type AptosWalletId } from "$lib/wallet/aptos"
 import { type EvmWalletId } from "$lib/wallet/evm"
 import { Schema } from "effect"
-import { RpcType } from "$lib/schema/chain.ts"
+import { RpcType } from "@unionlabs/sdk/schema"
 
 type Chain = Schema.Schema.Type<typeof RpcType>
 type ChainConnectStatus = State["status"]

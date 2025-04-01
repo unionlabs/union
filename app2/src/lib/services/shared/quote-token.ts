@@ -1,16 +1,14 @@
 import { Effect, Schedule } from "effect"
-import { type Address, fromHex } from "viem"
 import type { Hex } from "viem"
+import { type Address, fromHex } from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
-import type { Channel } from "$lib/schema/channel.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain, Channel, TokenRawDenom } from "@unionlabs/sdk/schema"
 import { getCosmosPublicClient } from "$lib/services/cosmos/clients.ts"
 import { tokenWrappingQuery } from "$lib/queries/tokens.svelte.ts"
 import { GetQuoteError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import { MoveVector } from "@aptos-labs/ts-sdk"
 import { getPublicClient as getAptosClient } from "$lib/services/aptos/clients"
 import { getPublicClient } from "../evm/clients.ts"
-import type { TokenRawDenom } from "$lib/schema/token"
 
 const retryPolicy = Schedule.recurs(2).pipe(
   Schedule.compose(Schedule.exponential(200)),
@@ -25,13 +23,12 @@ export const getQuoteToken = (
 ) =>
   Effect.gen(function* () {
     // TODO: make safer
-    const { v1_ibc_union_tokens } = yield* tokenWrappingQuery({
-      base_token,
-      destination_channel_id: channel.source_channel_id,
-      source_chain_id: sourceChain.chain_id
+    const { v2_tokens } = yield* tokenWrappingQuery({
+      denom: base_token,
+      universal_chain_id: sourceChain.universal_chain_id
     })
 
-    const quote_token = v1_ibc_union_tokens[0]?.wrapping[0]?.unwrapped_address_hex
+    const quote_token = v2_tokens[0]?.wrapping[0]?.unwrapped_denom
     if (quote_token) {
       return { type: "UNWRAPPED" as const, quote_token }
     }

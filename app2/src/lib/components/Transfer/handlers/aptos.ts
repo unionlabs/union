@@ -2,14 +2,13 @@ import {
   hasFailedExit as hasAptosFailedExit,
   isComplete as isAptosComplete,
   nextState as aptosNextState,
-  TransferSubmitState as AptosTransferSubmitState,
+  TransferReceiptState as AptosTransferReceiptState,
   TransferSubmission as AptosTransferSubmission,
-  TransferReceiptState as AptosTransferReceiptState
+  TransferSubmitState as AptosTransferSubmitState
 } from "$lib/services/transfer-ucs03-aptos"
 import { SwitchChainState as EvmSwitchChainState } from "$lib/services/transfer-ucs03-evm"
 import { TransferState, type TransferStateUnion } from "$lib/components/Transfer/validation.ts"
-import type { AptosTransfer } from "$lib/schema/transfer-args.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { AptosTransfer, Chain } from "@unionlabs/sdk/schema"
 
 export async function handleAptosSubmit(
   currentState: TransferStateUnion,

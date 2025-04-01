@@ -1,6 +1,6 @@
 <script lang="ts">
 import { fade, fly } from "svelte/transition"
-import { onMount, onDestroy } from "svelte"
+import { onDestroy, onMount } from "svelte"
 import ChainAssetButton from "$lib/components/Transfer/ChainAsset/ChainAssetButton.svelte"
 import ChainSelector from "$lib/components/Transfer/ChainAsset/ChainSelector.svelte"
 import TransferDirectionInfo from "$lib/components/Transfer/ChainAsset/TransferDirectionInfo.svelte"

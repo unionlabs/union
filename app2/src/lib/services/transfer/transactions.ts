@@ -7,7 +7,7 @@ import type {
 } from "viem"
 import { SendTransactionError, WaitForTransactionReceiptError } from "./errors.ts"
 import { getPublicClient, getWalletClient } from "../evm/clients.ts"
-import type { Chain } from "$lib/schema/chain.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
 
 export const submitTransfer = (chain: Chain, transactionArgs: SendTransactionParameters) =>
   Effect.gen(function* () {
