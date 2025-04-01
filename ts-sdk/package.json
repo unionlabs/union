@@ -10,19 +10,46 @@
     "url": "https://github.com/unionlabs/union.git",
     "directory": "ts-sdk"
   },
-  "publishConfig": {
-    "access": "public",
-    "directory": "dist",
-    "provenance": true
+  "exports": {
+    ".": {
+      "import": "./build/esm/index.js",
+      "types": "./build/dts/index.d.ts"
+    },
+    "./ucs03": {
+      "import": "./build/esm/ucs03/index.js",
+      "types": "./build/dts/ucs03/index.d.ts"
+    },
+    "./evm": {
+      "import": "./dist/src/evm/index.js",
+      "types": "./dist/dts/evm/index.d.ts"
+    },
+    "./cosmos": {
+      "import": "./dist/src/cosmos/index.js",
+      "types": "./dist/dts/cosmos/index.d.ts"
+    },
+    "./evm/abi": {
+      "import": "./dist/src/evm/abi/index.js",
+      "types": "./dist/dts/evm/abi/index.d.ts"
+    },
+    "./evm/ucs03": {
+      "import": "./dist/src/evm/ucs03/index.js",
+      "types": "./dist/dts/evm/ucs03/index.d.ts"
+    },
+    "./evm/erc20": {
+      "import": "./dist/src/evm/erc20.js",
+      "types": "./dist/dts/evm/erc20.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/src/utils/index.js",
+      "types": "./dist/dts/utils/index.d.ts"
+    }
   },
   "scripts": {
-    "build": "pnpm build-esm && pnpm build-annotate && pnpm build-cjs && build-utils pack-v2",
+    "build": "pnpm build-esm && pnpm build-annotate",
     "build-annotate": "babel build/esm --plugins annotate-pure-calls --out-dir build/esm --source-maps",
-    "build-cjs": "babel build/esm --plugins @babel/transform-export-namespace-from --plugins @babel/transform-modules-commonjs --out-dir build/cjs --source-maps",
     "build-esm": "tsc -b tsconfig.build.json",
     "check": "tsc -b tsconfig.json",
     "check:circular": "dpdm -T src",
-    "codegen": "build-utils prepare-v2",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -33,8 +60,6 @@
   "devDependencies": {
     "@babel/cli": "^7.24.8",
     "@babel/core": "^7.25.2",
-    "@babel/plugin-transform-export-namespace-from": "^7.24.7",
-    "@babel/plugin-transform-modules-commonjs": "^7.24.8",
     "@effect/build-utils": "^0.7.7",
     "@effect/vitest": "~0.19.10",
     "babel-plugin-annotate-pure-calls": "^0.5.0",

@@ -173,7 +173,8 @@
         ./docs/openapi.nix
         ./ceremony/ceremony.nix
         ./site/site.nix
-        ./web.nix
+        ./app2/app2.nix
+        ./ts-sdk/ts-sdk.nix
         ./typescript-sdk/typescript-sdk.nix
         ./cosmwasm/cosmwasm.nix
         ./evm/evm.nix
