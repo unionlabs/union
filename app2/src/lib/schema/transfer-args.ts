@@ -32,7 +32,7 @@ const EvmTransferSchema = Schema.Struct({
   sourceRpcType: Schema.Literal("evm").annotations({
     message: () => "sourceRpcType must be 'evm'"
   }),
-  wethQuoteToken: EvmWethToken,
+  wethBaseToken: EvmWethToken,
   receiver: Schema.String.pipe(
     Schema.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )

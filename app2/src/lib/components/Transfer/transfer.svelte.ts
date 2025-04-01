@@ -102,7 +102,7 @@ export class Transfer {
     )
   })
 
-  wethQuoteToken = $derived.by(() => {
+  wethBaseToken = $derived.by(() => {
     if (Option.isNone(this.sourceChain)) return Option.none()
     return this.sourceChain.value.universal_chain_id in WETH_DENOMS
       ? Option.some(WETH_DENOMS[this.sourceChain.value.universal_chain_id])
@@ -118,7 +118,7 @@ export class Transfer {
       parsedAmount,
       derivedReceiver,
       ucs03address,
-      wethQuoteToken
+      wethBaseToken
     } = {
       sourceChain: Option.getOrNull(this.sourceChain),
       destinationChain: Option.getOrNull(this.destinationChain),
@@ -127,7 +127,7 @@ export class Transfer {
       parsedAmount: Option.getOrNull(this.parsedAmount),
       derivedReceiver: Option.getOrNull(this.derivedReceiver),
       ucs03address: Option.getOrNull(this.ucs03address),
-      wethQuoteToken: Option.getOrNull(this.wethQuoteToken)
+      wethBaseToken: Option.getOrNull(this.wethBaseToken)
     }
 
     return {
@@ -143,7 +143,7 @@ export class Transfer {
       receiver: derivedReceiver,
       timeoutHeight: "0",
       timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
-      wethQuoteToken: wethQuoteToken
+      wethBaseToken: wethBaseToken
     }
   })
 
