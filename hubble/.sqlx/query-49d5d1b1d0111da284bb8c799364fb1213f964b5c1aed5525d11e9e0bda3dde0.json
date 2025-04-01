@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT id, source_uri, name, logo_uri\n        FROM hubble.token_sources\n        WHERE enabled = true\n        ORDER BY id\n        ",
+  "query": "\n        SELECT id, source_uri, name, logo_uri\n        FROM token.token_sources\n        WHERE enabled = true\n        ORDER BY id\n        ",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       true
     ]
   },
-  "hash": "fcadfa487703875e106d01f0ddc74bffb52c2c8df547a18174aca7c36527a7f0"
+  "hash": "49d5d1b1d0111da284bb8c799364fb1213f964b5c1aed5525d11e9e0bda3dde0"
 }
