@@ -87,10 +87,20 @@ let transferIntents = $derived.by(() => {
   }
 
   if (transferValue.sourceChain.rpc_type === "cosmos") {
+    console.log('add',       {
+      sender: sender.value,
+      receiver: transferValue.receiver,
+      receiver2: transferValue.receiver.toLowerCase(),
+      baseToken: isHex(transferValue.baseToken)
+        ? fromHex(transferValue.baseToken, "string")
+        : transferValue.baseToken,
+      baseAmount: transferValue.baseAmount,
+      quoteAmount: transferValue.baseAmount
+    })
     return Option.some([
       {
         sender: sender.value,
-        receiver: transferValue.receiver,
+        receiver: transferValue.receiver.toLowerCase(),
         baseToken: isHex(transferValue.baseToken)
           ? fromHex(transferValue.baseToken, "string")
           : transferValue.baseToken,
@@ -308,7 +318,7 @@ const intentsToBatch = (ti: typeof transferIntents) =>
               Effect.sync(() => console.log("batch: Cosmos->EVM order created", order))
             ),
             Effect.catchAll(error => {
-              console.error("batch: Error creating Cosmos->EVM order", error.cause)
+              console.error("batch: Error creating Cosmos->EVM order", error)
               return Effect.fail(error)
             }),
             provideCosmWasmClientSource,
@@ -339,7 +349,7 @@ const intentsToBatch = (ti: typeof transferIntents) =>
 
       // Handle both array and single order cases
       console.log(`batch: Orders created:`, orders)
-      const batch = Array.isArray(orders) ? Batch(orders) : Batch([orders])
+      const batch = new Batch({operand: Array.isArray(orders) ? orders : [orders]})
       console.log(`batch: Batch created:`, batch)
       return batch
     }).pipe(
