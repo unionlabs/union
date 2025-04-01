@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/sdk",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "type": "module",
   "license": "MIT",
   "author": "@unionlabs",
@@ -10,43 +10,39 @@
     "url": "https://github.com/unionlabs/union.git",
     "directory": "ts-sdk"
   },
+  "files": ["LICENSE", "README.md", "dist", "package.json", "src"],
   "exports": {
     ".": {
-      "import": "./build/esm/index.js",
-      "types": "./build/dts/index.d.ts"
+      "import": "./dist/index.js"
     },
     "./ucs03": {
-      "import": "./build/esm/ucs03/index.js",
-      "types": "./build/dts/ucs03/index.d.ts"
+      "import": "./dist/ucs03/index.js"
     },
     "./evm": {
-      "import": "./dist/src/evm/index.js",
-      "types": "./dist/dts/evm/index.d.ts"
+      "import": "./dist/evm/index.js"
     },
     "./cosmos": {
-      "import": "./dist/src/cosmos/index.js",
-      "types": "./dist/dts/cosmos/index.d.ts"
+      "import": "./dist/cosmos/index.js"
     },
     "./evm/abi": {
-      "import": "./dist/src/evm/abi/index.js",
-      "types": "./dist/dts/evm/abi/index.d.ts"
+      "import": "./dist/evm/abi/index.js"
     },
     "./evm/ucs03": {
-      "import": "./dist/src/evm/ucs03/index.js",
-      "types": "./dist/dts/evm/ucs03/index.d.ts"
+      "import": "./dist/evm/ucs03/index.js"
     },
     "./evm/erc20": {
-      "import": "./dist/src/evm/erc20.js",
-      "types": "./dist/dts/evm/erc20.d.ts"
+      "import": "./dist/evm/erc20.js"
     },
     "./utils": {
-      "import": "./dist/src/utils/index.js",
-      "types": "./dist/dts/utils/index.d.ts"
+      "import": "./dist/utils/index.js"
+    },
+    "./schema": {
+      "import": "./dist/schema/index.js"
     }
   },
   "scripts": {
     "build": "pnpm build-esm && pnpm build-annotate",
-    "build-annotate": "babel build/esm --plugins annotate-pure-calls --out-dir build/esm --source-maps",
+    "build-annotate": "babel dist/ --plugins annotate-pure-calls --out-dir dist/ --source-maps",
     "build-esm": "tsc -b tsconfig.build.json",
     "check": "tsc -b tsconfig.json",
     "check:circular": "dpdm -T src",

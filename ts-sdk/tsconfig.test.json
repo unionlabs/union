@@ -5,6 +5,6 @@
   "compilerOptions": {
     "tsBuildInfoFile": ".tsbuildinfo/test.tsbuildinfo",
     "rootDir": "test",
-    "outDir": "build/test"
+    "outDir": "dist/test"
   }
 }

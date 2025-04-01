@@ -7,7 +7,7 @@ _: {
       ...
     }:
     let
-      buildPnpmPackage = import ../nix/buildPnpmPackage.nix {
+      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
         inherit pkgs lib;
       };
       pnpm = pkgs.pnpm_10;
@@ -42,7 +42,7 @@ _: {
             name = "publish-ts-sdk";
             text = ''
               cd ${self'.packages.ts-sdk}/
-              ${pnpm} publish --dry-run
+              ${pnpm} publish --access='public'
             '';
           };
         };

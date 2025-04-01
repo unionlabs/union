@@ -20,14 +20,14 @@ let
   src =
     with lib.fileset;
     (toSource {
-      root = ./..;
+      root = ./../..;
       fileset = unions (
         [
-          ../package.json
-          ../pnpm-lock.yaml
-          ../pnpm-workspace.yaml
-          ../tsconfig.base.json
-          ../patches
+          ../../package.json
+          ../../pnpm-lock.yaml
+          ../../pnpm-workspace.yaml
+          ../../tsconfig.base.json
+          ../../patches
         ]
         ++ extraSrcs
       );
