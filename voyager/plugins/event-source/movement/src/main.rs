@@ -313,7 +313,8 @@ impl PluginServer<ModuleCall, Never> for Module {
                     })
                     .filter(|(typ, _, _)| typ.name.0.as_str() != "CreateLensClient")
                     .map(|(typ, data, hash)| {
-                        let event = match dbg!(typ).name.0.as_str() {
+                        let event_type = typ.name.0.as_str();
+                        let event = match event_type {
                             "CreateClient" => from_raw_event::<ibc::CreateClient>(data),
                             "UpdateClient" => from_raw_event::<ibc::UpdateClient>(data),
                             "ConnectionOpenInit" => from_raw_event::<ibc::ConnectionOpenInit>(data),
@@ -333,6 +334,9 @@ impl PluginServer<ModuleCall, Never> for Module {
                             "TimeoutPacket" => from_raw_event::<ibc::TimeoutPacket>(data),
                             unknown => panic!("unknown event `{unknown}`"),
                         };
+
+                        info!(event_type = %event_type, tx_hash = %hash, height = %height, "raw movement event");
+
                         // TODO: Check the type before deserializing
                         call(PluginMessage::new(
                             self.plugin_name(),
@@ -757,9 +761,9 @@ impl PluginServer<ModuleCall, Never> for Module {
                     events::IbcEvent::TimeoutPacket(_) => todo!(),
                 };
 
-                ibc_union_spec::log_event(&full_event, &self.chain_id);
-
                 let voyager_client = e.try_get::<VoyagerClient>()?;
+
+                ibc_union_spec::log_event(&full_event, &self.chain_id);
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
