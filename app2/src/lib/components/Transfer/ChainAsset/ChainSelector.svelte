@@ -21,6 +21,7 @@ function selectChain(chain: Chain) {
   }
   onSelect()
 }
+
 </script>
 
 <div class="p-4">
@@ -47,7 +48,7 @@ function selectChain(chain: Chain) {
             {/if}
           {/if}
 
-          <span class="text-xs text-center truncate w-fit">{chain.display_name.split(" ")[0]}</span>
+          <span class="text-xs text-center truncate w-fit">{chain.display_name}</span>
         </button>
       {/each}
     </div>
