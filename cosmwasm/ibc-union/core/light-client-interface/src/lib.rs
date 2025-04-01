@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
 use core::fmt::Debug;
+use std::error::Error;
 
 use cosmwasm_std::{to_json_binary, Addr, Binary, Deps, DepsMut, Env, Querier, Response, StdError};
 use depolama::{QuerierExt, StorageExt, Store};
@@ -27,15 +28,19 @@ pub mod state;
 #[debug(bound())]
 pub enum DecodeError<T: IbcClient> {
     #[error("unable to decode header")]
-    Header(DecodeErrorOf<T::Encoding, T::Header>),
+    Header(#[source] DecodeErrorOf<T::Encoding, T::Header>),
     #[error("unable to decode misbehaviour")]
-    Misbehaviour(DecodeErrorOf<T::Encoding, T::Misbehaviour>),
+    Misbehaviour(#[source] DecodeErrorOf<T::Encoding, T::Misbehaviour>),
     #[error("unable to decode client state")]
-    ClientState(DecodeErrorOf<T::Encoding, T::ClientState>),
+    ClientState(#[source] DecodeErrorOf<T::Encoding, T::ClientState>),
     #[error("unable to decode consensus state")]
-    ConsensusState(DecodeErrorOf<EthAbi, T::ConsensusState>),
+    ConsensusState {
+        counterparty_height: u64,
+        #[source]
+        error: DecodeErrorOf<EthAbi, T::ConsensusState>,
+    },
     #[error("unable to decode storage proof")]
-    StorageProof(DecodeErrorOf<T::Encoding, T::StorageProof>),
+    StorageProof(#[source] DecodeErrorOf<T::Encoding, T::StorageProof>),
     #[error("unable to decode raw storage ({0})")]
     RawStorage(Bytes),
 }
@@ -235,21 +240,21 @@ impl<T: IbcClient> Default for ClientCreationResult<T> {
     }
 }
 
-pub trait IbcClient: Sized {
+pub trait IbcClient: Sized + 'static {
     type Error: core::error::Error + Into<IbcClientError<Self>>;
     type CustomQuery: cosmwasm_std::CustomQuery;
-    type Header: Decode<Self::Encoding, Error: Debug> + Debug + 'static;
-    type Misbehaviour: Decode<Self::Encoding, Error: Debug> + Debug + 'static;
-    type ClientState: Decode<Self::Encoding, Error: Debug>
+    type Header: Decode<Self::Encoding, Error: Error + 'static> + Debug + 'static;
+    type Misbehaviour: Decode<Self::Encoding, Error: Error + 'static> + Debug + 'static;
+    type ClientState: Decode<Self::Encoding, Error: Error + 'static>
         + Encode<Self::Encoding>
         + Debug
         + 'static;
     /// Note that this type only requires `Encode/Decode<Ethabi>`, cause `ConsensusState` must have
     /// a common encoding scheme for state lenses. When doing state lenses, client X will read the
     /// consensus state of client Y by assuming it's state is ethabi-encoded.
-    type ConsensusState: Decode<EthAbi, Error: Debug> + Encode<EthAbi> + Debug + 'static;
+    type ConsensusState: Decode<EthAbi, Error: Error + 'static> + Encode<EthAbi> + Debug + 'static;
     type StorageProof: Encode<Self::Encoding>
-        + Decode<Self::Encoding, Error: Debug>
+        + Decode<Self::Encoding, Error: Error + 'static>
         + Debug
         + 'static;
     type Encoding: Encoding;
@@ -503,6 +508,10 @@ pub fn read_consensus_state<T: IbcClient>(
             )))
         })?;
 
-    T::ConsensusState::decode(&consensus_state)
-        .map_err(|e| IbcClientError::Decode(DecodeError::ConsensusState(e)))
+    T::ConsensusState::decode(&consensus_state).map_err(|e| {
+        IbcClientError::Decode(DecodeError::ConsensusState {
+            counterparty_height: height,
+            error: e,
+        })
+    })
 }
