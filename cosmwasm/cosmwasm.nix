@@ -342,17 +342,17 @@ _: {
 
       ucs03-configs = {
         cw20 = {
-          path = "${self'.packages.ucs03-zkgm}";
-          token_minter_path = "${self'.packages.cw20-token-minter}";
+          path = "${ucs03-zkgm.release}";
+          token_minter_path = "${cw20-token-minter.release}";
           token_minter_config = {
             cw20 = {
-              cw20_base = "${cw20-base}";
+              cw20_base = "${cw20-base.release}";
             };
           };
         };
         native = {
-          path = "${self'.packages.ucs03-zkgm}";
-          token_minter_path = "${self'.packages.token-factory-minter}";
+          path = "${ucs03-zkgm.release}";
+          # token_minter_path = "${token-factory-minter.release}";
           token_minter_config = {
             native = { };
           };
@@ -427,13 +427,13 @@ _: {
         { lightclients, apps, ... }:
         pkgs.writeText "contracts.json" (
           builtins.toJSON {
-            core = ibc-union;
+            core = ibc-union.release;
             lightclient = builtins.listToAttrs (
               map (
                 { name, client-type, ... }:
                 {
                   name = client-type;
-                  value = mk-lightclient name;
+                  value = (mk-lightclient name).release;
                 }
               ) (builtins.filter ({ name, ... }: builtins.elem name lightclients) all-lightclients)
             );
@@ -483,7 +483,7 @@ _: {
                     --address "$(echo "$ADDRESSES" | jq '.lightclient."${
                       (get-lightclient (l: l.name == lc)).client-type
                     }"' -r)" \
-                    --new-bytecode ${mk-lightclient lc} \
+                    --new-bytecode ${(mk-lightclient lc).release} \
                     ${mk-gas-args gas_config}
                 '';
               };
@@ -521,10 +521,11 @@ _: {
                     --rpc-url ${rpc_url} \
                     --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
                     --new-bytecode ${
-                      mk-app
+                      (mk-app
                         (pkgs.lib.lists.findFirst (a: a.value.name == app) (throw "???") (
                           pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
                         )).name
+                      ).release
                     } \
                     ${mk-gas-args gas_config}
                 '';
@@ -559,7 +560,7 @@ _: {
                   migrate \
                   --rpc-url ${rpc_url} \
                   --address "$(echo "$ADDRESSES" | jq '.core' -r)" \
-                  --new-bytecode ${ibc-union} \
+                  --new-bytecode ${ibc-union.release} \
                   ${mk-gas-args gas_config}
               '';
             };
