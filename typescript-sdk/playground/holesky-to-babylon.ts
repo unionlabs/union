@@ -1,12 +1,12 @@
 import { getAddress, http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { bech32AddressToHex, createUnionClient } from "#mod.ts"
+import { bech32AddressToHex, createUnionClient } from "../src/mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
   getRecommendedChannels
-} from "#query/offchain/ucs03-channels"
+} from "../src/query/offchain/ucs03-channels.ts"
 import { privateKeyToAccount } from "viem/accounts"
 
 // hack to encode bigints to json

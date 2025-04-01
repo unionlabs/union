@@ -1,42 +1,58 @@
 _: {
   perSystem =
     {
-      lib,
       pkgs,
       pkgsUnstable,
       ensureAtRepositoryRoot,
+      lib,
       ...
     }:
     let
+      buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
+        inherit pkgs lib;
+      };
       deps = with pkgsUnstable; [
         python3
         stdenv.cc
         pkg-config
         nodePackages_latest.nodejs
-        nodePackages_latest."patch-package"
+        pnpm_10
       ];
-      packageJSON = lib.importJSON ./package.json;
     in
     {
       packages = {
-        app2 = pkgsUnstable.buildNpmPackage {
-          npmDepsHash = "sha256-cgmgvbMV9lIFG4YEA5W2Vk3uvjUIp2BNWcQrEmrortE=";
-          src = ./.;
-          sourceRoot = "app2";
-          npmFlags = [ "--legacy-peer-deps" ];
-          pname = packageJSON.name;
-          inherit (packageJSON) version;
-          nativeBuildInputs = deps;
+        app2 = buildPnpmPackage rec {
+          packageJsonPath = ./package.json;
+          extraSrcs = [
+            ../app2
+            ../typescript-sdk
+            ../ts-sdk
+          ];
+          hash = "sha256-nR7H08cOxhjn1PgbvdBdDoLahV+xQCFw0Xpoi2oCfII=";
           buildInputs = deps;
+          nativeBuildInputs = buildInputs;
+          pnpmWorkspaces = [
+            "app2"
+            "@unionlabs/sdk"
+            "@unionlabs/client"
+          ];
+          buildPhase = ''
+            runHook preBuild
+            pnpm --filter=app2 prepare
+            pnpm --filter=app2 build
+            runHook postBuild
+          '';
+          checkPhase = ''
+            pnpm --filter=app2 check
+          '';
+          doCheck = false; # TODO(ehegnes): enable checks
           installPhase = ''
             mkdir -p $out
-            cp -r ./build/* $out
+            cp -r ./app2/build/* $out
           '';
           doDist = false;
-          NODE_OPTIONS = "--no-warnings";
         };
       };
-
       apps = {
         app2-dev-server = {
           type = "app";
@@ -46,9 +62,8 @@ _: {
             text = ''
               ${ensureAtRepositoryRoot}
               cd app2/
-
-              npm install
-              npm run dev -- --host
+              pnpm install
+              pnpm run dev -- --host
             '';
           };
         };
@@ -60,9 +75,8 @@ _: {
             text = ''
               ${ensureAtRepositoryRoot}
               cd app2/
-              npx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://development.graphql.union.build/v1/graphql"
-
-              npx gql.tada generate-output --disable-preprocessing --tsconfig ./tsconfig.json --output ./src/generated/graphql-env.d.ts
+              pnpm dlx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://development.graphql.union.build/v1/graphql"
+              pnpm dlx gql.tada generate-output --disable-preprocessing --tsconfig ./tsconfig.json --output ./src/generated/graphql-env.d.ts
             '';
           };
         };

@@ -4,6 +4,7 @@ import { Hex } from "./hex.js"
 import { SortOrder } from "./sort-order.js"
 import { PacketHash } from "./packet.js"
 import { TokenRawDenom, TokenRawAmount } from "./token.js"
+import { AggregateCount } from "./aggregate-count.js"
 
 export class TransferListItem extends S.Class<TransferListItem>("TransferListItem")({
   source_chain: ChainReference,
@@ -22,11 +23,6 @@ export class TransferListItem extends S.Class<TransferListItem>("TransferListIte
 
 export const TransferList = S.Array(TransferListItem)
 export type TransferList = typeof TransferList.Type
-
-export const AggregateCount = S.Struct({
-  count: S.Number
-})
-export type AggregateCount = typeof AggregateCount.Type
 
 export const TransferCount = S.Struct({
   aggregate: AggregateCount

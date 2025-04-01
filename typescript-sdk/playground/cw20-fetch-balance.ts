@@ -1,4 +1,4 @@
-import { queryCosmosCW20AddressBalance } from "#mod.ts"
+import { queryCosmosCW20AddressBalance } from "../src/mod.ts"
 
 const balance = await queryCosmosCW20AddressBalance({
   address: "bbn1xe0rnlh3u05qkwytkwmyzl86a0mvpwfxgf2t7u",

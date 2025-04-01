@@ -5,7 +5,7 @@ import { holesky } from "viem/chains"
 import { CosmosDestinationConfig } from "../src/cosmos/quote-token.js"
 import { createEvmToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
 import { CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/client.js"
-import { Instruction } from "../src/ucs03"
+import { Instruction } from "../src/ucs03.ts"
 
 const createBatch = Effect.gen(function* () {
   const mainTransfer = yield* createEvmToCosmosFungibleAssetOrder({

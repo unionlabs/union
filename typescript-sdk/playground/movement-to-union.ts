@@ -2,13 +2,13 @@ import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { createUnionClient, bech32AddressToHex } from "#mod.ts"
+import { createUnionClient, bech32AddressToHex } from "../src/mod.ts"
 
 import {
   getChannelInfo,
   getQuoteToken,
   getRecommendedChannels
-} from "#query/offchain/ucs03-channels"
+} from "../src/query/offchain/ucs03-channels.ts"
 
 type Channel = {
   source_chain_id: string

@@ -15,10 +15,12 @@ const mockWalletClient = {
 } as WalletClient
 
 // Mock service layers
+// @ts-expect-error
 const mockPublicViemClient = {
   client: mockPublicClient
 }
 
+// @ts-expect-error
 const mockViemWalletClient = {
   // @ts-ignore we do a partial mock
   client: mockWalletClient

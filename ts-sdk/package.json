@@ -1,47 +1,75 @@
 {
   "name": "@unionlabs/sdk",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "type": "module",
   "license": "MIT",
   "author": "@unionlabs",
-  "scripts": {
-    "build": "tsc",
-    "check": "tsc --noEmit",
-    "test": "vitest run",
-    "test-watch": "vitest",
-    "postinstall": "patch-package"
+  "description": "Union TypeScript SDK 2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unionlabs/union.git",
+    "directory": "ts-sdk"
   },
+  "files": ["LICENSE", "README.md", "dist", "package.json", "src"],
   "exports": {
-    ".": "./dist/src/index.js",
-    "./ucs03": "./dist/src/ucs03/index.js",
-    "./evm": "./dist/src/evm/index.js",
-    "./cosmos": "./dist/src/cosmos/index.js",
-    "./evm/abi": "./dist/src/evm/abi/index.js",
-    "./evm/ucs03": "./dist/src/evm/ucs03/index.js",
-    "./evm/erc20": "./dist/src/evm/erc20.js",
-    "./utils": "./dist/src/utils/index.js"
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./ucs03": {
+      "import": "./dist/ucs03/index.js"
+    },
+    "./evm": {
+      "import": "./dist/evm/index.js"
+    },
+    "./cosmos": {
+      "import": "./dist/cosmos/index.js"
+    },
+    "./evm/abi": {
+      "import": "./dist/evm/abi/index.js"
+    },
+    "./evm/ucs03": {
+      "import": "./dist/evm/ucs03/index.js"
+    },
+    "./evm/erc20": {
+      "import": "./dist/evm/erc20.js"
+    },
+    "./utils": {
+      "import": "./dist/utils/index.js"
+    },
+    "./schema": {
+      "import": "./dist/schema/index.js"
+    }
   },
-  "files": [
-    "package.json",
-    "README.md",
-    "src/**/*.ts",
-    "dist/**/*.js",
-    "dist/**/*.js.map",
-    "dist/**/*.d.ts",
-    "dist/**/*.d.ts.map"
-  ],
+  "scripts": {
+    "build": "pnpm build-esm && pnpm build-annotate",
+    "build-annotate": "babel dist/ --plugins annotate-pure-calls --out-dir dist/ --source-maps",
+    "build-esm": "tsc -b tsconfig.build.json",
+    "check": "tsc -b tsconfig.json",
+    "check:circular": "dpdm -T src",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "effect": "^3",
+    "viem": "^2"
+  },
   "devDependencies": {
+    "@babel/cli": "^7.24.8",
+    "@babel/core": "^7.25.2",
+    "@effect/build-utils": "^0.7.7",
     "@effect/vitest": "~0.19.10",
+    "babel-plugin-annotate-pure-calls": "^0.5.0",
     "biome": "^0.3.3",
+    "dpdm": "^3.14.0",
+    "effect": "^3.13.12",
     "typescript": "^5.8.2",
+    "viem": "^2.23.12",
     "vitest": "^3.0.8"
   },
   "dependencies": {
+    "@aptos-labs/ts-sdk": "1.34.0",
     "@cosmjs/cosmwasm-stargate": "^0.33.1",
     "@cosmjs/stargate": "^0.33.1",
-    "@aptos-labs/ts-sdk": "1.34.0",
-    "effect": "^3.13.12",
-    "patch-package": "^8.0.0",
-    "viem": "^2.23.12"
+    "@scure/base": "1.2.4"
   }
 }

@@ -1,11 +1,17 @@
-import { cosmosChainId, evmChainFromChainId, type EvmChainId, evmChainId, GRAQPHQL_URL } from "#mod"
+import {
+  cosmosChainId,
+  evmChainFromChainId,
+  type EvmChainId,
+  evmChainId,
+  GRAQPHQL_URL
+} from "../../mod.ts"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
 import { createPublicClient, fromHex, http, isHex, type Hex } from "viem"
 import { err, ok, ResultAsync, type Result } from "neverthrow"
-import { ucs03ZkgmAbi } from "#abi/ucs-03"
+import { ucs03ZkgmAbi } from "../../abi/ucs-03.ts"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
-import { cosmosRpcs, type CosmosChainId } from "#cosmos/client"
+import { cosmosRpcs, type CosmosChainId } from "../../cosmos/client.ts"
 
 const channelsQuery = graphql(/*  GraphQL */ `
   query Ucs03Channels {

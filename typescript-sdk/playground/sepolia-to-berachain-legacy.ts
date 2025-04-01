@@ -2,10 +2,10 @@
 import { fallback, http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { raise } from "#utilities/index.ts"
+import { raise } from "../src/utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { berachainTestnetbArtio, sepolia } from "viem/chains"
-import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
 
 /* `bun playground/sepolia-to-berachain.ts --private-key "..."` */
 

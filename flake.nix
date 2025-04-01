@@ -169,13 +169,12 @@
         ./lib/aptos.nix
         ./uniond/proto.nix
         ./app/app.nix
-        ./app2/app2.nix
         ./docs/docs.nix
         ./docs/openapi.nix
         ./ceremony/ceremony.nix
         ./site/site.nix
+        ./app2/app2.nix
         ./ts-sdk/ts-sdk.nix
-        # ./lib/near/near.nix
         ./typescript-sdk/typescript-sdk.nix
         ./cosmwasm/cosmwasm.nix
         ./evm/evm.nix
@@ -420,6 +419,7 @@
               ])
               ++ (with pkgsUnstable; [
                 bun
+                pnpm_10
                 deno
                 nixd
                 procs

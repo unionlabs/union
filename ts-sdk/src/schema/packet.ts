@@ -8,6 +8,7 @@ import { ConnectionId } from "./connection.js"
 import { ClientId } from "./client.js"
 import { PortId } from "./port.js"
 import { Height } from "./height.js"
+import { AggregateCount } from "./aggregate-count.js"
 
 export const PacketHash = S.String.pipe(S.pattern(/^0x[0-9a-f]{64}$/)).pipe(S.brand("PacketHash"))
 export type PacketHash = typeof PacketHash.Type
@@ -72,11 +73,6 @@ export class PacketDetails extends S.Class<PacketDetails>("PacketDetails")({
   decoded_flattened: S.OptionFromNullOr(S.Array(S.Any)),
   acknowledgement: S.OptionFromNullOr(S.Any)
 }) {}
-
-export const AggregateCount = S.Struct({
-  count: S.Number
-})
-export type AggregateCount = typeof AggregateCount.Type
 
 export const PacketCount = S.Struct({
   aggregate: AggregateCount
