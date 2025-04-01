@@ -105,11 +105,11 @@ export class FungibleAssetOrder extends S.TaggedClass<FungibleAssetOrder>()("Fun
       decoding: () => 3 as const
     })
   ),
-  version: S.Literal(0).pipe(
+  version: S.Literal(1).pipe(
     S.optional,
     S.withDefaults({
-      constructor: () => 0 as const,
-      decoding: () => 0 as const
+      constructor: () => 1 as const,
+      decoding: () => 1 as const
     })
   ),
   operand: Operand

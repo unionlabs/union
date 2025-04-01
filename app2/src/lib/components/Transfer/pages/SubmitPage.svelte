@@ -116,6 +116,7 @@ export const submit = Effect.gen(function* () {
     ),
     Match.when("cosmos", () =>
       Effect.gen(function* () {
+        console.log('lukas: here')
         const signingClient = yield* getCosmWasmClient(
           lts.value.sourceChain,
           cosmosStore.connectedWallet
@@ -123,7 +124,6 @@ export const submit = Effect.gen(function* () {
 
         const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
 
-        console.log("breeee", { msg: step.value.instruction })
         do {
           cts = yield* Effect.tryPromise(() =>
             nextStateCosmos(
@@ -145,7 +145,7 @@ export const submit = Effect.gen(function* () {
                   ])
                 }
               },
-              [{ denom: "muno", amount: "1" }]
+              [{ denom: "ubbn", amount: "1" }]
             )
           )
 
