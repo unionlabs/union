@@ -13,7 +13,9 @@ import {
   berachainTestnetbArtio,
   holesky,
   scrollSepolia,
-  sepolia
+  sepolia,
+  bobSepolia,
+  bob
 } from "@wagmi/core/chains"
 import { TESTNET_APP_INFO } from "$lib/config/app"
 
@@ -22,7 +24,9 @@ export const chains = [
   holesky,
   berachainTestnetbArtio,
   arbitrumSepolia,
-  scrollSepolia
+  scrollSepolia,
+  bobSepolia,
+  bob
 ] as const
 
 export function getChainFromWagmi(chainId: number) {
@@ -89,6 +93,24 @@ export const wagmiConfig = createConfig({
         name: "unstable_connector-injected-scroll-sepolia"
       }),
       http(scrollSepolia.rpcUrls.default.http.at(0), { name: "default Scroll Sepolia RPC" })
+    ]),
+    [bobSepolia.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-bob-sepolia",
+        name: "unstable_connector-injected-bob-sepolia"
+      }),
+      http(bobSepolia.rpcUrls.default.http.at(0), { name: "default Bob Sepolia RPC" })
+    ]),
+    [bob.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-bob",
+        name: "unstable_connector-injected-bob"
+      }),
+      http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" })
     ])
   },
   storage: createWagmiStorage({
