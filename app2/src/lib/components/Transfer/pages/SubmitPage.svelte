@@ -1,7 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import {Effect, Match, Option} from "effect"
+import { Effect, Match, Option } from "effect"
 import { SubmitInstruction } from "../transfer-step.ts"
 import { hasFailedExit, isComplete } from "$lib/components/Transfer/state/evm.ts"
 import { generateSalt } from "@unionlabs/sdk/utils"
@@ -11,13 +11,16 @@ import { getConnectorClient, type GetConnectorClientErrorType, http } from "@wag
 import { createViemPublicClient, createViemWalletClient } from "@unionlabs/sdk/evm"
 import { ConnectorClientError } from "$lib/services/transfer"
 import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.ts"
-import {custom, encodeAbiParameters, fromHex} from "viem"
+import { custom, encodeAbiParameters, fromHex } from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
-import {nextStateCosmos, TransactionSubmissionCosmos} from "$lib/components/Transfer/state/cosmos.ts";
-import {wallets} from "$lib/stores/wallets.svelte.ts";
-import {getCosmWasmClient} from "$lib/services/cosmos/clients.ts";
-import {cosmosStore} from "$lib/wallet/cosmos";
-import {instructionAbi} from "@unionlabs/sdk/evm/abi";
+import {
+  nextStateCosmos,
+  TransactionSubmissionCosmos
+} from "$lib/components/Transfer/state/cosmos.ts"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 
 const { stepIndex, onBack, onSubmit, actionButtonText }: Props = $props()
 
@@ -53,101 +56,110 @@ export const submit = Effect.gen(function* () {
   const sourceChainRpcType = lts.value.sourceChain.rpc_type
 
   yield* Match.value(sourceChainRpcType).pipe(
-    Match.when("evm", () => Effect.gen(function* () {
-      const viemChain = lts.value.sourceChain.toViemChain()
-      if (Option.isNone(viemChain)) return Effect.succeed(null)
+    Match.when("evm", () =>
+      Effect.gen(function* () {
+        const viemChain = lts.value.sourceChain.toViemChain()
+        if (Option.isNone(viemChain)) return Effect.succeed(null)
 
-      const publicClient = yield* createViemPublicClient({
-        chain: viemChain.value,
-        transport: http()
-      })
-
-      const connectorClient = yield* Effect.tryPromise({
-        try: () => getConnectorClient(wagmiConfig),
-        catch: err => new ConnectorClientError({ cause: err as GetConnectorClientErrorType })
-      })
-
-      const walletClient = yield* createViemWalletClient({
-        account: connectorClient.account,
-        chain: viemChain.value,
-        transport: custom(connectorClient)
-      })
-
-      do {
-        ets = yield* Effect.tryPromise({
-          try: () =>
-            nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
-              chain: viemChain.value,
-              account: connectorClient.account,
-              address: lts.value.channel.source_port_id,
-              abi: ucs03ZkgmAbi,
-              functionName: "send",
-              args: [
-                lts.value.channel.source_channel_id,
-                0n,
-                1000000000000n,
-                generateSalt(),
-                {
-                  opcode: step.value.instruction.opcode,
-                  version: step.value.instruction.version,
-                  operand: encodeAbi(step.value.instruction)
-                }
-              ]
-            }),
-          catch: error => (error instanceof Error ? error : new Error("Unknown error"))
+        const publicClient = yield* createViemPublicClient({
+          chain: viemChain.value,
+          transport: http()
         })
 
-        if (isComplete(ets)) {
-          onSubmit()
-          break
-        }
-      } while (!hasFailedExit(ets))
+        const connectorClient = yield* Effect.tryPromise({
+          try: () => getConnectorClient(wagmiConfig),
+          catch: err => new ConnectorClientError({ cause: err as GetConnectorClientErrorType })
+        })
 
-      return Effect.succeed(ets)
-    })),
-    Match.when("cosmos", () => Effect.gen(function* () {
-      const signingClient = yield* getCosmWasmClient(lts.value.sourceChain, cosmosStore.connectedWallet)
+        const walletClient = yield* createViemWalletClient({
+          account: connectorClient.account,
+          chain: viemChain.value,
+          transport: custom(connectorClient)
+        })
 
-      const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
+        do {
+          ets = yield* Effect.tryPromise({
+            try: () =>
+              nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
+                chain: viemChain.value,
+                account: connectorClient.account,
+                address: lts.value.channel.source_port_id,
+                abi: ucs03ZkgmAbi,
+                functionName: "send",
+                args: [
+                  lts.value.channel.source_channel_id,
+                  0n,
+                  1000000000000n,
+                  generateSalt(),
+                  {
+                    opcode: step.value.instruction.opcode,
+                    version: step.value.instruction.version,
+                    operand: encodeAbi(step.value.instruction)
+                  }
+                ]
+              }),
+            catch: error => (error instanceof Error ? error : new Error("Unknown error"))
+          })
 
-      console.log( 'breeee', {msg: step.value.instruction})
-      do {
-        cts = yield* Effect.tryPromise(() =>
-          nextStateCosmos(
-            cts,
-            lts.value.sourceChain,
-            signingClient,
-            sender,
-            fromHex(lts.value.channel.source_port_id, "string"),
-            {
-              send: {
-                channel_id: lts.value.channel.source_channel_id,
-                timeout_height: 10000000,
-                timeout_timestamp: 0,
-                salt: generateSalt(),
-                instruction: encodeAbiParameters(instructionAbi, [
-                  step.value.instruction.version,
-                  step.value.instruction.opcode,
-                  encodeAbi(step.value.instruction)
-                ])
-              }
-            },
-            [{ denom: "muno", amount: "1" }]
-          )
+          if (isComplete(ets)) {
+            onSubmit()
+            break
+          }
+        } while (!hasFailedExit(ets))
+
+        return Effect.succeed(ets)
+      })
+    ),
+    Match.when("cosmos", () =>
+      Effect.gen(function* () {
+        const signingClient = yield* getCosmWasmClient(
+          lts.value.sourceChain,
+          cosmosStore.connectedWallet
         )
 
-        if (isComplete(cts)) {
-          onSubmit()
-          break
-        }
-      } while (!hasFailedExit(cts))
+        const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
 
-      return Effect.succeed(cts)
-    })),
-    Match.orElse(() => Effect.gen(function* () {
-      yield* Effect.log("unknown chain type")
-      return Effect.succeed('no')
-    }))
+        console.log("breeee", { msg: step.value.instruction })
+        do {
+          cts = yield* Effect.tryPromise(() =>
+            nextStateCosmos(
+              cts,
+              lts.value.sourceChain,
+              signingClient,
+              sender,
+              fromHex(lts.value.channel.source_port_id, "string"),
+              {
+                send: {
+                  channel_id: lts.value.channel.source_channel_id,
+                  timeout_height: 10000000,
+                  timeout_timestamp: 0,
+                  salt: generateSalt(),
+                  instruction: encodeAbiParameters(instructionAbi, [
+                    step.value.instruction.version,
+                    step.value.instruction.opcode,
+                    encodeAbi(step.value.instruction)
+                  ])
+                }
+              },
+              [{ denom: "muno", amount: "1" }]
+            )
+          )
+
+          if (isComplete(cts)) {
+            onSubmit()
+            break
+          }
+        } while (!hasFailedExit(cts))
+
+        return Effect.succeed(cts)
+      })
+    ),
+    Match.orElse(() =>
+      Effect.gen(function* () {
+        yield* Effect.log("unknown chain type")
+        return Effect.succeed("no")
+      })
+    )
   )
 })
 </script>

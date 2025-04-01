@@ -1,7 +1,7 @@
 import { Option } from "effect"
 import type { Chain } from "$lib/schema/chain"
 import type { Channel } from "$lib/schema/channel"
-import type { TransferStep } from "./transfer-step"
+import type { TransferStep } from "./transfer-step.ts"
 
 /**
  * LockedTransfer stores a snapshot of critical transfer values

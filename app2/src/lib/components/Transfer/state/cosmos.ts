@@ -1,9 +1,8 @@
-import {Data, Effect, type Exit} from "effect"
-import {switchChain} from "$lib/services/transfer-ucs03-cosmos"
-import {executeContract} from "@unionlabs/sdk/cosmos"
-import type {Chain} from "$lib/schema/chain.ts"
-import type {SigningCosmWasmClient} from "@cosmjs/cosmwasm-stargate"
-import type {Hash} from "viem";
+import { Data, Effect, type Exit } from "effect"
+import { switchChain } from "$lib/services/transfer-ucs03-cosmos"
+import { executeContract } from "@unionlabs/sdk/cosmos"
+import type { Chain } from "$lib/schema/chain.ts"
+import type { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 
 export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>
   ? Exit.Exit<A, E>
@@ -37,36 +36,38 @@ export const nextStateCosmos = async (
   TransactionSubmissionCosmos.$match(ts, {
     Filling: () => SwitchChainInProgress(),
     SwitchChainInProgress: async () => {
-      const switchResult = await Effect.runPromiseExit(switchChain(chain));
+      const switchResult = await Effect.runPromiseExit(switchChain(chain))
       return SwitchChainComplete({
         exit: switchResult
-      });
+      })
     },
-    SwitchChainComplete: ({exit}) => {
+    SwitchChainComplete: ({ exit }) => {
       if (exit._tag === "Failure") {
-        console.error('[SwitchChainComplete] Chain switch failed with error:', exit.cause);
-        console.log('[SwitchChainComplete] → Retrying SwitchChainInProgress');
-        return SwitchChainInProgress();
-      } else {
-        console.log('[SwitchChainComplete] Chain switch successful. → Moving to ExecuteContractInProgress');
-        return WriteContractInProgress();
+        console.error("[SwitchChainComplete] Chain switch failed with error:", exit.cause)
+        console.log("[SwitchChainComplete] → Retrying SwitchChainInProgress")
+        return SwitchChainInProgress()
       }
+      console.log(
+        "[SwitchChainComplete] Chain switch successful. → Moving to ExecuteContractInProgress"
+      )
+      return WriteContractInProgress()
     },
     WriteContractInProgress: async () => {
-      const executeResult = await Effect.runPromiseExit(executeContract(signingClient, senderAddress, contractAddress, msg, funds));
+      const executeResult = await Effect.runPromiseExit(
+        executeContract(signingClient, senderAddress, contractAddress, msg, funds)
+      )
       return WriteContractComplete({
         exit: executeResult
-      });
+      })
     },
-    WriteContractComplete: ({exit}) => {
+    WriteContractComplete: ({ exit }) => {
       if (exit._tag === "Failure") {
-        console.error('[ExecuteContractComplete] Contract execution failed with error:', exit.cause);
-        console.log('[ExecuteContractComplete] → Retrying ExecuteContractInProgress');
-        return WriteContractInProgress();
-      } else {
-        console.log('[ExecuteContractComplete] Contract execution successful. Transaction complete!');
-        return ts;
+        console.error("[ExecuteContractComplete] Contract execution failed with error:", exit.cause)
+        console.log("[ExecuteContractComplete] → Retrying ExecuteContractInProgress")
+        return WriteContractInProgress()
       }
+      console.log("ExecuteContractComplete] Contract execution successful. Transaction complete!")
+      return ts
     }
   })
 
@@ -75,7 +76,7 @@ export const hasFailedExit = (state: TransactionSubmissionCosmos) =>
 
 export const isComplete = (state: TransactionSubmissionCosmos): string | false => {
   if (state._tag === "WriteContractComplete" && state.exit._tag === "Success") {
-    return state.exit.value.transactionHash;
+    return state.exit.value.transactionHash
   }
-  return false;
+  return false
 }

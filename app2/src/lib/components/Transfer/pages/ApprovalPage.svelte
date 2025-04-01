@@ -1,7 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-import {Effect, Match, Option} from "effect"
+import { Effect, Match, Option } from "effect"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
 import { ApprovalRequired } from "../transfer-step.ts"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
@@ -13,7 +13,7 @@ import {
   TransactionSubmissionEvm
 } from "$lib/components/Transfer/state/evm.ts"
 import { getWalletClient } from "$lib/services/evm/clients.ts"
-import {TransactionSubmissionCosmos} from "$lib/components/Transfer/state/cosmos.ts";
+import { TransactionSubmissionCosmos } from "$lib/components/Transfer/state/cosmos.ts"
 
 type Props = {
   stepIndex: number
@@ -48,48 +48,54 @@ const submit = Effect.gen(function* () {
   const sourceChainRpcType = lts.value.sourceChain.rpc_type
 
   yield* Match.value(sourceChainRpcType).pipe(
-    Match.when("evm", () => Effect.gen(function* () {
-      // Use the component-level state variable
-      const viemChain = lts.value.sourceChain.toViemChain()
-      if (Option.isNone(viemChain)) return Effect.succeed(null)
+    Match.when("evm", () =>
+      Effect.gen(function* () {
+        // Use the component-level state variable
+        const viemChain = lts.value.sourceChain.toViemChain()
+        if (Option.isNone(viemChain)) return Effect.succeed(null)
 
-      const publicClient = yield* createViemPublicClient({
-        chain: viemChain.value,
-        transport: http()
-      })
-
-      const walletClient = yield* getWalletClient(lts.value.sourceChain)
-
-      do {
-        ets = yield* Effect.tryPromise({
-          try: () =>
-            nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
-              chain: viemChain.value,
-              account: walletClient.account,
-              address: step.value.token,
-              abi: erc20Abi,
-              functionName: "approve",
-              args: [lts.value.channel.source_port_id, step.value.requiredAmount]
-            }),
-          catch: error => (error instanceof Error ? error : new Error("Unknown error"))
+        const publicClient = yield* createViemPublicClient({
+          chain: viemChain.value,
+          transport: http()
         })
 
-        if (isComplete(ets)) {
-          onApprove()
-          break
-        }
-      } while (!hasFailedExit(ets))
+        const walletClient = yield* getWalletClient(lts.value.sourceChain)
 
-      return Effect.succeed(ets)
-    })),
-    Match.when("cosmos", () => Effect.gen(function* () {
-      yield* Effect.log("doing cosmos")
-      return Effect.succeed(cts)
-    })),
-    Match.orElse(() => Effect.gen(function* () {
-      yield* Effect.log("unknown chain type")
-      return Effect.succeed('unknown chain type')
-    }))
+        do {
+          ets = yield* Effect.tryPromise({
+            try: () =>
+              nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
+                chain: viemChain.value,
+                account: walletClient.account,
+                address: step.value.token,
+                abi: erc20Abi,
+                functionName: "approve",
+                args: [lts.value.channel.source_port_id, step.value.requiredAmount]
+              }),
+            catch: error => (error instanceof Error ? error : new Error("Unknown error"))
+          })
+
+          if (isComplete(ets)) {
+            onApprove()
+            break
+          }
+        } while (!hasFailedExit(ets))
+
+        return Effect.succeed(ets)
+      })
+    ),
+    Match.when("cosmos", () =>
+      Effect.gen(function* () {
+        yield* Effect.log("doing cosmos")
+        return Effect.succeed(cts)
+      })
+    ),
+    Match.orElse(() =>
+      Effect.gen(function* () {
+        yield* Effect.log("unknown chain type")
+        return Effect.succeed("unknown chain type")
+      })
+    )
   )
 })
 </script>
