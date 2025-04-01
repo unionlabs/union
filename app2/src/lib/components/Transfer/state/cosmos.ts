@@ -56,7 +56,6 @@ export const nextStateCosmos = async (
       const executeResult = await Effect.runPromiseExit(
         executeContract(signingClient, senderAddress, contractAddress, msg, funds)
       )
-      console.log(executeResult)
       return WriteContractComplete({
         exit: executeResult
       })

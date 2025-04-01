@@ -5,8 +5,8 @@ import { Effect, Match, Option } from "effect"
 import { SubmitInstruction } from "../transfer-step.ts"
 import {
   hasFailedExit,
-  isComplete,
-  nextStateEvm,
+  isComplete as evmIsComplete,
+  nextStateEvm as evmHasFailedExit,
   TransactionSubmissionEvm
 } from "$lib/components/Transfer/state/evm.ts"
 import { generateSalt } from "@unionlabs/sdk/utils"
@@ -18,6 +18,8 @@ import { custom, encodeAbiParameters, fromHex } from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import {
   nextStateCosmos,
+  isComplete as cosmosIsComplete,
+  hasFailedExit as cosmosHasFailedExit,
   TransactionSubmissionCosmos
 } from "$lib/components/Transfer/state/cosmos.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
@@ -94,7 +96,7 @@ export const submit = Effect.gen(function* () {
                   lts.value.channel.source_channel_id,
                   0n,
                   1000000000000n,
-                  generateSalt(),
+                  generateSalt('evm'),
                   {
                     opcode: step.value.instruction.opcode,
                     version: step.value.instruction.version,
@@ -105,11 +107,11 @@ export const submit = Effect.gen(function* () {
             catch: error => (error instanceof Error ? error : new Error("Unknown error"))
           })
 
-          if (isComplete(ets)) {
+          if (evmIsComplete(ets)) {
             onSubmit()
             break
           }
-        } while (!hasFailedExit(ets))
+        } while (!evmHasFailedExit(ets))
 
         return Effect.succeed(ets)
       })
@@ -137,7 +139,7 @@ export const submit = Effect.gen(function* () {
                   channel_id: lts.value.channel.source_channel_id,
                   timeout_height: 10000000,
                   timeout_timestamp: 0,
-                  salt: generateSalt(),
+                  salt: generateSalt('cosmos'),
                   instruction: encodeAbiParameters(instructionAbi, [
                     step.value.instruction.version,
                     step.value.instruction.opcode,
@@ -149,11 +151,13 @@ export const submit = Effect.gen(function* () {
             )
           )
 
-          if (isComplete(cts)) {
+
+          if (cosmosIsComplete(cts)) {
+            console.log("Breaking loop with isComplete");
             onSubmit()
             break
           }
-        } while (!hasFailedExit(cts))
+        } while (!cosmosHasFailedExit(cts))
 
         return Effect.succeed(cts)
       })
