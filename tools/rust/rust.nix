@@ -130,7 +130,10 @@ _: {
           # for use in the devShell
           dev = pkgs.rust-bin.nightly.${nightlyVersion}.default.override {
             extensions = builtins.attrValues availableComponents;
-            targets = [ "wasm32-unknown-unknown" ];
+            targets = [
+              "wasm32-unknown-unknown"
+              "wasm32v1-none"
+            ];
           };
         };
       };

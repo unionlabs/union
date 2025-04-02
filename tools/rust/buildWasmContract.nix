@@ -9,7 +9,8 @@
   gitRev,
 }:
 let
-  CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+  # CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+  CARGO_BUILD_TARGET = "wasm32v1-none";
   DEFAULT_MAX_SIZE = 800 * 1024;
 
   dashesToUnderscores = builtins.replaceStrings [ "-" ] [ "_" ];
@@ -58,7 +59,7 @@ let
     "--no-default-features --lib ${
       if features != null then lib.concatStringsSep " " ([ "--features" ] ++ features) else ""
     }";
-  rustflags = "-C link-arg=-s -C target-cpu=mvp -C opt-level=z -C passes=adce,loop-deletion -Zlocation-detail=none";
+  rustflags = "-C link-arg=-s -C target-cpu=mvp -C opt-level=z -Cpanic=abort -C passes=adce,loop-deletion -Zlocation-detail=none";
 in
 {
   buildWasmContract =
