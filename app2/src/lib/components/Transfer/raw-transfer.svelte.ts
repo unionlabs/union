@@ -184,7 +184,7 @@ export class RawTransferSvelte {
 
     // Handle dependent field resets
     const resetMapping: Partial<Record<keyof FormFields, Array<keyof FormFields>>> = {
-      source: ["asset", "amount"],
+      source: ["asset", "amount", "destination"],
       asset: ["amount"],
       destination: ["receiver"]
     } as const
@@ -209,22 +209,16 @@ export class RawTransferSvelte {
     // Debounced URL update
     this.debouncedUpdateUrl(newParams)
   }
-}
 
-const STATE_KEY = Symbol("RAW_TRANSFER")
-
-export interface RawTransfer {
-  rawTransfer: RawTransferSvelte
-}
-
-export function createRawTransferState() {
-  const state: RawTransfer = {
-    rawTransfer: new RawTransferSvelte()
+  reset = () => {
+    this.set({
+      source: "",
+      destination: "",
+      asset: "",
+      receiver: "",
+      amount: ""
+    });
   }
-  setContext(STATE_KEY, state)
-  return state
 }
 
-export function getRawTransferState(): RawTransfer {
-  return getContext<RawTransfer>(STATE_KEY)
-}
+
