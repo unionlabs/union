@@ -11,7 +11,6 @@ import { lockedTransferStore } from "./locked-transfer.svelte.ts"
 import { Array as A, Cause, Console, Effect, flow, Match, Option, pipe } from "effect"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
-import { transferHash } from "$lib/stores/transfer-hash.ts"
 import {
   createCosmosToCosmosFungibleAssetOrder,
   createCosmosToEvmFungibleAssetOrder,
@@ -40,11 +39,9 @@ import { truncate } from "$lib/utils/format.ts"
 import * as TransferStep from "./transfer-step.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
 import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
-import { transferPacketHashQuery } from "$lib/queries/packet-hash.ts"
 
 let showDetails = $state(false)
 let currentPage = $state(0)
-let finalHash = $state("")
 let instruction: Option.Option<Instruction.Instruction> = $state(Option.none())
 let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
 
@@ -173,21 +170,6 @@ $effect(() => {
   checkAllowances(transferIntents).pipe(
     Effect.tap(result => (allowances = result)),
     Effect.runPromiseExit
-  )
-})
-
-$effect(() => {
-  pipe(
-    $transferHash,
-    Option.map(submission_tx_hash => transferPacketHashQuery({ submission_tx_hash })),
-    Effect.flatten,
-    Effect.flatMap(x =>
-      Effect.sync(() => {
-        finalHash = A.ensure(x.v2_transfers)[0].packet_hash
-      })
-    ),
-    Effect.catchAllCause(flow(Cause.pretty, Console.log)),
-    Effect.runPromise
   )
 })
 
@@ -563,8 +545,6 @@ function handleActionButtonClick() {
     goToNextPage()
     return
   }
-
-  transferHash.reset()
 }
 </script>
 
@@ -628,8 +608,6 @@ function handleActionButtonClick() {
             <IndexPage
               stepIndex={i + 1}
               onBack={goToPreviousPage}
-              hash={finalHash}
-              {actionButtonText}
             />
           {/if}
         {/each}

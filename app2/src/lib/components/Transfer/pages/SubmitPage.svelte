@@ -27,8 +27,14 @@ import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction.ts"
-import { transferHash } from "$lib/stores/transfer-hash.ts"
-import { transferPacketHashQuery } from "$lib/queries/packet-hash.ts"
+import {transferHashStore} from "$lib/stores/transfer-hash.svelte.ts"
+
+type Props = {
+  stepIndex: number
+  onBack: () => void
+  onSubmit: () => void
+  actionButtonText: string
+}
 
 const { stepIndex, onBack, onSubmit, actionButtonText }: Props = $props()
 
@@ -47,13 +53,6 @@ const step: Option.Option<ReturnType<typeof SubmitInstruction>> = $derived.by(()
 
 const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
 const destinationChain = $derived(lts.pipe(Option.map(ltss => ltss.destinationChain)))
-
-type Props = {
-  stepIndex: number
-  onBack: () => void
-  onSubmit: () => void
-  actionButtonText: string
-}
 
 let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
@@ -138,7 +137,8 @@ export const submit = Effect.gen(function* () {
 
           const result = evmIsComplete(ets)
           if (result) {
-            transferHash.setHash(result)
+            console.log('result', result)
+            transferHashStore.startPolling(result)
             onSubmit()
             break
           }
@@ -149,7 +149,6 @@ export const submit = Effect.gen(function* () {
     ),
     Match.when("cosmos", () =>
       Effect.gen(function* () {
-        console.log("lukas: here")
         const signingClient = yield* getCosmWasmClient(
           lts.value.sourceChain,
           cosmosStore.connectedWallet
@@ -184,8 +183,8 @@ export const submit = Effect.gen(function* () {
 
           const result = cosmosIsComplete(cts)
           if (result) {
-            console.log("Breaking loop with isComplete")
-            transferHash.setHash(result)
+            console.log('result', `0x${result}`)
+            transferHashStore.startPolling(`0x${result}`)
             onSubmit()
             break
           }
