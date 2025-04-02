@@ -256,7 +256,7 @@ function hasBookmarks() {
 <!-- Modal -->
 {#if isModalOpen}
   <div class="absolute bg-zinc-950 inset-0 z-40" transition:fade={{ duration: 300 }}>
-    <div class="w-full h-full max-h-full flex flex-col p-4" transition:fly={{ y: 30, duration: 300, opacity: 0 }}>
+    <div class="w-full h-full max-h-full flex flex-col px-4 pb-4 pt-2" transition:fly={{ y: 30, duration: 300, opacity: 0 }}>
       <div class="flex items-center justify-between mb-4 h-10">
         <div class="flex items-center h-full">
           <button
@@ -321,34 +321,36 @@ function hasBookmarks() {
           <!-- Manual address input -->
           <div>
             <div class="flex flex-col gap-2">
-              <div class="flex gap-2 h-10">
+              <div class="flex flex-col gap-2 h-10">
                 <input
                         type="text"
                         bind:value={manualAddress}
                         placeholder="Enter receiver address"
                         class={cn(
-                    "w-full p-2 rounded-md bg-zinc-800 text-zinc-200 h-full",
+                    "w-full p-2 py-5 rounded-md bg-zinc-800 text-zinc-200 h-full text-center",
                     "focus:outline-none focus:ring-1 focus:ring-sky-500",
                   )}
                 />
-                <Button
-                        class="h-10"
-                        disabled={!manualAddress.trim()} onclick={submitManualAddress}>
-                  Use
-                </Button>
-                <Button
-                        class="h-10 px-2"
-                        disabled={!manualAddress.trim()}
-                        onclick={toggleBookmarkOnAdd}
-                        aria-label={bookmarkOnAdd ? "Remove bookmark on add" : "Add bookmark on add"}
-                >
+                <div class="flex flex-1 gap-2 w-full">
+                  <Button
+                          class="h-10 flex-1"
+                          disabled={!manualAddress.trim()} onclick={submitManualAddress}>
+                    Use
+                  </Button>
+                  <Button
+                          class="h-10 px-2"
+                          disabled={!manualAddress.trim()}
+                          onclick={toggleBookmarkOnAdd}
+                          aria-label={bookmarkOnAdd ? "Remove bookmark on add" : "Add bookmark on add"}
+                  >
 
-                  {#if bookmarkOnAdd}
-                    <FilledBookmarkIcon class="size-5"/>
-                  {:else}
-                    <OutlinedBookmarkIcon class="size-5"/>
-                  {/if}
-                </Button>
+                    {#if bookmarkOnAdd}
+                      <FilledBookmarkIcon class="size-5"/>
+                    {:else}
+                      <OutlinedBookmarkIcon class="size-5"/>
+                    {/if}
+                  </Button>
+                </div>
               </div>
               {#if bookmarkOnAdd}
                 <div class="text-xs text-zinc-400">Address will be bookmarked when added</div>
@@ -359,9 +361,9 @@ function hasBookmarks() {
           <!--BUTTONS-->
           <div class="flex flex-col gap-4">
             <!-- Connected wallet option -->
-            <Button class="justify-between" onclick={useConnectedWallet}>
+            <Button class="justify-between py-5" onclick={useConnectedWallet}>
               <span class="flex items-center gap-2">
-                <SharpWalletIcon/>
+                <SharpWalletIcon class="size-5"/>
                 {#if hasWalletAddress}
                 Connected Wallet
               {:else}
@@ -371,19 +373,19 @@ function hasBookmarks() {
             </Button>
 
             <!-- Recent Addresses Button -->
-            <Button class="justify-between" onclick={showRecent} disabled={!hasRecent()}>
+            <Button class="justify-between py-5" onclick={showRecent} disabled={!hasRecent()}>
               <span class="flex items-center gap-2">
-                <RestoreIcon/>Recent
+                <RestoreIcon class="size-5" />Recent
               </span>
               {#if hasRecent()}
-                <span class="px-2 py-0.5 text-xs bg-zinc-700 rounded text-white">{recentAddresses[destinationChainId].length}</span>
+                <span class="px-2 py-1 text-xs bg-zinc-700 rounded text-white">{recentAddresses[destinationChainId].length}</span>
               {/if}
             </Button>
 
             <!-- Bookmarked Addresses Button -->
-            <Button class="justify-between" onclick={showBookmarks} disabled={!hasBookmarks()}>
+            <Button class="justify-between py-5" onclick={showBookmarks} disabled={!hasBookmarks()}>
               <span class="flex items-center gap-2">
-                <FilledBookmarkIcon/> Bookmarked
+                <FilledBookmarkIcon class="size-5"/> Bookmarked
               </span>
 
               {#if hasBookmarks()}

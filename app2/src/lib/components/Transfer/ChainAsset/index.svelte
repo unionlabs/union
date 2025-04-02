@@ -47,7 +47,7 @@ onDestroy(() => {
   <div class="absolute inset-0 bg-zinc-900 z-40 flex" transition:fade={{ duration: 300 }}>
     <div class="w-full h-auto max-h-full flex flex-col overflow-hidden" transition:fly={{ y: 30, duration: 300, opacity: 0 }}>
       <!-- Header with close button -->
-      <div class="p-4 border-b border-zinc-700 flex justify-between items-center h-12">
+      <div class="p-4 border-b border-zinc-800 flex justify-between items-center h-12">
         <h3 class="text-sm font-medium text-zinc-400">Select {type.charAt(0).toUpperCase() + type.slice(1)}</h3>
         <button
                 aria-label="Close"
