@@ -1,9 +1,7 @@
 _: {
   perSystem =
-    { crane, pkgs, ... }:
+    { crane, ... }:
     {
-      packages = crane.buildWorkspaceMember "lib/embed-commit/verifier" {
-        # extraNativeBuildInputs = [ pkgs.cmake ];
-      };
+      packages = crane.buildWorkspaceMember "lib/embed-commit/verifier" { };
     };
 }

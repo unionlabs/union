@@ -34,7 +34,15 @@
               pkgs.symlinkJoin {
                 name = "voyager-modules-plugins";
                 paths = pkgs.lib.mapAttrsToList (_: path: if release then path.release else path) (
-                  builtins.foldl' (acc: p: acc // (crane.buildWorkspaceMember p { })) { } voy-modules-list
+                  builtins.foldl' (
+                    acc: p:
+                    acc
+                    // (crane.buildWorkspaceMember p {
+                      postInstall = ''
+                        strip $out/bin/*
+                      '';
+                    })
+                  ) { } voy-modules-list
                 );
                 postBuild = ''
                   rm $out/lib -r
