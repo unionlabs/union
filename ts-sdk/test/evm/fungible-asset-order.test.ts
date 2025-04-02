@@ -169,7 +169,7 @@ describe("Fungible Asset Order Tests", () => {
         assert.deepStrictEqual(result, {
           _tag: "FungibleAssetOrder",
           opcode: 3,
-          version: 0,
+          version: 1,
           operand: [
             evmIntent.sender,
             evmIntent.receiver,
@@ -194,7 +194,7 @@ describe("Fungible Asset Order Tests", () => {
         assert.deepStrictEqual(result, {
           _tag: "FungibleAssetOrder",
           opcode: 3,
-          version: 0,
+          version: 1,
           operand: [
             evmIntent.sender,
             "0x3078313233",
@@ -219,7 +219,7 @@ describe("Fungible Asset Order Tests", () => {
         assert.deepStrictEqual(result, {
           _tag: "FungibleAssetOrder",
           opcode: 3,
-          version: 0,
+          version: 1,
           operand: [
             toHex(cosmosIntent.sender),
             "0x123",
@@ -244,7 +244,7 @@ describe("Fungible Asset Order Tests", () => {
         assert.deepStrictEqual(result, {
           _tag: "FungibleAssetOrder",
           opcode: 3,
-          version: 0,
+          version: 1,
           operand: [
             toHex(cosmosIntent.sender),
             toHex(cosmosIntent.receiver),
