@@ -222,6 +222,11 @@
           # installPhase to be passed to the cargo build derivation.
           cargoBuildInstallPhase ? null,
 
+          # standard postBuild phase.
+          postBuild ? null,
+          # standard postInstall phase.
+          postInstall ? null,
+
           # extra environment variables to pass to the derivation.
           extraEnv ? { },
           # extra environment variables to pass to the derivation, only for crane.buildPackage.
@@ -411,6 +416,12 @@
               })
               // (lib.optionalAttrs (cargoBuildInstallPhase != null) {
                 installPhaseCommand = cargoBuildInstallPhase;
+              })
+              // (lib.optionalAttrs (postBuild != null) {
+                inherit postBuild;
+              })
+              // (lib.optionalAttrs (postInstall != null) {
+                inherit postInstall;
               })
               // (lib.optionalAttrs (cargoBuildCheckPhase != null) {
                 checkPhase = cargoBuildCheckPhase;
