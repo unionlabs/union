@@ -48,11 +48,6 @@
           "height": 3027
         }
       }
-    },
-    "channels": {
-      "1": {
-        "tags": ["canonical"]
-      }
     }
   },
   {
@@ -87,17 +82,6 @@
           "address": "bbn15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljlspm2re6",
           "height": 606202
         }
-      }
-    },
-    "channels": {
-      "3": {
-        "tags": ["experimental"]
-      },
-      "4": {
-        "tags": ["experimental"]
-      },
-      "5": {
-        "tags": ["experimental"]
       }
     }
   },
@@ -136,11 +120,6 @@
           "address": "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
           "height": 7938590
         }
-      }
-    },
-    "channels": {
-      "1": {
-        "tags": ["canonical"]
       }
     }
   },
@@ -218,14 +197,6 @@
           "height": 168390
         }
       }
-    },
-    "channels": {
-      "3": {
-        "tags": ["experimental"]
-      },
-      "4": {
-        "tags": ["experimental"]
-      }
     }
   },
   {
@@ -263,11 +234,6 @@
           "address": "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
           "height": 15157453
         }
-      }
-    },
-    "channels": {
-      "3": {
-        "tags": ["experimental"]
       }
     }
   }

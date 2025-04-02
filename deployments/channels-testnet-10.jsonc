@@ -1,7 +1,7 @@
 {
-  "_note-1": "only register the 'init' side of the channel",
-  "_note-2": "keep universal chain ids (string) and channel (number) in ascending order",
-  "_note-3": "keep comments consistent, but don't parse them",
+  // - only register the 'init' side of the channel
+  // - keep universal chain ids (string) and channel (number) in ascending order
+  // - keep comments consistent, but don't parse them
   "babylon.bbn-test-5": {
     "4": {
       "comments": "bob.60808 channel 3",
