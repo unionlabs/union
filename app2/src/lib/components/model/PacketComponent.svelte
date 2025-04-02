@@ -68,7 +68,7 @@ const destinationChain = $derived(
           </div>
           <div class="col-span-5">
             <Label>Port</Label>
-            <LongMonoWord>{fromHex(packetDetails.data.value.source_port_id, "string")}</LongMonoWord>
+            <LongMonoWord>{ Option.isSome(sourceChain) && sourceChain.value.rpc_type === "cosmos" ? fromHex(packetDetails.data.value.source_port_id, "string") : packetDetails.data.value.source_port_id}</LongMonoWord>
           </div>
         </div>
       </div>
@@ -96,7 +96,7 @@ const destinationChain = $derived(
           </div>
           <div class="col-span-5">
             <Label>Port</Label>
-            <LongMonoWord>{fromHex(packetDetails.data.value.destination_port_id, "string")}</LongMonoWord>
+            <LongMonoWord>{ Option.isSome(destinationChain) && destinationChain.value.rpc_type === "cosmos" ? fromHex(packetDetails.data.value.source_port_id, "string") : packetDetails.data.value.destination_port_id}</LongMonoWord>
           </div>
         </div>
       </div>
