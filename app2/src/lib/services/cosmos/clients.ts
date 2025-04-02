@@ -51,13 +51,9 @@ export const getCosmWasmClient = (chain: Chain, connectedWallet: CosmosWalletId)
 
     return yield* Effect.tryPromise({
       try: () =>
-        SigningCosmWasmClient.connectWithSigner(
-          rpcUrl.value.toString(),
-          offlineSigner,
-          {
-            gasPrice
-          }
-        ),
+        SigningCosmWasmClient.connectWithSigner(rpcUrl.value.toString(), offlineSigner, {
+          gasPrice
+        }),
       catch: err =>
         new CosmWasmError({
           cause: String(err)

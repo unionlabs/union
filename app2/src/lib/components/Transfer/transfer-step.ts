@@ -19,10 +19,10 @@ export type TransferStep = Data.TaggedEnum<{
   WaitForIndex: {}
 }>
 
-export type Filling = ExtractTag<TransferStep, 'Filling'>
-export type ApprovalRequired = ExtractTag<TransferStep, 'ApprovalRequired'>
-export type SubmitInstruction = ExtractTag<TransferStep, 'SubmitInstruction'>
-export type WaitForIndex = ExtractTag<TransferStep, 'WaitForIndex'>
+export type Filling = ExtractTag<TransferStep, "Filling">
+export type ApprovalRequired = ExtractTag<TransferStep, "ApprovalRequired">
+export type SubmitInstruction = ExtractTag<TransferStep, "SubmitInstruction">
+export type WaitForIndex = ExtractTag<TransferStep, "WaitForIndex">
 
 // Create constructors for the steps
 export const {
@@ -41,5 +41,5 @@ export const description = match({
   Filling: () => "Configure your transfer details",
   ApprovalRequired: () => "Approve token spending",
   SubmitInstruction: () => "Submit transfer to blockchain",
-  WaitForIndex: () => "Waiting for indexer",
+  WaitForIndex: () => "Waiting for indexer"
 })

@@ -49,18 +49,25 @@ let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Fillin
 
 const isButtonEnabled = $derived(
   (ets._tag === "Filling" && cts._tag === "Filling") ||
-  evmHasFailedExit(ets) || cosmosHasFailedExit(cts)
-);
+    evmHasFailedExit(ets) ||
+    cosmosHasFailedExit(cts)
+)
 
 const getSubmitButtonText = $derived(
-  ets._tag === "SwitchChainInProgress" ? "Switching Chain..." :
-    ets._tag === "WriteContractInProgress" ? "Confirming Transaction..." :
-      ets._tag === "TransactionReceiptInProgress" ? "Waiting for Receipt..." :
-        cts._tag === "SwitchChainInProgress" ? "Switching Chain..." :
-          cts._tag === "WriteContractInProgress" ? "Confirming Transaction..." :
-            evmHasFailedExit(ets) || cosmosHasFailedExit(cts) ? "Try Again" :
-              actionButtonText
-);
+  ets._tag === "SwitchChainInProgress"
+    ? "Switching Chain..."
+    : ets._tag === "WriteContractInProgress"
+      ? "Confirming Transaction..."
+      : ets._tag === "TransactionReceiptInProgress"
+        ? "Waiting for Receipt..."
+        : cts._tag === "SwitchChainInProgress"
+          ? "Switching Chain..."
+          : cts._tag === "WriteContractInProgress"
+            ? "Confirming Transaction..."
+            : evmHasFailedExit(ets) || cosmosHasFailedExit(cts)
+              ? "Try Again"
+              : actionButtonText
+)
 
 const submit = Effect.gen(function* () {
   if (Option.isNone(step) || Option.isNone(lts)) return
