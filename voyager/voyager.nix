@@ -31,12 +31,15 @@
           let
             builder =
               release:
-              pkgs.linkFarm "voyager-modules-plugins" (
-                pkgs.lib.mapAttrsToList (name: path: {
-                  inherit name;
-                  path = if release then path.release else path;
-                }) (builtins.foldl' (acc: p: acc // (crane.buildWorkspaceMember p { })) { } voy-modules-list)
-              );
+              pkgs.symlinkJoin {
+                name = "voyager-modules-plugins";
+                paths = pkgs.lib.mapAttrsToList (_: path: if release then path.release else path) (
+                  builtins.foldl' (acc: p: acc // (crane.buildWorkspaceMember p { })) { } voy-modules-list
+                );
+                postBuild = ''
+                  rm $out/lib -r
+                '';
+              };
           in
           (builder false)
           // {
