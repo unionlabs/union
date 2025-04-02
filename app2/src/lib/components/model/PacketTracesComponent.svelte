@@ -9,12 +9,16 @@ import DateTimeComponent from "../ui/DateTimeComponent.svelte"
 import TransactionHashComponent from "./TransactionHashComponent.svelte"
 import BlockHashComponent from "./BlockHashComponent.svelte"
 import ChainComponent from "./ChainComponent.svelte"
+import { PACKET_TRACE_DISPLAY_NAMES } from "$lib/constants/packet-trace-names"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   packetTraces: ReadonlyArray<PacketTrace>
 }
 
 const { packetTraces }: Props = $props()
+
+const toTraceName = (type: string) =>
+  type in PACKET_TRACE_DISPLAY_NAMES ? PACKET_TRACE_DISPLAY_NAMES[type] : type
 </script>
 
 
@@ -44,16 +48,17 @@ const { packetTraces }: Props = $props()
 
           <!-- Content -->
           <div
-            class="flex-1 bg-zinc-50 dark:bg-zinc-900 px-4 rounded-lg"
+            class="flex-1 px-4"
           >
-            <div class="flex items-center gap-2">
+            <div class="flex items-center">
               <span
-                class="font-medium text-zinc-900 dark:text-zinc-100"
+                class="font-bold text-zinc-900 dark:text-zinc-100"
               >
-                {trace.type}
+                {toTraceName(trace.type)}  
               </span>
+              &nbspon&nbsp
               {#if Option.isSome(chain)}
-                <ChainComponent chain={chain.value} />
+                <ChainComponent class="font-normal" chain={chain.value} />
               {:else}
                 <span class="font-mono text-sm"
                   >{trace.chain.universal_chain_id}</span
@@ -63,22 +68,18 @@ const { packetTraces }: Props = $props()
 
             {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(trace.block_hash) &&  Option.isSome(chain)}
               <div
-                class="flex flex-col gap-1 text-sm text-zinc-600 dark:text-zinc-400"
+                class="flex flex-col text-sm text-zinc-600 dark:text-zinc-400"
               >
-                <div>
-                  <DateTimeComponent value={trace.timestamp.value} />
-                  <span>at height {trace.height.value}</span>
-                </div>
-                <div class="flex gap-2">
-                  <span class="font-medium">Tx:</span>
-                  <TransactionHashComponent
-                    hash={trace.transaction_hash.value}
-                  />
-                </div>
+                <p><DateTimeComponent value={trace.timestamp.value} /> <span>in block {trace.height.value}</span></p>
+                <TransactionHashComponent
+                  hash={trace.transaction_hash.value}
+                />
+                <!-- uncomment for block hash, im unsure if it provides real value 
                 <div class="flex gap-2">
                   <span class="font-medium">Block:</span>
                   <BlockHashComponent chain={chain.value} hash={trace.block_hash.value} />
                 </div>
+                !-->
               </div>
             {/if}
           </div>
