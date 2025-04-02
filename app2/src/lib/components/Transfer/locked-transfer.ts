@@ -1,5 +1,5 @@
 import { Option } from "effect"
-import type { Chain, Channel } from "@unionlabs/sdk/schema"
+import {type Chain, type Channel, Token} from "@unionlabs/sdk/schema"
 import type { TransferStep } from "./transfer-step.ts"
 
 /**
@@ -10,17 +10,23 @@ export class LockedTransfer {
   sourceChain: Chain
   destinationChain: Chain
   channel: Channel
+  parsedAmount: string
+  baseToken: Token
   steps: Array<TransferStep>
 
   constructor(
     sourceChain: Chain,
     destinationChain: Chain,
     channel: Channel,
+    parsedAmount: string,
+    baseToken: Token,
     steps: Array<TransferStep>
   ) {
     this.sourceChain = sourceChain
     this.destinationChain = destinationChain
     this.channel = channel
+    this.parsedAmount = parsedAmount
+    this.baseToken = baseToken
     this.steps = steps
   }
 
@@ -32,11 +38,12 @@ export class LockedTransfer {
     sourceChain: Option.Option<Chain>,
     destinationChain: Option.Option<Chain>,
     channel: Option.Option<Channel>,
-    parsedAmountL: Option.Option<string>,
+    parsedAmount: Option.Option<string>,
+    baseToken: Option.Option<Token>,
     steps: Option.Option<Array<TransferStep>>
   ): Option.Option<LockedTransfer> {
-    return Option.all([sourceChain, destinationChain, channel, steps]).pipe(
-      Option.map(([sc, dc, ch, st]) => new LockedTransfer(sc, dc, ch, st))
+    return Option.all([sourceChain, destinationChain, channel, parsedAmount, baseToken, steps]).pipe(
+      Option.map(([sc, dc, ch,pa, bt, st]) => new LockedTransfer(sc, dc, ch, pa, bt, st))
     )
   }
 
