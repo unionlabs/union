@@ -2,18 +2,20 @@
 import { cn } from "$lib/utils/index.js"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.js"
 import type { Chain, Token } from "@unionlabs/sdk/schema"
-import { Option } from "effect"
+import { type FiberStatus, Option } from "effect"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { formatUnits } from "viem"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import SharpArrowLeft from "$lib/components/icons/SharpArrowLeft.svelte"
+import type { Tags } from "effect/Types"
 
 type Props = {
   token: Token
   selectAsset: (token: Token) => void
+  status: Tags<FiberStatus.FiberStatus> | "NA"
 }
 
-let { token, selectAsset }: Props = $props()
+let { token, selectAsset, status }: Props = $props()
 
 let isSelected = $derived(transfer.raw.asset === token.denom)
 
@@ -45,40 +47,55 @@ export const toDisplayName = (
 </script>
 
 <button
-        class={cn(
-                "flex flex-col items-start w-full overflow-x-scroll px-4 py-1 text-left hover:bg-zinc-700 transition-colors border-b border-zinc-700 cursor-pointer",
-                isSelected ? "bg-zinc-700 text-white" : "text-zinc-300"
-              )}
-        onclick={() => {
-          console.log(token)
-         selectAsset(token)
-        }}
+  class={cn(
+    "flex flex-col items-start w-full overflow-x-scroll px-4 py-1 text-left hover:bg-zinc-700 transition-colors border-b border-zinc-700 cursor-pointer",
+    isSelected ? "bg-zinc-700 text-white" : "text-zinc-300",
+  )}
+  onclick={() => {
+    console.log(token);
+    selectAsset(token);
+  }}
 >
-    <div class="flex items-center flex gap-1 items-center overflow-x-scroll text-xs text-zinc-200">
-      <div class="mr-1">
-        {#if isLoading}
-          <Skeleton class="h-3 w-16"/>
-        {:else if Option.isSome(tokenBalance) && Option.isSome(tokenBalance.value.error)}
-          <span class="text-red-400">Error</span>
-        {:else}
-          {displayAmount}
-        {/if}
-      </div>
-      <div class="font-medium">
-        {token.representations[0]?.symbol ?? token.denom}
-      </div>
-    </div>
-    <div class="text-zinc-400 text-nowrap text-xs flex items-center gap-1">
-      {#if Option.isSome(chains.data)}
-        {#each token.wrapping as wrapping, i}
-          {#if i !== 0}
-            <SharpArrowLeft class="text-sky-300"/>
-          {/if}
-          {toDisplayName(
-            wrapping.unwrapped_chain.universal_chain_id,
-            chains.data.value,
-          )}
-        {/each}
+  <div class="flex gap-1 items-center overflow-x-scroll text-xs text-zinc-200">
+    <div class="mr-1">
+      {#if isLoading}
+        <Skeleton class="h-3 w-16" />
+      {:else if Option.isSome(tokenBalance) && Option.isSome(tokenBalance.value.error)}
+        <span class="text-red-400">Error</span>
+      {:else}
+        {displayAmount}
       {/if}
     </div>
+    <div class="font-medium">
+      {token.representations[0]?.symbol ?? token.denom}
+    </div>
+  </div>
+  <div class="text-zinc-400 text-nowrap text-xs flex items-center gap-1">
+    {#if Option.isSome(chains.data)}
+      {#each token.wrapping as wrapping, i}
+        {#if i !== 0}
+          <SharpArrowLeft class="text-sky-300" />
+        {/if}
+        {toDisplayName(
+          wrapping.unwrapped_chain.universal_chain_id,
+          chains.data.value,
+        )}
+      {/each}
+    {/if}
+  </div>
+  <div class="text-zinc-400 text-nowrap text-xs flex items-center gap-1">
+    <!-- FIXME: Styling here only for demonstration; consult team -->
+    {#if status === "Done"}
+      <span class="text-green-400">{status}</span>
+    {/if}
+    {#if status === "Running"}
+      <span class="text-blue-400">{status}</span>
+    {/if}
+    {#if status === "Suspended"}
+      <span class="text-orange-400">{status}</span>
+    {/if}
+    {#if status === "NA"}
+      <span class="text-red-400">DNE</span>
+    {/if}
+  </div>
 </button>
