@@ -513,6 +513,10 @@ let actionButtonText = $derived.by(() => {
     return "Submit"
   }
 
+  if (currentStep._tag === "WaitForIndex") {
+    return "Submit"
+  }
+
   return "Next"
 })
 

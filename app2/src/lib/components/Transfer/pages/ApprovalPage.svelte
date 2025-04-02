@@ -150,6 +150,7 @@ const submit = Effect.gen(function* () {
       <Button
               variant="secondary"
               onclick={onBack}
+              disabled={!isButtonEnabled}
       >
         Back
       </Button>

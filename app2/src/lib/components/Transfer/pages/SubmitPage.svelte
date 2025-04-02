@@ -212,6 +212,7 @@
       <Button
               variant="secondary"
               onclick={onBack}
+              disabled={!isButtonEnabled}
       >
         Back
       </Button>
