@@ -31,6 +31,13 @@ export class TransferHashStore {
     this.error = Option.none()
     this.hash = ""
   }
+
+  stopPolling = () => {
+    if (this.fiber._tag === "Some") {
+      Effect.runPromise(Fiber.interrupt(this.fiber.value))
+      this.fiber = Option.none()
+    }
+  }
 }
 
 export const transferHashStore = new TransferHashStore()
