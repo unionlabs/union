@@ -19,22 +19,22 @@ const {
 }: Props = $props()
 </script>
 
-<div class={cn("flex items-center w-full transition-all duration-500", className)} {...rest}>
+<div class={cn("flex items-center w-full transition-all duration-500 border-b border-zinc-800 p-4", className)} {...rest}>
   {#each Array(totalSteps) as _, i (i)}
     <div class={cn("flex items-center transition-all duration-500", i < totalSteps - 1 ? "flex-1" : "")}>
       <!-- Step dot with tooltip -->
       <Tooltip>
         {#snippet trigger()}
-          <div 
+          <div
             class={cn(
-              "w-4 h-4 rounded-full flex items-center justify-center transition-all duration-300 cursor-help",
-              i + 1 < currentStep ? "bg-white" : 
-              i + 1 === currentStep ? "bg-white ring-1 ring-white/30" : 
+              "w-3 h-3 rounded-full flex items-center justify-center transition-all duration-300 cursor-help",
+              i + 1 < currentStep ? "bg-white" :
+              i + 1 === currentStep ? "bg-white ring-1 ring-white/30" :
               "bg-zinc-600"
             )}
           ></div>
         {/snippet}
-        
+
         {#snippet content()}
           <div class="text-sm p-1">
             <div class="font-medium">Step {i + 1}</div>
@@ -44,12 +44,12 @@ const {
           </div>
         {/snippet}
       </Tooltip>
-      
+
       <!-- Connector line (except for last item) -->
       {#if i < totalSteps - 1}
-        <div 
+        <div
           class={cn(
-            "h-[2px] flex-1 mx-1 transition-all duration-300",
+            "h-[1px] flex-1 mx-1 transition-all duration-300",
             i + 1 < currentStep ? "bg-white" : "bg-zinc-600"
           )}
         ></div>
