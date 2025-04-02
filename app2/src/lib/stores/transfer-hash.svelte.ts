@@ -27,6 +27,7 @@ export class TransferHashStore {
 
     this.data = Option.none()
     this.error = Option.none()
+    this.hash = ""
   }
 }
 
