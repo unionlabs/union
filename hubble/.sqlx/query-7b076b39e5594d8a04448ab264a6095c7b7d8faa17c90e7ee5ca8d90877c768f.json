@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri\n        FROM hubble.token_source_representations\n        WHERE token_source_id = $1\n        ",
+  "query": "\n        SELECT token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri\n        FROM token.token_source_representations\n        WHERE token_source_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -54,5 +54,5 @@
       true
     ]
   },
-  "hash": "19c68585924be47b71a3ce9996070b751771d3d5405153729b794c148450e6d9"
+  "hash": "7b076b39e5594d8a04448ab264a6095c7b7d8faa17c90e7ee5ca8d90877c768f"
 }

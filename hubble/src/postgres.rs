@@ -2,8 +2,7 @@ use core::fmt::Debug;
 use std::fmt;
 
 use serde::Deserialize;
-use sqlx::{types::BigDecimal, Postgres};
-use tracing::info;
+use sqlx::{types::BigDecimal, Error, Postgres};
 use valuable::Valuable;
 
 /// ChainIds track both the database ID of a chain, as well as some canonical representation for
@@ -46,47 +45,20 @@ pub enum InsertMode {
     Upsert,
 }
 
-pub enum FetchOrCreated<T> {
-    Fetched(T),
-    Created(T),
-}
-
-impl<T> FetchOrCreated<T> {
-    pub fn get_inner_logged(self) -> T {
-        match self {
-            FetchOrCreated::Fetched(id) => id,
-            FetchOrCreated::Created(id) => {
-                info!("no existing chain-id found in db, created");
-                id
-            }
-        }
-    }
-}
-
-pub async fn fetch_or_insert_chain_id_tx(
+pub async fn fetch_chain_id_tx(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     canonical: String,
-) -> sqlx::Result<FetchOrCreated<ChainId>> {
-    use FetchOrCreated::*;
-    let db_chain_id = if let Some(chain_id) = sqlx::query!(
-        "SELECT id FROM \"hubble\".chains WHERE chain_id = $1 LIMIT 1",
+) -> sqlx::Result<ChainId> {
+    match sqlx::query!(
+        "SELECT id FROM config.chains WHERE chain_id = $1 LIMIT 1",
         canonical.to_string()
     )
     .fetch_optional(tx.as_mut())
     .await?
     {
-        Fetched(ChainId::new(chain_id.id, canonical.leak()))
-    } else {
-        let id = sqlx::query!(
-            "INSERT INTO \"hubble\".chains (chain_id) VALUES ($1) RETURNING id",
-            canonical.to_string()
-        )
-        .fetch_one(tx.as_mut())
-        .await?
-        .id;
-        Created(ChainId::new(id, canonical.leak()))
-    };
-    Ok(db_chain_id)
+        Some(chain_id) => Ok(ChainId::new(chain_id.id, canonical.leak())),
+        None => Err(Error::Protocol("No chain found with chain_id {canonical}. Add it to the config.chains table before using it in hubble".into()))
+    }
 }
 
 pub async fn schedule_replication_reset(

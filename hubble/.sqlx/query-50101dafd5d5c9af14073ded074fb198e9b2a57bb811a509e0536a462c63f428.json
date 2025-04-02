@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE token.token_sources\n        SET \n            source_uri = $2, \n            name = $3, \n            logo_uri = $4\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "50101dafd5d5c9af14073ded074fb198e9b2a57bb811a509e0536a462c63f428"
+}
