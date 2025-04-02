@@ -528,6 +528,7 @@ function handleActionButtonClick() {
         transfer.sourceChain,
         transfer.destinationChain,
         transfer.channel,
+        transfer.parsedAmount,
         transferSteps
       )
 

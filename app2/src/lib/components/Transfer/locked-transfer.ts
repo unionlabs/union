@@ -32,6 +32,7 @@ export class LockedTransfer {
     sourceChain: Option.Option<Chain>,
     destinationChain: Option.Option<Chain>,
     channel: Option.Option<Channel>,
+    parsedAmountL: Option.Option<string>,
     steps: Option.Option<Array<TransferStep>>
   ): Option.Option<LockedTransfer> {
     return Option.all([sourceChain, destinationChain, channel, steps]).pipe(
