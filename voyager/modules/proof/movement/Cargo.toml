@@ -17,7 +17,7 @@ aptos-rest-client = { workspace = true }
 aptos-types       = { workspace = true }
 clap              = { workspace = true, features = ["derive"] }
 embed-commit      = { workspace = true }
-ibc-union-spec    = { workspace = true }
+ibc-union-spec    = { workspace = true, features = ["serde"] }
 jsonrpsee         = { workspace = true, features = ["macros", "server", "tracing"] }
 reqwest           = { workspace = true, features = ["json"] }
 serde             = { workspace = true, features = ["derive"] }

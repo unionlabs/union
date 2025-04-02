@@ -17,7 +17,7 @@ arbitrum-client             = { workspace = true }
 arbitrum-light-client-types = { workspace = true, features = ["serde"] }
 arbitrum-types              = { workspace = true }
 embed-commit                = { workspace = true }
-ibc-union-spec.workspace    = true
+ibc-union-spec              = { workspace = true, features = ["serde"] }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }

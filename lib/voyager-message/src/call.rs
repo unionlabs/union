@@ -81,7 +81,7 @@ pub struct FetchBlocks {
 /// The returned [`Op`] ***MUST*** resolve to an [`OrderedHeaders`] data.
 /// This is the entrypoint called when a client update is requested, and
 /// is intended to be called in the queue of an
-/// [`AggregateMsgUpdateClientsFromOrderedHeaders`] message, which will
+/// [`AggregateSubmitTxFromOrderedHeaders`] message, which will
 /// be used to build the actual [`MsgUpdateClient`]s.
 #[model]
 pub struct FetchUpdateHeaders {

@@ -14,6 +14,6 @@ workspace = true
 [dependencies]
 bcs         = { workspace = true }
 hex-literal = { workspace = true }
-sha3        = { workspace = true }
+sha3        = { workspace = true, features = ["std"] }
 thiserror   = { workspace = true }
 unionlabs   = { workspace = true }

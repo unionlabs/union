@@ -47,25 +47,34 @@ pub struct L2Header {
     pub receipts_root: H256,
     // Box since 256 bytes is quite large
     pub logs_bloom: Box<H2048>,
-    #[serde(with = "unionlabs::primitives::uint::u256_big_endian_hex")]
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "unionlabs::primitives::uint::u256_big_endian_hex")
+    )]
     pub difficulty: U256,
-    #[serde(with = "unionlabs::primitives::uint::u256_big_endian_hex")]
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "unionlabs::primitives::uint::u256_big_endian_hex")
+    )]
     pub number: U256,
-    #[serde(with = "::serde_utils::u64_hex")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::u64_hex"))]
     pub gas_limit: u64,
-    #[serde(with = "::serde_utils::u64_hex")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::u64_hex"))]
     pub gas_used: u64,
-    #[serde(with = "::serde_utils::u64_hex")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::u64_hex"))]
     pub timestamp: u64,
     pub extra_data: H72,
     pub mix_hash: H256,
     pub nonce: H64,
-    #[serde(with = "unionlabs::primitives::uint::u256_big_endian_hex")]
+    #[cfg_attr(
+        feature = "serde",
+        serde(with = "unionlabs::primitives::uint::u256_big_endian_hex")
+    )]
     pub base_fee_per_gas: U256,
     pub withdrawals_root: H256,
-    #[serde(with = "::serde_utils::u64_hex")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::u64_hex"))]
     pub blob_gas_used: u64,
-    #[serde(with = "::serde_utils::u64_hex")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::u64_hex"))]
     pub excess_blob_gas: u64,
     pub parent_beacon_block_root: H256,
 }

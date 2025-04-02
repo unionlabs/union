@@ -17,7 +17,7 @@ beacon-api                              = { workspace = true }
 beacon-api-types                        = { workspace = true, features = ["serde"] }
 cometbft-rpc                            = { workspace = true }
 embed-commit                            = { workspace = true }
-ibc-union-spec.workspace                = true
+ibc-union-spec                          = { workspace = true, features = ["serde"] }
 jsonrpsee                               = { workspace = true, features = ["macros", "server", "tracing"] }
 movement-light-client-types             = { workspace = true, features = ["serde"] }
 serde                                   = { workspace = true, features = ["derive"] }

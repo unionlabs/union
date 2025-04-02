@@ -4,6 +4,7 @@
     {
       pkgs,
       crane,
+      dbg,
       ...
     }:
     let
@@ -12,44 +13,37 @@
         (pkgs.lib.hasPrefix "voyager/modules" member) || (pkgs.lib.hasPrefix "voyager/plugins" member)
       ) (builtins.fromTOML (builtins.readFile ../Cargo.toml)).workspace.members;
 
-      # TODO: Remove in favor of using .release
-      # TODO: Remove, build all modules and plugins individually
-      voyager-modules-dev = crane.buildWorkspaceMember voy-modules-list {
-        pname = "voyager-modules";
-        version = "0.0.0";
-      };
-
-      voyager-modules = crane.buildWorkspaceMember voy-modules-list {
-        pname = "voyager-modules";
-        version = "0.0.0";
-      };
-
       voyager = crane.buildWorkspaceMember "voyager" {
         extraEnv = {
           SQLX_OFFLINE = "1";
         };
       };
     in
-    # voyager-dev =
-    #   pkgs.lib.warn "voyager-dev is not intended to be used in production" crane.buildWorkspaceMember
-    #     (attrs // { dev = true; });
     {
-      packages =
-        voyager
-        // {
-          # voyager-modules-names = (
-          #   builtins.toFile "voyager-modules-list.json" (
-          #     builtins.toJSON (
-          #       map (
-          #         p: (builtins.fromTOML (builtins.readFile "${../.}/${p}/Cargo.toml")).package.name
-          #       ) voy-modules-list
-          #     )
-          #   )
-          # );
-          # voyager-dev = mkCi false voyager-dev.packages.voyager;
-        }
-        // voyager-modules-dev
-        // voyager-modules;
+      packages = voyager // {
+        voyager-modules-plugins-names = builtins.toFile "voyager-modules-plugins-names.json" (
+          builtins.toJSON (
+            map (
+              p: (builtins.fromTOML (builtins.readFile "${../.}/${p}/Cargo.toml")).package.name
+            ) voy-modules-list
+          )
+        );
+        voyager-modules-plugins =
+          let
+            builder =
+              release:
+              pkgs.linkFarm "voyager-modules-plugins" (
+                pkgs.lib.mapAttrsToList (name: path: {
+                  inherit name;
+                  path = if release then path.release else path;
+                }) (builtins.foldl' (acc: p: acc // (crane.buildWorkspaceMember p { })) { } voy-modules-list)
+              );
+          in
+          (builder false)
+          // {
+            release = builder true;
+          };
+      };
     };
 
   flake.nixosModules.voyager =
