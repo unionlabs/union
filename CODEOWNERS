@@ -1,4 +1,5 @@
 /deployments/ @benluelo
+/deployments/channels*.json @qlp
 /networks/genesis/ @aeryz @benluelo @cor @hussein-aitlahcen @KaiserKarel @PoisonPhang
 /.github/ @PoisonPhang
 /voyager/ @benluelo
