@@ -1,37 +1,37 @@
 <script lang="ts">
-  import {Option} from "effect"
-  import {lockedTransferStore} from "../locked-transfer.svelte.ts"
-  import {ApprovalRequired} from "../transfer-step.ts"
-  import Button from "$lib/components/ui/Button.svelte"
-  import {transferHashStore} from "$lib/stores/transfer-hash.svelte.ts";
-  import {goto} from "$app/navigation";
+import { Option } from "effect"
+import { lockedTransferStore } from "../locked-transfer.svelte.ts"
+import { ApprovalRequired } from "../transfer-step.ts"
+import Button from "$lib/components/ui/Button.svelte"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { goto } from "$app/navigation"
 
-  type Props = {
-    stepIndex: number
+type Props = {
+  stepIndex: number
+}
+
+const { stepIndex }: Props = $props()
+
+const lts = lockedTransferStore.get()
+
+// Get the step data from the locked transfer store
+const step: Option.Option<ReturnType<typeof ApprovalRequired>> = $derived.by(() => {
+  if (Option.isNone(lts)) return Option.none()
+
+  const steps = lts.value.steps
+  if (stepIndex < 0 || stepIndex >= steps.length) return Option.none()
+
+  const step = steps[stepIndex]
+  return step._tag === "ApprovalRequired" ? Option.some(step) : Option.none()
+})
+
+$effect(() => {
+  if (Option.isSome(transferHashStore.data)) {
+    const packet = transferHashStore.data.value
+    transferHashStore.reset()
+    goto(`/explorer/transfers/${packet}`)
   }
-
-  const {stepIndex}: Props = $props()
-
-  const lts = lockedTransferStore.get()
-
-  // Get the step data from the locked transfer store
-  const step: Option.Option<ReturnType<typeof ApprovalRequired>> = $derived.by(() => {
-    if (Option.isNone(lts)) return Option.none()
-
-    const steps = lts.value.steps
-    if (stepIndex < 0 || stepIndex >= steps.length) return Option.none()
-
-    const step = steps[stepIndex]
-    return step._tag === "ApprovalRequired" ? Option.some(step) : Option.none()
-  })
-
-  $effect(() => {
-    if (Option.isSome(transferHashStore.data)) {
-      const packet = transferHashStore.data.value
-      transferHashStore.reset()
-      goto(`/explorer/transfers/${packet}`)
-    }
-  })
+})
 </script>
 
 

@@ -1,7 +1,7 @@
-import {Effect, Fiber, Option} from "effect"
-import type {FetchDecodeGraphqlError} from "$lib/utils/queries.ts"
-import {transferPacketHashQuery} from "$lib/queries/packet-hash.ts"
-import type {PacketHash} from "@unionlabs/sdk/schema"
+import { Effect, Fiber, Option } from "effect"
+import type { FetchDecodeGraphqlError } from "$lib/utils/queries.ts"
+import { transferPacketHashQuery } from "$lib/queries/packet-hash.ts"
+import type { PacketHash } from "@unionlabs/sdk/schema"
 
 export class TransferHashStore {
   hash: string = $state("")
@@ -12,9 +12,11 @@ export class TransferHashStore {
   startPolling = (txHash: string) => {
     this.reset()
     this.hash = txHash
-    const newFiber = Effect.runFork(transferPacketHashQuery({
-      submission_tx_hash: txHash,
-    }))
+    const newFiber = Effect.runFork(
+      transferPacketHashQuery({
+        submission_tx_hash: txHash
+      })
+    )
 
     this.fiber = Option.some(newFiber)
   }

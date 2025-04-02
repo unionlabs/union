@@ -1,5 +1,4 @@
 import { debounce } from "$lib/utils"
-import { getContext, setContext } from "svelte"
 
 /**
  * Type definition for form fields managed by this store
@@ -217,8 +216,6 @@ export class RawTransferSvelte {
       asset: "",
       receiver: "",
       amount: ""
-    });
+    })
   }
 }
-
-

@@ -105,7 +105,8 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
     const sourceClient = (yield* CosmWasmClientSource).client
 
     // HACK: special cased for muno for now
-    const tokenMeta = intent.baseToken === "ubbn"
+    const tokenMeta =
+      intent.baseToken === "ubbn"
         ? {
             symbol: "ubbn",
             name: "ubbn",

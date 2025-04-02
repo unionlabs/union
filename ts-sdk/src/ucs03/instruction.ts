@@ -1,7 +1,7 @@
 import { encodeAbiParameters } from "viem"
 import { batchAbi, forwardAbi, fungibleAssetOrderAbi, multiplexAbi } from "../evm/abi/index.js"
 import { Data, Schema as S } from "effect"
-import {Hex, HexChecksum} from "../schema/hex.js"
+import { Hex, HexChecksum } from "../schema/hex.js"
 import { Uint64 } from "../schema/uint64.js"
 import type { NonEmptyReadonlyArray } from "effect/Array"
 
