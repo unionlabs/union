@@ -6,10 +6,10 @@ const config = {
   preprocess: vitePreprocess(),
   vitePlugin: {
     inspector: {
-      toggleKeyCombo: 'control-shift',
+      toggleKeyCombo: "control-shift",
       holdMode: true,
-      showToggleButton: 'always',
-      toggleButtonPos: 'bottom-right'
+      showToggleButton: "always",
+      toggleButtonPos: "bottom-right"
     }
   },
   kit: {

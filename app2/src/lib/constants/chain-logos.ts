@@ -198,5 +198,5 @@ export const chainLogoMap = new Map([
       light: "/logos/chains/light/CORN.svg",
       dark: "/logos/chains/dark/CORN.svg"
     }
-  ],
+  ]
 ])
