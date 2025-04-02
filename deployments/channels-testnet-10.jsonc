@@ -1,0 +1,27 @@
+{
+  // - only register the 'init' side of the channel
+  // - keep universal chain ids (string) and channel (number) in ascending order
+  // - keep comments consistent, but don't parse them
+  "babylon.bbn-test-5": {
+    "4": {
+      "comments": "bob.60808 channel 3",
+      "tags": ["experimental"]
+    },
+    "5": {
+      "comments": "corn.21000001 channel 4",
+      "tags": ["experimental"]
+    }
+  },
+  "bob.60808": {
+    "2": {
+      "comments": "babylon.bbn-test-5 channel 3",
+      "tags": ["experimental"]
+    }
+  },
+  "union.union-testnet-10": {
+    "1": {
+      "comments": "ethereum.11155111 channel 1",
+      "tags": ["canonical"]
+    }
+  }
+}
