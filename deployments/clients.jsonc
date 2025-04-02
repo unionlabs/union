@@ -1,20 +1,16 @@
 {
-  "union-testnet-10": [
-    8, // sepolia
-    9, // holesky
-    10 // babylon testnet
-  ],
-  "bbn-test-5": [
-    5 // union testnet
-  ],
-  "11155111": [
-    2 // union testnet
-    // 9, // holesky
-    // 10 // babylon testnet
-  ],
-  "17000": [
-    2 // union testnet
-    // 9, // holesky
-    // 10 // babylon testnet
-  ]
+  "union-testnet-10": {
+    "8": "11155111",
+    "9": "17000",
+    "10": "bbn-test-5"
+  },
+  "bbn-test-5": {
+    "5": "union-testnet-10"
+  },
+  "11155111": {
+    "2": "union-testnet-10"
+  },
+  "17000": {
+    "2": "union-testnet-10"
+  }
 }
