@@ -1,0 +1,20 @@
+{
+  "union-testnet-10": [
+    8, // sepolia
+    9, // holesky
+    10 // babylon testnet
+  ],
+  "bbn-test-5": [
+    5 // union testnet
+  ],
+  "11155111": [
+    2 // union testnet
+    // 9, // holesky
+    // 10 // babylon testnet
+  ],
+  "17000": [
+    2 // union testnet
+    // 9, // holesky
+    // 10 // babylon testnet
+  ]
+}

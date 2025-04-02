@@ -6,7 +6,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, instrument};
-use unionlabs::{ibc::core::client::height::Height, never::Never};
+use unionlabs::never::Never;
 use voyager_message::{
     call::{FetchUpdateHeaders, WaitForTrustedHeight},
     callback::AggregateSubmitTxFromOrderedHeaders,
@@ -58,20 +58,10 @@ impl Plugin for Module {
         let module = Self::new(config);
 
         match cmd {
-            Cmd::MakeMessage(CheckForClientAge {
-                chain_id,
-                ibc_spec_id,
-                client_id,
-                max_age,
-            }) => {
+            Cmd::MakeMessage(msg) => {
                 let op = call::<VoyagerMessage>(PluginMessage::new(
                     module.plugin_name(),
-                    ModuleCall::CheckForClientAge(CheckForClientAge {
-                        chain_id,
-                        ibc_spec_id,
-                        client_id,
-                        max_age,
-                    }),
+                    ModuleCall::CheckForClientAge(msg),
                 ));
 
                 println!("{}", into_value(op));
@@ -157,10 +147,7 @@ impl Module {
                         chain_id: chain_id.clone(),
                         ibc_spec_id: ibc_spec_id.clone(),
                         client_id: client_id.clone(),
-                        height: Height::new_with_revision(
-                            client_state_meta.counterparty_height.revision(),
-                            client_state_meta.counterparty_height.height() + max_age,
-                        ),
+                        height: client_state_meta.counterparty_height.increment_by(max_age),
                         finalized: false,
                     }),
                     call(PluginMessage::new(
