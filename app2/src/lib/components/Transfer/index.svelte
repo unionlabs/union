@@ -8,7 +8,7 @@ import FillingPage from "./pages/FillingPage.svelte"
 import ApprovalPage from "./pages/ApprovalPage.svelte"
 import SubmitPage from "./pages/SubmitPage.svelte"
 import { lockedTransferStore } from "./locked-transfer.svelte.ts"
-import { Array as A, Cause, Console, Effect, flow, Match, Option, pipe } from "effect"
+import { Effect, Match, Option, pipe } from "effect"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
 import {
@@ -80,16 +80,6 @@ let transferIntents = $derived.by(() => {
   }
 
   if (transferValue.sourceChain.rpc_type === "cosmos") {
-    console.log("add", {
-      sender: sender.value,
-      receiver: transferValue.receiver,
-      receiver2: transferValue.receiver.toLowerCase(),
-      baseToken: isHex(transferValue.baseToken)
-        ? fromHex(transferValue.baseToken, "string")
-        : transferValue.baseToken,
-      baseAmount: transferValue.baseAmount,
-      quoteAmount: transferValue.baseAmount
-    })
     return Option.some([
       {
         sender: sender.value,
@@ -111,7 +101,8 @@ let requiredApprovals = $derived.by(() => {
   const requiredAmounts = new Map<string, bigint>()
   for (const intent of transferIntents.value) {
     const currentAmount = requiredAmounts.get(intent.baseToken) || 0n
-    requiredAmounts.set(intent.baseToken, intent.baseAmount)
+    // FIX: Add the new amount to the current amount instead of replacing it
+    requiredAmounts.set(intent.baseToken, currentAmount + intent.baseAmount)
   }
 
   // Filter for tokens that need approval (allowance < required amount)
@@ -221,8 +212,7 @@ const intentsToBatch = (ti: typeof transferIntents) =>
     const provideCosmWasmClientSource = Effect.provideServiceEffect(
       CosmWasmClientSource,
       pipe(
-        Option.some("https://rpc.rpc-node.union-testnet-10.union.build"),
-        // transfer.sourceChain.value.getRpcUrl("rpc"),
+        transfer.sourceChain.value.getRpcUrl("rpc"),
         Option.map(createCosmWasmClient),
         Effect.flatten,
         Effect.map(client => ({ client }))
@@ -232,8 +222,7 @@ const intentsToBatch = (ti: typeof transferIntents) =>
     const provideCosmWasmClientDestination = Effect.provideServiceEffect(
       CosmWasmClientDestination,
       pipe(
-        Option.some("https://rpc.rpc-node.union-testnet-10.union.build"),
-        //transfer.destinationChain.value.getRpcUrl("rpc"),
+        transfer.destinationChain.value.getRpcUrl("rpc"),
         Option.map(createCosmWasmClient),
         Effect.flatten,
         Effect.map(client => ({ client }))
@@ -415,9 +404,7 @@ const checkAllowances = (ti: typeof transferIntents) =>
       // For Cosmos chains use a CosmWasm client to query CW20 allowances.
       const rpcUrl = sourceChain.getRpcUrl("rpc")
       if (Option.isNone(rpcUrl)) return Option.none()
-      const cosmwasmClient = yield* createCosmWasmClient(
-        "https://rpc.rpc-node.union-testnet-10.union.build"
-      )
+      const cosmwasmClient = yield* createCosmWasmClient(rpcUrl)
 
       // Query each token (assumed to be a CW20 contract) for the allowance.
       const allowanceChecks = yield* Effect.all(
@@ -426,7 +413,6 @@ const checkAllowances = (ti: typeof transferIntents) =>
             const decodedAddr = fromHex(tokenAddress, "string")
 
             if (!isValidBech32ContractAddress(decodedAddr)) {
-              console.log("It's native token, returning none. Token:", tokenAddress)
               return Option.none()
             }
 
@@ -522,6 +508,7 @@ function handleActionButtonClick() {
         transfer.destinationChain,
         transfer.channel,
         transfer.parsedAmount,
+        transfer.baseToken,
         transferSteps
       )
 
