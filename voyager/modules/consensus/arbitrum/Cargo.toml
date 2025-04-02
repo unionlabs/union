@@ -12,18 +12,18 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                    = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
-arbitrum-client          = { workspace = true }
-arbitrum-types           = { workspace = true }
-embed-commit             = { workspace = true }
-ibc-union-spec.workspace = true
-jsonrpsee                = { workspace = true, features = ["macros", "server", "tracing"] }
-serde                    = { workspace = true, features = ["derive"] }
-tokio                    = { workspace = true }
-tracing                  = { workspace = true }
-unionlabs                = { workspace = true }
-voyager-message          = { workspace = true }
-voyager-vm               = { workspace = true }
+alloy           = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+arbitrum-client = { workspace = true }
+arbitrum-types  = { workspace = true }
+embed-commit    = { workspace = true }
+ibc-union-spec  = { workspace = true, features = ["serde"] }
+jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
+serde           = { workspace = true, features = ["derive"] }
+tokio           = { workspace = true }
+tracing         = { workspace = true }
+unionlabs       = { workspace = true }
+voyager-message = { workspace = true }
+voyager-vm      = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }

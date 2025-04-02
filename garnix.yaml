@@ -58,6 +58,8 @@ builds:
       - 'packages.*.uniond-release-image'
       - 'packages.*.voyager'
       - 'packages.*.voyager-modules'
+      - 'checks.*.all-crates-buildable-individually'
+      - 'packages.*.voyager-modules-plugins-names'
     branch: main
   # build x86_64 on all branches
   - include:
@@ -102,4 +104,6 @@ builds:
       - 'packages.*.uniond-release-image'
       - 'packages.*.voyager'
       - 'packages.*.voyager-modules'
+      - 'checks.*.all-crates-buildable-individually'
+      - 'packages.*.voyager-modules-plugins-names'
 enableGithubOrgAccessTokens: true

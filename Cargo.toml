@@ -361,7 +361,7 @@ chrono                   = { version = "0.4.26", default-features = false }
 clap                     = { version = "4.3.0", default-features = false, features = ["std"] }       # clap has a fake std feature that is required to be enabled by default
 color-eyre               = { version = "0.6.2", default-features = false }
 cosmwasm-schema          = { version = "2.1.4", default-features = false }
-cosmwasm-std             = { version = "2.1.4", default-features = false }
+cosmwasm-std             = { version = "2.1.4", default-features = false, features = ["std"] }       # cosmwasm-std has a fake std feature that is requried to be enabled by default
 crossbeam-queue          = { version = "0.3.8", default-features = false }
 cw-storage-plus          = { version = "2.0.0", default-features = false }
 dashmap                  = { version = "5.5.3", default-features = false }

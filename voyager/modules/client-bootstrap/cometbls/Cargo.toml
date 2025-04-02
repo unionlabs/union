@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 cometbft-rpc                = { workspace = true }
-cometbls-light-client-types = { workspace = true }
+cometbls-light-client-types = { workspace = true, features = ["serde"] }
 embed-commit                = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 protos                      = { workspace = true }

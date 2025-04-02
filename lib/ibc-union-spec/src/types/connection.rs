@@ -130,6 +130,7 @@ pub mod ethabi {
         }
     }
 
+    #[cfg(feature = "ibc-solidity-compat")]
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum Error {
         #[error("invalid connection state")]

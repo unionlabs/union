@@ -11,6 +11,7 @@
       stdenv,
       get-flake,
       uniondBundleVersions,
+      dbg,
       ...
     }:
     let
