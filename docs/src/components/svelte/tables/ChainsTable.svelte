@@ -11,8 +11,8 @@ import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
 import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
 
 const graphqlQuery = dedent /* GraphQL */`
-    query Chains {
-      data: v1_ibc_union_chains {
+    query ChainsForDocs {
+      data: v2_chains {
         testnet
         chain_id
         logo_uri
