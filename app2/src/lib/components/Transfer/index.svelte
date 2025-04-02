@@ -519,6 +519,11 @@ let actionButtonText = $derived.by(() => {
 function handleActionButtonClick() {
   if (Option.isNone(transferSteps)) return
 
+  console.log("handleActionButtonClick called", {
+    transferSteps: transferSteps,
+    currentPage: currentPage
+  })
+
   const currentStep = transferSteps.value[currentPage]
 
   if (currentStep._tag === "Filling") {

@@ -7,13 +7,18 @@ import { ApprovalRequired } from "../transfer-step.ts"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
 import { erc20Abi, http } from "viem"
 import {
-  hasFailedExit,
-  isComplete,
+  hasFailedExit as evmHasFailedExit,
+  isComplete as evmIsComplete,
   nextStateEvm,
   TransactionSubmissionEvm
 } from "$lib/components/Transfer/state/evm.ts"
+import {
+  nextStateCosmos,
+  isComplete as cosmosIsComplete,
+  hasFailedExit as cosmosHasFailedExit,
+  TransactionSubmissionCosmos
+} from "$lib/components/Transfer/state/cosmos.ts"
 import { getWalletClient } from "$lib/services/evm/clients.ts"
-import { TransactionSubmissionCosmos } from "$lib/components/Transfer/state/cosmos.ts"
 
 type Props = {
   stepIndex: number
@@ -41,6 +46,21 @@ const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
 
 let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
+
+const isButtonEnabled = $derived(
+  (ets._tag === "Filling" && cts._tag === "Filling") ||
+  evmHasFailedExit(ets) || cosmosHasFailedExit(cts)
+);
+
+const getSubmitButtonText = $derived(
+  ets._tag === "SwitchChainInProgress" ? "Switching Chain..." :
+    ets._tag === "WriteContractInProgress" ? "Confirming Transaction..." :
+      ets._tag === "TransactionReceiptInProgress" ? "Waiting for Receipt..." :
+        cts._tag === "SwitchChainInProgress" ? "Switching Chain..." :
+          cts._tag === "WriteContractInProgress" ? "Confirming Transaction..." :
+            evmHasFailedExit(ets) || cosmosHasFailedExit(cts) ? "Try Again" :
+              actionButtonText
+);
 
 const submit = Effect.gen(function* () {
   if (Option.isNone(step) || Option.isNone(lts)) return
@@ -75,11 +95,11 @@ const submit = Effect.gen(function* () {
             catch: error => (error instanceof Error ? error : new Error("Unknown error"))
           })
 
-          if (isComplete(ets)) {
+          if (evmIsComplete(ets)) {
             onApprove()
             break
           }
-        } while (!hasFailedExit(ets))
+        } while (!evmHasFailedExit(ets))
 
         return Effect.succeed(ets)
       })
@@ -136,8 +156,9 @@ const submit = Effect.gen(function* () {
       <Button
               variant="primary"
               onclick={() => Effect.runPromise(submit)}
+              disabled={!isButtonEnabled}
       >
-        {actionButtonText}
+        {getSubmitButtonText}
       </Button>
     </div>
   {:else}
