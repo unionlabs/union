@@ -85,9 +85,7 @@ export const getGasPriceForChain = (
 ): Effect.Effect<{ amount: number; denom: string }, GetChainInfoError | GasPriceError, never> =>
   Effect.gen(function* () {
     const chainInfo = yield* getCosmosChainInfo(chain, connectedWallet)
-    console.log(chainInfo)
     const gasPriceStep = yield* getHighGasPriceStep(chainInfo)
-    console.log(gasPriceStep)
 
     return {
       amount: Number.parseFloat(gasPriceStep.amount),

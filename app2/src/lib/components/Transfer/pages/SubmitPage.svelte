@@ -4,8 +4,8 @@ import { lockedTransferStore } from "../locked-transfer.svelte.ts"
 import { Effect, Match, Option } from "effect"
 import { SubmitInstruction } from "../transfer-step.ts"
 import {
-  hasFailedExit,
-  isComplete,
+  hasFailedExit as evmHasFailedExit,
+  isComplete as evmIsComplete,
   nextStateEvm,
   TransactionSubmissionEvm
 } from "$lib/components/Transfer/state/evm.ts"
@@ -18,6 +18,8 @@ import { custom, encodeAbiParameters, fromHex } from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import {
   nextStateCosmos,
+  isComplete as cosmosIsComplete,
+  hasFailedExit as cosmosHasFailedExit,
   TransactionSubmissionCosmos
 } from "$lib/components/Transfer/state/cosmos.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
@@ -25,6 +27,16 @@ import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction.ts"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { isValidBech32ContractAddress } from "$lib/utils"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+
+type Props = {
+  stepIndex: number
+  onBack: () => void
+  onSubmit: () => void
+  actionButtonText: string
+}
 
 const { stepIndex, onBack, onSubmit, actionButtonText }: Props = $props()
 
@@ -44,15 +56,32 @@ const step: Option.Option<ReturnType<typeof SubmitInstruction>> = $derived.by(()
 const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
 const destinationChain = $derived(lts.pipe(Option.map(ltss => ltss.destinationChain)))
 
-type Props = {
-  stepIndex: number
-  onBack: () => void
-  onSubmit: () => void
-  actionButtonText: string
-}
-
 let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
+
+// Only disable the button when transaction is in progress AND no failures detected
+const isButtonEnabled = $derived(
+  (ets._tag === "Filling" && cts._tag === "Filling") ||
+    cosmosHasFailedExit(cts) ||
+    evmHasFailedExit(ets)
+)
+
+// Button text based on current state
+const getSubmitButtonText = $derived(
+  ets._tag === "SwitchChainInProgress"
+    ? "Switching Chain..."
+    : ets._tag === "WriteContractInProgress"
+      ? "Confirming Transaction..."
+      : ets._tag === "TransactionReceiptInProgress"
+        ? "Waiting for Receipt..."
+        : cts._tag === "SwitchChainInProgress"
+          ? "Switching Chain..."
+          : cts._tag === "WriteContractInProgress"
+            ? "Confirming Transaction..."
+            : evmHasFailedExit(ets) || cosmosHasFailedExit(cts)
+              ? "Try Again"
+              : actionButtonText
+)
 
 export const submit = Effect.gen(function* () {
   if (Option.isNone(step) || Option.isNone(lts)) return
@@ -72,7 +101,10 @@ export const submit = Effect.gen(function* () {
 
         const connectorClient = yield* Effect.tryPromise({
           try: () => getConnectorClient(wagmiConfig),
-          catch: err => new ConnectorClientError({ cause: err as GetConnectorClientErrorType })
+          catch: err =>
+            new ConnectorClientError({
+              cause: err as GetConnectorClientErrorType
+            })
         })
 
         const walletClient = yield* createViemWalletClient({
@@ -94,7 +126,7 @@ export const submit = Effect.gen(function* () {
                   lts.value.channel.source_channel_id,
                   0n,
                   1000000000000n,
-                  generateSalt(),
+                  generateSalt("evm"),
                   {
                     opcode: step.value.instruction.opcode,
                     version: step.value.instruction.version,
@@ -105,11 +137,14 @@ export const submit = Effect.gen(function* () {
             catch: error => (error instanceof Error ? error : new Error("Unknown error"))
           })
 
-          if (isComplete(ets)) {
+          const result = evmIsComplete(ets)
+          if (result) {
+            transferHashStore.startPolling(result)
+            transfer.raw.reset()
             onSubmit()
             break
           }
-        } while (!hasFailedExit(ets))
+        } while (!evmHasFailedExit(ets))
 
         return Effect.succeed(ets)
       })
@@ -122,8 +157,8 @@ export const submit = Effect.gen(function* () {
         )
 
         const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
+        const isNative = !isValidBech32ContractAddress(fromHex(lts.value.baseToken.denom, "string"))
 
-        console.log("breeee", { msg: step.value.instruction })
         do {
           cts = yield* Effect.tryPromise(() =>
             nextStateCosmos(
@@ -137,7 +172,7 @@ export const submit = Effect.gen(function* () {
                   channel_id: lts.value.channel.source_channel_id,
                   timeout_height: 10000000,
                   timeout_timestamp: 0,
-                  salt: generateSalt(),
+                  salt: generateSalt("cosmos"),
                   instruction: encodeAbiParameters(instructionAbi, [
                     step.value.instruction.version,
                     step.value.instruction.opcode,
@@ -145,15 +180,25 @@ export const submit = Effect.gen(function* () {
                   ])
                 }
               },
-              [{ denom: "muno", amount: "1" }]
+              isNative
+                ? [
+                    {
+                      denom: fromHex(lts.value.baseToken.denom, "string"),
+                      amount: lts.value.parsedAmount
+                    }
+                  ]
+                : undefined
             )
           )
 
-          if (isComplete(cts)) {
+          const result = cosmosIsComplete(cts)
+          if (result) {
+            transferHashStore.startPolling(`0x${result}`)
+            transfer.raw.reset()
             onSubmit()
             break
           }
-        } while (!hasFailedExit(cts))
+        } while (!cosmosHasFailedExit(cts))
 
         return Effect.succeed(cts)
       })
@@ -173,31 +218,35 @@ export const submit = Effect.gen(function* () {
     <div class="flex-1">
       <h3 class="text-lg font-semibold mb-4">Submit Transfer</h3>
       <div class="bg-zinc-800 rounded-lg p-4 mb-4">
-        <p class="mb-2">Ready to submit your transfer instruction to the blockchain.</p>
+        <p class="mb-2">
+          Ready to submit your transfer instruction to the blockchain.
+        </p>
         <div class="text-sm text-zinc-400">
-          <div class="mb-1">From: {sourceChain.value.display_name || "Unknown"}</div>
-          <div class="mb-1">To: {destinationChain.value.display_name || "Unknown"}</div>
-          <div>Amount: { "0"}</div>
+          <div class="mb-1">
+            From: {sourceChain.value.display_name || "Unknown"}
+          </div>
+          <div class="mb-1">
+            To: {destinationChain.value.display_name || "Unknown"}
+          </div>
+          <div>Amount: (fix this)</div>
         </div>
       </div>
       <p class="text-sm text-zinc-400">
-        This will initiate the transfer on the blockchain.
-        You'll need to confirm the transaction in your wallet.
+        This will initiate the transfer on the blockchain. You'll need to
+        confirm the transaction in your wallet.
       </p>
     </div>
 
     <div class="flex justify-between mt-4">
-      <Button
-              variant="secondary"
-              onclick={onBack}
-      >
+      <Button variant="secondary" onclick={onBack} disabled={!isButtonEnabled}>
         Back
       </Button>
       <Button
               variant="primary"
               onclick={() => Effect.runPromise(submit)}
+              disabled={!isButtonEnabled}
       >
-        {actionButtonText}
+        {getSubmitButtonText}
       </Button>
     </div>
   {:else}

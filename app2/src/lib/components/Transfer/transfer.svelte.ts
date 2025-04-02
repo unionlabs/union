@@ -85,7 +85,6 @@ export class Transfer {
   })
 
   ucs03address = $derived.by<Option.Option<Address>>(() => {
-    console.log("channels ", channels.data)
     return Option.all([
       this.sourceChain,
       this.channel,

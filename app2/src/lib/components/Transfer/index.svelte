@@ -36,20 +36,13 @@ import {
 } from "@unionlabs/sdk/cosmos"
 import { fromHex, http, isHex } from "viem"
 import { truncate } from "$lib/utils/format.ts"
-import {
-  ApprovalRequired,
-  Filling,
-  getStepDescription,
-  SubmitInstruction,
-  type TransferStep,
-  WaitForIndex
-} from "./transfer-step.ts"
+import * as TransferStep from "./transfer-step.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
 import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
 
 let showDetails = $state(false)
 let currentPage = $state(0)
-let instruction: Option.Option<Instruction> = $state(Option.none())
+let instruction: Option.Option<Instruction.Instruction> = $state(Option.none())
 let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
 
 //This should now handle cosmos, evm and aptos (when aptos is implemented)
@@ -90,7 +83,7 @@ let transferIntents = $derived.by(() => {
     return Option.some([
       {
         sender: sender.value,
-        receiver: transferValue.receiver,
+        receiver: transferValue.receiver.toLowerCase(),
         baseToken: isHex(transferValue.baseToken)
           ? fromHex(transferValue.baseToken, "string")
           : transferValue.baseToken,
@@ -108,7 +101,8 @@ let requiredApprovals = $derived.by(() => {
   const requiredAmounts = new Map<string, bigint>()
   for (const intent of transferIntents.value) {
     const currentAmount = requiredAmounts.get(intent.baseToken) || 0n
-    requiredAmounts.set(intent.baseToken, intent.baseAmount)
+    // FIX: Add the new amount to the current amount instead of replacing it
+    requiredAmounts.set(intent.baseToken, currentAmount + intent.baseAmount)
   }
 
   // Filter for tokens that need approval (allowance < required amount)
@@ -127,7 +121,7 @@ let requiredApprovals = $derived.by(() => {
 
 // Derive the steps based on required approvals and instruction
 let transferSteps = $derived.by(() => {
-  const steps: Array<TransferStep> = [Filling()]
+  const steps: Array<TransferStep.TransferStep> = [TransferStep.Filling()]
 
   // Add approval steps if needed
   if (Option.isSome(requiredApprovals)) {
@@ -137,7 +131,7 @@ let transferSteps = $derived.by(() => {
         const tokenAllowance = allowances.value.find(a => a.token === approval.token)
         if (tokenAllowance) {
           steps.push(
-            ApprovalRequired({
+            TransferStep.ApprovalRequired({
               token: approval.token,
               requiredAmount: approval.requiredAmount,
               currentAllowance: tokenAllowance.allowance
@@ -150,8 +144,8 @@ let transferSteps = $derived.by(() => {
 
   // Add the instruction submission step if we have an instruction
   if (Option.isSome(instruction)) {
-    steps.push(SubmitInstruction({ instruction: instruction.value }))
-    steps.push(WaitForIndex())
+    steps.push(TransferStep.SubmitInstruction({ instruction: instruction.value }))
+    steps.push(TransferStep.WaitForIndex())
   }
 
   return steps.length > 0 ? Option.some(steps) : Option.none()
@@ -218,8 +212,7 @@ const intentsToBatch = (ti: typeof transferIntents) =>
     const provideCosmWasmClientSource = Effect.provideServiceEffect(
       CosmWasmClientSource,
       pipe(
-        Option.some("https://rpc.rpc-node.union-testnet-10.union.build"),
-        // transfer.sourceChain.value.getRpcUrl("rpc"),
+        transfer.sourceChain.value.getRpcUrl("rpc"),
         Option.map(createCosmWasmClient),
         Effect.flatten,
         Effect.map(client => ({ client }))
@@ -229,8 +222,7 @@ const intentsToBatch = (ti: typeof transferIntents) =>
     const provideCosmWasmClientDestination = Effect.provideServiceEffect(
       CosmWasmClientDestination,
       pipe(
-        Option.some("https://rpc.rpc-node.union-testnet-10.union.build"),
-        //transfer.destinationChain.value.getRpcUrl("rpc"),
+        transfer.destinationChain.value.getRpcUrl("rpc"),
         Option.map(createCosmWasmClient),
         Effect.flatten,
         Effect.map(client => ({ client }))
@@ -308,7 +300,7 @@ const intentsToBatch = (ti: typeof transferIntents) =>
               Effect.sync(() => console.log("batch: Cosmos->EVM order created", order))
             ),
             Effect.catchAll(error => {
-              console.error("batch: Error creating Cosmos->EVM order", error.cause)
+              console.error("batch: Error creating Cosmos->EVM order", error)
               return Effect.fail(error)
             }),
             provideCosmWasmClientSource,
@@ -339,7 +331,9 @@ const intentsToBatch = (ti: typeof transferIntents) =>
 
       // Handle both array and single order cases
       console.log(`batch: Orders created:`, orders)
-      const batch = Array.isArray(orders) ? Batch(orders) : Batch([orders])
+      const batch = new Batch({
+        operand: Array.isArray(orders) ? orders : [orders]
+      })
       console.log(`batch: Batch created:`, batch)
       return batch
     }).pipe(
@@ -410,9 +404,7 @@ const checkAllowances = (ti: typeof transferIntents) =>
       // For Cosmos chains use a CosmWasm client to query CW20 allowances.
       const rpcUrl = sourceChain.getRpcUrl("rpc")
       if (Option.isNone(rpcUrl)) return Option.none()
-      const cosmwasmClient = yield* createCosmWasmClient(
-        "https://rpc.rpc-node.union-testnet-10.union.build"
-      )
+      const cosmwasmClient = yield* createCosmWasmClient(rpcUrl)
 
       // Query each token (assumed to be a CW20 contract) for the allowance.
       const allowanceChecks = yield* Effect.all(
@@ -421,7 +413,6 @@ const checkAllowances = (ti: typeof transferIntents) =>
             const decodedAddr = fromHex(tokenAddress, "string")
 
             if (!isValidBech32ContractAddress(decodedAddr)) {
-              console.log("It's native token, returning none. Token:", tokenAddress)
               return Option.none()
             }
 
@@ -491,33 +482,33 @@ let actionButtonText = $derived.by(() => {
     return "Complete"
   }
 
-  if (currentStep._tag === "Filling") {
-    return "Continue"
-  }
-
-  if (currentStep._tag === "ApprovalRequired") {
-    return "Approve"
-  }
-
-  if (currentStep._tag === "SubmitInstruction") {
-    return "Submit"
-  }
-
-  return "Next"
+  return TransferStep.match(currentStep, {
+    Filling: () => "Continue",
+    ApprovalRequired: () => "Approve",
+    SubmitInstruction: () => "Submit",
+    WaitForIndex: () => "Submit"
+  })
 })
 
 function handleActionButtonClick() {
   if (Option.isNone(transferSteps)) return
 
+  console.log("handleActionButtonClick called", {
+    transferSteps: transferSteps,
+    currentPage: currentPage
+  })
+
   const currentStep = transferSteps.value[currentPage]
 
-  if (currentStep._tag === "Filling") {
+  if (TransferStep.is("Filling")(currentStep)) {
     // Lock the transfer values before proceeding
     if (Option.isNone(lockedTransferStore.get())) {
       const newLockedTransfer = LockedTransfer.fromTransfer(
         transfer.sourceChain,
         transfer.destinationChain,
         transfer.channel,
+        transfer.parsedAmount,
+        transfer.baseToken,
         transferSteps
       )
 
@@ -532,12 +523,12 @@ function handleActionButtonClick() {
     return
   }
 
-  if (currentStep._tag === "ApprovalRequired") {
+  if (TransferStep.is("ApprovalRequired")(currentStep)) {
     goToNextPage()
     return
   }
 
-  if (currentStep._tag === "SubmitInstruction") {
+  if (TransferStep.is("SubmitInstruction")(currentStep)) {
     goToNextPage()
     return
   }
@@ -545,14 +536,14 @@ function handleActionButtonClick() {
 </script>
 
 <Card
-        divided
-        class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden"
+  divided
+  class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden"
 >
   <div class="p-4 w-full">
     <StepProgressBar
-            class="w-full"
-            currentStep={currentPage + 1}
-            totalSteps={lockedTransferStore.get().pipe(
+      class="w-full"
+      currentStep={currentPage + 1}
+      totalSteps={lockedTransferStore.get().pipe(
         Option.map((lts) => lts.steps.length),
         Option.getOrElse(() =>
           transferSteps.pipe(
@@ -561,10 +552,12 @@ function handleActionButtonClick() {
           ),
         ),
       )}
-            stepDescriptions={lockedTransferStore.get().pipe(
-        Option.map((lts) => lts.steps.map(getStepDescription)),
+      stepDescriptions={lockedTransferStore.get().pipe(
+        Option.map((lts) => lts.steps.map(TransferStep.description)),
         Option.orElse(() =>
-          transferSteps.pipe(Option.map((ts) => ts.map(getStepDescription))),
+          transferSteps.pipe(
+            Option.map((ts) => ts.map(TransferStep.description)),
+          ),
         ),
         Option.getOrElse(() => ["Configure your transfer"]),
       )}
@@ -575,34 +568,33 @@ function handleActionButtonClick() {
   <div class="relative flex-1 overflow-hidden">
     <!-- Pages wrapper with horizontal sliding -->
     <div
-            class="absolute inset-0 flex transition-transform duration-300 ease-in-out"
-            style="transform: translateX(-{currentPage * 100}%);"
+      class="absolute inset-0 flex transition-transform duration-300 ease-in-out"
+      style="transform: translateX(-{currentPage * 100}%);"
     >
       <!-- Page 1: Filling -->
-      <FillingPage onContinue={handleActionButtonClick} {actionButtonText}/>
+      <FillingPage onContinue={handleActionButtonClick} {actionButtonText} />
 
       <!-- Dynamic pages for each step -->
       {#if Option.isSome(lockedTransferStore.get())}
         {#each lockedTransferStore.get().value.steps.slice(1) as step, i}
-          {#if step._tag === "ApprovalRequired"}
+          {#if TransferStep.is("ApprovalRequired")(step)}
             <ApprovalPage
-                    stepIndex={i + 1}
-                    onBack={goToPreviousPage}
-                    onApprove={handleActionButtonClick}
-                    {actionButtonText}
+              stepIndex={i + 1}
+              onBack={goToPreviousPage}
+              onApprove={handleActionButtonClick}
+              {actionButtonText}
             />
-          {:else if step._tag === "SubmitInstruction"}
+          {:else if TransferStep.is("SubmitInstruction")(step)}
             <SubmitPage
-                    stepIndex={i + 1}
-                    onBack={goToPreviousPage}
-                    onSubmit={handleActionButtonClick}
-                    {actionButtonText}
+              stepIndex={i + 1}
+              onBack={goToPreviousPage}
+              onSubmit={handleActionButtonClick}
+              {actionButtonText}
             />
-          {:else if step._tag === "WaitForIndex"}
+          {:else if TransferStep.is("WaitForIndex")(step)}
             <IndexPage
-                    stepIndex={i + 1}
-                    onBack={goToPreviousPage}
-                    {actionButtonText}
+              stepIndex={i + 1}
+              onBack={goToPreviousPage}
             />
           {/if}
         {/each}
@@ -611,7 +603,7 @@ function handleActionButtonClick() {
   </div>
 
   {#if showDetails}
-    <ShowData/>
+    <ShowData />
   {/if}
 </Card>
 
@@ -623,22 +615,22 @@ function handleActionButtonClick() {
     <ol class="list-decimal pl-5 mt-2">
       {#each lockedTransferStore
         .get()
-        .pipe(Option.map((lts) => lts.steps), Option.orElse(() => transferSteps), Option.getOrElse(() => [],),) as step, index}
+        .pipe( Option.map((lts) => lts.steps), Option.orElse(() => transferSteps), Option.getOrElse( () => [], ), ) as step, index}
         <li class="mb-2" class:font-bold={index === currentPage}>
-          {#if step._tag === "Filling"}
+          {#if TransferStep.is("Filling")(step)}
             <div>Configure transfer details</div>
-          {:else if step._tag === "ApprovalRequired"}
+          {:else if TransferStep.is("ApprovalRequired")(step)}
             <div>
               Approve token: <span class="font-mono"
-            >{truncate(step.token, 8, "middle")}</span
-            >
+                >{truncate(step.token, 8, "middle")}</span
+              >
               <div class="text-sm">
                 Current allowance: {step.currentAllowance.toString()}
-                <br/>
+                <br />
                 Required amount: {step.requiredAmount.toString()}
               </div>
             </div>
-          {:else if step._tag === "SubmitInstruction"}
+          {:else if TransferStep.is("SubmitInstruction")(step)}
             <div>Submit transfer instruction</div>
           {/if}
         </li>

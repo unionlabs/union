@@ -1,6 +1,7 @@
 import { Data } from "effect"
 import type { Instruction } from "@unionlabs/sdk/ucs03"
 import type { TokenRawDenom } from "@unionlabs/sdk/schema"
+import type { ExtractTag } from "effect/Types"
 
 /**
  * Defines the different steps in a transfer process
@@ -13,30 +14,32 @@ export type TransferStep = Data.TaggedEnum<{
     readonly currentAllowance: bigint
   }
   SubmitInstruction: {
-    readonly instruction: Instruction
+    readonly instruction: Instruction.Instruction
   }
   WaitForIndex: {}
 }>
 
+export type Filling = ExtractTag<TransferStep, "Filling">
+export type ApprovalRequired = ExtractTag<TransferStep, "ApprovalRequired">
+export type SubmitInstruction = ExtractTag<TransferStep, "SubmitInstruction">
+export type WaitForIndex = ExtractTag<TransferStep, "WaitForIndex">
+
 // Create constructors for the steps
-export const { Filling, ApprovalRequired, SubmitInstruction, WaitForIndex } =
-  Data.taggedEnum<TransferStep>()
+export const {
+  $match: match,
+  $is: is,
+  Filling,
+  ApprovalRequired,
+  SubmitInstruction,
+  WaitForIndex
+} = Data.taggedEnum<TransferStep>()
 
 /**
  * Get a human-readable description for a transfer step
  */
-export function getStepDescription(step: TransferStep): string {
-  if (step._tag === "Filling") {
-    return "Configure your transfer details"
-  }
-  if (step._tag === "ApprovalRequired") {
-    return "Approve token spending"
-  }
-  if (step._tag === "SubmitInstruction") {
-    return "Submit transfer to blockchain"
-  }
-  if (step._tag === "WaitForIndex") {
-    return "Waiting for indexer"
-  }
-  return "Transfer step"
-}
+export const description = match({
+  Filling: () => "Configure your transfer details",
+  ApprovalRequired: () => "Approve token spending",
+  SubmitInstruction: () => "Submit transfer to blockchain",
+  WaitForIndex: () => "Waiting for indexer"
+})

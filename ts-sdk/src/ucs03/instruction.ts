@@ -1,7 +1,7 @@
 import { encodeAbiParameters } from "viem"
 import { batchAbi, forwardAbi, fungibleAssetOrderAbi, multiplexAbi } from "../evm/abi/index.js"
 import { Data, Schema as S } from "effect"
-import { Hex } from "../schema/hex.js"
+import { Hex, HexChecksum } from "../schema/hex.js"
 import { Uint64 } from "../schema/uint64.js"
 import type { NonEmptyReadonlyArray } from "effect/Array"
 
@@ -23,7 +23,7 @@ const Operand = S.Union(
   // [readonly { version: number; opcode: number; operand: `0x${string}`; }[]]
   S.Tuple(S.Array(S.Struct({ version: Version, opcode: OpCode, operand: Hex }))),
   // [`0x${string}`, `0x${string}`, `0x${string}`, bigint, string, string, number, bigint, `0x${string}`, bigint]
-  S.Tuple(Hex, Hex, Hex, Uint64, S.String, S.String, S.Uint8, Uint64, Hex, Uint64),
+  S.Tuple(Hex, Hex, Hex, Uint64, S.String, S.String, S.Uint8, Uint64, HexChecksum, Uint64),
   // [bigint, `0x${string}`]
   S.Tuple(Uint64, Hex),
   // [readonly `0x${string}`[]]
@@ -105,11 +105,11 @@ export class FungibleAssetOrder extends S.TaggedClass<FungibleAssetOrder>()("Fun
       decoding: () => 3 as const
     })
   ),
-  version: S.Literal(0).pipe(
+  version: S.Literal(1).pipe(
     S.optional,
     S.withDefaults({
-      constructor: () => 0 as const,
-      decoding: () => 0 as const
+      constructor: () => 1 as const,
+      decoding: () => 1 as const
     })
   ),
   operand: Operand
