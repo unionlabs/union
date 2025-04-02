@@ -37,9 +37,6 @@ let displayAmount = $derived.by(() => {
 })
 
 let isLoading = $derived(Option.isSome(transfer.sortedBalances) && Option.isNone(tokenBalance))
-$effect(() => {
-  console.log(token)
-})
 
 export const toDisplayName = (
   chain_id: string | undefined | null,

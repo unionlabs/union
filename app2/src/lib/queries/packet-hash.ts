@@ -28,7 +28,6 @@ createQueryGraphql({
   },
   refetchInterval: "1 seconds",
   writeData: data => {
-    console.log(data)
     transferHashStore.data = data.pipe(
       Option.flatMap(result =>
         result.v2_transfers.length > 0
