@@ -94,7 +94,7 @@ function getArrowSpan(
     <Label>Packet Trace</Label>
     
       <!-- Chain headers -->
-      <div class="grid mb-4 size-full" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
+      <div class="grid mb-4 size-[120%] mx-[-10%]" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
 
 
         <!-- Background grid with lines -->
@@ -131,24 +131,24 @@ function getArrowSpan(
           
             <!-- Trace card -->
 
-            <div class=" p-2 rounded-lg col-span-3 flex flex-col items-center" 
+            <div class="pb-1 rounded-lg col-span-3 flex flex-col items-center" 
               style="grid-row: {i * 2 + 2}; grid-column-start: {column * 2 + 1}  ">
             {#if Option.isSome(trace.height) && !(Option.isSome(prevTrace) && Option.isSome(prevTrace.value.height) && prevTrace.value.height.value === trace.height.value)}
-              <div class="text-zinc-400">{trace.height.value}</div>
+              <div class="text-zinc-500 pt-2 flex text-xs flex-col items-center">
+              <div>{trace.height.value}</div>
               {#if Option.isSome(trace.timestamp)}
-                <DateTimeComponent value={trace.timestamp.value} />
+                <DateTimeComponent class="text-zinc-500" showDate={false} value={trace.timestamp.value} />
               {/if}
+              </div>
 
             {/if}
-              <div class="bg-zinc-800 rounded px-2 py-1">
-                <div class="flex items-center justify-between">
-                  <span class="font-bold text-zinc-900 dark:text-zinc-100">
-                    {toTraceName(trace.type)}
-                  </span>
+              <div class="bg-zinc-800 flex flex-col items-center rounded px-2 py-1">
+                <div class="font-semibold text-sm">
+                  {toTraceName(trace.type)}
                 </div>
 
                 {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
-                  <div class="text-sm text-zinc-400">
+                  <div class="text-xs text-zinc-400">
                     <TransactionHashComponent hash={trace.transaction_hash.value} />
                   </div>
                 {/if}
@@ -171,45 +171,5 @@ function getArrowSpan(
       </div>
       !-->
 
-      <!--
-      <div class="relative grid gap-4 p-4" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
-        {#each packetTraces as trace, i}
-          {@const chain = getChain(chainsList, trace.chain.universal_chain_id)}
-          {@const column = getTraceColumn(trace, positions)}
-          {@const nextTrace = packetTraces[i + 1]}
-          {@const arrowSpan = getArrowSpan(trace, nextTrace, positions)}
-          
-          <div class="contents">
-
-            <div>hi{trace.height.value}</div>
-            <div class=" p-2 rounded-lg bg-zinc-100 dark:bg-red-800" 
-              style="grid-row: {i + 1}; grid-column: {column * 2 - 1}">
-              <div class="flex items-center justify-between">
-               <span class="font-bold text-zinc-900 dark:text-zinc-100">
-                  {toTraceName(trace.type)}
-                </span>
-              </div>
-
-              {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
-                <div class="text-sm text-zinc-600 dark:text-zinc-400">
-                  <p><DateTimeComponent value={trace.timestamp.value} /> <span>in block {trace.height.value}</span></p>
-                  <TransactionHashComponent hash={trace.transaction_hash.value} />
-                </div>
-              {/if}
-            </div>
-
-            {#if arrowSpan}
-              <div style="grid-row: {i + 1}; {arrowSpan.gridColumn}">
-                <div class="absolute inset-0 flex items-center">
-                  <div class="w-full h-0.5 bg-zinc-400 dark:bg-zinc-600">
-                    <div class="absolute {arrowSpan.isLeft ? 'left-0' : 'right-0'} top-[-4px] border-[5px] border-transparent {arrowSpan.isLeft ? 'border-r-zinc-400 dark:border-r-zinc-600' : 'border-l-zinc-400 dark:border-l-zinc-600'}" />
-                  </div>
-                </div>
-              </div>
-            {/if}
-          </div>
-        {/each}
-      </div>
-      !-->
   </div>
 {/if}
