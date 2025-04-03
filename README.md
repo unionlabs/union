@@ -19,7 +19,7 @@
 
 </div>
 
-Union is the hyper-efficient zero-knowledge infrastructure layer for general message passing, asset transfers, NFTs, and DeFi. It’s based on [Consensus Verification] and has no dependencies on trusted third parties, oracles, multi-signatures, or MPC. It implements [IBC] for compatibility with [Cosmos] chains and connects to EVM chains like [Ethereum], [Berachain (beacon-kit)](https://github.com/berachain/beacon-kit), [Arbitrum], and more.
+Union is the hyper-efficient zero-knowledge infrastructure layer for general message passing, asset transfers, NFTs, and DeFi. Its based on [Consensus Verification] and has no dependencies on trusted third parties, oracles, multi-signatures or MPC. It implements [IBC] for compatibility with [Cosmos] chains and connects to EVM chains like [Ethereum], [Berachain (beacon-kit)](https://github.com/berachain/beacon-kit), [Arbitrum], and more.
 
 The upgradability of contracts on other chains, connections, token configurations, and evolution of the protocol will all be controlled by decentralized governance, aligning the priorities of Union with its users, validators, and operators.
 
@@ -63,7 +63,7 @@ nix flake show
 
 The result of whatever you build will be in `result/`
 
-You can now also enter our dev shell, which has all of the dependencies (`cargo`, `rustc`, `node`, `go`, etc.) you need to work on any component:
+You can now also enter our dev shell, which has all the dependencies (`cargo`, `rustc`, `node`, `go`, etc.) you need to work on any component:
 _(Don't worry, this will not affect your system outside of this repo)_
 
 ```sh
