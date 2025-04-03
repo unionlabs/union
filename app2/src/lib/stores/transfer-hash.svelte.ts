@@ -22,7 +22,7 @@ export class TransferHashStore {
   }
 
   reset = () => {
-    if (this.fiber._tag === "Some") {
+    if (Option.isSome(this.fiber)) {
       Effect.runPromise(Fiber.interrupt(this.fiber.value))
       this.fiber = Option.none()
     }
