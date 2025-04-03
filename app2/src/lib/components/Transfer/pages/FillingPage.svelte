@@ -43,6 +43,7 @@
 
 
   const transferState = $derived.by<FillingEnum>(() => {
+    //Check if we have any wallet
     if (!wallets.hasAnyWallet()) {
       return WalletNeeded()
     }

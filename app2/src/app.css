@@ -27,6 +27,11 @@
     "Segoe UI Symbol", "Noto Color Emoji";
 }
 
+@utility blur-fade-bottom-up {
+  backdrop-filter: blur(8px);
+  mask: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0) 100%);
+}
+
 pre {
   font-family: var(--font-mono);
 }

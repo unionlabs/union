@@ -3,9 +3,10 @@
   import {onDestroy, onMount} from "svelte"
   import ChainAssetButton from "$lib/components/Transfer/ChainAsset/ChainAssetButton.svelte"
   import ChainSelector from "$lib/components/Transfer/ChainAsset/ChainSelector.svelte"
-  import TransferDirectionInfo from "$lib/components/Transfer/ChainAsset/TransferDirectionInfo.svelte"
   import AssetSelector from "$lib/components/Transfer/ChainAsset/AssetSelector.svelte"
   import SharpChevronLeftIcon from "$lib/components/icons/SharpChevronLeftIcon.svelte";
+  import { crossfade } from 'svelte/transition';
+
   type Props = {
     type: "source" | "destination"
   }
@@ -51,6 +52,13 @@
   onDestroy(() => {
     document.removeEventListener("keydown", handleKeydown)
   })
+
+  const [send, receive] = crossfade({
+    duration: 200,
+    fallback(node, params) {
+      return fly(node, { delay: 0, duration: 200, y: 20 });
+    }
+  });
 </script>
 {#if open}
   <div class="absolute inset-0 bg-zinc-925 z-40 flex" transition:fade={{ duration: 300 }}>
@@ -65,24 +73,24 @@
         >
           <SharpChevronLeftIcon class="size-5"/>
           <div class="ml-2 flex items-center">
-            <span class="text-lg text-zinc-100">Select </span>
-            <div class="overflow-hidden h-6 ml-1">
+            <span class="text-lg text-zinc-100">Select</span>
+            <div class="relative w-16 h-6 flex items-center ml-2">
               {#if page === 1}
-                <span
-                        class="text-lg text-zinc-100 inline-block"
-                        in:fly={{ y: 20, duration: 200 }}
-                        out:fly={{ y: -20, duration: 200 }}
-                >
-                  chain
-                </span>
+          <span
+                  class="text-lg text-zinc-100 absolute"
+                  in:receive={{key: 'chain'}}
+                  out:send={{key: 'chain'}}
+          >
+            Chain
+          </span>
               {:else}
-                <span
-                        class="text-lg text-zinc-100 inline-block"
-                        in:fly={{ y: 20, duration: 200 }}
-                        out:fly={{ y: -20, duration: 200 }}
-                >
-                  Asset
-                </span>
+          <span
+                  class="text-lg text-zinc-100 absolute"
+                  in:receive={{key: 'asset'}}
+                  out:send={{key: 'asset'}}
+          >
+            Asset
+          </span>
               {/if}
             </div>
           </div>
