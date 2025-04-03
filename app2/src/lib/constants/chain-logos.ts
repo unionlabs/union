@@ -174,5 +174,29 @@ export const chainLogoMap = new Map([
       light: "/logos/chains/light/0G.svg",
       dark: "/logos/chains/dark/0G.svg"
     }
+  ],
+  [
+    "bob.808813",
+    {
+      color: "/logos/chains/color/BOB.svg",
+      light: "/logos/chains/light/BOB.svg",
+      dark: "/logos/chains/dark/BOB.svg"
+    }
+  ],
+  [
+    "bob.60808",
+    {
+      color: "/logos/chains/color/BOB.svg",
+      light: "/logos/chains/light/BOB.svg",
+      dark: "/logos/chains/dark/BOB.svg"
+    }
+  ],
+  [
+    "corn.21000001",
+    {
+      color: "/logos/chains/color/CORN.svg",
+      light: "/logos/chains/light/CORN.svg",
+      dark: "/logos/chains/dark/CORN.svg"
+    }
   ]
 ])

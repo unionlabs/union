@@ -34,7 +34,7 @@ const isChainLoading = $derived.by(() => {
   <button
           onclick={onClick}
           class={cn(
-      "w-full h-12 rounded-md bg-zinc-800 text-zinc-200",
+      "w-full h-14 rounded-md bg-zinc-800 text-zinc-200",
       "hover:bg-zinc-600 hover:border-zinc-500",
       "focus:outline-none focus:ring-2 focus:ring-sky-500",
       "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -64,7 +64,7 @@ const isChainLoading = $derived.by(() => {
       {:else}
 
         <!-- Chain Selected -->
-        <div class="flex gap-2 items-center justify-between p-2 flex-1 w-full">
+        <div class="flex gap-2 items-center justify-between p-3 flex-1 w-full">
 
           <!--LOGO-->
           {#if selectedChain.value.universal_chain_id}

@@ -539,7 +539,7 @@ function handleActionButtonClick() {
   divided
   class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden"
 >
-  <div class="p-4 w-full">
+  <div class="w-full">
     <StepProgressBar
       class="w-full"
       currentStep={currentPage + 1}
@@ -567,10 +567,12 @@ function handleActionButtonClick() {
   <!-- Sliding pages container -->
   <div class="relative flex-1 overflow-hidden">
     <!-- Pages wrapper with horizontal sliding -->
+
     <div
       class="absolute inset-0 flex transition-transform duration-300 ease-in-out"
       style="transform: translateX(-{currentPage * 100}%);"
     >
+
       <!-- Page 1: Filling -->
       <FillingPage onContinue={handleActionButtonClick} {actionButtonText} />
 
