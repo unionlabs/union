@@ -37,12 +37,45 @@ function getChainPositions(traces: ReadonlyArray<PacketTrace>) {
 }
 
 function getTraceColumn(trace: PacketTrace, positions: ReturnType<typeof getChainPositions>) {
-  if (trace.chain.universal_chain_id === positions.left?.universal_chain_id) return 1
+  if (trace.chain.universal_chain_id === positions.left?.universal_chain_id) return 0
   if (positions.center && trace.chain.universal_chain_id === positions.center.universal_chain_id)
-    return 2
+    return 1
   if (trace.chain.universal_chain_id === positions.right?.universal_chain_id)
-    return positions.columns
+    return positions.columns - 1
   return 1
+}
+
+function getGridTemplateColumns(columns: number) {
+  const parts = []
+  for (let i = 0; i < columns; i++) {
+    parts.push("1fr", "2px")
+    if (i === columns - 1) {
+      parts.push("1fr")
+    }
+  }
+  return parts.join(" ")
+}
+
+function getArrowSpan(
+  currentTrace: PacketTrace,
+  nextTrace: PacketTrace | undefined,
+  positions: ReturnType<typeof getChainPositions>
+) {
+  if (!nextTrace) return null
+
+  const currentColumn = getTraceColumn(currentTrace, positions)
+  const nextColumn = getTraceColumn(nextTrace, positions)
+
+  // Don't draw arrow if on same column
+  if (currentColumn === nextColumn) return null
+
+  const start = currentColumn * 2 + 2
+  const end = nextColumn * 2 + 2
+
+  return {
+    gridColumn: `${Math.min(start, end)} / ${Math.max(start, end)}`,
+    isLeft: nextColumn < currentColumn
+  }
 }
 </script>
 
@@ -59,62 +92,113 @@ function getTraceColumn(trace: PacketTrace, positions: ReturnType<typeof getChai
   <div>
     <Label>Packet Trace</Label>
     
-    <div class="relative mt-4">
       <!-- Chain headers -->
-      <div class="grid mb-4" style="grid-template-columns: repeat({positions.columns}, 1fr)">
+      <div class=" grid mb-4 size-full" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
+        <!-- Chain names with lines -->
         {#if Option.isSome(leftChain)}
-          <div class="text-center">
+          <div class="text-center col-start-1 col-span-3 row-1">
             <ChainComponent chain={leftChain.value} />
           </div>
         {/if}
         
         {#if Option.isSome(centerChain)}
-          <div class="text-center">
+          <div class="text-center col-start-3 col-span-3 row-1">
             <ChainComponent chain={centerChain.value} />
           </div>
         {/if}
         
         {#if Option.isSome(rightChain)}
-          <div class="text-center">
+          <div class="text-center col-start-5 col-span-3 row-1">
             <ChainComponent chain={rightChain.value} />
           </div>
         {/if}
-      </div>
 
-      <!-- Background grid with lines -->
-      <div class="absolute inset-0 grid overflow-hidden" style="grid-template-columns: repeat({positions.columns}, 1fr)">
+        <!-- Background grid with lines -->
         {#each Array(positions.columns) as _, i}
-          <div class="w-0.5 h-full my-12 mx-auto bg-zinc-800" ></div>
+          <div class="bg-zinc-800 row-start-1 row-span-10" style="grid-column: {i * 2 + 2}" ></div>
         {/each}
-      </div>
 
-      <!-- Foreground grid with traces -->
-      <div class="relative grid gap-4 p-4" style="grid-template-columns: repeat({positions.columns}, 1fr)">
+        <!-- Traces and arrows -->
+
         {#each packetTraces as trace, i}
           {@const chain = getChain(chainsList, trace.chain.universal_chain_id)}
           {@const column = getTraceColumn(trace, positions)}
+          {@const nextTrace = packetTraces[i + 1]}
+          {@const arrowSpan = getArrowSpan(trace, nextTrace, positions)}
           
-          <div class="relative p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800" style="grid-row: {i + 1}; grid-column: {column}">
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-zinc-900 dark:text-zinc-100">
-                {toTraceName(trace.type)}
-              </span>
+            <!-- Trace card -->
+            <div class=" p-2 rounded-lg col-span-3 flex justify-center" 
+              style="grid-column-start: {column * 2 + 1}  ">
+              <div class="bg-zinc-800 rounded px-4 py-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-zinc-900 dark:text-zinc-100">
+                    {toTraceName(trace.type)}
+                  </span>
+                </div>
+
+                {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
+                  <div class="text-sm text-zinc-600 dark:text-zinc-400">
+                    <p><DateTimeComponent value={trace.timestamp.value} /> <span>in block {trace.height.value}</span></p>
+                    <TransactionHashComponent hash={trace.transaction_hash.value} />
+                  </div>
+                {/if}
+              </div>
             </div>
 
-            {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
-              <div class="text-sm text-zinc-600 dark:text-zinc-400">
-                <p><DateTimeComponent value={trace.timestamp.value} /> <span>in block {trace.height.value}</span></p>
-                <TransactionHashComponent hash={trace.transaction_hash.value} />
+            {#if arrowSpan}
+              <div class="MARKER" style="grid-column: {arrowSpan.gridColumn};">
+                  {JSON.stringify(arrowSpan)}
+                  <div class="w-full h-0.5 bg-zinc-400 dark:bg-zinc-600">
+                    <!--<div class="absolute {arrowSpan.isLeft ? 'left-0' : 'right-0'} top-[-4px] border-[5px] border-transparent {arrowSpan.isLeft ? 'border-r-zinc-400 dark:border-r-zinc-600' : 'border-l-zinc-400 dark:border-l-zinc-600'}" ></div>-->
+                  </div>
               </div>
             {/if}
+        {/each}
+        
+      </div>
 
-            <!-- Arrows -->
-            {#if trace.type === "PACKET_SEND" || trace.type === "PACKET_SEND_LC_UPDATE_L2"}
-              <div class="absolute h-0.5 bg-zinc-400 dark:bg-zinc-600 top-1/2 -translate-y-1/2 left-full w-[calc(100%-2rem)] after:absolute after:right-[-6px] after:top-[-4px] after:border-[5px] after:border-transparent after:border-l-zinc-400 dark:after:border-l-zinc-600" ></div>
+      <!--
+      <div class="absolute inset-0 grid overflow-hidden" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
+      </div>
+      !-->
+
+      <!--
+      <div class="relative grid gap-4 p-4" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
+        {#each packetTraces as trace, i}
+          {@const chain = getChain(chainsList, trace.chain.universal_chain_id)}
+          {@const column = getTraceColumn(trace, positions)}
+          {@const nextTrace = packetTraces[i + 1]}
+          {@const arrowSpan = getArrowSpan(trace, nextTrace, positions)}
+          
+          <div class="contents">
+            <div class=" p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800" 
+              style="grid-row: {i + 1}; grid-column: {column * 2 - 1}">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-zinc-900 dark:text-zinc-100">
+                  {toTraceName(trace.type)}
+                </span>
+              </div>
+
+              {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
+                <div class="text-sm text-zinc-600 dark:text-zinc-400">
+                  <p><DateTimeComponent value={trace.timestamp.value} /> <span>in block {trace.height.value}</span></p>
+                  <TransactionHashComponent hash={trace.transaction_hash.value} />
+                </div>
+              {/if}
+            </div>
+
+            {#if arrowSpan}
+              <div style="grid-row: {i + 1}; {arrowSpan.gridColumn}">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full h-0.5 bg-zinc-400 dark:bg-zinc-600">
+                    <div class="absolute {arrowSpan.isLeft ? 'left-0' : 'right-0'} top-[-4px] border-[5px] border-transparent {arrowSpan.isLeft ? 'border-r-zinc-400 dark:border-r-zinc-600' : 'border-l-zinc-400 dark:border-l-zinc-600'}" />
+                  </div>
+                </div>
+              </div>
             {/if}
           </div>
         {/each}
       </div>
-    </div>
+      !-->
   </div>
 {/if}
