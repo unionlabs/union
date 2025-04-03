@@ -51,40 +51,40 @@ function getTraceColumn(trace: PacketTrace, positions: ReturnType<typeof getChai
 {@const chainsList = chains.data.value}
 {@const positions = getChainPositions(packetTraces)}
 {@const leftChain = Option.fromNullable(positions.left?.universal_chain_id)
-  .pipe(Option.map((id) => getChain(chainsList, id)))}
+  .pipe(Option.flatMap((id) => getChain(chainsList, id)))}
 {@const centerChain = Option.fromNullable(positions.center?.universal_chain_id)
-  .pipe(Option.map((id) => getChain(chainsList, id)))}
+  .pipe(Option.flatMap((id) => getChain(chainsList, id)))}
 {@const rightChain = Option.fromNullable(positions.right?.universal_chain_id)
-  .pipe(Option.map((id) => getChain(chainsList, id)))}
+  .pipe(Option.flatMap((id) => getChain(chainsList, id)))}
   <div>
     <Label>Packet Trace</Label>
     
     <div class="relative mt-4">
       <!-- Chain headers -->
       <div class="grid mb-4" style="grid-template-columns: repeat({positions.columns}, 1fr)">
-        {#if Option.isSome(leftChain) && Option.isSome(leftChain.value)}
+        {#if Option.isSome(leftChain)}
           <div class="text-center">
-            <ChainComponent chain={leftChain.value.value} />
+            <ChainComponent chain={leftChain.value} />
           </div>
         {/if}
         
-        {#if Option.isSome(centerChain) && Option.isSome(centerChain.value)}
+        {#if Option.isSome(centerChain)}
           <div class="text-center">
-            <ChainComponent chain={centerChain.value.value} />
+            <ChainComponent chain={centerChain.value} />
           </div>
         {/if}
         
-        {#if Option.isSome(rightChain) && Option.isSome(rightChain.value)}
+        {#if Option.isSome(rightChain)}
           <div class="text-center">
-            <ChainComponent chain={rightChain.value.value} />
+            <ChainComponent chain={rightChain.value} />
           </div>
         {/if}
       </div>
 
       <!-- Background grid with lines -->
-      <div class="absolute inset-0 grid" style="grid-template-columns: repeat({positions.columns}, 1fr)">
+      <div class="absolute inset-0 grid overflow-hidden" style="grid-template-columns: repeat({positions.columns}, 1fr)">
         {#each Array(positions.columns) as _, i}
-          <div class="w-0.5 h-full mx-auto bg-zinc-200 dark:bg-zinc-700" />
+          <div class="w-0.5 h-full my-12 mx-auto bg-zinc-800" ></div>
         {/each}
       </div>
 
@@ -110,7 +110,7 @@ function getTraceColumn(trace: PacketTrace, positions: ReturnType<typeof getChai
 
             <!-- Arrows -->
             {#if trace.type === "PACKET_SEND" || trace.type === "PACKET_SEND_LC_UPDATE_L2"}
-              <div class="absolute h-0.5 bg-zinc-400 dark:bg-zinc-600 top-1/2 -translate-y-1/2 left-full w-[calc(100%-2rem)] after:absolute after:right-[-6px] after:top-[-4px] after:border-[5px] after:border-transparent after:border-l-zinc-400 dark:after:border-l-zinc-600" />
+              <div class="absolute h-0.5 bg-zinc-400 dark:bg-zinc-600 top-1/2 -translate-y-1/2 left-full w-[calc(100%-2rem)] after:absolute after:right-[-6px] after:top-[-4px] after:border-[5px] after:border-transparent after:border-l-zinc-400 dark:after:border-l-zinc-600" ></div>
             {/if}
           </div>
         {/each}
