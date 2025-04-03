@@ -119,6 +119,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         at: Height,
         path: StorePath,
     ) -> RpcResult<(Value, ProofType)> {
+        // TODO: Extract this into a function somewhere, reuse in lightclients
         let data = [0x03]
             .into_iter()
             .chain(*self.ibc_host_contract_address.data())

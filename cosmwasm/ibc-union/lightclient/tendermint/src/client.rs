@@ -7,6 +7,7 @@ use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
+use ibc_union_spec::path::IBC_UNION_COSMWASM_COMMITMENT_PREFIX;
 use ics23::ibc_api::SDK_SPECS;
 use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tendermint_verifier::types::{HostFns, SignatureVerifier};
@@ -378,10 +379,10 @@ pub fn verify_membership(
         root,
         &[
             b"wasm".to_vec(),
-            0x3u8
-                .to_le_bytes()
+            [0x03]
                 .into_iter()
                 .chain(*contract_address)
+                .chain(IBC_UNION_COSMWASM_COMMITMENT_PREFIX)
                 .chain(key)
                 .collect::<Vec<_>>(),
         ],
@@ -402,10 +403,10 @@ pub fn verify_non_membership(
         root,
         &[
             b"wasm".to_vec(),
-            0x3u8
-                .to_le_bytes()
+            [0x03]
                 .into_iter()
                 .chain(*contract_address)
+                .chain(IBC_UNION_COSMWASM_COMMITMENT_PREFIX)
                 .chain(key)
                 .collect::<Vec<_>>(),
         ],

@@ -9,6 +9,7 @@ use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
+use ibc_union_spec::path::IBC_UNION_COSMWASM_COMMITMENT_PREFIX;
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
     encoding::Bincode,
@@ -25,7 +26,6 @@ use crate::{
 
 pub const WASMD_MODULE_STORE_KEY: &[u8] = b"wasm";
 pub const WASMD_CONTRACT_STORE_PREFIX: u8 = 0x03;
-pub const IBC_UNION_COSMWASM_COMMITMENT_PREFIX: u8 = 0x00;
 
 pub struct CometblsLightClient<T: ZkpVerifier = ()>(PhantomData<T>);
 
@@ -61,11 +61,10 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
             &consensus_state.app_hash,
             &[
                 WASMD_MODULE_STORE_KEY.into(),
-                WASMD_CONTRACT_STORE_PREFIX
-                    .to_le_bytes()
+                [WASMD_CONTRACT_STORE_PREFIX]
                     .into_iter()
                     .chain(client_state.contract_address)
-                    .chain(vec![IBC_UNION_COSMWASM_COMMITMENT_PREFIX])
+                    .chain(IBC_UNION_COSMWASM_COMMITMENT_PREFIX)
                     .chain(key)
                     .collect::<Vec<_>>(),
             ],
@@ -88,11 +87,10 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
             &consensus_state.app_hash,
             &[
                 WASMD_MODULE_STORE_KEY.into(),
-                WASMD_CONTRACT_STORE_PREFIX
-                    .to_le_bytes()
+                [WASMD_CONTRACT_STORE_PREFIX]
                     .into_iter()
                     .chain(client_state.contract_address)
-                    .chain(vec![IBC_UNION_COSMWASM_COMMITMENT_PREFIX])
+                    .chain(IBC_UNION_COSMWASM_COMMITMENT_PREFIX)
                     .chain(key)
                     .collect::<Vec<_>>(),
             ],
