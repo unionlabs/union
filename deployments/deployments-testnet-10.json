@@ -95,7 +95,7 @@
       "sender": "0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2",
       "core": {
         "address": "0x06a409cbED33CaA9bf8181eF3afF2C504E1CfB95",
-        "height": 7944760
+        "height": 7996186
       },
       "lightclient": {
         "cometbls": {
@@ -103,11 +103,15 @@
           "height": 7938586
         },
         "state-lens/ics23/mpt": {
-          "address": "0xb66972c8dF9A185e0f0D34620F86dcb0DFeB1F3A",
-          "height": 7938586
+          "address": "0x77de6deae44d84f0c92b104a7e13e15fb3574f05",
+          "height": 8039214
         },
         "state-lens/ics23/ics23": {
-          "address": "0xd03953Ff5730Bd08684D529dC67630a0Ad0DfC67",
+          "address": "0xb66972c8df9a185e0f0d34620f86dcb0dfeb1f3a",
+          "height": 7938586
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd03953ff5730bd08684d529dc67630a0ad0dfc67",
           "height": 7938586
         }
       },
@@ -118,7 +122,7 @@
         },
         "ucs03": {
           "address": "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
-          "height": 7938590
+          "height": 7996223
         }
       }
     }
@@ -133,19 +137,23 @@
       "sender": "0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2",
       "core": {
         "address": "0x06a409cbED33CaA9bf8181eF3afF2C504E1CfB95",
-        "height": 3527215
+        "height": 3603668
       },
       "lightclient": {
         "cometbls": {
           "address": "0x8df982115d392D1b28B1f30Ba0834817f8b518dc",
-          "height": 3525179
+          "height": 3603671
         },
         "state-lens/ics23/mpt": {
-          "address": "0xb66972c8dF9A185e0f0D34620F86dcb0DFeB1F3A",
-          "height": 3525179
+          "address": "0x77de6deae44d84f0c92b104a7e13e15fb3574f05",
+          "height": 3605573
         },
         "state-lens/ics23/ics23": {
-          "address": "0xd03953Ff5730Bd08684D529dC67630a0Ad0DfC67",
+          "address": "0xb66972c8df9a185e0f0d34620f86dcb0dfeb1f3a",
+          "height": 3525179
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd03953ff5730bd08684d529dc67630a0ad0dfc67",
           "height": 3525179
         }
       },
@@ -156,7 +164,7 @@
         },
         "ucs03": {
           "address": "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
-          "height": 3525179
+          "height": 3603756
         }
       }
     }
@@ -171,7 +179,7 @@
       "sender": "0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2",
       "core": {
         "address": "0x06a409cbED33CaA9bf8181eF3afF2C504E1CfB95",
-        "height": 168386
+        "height": 168746
       },
       "lightclient": {
         "cometbls": {
@@ -179,11 +187,15 @@
           "height": 168387
         },
         "state-lens/ics23/mpt": {
-          "address": "0xb66972c8dF9A185e0f0D34620F86dcb0DFeB1F3A",
+          "address": "0x77de6deae44d84f0c92b104a7e13e15fb3574f05",
           "height": 168387
         },
         "state-lens/ics23/ics23": {
-          "address": "0xd03953Ff5730Bd08684D529dC67630a0Ad0DfC67",
+          "address": "0xb66972c8df9a185e0f0d34620f86dcb0dfeb1f3a",
+          "height": 168387
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd03953ff5730bd08684d529dc67630a0ad0dfc67",
           "height": 168388
         }
       },
@@ -194,7 +206,7 @@
         },
         "ucs03": {
           "address": "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
-          "height": 168390
+          "height": 168754
         }
       }
     }
@@ -217,11 +229,15 @@
           "height": 15157452
         },
         "state-lens/ics23/mpt": {
-          "address": "0xb66972c8dF9A185e0f0D34620F86dcb0DFeB1F3A",
+          "address": "0x77de6deae44d84f0c92b104a7e13e15fb3574f05",
           "height": 15157452
         },
         "state-lens/ics23/ics23": {
-          "address": "0xd03953Ff5730Bd08684D529dC67630a0Ad0DfC67",
+          "address": "0xb66972c8df9a185e0f0d34620f86dcb0dfeb1f3a",
+          "height": 15157452
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd03953ff5730bd08684d529dc67630a0ad0dfc67",
           "height": 15157452
         }
       },
