@@ -11,12 +11,12 @@
       "comments": "corn.21000001 channel 4",
       "tags": ["experimental"]
     },
-    "7": {
-      "comments": "union.union-testnet-10 channel 2",
-      "tags": ["canonical"]
-    },
     "6": {
       "comments": "ethereum.17000 channel 1",
+      "tags": ["canonical"]
+    },
+    "7": {
+      "comments": "union.union-testnet-10 channel 2",
       "tags": ["canonical"]
     }
   },
@@ -24,12 +24,6 @@
     "2": {
       "comments": "babylon.bbn-test-5 channel 3",
       "tags": ["experimental"]
-    }
-  },
-  "union.union-testnet-10": {
-    "1": {
-      "comments": "ethereum.11155111 channel 1",
-      "tags": ["deprecated"]
     }
   },
   "ethereum.11155111": {
@@ -46,6 +40,12 @@
     "2": {
       "comments": "union.union-testnet-10 channel 4",
       "tags": ["canonical"]
+    }
+  },
+  "union.union-testnet-10": {
+    "1": {
+      "comments": "ethereum.11155111 channel 1",
+      "tags": ["deprecated"]
     }
   }
 }

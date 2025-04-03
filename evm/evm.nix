@@ -201,7 +201,7 @@ _: {
         }
         {
           network = "holesky";
-          rpc-url = "https://1rpc.io/holesky";
+          rpc-url = "https://holesky.gateway.tenderly.co";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           extra-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
         }
