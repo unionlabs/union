@@ -23,7 +23,8 @@
   "go.toolsGopath": ".",
 
   // https://code.visualstudio.com/docs/typescript/typescript-compiling#_using-the-workspace-version-of-typescript
-  "typescript.tsdk": "./docs/node_modules/typescript/lib",
+  "typescript.tsdk": "./node_modules/typescript/lib",
+
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "biome.enabled": true,
   "[json]": {

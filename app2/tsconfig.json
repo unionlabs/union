@@ -15,6 +15,7 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "plugins": [
+      { "name": "@effect/language-service" },
       {
         "name": "gql.tada/ts-plugin",
         "schema": "./src/generated/schema.graphql",
