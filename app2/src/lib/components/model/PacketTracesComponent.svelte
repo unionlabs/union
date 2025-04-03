@@ -50,26 +50,32 @@ function getTraceColumn(trace: PacketTrace, positions: ReturnType<typeof getChai
 {#if packetTraces.length > 0 && Option.isSome(chains.data)}
 {@const chainsList = chains.data.value}
 {@const positions = getChainPositions(packetTraces)}
+{@const leftChain = Option.fromNullable(positions.left?.universal_chain_id)
+  .pipe(Option.map((id) => getChain(chainsList, id)))}
+{@const centerChain = Option.fromNullable(positions.center?.universal_chain_id)
+  .pipe(Option.map((id) => getChain(chainsList, id)))}
+{@const rightChain = Option.fromNullable(positions.right?.universal_chain_id)
+  .pipe(Option.map((id) => getChain(chainsList, id)))}
   <div>
     <Label>Packet Trace</Label>
     
     <div class="grid gap-4 p-4 mt-4" style="grid-template-columns: repeat({positions.columns}, 1fr)">
       <!-- Chain headers -->
-      {#if Option.isSome(getChain(chainsList, positions.left?.universal_chain_id || ""))}
+      {#if Option.isSome(leftChain) && Option.isSome(leftChain.value)}
         <div class="text-center mb-4">
-          <ChainComponent chain={getChain(chainsList, positions.left?.universal_chain_id || "").value} />
+          <ChainComponent chain={leftChain.value.value} />
         </div>
       {/if}
       
-      {#if positions.center && Option.isSome(getChain(chainsList, positions.center.universal_chain_id))}
+      {#if Option.isSome(centerChain) && Option.isSome(centerChain.value)}
         <div class="text-center mb-4">
-          <ChainComponent chain={getChain(chainsList, positions.center.universal_chain_id).value} />
+          <ChainComponent chain={centerChain.value.value} />
         </div>
       {/if}
       
-      {#if Option.isSome(getChain(chainsList, positions.right?.universal_chain_id || ""))}
+      {#if Option.isSome(rightChain) && Option.isSome(rightChain.value)}
         <div class="text-center mb-4">
-          <ChainComponent chain={getChain(chainsList, positions.right?.universal_chain_id || "").value} />
+          <ChainComponent chain={rightChain.value.value} />
         </div>
       {/if}
 
