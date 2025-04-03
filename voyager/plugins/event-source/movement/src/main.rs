@@ -17,6 +17,7 @@ use ibc_union_spec::{
         PacketSend, UpdateClient, WriteAck,
     },
     path::{ChannelPath, ConnectionPath},
+    log_event,
     ChannelId, ClientId, Connection, ConnectionState, IbcUnion,
 };
 use jsonrpsee::{
@@ -407,154 +408,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 tx_hash,
                 height,
             }) => {
-                // Log additional details based on event type
-                match &event {
-                    events::IbcEvent::CreateClient(event) => {
-                        info!(
-                            client_id = %event.client_id,
-                            client_type = %event.client_type,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement CreateClient event"
-                        );
-                    },
-                    events::IbcEvent::UpdateClient(event) => {
-                        info!(
-                            client_id = %event.client_id,
-                            client_type = %event.client_type,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement UpdateClient event"
-                        );
-                    },
-                    events::IbcEvent::ConnectionOpenInit(event) => {
-                        info!(
-                            client_id = %event.client_id,
-                            connection_id = %event.connection_id,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement ConnectionOpenInit event"
-                        );
-                    },
-                    events::IbcEvent::ConnectionOpenTry(event) => {
-                        info!(
-                            client_id = %event.client_id,
-                            connection_id = %event.connection_id,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement ConnectionOpenTry event"
-                        );
-                    },
-                    events::IbcEvent::ConnectionOpenAck(event) => {
-                        info!(
-                            client_id = %event.client_id,
-                            connection_id = %event.connection_id,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement ConnectionOpenAck event"
-                        );
-                    },
-                    events::IbcEvent::ConnectionOpenConfirm(event) => {
-                        info!(
-                            client_id = %event.client_id,
-                            connection_id = %event.connection_id,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement ConnectionOpenConfirm event"
-                        );
-                    },
-                    events::IbcEvent::ChannelOpenInit(event) => {
-                        info!(
-                            port_id = %event.port_id,
-                            channel_id = %event.channel_id,
-                            connection_id = %event.connection_id,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement ChannelOpenInit event"
-                        );
-                    },
-                    events::IbcEvent::ChannelOpenTry(event) => {
-                        info!(
-                            port_id = %event.port_id,
-                            channel_id = %event.channel_id,
-                            connection_id = %event.connection_id,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement ChannelOpenTry event"
-                        );
-                    },
-                    events::IbcEvent::ChannelOpenAck(event) => {
-                        info!(
-                            port_id = %event.port_id,
-                            channel_id = %event.channel_id,
-                            connection_id = %event.connection_id,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement ChannelOpenAck event"
-                        );
-                    },
-                    events::IbcEvent::ChannelOpenConfirm(event) => {
-                        info!(
-                            port_id = %event.port_id,
-                            channel_id = %event.channel_id,
-                            connection_id = %event.connection_id,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement ChannelOpenConfirm event"
-                        );
-                    },
-                    events::IbcEvent::WriteAcknowledgement(event) => {
-                        info!(
-                            packet_sequence = %event.packet.sequence,
-                            source_port = %event.packet.source_port,
-                            source_channel = %event.packet.source_channel,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement WriteAcknowledgement event"
-                        );
-                    },
-                    events::IbcEvent::RecvPacket(event) => {
-                        info!(
-                            packet_sequence = %event.packet.sequence,
-                            source_port = %event.packet.source_port,
-                            source_channel = %event.packet.source_channel,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement RecvPacket event"
-                        );
-                    },
-                    events::IbcEvent::SendPacket(event) => {
-                        info!(
-                            packet_sequence = %event.sequence,
-                            source_port = %event.source_port,
-                            source_channel = %event.source_channel,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement SendPacket event"
-                        );
-                    },
-                    events::IbcEvent::AcknowledgePacket(event) => {
-                        info!(
-                            packet_sequence = %event.packet.sequence,
-                            source_port = %event.packet.source_port,
-                            source_channel = %event.packet.source_channel,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement AcknowledgePacket event"
-                        );
-                    },
-                    events::IbcEvent::TimeoutPacket(event) => {
-                        info!(
-                            packet_sequence = %event.packet.sequence,
-                            source_port = %event.packet.source_port,
-                            source_channel = %event.packet.source_channel,
-                            height = %height,
-                            tx_hash = %tx_hash,
-                            "Movement TimeoutPacket event"
-                        );
-                    },
-                }
-                
                 let (full_event, client_id): (FullEvent, ClientId) = match event {
                     events::IbcEvent::CreateClient(event) => (
                         CreateClient {
@@ -906,9 +759,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     events::IbcEvent::TimeoutPacket(_) => todo!(),
                 };
 
-                ibc_union_spec::log_event(&full_event, &self.chain_id);
-
                 let voyager_client = e.try_get::<VoyagerClient>()?;
+
+                // Log the full event using ibc_union_spec::log_event
+                log_event(&full_event, &self.chain_id);
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
