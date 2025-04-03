@@ -18,7 +18,7 @@ workspace = true
 [dependencies.serde-utils]
 workspace = true
 [dependencies.tonic]
-features  = ["codegen", "prost", "gzip", "transport"]
+features  = ["codegen", "prost", "gzip", "transport", "tls", "tls-roots", "tls-webpki-roots"]
 optional  = true
 workspace = true
 

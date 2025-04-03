@@ -258,7 +258,6 @@
               })
             ];
             systemd.services."voyager-${instance.name}" = lib.mkIf (cfg.enable && instance.enable) {
-              wantedBy = [ "multi-user.target" ];
               description = "Voyager ${instance.name}";
               serviceConfig = {
                 Type = "simple";
