@@ -609,52 +609,52 @@ function handleActionButtonClick() {
   {/if}
 </Card>
 
-<!-- Debug info can be hidden in production -->
-{#if Option.isSome(lockedTransferStore.get()) || Option.isSome(transferSteps)}
-  <div class="mt-4">
-    <h3 class="text-lg font-semibold">Current Page: {currentPage}</h3>
-    <h4 class="text-md">Steps to complete transfer:</h4>
-    <ol class="list-decimal pl-5 mt-2">
-      {#each lockedTransferStore
-        .get()
-        .pipe( Option.map((lts) => lts.steps), Option.orElse(() => transferSteps), Option.getOrElse( () => [], ), ) as step, index}
-        <li class="mb-2" class:font-bold={index === currentPage}>
-          {#if TransferStep.is("Filling")(step)}
-            <div>Configure transfer details</div>
-          {:else if TransferStep.is("ApprovalRequired")(step)}
-            <div>
-              Approve token: <span class="font-mono"
-                >{truncate(step.token, 8, "middle")}</span
-              >
-              <div class="text-sm">
-                Current allowance: {step.currentAllowance.toString()}
-                <br />
-                Required amount: {step.requiredAmount.toString()}
-              </div>
-            </div>
-          {:else if TransferStep.is("SubmitInstruction")(step)}
-            <div>Submit transfer instruction</div>
-          {/if}
-        </li>
-      {/each}
-    </ol>
-  </div>
-{/if}
+<!--&lt;!&ndash; Debug info can be hidden in production &ndash;&gt;-->
+<!--{#if Option.isSome(lockedTransferStore.get()) || Option.isSome(transferSteps)}-->
+<!--  <div class="mt-4">-->
+<!--    <h3 class="text-lg font-semibold">Current Page: {currentPage}</h3>-->
+<!--    <h4 class="text-md">Steps to complete transfer:</h4>-->
+<!--    <ol class="list-decimal pl-5 mt-2">-->
+<!--      {#each lockedTransferStore-->
+<!--        .get()-->
+<!--        .pipe( Option.map((lts) => lts.steps), Option.orElse(() => transferSteps), Option.getOrElse( () => [], ), ) as step, index}-->
+<!--        <li class="mb-2" class:font-bold={index === currentPage}>-->
+<!--          {#if TransferStep.is("Filling")(step)}-->
+<!--            <div>Configure transfer details</div>-->
+<!--          {:else if TransferStep.is("ApprovalRequired")(step)}-->
+<!--            <div>-->
+<!--              Approve token: <span class="font-mono"-->
+<!--                >{truncate(step.token, 8, "middle")}</span-->
+<!--              >-->
+<!--              <div class="text-sm">-->
+<!--                Current allowance: {step.currentAllowance.toString()}-->
+<!--                <br />-->
+<!--                Required amount: {step.requiredAmount.toString()}-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          {:else if TransferStep.is("SubmitInstruction")(step)}-->
+<!--            <div>Submit transfer instruction</div>-->
+<!--          {/if}-->
+<!--        </li>-->
+<!--      {/each}-->
+<!--    </ol>-->
+<!--  </div>-->
+<!--{/if}-->
 
-<h2>transfer intents</h2>
-<pre>{JSON.stringify(transferIntents, null, 2)}</pre>
+<!--<h2>transfer intents</h2>-->
+<!--<pre>{JSON.stringify(transferIntents, null, 2)}</pre>-->
 
-<h2>instruction</h2>
-<pre>{JSON.stringify(instruction, null, 2)}</pre>
+<!--<h2>instruction</h2>-->
+<!--<pre>{JSON.stringify(instruction, null, 2)}</pre>-->
 
-<h2>allowances</h2>
-<pre>{JSON.stringify(allowances, null, 2)}</pre>
+<!--<h2>allowances</h2>-->
+<!--<pre>{JSON.stringify(allowances, null, 2)}</pre>-->
 
-<h2>required approvals</h2>
-<pre>{JSON.stringify(requiredApprovals, null, 2)}</pre>
+<!--<h2>required approvals</h2>-->
+<!--<pre>{JSON.stringify(requiredApprovals, null, 2)}</pre>-->
 
-<h2>transfer steps</h2>
-<pre>{JSON.stringify(transferSteps, null, 2)}</pre>
+<!--<h2>transfer steps</h2>-->
+<!--<pre>{JSON.stringify(transferSteps, null, 2)}</pre>-->
 
-<h2>locked transfer</h2>
-<pre>{JSON.stringify(lockedTransferStore.get(), null, 2)}</pre>
+<!--<h2>locked transfer</h2>-->
+<!--<pre>{JSON.stringify(lockedTransferStore.get(), null, 2)}</pre>-->

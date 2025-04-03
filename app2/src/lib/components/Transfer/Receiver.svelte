@@ -265,7 +265,7 @@ function hasBookmarks() {
                   class="mr-3 flex items-center text-zinc-400 hover:text-zinc-200 cursor-pointer h-full"
           >
             <SharpChevronLeftIcon/>
-            <span class="text-xl text-zinc-100 ml-2">
+            <span class="text-lg text-zinc-100 ml-2">
               {#if currentView === "main"}
                 Receiver
               {:else if currentView === "recent"}

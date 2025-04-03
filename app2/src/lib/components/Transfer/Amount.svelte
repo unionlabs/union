@@ -105,7 +105,7 @@ function setMaxAmount() {
             autocapitalize="none"
             pattern="^[0-9]*[.]?[0-9]*$"
             value={transfer.raw.amount}
-            class="h-12 text-center"
+            class="h-14 text-center text-lg"
             oninput={(event) => {
     const input = event.currentTarget
     const value = input.value

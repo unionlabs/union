@@ -13,7 +13,7 @@ export const URLS = () => {
       ? "graphql.union.build"
       : ENV() === "STAGING"
         ? "staging.graphql.union.build"
-        : "pink.graphql.union.build"
+        : "development.graphql.union.build"
 
   return {
     GRAPHQL: `https://${GRAPHQL_BASE}/v1/graphql`,

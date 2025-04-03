@@ -29,11 +29,11 @@ function selectChain(chain: Chain) {
       {#each chains.data.value as chain}
         <button
                 class={cn(
-            "flex items-center gap-2 justify-start px-2 py-1 rounded-md transition-colors cursor-pointer",
+            "flex flex-col items-center gap-2 justify-start px-2 py-4 rounded-md transition-colors cursor-pointer",
             (type === "source" && transfer.raw.source === chain.chain_id) ||
             (type === "destination" && transfer.raw.destination === chain.chain_id)
-              ? "bg-zinc-700 hover:bg-zinc-600 ring-1 ring-sky-500"
-              : "bg-zinc-800 hover:bg-zinc-600"
+              ? "bg-zinc-900 hover:bg-zinc-800 ring-1 ring-sky-500"
+              : "bg-zinc-900 hover:bg-zinc-800"
           )}
                 onclick={() => selectChain(chain)}
         >
@@ -41,7 +41,7 @@ function selectChain(chain: Chain) {
           {#if chain.universal_chain_id}
             {@const chainLogo = chainLogoMap.get(chain.universal_chain_id)}
             {#if chainLogo?.color}
-              <span class="w-5 h-5 flex items-center justify-center overflow-hidden">
+              <span class="w-10 h-10 flex items-center justify-center overflow-hidden">
                 <img src={chainLogo.color} alt="">
               </span>
             {/if}

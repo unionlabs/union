@@ -46,7 +46,7 @@ export const toDisplayName = (
 
 <button
         class={cn(
-                "flex flex-col items-start w-full overflow-x-scroll px-4 py-1 text-left hover:bg-zinc-700 transition-colors border-b border-zinc-700 cursor-pointer",
+                "flex flex-col items-start w-full overflow-x-scroll px-4 py-3 text-left  bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer rounded",
                 isSelected ? "bg-zinc-700 text-white" : "text-zinc-300"
               )}
         onclick={() => {
@@ -54,7 +54,7 @@ export const toDisplayName = (
          selectAsset(token)
         }}
 >
-    <div class="flex items-center flex gap-1 items-center overflow-x-scroll text-xs text-zinc-200">
+    <div class="flex items-center flex gap-1 items-center overflow-x-scroll text-sm text-zinc-200">
       <div class="mr-1">
         {#if isLoading}
           <Skeleton class="h-3 w-16"/>

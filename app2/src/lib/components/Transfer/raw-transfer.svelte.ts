@@ -183,7 +183,7 @@ export class RawTransferSvelte {
 
     // Handle dependent field resets
     const resetMapping: Partial<Record<keyof FormFields, Array<keyof FormFields>>> = {
-      source: ["asset", "amount", "destination"],
+      source: ["asset", "amount"],
       asset: ["amount"],
       destination: ["receiver"]
     } as const
