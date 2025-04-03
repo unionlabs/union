@@ -69,12 +69,13 @@ function getArrowSpan(
   // Don't draw arrow if on same column
   if (currentColumn === nextColumn) return null
 
-  const start = currentColumn * 2 + 2
-  const end = nextColumn * 2 + 2
+  const isLeft = nextColumn < currentColumn
+  const start = currentColumn * 2 + (isLeft ? 2 : 3)
+  const end = nextColumn * 2 + (isLeft ? 2 : 3)
 
   return {
     gridColumn: `${Math.min(start, end)} / ${Math.max(start, end)}`,
-    isLeft: nextColumn < currentColumn
+    isLeft
   }
 }
 </script>
@@ -94,6 +95,13 @@ function getArrowSpan(
     
       <!-- Chain headers -->
       <div class="grid mb-4 size-full" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
+
+
+        <!-- Background grid with lines -->
+        {#each Array(positions.columns) as _, i}
+          <div class="bg-zinc-800" style="grid-row: 2 / 100; grid-column: {i * 2 + 2}" ></div>
+        {/each}
+        
         <!-- Chain names with lines -->
         {#if Option.isSome(leftChain)}
           <div class="text-center col-start-1 col-span-3 row-1">
@@ -112,24 +120,27 @@ function getArrowSpan(
             <ChainComponent chain={rightChain.value} />
           </div>
         {/if}
-
-        <!-- Background grid with lines -->
-        {#each Array(positions.columns) as _, i}
-          <div class="bg-zinc-800" style="grid-row: -1 / 5; grid-column: {i * 2 + 2}" ></div>
-        {/each}
-
         <!-- Traces and arrows -->
 
         {#each packetTraces as trace, i}
           {@const chain = getChain(chainsList, trace.chain.universal_chain_id)}
           {@const column = getTraceColumn(trace, positions)}
           {@const nextTrace = packetTraces[i + 1]}
+          {@const prevTrace = Option.fromNullable(i > 0 ? packetTraces[i - 1] : null)}
           {@const arrowSpan = getArrowSpan(trace, nextTrace, positions)}
           
             <!-- Trace card -->
-            <div class=" p-2 rounded-lg col-span-3 flex justify-center" 
-              style="grid-column-start: {column * 2 + 1}  ">
-              <div class="bg-zinc-800 rounded px-4 py-2">
+
+            <div class=" p-2 rounded-lg col-span-3 flex flex-col items-center" 
+              style="grid-row: {i * 2 + 2}; grid-column-start: {column * 2 + 1}  ">
+            {#if Option.isSome(trace.height) && !(Option.isSome(prevTrace) && Option.isSome(prevTrace.value.height) && prevTrace.value.height.value === trace.height.value)}
+              <div class="text-zinc-400">{trace.height.value}</div>
+              {#if Option.isSome(trace.timestamp)}
+                <DateTimeComponent value={trace.timestamp.value} />
+              {/if}
+
+            {/if}
+              <div class="bg-zinc-800 rounded px-2 py-1">
                 <div class="flex items-center justify-between">
                   <span class="font-bold text-zinc-900 dark:text-zinc-100">
                     {toTraceName(trace.type)}
@@ -137,8 +148,7 @@ function getArrowSpan(
                 </div>
 
                 {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
-                  <div class="text-sm text-zinc-600 dark:text-zinc-400">
-                    <p><DateTimeComponent value={trace.timestamp.value} /> <span>in block {trace.height.value}</span></p>
+                  <div class="text-sm text-zinc-400">
                     <TransactionHashComponent hash={trace.transaction_hash.value} />
                   </div>
                 {/if}
@@ -146,15 +156,14 @@ function getArrowSpan(
             </div>
 
             {#if arrowSpan}
-              <div style="grid-column: {arrowSpan.gridColumn};">
-                  {JSON.stringify(arrowSpan)}
-                  <div class="w-full h-0.5 bg-zinc-400 dark:bg-zinc-600">
-                    <!--<div class="absolute {arrowSpan.isLeft ? 'left-0' : 'right-0'} top-[-4px] border-[5px] border-transparent {arrowSpan.isLeft ? 'border-r-zinc-400 dark:border-r-zinc-600' : 'border-l-zinc-400 dark:border-l-zinc-600'}" ></div>-->
+              <div class="flex items-center {arrowSpan.isLeft ? 'flex-row-reverse' : 'flex-row'}" style="grid-row: {i * 2 + 3}; grid-column: {arrowSpan.gridColumn};">
+                  <div class="flex-1 h-0.5 bg-zinc-600">
                   </div>
+                    <div class="border-[5px] border-transparent {arrowSpan.isLeft ? 'dark:border-r-zinc-600' : 'border-l-zinc-400 dark:border-l-zinc-600'}" ></div>
               </div>
             {/if}
         {/each}
-        
+       
       </div>
 
       <!--
@@ -171,10 +180,12 @@ function getArrowSpan(
           {@const arrowSpan = getArrowSpan(trace, nextTrace, positions)}
           
           <div class="contents">
-            <div class=" p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800" 
+
+            <div>hi{trace.height.value}</div>
+            <div class=" p-2 rounded-lg bg-zinc-100 dark:bg-red-800" 
               style="grid-row: {i + 1}; grid-column: {column * 2 - 1}">
               <div class="flex items-center justify-between">
-                <span class="font-bold text-zinc-900 dark:text-zinc-100">
+               <span class="font-bold text-zinc-900 dark:text-zinc-100">
                   {toTraceName(trace.type)}
                 </span>
               </div>
