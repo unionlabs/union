@@ -25,7 +25,7 @@ const toTraceName = (type: string) =>
 {#if packetTraces.length > 0 && Option.isSome(chains.data)}
 {@const chainsList = chains.data.value}
   <div class="relative">
-    <Label>Transfer Timeline</Label>
+    <Label>Packet Trace</Label>
     <div class="mt-4 space-y-8">
       {#each packetTraces as trace, i}
         {@const chain = getChain(
