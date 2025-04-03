@@ -149,9 +149,6 @@
           "consensus_type": "ethereum",
           "ibc_interface": "ibc-cosmwasm",
           "ibc_spec_id": "ibc-union"
-        },
-        "config": {
-          "chain_spec": "minimal"
         }
       }
     ],
