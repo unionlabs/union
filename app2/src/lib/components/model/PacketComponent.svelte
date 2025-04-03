@@ -313,7 +313,7 @@ const destinationChain = $derived(
     {#if Option.isSome(packetDetails.data.value.acknowledgement)}
       <div class="p-4">
         <Label>Acknowledgement</Label>
-        <pre class="overflow-auto text-xs mt-2">{JSON.stringify(packetDetails.data.value.acknowledgement.value, null, 2)}</pre>
+        <LongMonoWord class="mt-2">{packetDetails.data.value.acknowledgement.value}</LongMonoWord>
       </div>
     {/if}
   </div>
