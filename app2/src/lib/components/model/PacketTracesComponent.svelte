@@ -93,7 +93,7 @@ function getArrowSpan(
     <Label>Packet Trace</Label>
     
       <!-- Chain headers -->
-      <div class=" grid mb-4 size-full" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
+      <div class="grid mb-4 size-full" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
         <!-- Chain names with lines -->
         {#if Option.isSome(leftChain)}
           <div class="text-center col-start-1 col-span-3 row-1">
@@ -115,7 +115,7 @@ function getArrowSpan(
 
         <!-- Background grid with lines -->
         {#each Array(positions.columns) as _, i}
-          <div class="bg-zinc-800 row-start-1 row-span-10" style="grid-column: {i * 2 + 2}" ></div>
+          <div class="bg-zinc-800" style="grid-row: -1 / 5; grid-column: {i * 2 + 2}" ></div>
         {/each}
 
         <!-- Traces and arrows -->
@@ -146,7 +146,7 @@ function getArrowSpan(
             </div>
 
             {#if arrowSpan}
-              <div class="MARKER" style="grid-column: {arrowSpan.gridColumn};">
+              <div style="grid-column: {arrowSpan.gridColumn};">
                   {JSON.stringify(arrowSpan)}
                   <div class="w-full h-0.5 bg-zinc-400 dark:bg-zinc-600">
                     <!--<div class="absolute {arrowSpan.isLeft ? 'left-0' : 'right-0'} top-[-4px] border-[5px] border-transparent {arrowSpan.isLeft ? 'border-r-zinc-400 dark:border-r-zinc-600' : 'border-l-zinc-400 dark:border-l-zinc-600'}" ></div>-->
