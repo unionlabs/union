@@ -1,4 +1,5 @@
-use std::{collections::BTreeSet, num::NonZeroU32};
+use alloc::{boxed::Box, collections::BTreeSet, string::ToString};
+use core::num::NonZeroU32;
 
 use alloy::sol_types::SolValue;
 #[cfg(not(feature = "library"))]

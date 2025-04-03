@@ -1,4 +1,5 @@
-use std::{collections::BTreeSet, marker::PhantomData};
+use alloc::{collections::BTreeSet, string::String};
+use core::marker::PhantomData;
 
 use cosmwasm_std::{Addr, StdError, StdResult};
 use depolama::{KeyCodec, Prefix, Store, ValueCodec};

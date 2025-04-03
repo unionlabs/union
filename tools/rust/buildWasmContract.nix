@@ -9,8 +9,8 @@
   gitRev,
 }:
 let
-  # CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
-  CARGO_BUILD_TARGET = "wasm32v1-none";
+  CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+  # CARGO_BUILD_TARGET = "wasm32v1-none";
   DEFAULT_MAX_SIZE = 800 * 1024;
 
   dashesToUnderscores = builtins.replaceStrings [ "-" ] [ "_" ];

@@ -14,7 +14,7 @@ const EXPECTED_HASH_OP: HashOp = HashOp::Sha256;
 pub enum TryFromInnerOpError {
     #[error("unable to decode cosmos::ics23::InnerOp")]
     Cosmos(#[from] crate::cosmos::ics23::inner_op::TryFromInnerOpError),
-    #[error("hash must be {}, found {0}", EXPECTED_HASH_OP)]
+    #[error("hash must be {EXPECTED_HASH_OP}, found {0}")]
     InvalidHash(HashOp),
 }
 

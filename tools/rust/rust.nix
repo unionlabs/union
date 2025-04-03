@@ -79,14 +79,70 @@ _: {
           targets ? [ ],
           channel ? defaultChannel,
         }:
-        mkToolchain {
-          inherit targets channel;
-          components = with availableComponents; [
-            rustc
-            cargo
-            rust-src
-          ];
-        };
+        dbg (
+          (mkToolchain {
+            inherit targets channel;
+            components = with availableComponents; [
+              rustc
+              cargo
+              rust-src
+            ];
+          }).overrideAttrs
+            (
+              old:
+              old
+              // {
+                paths = map (
+                  path:
+                  if path.name == "rust-src-1.87.0-nightly-2025-03-28-aarch64-unknown-linux-gnu" then
+                    (path.overrideAttrs (
+                      old:
+                      old
+                      // {
+                        # pname = "OOGABOOGA";
+                        prePatch = ''
+                          ls -alh rust-src/lib
+                          echo $src
+                          echo $out
+                        '';
+                        patches = [
+                          ./0001-fix-include-dlmalloc-when-target_os-none.patch
+                        ];
+                      }
+                    ))
+                  else
+                    path
+                ) old.paths;
+              }
+              # dbg (
+              #   pkgs.lib.attrsets.updateManyAttrsByPath [
+              #     {
+              #       path = [
+              #         "passthru"
+              #         "availableComponents"
+              #         "rust-src"
+              #       ];
+              #       update = (
+              #         rust-src:
+              #         rust-src.overrideAttrs (
+              #           old:
+              #           old
+              #           // {
+              #             # pname = "OOGABOOGA";
+              #             prePatch = ''
+              #               ls -alh .
+              #             '';
+              #             patches = [
+              #               ./0001-fix-include-dlmalloc-when-target_os-none.patch
+              #             ];
+              #           }
+              #         )
+              #       );
+              #     }
+              #   ] old
+              # )
+            )
+        );
 
       mkNightly =
         {

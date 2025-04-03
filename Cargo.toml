@@ -361,7 +361,7 @@ chrono                   = { version = "0.4.26", default-features = false }
 clap                     = { version = "4.3.0", default-features = false, features = ["std"] }       # clap has a fake std feature that is required to be enabled by default
 color-eyre               = { version = "0.6.2", default-features = false }
 cosmwasm-schema          = { version = "2.1.4", default-features = false }
-cosmwasm-std             = { version = "2.1.4", default-features = false, features = ["std"] }       # cosmwasm-std has a fake std feature that is requried to be enabled by default
+cosmwasm-std             = { version = "2.2.2", default-features = false, features = ["std"] }       # cosmwasm-std has a fake std feature that is requried to be enabled by default
 crossbeam-queue          = { version = "0.3.8", default-features = false }
 cw-storage-plus          = { version = "2.0.0", default-features = false }
 dashmap                  = { version = "5.5.3", default-features = false }
@@ -393,7 +393,7 @@ sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.2", default-features = false }
 static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                    # https://github.com/nvzqz/static-assertions/pull/28
 subtle-encoding          = { version = "0.5.1", default-features = false }
-thiserror                = { version = "1.0.0", default-features = false }
+thiserror                = { version = "2.0.0", default-features = false }
 time                     = { version = "0.3.36", default-features = false }                          # Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
 tokio                    = { version = "1.33.0", default-features = false }
 toml                     = { version = "0.8.8", default-features = false }
@@ -405,6 +405,7 @@ typenum                  = { version = "1.17.0", default-features = false }
 [patch."crates-io"]
 # arbitrary       = { git = "https://github.com/unionlabs/arbitrary" }
 serde-json-wasm = { git = "https://github.com/benluelo/serde-json-wasm", branch = "impl-collect-str" }
+cosmwasm-std = { git = "https://github.com/benluelo/cosmwasm", branch = "no-std-v2" }
 # parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
 
 # https://aptos.dev/en/build/sdks/rust-sdk

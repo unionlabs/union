@@ -1,4 +1,4 @@
-#![cfg_attr(not(test), warn(clippy::unwrap_used))]
+#![cfg_attr(not(test), no_std, warn(clippy::unwrap_used))]
 
 pub mod contract;
 pub mod state;
