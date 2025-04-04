@@ -13,7 +13,6 @@ use unionlabs::{
 )]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum ClientState {
-    #[serde(alias = "V1")]
     V1(ClientStateV1),
 }
 
