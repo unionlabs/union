@@ -90,7 +90,7 @@ function getArrowSpan(
   .pipe(Option.flatMap((id) => getChain(chainsList, id)))}
 {@const rightChain = Option.fromNullable(positions.right?.universal_chain_id)
   .pipe(Option.flatMap((id) => getChain(chainsList, id)))}
-  <div class="mt-12">
+  <div class="mt-12 overflow-hidden">
       <div class="grid mt-4 size-[120%] mx-[-10%]" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
 
 
