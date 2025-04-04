@@ -14188,6 +14188,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucs04"
+version = "0.0.0"
+dependencies = [
+ "heck 0.5.0",
+ "serde_json",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "uint"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
