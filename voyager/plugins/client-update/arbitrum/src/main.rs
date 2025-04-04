@@ -35,7 +35,7 @@ use voyager_message::{
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
     FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, conc, data, noop, pass::PassResult, promise, seq, BoxDynError, Op, Visit};
+use voyager_vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit};
 
 use crate::{
     call::{FetchL2Update, FetchUpdate, ModuleCall},
@@ -416,33 +416,24 @@ impl Module {
             )
             .await?;
 
-        // client update data
+        let l1_latest_height = voyager_client
+            .query_latest_height(l1_client_meta.counterparty_chain_id.clone(), true)
+            .await?;
 
-        // the L1 height corresponding to the *exact* L2 height we're trying to update to
-        // note that this is not necessarily the height that we *will* update to, see below
-        let l1_height_of_l2_update_to = self
-            .l2_provider
-            .get_block(update_to.height().into())
-            .await
-            .unwrap()
-            .unwrap()
-            .other
-            // TODO: Arbitrum network type so we can avoid this
-            .get_deserialized::<U64>("l1BlockNumber")
-            .unwrap()
-            .unwrap()
-            .into_limbs()[0];
-
-        // the L2 block that was settled in a stakeOnNewNode transaction
-        // this is the block closest to, but not before, the requested update height
         let l2_settlement_block = finalized_l2_block_of_l1_height(
             &self.l1_provider,
             &self.l2_provider,
             self.l1_contract_address,
-            l1_height_of_l2_update_to,
+            l1_latest_height.height(),
         )
         .await
         .unwrap();
+
+        info!(
+            number = %l2_settlement_block.header.number,
+            extra_data = %l2_settlement_block.header.extra_data,
+            "l2_settlement_block"
+        );
 
         let l1_height_of_l2_settlement_block = l2_settlement_block
             .other
@@ -452,16 +443,13 @@ impl Module {
             .unwrap()
             .into_limbs()[0];
 
-        info!(
-            "l2 settlement block height {}",
-            l2_settlement_block.header.number
-        );
+        info!("l2 settlement block l1 height {l1_height_of_l2_settlement_block}");
 
         if l1_client_meta.counterparty_height.height() >= l1_height_of_l2_settlement_block {
             info!(
                 "l1 client {l1_client} (trusted height {l1_trusted_height}) \
-                    is already updated to a height >= the l1 height of closest \
-                    settlement l2 block {l1_height_of_l2_settlement_block}",
+                is already updated to a height >= the l1 height of closest \
+                settlement l2 block {l1_height_of_l2_settlement_block}",
                 l1_client = arbitrum_client_state.l1_client_id,
                 l1_trusted_height = l1_client_meta.counterparty_height,
             );
@@ -483,7 +471,7 @@ impl Module {
                         counterparty_chain_id: counterparty_chain_id.clone(),
                         client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
                         update_from: l1_client_meta.counterparty_height,
-                        update_to: Height::new(l2_settlement_block.header.number),
+                        update_to: l1_latest_height,
                     })],
                     [],
                     AggregateSubmitTxFromOrderedHeaders {
@@ -492,14 +480,23 @@ impl Module {
                         client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
                     },
                 ),
-                call(PluginMessage::new(
-                    self.plugin_name(),
-                    ModuleCall::from(FetchL2Update {
-                        update_from,
-                        counterparty_chain_id,
-                        client_id,
+                seq([
+                    call(WaitForTrustedHeight {
+                        chain_id: counterparty_chain_id.clone(),
+                        ibc_spec_id: IbcUnion::ID,
+                        client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
+                        height: l1_latest_height,
+                        finalized: false,
                     }),
-                )),
+                    call(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(FetchL2Update {
+                            update_from,
+                            counterparty_chain_id,
+                            client_id,
+                        }),
+                    )),
+                ]),
             ]))
         }
     }
