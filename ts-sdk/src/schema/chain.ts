@@ -1,11 +1,7 @@
 import { VIEM_CHAINS } from "../constants/viem-chains.js"
 import { Data, Effect, Option, Schema as S } from "effect"
 import type { Chain as ViemChain } from "viem"
-import type {
-  AddressCanonicalBytes,
-  AddressCosmosCanonical,
-  AddressCosmosDisplay
-} from "./address.ts"
+import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
 import { bech32, bytes } from "@scure/base"
 
 export const ChainId = S.String.pipe(S.brand("ChainId"))
@@ -117,7 +113,7 @@ export class Chain extends S.Class<Chain>("Chain")({
   }
 
   getDisplayAddress(
-    address: AddressCanonicalBytes
+    address: AddressCosmosCanonical
   ): Effect.Effect<string, NotACosmosChainError | CosmosAddressEncodeError> {
     switch (this.rpc_type) {
       case "cosmos":
