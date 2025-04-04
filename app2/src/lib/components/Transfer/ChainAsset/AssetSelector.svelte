@@ -1,75 +1,75 @@
 <script lang="ts">
-  import { Option } from "effect"
-  import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-  import { wallets } from "$lib/stores/wallets.svelte.ts"
-  import Skeleton from "$lib/components/ui/Skeleton.svelte"
-  import TransferAsset from "$lib/components/Transfer/ChainAsset/TransferAsset.svelte"
-  import { Token } from "@unionlabs/sdk/schema"
-  import {fade} from "svelte/transition"
-  import { tick } from "svelte"
+import { Option } from "effect"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import TransferAsset from "$lib/components/Transfer/ChainAsset/TransferAsset.svelte"
+import { Token } from "@unionlabs/sdk/schema"
+import { fade } from "svelte/transition"
+import { tick } from "svelte"
 
-  type Props = {
-    onSelect: () => void
+type Props = {
+  onSelect: () => void
+}
+
+const { onSelect }: Props = $props()
+
+let searchQuery = $state("")
+let searchOpen = $state(false)
+let searchInput: HTMLInputElement | null = null
+
+const isWalletConnected = $derived.by(() => {
+  if (Option.isNone(transfer.sourceChain)) return false
+  const addressOption = wallets.getAddressForChain(transfer.sourceChain.value)
+  return Option.isSome(addressOption)
+})
+
+const filteredTokens = $derived.by(() => {
+  if (Option.isNone(transfer.baseTokens)) return [] as Array<Token>
+
+  let tokensToShow: Array<Token>
+
+  if (isWalletConnected && Option.isSome(transfer.sortedBalances)) {
+    const sortedDenoms = transfer.sortedBalances.value.map(item => item.token.denom)
+    const baseTokens = transfer.baseTokens.value
+    const tokenMap = new Map(baseTokens.map(token => [token.denom, token]))
+    tokensToShow = sortedDenoms
+      .map(denom => tokenMap.get(denom))
+      .filter((token): token is Token => !!token)
+  } else {
+    tokensToShow = [...transfer.baseTokens.value]
   }
 
-  const { onSelect }: Props = $props()
+  if (!searchQuery) return tokensToShow
 
-  let searchQuery = $state("")
-  let searchOpen = $state(false)
-  let searchInput: HTMLInputElement | null = null;
+  const query = searchQuery.toLowerCase()
+  return tokensToShow.filter(
+    token =>
+      token.denom.toLowerCase().includes(query) ||
+      (token.representations[0]?.name?.toLowerCase() || "").includes(query) ||
+      (token.representations[0]?.symbol?.toLowerCase() || "").includes(query)
+  )
+})
 
-  const isWalletConnected = $derived.by(() => {
-    if (Option.isNone(transfer.sourceChain)) return false
-    const addressOption = wallets.getAddressForChain(transfer.sourceChain.value)
-    return Option.isSome(addressOption)
-  })
+function selectAsset(token: Token) {
+  transfer.raw.updateField("asset", token.denom)
+  onSelect()
+}
 
-  const filteredTokens = $derived.by(() => {
-    if (Option.isNone(transfer.baseTokens)) return [] as Array<Token>
+async function toggleSearch() {
+  searchOpen = !searchOpen
 
-    let tokensToShow: Array<Token>
-
-    if (isWalletConnected && Option.isSome(transfer.sortedBalances)) {
-      const sortedDenoms = transfer.sortedBalances.value.map(item => item.token.denom)
-      const baseTokens = transfer.baseTokens.value
-      const tokenMap = new Map(baseTokens.map(token => [token.denom, token]))
-      tokensToShow = sortedDenoms
-        .map(denom => tokenMap.get(denom))
-        .filter((token): token is Token => !!token)
-    } else {
-      tokensToShow = [...transfer.baseTokens.value]
+  if (searchOpen) {
+    // Wait for the input to be visible in the DOM
+    await tick()
+    // Focus the input once it opens
+    if (searchInput) {
+      searchInput.focus()
     }
-
-    if (!searchQuery) return tokensToShow
-
-    const query = searchQuery.toLowerCase()
-    return tokensToShow.filter(
-      token =>
-        token.denom.toLowerCase().includes(query) ||
-        (token.representations[0]?.name?.toLowerCase() || "").includes(query) ||
-        (token.representations[0]?.symbol?.toLowerCase() || "").includes(query)
-    )
-  })
-
-  function selectAsset(token: Token) {
-    transfer.raw.updateField("asset", token.denom)
-    onSelect()
+  } else {
+    searchQuery = ""
   }
-
-  async function toggleSearch() {
-    searchOpen = !searchOpen
-
-    if (!searchOpen) {
-      searchQuery = ""
-    } else {
-      // Wait for the input to be visible in the DOM
-      await tick()
-      // Focus the input once it opens
-      if (searchInput) {
-        searchInput.focus()
-      }
-    }
-  }
+}
 </script>
 
 <div class="h-full flex flex-col relative">

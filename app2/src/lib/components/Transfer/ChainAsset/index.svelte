@@ -1,64 +1,64 @@
 <script lang="ts">
-  import {fade, fly} from "svelte/transition"
-  import {onDestroy, onMount} from "svelte"
-  import ChainAssetButton from "$lib/components/Transfer/ChainAsset/ChainAssetButton.svelte"
-  import ChainSelector from "$lib/components/Transfer/ChainAsset/ChainSelector.svelte"
-  import AssetSelector from "$lib/components/Transfer/ChainAsset/AssetSelector.svelte"
-  import SharpChevronLeftIcon from "$lib/components/icons/SharpChevronLeftIcon.svelte";
-  import { crossfade } from 'svelte/transition';
+import { fade, fly } from "svelte/transition"
+import { onDestroy, onMount } from "svelte"
+import ChainAssetButton from "$lib/components/Transfer/ChainAsset/ChainAssetButton.svelte"
+import ChainSelector from "$lib/components/Transfer/ChainAsset/ChainSelector.svelte"
+import AssetSelector from "$lib/components/Transfer/ChainAsset/AssetSelector.svelte"
+import SharpChevronLeftIcon from "$lib/components/icons/SharpChevronLeftIcon.svelte"
+import { crossfade } from "svelte/transition"
 
-  type Props = {
-    type: "source" | "destination"
-  }
-  const {type}: Props = $props()
-  let open = $state(false)
-  let page: 1 | 2 = $state(1)
-  let previousPage: 1 | 2 = $state(1)
+type Props = {
+  type: "source" | "destination"
+}
+const { type }: Props = $props()
+let open = $state(false)
+let page: 1 | 2 = $state(1)
+let previousPage: 1 | 2 = $state(1)
 
-  function back() {
-    if (page === 2) {
-      previousPage = page;
-      page = 1;
-    } else {
-      open = false;
-    }
-  }
-
-  function onChainSelected() {
-    if (type === "destination") {
-      open = false
-    } else {
-      previousPage = page;
-      page = 2;
-    }
-  }
-
-  function onAssetSelected() {
-    previousPage = page;
+function back() {
+  if (page === 2) {
+    previousPage = page
     page = 1
+  } else {
     open = false
   }
+}
 
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape" && open) {
-      open = false
-    }
+function onChainSelected() {
+  if (type === "destination") {
+    open = false
+  } else {
+    previousPage = page
+    page = 2
   }
+}
 
-  onMount(() => {
-    document.addEventListener("keydown", handleKeydown)
-  })
+function onAssetSelected() {
+  previousPage = page
+  page = 1
+  open = false
+}
 
-  onDestroy(() => {
-    document.removeEventListener("keydown", handleKeydown)
-  })
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape" && open) {
+    open = false
+  }
+}
 
-  const [send, receive] = crossfade({
-    duration: 200,
-    fallback(node, params) {
-      return fly(node, { delay: 0, duration: 200, y: 20 });
-    }
-  });
+onMount(() => {
+  document.addEventListener("keydown", handleKeydown)
+})
+
+onDestroy(() => {
+  document.removeEventListener("keydown", handleKeydown)
+})
+
+const [send, receive] = crossfade({
+  duration: 200,
+  fallback(node) {
+    return fly(node, { delay: 0, duration: 200, y: 20 })
+  }
+})
 </script>
 {#if open}
   <div class="absolute inset-0 bg-zinc-925 z-40 flex" transition:fade={{ duration: 300 }}>
@@ -71,7 +71,7 @@
                 onclick={back}
                 class="mr-3 flex items-center text-zinc-400 hover:text-zinc-200 cursor-pointer h-full"
         >
-          <SharpChevronLeftIcon class="size-5"/>
+          <SharpChevronLeftIcon class="size-6"/>
           <div class="ml-2 flex items-center">
             <span class="text-lg text-zinc-100">Select</span>
             <div class="relative w-16 h-6 flex items-center ml-2">
