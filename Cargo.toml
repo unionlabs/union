@@ -212,6 +212,8 @@ members = [
 
   "lib/embed-commit",
   "lib/embed-commit/verifier",
+
+  "lib/ucs04",
 ]
 
 [workspace.package]
@@ -393,7 +395,7 @@ sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.2", default-features = false }
 static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                    # https://github.com/nvzqz/static-assertions/pull/28
 subtle-encoding          = { version = "0.5.1", default-features = false }
-thiserror                = { version = "1.0.0", default-features = false }
+thiserror                = { version = "2.0.0", default-features = false }
 time                     = { version = "0.3.36", default-features = false }                          # Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
 tokio                    = { version = "1.33.0", default-features = false }
 toml                     = { version = "0.8.8", default-features = false }

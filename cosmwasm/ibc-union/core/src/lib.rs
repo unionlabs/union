@@ -20,7 +20,7 @@ use unionlabs::primitives::Bytes;
     strum(prefix = "IBC_UNION_ERR_", serialize_all = "SCREAMING_SNAKE_CASE")
 )]
 pub enum ContractError {
-    #[error("{} std error: {0}", ContractErrorKind::from(self))]
+    #[error("{kind} std error: {0}", kind = ContractErrorKind::from(self))]
     Std(#[from] StdError),
     #[error("{} migration error", ContractErrorKind::from(self))]
     Migrate(#[from] UpgradeError),
@@ -94,7 +94,7 @@ pub enum ContractError {
     TimeoutTimestampNotReached,
     #[error("{} height timeout not yet reached", ContractErrorKind::from(self))]
     TimeoutHeightNotReached,
-    #[error("{} channel ({0}) does not exist", ContractErrorKind::from(self))]
+    #[error("{kind} channel ({0}) does not exist", kind = ContractErrorKind::from(self))]
     ChannelNotExist(u32),
     #[error(
         "{} packet has been already acknowledged",
