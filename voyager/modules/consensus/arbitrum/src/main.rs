@@ -103,7 +103,7 @@ impl ConsensusModuleServer for Module {
                 .query_latest_height(self.l1_chain_id.clone(), true)
                 .await?;
 
-            let block = arbitrum_client::finalized_execution_block_of_l1_height(
+            let block = arbitrum_client::finalized_l2_block_of_l1_height(
                 &self.l1_provider,
                 &self.l2_provider,
                 self.l1_contract_address,
@@ -143,7 +143,7 @@ impl ConsensusModuleServer for Module {
                 .query_latest_height(self.l1_chain_id.clone(), true)
                 .await?;
 
-            let block = arbitrum_client::finalized_execution_block_of_l1_height(
+            let block = arbitrum_client::finalized_l2_block_of_l1_height(
                 &self.l1_provider,
                 &self.l2_provider,
                 self.l1_contract_address,

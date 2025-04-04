@@ -40,7 +40,7 @@ pub async fn next_node_num_at_l1_height(
 }
 
 #[instrument(skip_all, fields(%l1_height, %l1_contract_address))]
-pub async fn finalized_execution_block_of_l1_height(
+pub async fn finalized_l2_block_of_l1_height(
     l1_provider: impl Provider,
     l2_provider: impl Provider<AnyNetwork>,
     l1_contract_address: H160,

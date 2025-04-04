@@ -23,7 +23,7 @@ pub struct ClientStateV1 {
 
     /// Client id of the client tracking the L1 that the chain this client tracks settles on
     pub l1_client_id: ClientId,
-    pub l1_latest_height: u64,
+
     /// Rollup contract on the L1
     pub l1_contract_address: H160,
 

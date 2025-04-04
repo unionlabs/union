@@ -14998,6 +14998,7 @@ dependencies = [
  "enumorph",
  "ethereum-light-client-types",
  "futures",
+ "ibc-union-spec",
  "jsonrpsee",
  "macros",
  "serde",

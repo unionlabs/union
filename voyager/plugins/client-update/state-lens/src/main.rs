@@ -13,7 +13,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use state_lens_light_client_types::Header;
 use tracing::{debug, info, instrument};
-use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
     callback::AggregateSubmitTxFromOrderedHeaders,
@@ -135,29 +135,13 @@ impl Module {
 
         debug!(?state_lens_client_state_info);
 
-        let state_lens_client_state_json = voyager_client
-            .decode_client_state::<IbcUnion>(
+        let state_lens_client_state = voyager_client
+            .decode_client_state::<IbcUnion, StateLensClientState>(
                 state_lens_client_state_info.client_type.clone(),
                 state_lens_client_state_info.ibc_interface,
                 raw_state_lens_client_state,
             )
             .await?;
-
-        debug!(%state_lens_client_state_json);
-
-        let state_lens_client_state = serde_json::from_value::<
-            state_lens_light_client_types::ClientState<serde_json::Map<String, serde_json::Value>>,
-        >(state_lens_client_state_json)
-        .map_err(|e| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "unable to deserialize state lens client state: {}",
-                    ErrorReporter(e)
-                ),
-                None::<()>,
-            )
-        })?;
 
         debug!(?state_lens_client_state);
 

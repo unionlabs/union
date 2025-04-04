@@ -20,7 +20,7 @@ pub enum Error {
     InvalidL2Proof(#[source] evm_storage_verifier::error::Error),
 }
 
-pub fn verify_header(
+pub fn verify_header_v1(
     client_state: &ClientStateV1,
     header: &Header,
     l1_state_root: H256,
@@ -34,7 +34,7 @@ pub fn verify_header(
     )
     .map_err(Error::InvalidContractAddressProof)?;
 
-    // Verify that the L1 `ClientState.l1_next_node_num_slot` is part of the L1 account root
+    // Verify that the L1 `ClientState.l1_next_node_num_slot` is part of the L1 Rollup account root
     verify_storage_proof(
         header.l1_account_proof.storage_root,
         client_state.l1_next_node_num_slot,
@@ -54,7 +54,7 @@ pub fn verify_header(
         )
     };
 
-    // Verify that the L1 `_nodes[ClientState.l1_nodes_slot].confirmData` is part of the L1 account root
+    // Verify that the L1 `_nodes[ClientState.l1_nodes_slot].confirmData` is part of the L1 Rollup account root
     let node_confirm_data_slot = nodes_confirm_data_mapping_key(
         client_state.l1_nodes_slot,
         node_num,
@@ -95,84 +95,3 @@ pub fn nodes_confirm_data_mapping_key(
 ) -> U256 {
     Slot::Mapping(&Slot::Offset(slot), MappingKey::Uint64(node_num)).slot() + confirm_data_offset
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use std::path::Path;
-
-//     use hex_literal::hex;
-//     use serde::de::DeserializeOwned;
-//     use unionlabs::{
-//         encoding::{DecodeAs, EncodeAs, Proto},
-//         ibc::lightclients::arbitrum::header::Header,
-//     };
-
-//     use crate::verify_header;
-
-//     fn read_json<T: DeserializeOwned>(path: impl AsRef<Path>) -> T {
-//         serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
-//     }
-
-//     // #[test]
-//     // fn test_update_header() {
-//     //     let arbitrum_client_state =
-//     //         read_json("/home/ben/projects/union/union/arb-client-state.json");
-//     //     let arbitrum_header: Header = read_json("/home/ben/projects/union/union/arb-header.json");
-
-//     //     let proto_header = arbitrum_header.clone().encode_as::<Proto>();
-//     //     let rt_header = Header::decode_as::<Proto>(&proto_header).unwrap();
-
-//     //     std::fs::write(
-//     //         "/home/ben/projects/union/union/arb-header-rt.json",
-//     //         serde_json::to_string_pretty(&rt_header).unwrap(),
-//     //     )
-//     //     .unwrap();
-
-//     //     assert_eq!(arbitrum_header, rt_header);
-
-//     //     let res = verify_header(
-//     //         arbitrum_client_state,
-//     //         arbitrum_header,
-//     //         hex!("2b06d9a1b1e74dc203face3a78f8b0fbaf2c07aca9d9520cf75ea3b6682bff93").into(),
-//     //     );
-
-//     //     let () = res.map_err(error_reporter::Report::new).unwrap();
-
-//     //     // assert!(matches!(res, Ok(())));
-//     // }
-
-//     // #[test]
-//     // fn test_l2_contract_slot_exist() {
-//     //     let proof: Proof =
-//     //         serde_json::from_str(&std::fs::read_to_string("tests/arbitrum_proof.json").unwrap())
-//     //             .unwrap();
-//     //     assert!(matches!(
-//     //         verify_zktrie_storage_proof(
-//     //             H256(hex!(
-//     //                 "1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0"
-//     //             )),
-//     //             proof.key.to_be_bytes().into(),
-//     //             &proof.value.to_be_bytes(),
-//     //             &proof.proof
-//     //         ),
-//     //         Ok(())
-//     //     ))
-//     // }
-
-//     // #[test]
-//     // fn test_l2_contract_slot_absent() {
-//     //     let proof: Proof =
-//     //         serde_json::from_str(&std::fs::read_to_string("tests/arbitrum_absent.json").unwrap())
-//     //             .unwrap();
-//     //     assert!(matches!(
-//     //         verify_zktrie_storage_absence(
-//     //             H256(hex!(
-//     //                 "1b52888cae05bdba27f8470293a7d2bc3b9a9c822d96affe05ef243e0dfd44a0"
-//     //             )),
-//     //             proof.key.to_be_bytes().into(),
-//     //             &proof.proof
-//     //         ),
-//     //         Ok(())
-//     //     ))
-//     // }
-// }
