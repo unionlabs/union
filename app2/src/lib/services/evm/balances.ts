@@ -78,9 +78,9 @@ export const fetchEvmBalance = ({
     const client = yield* getPublicClient(chain)
     const decodedDenom = yield* fromHexString(tokenAddress)
 
-    yield* Effect.log(
-      `fetching balance for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`
-    )
+    // yield* Effect.log(
+    //   `fetching balance for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`
+    // )
 
     const fetchBalance =
       decodedDenom === "native"

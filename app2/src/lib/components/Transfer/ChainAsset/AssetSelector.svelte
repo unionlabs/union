@@ -1,11 +1,24 @@
 <script lang="ts">
-import { Option } from "effect"
+import {
+  Chunk,
+  Effect,
+  Fiber,
+  Record as R,
+  FiberStatus,
+  Option,
+  pipe,
+  Schedule,
+  Stream
+} from "effect"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import Input from "$lib/components/ui/Input.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import TransferAsset from "$lib/components/Transfer/ChainAsset/TransferAsset.svelte"
 import { Token } from "@unionlabs/sdk/schema"
+import { balancesStore, denomFromChainKey, type BalanceKey } from "$lib/stores/balances.svelte"
+import type { Tags } from "effect/Types"
+import { SvelteMap } from "svelte/reactivity"
 
 type Props = {
   onSelect: () => void
@@ -19,6 +32,31 @@ const isWalletConnected = $derived.by(() => {
   if (Option.isNone(transfer.sourceChain)) return false
   const addressOption = wallets.getAddressForChain(transfer.sourceChain.value)
   return Option.isSome(addressOption)
+})
+
+let statuses = $state(new SvelteMap<BalanceKey, Tags<FiberStatus.FiberStatus>>())
+
+const statusMap = $derived(pipe(statuses, R.fromEntries, R.mapKeys(denomFromChainKey)))
+
+$effect(() => {
+  const watcher = balancesStore.fiberMapStatuses$.pipe(
+    Stream.runCollect,
+    Effect.flatMap(chunk =>
+      Effect.sync(() => {
+        if (Chunk.isNonEmpty(chunk)) {
+          statuses = new SvelteMap(chunk)
+        }
+      })
+    ),
+    Effect.repeat(Schedule.spaced("1 second")),
+    Effect.runFork
+  )
+
+  return () => {
+    console.log("[AssetSelector] cleaning up...")
+    Effect.runPromise(Fiber.interrupt(watcher))
+    // balancesStore.stopFetching();
+  }
 })
 
 const filteredTokens = $derived.by(() => {
@@ -69,48 +107,56 @@ function selectAsset(token: Token) {
 <div class="p-4 border-y border-zinc-700">
   <!-- Search Bar -->
   <Input
-          type="text"
-          placeholder="Search assets..."
-          disabled={!Option.isSome(transfer.sourceChain)}
-          value={searchQuery}
-          oninput={(e) => (searchQuery = (e.currentTarget as HTMLInputElement).value)}
+    type="text"
+    placeholder="Search assets..."
+    disabled={!Option.isSome(transfer.sourceChain)}
+    value={searchQuery}
+    oninput={(e) => (searchQuery = (e.currentTarget as HTMLInputElement).value)}
   />
 </div>
 
 <div class="overflow-y-scroll mb-12">
   <div class="w-full h-full">
-      {#if Option.isNone(transfer.sourceChain)}
-        <div class="flex items-center justify-center text-zinc-500 p-8">
-          Please select a source chain first
-        </div>
-      {:else if Option.isNone(transfer.baseTokens)}
-        <div>
-          {#each Array(5) as _, i}
-            <div class="flex items-center w-full px-4 py-2 border-b border-zinc-700">
-              <div class="flex-1 min-w-0">
-                <div class="mb-1">
-                  <Skeleton class="h-4 w-24" randomWidth={true}/>
-                </div>
-                <Skeleton class="h-3 w-32" randomWidth={true}/>
+    {#if Option.isNone(transfer.sourceChain)}
+      <div class="flex items-center justify-center text-zinc-500 p-8">
+        Please select a source chain first
+      </div>
+    {:else if Option.isNone(transfer.baseTokens)}
+      <div>
+        {#each Array(5) as _, i}
+          <div
+            class="flex items-center w-full px-4 py-2 border-b border-zinc-700"
+          >
+            <div class="flex-1 min-w-0">
+              <div class="mb-1">
+                <Skeleton class="h-4 w-24" randomWidth={true} />
               </div>
-              <div class="ml-2">
-                <Skeleton class="h-4 w-4"/>
-              </div>
+              <Skeleton class="h-3 w-32" randomWidth={true} />
             </div>
-          {/each}
-        </div>
-      {:else if filteredTokens.length === 0}
-        <div class="flex items-center justify-center text-zinc-500 p-8">
-          {searchQuery ? `No assets found matching "${searchQuery}"` : "No tokens found for this chain"}
-        </div>
-      {:else}
-        <div>
-          {#each filteredTokens as token}
-            {#key token.denom}
-              <TransferAsset {token} {selectAsset} />
-            {/key}
-          {/each}
-        </div>
-      {/if}
+            <div class="ml-2">
+              <Skeleton class="h-4 w-4" />
+            </div>
+          </div>
+        {/each}
+      </div>
+    {:else if filteredTokens.length === 0}
+      <div class="flex items-center justify-center text-zinc-500 p-8">
+        {searchQuery
+          ? `No assets found matching "${searchQuery}"`
+          : "No tokens found for this chain"}
+      </div>
+    {:else}
+      <div>
+        {#each filteredTokens as token}
+          {#key token.denom}
+            <TransferAsset
+              {token}
+              {selectAsset}
+              status={statusMap[token.denom] ?? "NA"}
+            />
+          {/key}
+        {/each}
+      </div>
+    {/if}
   </div>
 </div>

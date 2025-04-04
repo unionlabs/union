@@ -93,9 +93,9 @@ export const fetchCosmosBalance = ({
     const displayAddress = yield* chain.toCosmosDisplay(walletAddress)
     const decodedDenom = yield* fromHexString(tokenAddress)
 
-    yield* Effect.log(
-      `fetching balance for ${chain.universal_chain_id}:${displayAddress}:${decodedDenom}`
-    )
+    // yield* Effect.log(
+    //   `fetching balance for ${chain.universal_chain_id}:${displayAddress}:${decodedDenom}`
+    // )
 
     const fetchBalance = decodedDenom.startsWith(`${chain.addr_prefix}1`)
       ? fetchCosmosCw20Balance({
@@ -109,7 +109,7 @@ export const fetchCosmosBalance = ({
           denom: decodedDenom
         })
 
-    let balance = yield* Effect.retry(fetchBalance, cosmosBalanceRetrySchedule)
+    const balance = yield* Effect.retry(fetchBalance, cosmosBalanceRetrySchedule)
 
     return RawTokenBalance.make(Option.some(TokenRawAmount.make(balance)))
   }).pipe(
