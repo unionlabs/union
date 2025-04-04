@@ -116,7 +116,7 @@ impl Symlinker {
 pub enum CurrentVersionError {
     #[error("cannot read current link")]
     ReadLink(#[from] io::Error),
-    #[error("invalid bundle structure: binary parent directory is not a version {0}")]
+    #[error("invalid bundle structure: binary parent directory is not a version {0:?}")]
     InvalidBundleStructure(PathBuf),
 }
 
