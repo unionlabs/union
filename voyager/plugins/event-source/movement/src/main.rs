@@ -17,7 +17,6 @@ use ibc_union_spec::{
         PacketSend, UpdateClient, WriteAck,
     },
     path::{ChannelPath, ConnectionPath},
-    log_event,
     ChannelId, ClientId, Connection, ConnectionState, IbcUnion,
 };
 use jsonrpsee::{
@@ -762,7 +761,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 let voyager_client = e.try_get::<VoyagerClient>()?;
 
                 // Log the full event using ibc_union_spec::log_event
-                log_event(&full_event, &self.chain_id);
+                ibc_union_spec::log_event(&full_event, &self.chain_id);
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
