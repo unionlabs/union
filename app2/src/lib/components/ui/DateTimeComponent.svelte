@@ -55,7 +55,7 @@ const formatDate = (value: DateTime.DateTime) =>
     if (!showDate) {
       return showTime ? DateTime.formatIntl(zonedValue, timeFormat) : ""
     }
-    
+
     return showTime
       ? `${DateTime.formatIntl(zonedValue, dateFormat)} ${DateTime.formatIntl(zonedValue, timeFormat)}`
       : `${DateTime.formatIntl(zonedValue, dateFormat)}`

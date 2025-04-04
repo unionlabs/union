@@ -67,7 +67,7 @@
 - Never use `$:` statements or `$store` syntax
 - Use `$state()`, `$derived()`, and `$effect()` instead
 - Don't legacy syntax like `on:input` / `on:click`, use `oninput` and `onclick` instead.
-- Don't use self closing div tags (`<div/>`). intead do `<div></div>`
+- Don't use self closing div tags (`<div/>`). instead do `<div></div>`
 
 ### Props
 
