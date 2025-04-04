@@ -24,19 +24,13 @@ const EXPECTED_LENGTH: LengthOp = LengthOp::VarProto;
 pub enum TryFromExistenceProofError {
     #[error("unable to decode cosmos::ics23::ExistenceProof")]
     Cosmos(#[from] crate::cosmos::ics23::existence_proof::TryFromExistenceProofError),
-    #[error(
-        "invalid leaf.prehash_key, expected {} but found {0}",
-        EXPECTED_PREHASH_KEY
-    )]
+    #[error("invalid leaf.prehash_key, expected {EXPECTED_PREHASH_KEY} but found {0}")]
     InvalidPrehashKey(HashOp),
-    #[error(
-        "invalid leaf.prehash_value, expected {} but found {0}",
-        EXPECTED_PREHASH_VALUE
-    )]
+    #[error("invalid leaf.prehash_value, expected {EXPECTED_PREHASH_VALUE} but found {0}")]
     InvalidPrehashValue(HashOp),
-    #[error("invalid leaf.hash, expected {} but found {0}", EXPECTED_HASH)]
+    #[error("invalid leaf.hash, expected {EXPECTED_HASH} but found {0}")]
     InvalidHash(HashOp),
-    #[error("invalid leaf.length, expected {} but found {0}", EXPECTED_LENGTH)]
+    #[error("invalid leaf.length, expected {EXPECTED_LENGTH} but found {0}")]
     InvalidLength(LengthOp),
 }
 

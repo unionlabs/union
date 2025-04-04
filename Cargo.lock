@@ -1404,7 +1404,7 @@ dependencies = [
  "bcs 0.1.6",
  "hex-literal",
  "sha3 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -1468,7 +1468,7 @@ dependencies = [
  "ibc-union-msg",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -1503,7 +1503,7 @@ dependencies = [
  "evm-storage-verifier",
  "rlp",
  "sha3 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -2468,7 +2468,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
@@ -2484,7 +2484,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "ssz",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "typenum",
  "unionlabs",
 ]
@@ -2546,7 +2546,7 @@ dependencies = [
  "serde_json",
  "tendermint-light-client",
  "tendermint-verifier",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -2903,7 +2903,7 @@ dependencies = [
  "ibc-union-msg",
  "ics23",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -2937,7 +2937,7 @@ dependencies = [
  "rlp",
  "sha3 0.10.8",
  "ssz",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -3496,7 +3496,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -3515,7 +3515,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -3552,7 +3552,7 @@ dependencies = [
  "lazy_static",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -3569,7 +3569,7 @@ dependencies = [
  "protos",
  "serde",
  "serde-utils",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -3619,7 +3619,7 @@ dependencies = [
  "serde-utils",
  "sha2 0.10.8",
  "tendermint-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tonic 0.10.2",
  "tracing",
@@ -3831,7 +3831,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -3846,7 +3846,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -4599,7 +4599,7 @@ dependencies = [
  "schemars",
  "semver 1.0.26",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -4616,7 +4616,7 @@ dependencies = [
  "hex-literal",
  "ibc-union-spec",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "token-factory-api",
  "ucs03-zkgm-token-minter-api",
  "unionlabs",
@@ -5467,7 +5467,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -5482,7 +5482,7 @@ dependencies = [
  "ethereum-sync-protocol-types",
  "hex-literal",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -5498,7 +5498,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "ssz",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "typenum",
  "unionlabs",
 ]
@@ -5544,7 +5544,7 @@ dependencies = [
  "tendermint-light-client",
  "tendermint-light-client-types",
  "tendermint-verifier",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -5604,7 +5604,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha3 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "trie-db",
  "unionlabs",
 ]
@@ -5970,7 +5970,7 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "depolama",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -6153,7 +6153,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -6344,7 +6344,7 @@ dependencies = [
  "hex",
  "num-bigint 0.4.6",
  "substrate-bn",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -6359,7 +6359,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha3 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -6800,7 +6800,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tendermint-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tikv-jemallocator",
  "time",
  "tokio",
@@ -6983,7 +6983,7 @@ dependencies = [
  "macros",
  "serde",
  "subset-of",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tracing",
  "unionlabs",
  "voyager-core",
@@ -7016,7 +7016,7 @@ dependencies = [
  "serde",
  "serde-json-wasm 1.0.1",
  "strum 0.26.3",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -7035,7 +7035,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde-utils",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -7061,7 +7061,7 @@ dependencies = [
  "schemars",
  "serde",
  "sha3 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tracing",
  "unionlabs",
  "voyager-core",
@@ -7080,7 +7080,7 @@ dependencies = [
  "ibc-union-spec",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -7095,7 +7095,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -7113,7 +7113,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -8016,7 +8016,7 @@ dependencies = [
  "linea-types",
  "linea-zktrie",
  "rlp",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -8030,7 +8030,7 @@ dependencies = [
  "linea-types",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -8853,7 +8853,7 @@ dependencies = [
  "rlp",
  "serde",
  "serde-utils",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -8889,7 +8889,7 @@ dependencies = [
  "reqwest 0.11.27",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "throbber-widgets-tui",
  "tokio",
  "tokio-util",
@@ -8904,7 +8904,7 @@ dependencies = [
  "hex",
  "mpc-shared",
  "pgp",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
@@ -8919,7 +8919,7 @@ dependencies = [
  "reqwest 0.11.27",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
 ]
 
@@ -8950,7 +8950,7 @@ dependencies = [
  "hex",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs-primitives",
 ]
 
@@ -10946,7 +10946,7 @@ version = "0.0.0"
 dependencies = [
  "arc-swap",
  "jsonrpsee",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tokio-util",
  "tracing",
@@ -11662,7 +11662,7 @@ dependencies = [
  "alloy",
  "hex-literal",
  "sha3 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -11706,7 +11706,7 @@ dependencies = [
  "scroll-codec",
  "scroll-light-client-types",
  "scroll-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
  "zktrie",
 ]
@@ -12616,7 +12616,7 @@ dependencies = [
  "smallvec",
  "snap",
  "ssz-derive",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "typenum",
  "unionlabs",
  "unionlabs-primitives",
@@ -12672,7 +12672,7 @@ dependencies = [
  "protos",
  "serde",
  "state-lens-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -12695,7 +12695,7 @@ dependencies = [
  "serde",
  "state-lens-ics23-mpt-light-client-types",
  "state-lens-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -12710,7 +12710,7 @@ dependencies = [
  "serde",
  "state-lens-ics23-mpt-light-client-types",
  "state-lens-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -12736,7 +12736,7 @@ dependencies = [
  "serde-utils",
  "state-lens-ics23-smt-light-client-types",
  "state-lens-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -12750,7 +12750,7 @@ dependencies = [
  "protos",
  "serde",
  "state-lens-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -12766,7 +12766,7 @@ dependencies = [
  "serde",
  "serde_json",
  "state-lens-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tuple_join",
  "unionlabs",
 ]
@@ -13161,7 +13161,7 @@ dependencies = [
  "sha2 0.10.8",
  "tendermint-light-client-types",
  "tendermint-verifier",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -13176,7 +13176,7 @@ dependencies = [
  "protos",
  "serde",
  "tendermint-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -13240,7 +13240,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "tendermint-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
@@ -13986,7 +13986,7 @@ dependencies = [
  "rlp",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "trusted-mpt-light-client-types",
  "unionlabs",
 ]
@@ -14145,7 +14145,7 @@ dependencies = [
  "cosmwasm-std 1.5.11",
  "cw-storage-plus 1.2.0",
  "ethabi",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -14170,7 +14170,7 @@ dependencies = [
  "serde",
  "serde-json-wasm 1.0.1",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "token-factory-api",
  "ucs03-zkgm-token-minter-api",
  "unionlabs",
@@ -14185,6 +14185,15 @@ dependencies = [
  "enumorph",
  "ibc-union-spec",
  "token-factory-api",
+]
+
+[[package]]
+name = "ucs04"
+version = "0.0.0"
+dependencies = [
+ "heck 0.5.0",
+ "serde_json",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -14334,7 +14343,7 @@ dependencies = [
  "ssz",
  "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "subtle-encoding",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "typenum",
  "unionlabs-primitives",
  "wasmparser 0.113.3",
@@ -14355,7 +14364,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_bytes",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "typenum",
  "uint",
  "unionlabs",
@@ -14372,7 +14381,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tracing",
  "tracing-subscriber 0.3.19",
  "tracing-test",
@@ -14559,7 +14568,7 @@ dependencies = [
  "serde_json",
  "serde_jsonc",
  "sqlx",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tikv-jemallocator",
  "tokio",
  "tower 0.4.13",
@@ -14603,7 +14612,7 @@ dependencies = [
  "protos",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -14644,7 +14653,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tendermint-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -14664,7 +14673,7 @@ dependencies = [
  "movement-light-client-types",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -14749,7 +14758,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tendermint-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -14859,7 +14868,7 @@ dependencies = [
  "movement-light-client-types",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -14880,7 +14889,7 @@ dependencies = [
  "serde_json",
  "state-lens-ics23-ics23-light-client-types",
  "state-lens-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
@@ -14907,7 +14916,7 @@ dependencies = [
  "serde_json",
  "state-lens-ics23-mpt-light-client-types",
  "state-lens-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
@@ -14933,7 +14942,7 @@ dependencies = [
  "serde_json",
  "state-lens-ics23-smt-light-client-types",
  "state-lens-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
@@ -15022,7 +15031,7 @@ dependencies = [
  "serde",
  "serde_json",
  "ssz",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
@@ -15048,7 +15057,7 @@ dependencies = [
  "serde",
  "serde_json",
  "subset-of",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15093,7 +15102,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tendermint-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15117,7 +15126,7 @@ dependencies = [
  "serde",
  "serde_json",
  "subset-of",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15161,7 +15170,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tendermint-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15232,7 +15241,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tendermint-light-client-types",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
@@ -15249,7 +15258,7 @@ dependencies = [
  "embed-commit",
  "jsonrpsee",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15283,7 +15292,7 @@ dependencies = [
  "embed-commit",
  "jsonrpsee",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15298,7 +15307,7 @@ dependencies = [
  "embed-commit",
  "jsonrpsee",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15355,7 +15364,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15434,7 +15443,7 @@ dependencies = [
  "serde",
  "serde_json",
  "subset-of",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tokio-util",
  "tracing",
@@ -15517,7 +15526,7 @@ dependencies = [
  "protos",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15538,7 +15547,7 @@ dependencies = [
  "protos",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15577,7 +15586,7 @@ dependencies = [
  "protos",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15621,7 +15630,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15646,7 +15655,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15744,7 +15753,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sha2 0.10.8",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tonic 0.10.2",
  "tracing",
@@ -15768,7 +15777,7 @@ dependencies = [
  "macros",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15790,7 +15799,7 @@ dependencies = [
  "serde",
  "serde_json",
  "subset-of",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
@@ -17070,7 +17079,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "poseidon-rs",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
