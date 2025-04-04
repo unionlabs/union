@@ -13,6 +13,7 @@ import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import TransactionComponent from "$lib/components/model/TransactionComponent.svelte"
 import HeightComponent from "$lib/components/model/HeightComponent.svelte"
 import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
+import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
 
 const sourceChain = $derived(
   Option.flatMap(packetDetails.data, data =>
@@ -68,7 +69,7 @@ const destinationChain = $derived(
           </div>
           <div class="col-span-5">
             <Label>Port</Label>
-            <LongMonoWord>{fromHex(packetDetails.data.value.source_port_id, "string")}</LongMonoWord>
+            <LongMonoWord>{ Option.isSome(sourceChain) && sourceChain.value.rpc_type === "cosmos" ? fromHex(packetDetails.data.value.source_port_id, "string") : packetDetails.data.value.source_port_id}</LongMonoWord>
           </div>
         </div>
       </div>
@@ -96,7 +97,7 @@ const destinationChain = $derived(
           </div>
           <div class="col-span-5">
             <Label>Port</Label>
-            <LongMonoWord>{fromHex(packetDetails.data.value.destination_port_id, "string")}</LongMonoWord>
+            <LongMonoWord>{ Option.isSome(destinationChain) && destinationChain.value.rpc_type === "cosmos" ? fromHex(packetDetails.data.value.source_port_id, "string") : packetDetails.data.value.destination_port_id}</LongMonoWord>
           </div>
         </div>
       </div>
@@ -313,9 +314,10 @@ const destinationChain = $derived(
     {#if Option.isSome(packetDetails.data.value.acknowledgement)}
       <div class="p-4">
         <Label>Acknowledgement</Label>
-        <pre class="overflow-auto text-xs mt-2">{JSON.stringify(packetDetails.data.value.acknowledgement.value, null, 2)}</pre>
+        <LongMonoWord class="mt-2">{packetDetails.data.value.acknowledgement.value}</LongMonoWord>
       </div>
     {/if}
+    <PacketTracesComponent packetTraces={packetDetails.data.value.traces}/>
   </div>
 {:else}
   <div class="p-4">

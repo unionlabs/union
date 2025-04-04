@@ -25,7 +25,8 @@ const {
   ...rest
 }: Props = $props()
 
-const fullDisplayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address)))
+// const fullDisplayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address)))
+const fullDisplayAddress = address
 const displayAddress = $derived(
   shouldTruncate
     ? truncate(fullDisplayAddress, truncateChars, truncatePosition)

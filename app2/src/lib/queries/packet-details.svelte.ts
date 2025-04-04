@@ -52,6 +52,17 @@ export const packetDetailsQuery = (packetHash: PacketHash) =>
           decoded
           decoded_flattened
           acknowledgement
+          traces {
+            type
+            height
+            block_hash
+            timestamp
+            transaction_hash
+            chain {
+              universal_chain_id
+            }
+          }
+          
         }
       }
     `),

@@ -22,7 +22,7 @@ const classes = cn("flex flex-col text-md font-semibold", className)
   {/snippet}
 
   {#snippet content()}
-    <div class="text-sm flex flex-col gap-4 text-neutral-400">
+    <div class="text-sm text-left flex flex-col gap-4 text-neutral-400">
       <section class="flex justify-between items-center">
         <h2 class="text-white font-bold text-lg">{chain.display_name}</h2>
         <div class="bg-sky-400 text-black font-bold rounded px-1">

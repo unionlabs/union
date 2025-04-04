@@ -8,6 +8,7 @@ type Props = HTMLAttributes<HTMLTimeElement> & {
   class?: string
   showSeconds?: boolean
   showTime?: boolean
+  showDate?: boolean
 }
 
 const {
@@ -15,6 +16,7 @@ const {
   class: className = "",
   showSeconds = true,
   showTime = true,
+  showDate = true,
   ...rest
 }: Props = $props()
 
@@ -42,10 +44,16 @@ const formatDate = (value: DateTime.DateTime) =>
     const compareDate = DateTime.startOf(zonedValue, "day")
 
     if (DateTime.Equivalence(compareDate, today)) {
+      if (!showDate) return showTime ? DateTime.formatIntl(zonedValue, timeFormat) : ""
       return showTime ? `Today ${DateTime.formatIntl(zonedValue, timeFormat)}` : "Today"
     }
     if (DateTime.Equivalence(compareDate, yesterday)) {
+      if (!showDate) return showTime ? DateTime.formatIntl(zonedValue, timeFormat) : ""
       return showTime ? `Yesterday ${DateTime.formatIntl(zonedValue, timeFormat)}` : "Yesterday"
+    }
+
+    if (!showDate) {
+      return showTime ? DateTime.formatIntl(zonedValue, timeFormat) : ""
     }
 
     return showTime

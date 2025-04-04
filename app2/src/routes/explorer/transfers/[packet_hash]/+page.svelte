@@ -23,6 +23,10 @@ import { packetDetails } from "$lib/stores/packets.svelte"
 // Store for the transfer details
 import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import SharpRightArrowIcon from "$lib/components/icons/SharpRightArrowIcon.svelte"
+import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
+
+// State for packet details visibility
+let showPacketDetails = false
 
 let fiber: Fiber.Fiber<any, any>
 const packetHash = page.params.packet_hash
@@ -43,7 +47,9 @@ onMount(() => {
 </script>
 
 <Sections>
-  <Card class="overflow-auto p-6 transition-size" divided>
+  <Card class="overflow-auto" divided>
+    <div class="p-4">Transfer Details</div>
+    <div>
     {#if Option.isSome(transferDetails.error)}
       <ErrorComponent error={transferDetails.error.value} />
     {:else if Option.isSome(transferDetails.data) && Option.isSome(chains.data)}
@@ -60,8 +66,8 @@ onMount(() => {
 
       <div class="space-y-8">
         <!-- Chain and Token Transfer Display -->
-        <div class="flex flex-col items-center gap-2">
-          <div class="text-2xl">
+        <div class="flex flex-col gap-6">
+          <div class="text-2xl pt-6 px-4">
             {#if !settingsStore.showQuoteTokens}
               <TokenComponent
                 chain={sourceChain.value}
@@ -70,9 +76,9 @@ onMount(() => {
               />
             {/if}
           </div>
-          <div class="flex items-center gap-4">
+          <section class="flex flex-col px-4">
+            <Label>From</Label>
             {#if Option.isSome(sourceChain)}
-              <div class="flex flex-col items-end">
                 {#if settingsStore.showQuoteTokens}
                   <TokenComponent
                     chain={sourceChain.value}
@@ -80,140 +86,82 @@ onMount(() => {
                     amount={transfer.base_amount}
                   />
                 {/if}
-                <div class="flex flex-col items-end">
-                  {#if Option.isSome(sourceChain)}
-                    <ChainComponent chain={sourceChain.value} />
-                    <AddressComponent
-                      address={transfer.sender_canonical}
-                      chain={sourceChain.value}
-                      class="text-zinc-400"
-                    />
-                  {:else}
-                    <div>{transfer.source_chain.chain_id}</div>
-                    <div class="font-mono text-sm text-zinc-500">
-                      {transfer.sender_canonical}
-                    </div>
-                  {/if}
-                </div>
-              </div>
-
-              <div class="flex flex-col items-center gap-1">
-                <SharpRightArrowIcon class="w-8 h-8 text-zinc-400" />
-              </div>
-
-              <div class="flex flex-col items-start">
-                {#if settingsStore.showQuoteTokens && Option.isSome(destChain)}
-                  <TokenComponent
-                    chain={destChain.value}
-                    denom={transfer.quote_token}
-                    amount={transfer.quote_amount}
-                  />
-                {/if}
-                {#if Option.isSome(destChain)}
-                  <ChainComponent chain={destChain.value} />
+                {#if Option.isSome(sourceChain)}
+                  <ChainComponent chain={sourceChain.value} />
                   <AddressComponent
-                    address={transfer.receiver_canonical}
-                    chain={destChain.value}
+                    address={transfer.sender_canonical}
+                    chain={sourceChain.value}
                     class="text-zinc-400"
                   />
                 {:else}
-                  <div>{transfer.destination_chain.chain_id}</div>
-                  <div class="font-mono text-sm text-zinc-500">
-                    {transfer.receiver_canonical}
+                  <div>{transfer.source_chain.chain_id}</div>
+                  <div class="font-mono text-sm text-zinc-400">
+                    {transfer.sender_canonical}
                   </div>
                 {/if}
-              </div>
             {/if}
-          </div>
-          <div class="text-sm text-zinc-500 flex flex-col items-center">
             <DateTimeComponent
+              class="text-sm text-zinc-400"              
               value={transfer.transfer_send_timestamp}
               showSeconds={false}
             />
+            </section>
+
+
+            
+
+            <section class="flex flex-col px-4">
+            <Label>To</Label>
+            {#if settingsStore.showQuoteTokens && Option.isSome(destChain)}
+              <TokenComponent
+                chain={destChain.value}
+                denom={transfer.quote_token}
+                amount={transfer.quote_amount}
+              />
+            {/if}
+            {#if Option.isSome(destChain)}
+              <ChainComponent chain={destChain.value} />
+              <AddressComponent
+                address={transfer.receiver_canonical}
+                chain={destChain.value}
+                class="text-zinc-400"
+              />
+            {:else}
+              <div>{transfer.destination_chain.chain_id}</div>
+              <div class="font-mono text-sm text-zinc-400">
+                {transfer.receiver_canonical}
+              </div>
+            {/if}
             {#if Option.isSome(transfer.transfer_recv_timestamp)}
               <DateTimeComponent
+                class="text-sm text-zinc-400"              
                 value={transfer.transfer_recv_timestamp.value}
                 showSeconds={false}
               />
             {/if}
-          </div>
+            </section>
         </div>
 
-        {#if transfer.traces.length > 0}
-          <div class="relative">
-            <Label>Transfer Timeline</Label>
-            <div class="mt-4 space-y-8">
-              {#each transfer.traces as trace, i}
-                {@const chain = getChain(
-                  chainsList,
-                  trace.chain.universal_chain_id,
-                )}
-                <!-- Timeline line -->
-                <div
-                  class="absolute left-2 top-8 z-10 bottom-0 w-0.5 bg-zinc-200 dark:bg-zinc-700"
-                ></div>
-
-                <!-- Timeline item -->
-                <div class="relative flex items-start gap-4 ml-6">
-                  <!-- Timeline dot -->
-                  <div class="absolute z-20 -left-[1.5rem]">
-                    <div
-                      class="h-4 w-4 rounded-full bg-zinc-300 dark:bg-zinc-600 ring-4 ring-white dark:ring-zinc-900"
-                    ></div>
-                  </div>
-
-                  <!-- Content -->
-                  <div
-                    class="flex-1 bg-zinc-50 dark:bg-zinc-900 px-4 rounded-lg"
-                  >
-                    <div class="flex items-center gap-2">
-                      <span
-                        class="font-medium text-zinc-900 dark:text-zinc-100"
-                      >
-                        {trace.type}
-                      </span>
-                      {#if Option.isSome(chain)}
-                        <ChainComponent chain={chain.value} />
-                      {:else}
-                        <span class="font-mono text-sm"
-                          >{trace.chain.universal_chain_id}</span
-                        >
-                      {/if}
-                    </div>
-
-                    {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(trace.block_hash)}
-                      <div
-                        class="flex flex-col gap-1 text-sm text-zinc-600 dark:text-zinc-400"
-                      >
-                        <div>
-                          <DateTimeComponent value={trace.timestamp.value} />
-                          <span>at height {trace.height.value}</span>
-                        </div>
-                        <div class="flex gap-2">
-                          <span class="font-medium">Tx:</span>
-                          <TransactionHashComponent
-                            hash={trace.transaction_hash.value}
-                          />
-                        </div>
-                        <div class="flex gap-2">
-                          <span class="font-medium">Block:</span>
-                          <BlockHashComponent hash={trace.block_hash.value} />
-                        </div>
-                      </div>
-                    {/if}
-                  </div>
-                </div>
-              {/each}
-            </div>
-          </div>
-        {/if}
+        <PacketTracesComponent packetTraces={transfer.traces}/>
       </div>
     {/if}
+    </div>
   </Card>
 
-  <!-- Packet Details Card -->
-  <Card divided>
-    <div class="p-4">Packet Details</div>
-    <PacketComponent />
-  </Card>
+  <!-- Packet Details Card with toggle button -->
+  <div>
+    <button 
+      class="flex items-center justify-center w-full gap-2 py-2 px-4 text-left hover:text-zinc-300 text-zinc-400 cursor-pointer transition-colors"
+      on:click={() => showPacketDetails = !showPacketDetails}
+    >
+      <span>Packet Details</span>
+      <span class="transition-transform duration-300" style={showPacketDetails ? "transform: rotate(180deg)" : ""}>↓</span>
+    </button>
+    
+    {#if showPacketDetails}
+      <Card divided transition={false}>
+        <PacketComponent />
+      </Card>
+    {/if}
+  </div>
 </Sections>
