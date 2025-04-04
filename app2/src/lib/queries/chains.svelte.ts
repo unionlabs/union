@@ -5,7 +5,7 @@ import { graphql } from "gql.tada"
 import { chains } from "$lib/stores/chains.svelte"
 import type { Environment } from "$lib/constants"
 
-export let chainsQuery = (environment: Environment) =>
+export const chainsQuery = (environment: Environment) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_chains: Chains }),
     document: graphql(`
@@ -42,7 +42,7 @@ export let chainsQuery = (environment: Environment) =>
     }
   `),
     variables: { environment },
-    refetchInterval: "60 seconds",
+    refetchInterval: "10 minutes",
     writeData: data => {
       chains.data = data.pipe(Option.map(d => d.v2_chains))
     },

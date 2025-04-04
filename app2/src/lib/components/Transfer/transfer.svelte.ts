@@ -1,15 +1,24 @@
-import { Option } from "effect"
+import {Match, Option} from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
 import type { Channel, Token } from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
-import { type Address, fromHex, type Hex } from "viem"
+import {type Address, fromHex, type Hex, isHex} from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
 import { validateTransfer, type ValidationResult } from "$lib/components/Transfer/validation.ts"
 import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
+import {wallets} from "$lib/stores/wallets.svelte.ts";
+
+export type TransferIntent = {
+  sender: string;
+  receiver: string;
+  baseToken: string;
+  baseAmount: bigint;
+  quoteAmount: bigint;
+};
 
 export class Transfer {
   raw = new RawTransferSvelte()
@@ -69,6 +78,12 @@ export class Transfer {
   )
 
   derivedReceiver = $derived(getDerivedReceiverSafe(this.raw.receiver))
+
+  derivedSender = $derived(
+    Option.isNone(this.sourceChain)
+      ? Option.none()
+      : wallets.getAddressForChain(this.sourceChain.value)
+  )
 
   channel = $derived.by<Option.Option<Channel>>(() => {
     return Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
@@ -143,6 +158,56 @@ export class Transfer {
       timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
       wethBaseToken: wethBaseToken
     }
+  })
+
+  intents = $derived.by(() => {
+    if (this.validation._tag !== "Success") return Option.none()
+    const transferValue = this.validation.value
+
+    if (Option.isNone(this.derivedSender)) return Option.none()
+
+    const sender = Option.getOrUndefined(this.derivedSender)
+    if (!sender) return Option.none()
+
+    return Match.value(transferValue.sourceChain.rpc_type).pipe(
+      Match.when("evm", () => {
+        if (Option.isNone(this.wethBaseToken)) return Option.none()
+        // Safely get the wethBaseToken
+        const wethToken = Option.getOrUndefined(this.wethBaseToken)
+        if (!wethToken) return Option.none()
+
+        return Option.some([
+          {
+            sender: sender,
+            receiver: transferValue.receiver,
+            baseToken: transferValue.baseToken,
+            baseAmount: transferValue.baseAmount,
+            quoteAmount: transferValue.baseAmount
+          },
+          {
+            sender: sender,
+            receiver: transferValue.receiver,
+            baseToken: wethToken,
+            baseAmount: 500n,
+            quoteAmount: 0n
+          }
+        ])
+      }),
+      Match.when("cosmos", () => {
+        return Option.some([
+          {
+            sender: sender,
+            receiver: transferValue.receiver.toLowerCase(),
+            baseToken: isHex(transferValue.baseToken)
+              ? fromHex(transferValue.baseToken, "string")
+              : transferValue.baseToken,
+            baseAmount: transferValue.baseAmount,
+            quoteAmount: transferValue.baseAmount
+          }
+        ])
+      }),
+      Match.orElse(() => Option.none())
+    )
   })
 
   validation = $derived.by<ValidationResult>(() => validateTransfer(this.args))
