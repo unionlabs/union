@@ -16,11 +16,12 @@ workspace = true
 
 [dependencies]
 arbitrum-light-client-types = { workspace = true }
+arbitrum-types              = { workspace = true }
 evm-storage-verifier        = { workspace = true }
 rlp                         = { workspace = true }
 sha3                        = { workspace = true }
 thiserror                   = { workspace = true }
-unionlabs                   = { workspace = true }
+unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
 arbitrum-light-client-types = { workspace = true, features = ["serde"] }

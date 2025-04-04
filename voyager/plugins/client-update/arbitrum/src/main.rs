@@ -9,7 +9,7 @@ use alloy::{
 };
 use arbitrum_client::finalized_l2_block_of_l1_height;
 use arbitrum_light_client_types::{ClientState, Header, L2Header};
-use arbitrum_types::{L1_NEXT_NODE_NUM_SLOT, L1_NODES_CONFIRM_DATA_OFFSET, L1_NODES_SLOT};
+use arbitrum_types::L1_NEXT_NODE_NUM_SLOT;
 use ethereum_light_client_types::{AccountProof, StorageProof};
 use ibc_union_spec::{path::ClientStatePath, ClientId, IbcUnion};
 use jsonrpsee::{
@@ -287,19 +287,16 @@ impl Module {
         .await
         .unwrap();
 
+        // fetch two proofs at once!
         let [latest_confirmed_slot_proof, nodes_slot_proof]: [_; 2] = self
             .l1_provider
             .get_proof(
                 self.l1_contract_address.into(),
                 vec![
                     L1_NEXT_NODE_NUM_SLOT.to_be_bytes().into(),
-                    arbitrum_verifier::nodes_confirm_data_mapping_key(
-                        L1_NODES_SLOT.into(),
-                        latest_confirmed,
-                        L1_NODES_CONFIRM_DATA_OFFSET.into(),
-                    )
-                    .to_be_bytes()
-                    .into(),
+                    arbitrum_verifier::nodes_confirm_data_mapping_key(latest_confirmed)
+                        .to_be_bytes()
+                        .into(),
                 ],
             )
             .block_id(l1_block_number.into())

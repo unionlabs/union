@@ -3,10 +3,6 @@ use alloy::{
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
 };
 use arbitrum_light_client_types::{ClientState, ClientStateV1, ConsensusState};
-use arbitrum_types::{
-    L1_NEXT_NODE_NUM_SLOT, L1_NEXT_NODE_NUM_SLOT_OFFSET_BYTES, L1_NODES_CONFIRM_DATA_OFFSET,
-    L1_NODES_SLOT,
-};
 use ibc_union_spec::{ClientId, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -16,10 +12,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{info, instrument};
-use unionlabs::{
-    bounded::BoundedU8, ibc::core::client::height::Height, primitives::H160, result_unwrap,
-    ErrorReporter,
-};
+use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
 use voyager_message::{
     core::{ChainId, ClientType, QueryHeight},
     into_value,
@@ -170,14 +163,6 @@ impl ClientBootstrapModuleServer for Module {
                 .parse()
                 .expect("self.chain_id is a valid u256; qed;"),
             l1_contract_address: self.l1_contract_address,
-            l1_next_node_num_slot: L1_NEXT_NODE_NUM_SLOT.into(),
-            l1_nodes_slot: L1_NODES_SLOT.into(),
-            l1_next_node_num_slot_offset_bytes: const {
-                result_unwrap!(BoundedU8::<0, 24>::new_const(
-                    L1_NEXT_NODE_NUM_SLOT_OFFSET_BYTES as u8
-                ))
-            },
-            l1_nodes_confirm_data_offset: L1_NODES_CONFIRM_DATA_OFFSET.into(),
             frozen_height: Height::new(0),
             ibc_contract_address: self.ibc_handler_address,
         })))

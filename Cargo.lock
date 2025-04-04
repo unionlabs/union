@@ -1499,6 +1499,7 @@ name = "arbitrum-verifier"
 version = "0.0.0"
 dependencies = [
  "arbitrum-light-client-types",
+ "arbitrum-types",
  "evm-storage-verifier",
  "hex-literal",
  "rlp",
