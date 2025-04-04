@@ -1,8 +1,8 @@
-import {Data, Effect, type Exit, Option} from "effect";
-import type {Transfer} from "$lib/components/Transfer/transfer.svelte.ts";
-import {checkBalance} from "$lib/components/Transfer/state/filling/check-balance.ts";
-import {createOrdersBatch} from "$lib/components/Transfer/state/filling/create-orders.ts";
-import {checkAllowances} from "$lib/components/Transfer/state/filling/check-allowance.ts";
+import { Data, Effect, type Exit, Option } from "effect";
+import type { Transfer } from "$lib/components/Transfer/transfer.svelte.ts";
+import { checkBalance } from "$lib/components/Transfer/state/filling/check-balance.ts";
+import { createOrdersBatch } from "$lib/components/Transfer/state/filling/create-orders.ts";
+import { checkAllowances } from "$lib/components/Transfer/state/filling/check-allowance.ts";
 
 export type StateResult = {
   nextState: CreateTransferState | null;
@@ -29,18 +29,13 @@ export type CreateTransferState = Data.TaggedEnum<{
 
 export const CreateTransferState = Data.taggedEnum<CreateTransferState>();
 
-const {
-  CreateIntents,
-  CheckBalance,
-  CheckAllowance,
-  CreateOrders,
-  CreateSteps
-} = CreateTransferState;
+const { CreateIntents, CheckBalance, CheckAllowance, CreateOrders, CreateSteps } =
+  CreateTransferState;
 
 export const createTransferState = (
   cts: CreateTransferState,
   transfer: Transfer
-): Effect.Effect<StateResult, unknown, never> => {
+) => {
   if (
     !Option.isSome(transfer.sourceChain) ||
     !Option.isSome(transfer.destinationChain) ||
@@ -58,7 +53,7 @@ export const createTransferState = (
     });
   }
 
-  // Destructure the needed values
+  // Destructure the needed values. Note that source and destination are now full chain objects.
   const channel = transfer.channel.value;
   const ucs03address = transfer.ucs03address.value;
   const source = transfer.sourceChain.value;
@@ -95,24 +90,15 @@ export const createTransferState = (
       }),
     CheckAllowance: () =>
       Effect.gen(function* ($) {
-        // Attempt to retrieve allowances
         const allowancesOpt = yield* $(checkAllowances(source, intents, sender, ucs03address));
-
-        if (Option.isNone(allowancesOpt)) {
-          return {
-            nextState: null,
-            message: "CheckAllowance not supported or no tokens to approve"
-          };
-        }
-        const allowances = allowancesOpt.value;
+        const allowances = Option.getOrElse(allowancesOpt, () => []);
         return {
           nextState: CreateOrders({ allowances }),
-          message: "Allowances found, creating orders next..."
+          message: "Creating orders..."
         };
       }),
     CreateOrders: ({ allowances }) =>
       Effect.gen(function* () {
-        // Now we can pass in the chain details & create the batch
         const batchOpt = yield* createOrdersBatch(
           source,
           destination,
@@ -120,14 +106,12 @@ export const createTransferState = (
           ucs03address,
           intents
         );
-
         if (Option.isNone(batchOpt)) {
           return {
             nextState: null,
             message: "Could not create orders"
           };
         }
-
         const batch = batchOpt.value;
         console.log("Successfully created batch:", batch);
         return {
@@ -138,12 +122,14 @@ export const createTransferState = (
           message: "Orders created successfully"
         };
       }),
-    CreateSteps: ({ allowances, orders }) =>
-      Effect.succeed({
+    CreateSteps: ({ allowances, orders }) => {
+      console.log("lukas here");
+      return Effect.succeed({
         nextState: null,
         message: `Transfer process complete (or ready) – allowances: ${JSON.stringify(
           allowances
         )}, orders: ${JSON.stringify(orders)}`
-      })
+      });
+    }
   });
 };

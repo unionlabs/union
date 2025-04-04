@@ -1,6 +1,6 @@
 import { Effect, Option, Match } from "effect";
 import { type AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema";
-import { isHex, fromHex, http } from "viem";
+import {isHex, fromHex, http, type Address} from "viem";
 import {
   createViemPublicClient,
   readErc20Allowance,
@@ -105,7 +105,6 @@ export function checkAllowances(
       }
     }
 
-    // 4) Return Option.some(...) if steps needed, else Option.none()
     if (steps.length === 0) {
       console.log("lukas: No approval steps needed – returning Option.none");
       return Option.none<ApprovalStep[]>();
@@ -148,11 +147,9 @@ function handleEvmAllowances(
 
     // Parallel readErc20Allowance calls
     const results = yield* Effect.all(
-      tokenAddresses.map(tokenAddress =>
+      tokenAddresses.map((tokenAddress) =>
         Effect.gen(function* () {
-          console.log("lukas: Checking allowance for EVM token:", tokenAddress);
           const allowance = yield* readErc20Allowance(tokenAddress, sender, spender);
-          console.log("lukas: readErc20Allowance result", { tokenAddress, allowance });
           return { token: tokenAddress, allowance };
         }).pipe(
           Effect.provideService(ViemPublicClient, {
@@ -193,36 +190,29 @@ function handleCosmosAllowances(
     }
 
     const rpcUrl = rpcUrlOpt.value;
-    console.log("lukas: Creating CosmWasm client with rpcUrl:", rpcUrl);
-
     const cosmwasmClient = yield* createCosmWasmClient(rpcUrl);
 
-    // For each token, either skip or query
+    // Filter out native tokens entirely
+    const cw20Addresses = tokenAddresses.filter(isHex);
+
+    // If everything was native, we can just return an empty array
+    if (cw20Addresses.length === 0) {
+      console.log("lukas: All tokens are native → no allowances needed");
+      return Option.some([]);
+    }
+
     const checks = yield* Effect.all(
-      tokenAddresses.map(tokenAddress =>
+      cw20Addresses.map(tokenAddress =>
         Effect.gen(function* () {
-          console.log("lukas: Checking token (Cosmos):", tokenAddress);
-
-          // If not hex => native => set allowance=0n to reflect "no approval needed"
-          if (!isHex(tokenAddress)) {
-            console.log("lukas: Token is native denom (not hex) => skip approval:", tokenAddress);
-            return { token: tokenAddress, allowance: 0n };
-          }
-
-          // If hex => we treat it as a CW20
+          console.log("lukas: Checking CW20 token:", tokenAddress);
           const decoded = fromHex(tokenAddress, "string");
+
           if (!isValidBech32ContractAddress(decoded)) {
-            console.log("lukas: Not valid bech32 contract address => skip:", decoded);
+            console.log("lukas: Not valid bech32 contract address => skipping:", decoded);
             return { token: tokenAddress, allowance: 0n };
           }
 
           const owner = yield* sourceChain.toCosmosDisplay(sender);
-          console.log("lukas: Querying CW20 allowance for:", {
-            tokenAddress,
-            owner,
-            spender
-          });
-
           const result = yield* Effect.tryPromise({
             try: () =>
               cosmwasmClient.queryContractSmart(decoded, {
@@ -248,3 +238,4 @@ function handleCosmosAllowances(
     return Option.some(checks);
   });
 }
+
