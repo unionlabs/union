@@ -10,14 +10,9 @@ import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.s
 
 const graphqlQuery = dedent /* GraphQL */`
     query ConnectionsForDocs {
-      data: v1_ibc_union_connections {
-        source_chain {
-          display_name
-        }
-        destination_chain {
-          display_name
-        }
-        status
+      data: v2_connections {
+        source_universal_chain_id
+        destination_universal_chain_id
         source_connection_id
         source_client_id
       }
@@ -66,10 +61,9 @@ async function fetchConnections() {
   const dataArray = json.data.data
   // @ts-expect-error
   const rows = dataArray.map(item => [
-    item.source_chain?.display_name,
-    item.destination_chain?.display_name,
-    item.source_connection_id?.split("-")?.at(-1),
-    item.status,
+    item.source_universal_chain_id,
+    item.destination_universal_chain_id,
+    item.source_connection_id,
     item.source_client_id
   ]) as Array<Array<string>>
 
@@ -78,7 +72,7 @@ async function fetchConnections() {
       allRows: rows as Array<Array<string>>,
       total: rows.length,
       rowsChunks: splitArray({ array: rows, n: rowsPerPage }),
-      headers: ["source", "destination", "connection-id", "status", "client-id"]
+      headers: ["source", "destination", "connection-id", "client-id"]
     }
   }
 }

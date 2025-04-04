@@ -11,13 +11,9 @@ import { graphqlQueryToCurl, splitArray, stringIsJSON } from "#/lib/utilities.ts
 import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
 
 const graphqlQuery = dedent /* GraphQL */`
-    query ChannelsQuery {
-      data: v1_ibc_union_channels {
-        source_chain {
-          chain_id
-          display_name
-        }
-        status
+    query ChannelsForDocs {
+      data: v2_channels(args: { p_recommended: true }) {
+        source_universal_chain_id
         version
         source_port_id
         source_channel_id
@@ -67,10 +63,9 @@ async function fetchChannels() {
   const dataArray = json.data.data
   // @ts-expect-error
   const rows = dataArray.map(item => [
-    item.source_chain.display_name,
+    item.source_universal_chain_id,
     item.source_connection_id,
     item.source_channel_id,
-    item.status,
     item.version
   ]) as Array<Array<string>>
 
@@ -79,7 +74,7 @@ async function fetchChannels() {
       allRows: rows as Array<Array<string>>,
       total: rows.length,
       rowsChunks: splitArray({ array: rows, n: rowsPerPage }),
-      headers: ["chain", "conn. #", "channel #", "status", "version"]
+      headers: ["chain", "conn. #", "channel #", "version"]
     }
   }
 }
