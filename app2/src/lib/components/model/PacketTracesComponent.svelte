@@ -92,9 +92,7 @@ function getArrowSpan(
   .pipe(Option.flatMap((id) => getChain(chainsList, id)))}
   <div>
     <Label>Packet Trace</Label>
-    
-      <!-- Chain headers -->
-      <div class="grid mb-4 size-[120%] mx-[-10%]" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
+      <div class="grid my-4 size-[120%] mx-[-10%]" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
 
 
         <!-- Background grid with lines -->
@@ -116,7 +114,7 @@ function getArrowSpan(
         {/if}
         
         {#if Option.isSome(rightChain)}
-          <div class="text-center col-start-5 col-span-3 row-1">
+          <div class="text-center {Option.isSome(centerChain) ? 'col-start-5' : 'col-start-3'} col-span-3 row-1">
             <ChainComponent chain={rightChain.value} />
           </div>
         {/if}

@@ -63,7 +63,7 @@ onMount(() => {
 
       <div class="space-y-8">
         <!-- Chain and Token Transfer Display -->
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-6">
           <div class="text-2xl">
             {#if !settingsStore.showQuoteTokens}
               <TokenComponent
@@ -73,9 +73,9 @@ onMount(() => {
               />
             {/if}
           </div>
-          <div class="flex items-center gap-4">
+          <section class="flex flex-col">
+            <Label>From</Label>
             {#if Option.isSome(sourceChain)}
-              <div class="flex flex-col items-end">
                 {#if settingsStore.showQuoteTokens}
                   <TokenComponent
                     chain={sourceChain.value}
@@ -83,59 +83,62 @@ onMount(() => {
                     amount={transfer.base_amount}
                   />
                 {/if}
-                <div class="flex flex-col items-end">
-                  {#if Option.isSome(sourceChain)}
-                    <ChainComponent chain={sourceChain.value} />
-                    <AddressComponent
-                      address={transfer.sender_canonical}
-                      chain={sourceChain.value}
-                      class="text-zinc-400"
-                    />
-                  {:else}
-                    <div>{transfer.source_chain.chain_id}</div>
-                    <div class="font-mono text-sm text-zinc-500">
-                      {transfer.sender_canonical}
-                    </div>
-                  {/if}
-                </div>
-              </div>
-
-              <div class="flex flex-col items-start">
-                {#if settingsStore.showQuoteTokens && Option.isSome(destChain)}
-                  <TokenComponent
-                    chain={destChain.value}
-                    denom={transfer.quote_token}
-                    amount={transfer.quote_amount}
-                  />
-                {/if}
-                {#if Option.isSome(destChain)}
-                  <ChainComponent chain={destChain.value} />
+                {#if Option.isSome(sourceChain)}
+                  <ChainComponent chain={sourceChain.value} />
                   <AddressComponent
-                    address={transfer.receiver_canonical}
-                    chain={destChain.value}
+                    address={transfer.sender_canonical}
+                    chain={sourceChain.value}
                     class="text-zinc-400"
                   />
                 {:else}
-                  <div>{transfer.destination_chain.chain_id}</div>
-                  <div class="font-mono text-sm text-zinc-500">
-                    {transfer.receiver_canonical}
+                  <div>{transfer.source_chain.chain_id}</div>
+                  <div class="font-mono text-sm text-zinc-400">
+                    {transfer.sender_canonical}
                   </div>
                 {/if}
-              </div>
             {/if}
-          </div>
-          <div class="text-sm text-zinc-500 flex flex-col items-center">
             <DateTimeComponent
+              class="text-sm text-zinc-400"              
               value={transfer.transfer_send_timestamp}
               showSeconds={false}
             />
+            </section>
+
+
+            
+
+            <section class="flex flex-col">
+            <Label>To</Label>
+            {#if settingsStore.showQuoteTokens && Option.isSome(destChain)}
+              <TokenComponent
+                chain={destChain.value}
+                denom={transfer.quote_token}
+                amount={transfer.quote_amount}
+              />
+            {/if}
+            {#if Option.isSome(destChain)}
+              <ChainComponent chain={destChain.value} />
+              <AddressComponent
+                address={transfer.receiver_canonical}
+                chain={destChain.value}
+                class="text-zinc-400"
+              />
+            {:else}
+              <div>{transfer.destination_chain.chain_id}</div>
+              <div class="font-mono text-sm text-zinc-400">
+                {transfer.receiver_canonical}
+              </div>
+            {/if}
             {#if Option.isSome(transfer.transfer_recv_timestamp)}
               <DateTimeComponent
                 value={transfer.transfer_recv_timestamp.value}
                 showSeconds={false}
               />
             {/if}
-          </div>
+            </section>
+
+
+          
         </div>
 
         <PacketTracesComponent packetTraces={transfer.traces}/>
