@@ -44,7 +44,9 @@ onMount(() => {
 </script>
 
 <Sections>
-  <Card class="overflow-auto p-6 transition-size" divided>
+  <Card class="overflow-auto" divided>
+    <div class="p-4">Transfer Details</div>
+    <div class="p-4">
     {#if Option.isSome(transferDetails.error)}
       <ErrorComponent error={transferDetails.error.value} />
     {:else if Option.isSome(transferDetails.data) && Option.isSome(chains.data)}
@@ -61,7 +63,7 @@ onMount(() => {
 
       <div class="space-y-8">
         <!-- Chain and Token Transfer Display -->
-        <div class="flex flex-col items-center gap-2">
+        <div class="flex flex-col gap-2">
           <div class="text-2xl">
             {#if !settingsStore.showQuoteTokens}
               <TokenComponent
@@ -96,10 +98,6 @@ onMount(() => {
                     </div>
                   {/if}
                 </div>
-              </div>
-
-              <div class="flex flex-col items-center gap-1">
-                <SharpRightArrowIcon class="w-8 h-8 text-zinc-400" />
               </div>
 
               <div class="flex flex-col items-start">
@@ -143,6 +141,7 @@ onMount(() => {
         <PacketTracesComponent packetTraces={transfer.traces}/>
       </div>
     {/if}
+    </div>
   </Card>
 
   <!-- Packet Details Card -->

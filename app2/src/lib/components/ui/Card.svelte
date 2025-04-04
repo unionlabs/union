@@ -8,9 +8,16 @@ type Props = HTMLAttributes<HTMLDivElement> & {
   children: Snippet
   class?: string
   divided?: boolean
+  transition?: boolean
 }
 
-const { children, class: className = "", divided = false, ...rest }: Props = $props()
+const {
+  children,
+  class: className = "",
+  divided = false,
+  transition = true,
+  ...rest
+}: Props = $props()
 
 const classes = cn(
   // Base styles
@@ -26,7 +33,7 @@ const classes = cn(
 <div
   class={classes}
   {...rest}
-  in:fade={{delay:100}}
+  in:fade={{delay: transition ? 100 : 0, duration: transition ? 200 : 0 }}
 >
   {@render children()}
 </div>
