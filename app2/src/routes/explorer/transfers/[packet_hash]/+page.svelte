@@ -25,6 +25,9 @@ import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import SharpRightArrowIcon from "$lib/components/icons/SharpRightArrowIcon.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
 
+// State for packet details visibility
+let showPacketDetails = false
+
 let fiber: Fiber.Fiber<any, any>
 const packetHash = page.params.packet_hash
 
@@ -147,9 +150,20 @@ onMount(() => {
     </div>
   </Card>
 
-  <!-- Packet Details Card -->
-  <Card divided>
-    <div class="p-4">Packet Details</div>
-    <PacketComponent />
-  </Card>
+  <!-- Packet Details Card with toggle button -->
+  <div>
+    <button 
+      class="flex items-center justify-center w-full gap-2 py-2 px-4 text-left hover:text-zinc-300 text-zinc-400 cursor-pointer transition-colors"
+      on:click={() => showPacketDetails = !showPacketDetails}
+    >
+      <span>Packet Details</span>
+      <span class="transition-transform duration-300" style={showPacketDetails ? "transform: rotate(180deg)" : ""}>↓</span>
+    </button>
+    
+    {#if showPacketDetails}
+      <Card divided transition={false}>
+        <PacketComponent />
+      </Card>
+    {/if}
+  </div>
 </Sections>
