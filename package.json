@@ -1,8 +1,15 @@
 {
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@effect/language-service": "~0.5.1",
+    "typescript": "~5.8.2"
+  },
   "pnpm": {
     "patchedDependencies": {
       "@cosmjs/amino@0.33.1": "patches/@cosmjs__amino@0.33.1.patch",
       "@cosmjs/tendermint-rpc@0.33.1": "patches/@cosmjs__tendermint-rpc@0.33.1.patch"
-    }
+    },
+    "onlyBuiltDependencies": ["bufferutil", "utf-8-validate", "esbuild", "keccak", "core-js"]
   }
 }

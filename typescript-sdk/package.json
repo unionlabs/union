@@ -57,7 +57,6 @@
     "knip": "^5.43.6",
     "tsup": "^8.3.6",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3",
     "viem": "^2.22.21",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.0.5"
