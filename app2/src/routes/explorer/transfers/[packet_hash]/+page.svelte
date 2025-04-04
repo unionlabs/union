@@ -49,7 +49,7 @@ onMount(() => {
 <Sections>
   <Card class="overflow-auto" divided>
     <div class="p-4">Transfer Details</div>
-    <div class="p-4">
+    <div>
     {#if Option.isSome(transferDetails.error)}
       <ErrorComponent error={transferDetails.error.value} />
     {:else if Option.isSome(transferDetails.data) && Option.isSome(chains.data)}
@@ -67,7 +67,7 @@ onMount(() => {
       <div class="space-y-8">
         <!-- Chain and Token Transfer Display -->
         <div class="flex flex-col gap-6">
-          <div class="text-2xl">
+          <div class="text-2xl pt-6 px-4">
             {#if !settingsStore.showQuoteTokens}
               <TokenComponent
                 chain={sourceChain.value}
@@ -76,7 +76,7 @@ onMount(() => {
               />
             {/if}
           </div>
-          <section class="flex flex-col">
+          <section class="flex flex-col px-4">
             <Label>From</Label>
             {#if Option.isSome(sourceChain)}
                 {#if settingsStore.showQuoteTokens}
@@ -110,7 +110,7 @@ onMount(() => {
 
             
 
-            <section class="flex flex-col">
+            <section class="flex flex-col px-4">
             <Label>To</Label>
             {#if settingsStore.showQuoteTokens && Option.isSome(destChain)}
               <TokenComponent
@@ -134,6 +134,7 @@ onMount(() => {
             {/if}
             {#if Option.isSome(transfer.transfer_recv_timestamp)}
               <DateTimeComponent
+                class="text-sm text-zinc-400"              
                 value={transfer.transfer_recv_timestamp.value}
                 showSeconds={false}
               />

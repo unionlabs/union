@@ -91,8 +91,8 @@ function getArrowSpan(
 {@const rightChain = Option.fromNullable(positions.right?.universal_chain_id)
   .pipe(Option.flatMap((id) => getChain(chainsList, id)))}
   <div>
-    <Label>Packet Trace</Label>
-      <div class="grid my-4 size-[120%] mx-[-10%]" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
+    <Label class="px-4">Packet Trace</Label>
+      <div class="grid mt-4 size-[120%] mx-[-10%]" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
 
 
         <!-- Background grid with lines -->
@@ -154,20 +154,17 @@ function getArrowSpan(
             </div>
 
             {#if arrowSpan}
-              <div class="flex items-center {arrowSpan.isLeft ? 'flex-row-reverse' : 'flex-row'}" style="grid-row: {i * 2 + 3}; grid-column: {arrowSpan.gridColumn};">
-                  <div class="flex-1 h-0.5 bg-zinc-600">
+              <div class="flex py-2 items-center {arrowSpan.isLeft ? 'flex-row-reverse' : 'flex-row'}" style="grid-row: {i * 2 + 3}; grid-column: {arrowSpan.gridColumn};">
+                  <div class="flex-1 h-0.5 bg-zinc-700">
                   </div>
-                    <div class="border-[5px] border-transparent {arrowSpan.isLeft ? 'dark:border-r-zinc-600' : 'border-l-zinc-400 dark:border-l-zinc-600'}" ></div>
+                    <div class="border-[5px] border-transparent {arrowSpan.isLeft ? 'dark:border-r-zinc-700' : 'border-l-zinc-400 dark:border-l-zinc-700'}" ></div>
               </div>
             {/if}
         {/each}
+        <!-- spacer !-->
+        <div class="h-8" style="grid-row: 40;"></div>
        
       </div>
-
-      <!--
-      <div class="absolute inset-0 grid overflow-hidden" style="grid-template-columns: {getGridTemplateColumns(positions.columns)}">
-      </div>
-      !-->
 
   </div>
 {/if}
