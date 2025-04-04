@@ -140,9 +140,6 @@ onMount(() => {
               />
             {/if}
             </section>
-
-
-          
         </div>
 
         <PacketTracesComponent packetTraces={transfer.traces}/>
