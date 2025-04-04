@@ -97,7 +97,7 @@ const buttonText = $derived.by(() => {
   if (transfer.raw.amount) {
     const parsedAmount = Number.parseFloat(transfer.raw.amount)
     if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-      return "Amount can't be 0"
+      return "Enter amount"
     }
   }
 

@@ -16,8 +16,7 @@ const { type, onSelect }: Props = $props()
 
 function selectChain(chain: Chain) {
   if (type === "destination" && chain.chain_id === transfer.raw.source) {
-    transfer.raw.updateField("destination", "")
-    return
+    return // Don't allow selecting same chain as destination
   }
 
   transfer.raw.updateField(type, chain.chain_id)
@@ -36,17 +35,22 @@ function selectChain(chain: Chain) {
   {#if Option.isSome(chains.data)}
     <div class="grid grid-cols-3 gap-2">
       {#each chains.data.value as chain}
+        {@const isSelected = (type === "source" && transfer.raw.source === chain.chain_id) ||
+        (type === "destination" && transfer.raw.destination === chain.chain_id)}
+        {@const isDisabled = type === "destination" && transfer.raw.source === chain.chain_id}
+
         <button
                 class={cn(
-            "flex flex-col items-center gap-2 justify-start px-2 py-4 rounded-md transition-colors cursor-pointer",
-            (type === "source" && transfer.raw.source === chain.chain_id) ||
-            (type === "destination" && transfer.raw.destination === chain.chain_id)
+            "flex flex-col items-center gap-2 justify-start px-2 py-4 rounded-md transition-colors",
+            isSelected
               ? "bg-zinc-900 hover:bg-zinc-800 ring-1 ring-sky-500"
-              : "bg-zinc-900 hover:bg-zinc-800"
+              : isDisabled
+                ? "bg-zinc-900 opacity-50 cursor-not-allowed"
+                : "bg-zinc-900 hover:bg-zinc-800 cursor-pointer"
           )}
-                onclick={() => selectChain(chain)}
+                onclick={() => !isDisabled && selectChain(chain)}
+                disabled={isDisabled}
         >
-
           {#if chain.universal_chain_id}
             {@const chainLogo = chainLogoMap.get(chain.universal_chain_id)}
             {#if chainLogo?.color}
@@ -57,6 +61,10 @@ function selectChain(chain: Chain) {
           {/if}
 
           <span class="text-xs text-center truncate w-fit">{chain.display_name}</span>
+
+          {#if isDisabled}
+            <span class="text-xs text-sky-400">From chain</span>
+          {/if}
         </button>
       {/each}
     </div>

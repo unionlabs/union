@@ -35,12 +35,11 @@ import {
   createCosmWasmClient
 } from "@unionlabs/sdk/cosmos"
 import { fromHex, http, isHex } from "viem"
-import { truncate } from "$lib/utils/format.ts"
 import * as TransferStep from "./transfer-step.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
 import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-import { beforeNavigate, goto } from "$app/navigation"
+import { beforeNavigate } from "$app/navigation"
 
 let currentPage = $state(0)
 let instruction: Option.Option<Instruction.Instruction> = $state(Option.none())
@@ -543,7 +542,7 @@ const reset = () => {
   currentPage = 0
   instruction = Option.none()
   allowances = Option.none()
-  lockedTransferStore.unlock()
+  lockedTransferStore.reset()
   transfer.raw.reset()
   transferHashStore.reset()
 

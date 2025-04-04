@@ -20,6 +20,11 @@ class LockedTransferStore {
   isLocked() {
     return Option.isSome(this.transfer)
   }
+
+  reset() {
+    this.unlock()
+    this.transfer = Option.none()
+  }
 }
 
 export const lockedTransferStore = new LockedTransferStore()
