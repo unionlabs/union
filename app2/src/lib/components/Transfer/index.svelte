@@ -39,8 +39,9 @@ import { truncate } from "$lib/utils/format.ts"
 import * as TransferStep from "./transfer-step.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
 import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { beforeNavigate, goto } from "$app/navigation"
 
-let showDetails = $state(false)
 let currentPage = $state(0)
 let instruction: Option.Option<Instruction.Instruction> = $state(Option.none())
 let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
@@ -120,7 +121,11 @@ let requiredApprovals = $derived.by(() => {
 })
 
 // Derive the steps based on required approvals and instruction
+let forceReset = $state(false)
 let transferSteps = $derived.by(() => {
+  if (forceReset) {
+    return Option.some([TransferStep.Filling()])
+  }
   const steps: Array<TransferStep.TransferStep> = [TransferStep.Filling()]
 
   // Add approval steps if needed
@@ -533,6 +538,23 @@ function handleActionButtonClick() {
     return
   }
 }
+
+const reset = () => {
+  currentPage = 0
+  instruction = Option.none()
+  allowances = Option.none()
+  lockedTransferStore.unlock()
+  transfer.raw.reset()
+  transferHashStore.reset()
+
+  forceReset = true
+
+  setTimeout(() => {
+    forceReset = false
+  }, 0)
+}
+
+beforeNavigate(reset)
 </script>
 
 <Card
@@ -596,17 +618,13 @@ function handleActionButtonClick() {
           {:else if TransferStep.is("WaitForIndex")(step)}
             <IndexPage
               stepIndex={i + 1}
-              onBack={goToPreviousPage}
+              newTransfer={reset}
             />
           {/if}
         {/each}
       {/if}
     </div>
   </div>
-
-  {#if showDetails}
-    <ShowData />
-  {/if}
 </Card>
 
 <!--&lt;!&ndash; Debug info can be hidden in production &ndash;&gt;-->

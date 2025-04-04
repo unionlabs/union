@@ -414,7 +414,7 @@ function hasBookmarks() {
             <!--BUTTONS-->
             <div class="flex flex-col gap-4">
               <!-- Connected wallet option -->
-              <Button class="justify-between py-5" variant="outline" onclick={useConnectedWallet}>
+              <Button class="justify-between py-5" variant="secondary" onclick={useConnectedWallet}>
                 <span class="flex items-center gap-2">
                   <SharpWalletIcon class="size-5"/>
                   {#if hasWalletAddress}
@@ -426,7 +426,7 @@ function hasBookmarks() {
               </Button>
 
               <!-- Recent Addresses Button -->
-              <Button class="justify-between py-5" variant="outline" onclick={showRecent} disabled={!hasRecent()}>
+              <Button class="justify-between py-5" variant="secondary" onclick={showRecent} disabled={!hasRecent()}>
                 <span class="flex items-center gap-2">
                   <RestoreIcon class="size-5" />Recent
                 </span>
@@ -436,7 +436,7 @@ function hasBookmarks() {
               </Button>
 
               <!-- Bookmarked Addresses Button -->
-              <Button class="justify-between py-5" variant="outline" onclick={showBookmarks} disabled={!hasBookmarks()}>
+              <Button class="justify-between py-5" variant="secondary" onclick={showBookmarks} disabled={!hasBookmarks()}>
                 <span class="flex items-center gap-2">
                   <FilledBookmarkIcon class="size-5"/> Bookmarked
                 </span>

@@ -42,8 +42,6 @@ $effect(() => {
 })
 
 let showDetails = $state(false)
-
-beforeNavigate(transfer.raw.reset)
 </script>
 
 {@render children()}

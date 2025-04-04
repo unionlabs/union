@@ -39,10 +39,6 @@ const classes = cn(
     "bg-red-500 border-red-400 border text-white hover:bg-red-700",
     "focus-visible:ring-red-500"
   ],
-  variant === "outline" && [
-    "bg-transparent border-zinc-800 border text-white hover:bg-zinc-900",
-    "focus-visible:ring-red-500"
-  ],
 
   // Height and padding
   "h-9 px-4 py-2",
