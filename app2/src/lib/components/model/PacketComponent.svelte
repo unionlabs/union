@@ -13,6 +13,7 @@ import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import TransactionComponent from "$lib/components/model/TransactionComponent.svelte"
 import HeightComponent from "$lib/components/model/HeightComponent.svelte"
 import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
+import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
 
 const sourceChain = $derived(
   Option.flatMap(packetDetails.data, data =>
@@ -316,6 +317,7 @@ const destinationChain = $derived(
         <LongMonoWord class="mt-2">{packetDetails.data.value.acknowledgement.value}</LongMonoWord>
       </div>
     {/if}
+    <PacketTracesComponent packetTraces={packetDetails.data.value.traces}/>
   </div>
 {:else}
   <div class="p-4">

@@ -9,6 +9,7 @@ import { ClientId } from "./client.js"
 import { PortId } from "./port.js"
 import { Height } from "./height.js"
 import { AggregateCount } from "./aggregate-count.js"
+import { PacketTrace } from "./packet-trace.js"
 
 export const PacketHash = S.String.pipe(S.pattern(/^0x[0-9a-f]{64}$/)).pipe(S.brand("PacketHash"))
 export type PacketHash = typeof PacketHash.Type
@@ -71,7 +72,8 @@ export class PacketDetails extends S.Class<PacketDetails>("PacketDetails")({
   write_ack_transaction_hash: S.OptionFromNullOr(TransactionHash),
   decoded: S.OptionFromNullOr(S.Any),
   decoded_flattened: S.OptionFromNullOr(S.Array(S.Any)),
-  acknowledgement: S.OptionFromNullOr(S.Any)
+  acknowledgement: S.OptionFromNullOr(S.Any),
+  traces: S.Array(PacketTrace)
 }) {}
 
 export const PacketCount = S.Struct({
