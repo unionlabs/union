@@ -19,15 +19,15 @@ export type FungibleAssetOrderIntent = {
   quoteAmount: bigint
 }
 
-const guardAgainstZeroAmount = (intent: { baseAmount: bigint, quoteAmount: bigint }) => {
+const guardAgainstZeroAmount = (intent: { baseAmount: bigint; quoteAmount: bigint }) => {
   if (intent.baseAmount <= 0n) {
-    return Effect.fail(new Error("baseAmount must be greater than zero"));
+    return Effect.fail(new Error("baseAmount must be greater than zero"))
   }
   if (intent.quoteAmount <= 0n) {
-    return Effect.fail(new Error("quoteAmount must be greater than zero"));
+    return Effect.fail(new Error("quoteAmount must be greater than zero"))
   }
-  return Effect.succeed(intent);
-};
+  return Effect.succeed(intent)
+}
 
 /**
  * Creates a fungible asset order from EVM to EVM
@@ -40,7 +40,7 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
   quoteAmount: bigint
 }) =>
   Effect.gen(function* () {
-    yield* guardAgainstZeroAmount(intent);
+    yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* ViemPublicClientSource).client
     const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
       Effect.provideService(ViemPublicClient, { client: sourceClient })
@@ -75,7 +75,7 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
   quoteAmount: bigint
 }) =>
   Effect.gen(function* () {
-    yield* guardAgainstZeroAmount(intent);
+    yield* guardAgainstZeroAmount(intent)
     yield* Effect.log("creating client")
     const sourceClient = (yield* ViemPublicClientSource).client
     yield* Effect.log("reading erc20 meta")
@@ -114,8 +114,7 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
   quoteAmount: bigint
 }) =>
   Effect.gen(function* () {
-
-    yield* guardAgainstZeroAmount(intent);
+    yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
 
     // HACK: special cased for ubbn for now
@@ -161,7 +160,7 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
   quoteAmount: bigint
 }) =>
   Effect.gen(function* () {
-    yield* guardAgainstZeroAmount(intent);
+    yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
     const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
       Effect.provideService(CosmWasmClientContext, { client: sourceClient })
@@ -196,7 +195,7 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
   quoteAmount: bigint
 }) =>
   Effect.gen(function* () {
-    yield* guardAgainstZeroAmount(intent);
+    yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
     // HACK: special cased for muno for now
     const tokenMeta =
@@ -242,7 +241,7 @@ export const createAptosToCosmosFungibleAssetOrder = (intent: {
   quoteAmount: bigint
 }) =>
   Effect.gen(function* () {
-    yield* guardAgainstZeroAmount(intent);
+    yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* AptosPublicClient).client
     const tokenMeta = yield* readFaTokenInfo(intent.baseToken).pipe(
       Effect.provideService(AptosPublicClient, { client: sourceClient })

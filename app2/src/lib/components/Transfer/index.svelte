@@ -95,7 +95,7 @@ let transferIntents = $derived.by(() => {
 })
 
 $effect(() => {
-  console.log('hey: ', transferIntents)
+  console.log("hey: ", transferIntents)
 })
 
 let requiredApprovals = $derived.by(() => {
@@ -160,24 +160,26 @@ let transferSteps = $derived.by(() => {
 })
 
 $effect(() => {
-  if (Option.isNone(transferIntents)) return;
+  if (Option.isNone(transferIntents)) return
 
-  loading = true;
+  loading = true
 
   const batchEffect = intentsToBatch(transferIntents).pipe(
     Effect.tap(batch => (instruction = batch))
-  );
+  )
 
   const allowancesEffect = checkAllowances(transferIntents).pipe(
     Effect.tap(result => (allowances = result))
-  );
+  )
 
   Effect.all([batchEffect, allowancesEffect]).pipe(
-    Effect.ensuring(Effect.sync(() => {
-      loading = false;
-    })),
+    Effect.ensuring(
+      Effect.sync(() => {
+        loading = false
+      })
+    ),
     Effect.runPromiseExit
-  );
+  )
 })
 
 const intentsToBatch = (ti: typeof transferIntents) =>
@@ -348,21 +350,25 @@ const intentsToBatch = (ti: typeof transferIntents) =>
       return new Batch({
         operand: Array.isArray(orders) ? orders : [orders]
       })
-    }).pipe(
-      Effect.ensuring(Effect.sync(() => {
-        loading = false;
-      }))
-    ).pipe(
-      Effect.provideService(CosmosChannelDestination, {
-        ucs03address: fromHex(transfer.channel.value.destination_port_id, "string"),
-        channelId: transfer.channel.value.destination_channel_id
-      }),
+    })
+      .pipe(
+        Effect.ensuring(
+          Effect.sync(() => {
+            loading = false
+          })
+        )
+      )
+      .pipe(
+        Effect.provideService(CosmosChannelDestination, {
+          ucs03address: fromHex(transfer.channel.value.destination_port_id, "string"),
+          channelId: transfer.channel.value.destination_channel_id
+        }),
 
-      Effect.provideService(EvmChannelDestination, {
-        ucs03address: transfer.channel.value.source_port_id,
-        channelId: transfer.channel.value.source_channel_id
-      })
-    )
+        Effect.provideService(EvmChannelDestination, {
+          ucs03address: transfer.channel.value.source_port_id,
+          channelId: transfer.channel.value.source_channel_id
+        })
+      )
 
     const batchResult = yield* batchEffect
     return Option.some(batchResult)
@@ -470,10 +476,12 @@ const checkAllowances = (ti: typeof transferIntents) =>
     // Unsupported chain type.
     return Option.none()
   }).pipe(
-  Effect.ensuring(Effect.sync(() => {
-    loading = false;
-  }))
-)
+    Effect.ensuring(
+      Effect.sync(() => {
+        loading = false
+      })
+    )
+  )
 
 function goToNextPage() {
   if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
@@ -561,7 +569,7 @@ const reset = () => {
   lockedTransferStore.reset()
   transfer.raw.reset()
   transferHashStore.reset()
-  loading = false;
+  loading = false
 
   forceReset = true
 
