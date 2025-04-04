@@ -1499,9 +1499,10 @@ name = "arbitrum-verifier"
 version = "0.0.0"
 dependencies = [
  "arbitrum-light-client-types",
- "error_reporter",
  "evm-storage-verifier",
+ "hex-literal",
  "rlp",
+ "serde_json",
  "sha3 0.10.8",
  "thiserror 2.0.12",
  "unionlabs",
@@ -2929,7 +2930,6 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bob-light-client-types",
- "error_reporter",
  "evm-storage-verifier",
  "hex",
  "hex-literal",
@@ -5410,12 +5410,6 @@ dependencies = [
  "libc",
  "windows-sys 0.59.0",
 ]
-
-[[package]]
-name = "error_reporter"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31ae425815400e5ed474178a7a22e275a9687086a12ca63ec793ff292d8fdae8"
 
 [[package]]
 name = "etcetera"

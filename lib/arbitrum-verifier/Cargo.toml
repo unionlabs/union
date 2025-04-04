@@ -23,4 +23,6 @@ thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true }
 
 [dev-dependencies]
-error_reporter = "1.0.0"
+arbitrum-light-client-types = { workspace = true, features = ["serde"] }
+hex-literal                 = { workspace = true }
+serde_json                  = { workspace = true }

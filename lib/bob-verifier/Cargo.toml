@@ -23,6 +23,5 @@ thiserror              = { workspace = true }
 unionlabs              = { workspace = true }
 
 [dev-dependencies]
-error_reporter = "1.0.0"
 hex            = { workspace = true }
 hex-literal    = { workspace = true }
