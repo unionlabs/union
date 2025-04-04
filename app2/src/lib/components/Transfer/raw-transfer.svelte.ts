@@ -127,7 +127,7 @@ export class RawTransferSvelte {
     })
 
     history.replaceState({}, "", url.toString())
-  }, 300)
+  }, 100)
 
   /**
    * Set multiple fields at once

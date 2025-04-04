@@ -2,7 +2,6 @@
 import Card from "$lib/components/ui/Card.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import { LockedTransfer } from "./locked-transfer.ts"
-import ShowData from "$lib/components/Transfer/ShowData.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import FillingPage from "./pages/FillingPage.svelte"
 import ApprovalPage from "./pages/ApprovalPage.svelte"
@@ -44,6 +43,7 @@ import { beforeNavigate } from "$app/navigation"
 let currentPage = $state(0)
 let instruction: Option.Option<Instruction.Instruction> = $state(Option.none())
 let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
+let loading = $state(false)
 
 //This should now handle cosmos, evm and aptos (when aptos is implemented)
 let transferIntents = $derived.by(() => {
@@ -92,6 +92,10 @@ let transferIntents = $derived.by(() => {
       }
     ])
   }
+})
+
+$effect(() => {
+  console.log('hey: ', transferIntents)
 })
 
 let requiredApprovals = $derived.by(() => {
@@ -156,16 +160,24 @@ let transferSteps = $derived.by(() => {
 })
 
 $effect(() => {
-  if (Option.isNone(transferIntents)) return
-  intentsToBatch(transferIntents).pipe(
-    Effect.tap(batch => (instruction = batch)),
-    Effect.runPromiseExit
-  )
+  if (Option.isNone(transferIntents)) return;
 
-  checkAllowances(transferIntents).pipe(
-    Effect.tap(result => (allowances = result)),
+  loading = true;
+
+  const batchEffect = intentsToBatch(transferIntents).pipe(
+    Effect.tap(batch => (instruction = batch))
+  );
+
+  const allowancesEffect = checkAllowances(transferIntents).pipe(
+    Effect.tap(result => (allowances = result))
+  );
+
+  Effect.all([batchEffect, allowancesEffect]).pipe(
+    Effect.ensuring(Effect.sync(() => {
+      loading = false;
+    })),
     Effect.runPromiseExit
-  )
+  );
 })
 
 const intentsToBatch = (ti: typeof transferIntents) =>
@@ -255,7 +267,7 @@ const intentsToBatch = (ti: typeof transferIntents) =>
 
     const batchEffect = Effect.gen(function* () {
       console.log(`batch: Transfer intent value:`, ti.value)
-
+      loading = true
       const orders = yield* Match.value([source, destination]).pipe(
         Match.when(["evm", "cosmos"], () => {
           console.log("batch: Matched EVM -> Cosmos pattern", ti.value)
@@ -327,21 +339,20 @@ const intentsToBatch = (ti: typeof transferIntents) =>
             provideCosmosChannelDestination
           )
         }),
-        Match.orElse(x => {
+        Match.orElse(() => {
           console.log(`batch: No match found for ${source} -> ${destination}, throwing error`)
           throw new Error(`Unsupported source/destination combination: ${source} -> ${destination}`)
         })
       )
 
-      // Handle both array and single order cases
-      console.log(`batch: Orders created:`, orders)
-      const batch = new Batch({
+      return new Batch({
         operand: Array.isArray(orders) ? orders : [orders]
       })
-      console.log(`batch: Batch created:`, batch)
-      return batch
     }).pipe(
-      // Provide additional services and let Effect handle dependency resolution
+      Effect.ensuring(Effect.sync(() => {
+        loading = false;
+      }))
+    ).pipe(
       Effect.provideService(CosmosChannelDestination, {
         ucs03address: fromHex(transfer.channel.value.destination_port_id, "string"),
         channelId: transfer.channel.value.destination_channel_id
@@ -360,6 +371,7 @@ const intentsToBatch = (ti: typeof transferIntents) =>
 const checkAllowances = (ti: typeof transferIntents) =>
   Effect.gen(function* () {
     console.info("Checking allowances")
+    loading = true
     if (Option.isNone(ti)) return Option.none()
     if (Option.isNone(transfer.sourceChain)) return Option.none()
     if (Option.isNone(transfer.ucs03address)) return Option.none()
@@ -457,7 +469,11 @@ const checkAllowances = (ti: typeof transferIntents) =>
 
     // Unsupported chain type.
     return Option.none()
-  })
+  }).pipe(
+  Effect.ensuring(Effect.sync(() => {
+    loading = false;
+  }))
+)
 
 function goToNextPage() {
   if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
@@ -545,6 +561,7 @@ const reset = () => {
   lockedTransferStore.reset()
   transfer.raw.reset()
   transferHashStore.reset()
+  loading = false;
 
   forceReset = true
 
@@ -595,7 +612,12 @@ beforeNavigate(reset)
     >
 
       <!-- Page 1: Filling -->
-      <FillingPage onContinue={handleActionButtonClick} {actionButtonText} />
+      <FillingPage
+              onContinue={handleActionButtonClick}
+              {actionButtonText}
+              gotSteps={Option.isSome(transferSteps) && transferSteps.value.length > 1}
+              {loading}
+      />
 
       <!-- Dynamic pages for each step -->
       {#if Option.isSome(lockedTransferStore.get())}
