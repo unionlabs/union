@@ -4,8 +4,8 @@ import { Option } from "effect"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
 import { cn } from "$lib/utils"
-import { onMount } from "svelte"
-import { fade, fly } from "svelte/transition"
+import { onMount, onDestroy } from "svelte"
+import { fade, fly, crossfade } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
 import SharpChevronLeftIcon from "$lib/components/icons/SharpChevronLeftIcon.svelte"
 import FilledBookmarkIcon from "$lib/components/icons/FilledBookmarkIcon.svelte"
@@ -46,12 +46,28 @@ $effect(() => {
 
 let isModalOpen = $state(false)
 let currentView = $state("main") // "main", "recent", "bookmarks"
+let previousView = $state("main") // Track previous view for transitions
 let manualAddress = $state("")
 let showClearConfirm = $state(false)
 let bookmarkOnAdd = $state(false)
 
 let recentAddresses: Record<string, Array<string>> = $state({})
 let bookmarkedAddresses: Record<string, Array<string>> = $state({})
+
+// Create crossfade transition
+const [send, receive] = crossfade({
+  duration: 200,
+  fallback(node) {
+    return fly(node, { delay: 0, duration: 200, y: 20 })
+  }
+})
+
+// Handle keyboard events
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape" && isModalOpen) {
+    closeModal()
+  }
+}
 
 // Load addresses from localStorage
 onMount(() => {
@@ -64,6 +80,12 @@ onMount(() => {
   } catch (e) {
     console.error("Error loading addresses from localStorage", e)
   }
+
+  document.addEventListener("keydown", handleKeydown)
+})
+
+onDestroy(() => {
+  document.removeEventListener("keydown", handleKeydown)
 })
 
 function saveAddress(address: string, isBookmarked = false) {
@@ -208,6 +230,7 @@ function toggleBookmarkOnAdd() {
 function openModal() {
   isModalOpen = true
   currentView = "main"
+  previousView = "main"
   bookmarkOnAdd = false
 }
 
@@ -215,6 +238,7 @@ function closeModal() {
   isModalOpen = false
   manualAddress = ""
   currentView = "main"
+  previousView = "main"
   showClearConfirm = false
   bookmarkOnAdd = false
 }
@@ -223,16 +247,19 @@ function goBack() {
   if (currentView === "main") {
     closeModal()
   } else {
+    previousView = currentView
     currentView = "main"
     showClearConfirm = false
   }
 }
 
 function showRecent() {
+  previousView = currentView
   currentView = "recent"
 }
 
 function showBookmarks() {
+  previousView = currentView
   currentView = "bookmarks"
 }
 
@@ -255,25 +282,46 @@ function hasBookmarks() {
 
 <!-- Modal -->
 {#if isModalOpen}
-  <div class="absolute bg-zinc-950 inset-0 z-40" transition:fade={{ duration: 300 }}>
-    <div class="w-full h-full max-h-full flex flex-col px-4 pb-4 pt-2" transition:fly={{ y: 30, duration: 300, opacity: 0 }}>
-      <div class="flex items-center justify-between mb-4 h-10">
+  <div class="absolute bg-zinc-925 inset-0 z-40" transition:fade={{ duration: 300 }}>
+    <div class="w-full h-full max-h-full flex flex-col" transition:fly={{ y: 30, duration: 300, opacity: 0 }}>
+
+      <div class="border-b border-zinc-800 flex justify-between items-center h-12 flex-shrink-0 p-4">
         <div class="flex items-center h-full">
           <button
                   aria-label="Back"
                   onclick={goBack}
                   class="mr-3 flex items-center text-zinc-400 hover:text-zinc-200 cursor-pointer h-full"
           >
-            <SharpChevronLeftIcon/>
-            <span class="text-lg text-zinc-100 ml-2">
-              {#if currentView === "main"}
-                Receiver
-              {:else if currentView === "recent"}
-                Recent
-              {:else if currentView === "bookmarks"}
-                Bookmarked
-              {/if}
-              </span>
+            <SharpChevronLeftIcon class="size-6"/>
+            <div class="ml-2 flex items-center">
+              <div class="relative w-32 h-8 flex items-center">
+                {#if currentView === "main"}
+                  <span
+                          class="text-lg text-zinc-100 absolute"
+                          in:receive={{key: 'receiver'}}
+                          out:send={{key: 'receiver'}}
+                  >
+                    Receiver
+                  </span>
+                {:else if currentView === "recent"}
+                  <span
+                          class="text-lg text-zinc-100 absolute"
+                          in:receive={{key: 'recent'}}
+                          out:send={{key: 'recent'}}
+                  >
+                    Recent
+                  </span>
+                {:else if currentView === "bookmarks"}
+                  <span
+                          class="text-lg text-zinc-100 absolute"
+                          in:receive={{key: 'bookmarked'}}
+                          out:send={{key: 'bookmarked'}}
+                  >
+                    Bookmarked
+                  </span>
+                {/if}
+              </div>
+            </div>
           </button>
         </div>
 
@@ -292,7 +340,7 @@ function hasBookmarks() {
       </div>
 
       {#if showClearConfirm}
-        <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div class="bg-zinc-800 p-4 rounded-lg w-4/5 max-w-md">
             <h4 class="text-lg font-semibold mb-3">Clear all {currentView === "recent" ? "recent" : "bookmarked"}
               addresses?</h4>
@@ -315,166 +363,180 @@ function hasBookmarks() {
         </div>
       {/if}
 
-      {#if currentView === "main"}
-        <!-- Main View -->
-        <div class="flex flex-col justify-between h-full">
-          <!-- Manual address input -->
-          <div>
-            <div class="flex flex-col gap-2">
-              <div class="flex flex-col gap-2 h-10">
-                <input
-                        type="text"
-                        bind:value={manualAddress}
-                        placeholder="Enter receiver address"
-                        class={cn(
-                    "w-full p-2 py-5 rounded-md bg-zinc-800 text-zinc-200 h-full text-center",
-                    "focus:outline-none focus:ring-1 focus:ring-sky-500",
-                  )}
-                />
-                <div class="flex flex-1 gap-2 w-full">
-                  <Button
-                          class="h-10 flex-1"
-                          disabled={!manualAddress.trim()} onclick={submitManualAddress}>
-                    Use
-                  </Button>
-                  <Button
-                          class="h-10 px-2"
-                          disabled={!manualAddress.trim()}
-                          onclick={toggleBookmarkOnAdd}
-                          aria-label={bookmarkOnAdd ? "Remove bookmark on add" : "Add bookmark on add"}
-                  >
-
-                    {#if bookmarkOnAdd}
-                      <FilledBookmarkIcon class="size-5"/>
-                    {:else}
-                      <OutlinedBookmarkIcon class="size-5"/>
-                    {/if}
-                  </Button>
-                </div>
-              </div>
-              {#if bookmarkOnAdd}
-                <div class="text-xs text-zinc-400">Address will be bookmarked when added</div>
-              {/if}
-            </div>
-          </div>
-
-          <!--BUTTONS-->
-          <div class="flex flex-col gap-4">
-            <!-- Connected wallet option -->
-            <Button class="justify-between py-5" onclick={useConnectedWallet}>
-              <span class="flex items-center gap-2">
-                <SharpWalletIcon class="size-5"/>
-                {#if hasWalletAddress}
-                Connected Wallet
-              {:else}
-                Connect a Wallet
-              {/if}
-              </span>
-            </Button>
-
-            <!-- Recent Addresses Button -->
-            <Button class="justify-between py-5" onclick={showRecent} disabled={!hasRecent()}>
-              <span class="flex items-center gap-2">
-                <RestoreIcon class="size-5" />Recent
-              </span>
-              {#if hasRecent()}
-                <span class="px-2 py-1 text-xs bg-zinc-700 rounded text-white">{recentAddresses[destinationChainId].length}</span>
-              {/if}
-            </Button>
-
-            <!-- Bookmarked Addresses Button -->
-            <Button class="justify-between py-5" onclick={showBookmarks} disabled={!hasBookmarks()}>
-              <span class="flex items-center gap-2">
-                <FilledBookmarkIcon class="size-5"/> Bookmarked
-              </span>
-
-              {#if hasBookmarks()}
-                <span class="px-2 py-0.5 text-xs bg-zinc-700 rounded text-white">{bookmarkedAddresses[destinationChainId].length}</span>
-              {/if}
-            </Button>
-          </div>
-        </div>
-      {:else if currentView === "recent"}
-        <!-- Recent Addresses View -->
-        <div class="overflow-y-auto flex-grow">
-          {#if destinationChainId && recentAddresses[destinationChainId]?.length > 0}
-            <div class="space-y-2">
-              {#each recentAddresses[destinationChainId] as address}
-                <div class="flex items-center justify-between p-2 rounded bg-zinc-800">
-                  <button
-                          onclick={() => useAddress(address)}
-                          class="text-left flex-grow truncate text-zinc-200 hover:text-white"
-                  >
-                    {address}
-                  </button>
-                  <div class="flex items-center ml-2">
-                    <button
-                            onclick={() => toggleBookmark(address)}
-                            class="cursor-pointer p-1"
-                            aria-label={isBookmarked(address) ? "Remove bookmark" : "Add bookmark"}
+      <!-- Content area with transitions -->
+      <div class="flex-grow relative overflow-hidden">
+        {#if currentView === "main"}
+          <div
+                  class="flex flex-col justify-between h-full p-4 absolute inset-0"
+                  in:fly={{ x: previousView !== "main" ? -20 : 0, duration: 300, opacity: 0 }}
+                  out:fly={{ x: -20, duration: 300, opacity: 0 }}
+          >
+            <!-- Manual address input -->
+            <div>
+              <div class="flex flex-col gap-2">
+                <div class="flex flex-col gap-2 h-10">
+                  <input
+                          type="text"
+                          bind:value={manualAddress}
+                          placeholder="Enter receiver address"
+                          class={cn(
+                      "w-full p-2 py-5 rounded-md bg-zinc-800 text-zinc-200 h-full text-center",
+                      "focus:outline-none focus:ring-1 focus:ring-sky-500",
+                    )}
+                  />
+                  <div class="flex flex-1 gap-2 w-full">
+                    <Button
+                            class="h-10 flex-1"
+                            disabled={!manualAddress.trim()} onclick={submitManualAddress}>
+                      Use
+                    </Button>
+                    <Button
+                            class="h-10 px-2"
+                            disabled={!manualAddress.trim()}
+                            onclick={toggleBookmarkOnAdd}
+                            aria-label={bookmarkOnAdd ? "Remove bookmark on add" : "Add bookmark on add"}
                     >
-                      {#if isBookmarked(address)}
-                        <FilledBookmarkIcon/>
+
+                      {#if bookmarkOnAdd}
+                        <FilledBookmarkIcon class="size-5"/>
                       {:else}
-                        <OutlinedBookmarkIcon/>
+                        <OutlinedBookmarkIcon class="size-5"/>
                       {/if}
-                    </button>
-                    <button
-                            onclick={() => removeAddress(address, "recent")}
-                            class="cursor-pointer p-1 text-zinc-400 hover:text-zinc-200"
-                            aria-label="Remove from recent"
-                    >
-                      <SharpCancelIcon/>
-                    </button>
+                    </Button>
                   </div>
                 </div>
-              {/each}
+                {#if bookmarkOnAdd}
+                  <div class="text-xs text-zinc-400">Address will be bookmarked when added</div>
+                {/if}
+              </div>
             </div>
-          {:else}
-            <div class="text-center py-8 text-zinc-400">
-              No recent addresses found
+
+            <!--BUTTONS-->
+            <div class="flex flex-col gap-4">
+              <!-- Connected wallet option -->
+              <Button class="justify-between py-5" variant="outline" onclick={useConnectedWallet}>
+                <span class="flex items-center gap-2">
+                  <SharpWalletIcon class="size-5"/>
+                  {#if hasWalletAddress}
+                  Connected Wallet
+                {:else}
+                  Connect a Wallet
+                {/if}
+                </span>
+              </Button>
+
+              <!-- Recent Addresses Button -->
+              <Button class="justify-between py-5" variant="outline" onclick={showRecent} disabled={!hasRecent()}>
+                <span class="flex items-center gap-2">
+                  <RestoreIcon class="size-5" />Recent
+                </span>
+                {#if hasRecent()}
+                  <span class="px-3 py-1 -mr-1 text-xs bg-zinc-800 rounded text-white">{recentAddresses[destinationChainId].length}</span>
+                {/if}
+              </Button>
+
+              <!-- Bookmarked Addresses Button -->
+              <Button class="justify-between py-5" variant="outline" onclick={showBookmarks} disabled={!hasBookmarks()}>
+                <span class="flex items-center gap-2">
+                  <FilledBookmarkIcon class="size-5"/> Bookmarked
+                </span>
+
+                {#if hasBookmarks()}
+                  <span class="px-3 py-1 -mr-1 text-xs bg-zinc-800 rounded text-white">{bookmarkedAddresses[destinationChainId].length}</span>
+                {/if}
+              </Button>
             </div>
-          {/if}
-        </div>
-      {:else if currentView === "bookmarks"}
-        <!-- Bookmarked Addresses View -->
-        <div class="overflow-y-auto flex-grow">
-          {#if destinationChainId && bookmarkedAddresses[destinationChainId]?.length > 0}
-            <div class="space-y-2">
-              {#each bookmarkedAddresses[destinationChainId] as address}
-                <div class="flex items-center justify-between p-2 rounded bg-zinc-700">
-                  <button
-                          onclick={() => useAddress(address)}
-                          class="text-left flex-grow truncate text-zinc-200 hover:text-white"
-                  >
-                    {address}
-                  </button>
-                  <div class="flex items-center ml-2">
+          </div>
+        {:else if currentView === "recent"}
+          <!-- Recent Addresses View -->
+          <div
+                  class="overflow-y-auto p-4 absolute inset-0 h-full"
+                  in:fly={{ x: previousView === "main" ? 20 : -20, duration: 300, opacity: 0 }}
+                  out:fly={{ x: previousView === "main" ? -20 : 20, duration: 300, opacity: 0 }}
+          >
+            {#if destinationChainId && recentAddresses[destinationChainId]?.length > 0}
+              <div class="space-y-2">
+                {#each recentAddresses[destinationChainId] as address}
+                  <div class="flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer rounded">
                     <button
-                            onclick={() => toggleBookmark(address)}
-                            class="cursor-pointer p-1"
-                            aria-label="Remove bookmark"
+                            onclick={() => useAddress(address)}
+                            class="text-left flex-grow truncate text-zinc-200 hover:text-white text-sm cursor-pointer"
                     >
-                      <FilledBookmarkIcon/>
+                      {address}
                     </button>
-                    <button
-                            onclick={() => removeAddress(address, "bookmarked")}
-                            class="cursor-pointer p-1 text-zinc-400 hover:text-zinc-200"
-                            aria-label="Remove from bookmarks"
-                    >
-                      <SharpCancelIcon/>
-                    </button>
+                    <div class="flex items-center ml-2">
+                      <button
+                              onclick={() => toggleBookmark(address)}
+                              class="cursor-pointer p-1"
+                              aria-label={isBookmarked(address) ? "Remove bookmark" : "Add bookmark"}
+                      >
+                        {#if isBookmarked(address)}
+                          <FilledBookmarkIcon/>
+                        {:else}
+                          <OutlinedBookmarkIcon/>
+                        {/if}
+                      </button>
+                      <button
+                              onclick={() => removeAddress(address, "recent")}
+                              class="cursor-pointer p-1 text-zinc-400 hover:text-zinc-200"
+                              aria-label="Remove from recent"
+                      >
+                        <SharpCancelIcon/>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              {/each}
-            </div>
-          {:else}
-            <div class="text-center py-8 text-zinc-400">
-              No bookmarked addresses found
-            </div>
-          {/if}
-        </div>
-      {/if}
+                {/each}
+              </div>
+            {:else}
+              <div class="text-center py-8 text-zinc-400">
+                No recent addresses found
+              </div>
+            {/if}
+          </div>
+        {:else if currentView === "bookmarks"}
+          <!-- Bookmarked Addresses View -->
+          <div
+                  class="overflow-y-auto p-4 absolute inset-0 h-full"
+                  in:fly={{ x: previousView === "main" ? 20 : -20, duration: 300, opacity: 0 }}
+                  out:fly={{ x: previousView === "main" ? -20 : 20, duration: 300, opacity: 0 }}
+          >
+            {#if destinationChainId && bookmarkedAddresses[destinationChainId]?.length > 0}
+              <div class="space-y-2">
+                {#each bookmarkedAddresses[destinationChainId] as address}
+                  <div class="flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800 transition-colors rounded cursor-pointer">
+                    <button
+                            onclick={() => useAddress(address)}
+                            class="text-left flex-grow truncate text-zinc-200 hover:text-white cursor-pointer"
+                    >
+                      {address}
+                    </button>
+                    <div class="flex items-center ml-2">
+                      <button
+                              onclick={() => toggleBookmark(address)}
+                              class="cursor-pointer p-1"
+                              aria-label="Remove bookmark"
+                      >
+                        <FilledBookmarkIcon/>
+                      </button>
+                      <button
+                              onclick={() => removeAddress(address, "bookmarked")}
+                              class="cursor-pointer p-1 text-zinc-400 hover:text-zinc-200"
+                              aria-label="Remove from bookmarks"
+                      >
+                        <SharpCancelIcon/>
+                      </button>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {:else}
+              <div class="text-center py-8 text-zinc-400">
+                No bookmarked addresses found
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
 {/if}

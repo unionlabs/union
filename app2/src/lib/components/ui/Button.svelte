@@ -4,7 +4,7 @@ import type { HTMLButtonAttributes } from "svelte/elements"
 import type { Snippet } from "svelte"
 
 type Props = HTMLButtonAttributes & {
-  variant?: "primary" | "secondary" | "danger"
+  variant?: "primary" | "secondary" | "danger" | "outline"
   class?: string
   children: Snippet
 }
@@ -37,6 +37,10 @@ const classes = cn(
   ],
   variant === "danger" && [
     "bg-red-500 border-red-400 border text-white hover:bg-red-700",
+    "focus-visible:ring-red-500"
+  ],
+  variant === "outline" && [
+    "bg-transparent border-zinc-800 border text-white hover:bg-zinc-900",
     "focus-visible:ring-red-500"
   ],
 

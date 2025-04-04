@@ -26,6 +26,7 @@ type FillingEnum = Data.TaggedEnum<{
   AssetNeeded: {}
   DestinationNeeded: {}
   AmountNeeded: {}
+  ReceiverNeeded: {}
   ReadyToReview: { isValid: boolean }
 }>
 
@@ -38,11 +39,11 @@ const {
   AssetNeeded,
   DestinationNeeded,
   AmountNeeded,
+  ReceiverNeeded,
   ReadyToReview
 } = FillingState
 
 const transferState = $derived.by<FillingEnum>(() => {
-  //Check if we have any wallet
   if (!wallets.hasAnyWallet()) {
     return WalletNeeded()
   }
@@ -70,6 +71,15 @@ const transferState = $derived.by<FillingEnum>(() => {
           return AmountNeeded()
         }
 
+        const parsedAmount = Number.parseFloat(transfer.raw.amount)
+        if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+          return AmountNeeded()
+        }
+
+        if (Option.isSome(transfer.destinationChain) && Option.isNone(transfer.derivedReceiver)) {
+          return ReceiverNeeded()
+        }
+
         return ReadyToReview({
           isValid: transfer.validation._tag === "Success"
         })
@@ -84,6 +94,13 @@ const buttonText = $derived.by(() => {
     return "No channel open"
   }
 
+  if (transfer.raw.amount) {
+    const parsedAmount = Number.parseFloat(transfer.raw.amount)
+    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+      return "Amount can't be 0"
+    }
+  }
+
   return FillingState.$match(transferState, {
     WalletNeeded: () => "Connect wallet",
     ChainNeeded: () => "Select chain",
@@ -91,6 +108,7 @@ const buttonText = $derived.by(() => {
     AssetNeeded: () => "Select asset",
     DestinationNeeded: () => "Select destination",
     AmountNeeded: () => "Enter amount",
+    ReceiverNeeded: () => "Select receiver",
     ReadyToReview: () => "Review transfer"
   })
 })
@@ -100,6 +118,10 @@ const isButtonEnabled = $derived.by(() => {
     Match.when(
       state => state._tag === "WalletNeeded" || state._tag === "ChainWalletNeeded",
       () => true
+    ),
+    Match.when(
+      state => state._tag === "ReceiverNeeded",
+      () => false
     ),
     Match.when(
       state => state._tag === "ReadyToReview" && state.isValid,
@@ -120,13 +142,10 @@ function handleButtonClick() {
     ChainNeeded: () => {},
     AssetNeeded: () => {},
     DestinationNeeded: () => {},
-    AmountNeeded: () => {}
+    AmountNeeded: () => {},
+    ReceiverNeeded: () => {}
   })
 }
-
-$effect(() => {
-  console.log(transfer.validation.fieldErrors)
-})
 </script>
 
 <div class="min-w-full p-4 flex flex-col justify-between h-full">
