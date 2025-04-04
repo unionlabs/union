@@ -19,6 +19,7 @@ export type TransferIntent = {
   baseAmount: bigint;
   quoteAmount: bigint;
 };
+export type TransferIntents = Array<TransferIntent>;
 
 export class Transfer {
   raw = new RawTransferSvelte()
@@ -161,22 +162,21 @@ export class Transfer {
   })
 
   intents = $derived.by(() => {
-    if (this.validation._tag !== "Success") return Option.none()
-    const transferValue = this.validation.value
+    if (this.validation._tag !== "Success") return Option.none<TransferIntents>();
+    const transferValue = this.validation.value;
 
-    if (Option.isNone(this.derivedSender)) return Option.none()
+    if (Option.isNone(this.derivedSender)) return Option.none<TransferIntents>();
 
-    const sender = Option.getOrUndefined(this.derivedSender)
-    if (!sender) return Option.none()
+    const sender = Option.getOrUndefined(this.derivedSender);
+    if (!sender) return Option.none<TransferIntents>();
 
     return Match.value(transferValue.sourceChain.rpc_type).pipe(
       Match.when("evm", () => {
-        if (Option.isNone(this.wethBaseToken)) return Option.none()
-        // Safely get the wethBaseToken
-        const wethToken = Option.getOrUndefined(this.wethBaseToken)
-        if (!wethToken) return Option.none()
+        if (Option.isNone(this.wethBaseToken)) return Option.none<TransferIntents>();
+        const wethToken = Option.getOrUndefined(this.wethBaseToken);
+        if (!wethToken) return Option.none<TransferIntents>();
 
-        return Option.some([
+        return Option.some<TransferIntents>([
           {
             sender: sender,
             receiver: transferValue.receiver,
@@ -191,10 +191,11 @@ export class Transfer {
             baseAmount: 500n,
             quoteAmount: 0n
           }
-        ])
+        ]);
       }),
+
       Match.when("cosmos", () => {
-        return Option.some([
+        return Option.some<TransferIntents>([
           {
             sender: sender,
             receiver: transferValue.receiver.toLowerCase(),
@@ -204,11 +205,12 @@ export class Transfer {
             baseAmount: transferValue.baseAmount,
             quoteAmount: transferValue.baseAmount
           }
-        ])
+        ]);
       }),
-      Match.orElse(() => Option.none())
-    )
-  })
+
+      Match.orElse(() => Option.none<TransferIntents>())
+    );
+  });
 
   validation = $derived.by<ValidationResult>(() => validateTransfer(this.args))
 }
