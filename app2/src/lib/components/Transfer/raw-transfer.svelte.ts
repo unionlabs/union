@@ -127,7 +127,7 @@ export class RawTransferSvelte {
     })
 
     history.replaceState({}, "", url.toString())
-  }, 300)
+  }, 100)
 
   /**
    * Set multiple fields at once
@@ -183,7 +183,7 @@ export class RawTransferSvelte {
 
     // Handle dependent field resets
     const resetMapping: Partial<Record<keyof FormFields, Array<keyof FormFields>>> = {
-      source: ["asset", "amount", "destination"],
+      source: ["asset", "amount"],
       asset: ["amount"],
       destination: ["receiver"]
     } as const

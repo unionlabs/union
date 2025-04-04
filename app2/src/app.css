@@ -20,11 +20,17 @@
 
 @theme {
   --color-zinc-925: oklch(0.1755 0.0055 285.854);
+  --color-union: oklch(0.84 0.1281 215.6);
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+@utility blur-fade-bottom-up {
+  backdrop-filter: blur(8px);
+  mask: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0) 100%);
 }
 
 pre {

@@ -2,10 +2,11 @@
 import { Option } from "effect"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
-import Input from "$lib/components/ui/Input.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import TransferAsset from "$lib/components/Transfer/ChainAsset/TransferAsset.svelte"
 import { Token } from "@unionlabs/sdk/schema"
+import { fade } from "svelte/transition"
+import { tick } from "svelte"
 
 type Props = {
   onSelect: () => void
@@ -14,6 +15,8 @@ type Props = {
 const { onSelect }: Props = $props()
 
 let searchQuery = $state("")
+let searchOpen = $state(false)
+let searchInput: HTMLInputElement | null = null
 
 const isWalletConnected = $derived.by(() => {
   if (Option.isNone(transfer.sourceChain)) return false
@@ -22,35 +25,23 @@ const isWalletConnected = $derived.by(() => {
 })
 
 const filteredTokens = $derived.by(() => {
-  // If we don't have base tokens yet, return empty array
   if (Option.isNone(transfer.baseTokens)) return [] as Array<Token>
 
   let tokensToShow: Array<Token>
 
-  // If wallet is connected, and we have sorted balances, use the sorted order
   if (isWalletConnected && Option.isSome(transfer.sortedBalances)) {
-    // Extract tokens in order from sortedBalances
     const sortedDenoms = transfer.sortedBalances.value.map(item => item.token.denom)
-
-    // Get full token details from baseTokens
     const baseTokens = transfer.baseTokens.value
-
-    // Create token lookup map for efficient access
     const tokenMap = new Map(baseTokens.map(token => [token.denom, token]))
-
-    // Create sorted token array with full details
     tokensToShow = sortedDenoms
       .map(denom => tokenMap.get(denom))
       .filter((token): token is Token => !!token)
   } else {
-    // No wallet connected or no sorted balances, just use base tokens
     tokensToShow = [...transfer.baseTokens.value]
   }
 
-  // If no search query, return all tokens
   if (!searchQuery) return tokensToShow
 
-  // Filter by search query
   const query = searchQuery.toLowerCase()
   return tokensToShow.filter(
     token =>
@@ -64,21 +55,26 @@ function selectAsset(token: Token) {
   transfer.raw.updateField("asset", token.denom)
   onSelect()
 }
+
+async function toggleSearch() {
+  searchOpen = !searchOpen
+
+  if (searchOpen) {
+    // Wait for the input to be visible in the DOM
+    await tick()
+    // Focus the input once it opens
+    if (searchInput) {
+      searchInput.focus()
+    }
+  } else {
+    searchQuery = ""
+  }
+}
 </script>
 
-<div class="p-4 border-y border-zinc-700">
-  <!-- Search Bar -->
-  <Input
-          type="text"
-          placeholder="Search assets..."
-          disabled={!Option.isSome(transfer.sourceChain)}
-          value={searchQuery}
-          oninput={(e) => (searchQuery = (e.currentTarget as HTMLInputElement).value)}
-  />
-</div>
-
-<div class="overflow-y-scroll mb-12">
-  <div class="w-full h-full">
+<div class="h-full flex flex-col relative">
+  <div class="overflow-y-auto flex-grow" in:fade={{ duration: 300 }}>
+    <div class="w-full">
       {#if Option.isNone(transfer.sourceChain)}
         <div class="flex items-center justify-center text-zinc-500 p-8">
           Please select a source chain first
@@ -104,7 +100,7 @@ function selectAsset(token: Token) {
           {searchQuery ? `No assets found matching "${searchQuery}"` : "No tokens found for this chain"}
         </div>
       {:else}
-        <div>
+        <div class="flex flex-col gap-1 p-2 pb-16">
           {#each filteredTokens as token}
             {#key token.denom}
               <TransferAsset {token} {selectAsset} />
@@ -112,5 +108,41 @@ function selectAsset(token: Token) {
           {/each}
         </div>
       {/if}
+    </div>
+  </div>
+
+  <div class="absolute bottom-0 inset-x-0 z-0 {searchOpen ? 'h-20' : 'h-0'} transition-all bg-gradient-to-t from-zinc-925 to-transparent blur-fade-bottom-up"></div>
+  <div class="absolute bottom-0 inset-x-0 z-10 flex justify-end w-full p-4">
+    <div class="flex items-center bg-zinc-800 rounded-md shadow-lg overflow-hidden transition-all duration-300 ease-in-out {searchOpen ? 'w-full' : 'w-10'}">
+      {#if searchOpen}
+        <div class="flex-grow flex items-center transition-all duration-300 ease-in-out">
+          <input
+                  bind:this={searchInput}
+                  type="text"
+                  placeholder="Search assets..."
+                  disabled={!Option.isSome(transfer.sourceChain)}
+                  value={searchQuery}
+                  class="bg-transparent border-0 pl-4 pr-2 py-2 h-10 focus:ring-0 w-full text-zinc-100 focus:outline-none focus:ring-0 focus:none"
+                  oninput={(e) => (searchQuery = (e.currentTarget as HTMLInputElement).value)}
+          />
+        </div>
+      {/if}
+      <button
+              class="flex items-center justify-center h-10 w-10 {searchOpen ? 'bg-zinc-700 hover:bg-zinc-600' : 'bg-zinc-800 hover:bg-zinc-700'} text-zinc-300 flex-shrink-0 transition-colors duration-300 cursor-pointer"
+              onclick={toggleSearch}
+              aria-label={searchOpen ? "Close search" : "Search assets"}
+              disabled={!Option.isSome(transfer.sourceChain)}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          {#if searchOpen}
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          {:else}
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          {/if}
+        </svg>
+      </button>
+    </div>
   </div>
 </div>

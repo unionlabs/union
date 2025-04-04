@@ -34,9 +34,9 @@ const isChainLoading = $derived.by(() => {
   <button
           onclick={onClick}
           class={cn(
-      "w-full h-14 rounded-md bg-zinc-800 text-zinc-200",
-      "hover:bg-zinc-600 hover:border-zinc-500",
-      "focus:outline-none focus:ring-2 focus:ring-sky-500",
+      "w-full h-14 rounded-md bg-zinc-800/70 text-zinc-200",
+      "hover:bg-zinc-800 hover:border-zinc-500",
+      "focus:outline-none focus:ring-1 focus:ring-white",
       "disabled:opacity-50 disabled:cursor-not-allowed",
       "transition-all duration-200 cursor-pointer",
     )}
@@ -54,12 +54,10 @@ const isChainLoading = $derived.by(() => {
         </div>
       {:else if Option.isNone(selectedChain)}
         <!-- No Chain Selected -->
-        <div class="flex gap-2 items-center justify-between p-2 flex-1">
-          <div class="w-8 h-8 flex items-center bg-zinc-500 rounded-full justify-center">
-            ?
-          </div>
+        <div class="flex gap-2 items-center justify-between p-3 flex-1">
+          <div class="w-8 h-8 flex items-center bg-zinc-700 rounded-full justify-center"></div>
           <span class="text-zinc-400 flex-1 text-start">Select</span>
-          <SharpChevronDownIcon/>
+          <SharpChevronDownIcon class="size-6"/>
         </div>
       {:else}
 

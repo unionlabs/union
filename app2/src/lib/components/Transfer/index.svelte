@@ -2,7 +2,6 @@
 import Card from "$lib/components/ui/Card.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import { LockedTransfer } from "./locked-transfer.ts"
-import ShowData from "$lib/components/Transfer/ShowData.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import FillingPage from "./pages/FillingPage.svelte"
 import ApprovalPage from "./pages/ApprovalPage.svelte"
@@ -35,15 +34,16 @@ import {
   createCosmWasmClient
 } from "@unionlabs/sdk/cosmos"
 import { fromHex, http, isHex } from "viem"
-import { truncate } from "$lib/utils/format.ts"
 import * as TransferStep from "./transfer-step.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
 import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { beforeNavigate } from "$app/navigation"
 
-let showDetails = $state(false)
 let currentPage = $state(0)
 let instruction: Option.Option<Instruction.Instruction> = $state(Option.none())
 let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
+let loading = $state(false)
 
 //This should now handle cosmos, evm and aptos (when aptos is implemented)
 let transferIntents = $derived.by(() => {
@@ -94,6 +94,10 @@ let transferIntents = $derived.by(() => {
   }
 })
 
+$effect(() => {
+  console.log("hey: ", transferIntents)
+})
+
 let requiredApprovals = $derived.by(() => {
   if (Option.isNone(transferIntents) || Option.isNone(allowances)) return Option.none()
 
@@ -120,7 +124,11 @@ let requiredApprovals = $derived.by(() => {
 })
 
 // Derive the steps based on required approvals and instruction
+let forceReset = $state(false)
 let transferSteps = $derived.by(() => {
+  if (forceReset) {
+    return Option.some([TransferStep.Filling()])
+  }
   const steps: Array<TransferStep.TransferStep> = [TransferStep.Filling()]
 
   // Add approval steps if needed
@@ -153,13 +161,23 @@ let transferSteps = $derived.by(() => {
 
 $effect(() => {
   if (Option.isNone(transferIntents)) return
-  intentsToBatch(transferIntents).pipe(
-    Effect.tap(batch => (instruction = batch)),
-    Effect.runPromiseExit
+
+  loading = true
+
+  const batchEffect = intentsToBatch(transferIntents).pipe(
+    Effect.tap(batch => (instruction = batch))
   )
 
-  checkAllowances(transferIntents).pipe(
-    Effect.tap(result => (allowances = result)),
+  const allowancesEffect = checkAllowances(transferIntents).pipe(
+    Effect.tap(result => (allowances = result))
+  )
+
+  Effect.all([batchEffect, allowancesEffect]).pipe(
+    Effect.ensuring(
+      Effect.sync(() => {
+        loading = false
+      })
+    ),
     Effect.runPromiseExit
   )
 })
@@ -251,7 +269,7 @@ const intentsToBatch = (ti: typeof transferIntents) =>
 
     const batchEffect = Effect.gen(function* () {
       console.log(`batch: Transfer intent value:`, ti.value)
-
+      loading = true
       const orders = yield* Match.value([source, destination]).pipe(
         Match.when(["evm", "cosmos"], () => {
           console.log("batch: Matched EVM -> Cosmos pattern", ti.value)
@@ -323,31 +341,34 @@ const intentsToBatch = (ti: typeof transferIntents) =>
             provideCosmosChannelDestination
           )
         }),
-        Match.orElse(x => {
+        Match.orElse(() => {
           console.log(`batch: No match found for ${source} -> ${destination}, throwing error`)
           throw new Error(`Unsupported source/destination combination: ${source} -> ${destination}`)
         })
       )
 
-      // Handle both array and single order cases
-      console.log(`batch: Orders created:`, orders)
-      const batch = new Batch({
+      return new Batch({
         operand: Array.isArray(orders) ? orders : [orders]
       })
-      console.log(`batch: Batch created:`, batch)
-      return batch
-    }).pipe(
-      // Provide additional services and let Effect handle dependency resolution
-      Effect.provideService(CosmosChannelDestination, {
-        ucs03address: fromHex(transfer.channel.value.destination_port_id, "string"),
-        channelId: transfer.channel.value.destination_channel_id
-      }),
+    })
+      .pipe(
+        Effect.ensuring(
+          Effect.sync(() => {
+            loading = false
+          })
+        )
+      )
+      .pipe(
+        Effect.provideService(CosmosChannelDestination, {
+          ucs03address: fromHex(transfer.channel.value.destination_port_id, "string"),
+          channelId: transfer.channel.value.destination_channel_id
+        }),
 
-      Effect.provideService(EvmChannelDestination, {
-        ucs03address: transfer.channel.value.source_port_id,
-        channelId: transfer.channel.value.source_channel_id
-      })
-    )
+        Effect.provideService(EvmChannelDestination, {
+          ucs03address: transfer.channel.value.source_port_id,
+          channelId: transfer.channel.value.source_channel_id
+        })
+      )
 
     const batchResult = yield* batchEffect
     return Option.some(batchResult)
@@ -356,6 +377,7 @@ const intentsToBatch = (ti: typeof transferIntents) =>
 const checkAllowances = (ti: typeof transferIntents) =>
   Effect.gen(function* () {
     console.info("Checking allowances")
+    loading = true
     if (Option.isNone(ti)) return Option.none()
     if (Option.isNone(transfer.sourceChain)) return Option.none()
     if (Option.isNone(transfer.ucs03address)) return Option.none()
@@ -453,7 +475,13 @@ const checkAllowances = (ti: typeof transferIntents) =>
 
     // Unsupported chain type.
     return Option.none()
-  })
+  }).pipe(
+    Effect.ensuring(
+      Effect.sync(() => {
+        loading = false
+      })
+    )
+  )
 
 function goToNextPage() {
   if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
@@ -533,6 +561,24 @@ function handleActionButtonClick() {
     return
   }
 }
+
+const reset = () => {
+  currentPage = 0
+  instruction = Option.none()
+  allowances = Option.none()
+  lockedTransferStore.reset()
+  transfer.raw.reset()
+  transferHashStore.reset()
+  loading = false
+
+  forceReset = true
+
+  setTimeout(() => {
+    forceReset = false
+  }, 0)
+}
+
+beforeNavigate(reset)
 </script>
 
 <Card
@@ -574,7 +620,12 @@ function handleActionButtonClick() {
     >
 
       <!-- Page 1: Filling -->
-      <FillingPage onContinue={handleActionButtonClick} {actionButtonText} />
+      <FillingPage
+              onContinue={handleActionButtonClick}
+              {actionButtonText}
+              gotSteps={Option.isSome(transferSteps) && transferSteps.value.length > 1}
+              {loading}
+      />
 
       <!-- Dynamic pages for each step -->
       {#if Option.isSome(lockedTransferStore.get())}
@@ -596,65 +647,61 @@ function handleActionButtonClick() {
           {:else if TransferStep.is("WaitForIndex")(step)}
             <IndexPage
               stepIndex={i + 1}
-              onBack={goToPreviousPage}
+              newTransfer={reset}
             />
           {/if}
         {/each}
       {/if}
     </div>
   </div>
-
-  {#if showDetails}
-    <ShowData />
-  {/if}
 </Card>
 
-<!-- Debug info can be hidden in production -->
-{#if Option.isSome(lockedTransferStore.get()) || Option.isSome(transferSteps)}
-  <div class="mt-4">
-    <h3 class="text-lg font-semibold">Current Page: {currentPage}</h3>
-    <h4 class="text-md">Steps to complete transfer:</h4>
-    <ol class="list-decimal pl-5 mt-2">
-      {#each lockedTransferStore
-        .get()
-        .pipe( Option.map((lts) => lts.steps), Option.orElse(() => transferSteps), Option.getOrElse( () => [], ), ) as step, index}
-        <li class="mb-2" class:font-bold={index === currentPage}>
-          {#if TransferStep.is("Filling")(step)}
-            <div>Configure transfer details</div>
-          {:else if TransferStep.is("ApprovalRequired")(step)}
-            <div>
-              Approve token: <span class="font-mono"
-                >{truncate(step.token, 8, "middle")}</span
-              >
-              <div class="text-sm">
-                Current allowance: {step.currentAllowance.toString()}
-                <br />
-                Required amount: {step.requiredAmount.toString()}
-              </div>
-            </div>
-          {:else if TransferStep.is("SubmitInstruction")(step)}
-            <div>Submit transfer instruction</div>
-          {/if}
-        </li>
-      {/each}
-    </ol>
-  </div>
-{/if}
+<!--&lt;!&ndash; Debug info can be hidden in production &ndash;&gt;-->
+<!--{#if Option.isSome(lockedTransferStore.get()) || Option.isSome(transferSteps)}-->
+<!--  <div class="mt-4">-->
+<!--    <h3 class="text-lg font-semibold">Current Page: {currentPage}</h3>-->
+<!--    <h4 class="text-md">Steps to complete transfer:</h4>-->
+<!--    <ol class="list-decimal pl-5 mt-2">-->
+<!--      {#each lockedTransferStore-->
+<!--        .get()-->
+<!--        .pipe( Option.map((lts) => lts.steps), Option.orElse(() => transferSteps), Option.getOrElse( () => [], ), ) as step, index}-->
+<!--        <li class="mb-2" class:font-bold={index === currentPage}>-->
+<!--          {#if TransferStep.is("Filling")(step)}-->
+<!--            <div>Configure transfer details</div>-->
+<!--          {:else if TransferStep.is("ApprovalRequired")(step)}-->
+<!--            <div>-->
+<!--              Approve token: <span class="font-mono"-->
+<!--                >{truncate(step.token, 8, "middle")}</span-->
+<!--              >-->
+<!--              <div class="text-sm">-->
+<!--                Current allowance: {step.currentAllowance.toString()}-->
+<!--                <br />-->
+<!--                Required amount: {step.requiredAmount.toString()}-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          {:else if TransferStep.is("SubmitInstruction")(step)}-->
+<!--            <div>Submit transfer instruction</div>-->
+<!--          {/if}-->
+<!--        </li>-->
+<!--      {/each}-->
+<!--    </ol>-->
+<!--  </div>-->
+<!--{/if}-->
 
-<h2>transfer intents</h2>
-<pre>{JSON.stringify(transferIntents, null, 2)}</pre>
+<!--<h2>transfer intents</h2>-->
+<!--<pre>{JSON.stringify(transferIntents, null, 2)}</pre>-->
 
-<h2>instruction</h2>
-<pre>{JSON.stringify(instruction, null, 2)}</pre>
+<!--<h2>instruction</h2>-->
+<!--<pre>{JSON.stringify(instruction, null, 2)}</pre>-->
 
-<h2>allowances</h2>
-<pre>{JSON.stringify(allowances, null, 2)}</pre>
+<!--<h2>allowances</h2>-->
+<!--<pre>{JSON.stringify(allowances, null, 2)}</pre>-->
 
-<h2>required approvals</h2>
-<pre>{JSON.stringify(requiredApprovals, null, 2)}</pre>
+<!--<h2>required approvals</h2>-->
+<!--<pre>{JSON.stringify(requiredApprovals, null, 2)}</pre>-->
 
-<h2>transfer steps</h2>
-<pre>{JSON.stringify(transferSteps, null, 2)}</pre>
+<!--<h2>transfer steps</h2>-->
+<!--<pre>{JSON.stringify(transferSteps, null, 2)}</pre>-->
 
-<h2>locked transfer</h2>
-<pre>{JSON.stringify(lockedTransferStore.get(), null, 2)}</pre>
+<!--<h2>locked transfer</h2>-->
+<!--<pre>{JSON.stringify(lockedTransferStore.get(), null, 2)}</pre>-->

@@ -4,7 +4,7 @@ import type { HTMLButtonAttributes } from "svelte/elements"
 import type { Snippet } from "svelte"
 
 type Props = HTMLButtonAttributes & {
-  variant?: "primary" | "secondary" | "danger"
+  variant?: "primary" | "secondary" | "danger" | "outline"
   class?: string
   children: Snippet
 }
