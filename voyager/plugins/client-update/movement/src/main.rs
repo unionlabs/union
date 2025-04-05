@@ -19,10 +19,10 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
-    primitives::{ChainId, ClientType},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     module::{PluginInfo, PluginServer, UnexpectedChainIdError},
+    primitives::{ChainId, ClientType},
     vm::{data, pass::PassResult, BoxDynError, Op, Visit},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };

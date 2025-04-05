@@ -25,9 +25,9 @@ use unionlabs::{
     ErrorReporter, WasmClientType,
 };
 use voyager_message::{
-    primitives::ChainId,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
+    primitives::ChainId,
     rpc::ProofType,
     ProofModule,
 };

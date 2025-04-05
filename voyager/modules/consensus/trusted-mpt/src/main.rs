@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
-    primitives::{ChainId, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
+    primitives::{ChainId, Timestamp},
     ConsensusModule,
 };
 use voyager_vm::BoxDynError;

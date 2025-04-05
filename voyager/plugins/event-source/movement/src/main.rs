@@ -31,10 +31,10 @@ use tracing::{debug, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
 use voyager_message::{
     call::{Call, WaitForHeight},
-    primitives::{ChainId, ClientInfo, ClientType, IbcSpec},
     data::{ChainEvent, Data},
     into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientInfo, ClientType, IbcSpec},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};

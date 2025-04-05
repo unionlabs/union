@@ -707,9 +707,9 @@ pub mod utils {
     use voyager_message::{
         call::SubmitTx,
         context::Context,
-        primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
         data::IbcDatagram,
         module::{ClientBootstrapModuleClient, ClientModuleClient},
+        primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
         VoyagerMessage,
     };
     use voyager_vm::{call, Op};

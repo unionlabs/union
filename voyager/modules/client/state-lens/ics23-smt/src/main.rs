@@ -17,12 +17,12 @@ use unionlabs::{
     primitives::Bytes,
 };
 use voyager_message::{
+    into_value,
+    module::{ClientModuleInfo, ClientModuleServer},
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         Timestamp,
     },
-    into_value,
-    module::{ClientModuleInfo, ClientModuleServer},
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;

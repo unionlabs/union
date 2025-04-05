@@ -346,9 +346,9 @@ zktrie               = { path = "lib/zktrie-rs", default-features = false }
 
 galois-rpc = { path = "lib/galois-rpc", default-features = false }
 
-voyager-primitives    = { path = "lib/voyager-primitives", default-features = false }
-voyager-message = { path = "lib/voyager-message", default-features = false }
-voyager-vm      = { path = "lib/voyager-vm", default-features = false }
+voyager-message    = { path = "lib/voyager-message", default-features = false }
+voyager-primitives = { path = "lib/voyager-primitives", default-features = false }
+voyager-vm         = { path = "lib/voyager-vm", default-features = false }
 
 embed-commit = { path = "lib/embed-commit", default-features = false }
 

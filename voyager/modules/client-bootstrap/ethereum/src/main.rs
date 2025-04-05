@@ -20,9 +20,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    primitives::{ChainId, ClientType},
     ensure_null, into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    primitives::{ChainId, ClientType},
     ClientBootstrapModule,
 };
 use voyager_vm::BoxDynError;

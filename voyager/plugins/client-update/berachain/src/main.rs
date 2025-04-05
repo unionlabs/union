@@ -20,11 +20,11 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
-    primitives::{ChainId, ClientType, IbcSpecId},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientType, IbcSpecId},
     DefaultCmd, Plugin, PluginMessage, RawClientId, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op, Visit};

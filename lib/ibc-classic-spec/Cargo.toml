@@ -12,11 +12,11 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-enumorph.workspace     = true
-macros.workspace       = true
-serde                  = { workspace = true, features = ["derive"] }
-subset-of.workspace    = true
-thiserror.workspace    = true
-tracing.workspace      = true
-unionlabs.workspace    = true
+enumorph.workspace           = true
+macros.workspace             = true
+serde                        = { workspace = true, features = ["derive"] }
+subset-of.workspace          = true
+thiserror.workspace          = true
+tracing.workspace            = true
+unionlabs.workspace          = true
 voyager-primitives.workspace = true

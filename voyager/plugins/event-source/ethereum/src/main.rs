@@ -33,10 +33,10 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, WaitForHeight},
-    primitives::{ChainId, ClientInfo, IbcSpec},
     data::{ChainEvent, Data},
     into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientInfo, IbcSpec},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, noop, pass::PassResult, seq, BoxDynError, Op};
