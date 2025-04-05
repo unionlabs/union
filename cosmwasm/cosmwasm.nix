@@ -130,6 +130,7 @@ _: {
           bech32_prefix = "union";
           lightclients = [
             "arbitrum"
+            "bob"
             # "berachain"
             "ethereum"
             "trusted-mpt"
@@ -626,6 +627,7 @@ _: {
 
       cw20-token-minter = crane.buildWasmContract "cosmwasm/cw20-token-minter" { };
 
+      # update-deployments-json deployer
       update-deployments-json =
         { name, rpc_url, ... }:
         pkgs.writeShellApplication {
@@ -720,7 +722,7 @@ _: {
             ibc-union
             multicall
             ;
-          cosmwasm-scripts = dbg (
+          cosmwasm-scripts =
             {
               inherit ibc-union-contract-addresses;
             }
@@ -738,8 +740,7 @@ _: {
                   // (mkRootDrv chain.name);
               }) networks
             ))
-            // (mkRootDrv "cosmwasm-scripts")
-          );
+            // (mkRootDrv "cosmwasm-scripts");
         }
         //
           # all light clients
