@@ -347,6 +347,7 @@ pub struct ClientInfo {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case", deny_unknown_fields)
 )]
+// TODO: Add status
 pub struct ClientStateMeta {
     /// The counterparty height this client has been updated to. A consensus
     /// state will exist at this height.

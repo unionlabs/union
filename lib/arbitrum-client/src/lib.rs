@@ -8,7 +8,7 @@ use alloy::{
     sol_types::SolEvent,
 };
 use arbitrum_types::{NodeCreated, L1_NEXT_NODE_NUM_SLOT, L1_NEXT_NODE_NUM_SLOT_OFFSET_BYTES};
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, trace};
 use unionlabs::{
     primitives::{H160, H256},
     ByteArrayExt,
@@ -40,7 +40,7 @@ pub async fn next_node_num_at_l1_height(
 }
 
 #[instrument(skip_all, fields(%l1_height, %l1_contract_address))]
-pub async fn finalized_execution_block_of_l1_height(
+pub async fn finalized_l2_block_of_l1_height(
     l1_provider: impl Provider,
     l2_provider: impl Provider<AnyNetwork>,
     l1_contract_address: H160,
@@ -64,12 +64,21 @@ pub async fn finalized_execution_block_of_l1_height(
 
     let event: NodeCreated = NodeCreated::decode_log(&event.inner, true)?.data;
 
-    debug!(next_node_num, "{event:?}");
+    trace!(next_node_num, "{event:?}");
+
+    let block_hash = event.assertion.afterState.globalState.bytes32Vals[0];
+
+    debug!("next node num {next_node_num} is l2 block hash {block_hash}");
 
     let block = l2_provider
-        .get_block(event.assertion.afterState.globalState.bytes32Vals[0].into())
+        .get_block(block_hash.into())
         .await?
         .expect("block must exist");
+
+    debug!(
+        "l2 block hash {block_hash} is l2 block number {}",
+        block.header.number
+    );
 
     Ok(block)
 }

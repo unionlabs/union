@@ -46,7 +46,7 @@ pub fn verify_storage_proof(
         Some(value) if value == expected_value => Ok(()),
         Some(value) => Err(Error::ValueMismatch {
             expected: expected_value.into(),
-            actual: value,
+            actual: value.into(),
         })?,
         None => Err(Error::ValueMissing {
             value: expected_value.into(),
