@@ -3,11 +3,7 @@ use std::net::SocketAddr;
 use axum::{
     extract::State,
     routing::{get, post},
-    Json,
-};
-use futures::{
-    channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
-    SinkExt,
+    Json, Router,
 };
 use prometheus::TextEncoder;
 use reqwest::StatusCode;
@@ -15,10 +11,12 @@ use tracing::error;
 use voyager_message::VoyagerMessage;
 use voyager_vm::Op;
 
-pub fn run(laddr: &SocketAddr) -> UnboundedReceiver<Op<VoyagerMessage>> {
-    let (queue_tx, queue_rx) = unbounded::<Op<VoyagerMessage>>();
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender, UnboundedReceiver};
 
-    let app = axum::Router::new()
+pub fn run(laddr: &SocketAddr) -> UnboundedReceiver<Op<VoyagerMessage>> {
+    let (queue_tx, queue_rx) = unbounded_channel::<Op<VoyagerMessage>>();
+
+    let app = Router::new()
         .route("/enqueue", post(enqueue))
         .route("/health", get(|| async move { StatusCode::OK }))
         .route("/metrics", get(metrics))
@@ -38,10 +36,12 @@ pub fn run(laddr: &SocketAddr) -> UnboundedReceiver<Op<VoyagerMessage>> {
 
 // #[axum::debug_handler]
 async fn enqueue(
-    State(mut sender): State<UnboundedSender<Op<VoyagerMessage>>>,
+    State(sender): State<UnboundedSender<Op<VoyagerMessage>>>,
     Json(op): Json<Op<VoyagerMessage>>,
 ) -> StatusCode {
-    sender.send(op).await.expect("receiver should not close");
+    if sender.send(op).is_err() {
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    }
 
     StatusCode::OK
 }
