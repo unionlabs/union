@@ -402,14 +402,14 @@ pub fn execute(
             acknowledgement.into_vec(),
         ),
         ExecuteMsg::PacketSend(MsgSendPacket {
-            source_channel_id: source_channel,
+            source_channel_id,
             timeout_height,
             timeout_timestamp,
             data,
         }) => send_packet(
             deps.branch(),
             info.sender,
-            source_channel,
+            source_channel_id,
             timeout_height,
             timeout_timestamp,
             data.into_vec(),
@@ -664,9 +664,9 @@ fn acknowledge_packet(
 ) -> ContractResult {
     let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
 
-    let source_channel = first.source_channel_id;
+    let source_channel_id = first.source_channel_id;
 
-    let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
+    let channel = ensure_channel_state(deps.as_ref(), source_channel_id)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
     let commitment_key = BatchReceiptsPath::from_packets(&packets).key();
@@ -685,14 +685,17 @@ fn acknowledge_packet(
         },
     )?;
 
-    let port_id = deps.storage.read::<ChannelOwner>(&source_channel)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&source_channel_id)?;
     let mut events = Vec::with_capacity(packets.len());
     let mut messages = Vec::with_capacity(packets.len());
     for (packet, ack) in packets.into_iter().zip(acknowledgements) {
+        if packet.source_channel_id != source_channel_id {
+            return Err(ContractError::BatchSameChannelOnly);
+        }
         mark_packet_as_acknowledged(deps.branch(), &packet)?;
         events.push(
             Event::new(events::packet::ACK)
-                .add_attributes(packet_to_attr_hash(source_channel, &packet))
+                .add_attributes(packet_to_attr_hash(source_channel_id, &packet))
                 .add_attributes([
                     (events::attribute::ACKNOWLEDGEMENT, hex::encode(&ack)),
                     (events::attribute::MAKER, relayer.clone().to_string()),
@@ -1535,9 +1538,9 @@ fn process_receive(
     intent: bool,
 ) -> Result<Response, ContractError> {
     let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
-    let destination_channel = first.destination_channel_id;
+    let destination_channel_id = first.destination_channel_id;
 
-    let channel = ensure_channel_state(deps.as_ref(), destination_channel)?;
+    let channel = ensure_channel_state(deps.as_ref(), destination_channel_id)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
     if !intent {
@@ -1558,8 +1561,12 @@ fn process_receive(
 
     let mut events = Vec::with_capacity(packets.len());
     let mut messages = Vec::with_capacity(packets.len());
-    let port_id = deps.storage.read::<ChannelOwner>(&destination_channel)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&destination_channel_id)?;
     for (packet, relayer_msg) in packets.into_iter().zip(relayer_msgs) {
+        if packet.destination_channel_id != destination_channel_id {
+            return Err(ContractError::BatchSameChannelOnly);
+        }
+
         if packet.timeout_height > 0 && (env.block.height >= packet.timeout_height) {
             return Err(ContractError::ReceivedTimedOutPacketHeight {
                 timeout_height: packet.timeout_height,
@@ -1580,7 +1587,7 @@ fn process_receive(
             if intent {
                 events.push(
                     Event::new(events::packet::INTENT_RECV)
-                        .add_attributes(packet_to_attr_hash(destination_channel, &packet))
+                        .add_attributes(packet_to_attr_hash(destination_channel_id, &packet))
                         .add_attributes([
                             (events::attribute::MAKER, relayer.clone()),
                             (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
@@ -1600,7 +1607,7 @@ fn process_receive(
             } else {
                 events.push(
                     Event::new(events::packet::RECV)
-                        .add_attributes(packet_to_attr_hash(destination_channel, &packet))
+                        .add_attributes(packet_to_attr_hash(destination_channel_id, &packet))
                         .add_attributes([
                             (events::attribute::MAKER, relayer.clone()),
                             (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),

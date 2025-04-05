@@ -4,7 +4,6 @@ import "../../../contracts/core/25-handler/IBCHandler.sol";
 
 contract TestIBCHandler is IBCHandler {
     function assumePacketSent(
-        uint32 channel,
         IBCPacket calldata packet
     ) public {
         commitments[IBCCommitment.batchPacketsCommitmentKey(

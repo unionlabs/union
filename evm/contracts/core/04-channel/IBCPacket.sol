@@ -243,7 +243,6 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         if (l == 0) {
             revert IBCErrors.ErrNotEnoughPackets();
         }
-        uint32 sourceChannelId = packets[0].sourceChannelId;
         uint32 destinationChannelId = packets[0].destinationChannelId;
         IBCChannel storage channel = ensureChannelState(destinationChannelId);
         uint32 clientId = ensureConnectionState(channel.connectionId);
@@ -266,6 +265,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         IIBCModule module = lookupModuleByChannel(destinationChannelId);
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = packets[i];
+            if (packet.destinationChannelId != destinationChannelId) {
+                revert IBCErrors.ErrBatchSameChannelOnly();
+            }
             // Check packet height timeout
             if (
                 packet.timeoutHeight > 0
@@ -402,6 +404,9 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         IIBCModule module = lookupModuleByChannel(sourceChannelId);
         for (uint256 i = 0; i < l; i++) {
             IBCPacket calldata packet = msg_.packets[i];
+            if (packet.sourceChannelId != sourceChannelId) {
+                revert IBCErrors.ErrBatchSameChannelOnly();
+            }
             markPacketAsAcknowledged(packet);
             bytes calldata acknowledgement = msg_.acknowledgements[i];
             module.onAcknowledgementPacket(
