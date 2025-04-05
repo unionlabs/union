@@ -1,6 +1,6 @@
 import { Data, Effect, type Exit, Option } from "effect";
-import type { Transfer } from "$lib/components/Transfer/transfer.svelte.ts";
-import { checkBalance } from "$lib/components/Transfer/state/filling/check-balance.ts";
+import type { Transfer, TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts";
+import { checkBalanceForIntents } from "$lib/components/Transfer/state/filling/check-balance.ts";
 import { createOrdersBatch } from "$lib/components/Transfer/state/filling/create-orders.ts";
 import { checkAllowances } from "$lib/components/Transfer/state/filling/check-allowance.ts";
 
@@ -25,15 +25,10 @@ export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>
 export type CreateTransferState = Data.TaggedEnum<{
   Filling: {};
   CreateIntents: {};
-  CheckBalance: {};
+  CheckBalance: { intents: TransferIntents };
   CheckAllowance: {};
-  CreateOrders: {
-    allowances: AllowanceData[];
-  };
-  CreateSteps: {
-    allowances: AllowanceData[];
-    orders: unknown[];
-  };
+  CreateOrders: { allowances: AllowanceData[] };
+  CreateSteps: { allowances: AllowanceData[]; orders: unknown[] };
 }>;
 
 export const CreateTransferState = Data.taggedEnum<CreateTransferState>();
@@ -66,7 +61,6 @@ export const createTransferState = (
   const ucs03address = transfer.ucs03address.value;
   const source = transfer.sourceChain.value;
   const destination = transfer.destinationChain.value;
-  const token = transfer.baseToken.value;
   const sender = transfer.derivedSender.value;
   const amount = transfer.parsedAmount.value;
   const intents = transfer.intents.value;
@@ -74,7 +68,7 @@ export const createTransferState = (
   if (amount === "0" || amount === "" || BigInt(amount) === BigInt(0)) {
     return Effect.succeed({
       nextState: null,
-      message: "Please enter a non-zero amount"
+      message: "Enter an amount"
     });
   }
 
@@ -86,19 +80,18 @@ export const createTransferState = (
       }),
     CreateIntents: () =>
       Effect.succeed({
-        nextState: CheckBalance(),
+        nextState: CheckBalance({ intents }),
         message: "Checking balance..."
       }),
-    CheckBalance: () =>
+    CheckBalance: ({ intents }) =>
       Effect.gen(function* () {
-        const hasEnoughBalance = yield* checkBalance(source, sender, token, amount);
+        const hasEnoughBalance = yield* checkBalanceForIntents(source, intents);
         return hasEnoughBalance
           ? { nextState: CheckAllowance(), message: "Checking allowance..." }
           : { nextState: null, message: "Insufficient funds" };
       }),
     CheckAllowance: () =>
       Effect.gen(function* ($) {
-        // Expected to return allowances in the new AllowanceData format.
         const allowancesOpt = yield* $(checkAllowances(source, intents, sender, ucs03address));
         const allowances = Option.getOrElse(allowancesOpt, () => []);
         return {
