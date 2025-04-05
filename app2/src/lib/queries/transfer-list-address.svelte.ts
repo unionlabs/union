@@ -1,10 +1,10 @@
 import { createQueryGraphql } from "$lib/utils/queries"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
-import { transferCount, transferListAddress } from "$lib/stores/transfers.svelte"
+import { transferListAddress } from "$lib/stores/transfers.svelte"
 import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
 import type { AddressCanonicalBytes, SortOrder } from "@unionlabs/sdk/schema"
-import { TransferCount, TransferList } from "@unionlabs/sdk/schema"
+import { TransferList } from "@unionlabs/sdk/schema"
 
 export const LIMIT = 10
 
