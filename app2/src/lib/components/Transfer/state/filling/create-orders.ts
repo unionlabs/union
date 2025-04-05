@@ -1,5 +1,5 @@
 import { Effect, Match, Option, pipe } from "effect";
-import { fromHex, http, isHex } from "viem";
+import { fromHex, http } from "viem";
 import {
   createViemPublicClient,
   ViemPublicClientSource,
@@ -20,14 +20,14 @@ import {
 } from "@unionlabs/sdk/ucs03";
 import { Batch } from "@unionlabs/sdk/ucs03/instruction";
 import { Channel, Chain } from "@unionlabs/sdk/schema";
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts";
+import { type TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts";
 
 export function createOrdersBatch(
   sourceChain: Chain,
   destinationChain: Chain,
   channel: Channel,
   ucs03address: string,
-  intents: typeof transfer.intents
+  intents: TransferIntents
 ) {
   return Effect.gen(function* () {
     // Validate required parameters.

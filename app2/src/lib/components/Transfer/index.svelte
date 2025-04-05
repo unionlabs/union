@@ -1,486 +1,58 @@
 <script lang="ts">
-  import Card from "$lib/components/ui/Card.svelte"
-  import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
-  import {LockedTransfer} from "./locked-transfer.ts"
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
-  import FillingPage from "./pages/FillingPage.svelte"
-  import ApprovalPage from "./pages/ApprovalPage.svelte"
-  import SubmitPage from "./pages/SubmitPage.svelte"
-  import {lockedTransferStore} from "./locked-transfer.svelte.ts"
-  import {Effect, Exit, Match, Option, pipe} from "effect"
-  import {wallets} from "$lib/stores/wallets.svelte"
-  import {
-    createCosmosToCosmosFungibleAssetOrder,
-    createCosmosToEvmFungibleAssetOrder,
-    createEvmToCosmosFungibleAssetOrder,
-    createEvmToEvmFungibleAssetOrder,
-    type Instruction
-  } from "@unionlabs/sdk/ucs03"
-  import {Batch} from "@unionlabs/sdk/ucs03/instruction.ts"
-  import {
-    createViemPublicClient,
-    EvmChannelDestination,
-    readErc20Allowance,
-    ViemPublicClient,
-    ViemPublicClientDestination,
-    ViemPublicClientSource
-  } from "@unionlabs/sdk/evm"
-
-  import {
-    CosmosChannelDestination,
-    CosmWasmClientDestination,
-    CosmWasmClientSource,
-    createCosmWasmClient
-  } from "@unionlabs/sdk/cosmos"
-  import {fromHex, http, isHex} from "viem"
-  import * as TransferStep from "./transfer-step.ts"
-  import {isValidBech32ContractAddress} from "@unionlabs/client"
-  import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
-  import {transferHashStore} from "$lib/stores/transfer-hash.svelte.ts"
-  import {beforeNavigate} from "$app/navigation"
+  import Card from "$lib/components/ui/Card.svelte";
+  import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte";
+  import { LockedTransfer } from "./locked-transfer.ts";
+  import { transfer } from "$lib/components/Transfer/transfer.svelte.ts";
+  import FillingPage from "./pages/FillingPage.svelte";
+  import ApprovalPage from "./pages/ApprovalPage.svelte";
+  import SubmitPage from "./pages/SubmitPage.svelte";
+  import { lockedTransferStore } from "./locked-transfer.svelte.ts";
+  import { Effect, Exit, Option } from "effect";
+  import * as TransferStep from "./transfer-step.ts";
+  import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte";
   import {
     CreateTransferState,
     createTransferState,
     type StateResult
   } from "$lib/components/Transfer/state/filling/index.ts";
 
-  let currentPage = $state(0)
-  let instruction: Option.Option<Instruction.Instruction> = $state(Option.none())
-  let allowances: Option.Option<Array<{ token: string; allowance: bigint }>> = $state(Option.none())
-  let loading = $state(false)
-
-  let requiredApprovals = $derived.by(() => {
-    if (Option.isNone(transfer.intents) || Option.isNone(allowances)) return Option.none()
-
-    // Create a map of token to required amount from transfer intents
-    const requiredAmounts = new Map<string, bigint>()
-    for (const intent of transfer.intents.value) {
-      const currentAmount = requiredAmounts.get(intent.baseToken) || 0n
-      // FIX: Add the new amount to the current amount instead of replacing it
-      requiredAmounts.set(intent.baseToken, currentAmount + intent.baseAmount)
-    }
-
-    // Filter for tokens that need approval (allowance < required amount)
-    const tokensNeedingApproval = allowances.value
-      .filter(({token, allowance}) => {
-        const requiredAmount = requiredAmounts.get(token) || 0n
-        return allowance < requiredAmount
-      })
-      .map(({token}) => ({
-        token,
-        requiredAmount: requiredAmounts.get(token) || 0n
-      }))
-
-    return tokensNeedingApproval.length > 0 ? Option.some(tokensNeedingApproval) : Option.none()
-  })
-
-  // Derive the steps based on required approvals and instruction
-  let forceReset = $state(false)
-  let transferSteps = $derived.by(() => {
-    if (forceReset) {
-      return Option.some([TransferStep.Filling()])
-    }
-    const steps: Array<TransferStep.TransferStep> = [TransferStep.Filling()]
-
-    // Add approval steps if needed
-    if (Option.isSome(requiredApprovals)) {
-      // Find the allowance for each token that needs approval
-      for (const approval of requiredApprovals.value) {
-        if (Option.isSome(allowances)) {
-          const tokenAllowance = allowances.value.find(a => a.token === approval.token)
-          if (tokenAllowance) {
-            steps.push(
-              TransferStep.ApprovalRequired({
-                token: approval.token,
-                requiredAmount: approval.requiredAmount,
-                currentAllowance: tokenAllowance.allowance
-              })
-            )
-          }
-        }
-      }
-    }
-
-    // Add the instruction submission step if we have an instruction
-    if (Option.isSome(instruction)) {
-      steps.push(TransferStep.SubmitInstruction({instruction: instruction.value}))
-      steps.push(TransferStep.WaitForIndex())
-    }
-
-    return steps.length > 0 ? Option.some(steps) : Option.none()
-  })
-
-  $effect(() => {
-    if (Option.isNone(transfer.intents)) return
-
-    loading = true
-
-    const batchEffect = intentsToBatch(transfer.intents).pipe(
-      Effect.tap(batch => (instruction = batch))
-    )
-
-    const allowancesEffect = checkAllowances(transfer.intents).pipe(
-      Effect.tap(result => (allowances = result))
-    )
-
-    Effect.all([batchEffect, allowancesEffect]).pipe(
-      Effect.ensuring(
-        Effect.sync(() => {
-          loading = false
-        })
-      ),
-      Effect.runPromiseExit
-    )
-  })
-
-  const intentsToBatch = (ti: typeof transfer.intents) =>
-    Effect.gen(function* () {
-      if (
-        Option.isNone(ti) ||
-        Option.isNone(transfer.sourceChain) ||
-        Option.isNone(transfer.channel) ||
-        Option.isNone(transfer.destinationChain) ||
-        Option.isNone(transfer.ucs03address)
-      ) {
-        return Option.none()
-      }
-
-      const source = transfer.sourceChain.value.rpc_type
-      const destination = transfer.destinationChain.value.rpc_type
-
-      const provideViemPublicClientSource = Effect.provideServiceEffect(
-        ViemPublicClientSource,
-        pipe(
-          transfer.sourceChain.value.toViemChain(),
-          Option.map(chain =>
-            createViemPublicClient({
-              chain,
-              transport: http()
-            })
-          ),
-          Effect.flatten,
-          Effect.map(client => ({client}))
-        )
-      )
-
-      const provideViemPublicClientDestination = Effect.provideServiceEffect(
-        ViemPublicClientDestination,
-        pipe(
-          transfer.destinationChain.value.toViemChain(),
-          Option.map(chain =>
-            createViemPublicClient({
-              chain,
-              transport: http()
-            })
-          ),
-          Effect.flatten,
-          Effect.map(client => ({client}))
-        )
-      )
-
-      const provideCosmWasmClientSource = Effect.provideServiceEffect(
-        CosmWasmClientSource,
-        pipe(
-          transfer.sourceChain.value.getRpcUrl("rpc"),
-          Option.map(createCosmWasmClient),
-          Effect.flatten,
-          Effect.map(client => ({client}))
-        )
-      )
-
-      const provideCosmWasmClientDestination = Effect.provideServiceEffect(
-        CosmWasmClientDestination,
-        pipe(
-          transfer.destinationChain.value.getRpcUrl("rpc"),
-          Option.map(createCosmWasmClient),
-          Effect.flatten,
-          Effect.map(client => ({client}))
-        )
-      )
-
-      const evmChannelDestinationEffect = Effect.succeed({
-        ucs03address: transfer.channel.value.destination_port_id,
-        channelId: transfer.channel.value.destination_channel_id
-      })
-
-      const cosmosChannelDestinationEffect = Effect.succeed({
-        ucs03address: fromHex(transfer.channel.value.destination_port_id, "string"),
-        channelId: transfer.channel.value.destination_channel_id
-      })
-
-      const provideEvmChannelDestination = Effect.provideServiceEffect(
-        EvmChannelDestination,
-        evmChannelDestinationEffect
-      )
-
-      const provideCosmosChannelDestination = Effect.provideServiceEffect(
-        CosmosChannelDestination,
-        cosmosChannelDestinationEffect
-      )
-
-      const batchEffect = Effect.gen(function* () {
-        console.log(`batch: Transfer intent value:`, ti.value)
-        loading = true
-        const orders = yield* Match.value([source, destination]).pipe(
-          Match.when(["evm", "cosmos"], () => {
-            console.log("batch: Matched EVM -> Cosmos pattern", ti.value)
-            return Effect.all([
-              Effect.tap(createEvmToCosmosFungibleAssetOrder(ti.value[0]), order =>
-                Effect.sync(() => console.log("batch: First order created", order))
-              ),
-              Effect.tap(createEvmToCosmosFungibleAssetOrder(ti.value[1]), order =>
-                Effect.sync(() => console.log("batch: Second order created", order))
-              )
-            ]).pipe(
-              Effect.tap(orders =>
-                Effect.sync(() => console.log("batch: All orders created", orders))
-              ),
-              Effect.catchAll(error => {
-                console.error("batch: Error creating orders", error.cause)
-                return Effect.fail(error)
-              }),
-              provideCosmosChannelDestination,
-              provideViemPublicClientSource,
-              provideCosmWasmClientDestination
-            )
-          }),
-          Match.when(["evm", "evm"], () => {
-            console.log("batch: Matched EVM -> EVM pattern")
-            return Effect.all([
-              createEvmToEvmFungibleAssetOrder(ti.value[0]),
-              createEvmToEvmFungibleAssetOrder(ti.value[1])
-            ]).pipe(
-              Effect.tap(orders =>
-                Effect.sync(() => console.log("batch: EVM->EVM orders created", orders))
-              ),
-              Effect.catchAll(error => {
-                console.error("batch: Error creating EVM->EVM orders", error.cause)
-                return Effect.fail(error)
-              }),
-              provideViemPublicClientSource,
-              provideViemPublicClientDestination,
-              provideEvmChannelDestination
-            )
-          }),
-          Match.when(["cosmos", "evm"], () => {
-            console.log("batch: Matched Cosmos -> EVM pattern")
-            return createCosmosToEvmFungibleAssetOrder(ti.value[0]).pipe(
-              Effect.tap(order =>
-                Effect.sync(() => console.log("batch: Cosmos->EVM order created", order))
-              ),
-              Effect.catchAll(error => {
-                console.error("batch: Error creating Cosmos->EVM order", error)
-                return Effect.fail(error)
-              }),
-              provideCosmWasmClientSource,
-              provideViemPublicClientDestination,
-              provideEvmChannelDestination
-            )
-          }),
-          Match.when(["cosmos", "cosmos"], () => {
-            console.log("batch: Matched Cosmos -> Cosmos pattern")
-            return createCosmosToCosmosFungibleAssetOrder(ti.value[0]).pipe(
-              Effect.tap(order =>
-                Effect.sync(() => console.log("batch: Cosmos->Cosmos order created", order))
-              ),
-              Effect.catchAll(error => {
-                console.error("batch: Error creating Cosmos->Cosmos order", error.cause)
-                return Effect.fail(error)
-              }),
-              provideCosmWasmClientSource,
-              provideCosmWasmClientDestination,
-              provideCosmosChannelDestination
-            )
-          }),
-          Match.orElse(() => {
-            console.log(`batch: No match found for ${source} -> ${destination}, throwing error`)
-            throw new Error(`Unsupported source/destination combination: ${source} -> ${destination}`)
-          })
-        )
-
-        return new Batch({
-          operand: Array.isArray(orders) ? orders : [orders]
-        })
-      })
-        .pipe(
-          Effect.ensuring(
-            Effect.sync(() => {
-              loading = false
-            })
-          )
-        )
-        .pipe(
-          Effect.provideService(CosmosChannelDestination, {
-            ucs03address: fromHex(transfer.channel.value.destination_port_id, "string"),
-            channelId: transfer.channel.value.destination_channel_id
-          }),
-
-          Effect.provideService(EvmChannelDestination, {
-            ucs03address: transfer.channel.value.source_port_id,
-            channelId: transfer.channel.value.source_channel_id
-          })
-        )
-
-      const batchResult = yield* batchEffect
-      return Option.some(batchResult)
-    })
-
-  const checkAllowances = (ti: typeof transfer.intents) =>
-    Effect.gen(function* () {
-      console.info("Checking allowances")
-      loading = true
-      if (Option.isNone(ti)) return Option.none()
-      if (Option.isNone(transfer.sourceChain)) return Option.none()
-      if (Option.isNone(transfer.ucs03address)) return Option.none()
-
-      const sourceChain = transfer.sourceChain.value
-      const chainType = sourceChain.rpc_type
-      const spenderAddress = transfer.ucs03address.value
-
-      // Get the sender's address for the source chain.
-      const sender = wallets.getAddressForChain(sourceChain)
-
-      if (Option.isNone(sender)) return Option.none()
-
-      // Get unique token addresses from the transfer intents.
-      const tokenAddresses = [...new Set(ti.value.map(intent => intent.baseToken))]
-
-      if (chainType === "evm") {
-        // For EVM chains use the existing logic.
-        const viemChain = sourceChain.toViemChain()
-        if (Option.isNone(viemChain)) return Option.none()
-        const publicClientSource = yield* createViemPublicClient({
-          chain: viemChain.value,
-          transport: http()
-        })
-
-        const allowanceChecks = yield* Effect.all(
-          tokenAddresses.map(tokenAddress =>
-            Effect.gen(function* () {
-              const allowance = yield* readErc20Allowance(
-                tokenAddress,
-                sender.value, // EVM sender address
-                spenderAddress
-              )
-              return {token: tokenAddress, allowance}
-            }).pipe(
-              Effect.provideService(ViemPublicClient, {
-                client: publicClientSource
-              })
-            )
-          )
-        )
-        return Option.some(allowanceChecks)
-      }
-
-      if (chainType === "cosmos") {
-        // For Cosmos chains use a CosmWasm client to query CW20 allowances.
-        const rpcUrl = sourceChain.getRpcUrl("rpc")
-        if (Option.isNone(rpcUrl)) return Option.none()
-        const cosmwasmClient = yield* createCosmWasmClient(rpcUrl)
-
-        // Query each token (assumed to be a CW20 contract) for the allowance.
-        const allowanceChecks = yield* Effect.all(
-          tokenAddresses.map(tokenAddress =>
-            Effect.gen(function* () {
-              const decodedAddr = fromHex(tokenAddress, "string")
-
-              if (!isValidBech32ContractAddress(decodedAddr)) {
-                return Option.none()
-              }
-
-              // TODO:
-              // const allowance = yield* readCw20Allowance(contractAddress, walletAddress, spender).pipe(withClient)
-              // use it like this when deployed new ts-sdk
-              const owner = yield* sourceChain.toCosmosDisplay(sender.value)
-              const result = yield* Effect.tryPromise({
-                try: () =>
-                  cosmwasmClient.queryContractSmart(decodedAddr, {
-                    allowance: {
-                      owner: owner,
-                      spender: spenderAddress
-                    }
-                  }),
-                catch: e => console.info("Error: ", e)
-              })
-
-              return {
-                token: tokenAddress,
-                allowance: BigInt(result.allowance)
-              }
-            }).pipe(
-              Effect.provideService(CosmWasmClientSource, {
-                client: cosmwasmClient
-              }),
-              Effect.tapErrorCause(cause => Effect.logError("Predict failed with cause", cause))
-            )
-          )
-        )
-        return Option.some(allowanceChecks)
-      }
-
-      if (chainType === "aptos") {
-        console.log("Aptos not supported atm")
-        return Option.none()
-      }
-
-      // Unsupported chain type.
-      return Option.none()
-    }).pipe(
-      Effect.ensuring(
-        Effect.sync(() => {
-          loading = false
-        })
-      )
-    )
+  let currentPage = $state(0);
+  let loading = $state(false);
+  let transferSteps = $state<Option.Option<TransferStep.TransferStep[]>>(Option.none());
 
   function goToNextPage() {
     if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
-      currentPage++
+      currentPage++;
     }
   }
 
   function goToPreviousPage() {
     if (currentPage > 0) {
-      currentPage--
-
-      // If we're going back to the filling page (page 0), unlock the transfer
+      currentPage--;
       if (currentPage === 0) {
-        lockedTransferStore.unlock()
+        lockedTransferStore.unlock();
       }
     }
   }
 
-  // Determine which button text to show based on current page and state
   let actionButtonText = $derived.by(() => {
-    if (Option.isNone(transferSteps)) return "Submit"
-
-    const currentStep = transferSteps.value[currentPage]
-
+    if (Option.isNone(transferSteps)) return "Submit";
+    const currentStep = transferSteps.value[currentPage];
     if (currentPage === transferSteps.value.length - 1) {
-      return "Complete"
+      return "Complete";
     }
-
     return TransferStep.match(currentStep, {
       Filling: () => "Continue",
       ApprovalRequired: () => "Approve",
       SubmitInstruction: () => "Submit",
       WaitForIndex: () => "Submit"
-    })
-  })
+    });
+  });
 
   function handleActionButtonClick() {
-    if (Option.isNone(transferSteps)) return
-
-    console.log("handleActionButtonClick called", {
-      transferSteps: transferSteps,
-      currentPage: currentPage
-    })
-
-    const currentStep = transferSteps.value[currentPage]
-
+    if (Option.isNone(transferSteps)) return;
+    const currentStep = transferSteps.value[currentPage];
     if (TransferStep.is("Filling")(currentStep)) {
-      // Lock the transfer values before proceeding
       if (Option.isNone(lockedTransferStore.get())) {
         const newLockedTransfer = LockedTransfer.fromTransfer(
           transfer.sourceChain,
@@ -489,88 +61,98 @@
           transfer.parsedAmount,
           transfer.baseToken,
           transferSteps
-        )
-
+        );
         if (Option.isNone(newLockedTransfer)) {
-          console.error("Failed to lock transfer values")
-          return
+          console.error("Failed to lock transfer values");
+          return;
         }
-
-        lockedTransferStore.lock(newLockedTransfer.value)
+        lockedTransferStore.lock(newLockedTransfer.value);
       }
-      goToNextPage()
-      return
+      goToNextPage();
+      return;
     }
-
     if (TransferStep.is("ApprovalRequired")(currentStep)) {
-      goToNextPage()
-      return
+      goToNextPage();
+      return;
     }
-
     if (TransferStep.is("SubmitInstruction")(currentStep)) {
-      goToNextPage()
-      return
+      goToNextPage();
+      return;
     }
   }
 
-  const reset = () => {
-    currentPage = 0
-    instruction = Option.none()
-    allowances = Option.none()
-    lockedTransferStore.reset()
-    transfer.raw.reset()
-    transferHashStore.reset()
-    loading = false
+  let isLoading: boolean = $state(false);
+  let statusMessage = $state("");
 
-    forceReset = true
-
-    setTimeout(() => {
-      forceReset = false
-    }, 0)
-  }
-
-  beforeNavigate(reset)
-
-  /////////////
-
-  let isLoading: boolean = $state(false)
-  let statusMessage = $state("")
-
+  // New effect block that runs the state machine and computes transferSteps inline.
   $effect(() => {
-    isLoading = true
-    statusMessage = "Starting transfer process..."
+    isLoading = true;
+    statusMessage = "Starting transfer process...";
 
     const runStateMachine = async () => {
-      let currentState: CreateTransferState = CreateTransferState.Filling()
-      let running = true
+      let currentState: CreateTransferState = CreateTransferState.Filling();
+      let running = true;
+      let finalOrders: unknown[] | undefined;
+      let finalAllowances: Array<{ token: string; requiredAmount: string; currentAllowance: string }> | undefined;
 
       while (running) {
-        const exit = await Effect.runPromiseExit(createTransferState(currentState, transfer))
-
+        const exit = await Effect.runPromiseExit(createTransferState(currentState, transfer));
         if (Exit.isSuccess(exit)) {
-          const result: StateResult = exit.value
-
-          console.log('[CTS] result:', result.message)
+          const result: StateResult = exit.value;
           if (result.message) {
-            statusMessage = result.message
+            statusMessage = result.message;
           }
-
+          if (result.orders) {
+            finalOrders = result.orders;
+          }
+          if (result.allowances) {
+            finalAllowances = result.allowances
+          }
           if (result.nextState) {
-            currentState = result.nextState
+            currentState = result.nextState;
           } else {
-            running = false
+            running = false;
           }
         } else {
-          statusMessage = "An error occurred"
-          running = false
+          statusMessage = "An error occurred";
+          running = false;
         }
       }
 
-      isLoading = false
-    }
-    runStateMachine()
-  })
+      // Build transferSteps inline.
+      const steps: TransferStep.TransferStep[] = [];
+      steps.push(TransferStep.Filling());
+
+      // Compute approval steps using the simplified allowance data.
+      if (finalAllowances) {
+        const approvalSteps = finalAllowances
+          .filter(
+            ({ requiredAmount, currentAllowance }) =>
+              BigInt(currentAllowance) < BigInt(requiredAmount)
+          )
+          .map(({ token, requiredAmount, currentAllowance }) =>
+            TransferStep.ApprovalRequired({
+              token,
+              requiredAmount: BigInt(requiredAmount),
+              currentAllowance: BigInt(currentAllowance)
+            })
+          );
+        steps.push(...approvalSteps);
+      }
+
+      if (finalOrders) {
+        steps.push(TransferStep.SubmitInstruction({ instruction: finalOrders }));
+        steps.push(TransferStep.WaitForIndex());
+      }
+
+      transferSteps = Option.some(steps);
+      isLoading = false;
+    };
+
+    runStateMachine();
+  });
 </script>
+
 
 <Card
         divided

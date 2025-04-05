@@ -4,9 +4,18 @@ import { checkBalance } from "$lib/components/Transfer/state/filling/check-balan
 import { createOrdersBatch } from "$lib/components/Transfer/state/filling/create-orders.ts";
 import { checkAllowances } from "$lib/components/Transfer/state/filling/check-allowance.ts";
 
+// New type representing the simplified allowance data
+export type AllowanceData = {
+  token: string;
+  requiredAmount: string;
+  currentAllowance: string;
+};
+
 export type StateResult = {
   nextState: CreateTransferState | null;
   message?: string;
+  orders?: unknown[];
+  allowances?: AllowanceData[];
 };
 
 export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>
@@ -19,11 +28,11 @@ export type CreateTransferState = Data.TaggedEnum<{
   CheckBalance: {};
   CheckAllowance: {};
   CreateOrders: {
-    allowances: Array<{ token: string; allowance: bigint }>;
+    allowances: AllowanceData[];
   };
   CreateSteps: {
-    allowances: Array<{ token: string; allowance: bigint }>;
-    orders: Array<unknown>;
+    allowances: AllowanceData[];
+    orders: unknown[];
   };
 }>;
 
@@ -53,7 +62,6 @@ export const createTransferState = (
     });
   }
 
-  // Destructure the needed values. Note that source and destination are now full chain objects.
   const channel = transfer.channel.value;
   const ucs03address = transfer.ucs03address.value;
   const source = transfer.sourceChain.value;
@@ -90,6 +98,7 @@ export const createTransferState = (
       }),
     CheckAllowance: () =>
       Effect.gen(function* ($) {
+        // Expected to return allowances in the new AllowanceData format.
         const allowancesOpt = yield* $(checkAllowances(source, intents, sender, ucs03address));
         const allowances = Option.getOrElse(allowancesOpt, () => []);
         return {
@@ -114,21 +123,21 @@ export const createTransferState = (
         }
         const batch = batchOpt.value;
         console.log("Successfully created batch:", batch);
+        // Return orders and allowances for later use.
         return {
-          nextState: CreateSteps({
-            allowances,
-            orders: batch
-          }),
-          message: "Orders created successfully"
+          nextState: CreateSteps({ allowances, orders: batch }),
+          message: "Orders created successfully",
+          orders: batch,
+          allowances: allowances
         };
       }),
     CreateSteps: ({ allowances, orders }) => {
-      console.log("lukas here");
+      console.log("Finalizing transfer process");
       return Effect.succeed({
         nextState: null,
-        message: `Transfer process complete (or ready) – allowances: ${JSON.stringify(
-          allowances
-        )}, orders: ${JSON.stringify(orders)}`
+        message: `Transfer complete – allowances: ${JSON.stringify(allowances)}, orders: ${JSON.stringify(orders)}`,
+        orders,
+        allowances
       });
     }
   });
