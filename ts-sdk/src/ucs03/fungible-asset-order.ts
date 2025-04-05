@@ -23,9 +23,6 @@ const guardAgainstZeroAmount = (intent: { baseAmount: bigint; quoteAmount: bigin
   if (intent.baseAmount <= 0n) {
     return Effect.fail(new Error("baseAmount must be greater than zero"))
   }
-  if (intent.quoteAmount <= 0n) {
-    return Effect.fail(new Error("quoteAmount must be greater than zero"))
-  }
   return Effect.succeed(intent)
 }
 
