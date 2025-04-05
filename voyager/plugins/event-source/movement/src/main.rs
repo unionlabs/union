@@ -31,7 +31,7 @@ use tracing::{debug, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
 use voyager_message::{
     call::{Call, WaitForHeight},
-    core::{ChainId, ClientInfo, ClientType, IbcSpec},
+    primitives::{ChainId, ClientInfo, ClientType, IbcSpec},
     data::{ChainEvent, Data},
     into_value,
     module::{PluginInfo, PluginServer},

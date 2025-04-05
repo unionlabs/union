@@ -35,11 +35,11 @@ use voyager_vm::{ItemId, QueueError};
 
 use crate::{
     context::{equivalent_chain_ids::EquivalentChainIds, ibc_spec_handler::IbcSpecHandlers},
-    core::{ChainId, ClientType, IbcInterface},
     module::{
         ClientBootstrapModuleInfo, ClientModuleInfo, ConsensusModuleInfo, PluginInfo,
         ProofModuleInfo, StateModuleInfo,
     },
+    primitives::{ChainId, ClientType, IbcInterface},
     rpc::{server::Server, VoyagerRpcServer},
     IdThreadClient, ParamsWithItemId, UNPROCESSABLE_JSONRPC_ERROR_CODE,
 };

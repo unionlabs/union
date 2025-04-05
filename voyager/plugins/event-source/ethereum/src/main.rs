@@ -33,7 +33,7 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, WaitForHeight},
-    core::{ChainId, ClientInfo, IbcSpec},
+    primitives::{ChainId, ClientInfo, IbcSpec},
     data::{ChainEvent, Data},
     into_value,
     module::{PluginInfo, PluginServer},

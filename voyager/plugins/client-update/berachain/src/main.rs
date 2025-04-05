@@ -20,7 +20,7 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
-    core::{ChainId, ClientType, IbcSpecId},
+    primitives::{ChainId, ClientType, IbcSpecId},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     into_value,

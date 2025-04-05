@@ -11,9 +11,9 @@ use state_lens_ics23_mpt_light_client_types::{client_state::Extra, ClientState, 
 use tracing::instrument;
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
-    core::{ChainId, ClientType, QueryHeight},
     ensure_null, into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    primitives::{ChainId, ClientType, QueryHeight},
     ClientBootstrapModule, ExtensionsExt, VoyagerClient, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;

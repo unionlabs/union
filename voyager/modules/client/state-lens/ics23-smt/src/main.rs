@@ -17,7 +17,7 @@ use unionlabs::{
     primitives::Bytes,
 };
 use voyager_message::{
-    core::{
+    primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         Timestamp,
     },

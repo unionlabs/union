@@ -10,7 +10,7 @@ use unionlabs::never::Never;
 use voyager_message::{
     call::{FetchUpdateHeaders, WaitForTrustedHeight},
     callback::AggregateSubmitTxFromOrderedHeaders,
-    core::{ChainId, IbcSpecId, QueryHeight},
+    primitives::{ChainId, IbcSpecId, QueryHeight},
     data::Data,
     into_value,
     module::{PluginInfo, PluginServer},

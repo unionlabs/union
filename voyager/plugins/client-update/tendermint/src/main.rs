@@ -24,7 +24,7 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
-    core::{ChainId, ClientType},
+    primitives::{ChainId, ClientType},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     into_value,

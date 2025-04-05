@@ -12,7 +12,7 @@ use voyager_primitives::{ConsensusStateMeta, IbcSpecId, Timestamp};
 
 use crate::{
     context::LoadedModulesInfo,
-    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
+    primitives::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
     RawClientId, FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,
 };
 

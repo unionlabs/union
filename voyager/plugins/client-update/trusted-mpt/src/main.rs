@@ -15,11 +15,11 @@ use trusted_mpt_light_client_types::Header;
 use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
 use voyager_message::{
     call::Call,
-    core::{ChainId, ClientType},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientType},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
 use voyager_vm::{pass::PassResult, BoxDynError, Op, Visit};

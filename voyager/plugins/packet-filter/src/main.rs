@@ -11,7 +11,7 @@ use serde_with::{serde_as, DisplayFromStr};
 use tracing::{instrument, trace};
 use unionlabs::never::Never;
 use voyager_message::{
-    core::IbcSpec,
+    primitives::IbcSpec,
     data::Data,
     module::{PluginInfo, PluginServer},
     DefaultCmd, Plugin, VoyagerMessage,

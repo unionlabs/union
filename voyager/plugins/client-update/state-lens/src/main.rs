@@ -17,10 +17,10 @@ use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
     callback::AggregateSubmitTxFromOrderedHeaders,
-    core::{ChainId, ClientType, IbcSpec, QueryHeight},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
     rpc::ProofType,
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
     FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,

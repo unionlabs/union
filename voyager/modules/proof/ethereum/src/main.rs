@@ -18,7 +18,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::ChainId,
+    primitives::ChainId,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
     rpc::ProofType,

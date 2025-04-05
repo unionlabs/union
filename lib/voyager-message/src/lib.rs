@@ -74,7 +74,7 @@ pub mod rpc;
 
 pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
-pub use voyager_primitives as core;
+pub use voyager_primitives as primitives;
 pub use voyager_vm as vm;
 
 #[derive(Debug, Clone, PartialEq)]

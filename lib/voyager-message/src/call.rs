@@ -8,9 +8,8 @@ use voyager_primitives::{ClientType, IbcSpecId, QueryHeight, Timestamp};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
 
 use crate::{
-    context::WithId, core::ChainId, data::IbcDatagram, error_object_to_queue_error,
-    json_rpc_error_to_queue_error, module::PluginClient, Context, PluginMessage, RawClientId,
-    VoyagerMessage,
+    context::WithId, data::IbcDatagram, error_object_to_queue_error, json_rpc_error_to_queue_error,
+    module::PluginClient, primitives::ChainId, Context, PluginMessage, RawClientId, VoyagerMessage,
 };
 
 #[model]

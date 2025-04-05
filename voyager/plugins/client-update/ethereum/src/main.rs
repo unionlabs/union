@@ -25,11 +25,11 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTimestamp},
-    core::{ChainId, ClientType, Timestamp},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientType, Timestamp},
     DefaultCmd, Plugin, PluginMessage, RawClientId, VoyagerMessage,
 };
 use voyager_vm::{call, defer, now, pass::PassResult, seq, BoxDynError, Op, Visit};

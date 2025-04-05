@@ -14,10 +14,10 @@ use voyager_vm::{BoxDynError, CallbackT, Op, QueueError};
 use crate::{
     call::SubmitTx,
     context::WithId,
-    core::ChainId,
     data::{Data, IbcDatagram, OrderedHeaders},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{ClientModuleClient, PluginClient},
+    primitives::ChainId,
     rpc::missing_state,
     Context, PluginMessage, RawClientId, VoyagerMessage,
 };

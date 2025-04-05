@@ -19,7 +19,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientType},
+    primitives::{ChainId, ClientType},
     into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
     ClientBootstrapModule, FATAL_JSONRPC_ERROR_CODE,

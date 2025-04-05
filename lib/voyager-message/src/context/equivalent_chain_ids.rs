@@ -3,7 +3,7 @@ use std::{collections::HashSet, sync::OnceLock};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use crate::core::ChainId;
+use crate::primitives::ChainId;
 
 /// [`ChainId`] to consider equivalent.
 ///

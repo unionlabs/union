@@ -21,7 +21,7 @@ use unionlabs::{
     result_unwrap, ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientType},
+    primitives::{ChainId, ClientType},
     ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
     rpc::json_rpc_error_to_error_object,

@@ -12,7 +12,7 @@ use unionlabs::{
     bech32::Bech32, ibc::core::client::height::Height, primitives::H256, ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientType, QueryHeight},
+    primitives::{ChainId, ClientType, QueryHeight},
     ensure_null, into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
     ClientBootstrapModule, ExtensionsExt, VoyagerClient, FATAL_JSONRPC_ERROR_CODE,

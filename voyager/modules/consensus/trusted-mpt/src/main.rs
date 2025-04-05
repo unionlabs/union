@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
-    core::{ChainId, Timestamp},
+    primitives::{ChainId, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
     ConsensusModule,
 };

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, error, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
-    core::{ChainId, ConsensusType, Timestamp},
+    primitives::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
     rpc::json_rpc_error_to_error_object,
     ConsensusModule,

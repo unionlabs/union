@@ -16,7 +16,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ConsensusType, Timestamp},
+    primitives::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
     vm::BoxDynError,
     ConsensusModule,

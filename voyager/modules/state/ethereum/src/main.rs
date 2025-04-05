@@ -28,7 +28,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientInfo, ClientType, IbcInterface},
+    primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
     into_value,
     module::{StateModuleInfo, StateModuleServer},
     StateModule,

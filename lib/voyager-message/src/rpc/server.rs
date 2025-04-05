@@ -22,12 +22,12 @@ use voyager_vm::ItemId;
 // use voyager_primitives::IbcStoreFormat;
 use crate::{
     context::{LoadedModulesInfo, Modules, WithId},
-    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
     into_value,
     module::{
         ClientBootstrapModuleClient, ClientModuleClient, ConsensusModuleClient,
         RawProofModuleClient, RawStateModuleClient,
     },
+    primitives::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
     rpc::{
         json_rpc_error_to_error_object, server::cache::StateRequest, IbcProof, IbcState,
         SelfClientState, SelfConsensusState, VoyagerRpcServer,

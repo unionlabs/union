@@ -15,8 +15,8 @@ use unionlabs::{
     primitives::H160,
 };
 use voyager_message::{
-    core::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
+    primitives::{ChainId, ConsensusType, Timestamp},
     ConsensusModule, ExtensionsExt, VoyagerClient,
 };
 use voyager_vm::BoxDynError;

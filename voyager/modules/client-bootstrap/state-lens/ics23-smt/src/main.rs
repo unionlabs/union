@@ -11,7 +11,7 @@ use state_lens_ics23_smt_light_client_types::{client_state::Extra, ClientState, 
 use tracing::instrument;
 use unionlabs::{aptos::account::AccountAddress, ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
-    core::{ChainId, ClientType, QueryHeight},
+    primitives::{ChainId, ClientType, QueryHeight},
     into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
     ClientBootstrapModule, ExtensionsExt, VoyagerClient, FATAL_JSONRPC_ERROR_CODE,

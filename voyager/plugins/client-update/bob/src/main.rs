@@ -31,11 +31,11 @@ use unionlabs::{
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
     callback::AggregateSubmitTxFromOrderedHeaders,
-    core::{ChainId, ClientType, IbcSpec, QueryHeight},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit};

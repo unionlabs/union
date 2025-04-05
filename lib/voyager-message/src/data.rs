@@ -7,8 +7,9 @@ use unionlabs::{ibc::core::client::height::Height, primitives::H256, traits::Mem
 use voyager_primitives::IbcSpecId;
 
 use crate::{
-    core::{ChainId, ClientInfo, IbcSpec},
-    into_value, PluginMessage,
+    into_value,
+    primitives::{ChainId, ClientInfo, IbcSpec},
+    PluginMessage,
 };
 
 #[model]

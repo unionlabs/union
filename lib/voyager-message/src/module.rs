@@ -9,10 +9,10 @@ use voyager_primitives::{ConsensusType, IbcSpecId, Timestamp};
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 
 use crate::{
-    core::{
+    data::Data,
+    primitives::{
         ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcSpec,
     },
-    data::Data,
     rpc::ProofType,
     RawClientId, VoyagerMessage,
 };

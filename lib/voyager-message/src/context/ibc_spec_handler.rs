@@ -5,7 +5,7 @@ use serde_json::Value;
 use unionlabs::primitives::Bytes;
 use voyager_primitives::IbcSpecId;
 
-use crate::{core::IbcSpec, into_value, RawClientId, FATAL_JSONRPC_ERROR_CODE};
+use crate::{into_value, primitives::IbcSpec, RawClientId, FATAL_JSONRPC_ERROR_CODE};
 
 pub struct IbcSpecHandlers {
     pub(crate) handlers: HashMap<IbcSpecId, IbcSpecHandler>,

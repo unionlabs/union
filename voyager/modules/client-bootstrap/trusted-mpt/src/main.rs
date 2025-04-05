@@ -9,7 +9,7 @@ use tracing::instrument;
 use trusted_mpt_light_client_types::{ClientState, ClientStateV1, ConsensusState};
 use unionlabs::{ibc::core::client::height::Height, primitives::H160};
 use voyager_message::{
-    core::{ChainId, ClientType},
+    primitives::{ChainId, ClientType},
     ensure_null, into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
     ClientBootstrapModule,

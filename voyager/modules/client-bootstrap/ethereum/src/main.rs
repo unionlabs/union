@@ -20,7 +20,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientType},
+    primitives::{ChainId, ClientType},
     ensure_null, into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
     ClientBootstrapModule,

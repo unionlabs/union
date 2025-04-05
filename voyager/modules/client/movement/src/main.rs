@@ -16,7 +16,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{
+    primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         Timestamp,
     },

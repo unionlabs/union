@@ -27,10 +27,10 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::ChainId,
     data::Data,
     hook::SubmitTxHook,
     module::{PluginInfo, PluginServer},
+    primitives::ChainId,
     vm::{call, defer, now, pass::PassResult, seq, BoxDynError, Op, Visit},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };

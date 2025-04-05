@@ -34,8 +34,8 @@ use voyager_message::{
         equivalent_chain_ids::EquivalentChainIds, get_plugin_info,
         ibc_spec_handler::IbcSpecHandler, Context, ModulesConfig,
     },
-    core::{IbcSpec, QueryHeight},
     filter::{make_filter, run_filter, JaqInterestFilter},
+    primitives::{IbcSpec, QueryHeight},
     rpc::{server::cache, IbcState, VoyagerRpcClient},
     VoyagerMessage,
 };
@@ -707,7 +707,7 @@ pub mod utils {
     use voyager_message::{
         call::SubmitTx,
         context::Context,
-        core::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
+        primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
         data::IbcDatagram,
         module::{ClientBootstrapModuleClient, ClientModuleClient},
         VoyagerMessage,
