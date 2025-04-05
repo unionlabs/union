@@ -13,6 +13,10 @@
           "address": "union1wd2phywsdxf7k5g55s9dng6g8psnxrvty65a5asxsjwztqf68eyqdh9se2",
           "height": 127944
         },
+        "bob": {
+          "address": "union1x9z7teq50n7ngcn2nn4lagpmwjfanjzwtpz8tg5rmu2205wcjxkqxueaet",
+          "height": 277795
+        },
         "ethereum": {
           "address": "union12de3l5lxkc2xj5ujt6w080xx8d4pqsurza7rlapl3kqukualtuaq5ey8r8",
           "height": 3021
