@@ -52,9 +52,6 @@ const chainName = $derived(Option.getOrElse(getChainName(), () => ""))
   {#snippet trigger()}
     <div class="font-mono text-xs break-all {className}" {...rest}>
       <Truncate showCopy={false} value={hash} maxLength={12} />
-      {#if chainName}
-        <span class="text-xs text-zinc-500 ml-1">({chainName})</span>
-      {/if}
     </div>
   {/snippet}
 

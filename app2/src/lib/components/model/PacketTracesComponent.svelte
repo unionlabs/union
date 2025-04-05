@@ -146,7 +146,7 @@ function getArrowSpan(
 
                 {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
                   <div class="text-xs text-zinc-400">
-                    <TransactionHashComponent hash={trace.transaction_hash.value} />
+                    <TransactionHashComponent chain={chain.value} hash={trace.transaction_hash.value} />
                   </div>
                 {/if}
               </div>
