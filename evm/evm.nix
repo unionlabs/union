@@ -146,6 +146,7 @@ _: {
         test = "tests/src"
 
         [etherscan]
+        local-devnet = { key = "''${VERIFICATION_KEY}", chain = "32382", url = "http://localhost/api" }
         corn-testnet = { key = "''${VERIFICATION_KEY}", chain = "21000001", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/21000001/public" }
         bob-mainnet = { key = "''${VERIFICATION_KEY}", chain = "60808", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/60808/public" }
       '';
@@ -180,67 +181,92 @@ _: {
       };
 
       # network           : plaintext name of network
-      # rpc-url           : rpc url for this network, should support full eth_getLogs (for fetching the deployment heights)
+      # rpc-url           : rpc url for this network, should support full eth_getLogs (for fetching the
+      #                     deployment heights)
       # private-key       : bash expression that evaluates to the private key to use for deployments
-      # verification-args : args to pass when verification is possible
-      # verification-key  : bash expression that evaluates to the verification key, will be available in $VERIFICATION_KEY
+      #
+      # verify            : whether this chain supports verification. defaults to true, if true then the
+      #                     following args are also read:
+      # verifier          : forge --verifier to use
+      # verification-key  : bash expression that evaluates to the verification key, this will be available
+      #                     in the $VERIFICATION_KEY env var
       networks = [
+        # devnets
         {
           network = "devnet";
           rpc-url = "http://localhost:8545";
           private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
-          verification-args = pkgs.lib.optionalString pkgs.stdenv.isx86_64 "--verify --verifier blockscout --verifier-url http://localhost/api";
+
+          verify = pkgs.lib.optionalString pkgs.stdenv.isx86_64;
+          verifier = "blockscout";
+          verification-key = "";
         }
         {
           # for use with the local berachain devnet from berachain/beacon-kit
           network = "berachain-devnet";
           rpc-url = "http://localhost:8545";
           private-key = "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306";
+
+          verify = false;
         }
         {
           # for use with the local arbitrum devnet from offchainlabs/nitro-testnode
           network = "arbitrum-devnet";
           rpc-url = "http://localhost:8547";
           private-key = "0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659";
+
+          verify = false;
         }
+
+        # testnets
         {
           network = "sepolia";
           rpc-url = "https://0xrpc.io/sep";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
-          verification-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
+
+          verifier = "etherscan";
+          verification-key = ''"$1"'';
         }
         {
           network = "holesky";
           rpc-url = "https://holesky.gateway.tenderly.co";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
-          verification-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
+
+          verifier = "etherscan";
+          verification-key = ''"$1"'';
         }
         {
           network = "corn-testnet";
           rpc-url = "https://testnet.corn-rpc.com";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
-          verification-args = ''--verify --verifier etherscan'';
-          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
-        }
-        {
-          network = "bob";
-          rpc-url = "https://rpc.gobob.xyz";
-          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
-          verification-args = ''--verify --verifier etherscan'';
+
+          verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
         }
         {
           network = "0g-testnet";
           rpc-url = "https://evmrpc-testnet.0g.ai";
           private-key = ''"$1"'';
-          verification-args = " --legacy --batch-size=1";
-          # verification-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+
+          verify = false;
         }
+
+        # mainnets
+        {
+          network = "bob";
+          rpc-url = "https://rpc.gobob.xyz";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+        }
+
+        # NOTE: These haven't been tested since testnet 8 (or earlier), and as such are unlikely to work properly
         {
           network = "scroll-testnet";
           rpc-url = "https://sepolia-rpc.scroll.io";
           private-key = ''"$1"'';
-          verification-args = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
+          verifier = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
         }
         {
           network = "arbitrum-testnet";
@@ -253,40 +279,6 @@ _: {
           private-key = ''"$1"'';
         }
       ];
-
-      eth-deploy =
-        {
-          rpc-url,
-          private-key,
-          verification-args ? "",
-          verification-key ? "",
-          ...
-        }:
-        mkCi false (
-          pkgs.writeShellApplication {
-            name = "eth-deploy-ibc";
-            runtimeInputs = [ self'.packages.forge ];
-            text = ''
-              ${ensureAtRepositoryRoot}
-              OUT="$(mktemp -d)"
-              pushd "$OUT"
-              cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
-              cp --no-preserve=mode -r ${evmSources}/* .
-
-              VERIFICATION_KEY=${verification-key} \
-              PRIVATE_KEY=${private-key} \
-              DEPLOYER="$3" \
-              FOUNDRY_PROFILE="script" \
-                forge script scripts/Deploy.s.sol:DeployIBC \
-                -vvvv \
-                --rpc-url ${rpc-url} \
-                --broadcast ${verification-args}
-
-              popd
-              rm -rf "$OUT"
-            '';
-          }
-        );
 
       get-deployed-heights =
         { rpc-url, ... }:
@@ -365,12 +357,50 @@ _: {
           '';
         };
 
-      eth-deploy-full =
+      deploy =
         {
           rpc-url,
           private-key,
-          verification-args ? "",
-          verification-key ? "",
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplication {
+            name = "eth-deploy-ibc";
+            runtimeInputs = [ self'.packages.forge ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+              OUT="$(mktemp -d)"
+              pushd "$OUT"
+              cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+              cp --no-preserve=mode -r ${evmSources}/* .
+
+              VERIFICATION_KEY=${verification-key} \
+              PRIVATE_KEY=${private-key} \
+              DEPLOYER="$3" \
+              FOUNDRY_PROFILE="script" \
+                forge script scripts/Deploy.s.sol:DeployIBC \
+                -vvvv \
+                --rpc-url ${rpc-url} \
+                --broadcast ${pkgs.lib.optionalString verify "--verify --verifier ${verifier}"}
+
+              popd
+              rm -rf "$OUT"
+            '';
+          }
+        );
+
+      deploy-full =
+        {
+          rpc-url,
+          private-key,
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -391,7 +421,7 @@ _: {
                 forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
                 -vvvv \
                 --rpc-url ${rpc-url} \
-                --broadcast ${verification-args}
+                --broadcast ${pkgs.lib.optionalString verify "--verify --verifier ${verifier}"}
 
               popd
               rm -rf "$OUT"
@@ -399,11 +429,14 @@ _: {
           }
         );
 
-      eth-verify =
+      verify =
         {
           rpc-url,
           private-key,
-          verification-args ? "",
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -424,6 +457,7 @@ _: {
                 while IFS=$'\t' read -r address args contract; do
                   if [ "$address" != "0x0000000000000000000000000000000000000000" ]
                   then
+                    VERIFICATION_KEY=${verification-key} \
                     PRIVATE_KEY=${private-key} \
                     FOUNDRY_LIBS='["libs"]' \
                     FOUNDRY_PROFILE="script" \
@@ -431,8 +465,7 @@ _: {
                         --force \
                         --watch "$address" "$contract" \
                         --constructor-args "$args" \
-                        --api-key "$3" \
-                        --rpc-url ${rpc-url} || true
+                        --rpc-url ${rpc-url} ${pkgs.lib.optionalString verify "--verify --verifier ${verifier}"} || true
                   fi
                 done
 
@@ -442,12 +475,14 @@ _: {
           }
         );
 
-      eth-deploy-single =
+      deploy-single =
         {
           rpc-url,
           kind,
-          verification-args ? "",
-          verification-key ? "",
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -487,7 +522,7 @@ _: {
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
                 -vvvv \
                 --rpc-url "${rpc-url}" \
-                --broadcast ${verification-args}
+                --broadcast ${pkgs.lib.optionalString verify "--verify --verifier ${verifier}"}
 
               popd
               rm -rf "$OUT"
@@ -495,14 +530,17 @@ _: {
           }
         );
 
-      eth-upgrade =
+      # TODO: Read the deployments.json to get the deployer and sender (can't upgrade without a deployment anyways)
+      upgrade =
         {
           dry ? false,
           rpc-url,
           protocol,
           private-key,
-          verification-args,
-          verification-key,
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -545,7 +583,7 @@ _: {
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
                   --rpc-url ${rpc-url} \
-                  --broadcast --slow ${verification-args}
+                  --broadcast ${pkgs.lib.optionalString verify "--verify --verifier ${verifier}"}
 
               rm -rf "$OUT"
               popd
@@ -720,6 +758,7 @@ _: {
               ''
           );
 
+        # USAGE: evm-contracts-addresses deployer sender rpc-url
         evm-contracts-addresses = mkCi false (
           pkgs.writeShellApplication {
             name = "evm-contracts-addresses";
@@ -789,55 +828,55 @@ _: {
           // builtins.listToAttrs (
             builtins.map (args: {
               name = "eth-verify-${args.network}";
-              value = eth-verify args;
+              value = verify args;
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
               name = "eth-deploy-${args.network}-full";
-              value = eth-deploy-full args;
+              value = deploy-full args;
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
               name = "eth-deploy-${args.network}";
-              value = eth-deploy args;
+              value = deploy args;
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-deploy-${args.network}-state-lens-ics23-mpt-client";
-              value = eth-deploy-single ({ kind = "StateLensIcs23MptClient"; } // args);
+              name = "deploy-${args.network}-state-lens-ics23-mpt-client";
+              value = deploy-single ({ kind = "StateLensIcs23MptClient"; } // args);
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-deploy-${args.network}-state-lens-ics23-ics23-client";
-              value = eth-deploy-single ({ kind = "StateLensIcs23Ics23Client"; } // args);
+              name = "deploy-${args.network}-state-lens-ics23-ics23-client";
+              value = deploy-single ({ kind = "StateLensIcs23Ics23Client"; } // args);
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-deploy-${args.network}-state-lens-ics23-smt-client";
-              value = eth-deploy-single ({ kind = "StateLensIcs23SmtClient"; } // args);
+              name = "deploy-${args.network}-state-lens-ics23-smt-client";
+              value = deploy-single ({ kind = "StateLensIcs23SmtClient"; } // args);
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-deploy-${args.network}-ucs03";
-              value = eth-deploy-single ({ kind = "UCS03"; } // args);
+              name = "deploy-${args.network}-ucs03";
+              value = deploy-single ({ kind = "UCS03"; } // args);
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-deploy-${args.network}-multicall";
-              value = eth-deploy-single ({ kind = "Multicall"; } // args);
+              name = "deploy-${args.network}-multicall";
+              value = deploy-single ({ kind = "Multicall"; } // args);
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-dryupgrade-${args.network}-ucs03";
-              value = eth-upgrade (
+              name = "dryupgrade-${args.network}-ucs03";
+              value = upgrade (
                 {
                   dry = true;
                   protocol = "UCS03";
@@ -848,8 +887,8 @@ _: {
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-dryupgrade-${args.network}-cometbls-client";
-              value = eth-upgrade (
+              name = "dryupgrade-${args.network}-cometbls-client";
+              value = upgrade (
                 {
                   dry = true;
                   protocol = "CometblsClient";
@@ -860,8 +899,8 @@ _: {
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-upgrade-${args.network}-ucs03";
-              value = eth-upgrade (
+              name = "upgrade-${args.network}-ucs03";
+              value = upgrade (
                 {
                   dry = false;
                   protocol = "UCS03";
@@ -872,8 +911,8 @@ _: {
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-upgrade-${args.network}-state-lens-ics23-mpt-client";
-              value = eth-upgrade (
+              name = "upgrade-${args.network}-state-lens-ics23-mpt-client";
+              value = upgrade (
                 {
                   dry = false;
                   protocol = "StateLensIcs23MptClient";
@@ -884,8 +923,8 @@ _: {
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-upgrade-${args.network}-state-lens-ics23-ics23-client";
-              value = eth-upgrade (
+              name = "upgrade-${args.network}-state-lens-ics23-ics23-client";
+              value = upgrade (
                 {
                   dry = false;
                   protocol = "StateLensIcs23Ics23Client";
@@ -896,8 +935,8 @@ _: {
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-upgrade-${args.network}-state-lens-ics23-smt-client";
-              value = eth-upgrade (
+              name = "upgrade-${args.network}-state-lens-ics23-smt-client";
+              value = upgrade (
                 {
                   dry = false;
                   protocol = "StateLensIcs23SmtClient";
@@ -908,8 +947,8 @@ _: {
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-dryupgrade-${args.network}-ibc";
-              value = eth-upgrade (
+              name = "dryupgrade-${args.network}-ibc";
+              value = upgrade (
                 {
                   dry = true;
                   protocol = "IBCHandler";
@@ -920,26 +959,26 @@ _: {
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-upgrade-${args.network}-ucs00";
-              value = eth-upgrade ({ protocol = "UCS00"; } // args);
+              name = "upgrade-${args.network}-ucs00";
+              value = upgrade ({ protocol = "UCS00"; } // args);
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-upgrade-${args.network}-cometbls-client";
-              value = eth-upgrade ({ protocol = "CometblsClient"; } // args);
+              name = "upgrade-${args.network}-cometbls-client";
+              value = upgrade ({ protocol = "CometblsClient"; } // args);
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-get-deployed-heights-${args.network}";
+              name = "get-deployed-heights-${args.network}";
               value = get-deployed-heights args;
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-upgrade-${args.network}-ibc";
-              value = eth-upgrade ({ protocol = "IBCHandler"; } // args);
+              name = "upgrade-${args.network}-ibc";
+              value = upgrade ({ protocol = "IBCHandler"; } // args);
             }) networks
           );
       };
