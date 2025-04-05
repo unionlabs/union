@@ -34,9 +34,6 @@ async fn main() {
 #[derive(Debug, Clone)]
 pub struct Module {
     pub chain_id: ChainId,
-    pub l1_chain_id: ChainId,
-
-    pub union_chain_id: ChainId,
 
     pub l2_oracle_address: H160,
 
@@ -50,10 +47,6 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub l1_chain_id: ChainId,
-
-    pub union_chain_id: ChainId,
-
     pub l2_oracle_address: H160,
 
     /// The address of the `IBCHandler` smart contract.
@@ -96,16 +89,13 @@ impl ClientBootstrapModule for Module {
                 .await?,
         );
 
-        let l1_chain_id = ChainId::new(l1_provider.get_chain_id().await?.to_string());
         let l2_chain_id = ChainId::new(l2_provider.get_chain_id().await?.to_string());
 
         info.ensure_chain_id(l2_chain_id.to_string())?;
         info.ensure_client_type(ClientType::BOB)?;
 
         Ok(Self {
-            l1_chain_id: config.l1_chain_id,
-            chain_id: l1_chain_id,
-            union_chain_id: config.union_chain_id,
+            chain_id: l2_chain_id,
             ibc_handler_address: config.ibc_handler_address,
             l2_oracle_address: config.l2_oracle_address,
             l1_provider,

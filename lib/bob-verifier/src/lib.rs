@@ -11,9 +11,7 @@ use unionlabs::{
     primitives::{H256, U256},
 };
 
-// Constant value from the L2OutputOracle of gobob.xyz mainnet
-// See: https://docs.gobob.xyz/learn/reference/contracts/#ethereum-l1
-// See: https://etherscan.io/address/0xdDa53E23f8a32640b04D7256e651C1db98dB11C1#readProxyContract
+// Arbitrary finalization enforced in parallel of the L1 finality.
 pub const FINALIZATION_PERIOD_SECONDS: u64 = 60;
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]

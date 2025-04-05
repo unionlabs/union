@@ -66,25 +66,7 @@ pub async fn finalized_execution_block_of_l1_height(
         ._0;
     // The period until the L2 block is considered to be final.
     let finalization_period_seconds = U256::try_from(l2_finalization_period_seconds).unwrap();
-    // This is the interval in number of blocks.
-    let submission_interval = oracle
-        .SUBMISSION_INTERVAL()
-        .call()
-        .block(l1_height.into())
-        .await?
-        ._0;
-    let l2_block_time = oracle
-        .L2_BLOCK_TIME()
-        .call()
-        .block(l1_height.into())
-        .await?
-        ._0;
-    // We start at + 2 in case we observe delay from the proposer
-    let mut finalized_output_index = (latest_output_index + U256::ONE + U256::ONE)
-        .checked_sub(finalization_period_seconds / (submission_interval * l2_block_time))
-        .expect("impossible");
-    // If the proposer was perfect, we wouldn't have to loop, this is used to
-    // avoid using an older block if proposer is delaying submission a bit.
+    let mut finalized_output_index = latest_output_index;
     let finalized_output = loop {
         let current_output = oracle
             .getL2Output(finalized_output_index)

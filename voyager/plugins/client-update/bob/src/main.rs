@@ -38,7 +38,7 @@ use voyager_message::{
     module::{PluginInfo, PluginServer},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
-use voyager_vm::{call, conc, data, noop, pass::PassResult, promise, seq, BoxDynError, Op, Visit};
+use voyager_vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit};
 
 use crate::{
     call::{FetchUpdate, ModuleCall},
@@ -412,15 +412,18 @@ impl Module {
 
         if bob_client_state.latest_height >= update_to.height() {
             info!("bob: irrelevant update");
-            Ok(noop())
+            Ok(data(OrderedHeaders { headers: vec![] }))
         } else {
             let l1_client_info = voy_client
-                .client_info::<IbcUnion>(self.chain_id.clone(), bob_client_state.l1_client_id)
+                .client_info::<IbcUnion>(
+                    counterparty_chain_id.clone(),
+                    bob_client_state.l1_client_id,
+                )
                 .await?;
 
             let l1_client_meta = voy_client
                 .client_state_meta::<IbcUnion>(
-                    self.chain_id.clone(),
+                    counterparty_chain_id.clone(),
                     QueryHeight::Finalized,
                     bob_client_state.l1_client_id,
                 )
@@ -517,7 +520,7 @@ impl Module {
 
         let l1_client_meta = voy_client
             .client_state_meta::<IbcUnion>(
-                self.chain_id.clone(),
+                counterparty_chain_id.clone(),
                 QueryHeight::Finalized,
                 bob_client_state.l1_client_id,
             )
