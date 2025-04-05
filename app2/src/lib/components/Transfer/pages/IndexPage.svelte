@@ -1,7 +1,5 @@
 <script lang="ts">
 import { Option } from "effect"
-import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { ApprovalRequired } from "../transfer-step.ts"
 import Button from "$lib/components/ui/Button.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { goto } from "$app/navigation"
@@ -9,23 +7,10 @@ import { truncate } from "$lib/utils/format.ts"
 import { fly } from "svelte/transition"
 
 type Props = {
-  stepIndex: number
   newTransfer: () => void
 }
 
-const { stepIndex, newTransfer }: Props = $props()
-
-const lts = lockedTransferStore.get()
-
-const step: Option.Option<ReturnType<typeof ApprovalRequired>> = $derived.by(() => {
-  if (Option.isNone(lts)) return Option.none()
-
-  const steps = lts.value.steps
-  if (stepIndex < 0 || stepIndex >= steps.length) return Option.none()
-
-  const step = steps[stepIndex]
-  return step._tag === "ApprovalRequired" ? Option.some(step) : Option.none()
-})
+const { newTransfer }: Props = $props()
 
 $effect(() => {
   if (Option.isSome(transferHashStore.data)) {
