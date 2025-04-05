@@ -15,11 +15,11 @@ use jsonrpsee::{
 use serde_json::Value;
 use tracing::{debug, info_span, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
-use voyager_core::{ConsensusStateMeta, IbcSpecId, Timestamp};
+use voyager_primitives::{ConsensusStateMeta, IbcSpecId, Timestamp};
 use voyager_vm::ItemId;
 
 // use valuable::Valuable;
-// use voyager_core::IbcStoreFormat;
+// use voyager_primitives::IbcStoreFormat;
 use crate::{
     context::{LoadedModulesInfo, Modules, WithId},
     core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
@@ -47,7 +47,7 @@ pub mod cache {
     use serde_json::Value;
     use tracing::trace;
     use unionlabs::ibc::core::client::height::Height;
-    use voyager_core::{ChainId, IbcSpec, IbcSpecId, IbcStorePathKey};
+    use voyager_primitives::{ChainId, IbcSpec, IbcSpecId, IbcStorePathKey};
 
     #[derive(Debug, Clone)]
     pub struct Cache {

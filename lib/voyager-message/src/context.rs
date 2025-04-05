@@ -30,7 +30,7 @@ use tracing::{
 use unionlabs::{
     ethereum::keccak256, primitives::encoding::HexUnprefixed, traits::Member, ErrorReporter,
 };
-use voyager_core::{ConsensusType, IbcSpecId};
+use voyager_primitives::{ConsensusType, IbcSpecId};
 use voyager_vm::{ItemId, QueueError};
 
 use crate::{

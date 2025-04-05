@@ -1,7 +1,7 @@
 use enumorph::Enumorph;
 use sha3::{Digest, Keccak256};
 use unionlabs::primitives::{Bytes, H256, U256};
-use voyager_core::IbcStorePathKey;
+use voyager_primitives::IbcStorePathKey;
 
 #[cfg(feature = "ethabi")]
 use crate::Packet;

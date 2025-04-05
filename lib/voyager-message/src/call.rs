@@ -4,7 +4,7 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 use tracing::{debug, info, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, traits::Member};
-use voyager_core::{ClientType, IbcSpecId, QueryHeight, Timestamp};
+use voyager_primitives::{ClientType, IbcSpecId, QueryHeight, Timestamp};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
 
 use crate::{

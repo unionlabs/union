@@ -1,5 +1,5 @@
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
-use voyager_core::{IbcSpec, IbcSpecId};
+use voyager_primitives::{IbcSpec, IbcSpecId};
 
 pub mod datagram;
 pub mod event;
@@ -59,7 +59,7 @@ impl IbcSpec for IbcUnion {
 }
 
 #[cfg(feature = "tracing")]
-pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
+pub fn log_event(e: &FullEvent, chain_id: &voyager_primitives::ChainId) {
     use tracing::info;
 
     let event = e.name();

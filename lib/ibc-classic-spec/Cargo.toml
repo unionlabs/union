@@ -19,4 +19,4 @@ subset-of.workspace    = true
 thiserror.workspace    = true
 tracing.workspace      = true
 unionlabs.workspace    = true
-voyager-core.workspace = true
+voyager-primitives.workspace = true

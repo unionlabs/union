@@ -5,7 +5,7 @@ use macros::model;
 use schemars::JsonSchema;
 use serde_json::Value;
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, traits::Member};
-use voyager_core::{ConsensusType, IbcSpecId, Timestamp};
+use voyager_primitives::{ConsensusType, IbcSpecId, Timestamp};
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 
 use crate::{

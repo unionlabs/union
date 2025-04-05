@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use serde_json::Value;
 use unionlabs::primitives::Bytes;
-use voyager_core::IbcSpecId;
+use voyager_primitives::IbcSpecId;
 
 use crate::{core::IbcSpec, into_value, RawClientId, FATAL_JSONRPC_ERROR_CODE};
 

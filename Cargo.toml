@@ -54,7 +54,7 @@ members = [
   "lib/unionlabs-primitives",
   "lib/zktrie-rs",
   "lib/voyager-message",
-  "lib/voyager-core",
+  "lib/voyager-primitives",
   "lib/galois-rpc",
   "lib/cosmos-sdk-event",
   "lib/frissitheto",
@@ -193,7 +193,7 @@ members = [
   "lib/aptos-verifier",
 
   "lib/reconnecting-jsonrpc-ws-client",
-  "lib/voyager-core",
+  "lib/voyager-primitives",
   "lib/subset-of",
   "lib/cometbft-types",
   "lib/galois-rpc",
@@ -346,7 +346,7 @@ zktrie               = { path = "lib/zktrie-rs", default-features = false }
 
 galois-rpc = { path = "lib/galois-rpc", default-features = false }
 
-voyager-core    = { path = "lib/voyager-core", default-features = false }
+voyager-primitives    = { path = "lib/voyager-primitives", default-features = false }
 voyager-message = { path = "lib/voyager-message", default-features = false }
 voyager-vm      = { path = "lib/voyager-vm", default-features = false }
 

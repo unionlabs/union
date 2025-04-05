@@ -1,5 +1,5 @@
 use tracing::info;
-use voyager_core::{ChainId, ClientType};
+use voyager_primitives::{ChainId, ClientType};
 use voyager_vm::Visit;
 
 use crate::{

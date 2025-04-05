@@ -23,7 +23,7 @@ sha3            = { workspace = true }
 thiserror       = { workspace = true }
 tracing         = { workspace = true, optional = true }
 unionlabs       = { workspace = true }
-voyager-core    = { workspace = true }
+voyager-primitives    = { workspace = true }
 
 [dev-dependencies]
 ibc-solidity   = { workspace = true }
@@ -35,6 +35,6 @@ default = []
 bincode             = ["dep:bincode", "unionlabs/bincode"]
 ethabi              = ["dep:alloy-sol-types", "unionlabs/ethabi"]
 ibc-solidity-compat = ["dep:ibc-solidity"]
-schemars            = ["dep:schemars", "voyager-core/schemars", "unionlabs/schemars"]
-serde               = ["dep:serde", "voyager-core/serde"]
+schemars            = ["dep:schemars", "voyager-primitives/schemars", "unionlabs/schemars"]
+serde               = ["dep:serde", "voyager-primitives/serde"]
 tracing             = ["dep:tracing", "ethabi"]                                       # ethabi for the packet hash in logs

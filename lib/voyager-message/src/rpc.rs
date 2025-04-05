@@ -8,7 +8,7 @@ use macros::model;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
-use voyager_core::{ConsensusStateMeta, IbcSpecId, Timestamp};
+use voyager_primitives::{ConsensusStateMeta, IbcSpecId, Timestamp};
 
 use crate::{
     context::LoadedModulesInfo,

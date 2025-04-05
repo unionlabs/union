@@ -1,6 +1,6 @@
 use enumorph::Enumorph;
 use unionlabs::primitives::H256;
-use voyager_core::IbcQuery;
+use voyager_primitives::IbcQuery;
 
 use crate::{types::ChannelId, IbcUnion, Packet};
 
