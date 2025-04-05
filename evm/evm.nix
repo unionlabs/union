@@ -465,7 +465,7 @@ _: {
                         --force \
                         --watch "$address" "$contract" \
                         --constructor-args "$args" \
-                        --rpc-url ${rpc-url} ${pkgs.lib.optionalString verify "--verify --verifier ${verifier}"} || true
+                        --rpc-url ${rpc-url} ${pkgs.lib.optionalString verify "--verifier ${verifier}"} || true
                   fi
                 done
 
