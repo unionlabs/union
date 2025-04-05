@@ -213,6 +213,14 @@ impl ClientBootstrapModuleServer for Module {
             },
         );
 
+        info!(
+            timestamp = %consensus_state.timestamp,
+            state_root = %consensus_state.state_root,
+            storage_root = %consensus_state.storage_root,
+            "decoded consensus state value of l2 client {} on l1 chain {}",
+            config.l2_client_id, l1_client_meta.counterparty_chain_id
+        );
+
         Ok(into_value(&consensus_state))
     }
 }
