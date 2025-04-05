@@ -9,7 +9,7 @@ export const channelsQuery = () =>
     schema: Schema.Struct({ v2_channels: Channels }),
     document: graphql(`
       query Ucs03Channels @cached(ttl: 60) {
-          v2_channels(args: { p_tags: ["experimental"]}) {
+          v2_channels(args: { p_recommended: true}) {
               destination_channel_id
               destination_client_id
               destination_connection_id
