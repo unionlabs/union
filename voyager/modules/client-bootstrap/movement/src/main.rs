@@ -17,9 +17,9 @@ use unionlabs::{
     primitives::{FixedBytes, H160, U256},
 };
 use voyager_message::{
-    core::{ChainId, ClientType},
     ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    primitives::{ChainId, ClientType},
     vm::BoxDynError,
     ClientBootstrapModule,
 };

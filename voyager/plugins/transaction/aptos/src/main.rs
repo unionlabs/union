@@ -21,10 +21,10 @@ use sha3::Digest;
 use tracing::instrument;
 use unionlabs::primitives::H256;
 use voyager_message::{
-    core::ChainId,
     data::Data,
     hook::SubmitTxHook,
     module::{PluginInfo, PluginServer},
+    primitives::ChainId,
     vm::{call, noop, pass::PassResult, Op, Visit},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };

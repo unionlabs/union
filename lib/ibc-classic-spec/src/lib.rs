@@ -29,7 +29,7 @@ use unionlabs::{
     primitives::{Bytes, H256},
     ErrorReporter,
 };
-use voyager_core::{ClientType, IbcSpec, IbcSpecId, IbcStorePathKey};
+use voyager_primitives::{ClientType, IbcSpec, IbcSpecId, IbcStorePathKey};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum IbcClassic {}

@@ -33,9 +33,9 @@ use unionlabs::{
 };
 use voyager_message::{
     call::WaitForHeight,
-    core::{ChainId, IbcSpec, QueryHeight},
     data::{ChainEvent, Data, IbcDatagram},
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, IbcSpec, QueryHeight},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
     FATAL_JSONRPC_ERROR_CODE,
 };

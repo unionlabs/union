@@ -34,10 +34,10 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, WaitForHeight},
-    core::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
     data::{ChainEvent, Data},
     into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
     ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, noop, pass::PassResult, seq, BoxDynError, Op};

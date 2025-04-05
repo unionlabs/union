@@ -10,8 +10,8 @@ use unionlabs::{
     bech32::Bech32, ibc::core::client::height::Height, primitives::H256, traits::Member,
 };
 use voyager_message::{
-    core::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
+    primitives::{ChainId, ConsensusType, Timestamp},
     rpc::json_rpc_error_to_error_object,
     ConsensusModule,
 };

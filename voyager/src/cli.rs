@@ -3,8 +3,8 @@ use std::{ffi::OsString, str::FromStr};
 use clap::{self, Parser, Subcommand};
 use unionlabs::{self, bounded::BoundedI64, ibc::core::client::height::Height, result_unwrap};
 use voyager_message::{
-    core::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
     module::{ClientModuleInfo, ConsensusModuleInfo, ProofModuleInfo, StateModuleInfo},
+    primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
     RawClientId, VoyagerMessage,
 };
 use voyager_vm::{BoxDynError, Op};

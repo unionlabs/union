@@ -27,9 +27,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientInfo, ClientType, IbcInterface, Timestamp},
     into_value,
     module::{StateModuleInfo, StateModuleServer},
+    primitives::{ChainId, ClientInfo, ClientType, IbcInterface, Timestamp},
     StateModule,
 };
 use voyager_vm::BoxDynError;

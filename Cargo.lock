@@ -7013,7 +7013,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tracing",
  "unionlabs",
- "voyager-core",
+ "voyager-primitives",
 ]
 
 [[package]]
@@ -7091,7 +7091,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tracing",
  "unionlabs",
- "voyager-core",
+ "voyager-primitives",
 ]
 
 [[package]]
@@ -15442,19 +15442,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-core"
-version = "0.0.0"
-dependencies = [
- "consensus-primitives",
- "hex-literal",
- "macros",
- "schemars",
- "serde",
- "serde_json",
- "unionlabs",
-]
-
-[[package]]
 name = "voyager-event-source-plugin-cosmos-sdk"
 version = "0.0.0"
 dependencies = [
@@ -15561,7 +15548,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.19",
  "unionlabs",
- "voyager-core",
+ "voyager-primitives",
  "voyager-vm",
 ]
 
@@ -15622,6 +15609,19 @@ dependencies = [
  "unionlabs",
  "voyager-message",
  "voyager-vm",
+]
+
+[[package]]
+name = "voyager-primitives"
+version = "0.0.0"
+dependencies = [
+ "consensus-primitives",
+ "hex-literal",
+ "macros",
+ "schemars",
+ "serde",
+ "serde_json",
+ "unionlabs",
 ]
 
 [[package]]

@@ -31,10 +31,10 @@ use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{bounded::BoundedI64, ibc::core::client::height::Height};
 use voyager_message::{
     call::{Call, WaitForHeight},
-    core::{ChainId, ClientType},
     data::Data,
     hook::UpdateHook,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientType},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{

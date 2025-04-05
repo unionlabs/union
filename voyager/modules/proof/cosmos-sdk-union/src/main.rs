@@ -27,9 +27,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::ChainId,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
+    primitives::ChainId,
     rpc::ProofType,
     ProofModule, FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,
 };

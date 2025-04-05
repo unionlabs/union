@@ -14,9 +14,9 @@ use serde_json::Value;
 use tracing::{info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
 use voyager_message::{
-    core::{ChainId, ClientType, QueryHeight},
     into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    primitives::{ChainId, ClientType, QueryHeight},
     ClientBootstrapModule, ExtensionsExt, VoyagerClient, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;

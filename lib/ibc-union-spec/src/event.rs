@@ -1,6 +1,6 @@
 use enumorph::Enumorph;
 use unionlabs::primitives::Bytes;
-use voyager_core::ClientType;
+use voyager_primitives::ClientType;
 
 use crate::{
     types::{ChannelId, ClientId, ConnectionId},

@@ -11,9 +11,9 @@ use serde_with::{serde_as, DisplayFromStr};
 use tracing::{instrument, trace};
 use unionlabs::never::Never;
 use voyager_message::{
-    core::IbcSpec,
     data::Data,
     module::{PluginInfo, PluginServer},
+    primitives::IbcSpec,
     DefaultCmd, Plugin, VoyagerMessage,
 };
 use voyager_vm::{pass::PassResult, BoxDynError, Op};

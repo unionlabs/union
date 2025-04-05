@@ -1,6 +1,6 @@
 use enumorph::Enumorph;
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
-use voyager_core::ClientType;
+use voyager_primitives::ClientType;
 
 use crate::{
     types::{ChannelId, ClientId, ConnectionId},

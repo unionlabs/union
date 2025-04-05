@@ -39,7 +39,7 @@ use tracing::{
 use unionlabs::{
     ibc::core::client::height::Height, primitives::Bytes, traits::Member, ErrorReporter,
 };
-use voyager_core::{
+use voyager_primitives::{
     ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcQuery,
     IbcSpec, IbcSpecId, IbcStorePathKey, QueryHeight, Timestamp,
 };
@@ -74,7 +74,7 @@ pub mod rpc;
 
 pub use reconnecting_jsonrpc_ws_client;
 pub use reth_ipc;
-pub use voyager_core as core;
+pub use voyager_primitives as primitives;
 pub use voyager_vm as vm;
 
 #[derive(Debug, Clone, PartialEq)]

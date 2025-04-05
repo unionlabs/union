@@ -10,10 +10,10 @@ use unionlabs::never::Never;
 use voyager_message::{
     call::{FetchUpdateHeaders, WaitForTrustedHeight},
     callback::AggregateSubmitTxFromOrderedHeaders,
-    core::{ChainId, IbcSpecId, QueryHeight},
     data::Data,
     into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, IbcSpecId, QueryHeight},
     ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, defer, now, pass::PassResult, promise, seq, BoxDynError, Op};

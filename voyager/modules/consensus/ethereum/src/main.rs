@@ -15,8 +15,8 @@ use serde::{Deserialize, Serialize};
 use tracing::{instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
 use voyager_message::{
-    core::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
+    primitives::{ChainId, ConsensusType, Timestamp},
     ConsensusModule,
 };
 use voyager_vm::BoxDynError;

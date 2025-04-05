@@ -35,10 +35,10 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::ChainId,
     data::Data,
     hook::SubmitTxHook,
     module::{PluginInfo, PluginServer},
+    primitives::ChainId,
     vm::{call, noop, pass::PassResult, seq, BoxDynError, Op, Visit},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };

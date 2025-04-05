@@ -11,8 +11,8 @@ use tracing::{debug, instrument, warn};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::{SubmitTx, WaitForClientUpdate},
-    core::{ChainId, ClientStateMeta, QueryHeight},
     data::{Data, IbcDatagram, OrderedHeaders},
+    primitives::{ChainId, ClientStateMeta, QueryHeight},
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, noop, promise, seq, Op};

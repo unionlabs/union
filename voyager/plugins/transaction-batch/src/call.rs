@@ -8,7 +8,7 @@ use tracing::info;
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::FetchUpdateHeaders,
-    core::{ChainId, QueryHeight},
+    primitives::{ChainId, QueryHeight},
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, MISSING_STATE_ERROR_CODE,
 };
 use voyager_vm::{now, promise, Op};

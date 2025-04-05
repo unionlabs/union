@@ -15,11 +15,11 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{
+    module::{ClientModuleInfo, ClientModuleServer},
+    primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         IbcSpecId, Timestamp,
     },
-    module::{ClientModuleInfo, ClientModuleServer},
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;

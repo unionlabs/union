@@ -21,9 +21,9 @@ use unionlabs::{
     result_unwrap, ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientType},
     ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    primitives::{ChainId, ClientType},
     ClientBootstrapModule,
 };
 use voyager_vm::BoxDynError;

@@ -30,9 +30,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientInfo, ClientType, IbcInterface, IbcSpec},
     into_value,
     module::{StateModuleInfo, StateModuleServer},
+    primitives::{ChainId, ClientInfo, ClientType, IbcInterface, IbcSpec},
     StateModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
