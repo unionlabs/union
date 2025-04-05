@@ -220,6 +220,8 @@ members = [
   "lib/embed-commit/verifier",
 
   "lib/ucs04",
+
+  "lib/consensus-primitives",
 ]
 
 [workspace.package]
@@ -351,6 +353,8 @@ voyager-vm      = { path = "lib/voyager-vm", default-features = false }
 embed-commit = { path = "lib/embed-commit", default-features = false }
 
 ucs04 = { path = "lib/ucs04", default-features = false }
+
+consensus-primitives = { path = "lib/consensus-primitives", default-features = false }
 
 # external dependencies
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }

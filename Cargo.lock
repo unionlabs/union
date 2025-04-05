@@ -3660,6 +3660,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "consensus-primitives"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.1",
+ "schemars",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "console"
 version = "0.15.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15435,6 +15445,7 @@ dependencies = [
 name = "voyager-core"
 version = "0.0.0"
 dependencies = [
+ "consensus-primitives",
  "hex-literal",
  "macros",
  "schemars",
