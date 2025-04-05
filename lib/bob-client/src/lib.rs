@@ -10,6 +10,23 @@ use bob_types::L2OutputOracle;
 use tracing::instrument;
 use unionlabs::primitives::H160;
 
+#[instrument(skip_all, fields(%l1_height, %l2_oracle_address))]
+pub async fn latest_committed_l2_block_number(
+    l1_provider: impl Provider,
+    l2_oracle_address: H160,
+    l1_height: u64,
+) -> Result<u64, alloy::contract::Error> {
+    let oracle = L2OutputOracle::new(l2_oracle_address.into(), &l1_provider);
+    Ok(oracle
+        .latestBlockNumber()
+        .call()
+        .block(l1_height.into())
+        .await?
+        ._0
+        .try_into()
+        .unwrap())
+}
+
 #[instrument(skip_all, fields(%l1_height, %l2_height, %l2_oracle_address))]
 pub async fn output_index_of_l2_block_on_l1_block(
     l1_provider: impl Provider,

@@ -6,12 +6,14 @@ use alloy::{
     network::AnyNetwork,
     providers::{DynProvider, Provider, ProviderBuilder},
 };
-use bob_client::output_index_of_l2_block_on_l1_block;
+use bob_client::{finalized_execution_block_of_l1_height, output_index_of_l2_block_on_l1_block};
 use bob_light_client_types::{
     header::{L2Header, OutputRootProof},
-    Header,
+    ClientState, Header,
 };
 use bob_types::{L2_OUTPUTS_SLOT, L2_TO_L1_MESSAGE_PASSER};
+use bob_verifier::FINALIZATION_PERIOD_SECONDS;
+use call::FetchL2Update;
 use ethereum_light_client_types::{AccountProof, StorageProof};
 use ibc_union_spec::{path::ClientStatePath, ClientId, IbcUnion};
 use jsonrpsee::{
@@ -20,7 +22,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, instrument};
+use tracing::{debug, info, instrument};
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{H160, H256, U256},
@@ -35,9 +37,8 @@ use voyager_message::{
     into_value,
     module::{PluginInfo, PluginServer},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit};
+use voyager_vm::{call, conc, data, noop, pass::PassResult, promise, seq, BoxDynError, Op, Visit};
 
 use crate::{
     call::{FetchUpdate, ModuleCall},
@@ -107,7 +108,7 @@ impl Module {
     )]
     pub async fn fetch_oracle_account_proof(&self, block_number: u64) -> RpcResult<AccountProof> {
         let account_update = self
-            .l2_provider
+            .l1_provider
             .get_proof(self.l2_oracle_address.into(), vec![])
             .block_id(block_number.into())
             .await
@@ -226,25 +227,21 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ready: msgs
                 .into_iter()
                 .map(|mut op| {
-                    UpdateHook::new(
-                        &self.chain_id,
-                        &ClientType::new(ClientType::ETHEREUM),
-                        |fetch| {
-                            Call::Plugin(PluginMessage::new(
-                                self.plugin_name(),
-                                ModuleCall::from(FetchUpdate {
-                                    from_height: fetch.update_from,
-                                    to_height: fetch.update_to,
-                                    counterparty_chain_id: fetch.counterparty_chain_id.clone(),
-                                    client_id: fetch
-                                        .client_id
-                                        .clone()
-                                        .decode_spec::<IbcUnion>()
-                                        .unwrap(),
-                                }),
-                            ))
-                        },
-                    )
+                    UpdateHook::new(&self.chain_id, &ClientType::new(ClientType::BOB), |fetch| {
+                        Call::Plugin(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(FetchUpdate {
+                                from_height: fetch.update_from,
+                                to_height: fetch.update_to,
+                                counterparty_chain_id: fetch.counterparty_chain_id.clone(),
+                                client_id: fetch
+                                    .client_id
+                                    .clone()
+                                    .decode_spec::<IbcUnion>()
+                                    .unwrap(),
+                            }),
+                        ))
+                    })
                     .visit_op(&mut op);
 
                     op
@@ -256,7 +253,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn call(&self, ext: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
+    async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate {
                 from_height,
@@ -265,7 +262,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 client_id,
             }) => self
                 .fetch_update(
-                    ext,
+                    e.try_get()?,
                     from_height,
                     to_height,
                     counterparty_chain_id,
@@ -276,6 +273,20 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     ErrorObject::owned(
                         -1,
                         format!("error fetching update: {}", ErrorReporter(&*e)),
+                        None::<()>,
+                    )
+                }),
+            ModuleCall::FetchL2Update(FetchL2Update {
+                update_from,
+                counterparty_chain_id,
+                client_id,
+            }) => self
+                .fetch_l2_update(e.try_get()?, update_from, counterparty_chain_id, client_id)
+                .await
+                .map_err(|e| {
+                    ErrorObject::owned(
+                        -1,
+                        format!("error fetching l2 update: {}", ErrorReporter(&*e)),
                         None::<()>,
                     )
                 }),
@@ -357,34 +368,18 @@ impl Module {
         fields(
             chain_id = %self.chain_id,
             %counterparty_chain_id,
-            %update_from_block_number,
-            %update_to_block_number
+            %update_from,
+            %update_to,
         )
     )]
     async fn fetch_update(
         &self,
-        ext: &Extensions,
-        update_from_block_number: Height,
-        update_to_block_number: Height,
+        voy_client: &VoyagerClient,
+        update_from: Height,
+        update_to: Height,
         counterparty_chain_id: ChainId,
         client_id: ClientId,
     ) -> Result<Op<VoyagerMessage>, BoxDynError> {
-        let voy_client = ext.try_get::<VoyagerClient>()?;
-
-        let l2_oracle_account_proof = self
-            .fetch_oracle_account_proof(update_from_block_number.height())
-            .await?;
-
-        let l2_ibc_account_proof = self
-            .fetch_ibc_contract_root_proof(update_from_block_number.height())
-            .await?;
-
-        let l2_block = self
-            .l2_provider
-            .get_block(update_from_block_number.height().into())
-            .await?
-            .unwrap();
-
         let counterparty_latest_height = voy_client
             .query_latest_height(counterparty_chain_id.clone(), false)
             .await?;
@@ -405,34 +400,120 @@ impl Module {
 
         debug!(?bob_client_state_info);
 
-        let bob_client_state_json = voy_client
-            .decode_client_state::<IbcUnion>(
+        let ClientState::V1(bob_client_state) = voy_client
+            .decode_client_state::<IbcUnion, ClientState>(
                 bob_client_state_info.client_type.clone(),
                 bob_client_state_info.ibc_interface,
                 raw_bob_client_state,
             )
             .await?;
 
-        debug!(%bob_client_state_json);
-
-        let bob_light_client_types::ClientState::V1(bob_client_state) =
-            serde_json::from_value::<bob_light_client_types::ClientState>(bob_client_state_json)
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!(
-                            "unable to deserialize bob client state: {}",
-                            ErrorReporter(e)
-                        ),
-                        None::<()>,
-                    )
-                })?;
-
         debug!(?bob_client_state);
 
-        let l1_client_info = voy_client
-            .client_info::<IbcUnion>(self.chain_id.clone(), bob_client_state.l1_client_id)
+        if bob_client_state.latest_height >= update_to.height() {
+            info!("bob: irrelevant update");
+            Ok(noop())
+        } else {
+            let l1_client_info = voy_client
+                .client_info::<IbcUnion>(self.chain_id.clone(), bob_client_state.l1_client_id)
+                .await?;
+
+            let l1_client_meta = voy_client
+                .client_state_meta::<IbcUnion>(
+                    self.chain_id.clone(),
+                    QueryHeight::Finalized,
+                    bob_client_state.l1_client_id,
+                )
+                .await?;
+
+            // Latest L1 finalized height
+            let l1_latest_height = voy_client
+                .query_latest_height(l1_client_meta.counterparty_chain_id.clone(), true)
+                .await?;
+
+            Ok(conc([
+                promise(
+                    [call(FetchUpdateHeaders {
+                        client_type: l1_client_info.client_type,
+                        chain_id: l1_client_meta.counterparty_chain_id.clone(),
+                        counterparty_chain_id: counterparty_chain_id.clone(),
+                        client_id: RawClientId::new(bob_client_state.l1_client_id),
+                        update_from: l1_client_meta.counterparty_height,
+                        update_to: l1_latest_height,
+                    })],
+                    [],
+                    AggregateSubmitTxFromOrderedHeaders {
+                        ibc_spec_id: IbcUnion::ID,
+                        chain_id: counterparty_chain_id.clone(),
+                        client_id: RawClientId::new(bob_client_state.l1_client_id),
+                    },
+                ),
+                seq([
+                    call(WaitForTrustedHeight {
+                        chain_id: counterparty_chain_id.clone(),
+                        ibc_spec_id: IbcUnion::ID,
+                        client_id: RawClientId::new(bob_client_state.l1_client_id),
+                        height: l1_latest_height,
+                        finalized: false,
+                    }),
+                    call(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(FetchL2Update {
+                            update_from,
+                            counterparty_chain_id,
+                            client_id,
+                        }),
+                    )),
+                ]),
+            ]))
+        }
+    }
+
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %counterparty_chain_id,
+            %update_from,
+            %client_id,
+        )
+    )]
+    async fn fetch_l2_update(
+        &self,
+        voy_client: &VoyagerClient,
+        update_from: Height,
+        counterparty_chain_id: ChainId,
+        client_id: ClientId,
+    ) -> Result<Op<VoyagerMessage>, BoxDynError> {
+        let counterparty_latest_height = voy_client
+            .query_latest_height(counterparty_chain_id.clone(), false)
             .await?;
+
+        let raw_bob_client_state = voy_client
+            .query_ibc_state(
+                counterparty_chain_id.clone(),
+                counterparty_latest_height,
+                ClientStatePath { client_id },
+            )
+            .await?;
+
+        debug!(?raw_bob_client_state);
+
+        let bob_client_state_info = voy_client
+            .client_info::<IbcUnion>(counterparty_chain_id.clone(), client_id)
+            .await?;
+
+        debug!(?bob_client_state_info);
+
+        let ClientState::V1(bob_client_state) = voy_client
+            .decode_client_state::<IbcUnion, ClientState>(
+                bob_client_state_info.client_type.clone(),
+                bob_client_state_info.ibc_interface,
+                raw_bob_client_state,
+            )
+            .await?;
+
+        debug!(?bob_client_state);
 
         let l1_client_meta = voy_client
             .client_state_meta::<IbcUnion>(
@@ -442,96 +523,86 @@ impl Module {
             )
             .await?;
 
-        let l1_latest_height = voy_client
-            .query_latest_height(l1_client_meta.counterparty_chain_id.clone(), true)
-            .await?;
+        let l1_height = l1_client_meta.counterparty_height.height();
 
-        let output_root_proof = self.fetch_output_root_proof(l2_block.header.number).await?;
-
-        let output_index = output_index_of_l2_block_on_l1_block(
+        let l2_block = finalized_execution_block_of_l1_height(
             &self.l1_provider,
+            &self.l2_provider,
             self.l2_oracle_address,
-            l2_block.header.number,
-            l1_latest_height.height(),
+            FINALIZATION_PERIOD_SECONDS,
+            l1_height,
         )
         .await
         .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
 
+        // Guarantee to exist because we know the latest committed exists.
+        let output_index = output_index_of_l2_block_on_l1_block(
+            &self.l1_provider,
+            self.l2_oracle_address,
+            l2_block.header.number,
+            l1_height,
+        )
+        .await
+        .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
+
+        // Extract proofs for the output proposal of the L2 oracle contract on
+        // the L1.
         let output_proposal_proof = self
-            .fetch_output_proposal_proof(output_index, l1_latest_height.height())
+            .fetch_output_proposal_proof(output_index, l1_height)
+            .await?;
+        let l2_oracle_account_proof = self.fetch_oracle_account_proof(l1_height).await?;
+
+        // Extract proofs for the preimage of the output proposal committed on
+        // L1 (extracted above) and IBC handle contract on the L2.
+        let output_root_proof = self.fetch_output_root_proof(l2_block.header.number).await?;
+        let l2_ibc_account_proof = self
+            .fetch_ibc_contract_root_proof(l2_block.header.number)
             .await?;
 
-        Ok(conc([
-            promise(
-                [call(FetchUpdateHeaders {
-                    client_type: l1_client_info.client_type,
-                    chain_id: l1_client_meta.counterparty_chain_id.clone(),
-                    counterparty_chain_id: counterparty_chain_id.clone(),
-                    client_id: RawClientId::new(bob_client_state.l1_client_id),
-                    update_from: l1_client_meta.counterparty_height,
-                    update_to: l1_latest_height,
-                })],
-                [],
-                AggregateSubmitTxFromOrderedHeaders {
-                    ibc_spec_id: IbcUnion::ID,
-                    chain_id: counterparty_chain_id.clone(),
-                    client_id: RawClientId::new(bob_client_state.l1_client_id),
+        Ok(data(OrderedHeaders {
+            headers: vec![(
+                DecodedHeaderMeta {
+                    height: Height::new(l2_block.header.number),
                 },
-            ),
-            seq([
-                call(WaitForTrustedHeight {
-                    chain_id: counterparty_chain_id,
-                    ibc_spec_id: IbcUnion::ID,
-                    client_id: RawClientId::new(bob_client_state.l1_client_id),
-                    height: l1_latest_height,
-                    finalized: false,
+                into_value(Header {
+                    l1_height,
+                    l2_oracle_account_proof,
+                    l2_ibc_account_proof,
+                    l2_header: L2Header {
+                        parent_hash: l2_block.header.parent_hash.into(),
+                        sha3_uncles: l2_block.header.ommers_hash.into(),
+                        miner: l2_block.header.beneficiary.into(),
+                        state_root: l2_block.header.state_root.into(),
+                        transactions_root: l2_block.header.transactions_root.into(),
+                        receipts_root: l2_block.header.receipts_root.into(),
+                        logs_bloom: Box::new(l2_block.header.logs_bloom.0.into()),
+                        difficulty: l2_block.header.difficulty.into(),
+                        number: l2_block.header.number.into(),
+                        gas_limit: l2_block.header.gas_limit,
+                        gas_used: l2_block.header.gas_used,
+                        timestamp: l2_block.header.timestamp,
+                        extra_data: l2_block.header.extra_data.to_vec().try_into().unwrap(),
+                        mix_hash: l2_block.header.mix_hash.unwrap_or_default().into(),
+                        nonce: l2_block.header.nonce.unwrap_or_default().into(),
+                        base_fee_per_gas: l2_block
+                            .header
+                            .base_fee_per_gas
+                            .unwrap_or_default()
+                            .into(),
+                        withdrawals_root: l2_block.header.withdrawals_root.unwrap().into(),
+                        blob_gas_used: l2_block.header.blob_gas_used.unwrap(),
+                        excess_blob_gas: l2_block.header.excess_blob_gas.unwrap(),
+                        parent_beacon_block_root: l2_block
+                            .header
+                            .parent_beacon_block_root
+                            .unwrap()
+                            .into(),
+                    },
+                    l2_oracle_l2_outputs_slot_proof: output_proposal_proof,
+                    output_index,
+                    output_root_proof,
                 }),
-                data(OrderedHeaders {
-                    headers: vec![(
-                        DecodedHeaderMeta {
-                            height: Height::new(l2_block.header.number),
-                        },
-                        into_value(Header {
-                            l1_height: l1_latest_height.height(),
-                            l2_oracle_account_proof,
-                            l2_ibc_account_proof,
-                            l2_header: L2Header {
-                                parent_hash: l2_block.header.parent_hash.into(),
-                                sha3_uncles: l2_block.header.ommers_hash.into(),
-                                miner: l2_block.header.beneficiary.into(),
-                                state_root: l2_block.header.state_root.into(),
-                                transactions_root: l2_block.header.transactions_root.into(),
-                                receipts_root: l2_block.header.receipts_root.into(),
-                                logs_bloom: Box::new(l2_block.header.logs_bloom.0.into()),
-                                difficulty: l2_block.header.difficulty.into(),
-                                number: l2_block.header.number.into(),
-                                gas_limit: l2_block.header.gas_limit,
-                                gas_used: l2_block.header.gas_used,
-                                timestamp: l2_block.header.timestamp,
-                                extra_data: l2_block.header.extra_data.to_vec().try_into().unwrap(),
-                                mix_hash: l2_block.header.mix_hash.unwrap_or_default().into(),
-                                nonce: l2_block.header.nonce.unwrap_or_default().into(),
-                                base_fee_per_gas: l2_block
-                                    .header
-                                    .base_fee_per_gas
-                                    .unwrap_or_default()
-                                    .into(),
-                                withdrawals_root: l2_block.header.withdrawals_root.unwrap().into(),
-                                blob_gas_used: l2_block.header.blob_gas_used.unwrap(),
-                                excess_blob_gas: l2_block.header.excess_blob_gas.unwrap(),
-                                parent_beacon_block_root: l2_block
-                                    .header
-                                    .parent_beacon_block_root
-                                    .unwrap()
-                                    .into(),
-                            },
-                            l2_oracle_l2_outputs_slot_proof: output_proposal_proof,
-                            output_index,
-                            output_root_proof,
-                        }),
-                    )],
-                }),
-            ]),
-        ]))
+            )],
+        }))
     }
 }

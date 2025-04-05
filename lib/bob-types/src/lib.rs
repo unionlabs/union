@@ -24,6 +24,7 @@ alloy::sol! {
         function SUBMISSION_INTERVAL() external view returns (uint256);
         function L2_BLOCK_TIME() external view returns (uint256);
         function FINALIZATION_PERIOD_SECONDS() external view returns (uint256);
+        function latestBlockNumber() external view returns (uint256);
         function latestOutputIndex() external view returns (uint256);
         function getL2Output(uint256 l2OutputIndex) external view returns (OutputProposal memory);
         function getL2OutputIndexAfter(uint256 _l2BlockNumber) external view returns (uint256);
