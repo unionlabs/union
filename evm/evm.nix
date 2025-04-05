@@ -144,6 +144,10 @@ _: {
 
         [profile.test]
         test = "tests/src"
+
+        [etherscan]
+        corn-testnet = { key = "''${VERIFICATION_KEY}", chain = "21000001", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/21000001/public" }
+        bob-mainnet = { key = "''${VERIFICATION_KEY}", chain = "60808", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/60808/public" }
       '';
       compilers = pkgs.linkFarm "evm-libraries" [
         {
@@ -174,12 +178,18 @@ _: {
             --set FOUNDRY_CONFIG "${foundryConfig}/foundry.toml"
         '';
       };
+
+      # network           : plaintext name of network
+      # rpc-url           : rpc url for this network, should support full eth_getLogs (for fetching the deployment heights)
+      # private-key       : bash expression that evaluates to the private key to use for deployments
+      # verification-args : args to pass when verification is possible
+      # verification-key  : bash expression that evaluates to the verification key, will be available in $VERIFICATION_KEY
       networks = [
         {
           network = "devnet";
           rpc-url = "http://localhost:8545";
           private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
-          extra-args = pkgs.lib.optionalString pkgs.stdenv.isx86_64 "--verify --verifier blockscout --verifier-url http://localhost/api";
+          verification-args = pkgs.lib.optionalString pkgs.stdenv.isx86_64 "--verify --verifier blockscout --verifier-url http://localhost/api";
         }
         {
           # for use with the local berachain devnet from berachain/beacon-kit
@@ -197,38 +207,40 @@ _: {
           network = "sepolia";
           rpc-url = "https://0xrpc.io/sep";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
-          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
+          verification-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
         }
         {
           network = "holesky";
           rpc-url = "https://holesky.gateway.tenderly.co";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
-          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
+          verification-args = ''--verify --verifier etherscan --etherscan-api-key "$1"'';
         }
         {
           network = "corn-testnet";
           rpc-url = "https://testnet.corn-rpc.com";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
-          extra-args = ''--verify --verifier-url https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/21000001/public --verifier etherscan --etherscan-api-key "$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verification-args = ''--verify --verifier etherscan'';
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
         }
         {
           network = "bob";
           rpc-url = "https://rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
-          extra-args = ''--verify --verifier-url https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/60808/public --verifier etherscan --etherscan-api-key "$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verification-args = ''--verify --verifier etherscan'';
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
         }
         {
           network = "0g-testnet";
           rpc-url = "https://evmrpc-testnet.0g.ai";
           private-key = ''"$1"'';
-          extra-args = " --legacy --batch-size=1";
-          # extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+          verification-args = " --legacy --batch-size=1";
+          # verification-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
         }
         {
           network = "scroll-testnet";
           rpc-url = "https://sepolia-rpc.scroll.io";
           private-key = ''"$1"'';
-          extra-args = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
+          verification-args = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
         }
         {
           network = "arbitrum-testnet";
@@ -246,7 +258,8 @@ _: {
         {
           rpc-url,
           private-key,
-          extra-args ? "",
+          verification-args ? "",
+          verification-key ? "",
           ...
         }:
         mkCi false (
@@ -260,13 +273,14 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              VERIFICATION_KEY=${verification-key} \
               PRIVATE_KEY=${private-key} \
               DEPLOYER="$3" \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployIBC \
                 -vvvv \
                 --rpc-url ${rpc-url} \
-                --broadcast ${extra-args}
+                --broadcast ${verification-args}
 
               popd
               rm -rf "$OUT"
@@ -355,7 +369,8 @@ _: {
         {
           rpc-url,
           private-key,
-          extra-args ? "",
+          verification-args ? "",
+          verification-key ? "",
           ...
         }:
         mkCi false (
@@ -369,13 +384,14 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              VERIFICATION_KEY=${verification-key} \
               PRIVATE_KEY=${private-key} \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
                 -vvvv \
                 --rpc-url ${rpc-url} \
-                --broadcast ${extra-args}
+                --broadcast ${verification-args}
 
               popd
               rm -rf "$OUT"
@@ -387,7 +403,7 @@ _: {
         {
           rpc-url,
           private-key,
-          extra-args ? "",
+          verification-args ? "",
           ...
         }:
         mkCi false (
@@ -430,7 +446,8 @@ _: {
         {
           rpc-url,
           kind,
-          extra-args ? "",
+          verification-args ? "",
+          verification-key ? "",
           ...
         }:
         mkCi false (
@@ -461,6 +478,7 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              VERIFICATION_KEY=${verification-key} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               PRIVATE_KEY="$argc_private_key" \
@@ -469,7 +487,7 @@ _: {
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
                 -vvvv \
                 --rpc-url "${rpc-url}" \
-                --broadcast ${extra-args}
+                --broadcast ${verification-args}
 
               popd
               rm -rf "$OUT"
@@ -483,6 +501,8 @@ _: {
           rpc-url,
           protocol,
           private-key,
+          verification-args,
+          verification-key,
           ...
         }:
         mkCi false (
@@ -516,6 +536,7 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              VERIFICATION_KEY=${verification-key} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               OWNER="${pkgs.lib.optionalString dry "$argc_owner_pk"}" \
@@ -524,7 +545,7 @@ _: {
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
                   --rpc-url ${rpc-url} \
-                  --broadcast
+                  --broadcast --slow ${verification-args}
 
               rm -rf "$OUT"
               popd
