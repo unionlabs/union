@@ -130,6 +130,7 @@ _: {
           bech32_prefix = "union";
           lightclients = [
             "arbitrum"
+            "bob"
             # "berachain"
             "ethereum"
             "trusted-mpt"
