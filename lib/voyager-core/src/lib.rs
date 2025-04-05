@@ -4,6 +4,7 @@
 use core::{fmt, str::FromStr};
 use std::fmt::{Debug, Display};
 
+pub use consensus_primitives::Timestamp;
 use macros::apply;
 use serde_json::Value;
 use unionlabs::{
@@ -434,42 +435,6 @@ impl FromStr for QueryHeight {
             "finalized" => Ok(Self::Finalized),
             _ => s.parse().map(Self::Specific),
         }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(transparent)
-)]
-pub struct Timestamp(u64);
-
-impl Timestamp {
-    #[must_use = "constructing a Timestamp has no effect"]
-    pub fn from_nanos(nanos: u64) -> Self {
-        Timestamp(nanos)
-    }
-
-    #[must_use = "constructing a Timestamp has no effect"]
-    pub fn from_secs(secs: u64) -> Self {
-        Timestamp(secs * 1_000_000_000)
-    }
-
-    #[must_use = "accessing the inner value has no effect"]
-    pub fn as_nanos(&self) -> u64 {
-        self.0
-    }
-
-    #[must_use = "accessing the inner value has no effect"]
-    pub fn as_secs(&self) -> u64 {
-        self.0 / 1_000_000_000
-    }
-}
-
-impl fmt::Display for Timestamp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
     }
 }
 
