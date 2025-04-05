@@ -149,6 +149,7 @@ _: {
         local-devnet = { key = "''${VERIFICATION_KEY}", chain = "32382", url = "http://localhost/api" }
         corn-testnet = { key = "''${VERIFICATION_KEY}", chain = "21000001", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/21000001/public" }
         bob-mainnet = { key = "''${VERIFICATION_KEY}", chain = "60808", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/60808/public" }
+        bob-testnet = { key = "''${VERIFICATION_KEY}", chain = "808813", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/808813/public" }
       '';
       compilers = pkgs.linkFarm "evm-libraries" [
         {
@@ -238,6 +239,14 @@ _: {
         {
           network = "corn-testnet";
           rpc-url = "https://testnet.corn-rpc.com";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+        }
+        {
+          network = "bob-testnet";
+          rpc-url = "https://bob-sepolia.rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
 
           verifier = "etherscan";
