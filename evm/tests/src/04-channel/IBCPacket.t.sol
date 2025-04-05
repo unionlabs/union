@@ -291,6 +291,25 @@ contract IBCPacketTests is Test {
         handler.recvPacket(msg_);
     }
 
+    function test_recvPacket_batchShareSameChannel(
+        uint32 sourceChannelId,
+        uint32 fakeDestinationChannelId,
+        bytes calldata message,
+        uint8 nbPackets,
+        uint8 tamperIndex
+    ) public {
+        vm.assume(nbPackets > 1);
+        vm.assume(0 < tamperIndex && tamperIndex < nbPackets);
+        vm.assume(fakeDestinationChannelId != channelId);
+        IBCMsgs.MsgPacketRecv memory msg_ =
+            createReceivePacket(sourceChannelId, message, nbPackets);
+        msg_.packets[tamperIndex].destinationChannelId =
+            fakeDestinationChannelId;
+        lightClient.pushValidMembership();
+        vm.expectRevert(IBCErrors.ErrBatchSameChannelOnly.selector);
+        handler.recvPacket(msg_);
+    }
+
     function test_recvPacket_timeoutTimestamp(
         uint32 timeout,
         uint32 sourceChannelId,
@@ -576,7 +595,7 @@ contract IBCPacketTests is Test {
             createPacketAcknowledgement(destinationChannel, message, nbPackets);
         lightClient.pushValidMembership();
         for (uint8 i = 0; i < nbPackets; i++) {
-            handler.assumePacketSent(channelId, msg_.packets[i]);
+            handler.assumePacketSent(msg_.packets[i]);
         }
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.expectEmit();
@@ -657,10 +676,29 @@ contract IBCPacketTests is Test {
             createPacketAcknowledgement(destinationChannel, message, nbPackets);
         lightClient.pushValidMembership();
         for (uint8 i = 0; i < nbPackets; i++) {
-            handler.assumePacketSent(channelId, msg_.packets[i]);
+            handler.assumePacketSent(msg_.packets[i]);
         }
         msg_.packets[0].data = abi.encodePacked(msg_.packets[0].data, hex"1337");
         vm.expectRevert(IBCErrors.ErrPacketCommitmentNotFound.selector);
+        handler.acknowledgePacket(msg_);
+    }
+
+    function test_acknowledgePacket_batchShareSameChannel(
+        uint32 destinationChannel,
+        uint32 fakeSourceChannelId,
+        bytes calldata message,
+        uint8 nbPackets
+    ) public {
+        vm.assume(fakeSourceChannelId != channelId);
+        vm.assume(nbPackets > 1);
+        IBCMsgs.MsgPacketAcknowledgement memory msg_ =
+            createPacketAcknowledgement(destinationChannel, message, nbPackets);
+        lightClient.pushValidMembership();
+        for (uint8 i = 0; i < nbPackets; i++) {
+            handler.assumePacketSent(msg_.packets[i]);
+        }
+        msg_.packets[1].sourceChannelId = fakeSourceChannelId;
+        vm.expectRevert(IBCErrors.ErrBatchSameChannelOnly.selector);
         handler.acknowledgePacket(msg_);
     }
 
@@ -686,7 +724,7 @@ contract IBCPacketTests is Test {
         IBCMsgs.MsgPacketAcknowledgement memory msg_ =
             createPacketAcknowledgement(destinationChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
-            handler.assumePacketSent(channelId, msg_.packets[i]);
+            handler.assumePacketSent(msg_.packets[i]);
         }
         lightClient.pushValidMembership();
         handler.acknowledgePacket(msg_);
@@ -711,7 +749,7 @@ contract IBCPacketTests is Test {
         IBCMsgs.MsgPacketAcknowledgement memory msg_ =
             createPacketAcknowledgement(destinationChannel, message, nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
-            handler.assumePacketSent(channelId, msg_.packets[i]);
+            handler.assumePacketSent(msg_.packets[i]);
         }
         vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.acknowledgePacket(msg_);
@@ -751,7 +789,7 @@ contract IBCPacketTests is Test {
         // fake timeout
         msg_.packet.timeoutTimestamp = timestamp;
         msg_.packet.timeoutHeight = 0;
-        handler.assumePacketSent(channelId, msg_.packet);
+        handler.assumePacketSent(msg_.packet);
         lightClient.pushValidNonMembership();
         lightClient.setLatestTimestamp(uint64(timestamp) + k);
         vm.expectEmit();
@@ -796,7 +834,7 @@ contract IBCPacketTests is Test {
         // fake timeout
         msg_.packet.timeoutTimestamp = timestamp;
         msg_.packet.timeoutHeight = 0;
-        handler.assumePacketSent(channelId, msg_.packet);
+        handler.assumePacketSent(msg_.packet);
         lightClient.setLatestTimestamp(uint64(timestamp) + k);
         vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
         handler.timeoutPacket(msg_);
@@ -815,7 +853,7 @@ contract IBCPacketTests is Test {
         // fake timeout
         msg_.packet.timeoutTimestamp = uint64(timestamp) + k + 1;
         msg_.packet.timeoutHeight = 0;
-        handler.assumePacketSent(channelId, msg_.packet);
+        handler.assumePacketSent(msg_.packet);
         lightClient.pushValidNonMembership();
         lightClient.setLatestTimestamp(timestamp);
         vm.expectRevert(IBCErrors.ErrTimeoutTimestampNotReached.selector);
@@ -836,7 +874,7 @@ contract IBCPacketTests is Test {
         // fake timeout
         msg_.packet.timeoutTimestamp = 0;
         msg_.packet.timeoutHeight = height;
-        handler.assumePacketSent(channelId, msg_.packet);
+        handler.assumePacketSent(msg_.packet);
         lightClient.pushValidNonMembership();
         lightClient.setLatestHeight(uint64(height) + k);
         msg_.proofHeight = uint64(height) + k;
@@ -881,7 +919,7 @@ contract IBCPacketTests is Test {
         // fake timeout
         msg_.packet.timeoutTimestamp = 0;
         msg_.packet.timeoutHeight = height;
-        handler.assumePacketSent(channelId, msg_.packet);
+        handler.assumePacketSent(msg_.packet);
         lightClient.setLatestHeight(uint64(height) + k);
         msg_.proofHeight = uint64(height) + k;
         vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
@@ -901,7 +939,7 @@ contract IBCPacketTests is Test {
         // fake timeout
         msg_.packet.timeoutTimestamp = 0;
         msg_.packet.timeoutHeight = uint64(height) + k + 1;
-        handler.assumePacketSent(channelId, msg_.packet);
+        handler.assumePacketSent(msg_.packet);
         lightClient.pushValidNonMembership();
         lightClient.setLatestHeight(height);
         msg_.proofHeight = height;
