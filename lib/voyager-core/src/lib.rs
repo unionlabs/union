@@ -145,6 +145,12 @@ impl ClientType {
     /// [MPT]: https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie
     pub const TRUSTED_MPT: &'static str = "trusted/evm/mpt";
 
+    /// A client tracking the state of the [Bob] optimistic L2, settling on
+    /// Ethereum, verified by verifying the L2 settlement on the L1.
+    ///
+    /// [Bob]: https://github.com/ethereum-optimism/optimism/blob/v1.7.2/packages/contracts-bedrock/src/L1/L2OutputOracle.sol
+    pub const BOB: &'static str = "bob";
+
     // lots more to come - near, linea, polygon - stay tuned
 }
 
@@ -187,6 +193,11 @@ impl ConsensusType {
     ///
     /// [Movement]: https://github.com/movementlabsxyz/movement
     pub const MOVEMENT: &'static str = "movement";
+
+    /// [Bob] optimistic L2, settling on Ethereum.
+    ///
+    /// [Bob]: https://github.com/ethereum-optimism/optimism/blob/v1.7.2/packages/contracts-bedrock/src/L1/L2OutputOracle.sol
+    pub const BOB: &'static str = "bob";
 
     // lots more to come - near, linea, polygon - stay tuned
 }

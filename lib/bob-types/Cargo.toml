@@ -1,0 +1,16 @@
+[package]
+authors.workspace    = true
+edition.workspace    = true
+license-file         = "LICENSE"
+name                 = "bob-types"
+publish.workspace    = true
+repository.workspace = true
+version              = "0.0.0"
+
+[dependencies]
+alloy       = { workspace = true, features = ["sol-types", "contract"] }
+hex-literal = { workspace = true }
+unionlabs   = { workspace = true }
+
+[lints]
+workspace = true

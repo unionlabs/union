@@ -88,6 +88,7 @@ _: {
           lightclients = [
             "ethereum"
             "trusted-mpt"
+            "bob"
           ];
         }
         {
