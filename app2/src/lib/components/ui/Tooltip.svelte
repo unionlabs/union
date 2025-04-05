@@ -100,7 +100,7 @@ function updatePosition(e?: MouseEvent) {
 
 const tooltipClasses = $derived(
   cn(
-    "fixed z-40 cursor-default overflow-hidden border border-1 border-zinc-800 bg-black p-2 rounded shadow-md",
+    "fixed z-40 cursor-default overflow-visible border border-1 border-zinc-800 bg-black p-2 rounded shadow-md",
     isVisible && "opacity-100 visible delay-600",
     isVisible ? "scale-100" : "scale-95",
     className
@@ -110,7 +110,7 @@ const tooltipClasses = $derived(
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div 
-  class="inline-block" 
+  class="inline-block cursor-pointer" 
   onmouseenter={onTriggerEnter}
   onmouseleave={onTriggerLeave}
 >
@@ -132,6 +132,14 @@ const tooltipClasses = $derived(
   }}
   {...rest}
 >
-  {@render content()}
+  <div class="tooltip-content">
+    {@render content()}
+  </div>
 </div>
 {/if}
+
+<style global>
+  .tooltip-content * {
+    pointer-events: auto !important;
+  }
+</style>

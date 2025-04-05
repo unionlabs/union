@@ -5,6 +5,7 @@ import { Option } from "effect"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import Truncate from "$lib/components/ui/Truncate.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   hash: string
@@ -69,8 +70,7 @@ const chainName = $derived(Option.getOrElse(getChainName(), () => ""))
       {#if chain}
         <section>
           <h3 class="text-white">Chain</h3>
-          <div>{chain.display_name}</div>
-          <div class="text-xs">{chain.universal_chain_id}</div>
+          <ChainComponent chain={chain} />
         </section>
       {/if}
 

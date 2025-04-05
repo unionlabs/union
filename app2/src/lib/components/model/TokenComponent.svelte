@@ -4,6 +4,7 @@ import { Option } from "effect"
 import Truncate from "$lib/components/ui/Truncate.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 
 interface Props {
   chain: Chain
@@ -100,8 +101,9 @@ const displayDenom = $derived(
             {/if}
           </section>
           <section>
-            <div>Chain: {chain.universal_chain_id}</div>
-            <div>Raw Denom: {denom}</div>
+            <h3 class="text-white">Chain</h3>
+            <ChainComponent chain={chain}/>
+            <div class="mt-2">Raw Denom: {denom}</div>
             {#each token.value.wrapping as wrap}
               <div>← {wrap.unwrapped_chain.universal_chain_id}</div>
             {/each}
