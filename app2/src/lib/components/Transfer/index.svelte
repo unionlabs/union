@@ -37,8 +37,12 @@
 
   let actionButtonText = $derived.by(() => {
     if (Option.isNone(transferSteps)) return "Submit";
-    const currentStep = transferSteps.value[currentPage];
-    if (currentPage === transferSteps.value.length - 1) {
+    const steps = transferSteps.value;
+    if (currentPage < 0 || currentPage >= steps.length || !steps[currentPage]) {
+      return "Submit";
+    }
+    const currentStep = steps[currentPage];
+    if (currentPage === steps.length - 1) {
       return "Complete";
     }
     return TransferStep.match(currentStep, {
@@ -48,6 +52,7 @@
       WaitForIndex: () => "Submit"
     });
   });
+
 
   function handleActionButtonClick() {
     if (Option.isNone(transferSteps)) return;
