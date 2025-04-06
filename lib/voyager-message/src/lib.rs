@@ -765,7 +765,7 @@ impl VoyagerClient {
                     Some(json!({
                         "chain_id": chain_id,
                         "height": height,
-                        "path": path
+                        "path": <P::Spec as IbcSpec>::StorePath::from(path.into())
                     })),
                 )
             })?;

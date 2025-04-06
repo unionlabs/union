@@ -247,16 +247,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 to_height,
                 counterparty_chain_id,
                 client_id,
-            }) => self
-                .fetch_update(from_height, to_height, counterparty_chain_id, client_id)
-                .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!("error fetching update: {}", ErrorReporter(&*e)),
-                        None::<()>,
-                    )
-                }),
+            }) => {
+                self.fetch_update(from_height, to_height, counterparty_chain_id, client_id)
+                    .await
+            }
         }
     }
 
@@ -342,7 +336,7 @@ impl Module {
         update_to_block_number: Height,
         counterparty_chain_id: ChainId,
         client_id: RawClientId,
-    ) -> Result<Op<VoyagerMessage>, BoxDynError> {
+    ) -> RpcResult<Op<VoyagerMessage>> {
         if update_from_block_number == update_to_block_number {
             info!("update is for the same height, noop");
             return Ok(voyager_vm::data(OrderedHeaders { headers: vec![] }));
