@@ -7,10 +7,11 @@ import { scale } from "svelte/transition"
 type Props = HTMLAttributes<HTMLDivElement> & {
   trigger: Snippet
   content: Snippet
+  title?: string
   class?: string
 }
 
-let { trigger, content, class: className = "", ...rest }: Props = $props()
+let { trigger, content, title, class: className = "", ...rest }: Props = $props()
 
 let tooltipElement: HTMLDivElement
 let isVisible = $state(false)
@@ -100,7 +101,7 @@ function updatePosition(e?: MouseEvent) {
 
 const tooltipClasses = $derived(
   cn(
-    "fixed z-40 cursor-default overflow-visible border border-1 border-zinc-800 bg-black p-2 rounded shadow-md",
+    "fixed z-40 cursor-default overflow-visible border border-1 border-zinc-700 bg-zinc-800 p-2 rounded shadow-md",
     isVisible && "opacity-100 visible delay-600",
     isVisible ? "scale-100" : "scale-95",
     className
@@ -132,7 +133,12 @@ const tooltipClasses = $derived(
   }}
   {...rest}
 >
-  <div class="tooltip-content">
+  <div class="tooltip-content text-sm flex flex-col gap-4">
+    {#if title}
+      <section class="flex justify-between items-center">
+        <h2 class="text-white font-bold text-lg">{title}</h2>
+      </section>
+    {/if}
     {@render content()}
   </div>
 </div>
