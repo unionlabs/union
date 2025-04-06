@@ -18,10 +18,8 @@ type Props = HTMLAttributes<HTMLDivElement> & {
 const { hash, chain, class: className = "", ...rest }: Props = $props()
 
 // Find the explorer URL for this transaction hash
-const getExplorerUrl = () => {
-  const chainOption = Option.fromNullable(chain)
-
-  return Option.flatMap(chainOption, c =>
+const explorerUrl = $derived(
+  Option.flatMap(Option.fromNullable(chain), c =>
     Option.liftPredicate(c.explorers, explorers => explorers.length > 0).pipe(
       Option.map(explorers => {
         // Use the first explorer by default
@@ -32,9 +30,7 @@ const getExplorerUrl = () => {
       })
     )
   )
-}
-
-const explorerUrl = $derived(getExplorerUrl())
+)
 const explorerName = $derived(
   Option.flatMap(Option.fromNullable(chain), c =>
     Option.liftPredicate(c.explorers, explorers => explorers.length > 0).pipe(
@@ -46,9 +42,7 @@ const explorerName = $derived(
 
 <Tooltip title="Transaction">
   {#snippet trigger()}
-    <div class="font-mono text-xs break-all {className}" {...rest}>
-      <Truncate showCopy={false} value={hash} maxLength={12} />
-    </div>
+    <Truncate class="font-mono text-xs break-all {className}" {...rest} showCopy={false} value={hash} maxLength={12} />
   {/snippet}
 
   {#snippet content()}

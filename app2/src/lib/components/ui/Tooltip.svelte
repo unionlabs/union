@@ -133,7 +133,7 @@ const tooltipClasses = $derived(
   }}
   {...rest}
 >
-  <div class="tooltip-content text-sm flex flex-col gap-4">
+  <div class="tooltip-content text-sm flex flex-col gap-4 text-left">
     {#if title}
       <section class="flex justify-between items-center">
         <h2 class="text-white font-bold text-lg">{title}</h2>

@@ -13,12 +13,14 @@ const { isOpen, onClose }: Props = $props()
 
 let tempPageLimit = $state(settingsStore.pageLimit)
 let tempShowQuoteTokens = $state(settingsStore.showQuoteTokens)
+let tempShowDeveloperChainDetails = $state(settingsStore.showDeveloperChainDetails)
 let tempShowZeroBalances = $state(uiStore.showZeroBalances)
 let tempShowDeveloperPages = $state(uiStore.showDeveloperPages)
 
 function handleSave() {
   settingsStore.pageLimit = tempPageLimit
   settingsStore.showQuoteTokens = tempShowQuoteTokens
+  settingsStore.showDeveloperChainDetails = tempShowDeveloperChainDetails
   uiStore.showZeroBalances = tempShowZeroBalances
   uiStore.showDeveloperPages = tempShowDeveloperPages
   onClose()
@@ -51,6 +53,17 @@ function handleSave() {
           class="form-checkbox"
         />
         <span class="text-sm font-medium">Show quote tokens</span>
+      </label>
+    </div>
+
+    <div class="space-y-2">
+      <label class="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          bind:checked={tempShowDeveloperChainDetails}
+          class="form-checkbox"
+        />
+        <span class="text-sm font-medium">Show developer chain details</span>
       </label>
     </div>
 
