@@ -205,7 +205,7 @@ impl ClientBootstrapModuleServer for Module {
             .unwrap();
 
         Ok(into_value(ConsensusState {
-            // REVIEW: Add state root?
+            state_root: l2_block.header.state_root.into(),
             ibc_storage_root: self
                 .provider
                 .get_proof(self.ibc_handler_address.into(), vec![])

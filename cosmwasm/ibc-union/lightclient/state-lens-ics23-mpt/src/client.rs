@@ -6,13 +6,13 @@ use ibc_union_light_client::{
 };
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use ibc_union_spec::path::ConsensusStatePath;
-use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState};
+use state_lens_ics23_mpt_light_client_types::{client_state::Extra, ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
 use unionlabs::{
     encoding::{Bincode, DecodeAs},
     ethereum::{ibc_commitment_key, keccak256},
     ibc::core::commitment::merkle_proof::MerkleProof,
-    primitives::{H256, U256},
+    primitives::{Bytes, H256, U256},
 };
 
 use crate::errors::Error;
@@ -142,29 +142,10 @@ impl IbcClient for StateLensIcs23MptLightClient {
         )
         .map_err(Error::L1Error)?;
 
-        let l2_timestamp = extract_uint64(
-            &header.l2_consensus_state,
-            client_state.extra.timestamp_offset as usize,
-        );
+        let consensus_state =
+            extract_consensus_state(&header.l2_consensus_state, &client_state.extra);
 
-        let l2_state_root = extract_bytes32(
-            &header.l2_consensus_state,
-            client_state.extra.state_root_offset as usize,
-        );
-
-        let l2_storage_root = extract_bytes32(
-            &header.l2_consensus_state,
-            client_state.extra.storage_root_offset as usize,
-        );
-
-        let mut state_update = StateUpdate::new(
-            header.l2_height.height(),
-            ConsensusState {
-                timestamp: l2_timestamp,
-                state_root: l2_state_root,
-                storage_root: l2_storage_root,
-            },
-        );
+        let mut state_update = StateUpdate::new(header.l2_height.height(), consensus_state);
 
         if client_state.l2_latest_height < header.l2_height.height() {
             client_state.l2_latest_height = header.l2_height.height();
@@ -181,6 +162,32 @@ impl IbcClient for StateLensIcs23MptLightClient {
         _relayer: Addr,
     ) -> Result<Self::ClientState, IbcClientError<Self>> {
         unimplemented!()
+    }
+}
+
+pub fn extract_consensus_state(
+    l2_consensus_state: &Bytes,
+    client_state_extra: &Extra,
+) -> ConsensusState {
+    let l2_timestamp = extract_uint64(
+        l2_consensus_state,
+        client_state_extra.timestamp_offset as usize,
+    );
+
+    let l2_state_root = extract_bytes32(
+        l2_consensus_state,
+        client_state_extra.state_root_offset as usize,
+    );
+
+    let l2_storage_root = extract_bytes32(
+        l2_consensus_state,
+        client_state_extra.storage_root_offset as usize,
+    );
+
+    ConsensusState {
+        timestamp: l2_timestamp,
+        state_root: l2_state_root,
+        storage_root: l2_storage_root,
     }
 }
 

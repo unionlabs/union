@@ -356,6 +356,8 @@ ucs04 = { path = "lib/ucs04", default-features = false }
 
 consensus-primitives = { path = "lib/consensus-primitives", default-features = false }
 
+state-lens-ics23-mpt-light-client = { path = "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt", default-features = false }
+
 # external dependencies
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 

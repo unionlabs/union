@@ -261,21 +261,40 @@ pub enum MsgCmd {
         )]
         metadata: serde_json::Value,
 
+        /// Additional client state config to pass to `self_client_state()`.
+        ///
+        /// This is mutually exclusive with `--config`.
         #[arg(
             long,
             // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
             value_parser(serde_json::Value::from_str),
-            default_value_t = serde_json::Value::Null
+            default_value_t = serde_json::Value::Null,
+            conflicts_with = "config"
         )]
         client_state_config: serde_json::Value,
 
+        /// Additional consensus state config to pass to `self_consensus_state()`.
+        ///
+        /// This is mutually exclusive with `--config`.
         #[arg(
             long,
             // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
             value_parser(serde_json::Value::from_str),
-            default_value_t = serde_json::Value::Null
+            default_value_t = serde_json::Value::Null,
+            conflicts_with = "config"
         )]
         consensus_state_config: serde_json::Value,
+
+        /// Additional config to pass to both `self_client_state()` `self_consensus_state()`.
+        ///
+        /// This is mutually exclusive with `--client-state-config` and `--consensus-state-config`.
+        #[arg(
+            long,
+            // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
+            value_parser(serde_json::Value::from_str),
+            default_value_t = serde_json::Value::Null,
+        )]
+        config: serde_json::Value,
 
         /// Automatically enqueue the op.
         #[arg(long, short = 'e', default_value_t = false)]

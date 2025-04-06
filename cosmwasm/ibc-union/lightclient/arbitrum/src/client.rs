@@ -83,6 +83,7 @@ impl IbcClient for ArbitrumLightClient {
             .map_err(Error::HeaderVerify)?;
 
         let consensus_state = ConsensusState {
+            state_root: header.l2_header.state_root,
             ibc_storage_root: header.l2_ibc_account_proof.storage_root,
             // must be nanos
             timestamp: 1_000_000_000 * header.l2_header.timestamp,

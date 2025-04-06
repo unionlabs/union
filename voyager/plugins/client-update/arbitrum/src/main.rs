@@ -432,6 +432,12 @@ impl Module {
             "l2_settlement_block"
         );
 
+        if l2_settlement_block.header.number == arbitrum_client_state.latest_height {
+            info!("update is a noop, l2 client will not be updated either");
+
+            return Ok(data(OrderedHeaders { headers: vec![] }));
+        }
+
         let l1_height_of_l2_settlement_block = l2_settlement_block
             .other
             // TODO: Arbitrum network type so we can avoid this
@@ -570,65 +576,71 @@ impl Module {
             ));
         }
 
-        let l1_account_proof = self
-            .fetch_l1_rollup_account_update(l1_client_meta.counterparty_height.height())
-            .await
-            .unwrap();
+        if l2_settlement_block.header.number == arbitrum_client_state.latest_height {
+            info!("update is a noop");
 
-        let l1_latest_confirmed_proofs = self
-            .fetch_l1_latest_confirmed_proofs(l1_client_meta.counterparty_height.height())
-            .await;
+            Ok(data(OrderedHeaders { headers: vec![] }))
+        } else {
+            let l1_account_proof = self
+                .fetch_l1_rollup_account_update(l1_client_meta.counterparty_height.height())
+                .await
+                .unwrap();
 
-        let l2_ibc_account_proof = self
-            .fetch_l2_ibc_contract_root_proof(l2_settlement_block.header.number)
-            .await;
+            let l1_latest_confirmed_proofs = self
+                .fetch_l1_latest_confirmed_proofs(l1_client_meta.counterparty_height.height())
+                .await;
 
-        Ok(data(OrderedHeaders {
-            headers: vec![(
-                DecodedHeaderMeta {
-                    height: Height::new(l2_settlement_block.header.number),
-                },
-                into_value(Header {
-                    l1_height: l1_client_meta.counterparty_height,
-                    l1_account_proof,
-                    l2_ibc_account_proof,
-                    l1_next_node_num_slot_proof: l1_latest_confirmed_proofs
-                        .latest_confirmed_slot_proof,
-                    l1_nodes_slot_proof: l1_latest_confirmed_proofs.nodes_slot_proof,
-                    l2_header: L2Header {
-                        parent_hash: l2_settlement_block.header.parent_hash.into(),
-                        sha3_uncles: l2_settlement_block.header.ommers_hash.into(),
-                        miner: l2_settlement_block.header.beneficiary.into(),
-                        state_root: l2_settlement_block.header.state_root.into(),
-                        transactions_root: l2_settlement_block.header.transactions_root.into(),
-                        receipts_root: l2_settlement_block.header.receipts_root.into(),
-                        logs_bloom: Box::new(l2_settlement_block.header.logs_bloom.0.into()),
-                        difficulty: l2_settlement_block.header.difficulty.into(),
-                        number: l2_settlement_block.header.number.into(),
-                        gas_limit: l2_settlement_block.header.gas_limit,
-                        gas_used: l2_settlement_block.header.gas_used,
-                        timestamp: l2_settlement_block.header.timestamp,
-                        extra_data: l2_settlement_block
-                            .header
-                            .extra_data
-                            .to_vec()
-                            .try_into()
-                            .unwrap(),
-                        mix_hash: l2_settlement_block
-                            .header
-                            .mix_hash
-                            .unwrap_or_default()
-                            .into(),
-                        nonce: l2_settlement_block.header.nonce.unwrap_or_default().into(),
-                        base_fee_per_gas: l2_settlement_block
-                            .header
-                            .base_fee_per_gas
-                            .unwrap_or_default()
-                            .into(),
+            let l2_ibc_account_proof = self
+                .fetch_l2_ibc_contract_root_proof(l2_settlement_block.header.number)
+                .await;
+
+            Ok(data(OrderedHeaders {
+                headers: vec![(
+                    DecodedHeaderMeta {
+                        height: Height::new(l2_settlement_block.header.number),
                     },
-                }),
-            )],
-        }))
+                    into_value(Header {
+                        l1_height: l1_client_meta.counterparty_height,
+                        l1_account_proof,
+                        l2_ibc_account_proof,
+                        l1_next_node_num_slot_proof: l1_latest_confirmed_proofs
+                            .latest_confirmed_slot_proof,
+                        l1_nodes_slot_proof: l1_latest_confirmed_proofs.nodes_slot_proof,
+                        l2_header: L2Header {
+                            parent_hash: l2_settlement_block.header.parent_hash.into(),
+                            sha3_uncles: l2_settlement_block.header.ommers_hash.into(),
+                            miner: l2_settlement_block.header.beneficiary.into(),
+                            state_root: l2_settlement_block.header.state_root.into(),
+                            transactions_root: l2_settlement_block.header.transactions_root.into(),
+                            receipts_root: l2_settlement_block.header.receipts_root.into(),
+                            logs_bloom: Box::new(l2_settlement_block.header.logs_bloom.0.into()),
+                            difficulty: l2_settlement_block.header.difficulty.into(),
+                            number: l2_settlement_block.header.number.into(),
+                            gas_limit: l2_settlement_block.header.gas_limit,
+                            gas_used: l2_settlement_block.header.gas_used,
+                            timestamp: l2_settlement_block.header.timestamp,
+                            extra_data: l2_settlement_block
+                                .header
+                                .extra_data
+                                .to_vec()
+                                .try_into()
+                                .unwrap(),
+                            mix_hash: l2_settlement_block
+                                .header
+                                .mix_hash
+                                .unwrap_or_default()
+                                .into(),
+                            nonce: l2_settlement_block.header.nonce.unwrap_or_default().into(),
+                            base_fee_per_gas: l2_settlement_block
+                                .header
+                                .base_fee_per_gas
+                                .unwrap_or_default()
+                                .into(),
+                        },
+                    }),
+                )],
+            }))
+        }
     }
 }
 

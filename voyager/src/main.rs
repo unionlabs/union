@@ -559,7 +559,19 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 rest_url,
                 client_state_config,
                 consensus_state_config,
+                config,
             } => {
+                let client_state_config = if client_state_config.is_null() {
+                    config.clone()
+                } else {
+                    client_state_config
+                };
+                let consensus_state_config = if consensus_state_config.is_null() {
+                    config
+                } else {
+                    consensus_state_config
+                };
+
                 let rest_url = get_rest_url(rest_url);
 
                 let voyager_config = get_voyager_config()?;

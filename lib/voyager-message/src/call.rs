@@ -181,7 +181,7 @@ impl CallT<VoyagerMessage> for Call {
             }) => {
                 let message = format!(
                     "client update request received for a {client_type} client \
-                    (id {client_id}) on {counterparty_chain_id} tracking {chain_id} from
+                    (id {client_id}) on {counterparty_chain_id} tracking {chain_id} from \
                     height {update_from} to {update_to} but it was not picked up by a plugin"
                 );
 
