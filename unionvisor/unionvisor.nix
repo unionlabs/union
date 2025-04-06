@@ -17,7 +17,9 @@
     let
       swapDotsWithUnderscores = pkgs.lib.replaceStrings [ "." ] [ "_" ];
 
-      unionvisor = crane.buildWorkspaceMember "unionvisor" { };
+      unionvisor = crane.buildWorkspaceMember "unionvisor" {
+        dontRemoveDevDeps = true;
+      };
 
       mkBundle =
         {

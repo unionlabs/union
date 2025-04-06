@@ -17,7 +17,7 @@ test-include = []
 workspace = true
 
 [dependencies]
-anyhow             = "1.0.93"
+anyhow             = "1.0.97"
 axum               = { workspace = true, features = ["macros", "tokio", "json"] }
 clap               = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 derive_more        = { workspace = true }
