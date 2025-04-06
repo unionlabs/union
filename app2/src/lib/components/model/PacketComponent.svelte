@@ -10,7 +10,7 @@ import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import { fromHex } from "viem"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
-import TransactionComponent from "$lib/components/model/TransactionComponent.svelte"
+import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
 import HeightComponent from "$lib/components/model/HeightComponent.svelte"
 import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
@@ -157,7 +157,7 @@ const destinationChain = $derived(
       {#if Option.isSome(packetDetails.data.value.packet_send_transaction_hash) && Option.isSome(sourceChain)}
         <div>
           <Label>Send Transaction Hash</Label>
-          <TransactionComponent 
+          <TransactionHashComponent 
             hash={packetDetails.data.value.packet_send_transaction_hash.value} 
             chain={sourceChain.value} 
           />
@@ -188,7 +188,7 @@ const destinationChain = $derived(
       {#if Option.isSome(packetDetails.data.value.packet_recv_transaction_hash) && Option.isSome(destinationChain)}
         <div>
           <Label>Receive Transaction Hash</Label>
-          <TransactionComponent 
+          <TransactionHashComponent 
             hash={packetDetails.data.value.packet_recv_transaction_hash.value} 
             chain={destinationChain.value} 
           />
@@ -219,7 +219,7 @@ const destinationChain = $derived(
       {#if Option.isSome(packetDetails.data.value.packet_ack_transaction_hash) && Option.isSome(destinationChain)}
         <div>
           <Label>Ack Transaction Hash</Label>
-          <TransactionComponent 
+          <TransactionHashComponent 
             hash={packetDetails.data.value.packet_ack_transaction_hash.value} 
             chain={destinationChain.value} 
           />
@@ -250,7 +250,7 @@ const destinationChain = $derived(
       {#if Option.isSome(packetDetails.data.value.write_ack_transaction_hash) && Option.isSome(sourceChain)}
         <div>
           <Label>Write Ack Transaction Hash</Label>
-          <TransactionComponent 
+          <TransactionHashComponent 
             hash={packetDetails.data.value.write_ack_transaction_hash.value} 
             chain={sourceChain.value} 
           />

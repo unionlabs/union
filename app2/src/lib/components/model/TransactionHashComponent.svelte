@@ -17,14 +17,12 @@ type Props = HTMLAttributes<HTMLDivElement> & {
 
 const { hash, chain, class: className = "", ...rest }: Props = $props()
 
-// Format hash based on chain type
-const formattedHash = $derived.by(() => {
-  if (chain?.rpc_type === "cosmos" && hash.startsWith("0x")) {
-    // For Cosmos chains: remove 0x prefix and convert to uppercase
-    return hash.slice(2).toUpperCase()
-  }
-  return hash
-})
+// For Cosmos chains: remove 0x prefix and convert to uppercase
+const formattedHash = $derived(
+  chain?.rpc_type === "cosmos" && hash.startsWith("0x") ?
+    hash.slice(2).toUpperCase()
+    : hash
+)
 
 // Find the explorer URL for this transaction hash
 const explorerUrl = $derived(
@@ -49,7 +47,7 @@ const explorerName = $derived(
 )
 </script>
 
-<Tooltip title="Transaction">
+<Tooltip title={chain ? `Transaction on ${chain.display_name}` : "Transaction"}>
   {#snippet trigger()}
     <Truncate class="font-mono text-xs break-all {className}" {...rest} showCopy={false} value={formattedHash} maxLength={12} />
   {/snippet}
