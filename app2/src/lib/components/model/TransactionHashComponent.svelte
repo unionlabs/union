@@ -70,7 +70,7 @@ const explorerName = $derived(
       <section>
         <Label>Explorer</Label>
         <div>
-          <A href={explorerUrl.value} class="underline">
+          <A href={explorerUrl.value}>
             View on {Option.getOrElse(explorerName, () => "Explorer")}
           </A>
         </div>
