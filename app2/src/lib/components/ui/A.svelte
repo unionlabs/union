@@ -2,6 +2,7 @@
 import { cn } from "$lib/utils"
 import type { HTMLAttributes } from "svelte/elements"
 import type { Snippet } from "svelte"
+import ExternalLinkIcon from "$lib/components/icons/ExternalLinkIcon.svelte"
 
 type Props = HTMLAttributes<HTMLAnchorElement> & {
   children: Snippet
@@ -10,26 +11,22 @@ type Props = HTMLAttributes<HTMLAnchorElement> & {
   external?: boolean
 }
 
-const {
-  children,
-  class: className = "",
-  href,
-  external = true,
-  ...rest
-}: Props = $props()
+const { children, class: className = "", href, external = true, ...rest }: Props = $props()
 
 const classes = cn(
   // Base styles
-  "text-sky-400 hover:text-sky-300 transition-colors",
+  "text-sky-400 hover:text-sky-300 transition-colors inline-flex items-center gap-1",
   // Additional classes passed as props
   className
 )
 
 // Add external link attributes if needed
-const externalAttrs = external ? {
-  target: "_blank",
-  rel: "noopener noreferrer"
-} : {}
+const externalAttrs = external
+  ? {
+      target: "_blank",
+      rel: "noopener noreferrer"
+    }
+  : {}
 </script>
 
 <a
@@ -38,5 +35,8 @@ const externalAttrs = external ? {
   {...externalAttrs}
   {...rest}
 >
-  {@render children()}
+  <span>{@render children()}</span>
+  {#if external}
+    <ExternalLinkIcon size={14} class="ml-0.5" />
+  {/if}
 </a>
