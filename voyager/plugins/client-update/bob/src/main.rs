@@ -424,7 +424,7 @@ impl Module {
             let l1_client_meta = voy_client
                 .client_state_meta::<IbcUnion>(
                     counterparty_chain_id.clone(),
-                    QueryHeight::Finalized,
+                    QueryHeight::Latest,
                     bob_client_state.l1_client_id,
                 )
                 .await?;
@@ -521,7 +521,7 @@ impl Module {
         let l1_client_meta = voy_client
             .client_state_meta::<IbcUnion>(
                 counterparty_chain_id.clone(),
-                QueryHeight::Finalized,
+                QueryHeight::Latest,
                 bob_client_state.l1_client_id,
             )
             .await?;
