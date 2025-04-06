@@ -19,9 +19,7 @@ const { hash, chain, class: className = "", ...rest }: Props = $props()
 
 // For Cosmos chains: remove 0x prefix and convert to uppercase
 const formattedHash = $derived(
-  chain?.rpc_type === "cosmos" && hash.startsWith("0x") ?
-    hash.slice(2).toUpperCase()
-    : hash
+  chain.rpc_type === "cosmos" && hash.startsWith("0x") ? hash.slice(2).toUpperCase() : hash
 )
 
 const explorerUrl = $derived(
@@ -66,11 +64,7 @@ const explorerName = $derived(
     {#if Option.isSome(explorerUrl)}
       <section>
         <Label>Explorer</Label>
-        <div>
-          <A href={explorerUrl.value}>
-            View on {explorerName}
-          </A>
-        </div>
+        <A href={explorerUrl.value}>View on {explorerName}</A>
       </section>
     {/if}
   {/snippet}

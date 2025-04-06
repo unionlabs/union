@@ -20,9 +20,7 @@ const { hash, chain, class: className = "", ...rest }: Props = $props()
 
 // For Cosmos chains: remove 0x prefix and convert to uppercase
 const formattedHash = $derived(
-  chain?.rpc_type === "cosmos" && hash.startsWith("0x") ?
-    hash.slice(2).toUpperCase()
-    : hash
+  chain?.rpc_type === "cosmos" && hash.startsWith("0x") ? hash.slice(2).toUpperCase() : hash
 )
 
 // Find the explorer URL for this transaction hash

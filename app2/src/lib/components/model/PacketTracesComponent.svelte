@@ -46,7 +46,7 @@ function getTraceColumn(trace: PacketTrace, positions: ReturnType<typeof getChai
 }
 
 function getGridTemplateColumns(columns: number) {
-  const parts = []
+  const parts: Array<string> = []
   for (let i = 0; i < columns; i++) {
     parts.push("1fr", "2px")
     if (i === columns - 1) {

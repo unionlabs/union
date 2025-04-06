@@ -15,8 +15,8 @@ const { value, maxLength = 8, class: className = "", showCopy = true, ...rest }:
 
 const shouldTruncate = $derived(value.length > maxLength)
 const displayValue = $derived(
-  shouldTruncate 
-    ? `${value.slice(0, Math.floor(maxLength/2))}…${value.slice(-Math.floor(maxLength/2))}`
+  shouldTruncate
+    ? `${value.slice(0, Math.floor(maxLength / 2))}…${value.slice(-Math.floor(maxLength / 2))}`
     : value
 )
 

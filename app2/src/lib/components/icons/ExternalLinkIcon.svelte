@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { cn } from "$lib/utils"
-  
-  interface Props {
-    class?: string
-    size?: number
-  }
-  
-  const { class: className = "", size = 16 }: Props = $props()
+import { cn } from "$lib/utils"
+
+interface Props {
+  class?: string
+  size?: number
+}
+
+const { class: className = "", size = 16 }: Props = $props()
 </script>
 
 <svg 
