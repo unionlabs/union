@@ -46,7 +46,7 @@ function getTraceColumn(trace: PacketTrace, positions: ReturnType<typeof getChai
 }
 
 function getGridTemplateColumns(columns: number) {
-  const parts = []
+  const parts: Array<string> = []
   for (let i = 0; i < columns; i++) {
     parts.push("1fr", "2px")
     if (i === columns - 1) {
@@ -146,7 +146,7 @@ function getArrowSpan(
 
                 {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
                   <div class="text-xs text-zinc-400">
-                    <TransactionHashComponent hash={trace.transaction_hash.value} />
+                    <TransactionHashComponent chain={chain.value} hash={trace.transaction_hash.value} />
                   </div>
                 {/if}
               </div>

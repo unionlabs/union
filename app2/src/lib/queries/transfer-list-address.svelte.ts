@@ -1,10 +1,10 @@
 import { createQueryGraphql } from "$lib/utils/queries"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
-import { transferCount, transferListAddress } from "$lib/stores/transfers.svelte"
+import { transferListAddress } from "$lib/stores/transfers.svelte"
 import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
 import type { AddressCanonicalBytes, SortOrder } from "@unionlabs/sdk/schema"
-import { TransferCount, TransferList } from "@unionlabs/sdk/schema"
+import { TransferList } from "@unionlabs/sdk/schema"
 
 export const LIMIT = 10
 
@@ -68,40 +68,40 @@ export const transferListPageLtAddressQuery = (
     }
   })
 
-export const transferCountForAddressesQuery = (
-  addresses: Array<typeof AddressCanonicalBytes.Type>
-) =>
-  createQueryGraphql({
-    schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders_aggregate: TransferCount }),
-    document: graphql(
-      `
-    query TransferCountForAddresses($addresses: [String!]!) @cached(ttl: 30) {
-      v1_ibc_union_fungible_asset_orders_aggregate(
-        where: {
-          _or: [
-            { sender_normalized: { _in: $addresses } },
-            { receiver_normalized: { _in: $addresses } }
-          ]
-        }
-      ) {
-        aggregate {
-          count
-        }
-      }
-    }
-  `
-    ),
-    variables: { addresses },
-    refetchInterval: "30 seconds",
-    writeData: data => {
-      transferCount.data = data.pipe(
-        Option.map(d => d.v1_ibc_union_fungible_asset_orders_aggregate)
-      )
-    },
-    writeError: error => {
-      transferCount.error = error
-    }
-  })
+// export const transferCountForAddressesQuery = (
+//   addresses: Array<typeof AddressCanonicalBytes.Type>
+// ) =>
+//   createQueryGraphql({
+//     schema: Schema.Struct({ v1_ibc_union_fungible_asset_orders_aggregate: TransferCount }),
+//     document: graphql(
+//       `
+//     query TransferCountForAddresses($addresses: [String!]!) @cached(ttl: 30) {
+//       v1_ibc_union_fungible_asset_orders_aggregate(
+//         where: {
+//           _or: [
+//             { sender_normalized: { _in: $addresses } },
+//             { receiver_normalized: { _in: $addresses } }
+//           ]
+//         }
+//       ) {
+//         aggregate {
+//           count
+//         }
+//       }
+//     }
+//   `
+//     ),
+//     variables: { addresses },
+//     refetchInterval: "30 seconds",
+//     writeData: data => {
+//       transferCount.data = data.pipe(
+//         Option.map(d => d.v1_ibc_union_fungible_asset_orders_aggregate)
+//       )
+//     },
+//     writeError: error => {
+//       transferCount.error = error
+//     }
+//   })
 
 export const transferListPageGtAddressQuery = (
   page: typeof SortOrder.Type,

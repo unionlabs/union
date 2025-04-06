@@ -1,8 +1,13 @@
 <script lang="ts">
 import type { HTMLAttributes } from "svelte/elements"
 import type { Chain } from "@unionlabs/sdk/schema"
+import { Option } from "effect"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import Label from "../ui/Label.svelte"
+import A from "../ui/A.svelte"
+import { pipe, Array, Struct, String } from "effect"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   hash: string
@@ -12,67 +17,55 @@ type Props = HTMLAttributes<HTMLDivElement> & {
 
 const { hash, chain, class: className = "", ...rest }: Props = $props()
 
-// Find the explorer URL for this block hash
-const getExplorerUrl = () => {
-  if (chain.explorers.length === 0) {
-    return null
-  }
+// For Cosmos chains: remove 0x prefix and convert to uppercase
+const formattedHash = $derived(
+  chain.rpc_type === "cosmos" && hash.startsWith("0x") ? hash.slice(2).toUpperCase() : hash
+)
 
-  // Use the first explorer by default
-  const explorer = chain.explorers[0]
-  // Replace {hash} placeholder if it exists, otherwise append the hash
-  const blockUrl = explorer.block_url.toString()
-  return blockUrl.includes("{hash}") ? blockUrl.replace("{hash}", hash) : `${blockUrl}${hash}`
-}
+const explorerUrl = $derived(
+  pipe(
+    chain.explorers,
+    Array.head,
+    Option.map(Struct.get("block_url")),
+    Option.map(String.concat(formattedHash))
+  )
+)
 
-const explorerUrl = $derived(getExplorerUrl())
-const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].display_name : null)
+const explorerName = $derived(
+  pipe(
+    chain.explorers,
+    Array.head,
+    Option.map(Struct.get("display_name")),
+    Option.getOrElse(() => "Explorer")
+  )
+)
 </script>
 
-<Tooltip>
+<Tooltip title={`Block on ${chain.display_name}`}>
   {#snippet trigger()}
     <LongMonoWord class={className} {...rest}>
-      {hash}
+      {formattedHash}
     </LongMonoWord>
   {/snippet}
 
   {#snippet content()}
-    <div class="text-sm flex flex-col gap-4 text-neutral-400">
-      <section class="flex justify-between items-center">
-        <h2 class="text-white font-bold text-lg">Block Details</h2>
-        <div class="bg-sky-400 text-black font-bold rounded px-1">
-          {chain.rpc_type.toUpperCase()}
-        </div>
-      </section>
+    <section>
+      <Label>Chain</Label>
+      <ChainComponent chain={chain} />
+    </section>
 
+    <section>
+      <Label>Block Hash</Label>
+      <LongMonoWord>
+        {formattedHash}
+      </LongMonoWord>
+    </section>
+
+    {#if Option.isSome(explorerUrl)}
       <section>
-        <h3 class="text-white">Chain</h3>
-        <div>{chain.display_name}</div>
-        <div class="text-xs">{chain.universal_chain_id}</div>
+        <Label>Explorer</Label>
+        <A href={explorerUrl.value}>View on {explorerName}</A>
       </section>
-
-      <section>
-        <h3 class="text-white">Block Hash</h3>
-        <LongMonoWord>
-          {hash}
-        </LongMonoWord>
-      </section>
-
-      {#if explorerUrl}
-        <section>
-          <h3 class="text-white">Explorer</h3>
-          <div>
-            <a 
-              href={explorerUrl} 
-              class="text-sky-400 hover:text-sky-300 underline" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              View on {explorerName || "Explorer"}
-            </a>
-          </div>
-        </section>
-      {/if}
-    </div>
+    {/if}
   {/snippet}
 </Tooltip>

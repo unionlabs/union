@@ -1,7 +1,5 @@
-
 <script lang="ts">
 import {
-  transferCountForAddressesQuery,
   transferListLatestAddressQuery,
   transferListPageGtAddressQuery,
   transferListPageLtAddressQuery
@@ -46,7 +44,7 @@ const fetchLive = async () => {
     transferFiber = Effect.runFork(
       transferListLatestAddressQuery(addresses, settingsStore.pageLimit)
     )
-    countFiber = Effect.runFork(transferCountForAddressesQuery(addresses))
+    // countFiber = Effect.runFork(transferCountForAddressesQuery(addresses))
   }
   fiberLock = false
 }
