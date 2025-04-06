@@ -613,12 +613,15 @@ contract ZkgmTests is Test {
     function test_tintForwardSalt_ok(
         bytes32 salt
     ) public {
-        vm.assume(
-            salt
-                < 0xffff000000000000000000000000000000000000000000000000000000000000
-        );
+        salt = bytes32(salt >> 8);
         assertFalse(ZkgmLib.isForwardedPacket(salt));
         assertTrue(ZkgmLib.isForwardedPacket(ZkgmLib.tintForwardSalt(salt)));
+    }
+
+    function test_tintForwardSalt_ok_2() public {
+        test_tintForwardSalt_ok(
+            0xdefe464db3fcf737aba09147ad0258e1f0913e3633c065053e744057b42dfefe
+        );
     }
 
     function test_onChanOpenInit_ok(
