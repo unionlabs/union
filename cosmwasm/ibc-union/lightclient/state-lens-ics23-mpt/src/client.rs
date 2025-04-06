@@ -192,7 +192,7 @@ pub fn extract_consensus_state(
 }
 
 fn extract_uint64(data: &[u8], offset: usize) -> u64 {
-    u64::from_le_bytes(
+    u64::from_be_bytes(
         data[offset..offset + 8]
             .try_into()
             .expect("impossible; qed"),
