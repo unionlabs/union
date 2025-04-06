@@ -2,7 +2,6 @@ import { encodeAbiParameters } from "viem"
 import { batchAbi, forwardAbi, fungibleAssetOrderAbi, multiplexAbi } from "../evm/abi/index.js"
 import { Data, Schema as S } from "effect"
 import { Hex, HexChecksum } from "../schema/hex.js"
-import { Uint64 } from "../schema/uint64.js"
 import type { NonEmptyReadonlyArray } from "effect/Array"
 
 const Version = S.NonNegativeInt
@@ -13,19 +12,35 @@ type OpCode = typeof OpCode.Type
 
 const Operand = S.Union(
   // [`0x${string}`, bigint, { version: number; opcode: number; operand: `0x${string}`; }]
-  S.Tuple(Hex, Uint64, S.Struct({ version: Version, opcode: OpCode, operand: Hex })),
+  S.Tuple(Hex, S.BigIntFromSelf, S.Struct({ version: Version, opcode: OpCode, operand: Hex })),
   // [number, number, `0x${string}`]
   S.Tuple(S.Number, S.Number, Hex),
   // [bigint, bigint, bigint, { version: number; opcode: number; operand: `0x${string}`; }]
-  S.Tuple(Uint64, Uint64, Uint64, S.Struct({ version: Version, opcode: OpCode, operand: Hex })),
+  S.Tuple(
+    S.BigIntFromSelf,
+    S.BigIntFromSelf,
+    S.BigIntFromSelf,
+    S.Struct({ version: Version, opcode: OpCode, operand: Hex })
+  ),
   // [`0x${string}`, boolean, `0x${string}`, `0x${string}`]
   S.Tuple(Hex, S.Boolean, Hex, Hex),
   // [readonly { version: number; opcode: number; operand: `0x${string}`; }[]]
   S.Tuple(S.Array(S.Struct({ version: Version, opcode: OpCode, operand: Hex }))),
   // [`0x${string}`, `0x${string}`, `0x${string}`, bigint, string, string, number, bigint, `0x${string}`, bigint]
-  S.Tuple(Hex, Hex, Hex, Uint64, S.String, S.String, S.Uint8, Uint64, HexChecksum, Uint64),
+  S.Tuple(
+    Hex,
+    Hex,
+    Hex,
+    S.BigIntFromSelf,
+    S.String,
+    S.String,
+    S.Uint8,
+    S.BigIntFromSelf,
+    HexChecksum,
+    S.BigIntFromSelf
+  ),
   // [bigint, `0x${string}`]
-  S.Tuple(Uint64, Hex),
+  S.Tuple(S.BigIntFromSelf, Hex),
   // [readonly `0x${string}`[]]
   S.Tuple(S.NonEmptyArray(Hex))
 )

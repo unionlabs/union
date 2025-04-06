@@ -1,25 +1,30 @@
-import {Match, Option} from "effect"
+import { Match, Option, Schema } from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
-import type {AddressCanonicalBytes, Channel, Token, TokenRawDenom} from "@unionlabs/sdk/schema"
+import {
+  Channel,
+  type AddressCanonicalBytes,
+  type Token,
+  type TokenRawDenom
+} from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
-import {type Address, fromHex, type Hex, isHex} from "viem"
+import { type Address, fromHex, type Hex, isHex } from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
 import { validateTransfer, type ValidationResult } from "$lib/components/Transfer/validation.ts"
 import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
-import {wallets} from "$lib/stores/wallets.svelte.ts";
+import { wallets } from "$lib/stores/wallets.svelte.ts"
 
 export type TransferIntent = {
-  sender: AddressCanonicalBytes;
-  receiver: string;
-  baseToken: TokenRawDenom;
-  baseAmount: bigint;
-  quoteAmount: bigint;
-};
-export type TransferIntents = Array<TransferIntent>;
+  sender: AddressCanonicalBytes
+  receiver: string
+  baseToken: TokenRawDenom
+  baseAmount: bigint
+  quoteAmount: bigint
+}
+export type TransferIntents = Array<TransferIntent>
 
 export class Transfer {
   raw = new RawTransferSvelte()
@@ -86,19 +91,87 @@ export class Transfer {
       : wallets.getAddressForChain(this.sourceChain.value)
   )
 
-  channel = $derived.by<Option.Option<Channel>>(() => {
-    return Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
+  // channel = $derived.by<Option.Option<Channel>>(() => {
+  //   return Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
+  //     Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
+  //       Option.fromNullable(
+  //         // getChannelInfoSafe(
+  //         //   sourceChain.universal_chain_id,
+  //         //   destinationChain.universal_chain_id,
+  //         //   channelsData
+  //         // )
+  //         // {
+  //         //   destination_channel_id: 9,
+  //         //   destination_client_id: 3,
+  //         //   destination_connection_id: 6,
+  //         //   destination_port_id:
+  //         //     "0x62626e31357a6370746c643837386c757834346c76633063687a687a376463646836326e68307865687761387937637a757a33796c6a6c73706d32726536",
+  //         //   destination_universal_chain_id: "babylon.bbn-test-5",
+  //         //   source_channel_id: 1,
+  //         //   source_client_id: 5,
+  //         //   source_connection_id: 2,
+  //         //   source_port_id: "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
+  //         //   source_universal_chain_id: "bob.808813"
+  //         // }
+  //         {
+  //           source_channel_id: 9,
+  //           source_client_id: 3,
+  //           source_connection_id: 6,
+  //           source_port_id:
+  //             "0x62626e31357a6370746c643837386c757834346c76633063687a687a376463646836326e68307865687761387937637a757a33796c6a6c73706d32726536",
+  //           source_universal_chain_id: "babylon.bbn-test-5",
+  //           destination_channel_id: 1,
+  //           destination_client_id: 5,
+  //           destination_connection_id: 2,
+  //           destination_port_id: "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
+  //           destination_universal_chain_id: "bob.808813"
+  //         }
+  //       )
+  //     )
+  //   )
+  // })
+  channel = $derived<Option.Option<Channel>>(
+    Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
-        Option.fromNullable(
-          getChannelInfoSafe(
-            sourceChain.universal_chain_id,
-            destinationChain.universal_chain_id,
-            channelsData
+        Match.value({ channelsData, sourceChain, destinationChain }).pipe(
+          Match.when(
+            {
+              sourceChain: { universal_chain_id: "bob.808813" },
+              destinationChain: { universal_chain_id: "babylon.bbn-test-5" }
+            },
+            ({
+              destinationChain: { universal_chain_id: destination_universal_chain_id },
+              sourceChain: { universal_chain_id: source_universal_chain_id }
+            }) =>
+              Option.some(
+                Schema.decodeSync(Channel)({
+                  destination_channel_id: 9,
+                  destination_client_id: 3,
+                  destination_connection_id: 6,
+                  destination_port_id:
+                    "0x62626e31357a6370746c643837386c757834346c76633063687a687a376463646836326e68307865687761387937637a757a33796c6a6c73706d32726536",
+                  destination_universal_chain_id: destination_universal_chain_id.toString(),
+                  source_channel_id: 1,
+                  source_client_id: 5,
+                  source_connection_id: 2,
+                  source_port_id: "0xe33534b7f8d38c6935a2f6ad35e09228da239962",
+                  source_universal_chain_id: source_universal_chain_id.toString()
+                })
+              )
+          ),
+          Match.orElse(() =>
+            Option.fromNullable(
+              getChannelInfoSafe(
+                sourceChain.universal_chain_id,
+                destinationChain.universal_chain_id,
+                channelsData
+              )
+            )
           )
         )
       )
     )
-  })
+  )
 
   ucs03address = $derived.by<Option.Option<Address>>(() => {
     return Option.all([
@@ -162,19 +235,19 @@ export class Transfer {
   })
 
   intents = $derived.by(() => {
-    if (this.validation._tag !== "Success") return Option.none<TransferIntents>();
-    const transferValue = this.validation.value;
+    if (this.validation._tag !== "Success") return Option.none<TransferIntents>()
+    const transferValue = this.validation.value
 
-    if (Option.isNone(this.derivedSender)) return Option.none<TransferIntents>();
+    if (Option.isNone(this.derivedSender)) return Option.none<TransferIntents>()
 
-    const sender = Option.getOrUndefined(this.derivedSender);
-    if (!sender) return Option.none<TransferIntents>();
+    const sender = Option.getOrUndefined(this.derivedSender)
+    if (!sender) return Option.none<TransferIntents>()
 
     return Match.value(transferValue.sourceChain.rpc_type).pipe(
       Match.when("evm", () => {
-        if (Option.isNone(this.wethBaseToken)) return Option.none<TransferIntents>();
-        const wethToken = Option.getOrUndefined(this.wethBaseToken);
-        if (!wethToken) return Option.none<TransferIntents>();
+        if (Option.isNone(this.wethBaseToken)) return Option.none<TransferIntents>()
+        const wethToken = Option.getOrUndefined(this.wethBaseToken)
+        if (!wethToken) return Option.none<TransferIntents>()
 
         return Option.some<TransferIntents>([
           {
@@ -191,7 +264,7 @@ export class Transfer {
             baseAmount: 500n,
             quoteAmount: 0n
           }
-        ]);
+        ])
       }),
 
       Match.when("cosmos", () => {
@@ -205,12 +278,12 @@ export class Transfer {
             baseAmount: transferValue.baseAmount,
             quoteAmount: transferValue.baseAmount
           }
-        ]);
+        ])
       }),
 
       Match.orElse(() => Option.none<TransferIntents>())
-    );
-  });
+    )
+  })
 
   validation = $derived.by<ValidationResult>(() => validateTransfer(this.args))
 }
