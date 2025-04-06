@@ -33,24 +33,17 @@ const getExplorerUrl = () => {
   )
 }
 
-const getExplorerName = () => {
-  return Option.flatMap(Option.fromNullable(chain), c =>
+const explorerUrl = $derived(getExplorerUrl())
+const explorerName = $derived(
+  Option.flatMap(Option.fromNullable(chain), c =>
     Option.liftPredicate(c.explorers, explorers => explorers.length > 0).pipe(
       Option.map(explorers => explorers[0].display_name)
     )
   )
-}
-
-const getChainName = () => {
-  return Option.map(Option.fromNullable(chain), c => c.display_name)
-}
-
-const explorerUrl = $derived(getExplorerUrl())
-const explorerName = $derived(getExplorerName())
-const chainName = $derived(Option.getOrElse(getChainName(), () => ""))
+)
 </script>
 
-<Tooltip title="Transaction Details">
+<Tooltip title="Transaction">
   {#snippet trigger()}
     <div class="font-mono text-xs break-all {className}" {...rest}>
       <Truncate showCopy={false} value={hash} maxLength={12} />
@@ -77,7 +70,7 @@ const chainName = $derived(Option.getOrElse(getChainName(), () => ""))
         <Label>Explorer</Label>
         <div>
           <a 
-            href={Option.getOrElse(explorerUrl, () => "#")} 
+            href={explorerUrl.value} 
             class="text-sky-400 hover:text-sky-300 underline" 
             target="_blank" 
             rel="noopener noreferrer"
