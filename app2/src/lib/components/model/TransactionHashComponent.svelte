@@ -8,10 +8,11 @@ import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import Label from "../ui/Label.svelte"
 import A from "../ui/A.svelte"
+import { pipe, Array, Struct, String } from "effect"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   hash: string
-  chain?: Chain
+  chain: Chain
   class?: string
 }
 
@@ -26,23 +27,20 @@ const formattedHash = $derived(
 
 // Find the explorer URL for this transaction hash
 const explorerUrl = $derived(
-  Option.flatMap(Option.fromNullable(chain), c =>
-    Option.liftPredicate(c.explorers, explorers => explorers.length > 0).pipe(
-      Option.map(explorers => {
-        // Use the first explorer by default
-        const explorer = explorers[0]
-        // Replace {hash} placeholder if it exists, otherwise append the hash
-        const txUrl = explorer.tx_url.toString()
-        return txUrl.includes("{hash}") ? txUrl.replace("{hash}", formattedHash) : `${txUrl}${formattedHash}`
-      })
-    )
+  pipe(
+    chain.explorers,
+    Array.head,
+    Option.map(Struct.get("tx_url")),
+    Option.map(String.concat(formattedHash))
   )
 )
+
 const explorerName = $derived(
-  Option.flatMap(Option.fromNullable(chain), c =>
-    Option.liftPredicate(c.explorers, explorers => explorers.length > 0).pipe(
-      Option.map(explorers => explorers[0].display_name)
-    )
+  pipe(
+    chain.explorers,
+    Array.head,
+    Option.map(Struct.get("display_name")),
+    Option.getOrElse(() => "explorer")
   )
 )
 </script>
@@ -72,7 +70,7 @@ const explorerName = $derived(
         <Label>Explorer</Label>
         <div>
           <A href={explorerUrl.value}>
-            View on {Option.getOrElse(explorerName, () => "Explorer")}
+            View on {explorerName}
           </A>
         </div>
       </section>
