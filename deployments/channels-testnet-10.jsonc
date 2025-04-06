@@ -26,6 +26,12 @@
       "tags": ["experimental"]
     }
   },
+  "bob.808813": {
+    "1": {
+      "comments": "babylon.bbn-test-5 channel 9",
+      "tags": ["canonical"]
+    }
+  },
   "ethereum.11155111": {
     "2": {
       "comments": "union.union-testnet-10 channel 3",
