@@ -33,28 +33,18 @@ pub struct Module {
 pub struct ClientStateConfig {
     /// The chain that the client will be created on.
     pub host_chain_id: ChainId,
+
     /// The L1 client on the host chain that tracks the intermediate chain.
     pub l1_client_id: ClientId,
     /// The L2 client on the L1 chain that tracks this L2.
     pub l2_client_id: ClientId,
-    #[serde(default = "default_timestamp_offset")]
+
+    /// The offset into the raw L2 consensus state to read the timestamp from.
     pub timestamp_offset: u16,
-    #[serde(default = "default_state_root_offset")]
+    /// The offset into the raw L2 consensus state to read the state root from.
     pub state_root_offset: u16,
-    #[serde(default = "default_storage_root_offset")]
+    /// The offset into the raw L2 consensus state to read the IBC storage root from.
     pub storage_root_offset: u16,
-}
-
-pub fn default_timestamp_offset() -> u16 {
-    0
-}
-
-pub fn default_state_root_offset() -> u16 {
-    32
-}
-
-pub fn default_storage_root_offset() -> u16 {
-    64
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
