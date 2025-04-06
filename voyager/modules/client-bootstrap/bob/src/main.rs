@@ -40,8 +40,7 @@ pub struct Module {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    pub l1_provider: DynProvider,
-    pub l2_provider: DynProvider<AnyNetwork>,
+    pub provider: DynProvider<AnyNetwork>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,8 +51,7 @@ pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
 
-    pub l1_rpc_url: String,
-    pub l2_rpc_url: String,
+    pub rpc_url: String,
 
     #[serde(default)]
     pub max_cache_size: u32,
@@ -74,22 +72,15 @@ impl ClientBootstrapModule for Module {
         config: Self::Config,
         info: ClientBootstrapModuleInfo,
     ) -> Result<Self, BoxDynError> {
-        let l1_provider = DynProvider::new(
-            ProviderBuilder::new()
-                .layer(CacheLayer::new(config.max_cache_size))
-                .connect(&config.l1_rpc_url)
-                .await?,
-        );
-
-        let l2_provider = DynProvider::new(
+        let provider = DynProvider::new(
             ProviderBuilder::new()
                 .network::<AnyNetwork>()
                 .layer(CacheLayer::new(config.max_cache_size))
-                .connect(&config.l2_rpc_url)
+                .connect(&config.rpc_url)
                 .await?,
         );
 
-        let l2_chain_id = ChainId::new(l2_provider.get_chain_id().await?.to_string());
+        let l2_chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
         info.ensure_chain_id(l2_chain_id.to_string())?;
         info.ensure_client_type(ClientType::BOB)?;
@@ -98,8 +89,7 @@ impl ClientBootstrapModule for Module {
             chain_id: l2_chain_id,
             ibc_handler_address: config.ibc_handler_address,
             l2_oracle_address: config.l2_oracle_address,
-            l1_provider,
-            l2_provider,
+            provider,
         })
     }
 }
@@ -148,7 +138,7 @@ impl ClientBootstrapModuleServer for Module {
         _: Value,
     ) -> RpcResult<Value> {
         let l2_block = self
-            .l2_provider
+            .provider
             .get_block(height.height().into())
             .await
             .map_err(|e| {
@@ -162,7 +152,7 @@ impl ClientBootstrapModuleServer for Module {
         Ok(into_value(ConsensusState {
             state_root: l2_block.header.state_root.into(),
             ibc_storage_root: self
-                .l2_provider
+                .provider
                 .get_proof(self.ibc_handler_address.into(), vec![])
                 .block_id(l2_block.header.number.into())
                 .await
