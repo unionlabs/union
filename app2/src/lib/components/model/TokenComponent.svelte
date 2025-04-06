@@ -5,6 +5,7 @@ import Truncate from "$lib/components/ui/Truncate.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import A from "../ui/A.svelte"
 
 interface Props {
   chain: Chain
@@ -117,7 +118,7 @@ const displayDenom = $derived(
               {#each rep.sources as source}
                 {#if source.source.source_uri}
                   <div>
-                    Source: <a class="underline" href={source.source.source_uri}>{source.source.name}</a>
+                    Source: <A class="underline" href={source.source.source_uri}>{source.source.name}</A>
                   </div>
                 {/if}
               {/each}

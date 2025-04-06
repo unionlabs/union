@@ -3,6 +3,7 @@ import type { HTMLAttributes } from "svelte/elements"
 import type { Chain } from "@unionlabs/sdk/schema"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import A from "../ui/A.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   hash: string
@@ -62,14 +63,9 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
         <section>
           <h3 class="text-white">Explorer</h3>
           <div>
-            <a 
-              href={explorerUrl} 
-              class="text-sky-400 hover:text-sky-300 underline" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
+            <A href={explorerUrl} class="underline">
               View on {explorerName || "Explorer"}
-            </a>
+            </A>
           </div>
         </section>
       {/if}

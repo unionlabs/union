@@ -7,6 +7,7 @@ import Truncate from "$lib/components/ui/Truncate.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import Label from "../ui/Label.svelte"
+import A from "../ui/A.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   hash: string
@@ -69,14 +70,9 @@ const explorerName = $derived(
       <section>
         <Label>Explorer</Label>
         <div>
-          <a 
-            href={explorerUrl.value} 
-            class="text-sky-400 hover:text-sky-300 underline" 
-            target="_blank" 
-            rel="noopener noreferrer"
-          >
+          <A href={explorerUrl.value} class="underline">
             View on {Option.getOrElse(explorerName, () => "Explorer")}
-          </a>
+          </A>
         </div>
       </section>
     {/if}

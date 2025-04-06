@@ -3,6 +3,7 @@ import type { HTMLAttributes } from "svelte/elements"
 import { Chain } from "@unionlabs/sdk/schema"
 import { cn } from "$lib/utils"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import A from "../ui/A.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   chain: Chain
@@ -50,9 +51,9 @@ const classes = cn("flex flex-col text-md font-semibold", className)
             {#each chain.rpcs as rpc}
               <div>
                 <span class="text-white">{rpc.type}:</span>
-                <a href={rpc.url} class="underline ml-2" target="_blank" rel="noopener noreferrer">
+                <A href={rpc.url} class="underline ml-2">
                   {rpc.url}
-                </a>
+                </A>
               </div>
             {/each}
           </div>
@@ -66,9 +67,9 @@ const classes = cn("flex flex-col text-md font-semibold", className)
                 <div class="flex flex-col">
                   <div class="flex items-center gap-2">
                     <span class="text-white">{explorer.display_name}</span>
-                    <a href={explorer.home_url} class="underline" target="_blank" rel="noopener noreferrer">
+                    <A href={explorer.home_url} class="underline">
                       {explorer.home_url}
-                    </a>
+                    </A>
                   </div>
                   <div class="text-xs">{explorer.description}</div>
                 </div>
