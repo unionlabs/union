@@ -124,8 +124,8 @@ export const submit = Effect.gen(function* () {
                 functionName: "send",
                 args: [
                   lts.value.channel.source_channel_id,
-                  0n,
-                  9007199254740991n,
+                  9007199254740991n, // Block height timeout
+                  0n, // Timeout Timestamp
                   generateSalt("evm"),
                   {
                     opcode: step.value.instruction.opcode,
