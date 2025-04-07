@@ -165,8 +165,8 @@ export const submit = Effect.gen(function* () {
               cts,
               lts.value.sourceChain,
               signingClient,
-              sender,
-              fromHex(lts.value.channel.source_port_id, "string"),
+              sender, //Sender address
+              fromHex(lts.value.channel.source_port_id, "string"), //contractAddress
               {
                 send: {
                   channel_id: lts.value.channel.source_channel_id,
