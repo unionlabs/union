@@ -10,9 +10,10 @@ import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
 import { Turnstile } from "svelte-turnstile"
 import request from "graphql-request"
 import { writable } from "svelte/store"
-import { faucetUnoMutation } from "$lib/queries/faucet"
+import { faucetUnoMutationDocument } from "$lib/queries/faucet"
 import { URLS } from "$lib/constants"
 import { Data } from "effect"
+import { bech32, bytes } from "@scure/base"
 
 // Define the faucet state type using Data.TaggedEnum.
 type FaucetProcessState = Data.TaggedEnum<{
@@ -43,10 +44,9 @@ const startVerification = () => {
   showTurnstile = true
   resetTurnstile?.() // resets/retriggers the Turnstile if available
 
-  // const token = "This is some random token.";
-  // faucetProcess.set(FaucetProcess.Verified({ token }));
+  // faucetProcess.set(FaucetProcess.Verified({ token }))
   // // Immediately submit the faucet request.
-  // submitFaucetRequest(token);
+  // submitFaucetRequest(token)
 }
 
 // Callback for successful Turnstile captcha.
@@ -69,10 +69,15 @@ const handleTurnstileError = (e: CustomEvent<{ code: string }>) => {
 const submitFaucetRequest = async (token: string) => {
   faucetProcess.set(FaucetProcess.Submitting({ token }))
   try {
-    const result = await request(URLS().GRAPHQL, faucetUnoMutation, {
+    let wallet_addr = ""
+    if (Option.isSome(wallets.cosmosAddress)) {
+      const words = bech32.toWords(bytes("hex", wallets.cosmosAddress.value.slice(2)))
+      wallet_addr = bech32.encode("union", words)
+    }
+    const result = await request(URLS().GRAPHQL, faucetUnoMutationDocument, {
       chainId: "union-testnet-9",
       denom: "muno",
-      address: Option.isSome(wallets.cosmosAddress) ? wallets.cosmosAddress.value : "",
+      address: wallet_addr,
       captchaToken: token
     })
     if (!result || !result.send) {
@@ -124,10 +129,11 @@ const resetProcess = () => {
           {/if}
           <AngleArrowIcon class="rotate-270"/>
         </div>
-
-        {#if $faucetProcess._tag === "Idle"}
+          {#if $faucetProcess._tag === "Idle"}
           <div class="flex gap-4">
-            <Button onclick={startVerification} class="flex-1">Claim</Button>
+            <Button onclick={startVerification} class="flex-1"
+            disabled={!Option.isSome(wallets.cosmosAddress)}
+                  >Claim</Button>
             <Button><SharpWalletIcon class="size-5"/></Button>
           </div>
         {:else if $faucetProcess._tag === "Verifying"}

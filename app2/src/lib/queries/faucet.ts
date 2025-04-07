@@ -10,12 +10,14 @@ export const faucetUnoMutationDocument = graphql(`
     $address: String!,
     $captchaToken: String!
   ) {
-    send(
-      chainId: $chainId,
-      denom: $denom,
-      address: $address,
-      captchaToken: $captchaToken
-    )
+    drip_drop {
+      send(
+        chainId: $chainId,
+        denom: $denom,
+        address: $address,
+        captchaToken: $captchaToken
+      )
+    }
   }
 `)
 
