@@ -14,6 +14,8 @@
     let
       fs = pkgs.lib.fileset;
 
+      writeTOML = (pkgs.formats.toml { }).generate;
+
       # clean up the lib namespace for what we actually need
       lib = args.lib // {
         inherit (args.lib.attrsets) nameValuePair attrByPath;
@@ -22,7 +24,7 @@
 
       craneLib = (inputs.crane.mkLib pkgs).overrideToolchain (_: rust.toolchains.nightly);
 
-      # get the crane metadata out of the Cargo.toml. returns an empty attrset if if the table is not present.
+      # get the crane metadata out of the Cargo.toml. returns an empty attrset if the table is not present.
       #
       # [package.metadata.crane]
       # test-include = ["path3", "path4"]
@@ -111,29 +113,58 @@
           workspaceMembers,
           # [path]
           extraIncludes,
+
+          # path | derivation
+          cargoToml,
+          # path | derivation
+          cargoLock,
+
+          # bool
+          dontRemoveDevDeps ? false,
         }:
-        assert isListOf builtins.isPath workspaceMembers;
-        assert isListOf builtins.isPath extraIncludes;
-        fs.toSource {
-          root = ../../.;
-          fileset =
-            fs.union
-              # unconditionally include...
-              (fs.unions (
-                lib.flatten [
-                  ../../rustfmt.toml
-                  ../../clippy.toml
-                  ../../Cargo.toml
-                  ../../Cargo.lock
-                  extraIncludes
-                ]
-              ))
-              # ...and include rust source of workspace deps
-              (
-                fs.intersection (fs.unions workspaceMembers) (
-                  fs.fileFilter (file: (file.name == "Cargo.toml") || (builtins.any file.hasExt [ "rs" ])) ../../.
-                )
-              );
+        assert isListOf builtins.isString workspaceMembers;
+        assert isListOf builtins.isString extraIncludes;
+        let
+          filteredSrc = fs.toSource {
+            root = ../../.;
+            fileset =
+              fs.union
+                # unconditionally include...
+                (fs.unions (lib.flatten [ (mkRootPaths extraIncludes) ]))
+                # ...and include rust source of workspace deps
+                (
+                  fs.intersection (fs.unions (mkRootPaths workspaceMembers)) (
+                    fs.fileFilter (file: (builtins.any file.hasExt [ "rs" ])) ../../.
+                  )
+                );
+          };
+        in
+        pkgs.stdenv.mkDerivation {
+          name = "clean-workspace-source";
+          src = filteredSrc;
+          buildInputs = [
+            pkgs.tree
+          ];
+          buildPhase = ''
+            tree .
+
+            cp ${cargoLock} ./Cargo.lock
+            cp ${cargoToml} ./Cargo.toml
+
+            ${builtins.concatStringsSep "\n\n" (
+              lib.mapAttrsToList (
+                path: cargoToml:
+                let
+                  cargoTomlPath = writeTOML "Cargo.toml" (
+                    builtins.removeAttrs cargoToml (lib.optionals (!dontRemoveDevDeps) [ "dev-dependencies" ])
+                  );
+                in
+                "cp ${cargoTomlPath} ./${path}/Cargo.toml"
+              ) (readMemberCargoTomls workspaceMembers)
+            )}
+
+            cp -r . $out
+          '';
         };
 
       # Cargo.toml of the workspace.
@@ -141,17 +172,89 @@
       # sig :: string
       workspaceCargoToml = lib.importTOML (root + "/Cargo.toml");
 
-      # full path to the workspace Cargo.lock.
+      # TODO: Assert version = 4;
+      normalizedCargoLock = builtins.foldl' (acc: p: lib.recursiveUpdate acc p) { } (
+        map (package: {
+          ${package.name} = {
+            ${package.version} =
+              package
+              // (lib.optionalAttrs (package ? source) (
+                let
+                  splitSource = lib.splitString "+" package.source;
+                  sourceType = builtins.head splitSource;
+                  sourceKey = # trim the commit ref if this is a git source
+                    # TODO: figure out how this is actually defined to work in the Cargo.lock schema/spec
+                    if sourceType == "git" then builtins.head (lib.splitString "#" package.source) else package.source;
+                in
+                {
+                  __source__.${sourceKey} = package;
+                }
+              ));
+          };
+        }) (lib.importTOML (root + "/Cargo.lock")).package
+      );
+
+      # get a single package entry from the Cargo.lock.
       #
-      # sig :: path
-      workspaceCargoLockPath = root + "/Cargo.lock";
+      # sig :: string -> attrs
+      getCargoLockPackageEntry =
+        depAndVersion:
+        let
+          split = lib.splitString " " depAndVersion;
+          depName = builtins.head split;
+          specifiedVersion = builtins.elemAt split 1;
+          specifiedSource = builtins.head (builtins.match "[(](.*)[)]" (builtins.elemAt split 2));
+          fullDep = normalizedCargoLock.${depName};
+        in
+        builtins.removeAttrs (
+          # dep name is just the dep name (no version or source)
+          # this means that this dependency only exists once in the lockfile, and as such only one version subkey will exist
+          if ((builtins.length split) == 1) then
+            fullDep.${builtins.head (builtins.attrNames fullDep)}
+          # dep name is the dep name and a version (no source)
+          else if ((builtins.length split) == 2) then
+            fullDep.${specifiedVersion}
+          # dep name is the dep name, version, and source
+          else if ((builtins.length split) == 3) then
+            fullDep.${specifiedVersion}.__source__.${specifiedSource}
+          else
+            throw "???"
+        ) [ "__source__" ];
+
+      getAllPackageDependencies =
+        packageName:
+        let
+          go =
+            foundSoFar: packageName':
+            let
+              packageLockEntry = getCargoLockPackageEntry packageName';
+              packageKey = packageName';
+              namedDep = {
+                ${packageKey} = packageLockEntry;
+              };
+            in
+            if builtins.hasAttr packageKey foundSoFar then
+              foundSoFar
+            else if packageLockEntry ? dependencies then
+              (builtins.foldl' go (namedDep // foundSoFar)) packageLockEntry.dependencies
+            else
+              foundSoFar // namedDep;
+        in
+        go { } packageName;
+
+      cleanCargoLock = packages: {
+        version = 4;
+        package = lib.unique (
+          lib.flatten (map (x: builtins.attrValues (getAllPackageDependencies x)) packages)
+        );
+      };
 
       # gets all the local (i.e. path) dependencies for a crate, recursively.
       #
       # note that to make this easier, we define all local dependencies as workspace dependencies.
       #
       # sig :: [string] ->  [string]
-      getWorkspaceDeps =
+      getMemberDeps =
         dirs:
         let
           go =
@@ -162,6 +265,7 @@
             lib.pipe
               (
                 dirCargoToml.dependencies
+                # TODO: Remove dev-dependencies?
                 // dirCargoToml.dev-dependencies or { }
                 // dirCargoToml.build-dependencies or { }
               )
@@ -189,11 +293,23 @@
         in
         lib.unique (lib.flatten (builtins.map (dir: go dir [ ]) dirs));
 
-      # TODO: Consider making crateDirFromRoot the first param to this function and the rest options
-      #       i.e. sig :: string -> attrs -> drv
+      # gets all the dependencies for a crate, recursively.
+      #
+      # sig :: [string] ->  attrs
+      getAllDeps =
+        dirs:
+        lib.pipe (getMemberDeps dirs) [
+          (map (
+            path:
+            ((crateCargoToml path).dependencies or { }) // ((crateCargoToml path).build-dependencies or { })
+          ))
+          (builtins.foldl' lib.recursiveUpdate { })
+        ];
+
+      # sig :: string -> attrs -> drv
       buildWorkspaceMember =
         # the directory that contains the Cargo.toml and src/ for the crate,
-        # relative to the repository root. or a list of multiple crates.
+        # relative to the repository root, or a list of multiple crates.
         crateDirFromRoot:
         {
           # a suffix to add to the package name.
@@ -234,6 +350,12 @@
 
           extraBuildInputs ? [ ],
           extraNativeBuildInputs ? [ ],
+
+          # this builder will by default remove dev-dependencies from the Cargo.toml of all crates in the filtered source of the packages being built. set this to true to disable this behaviour.
+          dontRemoveDevDeps ? false,
+
+          # the root Cargo.toml may require patching when building certain packages in the monorepo. this hook can be used to arbitrarily modify the patched Cargo.toml before writing it into the source root derivation.
+          rootCargoTomlHook ? x: x,
         }:
         assert builtins.isAttrs extraEnv;
         assert lib.assertMsg
@@ -292,43 +414,44 @@
 
           cargoBuild = craneLib.overrideToolchain cargoBuildRustToolchain';
 
+          memberDepsForCrate = getMemberDeps crateDirsFromRoot';
+          memberDepsForCrateCargoTomls = readMemberCargoTomls memberDepsForCrate;
+
+          patchedCargoLock = cleanCargoLock (map (dir: (crateCargoToml dir).package.name) crateDirsFromRoot');
+
+          allDepsForCrate = getAllDeps memberDepsForCrate;
+
+          patchedCargoToml = {
+            workspace = workspaceCargoToml.workspace // {
+              members = memberDepsForCrate;
+              dependencies = lib.filterAttrs (
+                dep: _: builtins.hasAttr dep allDepsForCrate
+              ) workspaceCargoToml.workspace.dependencies;
+            };
+            # only patch dependencies this crate actually depends on, since anything not in the lockfile will not be vendored by crane
+            patch = workspaceCargoToml.patch // {
+              crates-io = lib.filterAttrs (
+                depName: _patch: builtins.any (lockPackage: lockPackage.name == depName) patchedCargoLock.package
+              ) workspaceCargoToml.patch.crates-io;
+            };
+          };
+
+          # patch the workspace Cargo.toml and Cargo.lock to only contain the local dependencies required to build this crate
+          crateRepoSource = mkCleanSrc {
+            inherit dontRemoveDevDeps;
+            workspaceMembers = memberDepsForCrate;
+            extraIncludes =
+              (getIncludes memberDepsForCrateCargoTomls) ++ (getExtraIncludes memberDepsForCrateCargoTomls);
+            cargoToml = writeTOML "Cargo.toml" (rootCargoTomlHook patchedCargoToml);
+            cargoLock = writeTOML "Cargo.lock" patchedCargoLock;
+          };
+
           # build the package.
           #
-          # sig :: bool -> { packages : attrs }
+          # sig :: bool -> attrs
           builder =
             release:
             let
-              workspaceDepsForCrate = getWorkspaceDeps crateDirsFromRoot';
-
-              workspaceDepsForCrateCargoTomls = readMemberCargoTomls workspaceDepsForCrate;
-
-              crateSrc = mkCleanSrc {
-                workspaceMembers = mkRootPaths workspaceDepsForCrate;
-                extraIncludes = mkRootPaths (
-                  (getIncludes workspaceDepsForCrateCargoTomls) ++ (getExtraIncludes workspaceDepsForCrateCargoTomls)
-                );
-              };
-
-              # patch the workspace Cargo.toml to only contain the local dependencies required to build this crate
-              # TODO: Do the same to Cargo.lock?
-              crateRepoSource =
-                let
-                  patchedCargoToml = (pkgs.formats.toml { }).generate "Cargo.toml" (
-                    lib.recursiveUpdate workspaceCargoToml {
-                      workspace.members = workspaceDepsForCrate;
-                    }
-                  );
-                in
-                # REVIEW: This can maybe be a runCommand?
-                pkgs.stdenv.mkDerivation {
-                  name = "${pname'}-clean-workspace-source";
-                  src = crateSrc;
-                  buildPhase = ''
-                    cp -r . $out
-                    cp ${patchedCargoToml} $out/Cargo.toml
-                  '';
-                };
-
               packageFilterArgs = lib.concatMapStringsSep " " (
                 dir: "-p ${(crateCargoToml dir).package.name}"
               ) crateDirsFromRoot';
@@ -337,7 +460,9 @@
                 pname = pname';
                 version = version';
 
-                dummySrc = craneLib.mkDummySrc crateRepoSource;
+                dummySrc = craneLib.mkDummySrc {
+                  src = crateRepoSource;
+                };
 
                 # defaults to "--all-targets" otherwise, which breaks some stuff
                 cargoCheckExtraArgs = "";
@@ -350,18 +475,17 @@
                   ++ (lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ])
                   ++ extraBuildInputs;
 
-                # [ pkgs.breakpointHook ]
+                # [ pkgs.breakpointHook ] ++
                 nativeBuildInputs = extraNativeBuildInputs;
 
                 cargoVendorDir = craneLib.vendorMultipleCargoDeps {
-                  inherit (craneLib.findCargoFiles crateSrc) cargoConfigs;
-                  cargoLockList =
-                    [
-                      workspaceCargoLockPath
-                    ]
-                    ++ (lib.optionals (buildStdTarget != null) [
-                      ./rust-std-Cargo.lock
-                    ]);
+                  inherit (craneLib.findCargoFiles crateRepoSource) cargoConfigs;
+                  cargoLockList = lib.optionals (buildStdTarget != null) [
+                    ./rust-std-Cargo.lock
+                  ];
+                  cargoLockParsedList = [
+                    patchedCargoLock
+                  ];
                 };
 
                 PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
@@ -429,11 +553,11 @@
               // {
                 inherit cargoArtifacts;
               }
-              # for release builds, embed the git rev.
+              # for release builds, embed the git rev
               // (lib.optionalAttrs release (
                 assert lib.assertMsg
                   (builtins.any (x: x) (
-                    lib.mapAttrsToList (_: toml: toml.package.name == "embed-commit") workspaceDepsForCrateCargoTomls
+                    lib.mapAttrsToList (_: toml: toml.package.name == "embed-commit") memberDepsForCrateCargoTomls
                   ))
                   "crate ${pname'} does not depend on `embed-commit`, which is required for versioned release builds.";
                 {
@@ -468,8 +592,11 @@
       );
 
       cargoWorkspaceSrc = mkCleanSrc {
-        workspaceMembers = mkRootPaths workspaceCargoToml.workspace.members;
-        extraIncludes = mkRootPaths ((getIncludes allCargoTomls) ++ (getExtraIncludes allCargoTomls));
+        workspaceMembers = workspaceCargoToml.workspace.members;
+        extraIncludes = (getIncludes allCargoTomls) ++ (getExtraIncludes allCargoTomls);
+        cargoToml = ../../Cargo.toml;
+        cargoLock = ../../Cargo.lock;
+        dontRemoveDevDeps = true;
       };
     in
     {
@@ -599,6 +726,16 @@
           #   )
           # );
         };
+
+      # these are incredibly useful for debugging
+      # packages = {
+      #   cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "cosmwasm-deployer" ]);
+      #   getAllDeps = dbg (getAllDeps [ "cosmwasm/ibc-union/core" ]);
+      #   getDependency = dbg (
+      #     getCargoLockPackageEntry "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)"
+      #   );
+      #   normalizedCargoLock = writeJSON "normalized-Cargo.lock.json" normalizedCargoLock;
+      # };
 
       # FIXME: currently ICE, https://github.com/unionlabs/union/actions/runs/8882618404/job/24387814904
       # packages.rust-coverage =
