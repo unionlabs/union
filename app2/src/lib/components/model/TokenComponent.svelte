@@ -1,8 +1,14 @@
 <script lang="ts">
-import type { Chain, TokenRawAmount, TokenRawDenom } from "@unionlabs/sdk/schema"
+import {
+  getChain,
+  type Chain,
+  type TokenRawAmount,
+  type TokenRawDenom
+} from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import Truncate from "$lib/components/ui/Truncate.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
+import { chains } from "$lib/stores/chains.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import A from "../ui/A.svelte"
@@ -12,9 +18,10 @@ interface Props {
   denom: TokenRawDenom
   amount?: TokenRawAmount
   showRank?: boolean
+  showWrapping?: boolean
 }
 
-const { chain, denom, amount = undefined, showRank = true }: Props = $props()
+const { chain, denom, amount = undefined, showRank = true, showWrapping = true }: Props = $props()
 
 // Start the query when the component mounts
 $effect(() => {
@@ -84,6 +91,19 @@ const displayDenom = $derived(
       {/if}
       <Truncate value={displayDenom} maxLength={10} showCopy={false} />
     </div>
+
+    {#if Option.isSome(chains.data) && Option.isSome(token)}
+      <div class="text-xs text-zinc-400">
+      {#each token.value.wrapping as wrap}
+        {@const wrapChain = getChain(chains.data.value, wrap.unwrapped_chain.universal_chain_id)}
+        {#if Option.isSome(wrapChain)}
+          <div>← <ChainComponent chain={wrapChain.value}/></div>
+        {/if}
+      {/each}
+      </div>
+    {/if}
+
+    
   {/snippet}
   
   {#snippet content()}
