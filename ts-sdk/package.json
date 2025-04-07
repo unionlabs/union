@@ -1,6 +1,6 @@
 {
   "name": "@unionlabs/sdk",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "type": "module",
   "license": "MIT",
   "author": "@unionlabs",
@@ -19,31 +19,40 @@
   ],
   "exports": {
     ".": {
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
     "./ucs03": {
-      "import": "./dist/ucs03/index.js"
+      "import": "./dist/ucs03/index.js",
+      "types": "./dist/ucs03/index.d.ts"
     },
     "./evm": {
-      "import": "./dist/evm/index.js"
+      "import": "./dist/evm/index.js",
+      "types": "./dist/evm/index.d.ts"
     },
     "./cosmos": {
-      "import": "./dist/cosmos/index.js"
+      "import": "./dist/cosmos/index.js",
+      "types": "./dist/cosmos/index.d.ts"
     },
     "./evm/abi": {
-      "import": "./dist/evm/abi/index.js"
+      "import": "./dist/evm/abi/index.js",
+      "types": "./dist/evm/abi/index.d.ts"
     },
     "./evm/ucs03": {
-      "import": "./dist/evm/ucs03/index.js"
+      "import": "./dist/evm/ucs03/index.js",
+      "types": "./dist/evm/ucs03/index.d.ts"
     },
     "./evm/erc20": {
-      "import": "./dist/evm/erc20.js"
+      "import": "./dist/evm/erc20.js",
+      "types": "./dist/evm/erc20.d.ts"
     },
     "./utils": {
-      "import": "./dist/utils/index.js"
+      "import": "./dist/utils/index.js",
+      "types": "./dist/utils/index.d.ts"
     },
     "./schema": {
-      "import": "./dist/schema/index.js"
+      "import": "./dist/schema/index.js",
+      "types": "./dist/schema/index.d.ts"
     }
   },
   "scripts": {
