@@ -299,7 +299,10 @@
       getAllDeps =
         dirs:
         lib.pipe (getMemberDeps dirs) [
-          (map (path: (crateCargoToml path).dependencies))
+          (map (
+            path:
+            ((crateCargoToml path).dependencies or { }) // ((crateCargoToml path).build-dependencies or { })
+          ))
           (builtins.foldl' lib.recursiveUpdate { })
         ];
 
@@ -350,6 +353,9 @@
 
           # this builder will by default remove dev-dependencies from the Cargo.toml of all crates in the filtered source of the packages being built. set this to true to disable this behaviour.
           dontRemoveDevDeps ? false,
+
+          # the root Cargo.toml may require patching when building certain packages in the monorepo. this hook can be used to arbitrarily modify the patched Cargo.toml before writing it into the source root derivation.
+          rootCargoTomlHook ? x: x,
         }:
         assert builtins.isAttrs extraEnv;
         assert lib.assertMsg
@@ -436,13 +442,13 @@
             workspaceMembers = memberDepsForCrate;
             extraIncludes =
               (getIncludes memberDepsForCrateCargoTomls) ++ (getExtraIncludes memberDepsForCrateCargoTomls);
-            cargoToml = writeTOML "Cargo.toml" patchedCargoToml;
+            cargoToml = writeTOML "Cargo.toml" (rootCargoTomlHook patchedCargoToml);
             cargoLock = writeTOML "Cargo.lock" patchedCargoLock;
           };
 
           # build the package.
           #
-          # sig :: bool -> { packages : attrs }
+          # sig :: bool -> attrs
           builder =
             release:
             let
