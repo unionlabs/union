@@ -125,7 +125,7 @@ export const submit = Effect.gen(function* () {
                 args: [
                   lts.value.channel.source_channel_id,
                   0n,
-                  1000000000000n,
+                  9007199254740991n,
                   generateSalt("evm"),
                   {
                     opcode: step.value.instruction.opcode,
@@ -170,7 +170,7 @@ export const submit = Effect.gen(function* () {
               {
                 send: {
                   channel_id: lts.value.channel.source_channel_id,
-                  timeout_height: 10000000,
+                  timeout_height: Number.MAX_SAFE_INTEGER,
                   timeout_timestamp: 0,
                   salt: generateSalt("cosmos"),
                   instruction: encodeAbiParameters(instructionAbi, [
