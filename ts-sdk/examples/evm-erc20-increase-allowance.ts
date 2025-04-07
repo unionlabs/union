@@ -1,10 +1,10 @@
 import { Effect } from "effect"
-import { ViemPublicClient, ViemWalletClient } from "../src/evm/client.ts"
+import { ViemPublicClient, ViemWalletClient } from "../src/evm/client.js"
 import { createPublicClient, createWalletClient, http } from "viem"
 import { sepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
-import { increaseErc20Allowance, readErc20Allowance, readErc20Meta } from "../src/evm/erc20.ts"
-import { waitForTransactionReceipt } from "../src/evm/receipts.ts"
+import { increaseErc20Allowance, readErc20Allowance, readErc20Meta } from "../src/evm/erc20.js"
+import { waitForTransactionReceipt } from "../src/evm/receipts.js"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {

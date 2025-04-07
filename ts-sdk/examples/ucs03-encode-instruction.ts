@@ -1,5 +1,5 @@
 import { toHex } from "viem"
-import { Instruction } from "../src/ucs03.ts"
+import { Instruction } from "../src/ucs03.js"
 
 export const exampleBatchInstruction = new Instruction.Batch({
   operand: [

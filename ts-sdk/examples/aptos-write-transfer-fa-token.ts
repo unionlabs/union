@@ -1,7 +1,7 @@
 import { Effect } from "effect"
-import { AptosPublicClient, createAptosPublicClient } from "../src/aptos/client.ts"
-import { readContract, writeContract } from "../src/aptos/contract.ts"
-import { waitForTransactionReceipt } from "../src/aptos/receipts.ts"
+import { AptosPublicClient, createAptosPublicClient } from "../src/aptos/client.js"
+import { readContract, writeContract } from "../src/aptos/contract.js"
+import { waitForTransactionReceipt } from "../src/aptos/receipts.js"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
 import { AptosConfig, Network, MoveVector } from "@aptos-labs/ts-sdk"
 

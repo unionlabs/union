@@ -15,8 +15,8 @@ import { sendInstructionEvm } from "../src/ucs03/send-instruction.js"
 import { privateKeyToAccount } from "viem/accounts"
 import { ViemWalletClient } from "../src/evm/client.js"
 import { SourceConfig } from "../src/evm/quote-token.js"
-import { readErc20Allowance, increaseErc20Allowance } from "../src/evm/erc20.ts"
-import { waitForTransactionReceipt } from "../src/evm/receipts.ts"
+import { readErc20Allowance, increaseErc20Allowance } from "../src/evm/erc20.js"
+import { waitForTransactionReceipt } from "../src/evm/receipts.js"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {

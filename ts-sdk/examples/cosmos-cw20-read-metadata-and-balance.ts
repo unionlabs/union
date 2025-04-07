@@ -1,6 +1,6 @@
 import { Effect } from "effect"
-import { CosmWasmClientContext, createCosmWasmClient } from "../src/cosmos/client.ts"
-import { readCw20TokenInfo, readCw20Balance, readCw20Allowance } from "../src/cosmos/cw20.ts"
+import { CosmWasmClientContext, createCosmWasmClient } from "../src/cosmos/client.js"
+import { readCw20TokenInfo, readCw20Balance, readCw20Allowance } from "../src/cosmos/cw20.js"
 
 Effect.runPromiseExit(
   Effect.gen(function* () {

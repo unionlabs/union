@@ -1,6 +1,6 @@
 import { Effect } from "effect"
-import { createSigningCosmWasmClient } from "../src/cosmos/client.ts"
-import { executeContract } from "../src/cosmos/contract.ts"
+import { createSigningCosmWasmClient } from "../src/cosmos/client.js"
+import { executeContract } from "../src/cosmos/contract.js"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 
 Effect.runPromiseExit(

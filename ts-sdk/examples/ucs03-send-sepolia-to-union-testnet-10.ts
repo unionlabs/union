@@ -14,9 +14,9 @@ import { sendInstructionEvm } from "../src/ucs03/send-instruction.js"
 import { privateKeyToAccount } from "viem/accounts"
 import { ViemWalletClient } from "../src/evm/client.js"
 import { EvmChannelSource } from "../src/evm/channel.js"
-import { readErc20Allowance, increaseErc20Allowance } from "../src/evm/erc20.ts"
-import { waitForTransactionReceipt } from "../src/evm/receipts.ts"
-import { CosmosChannelDestination } from "../src/cosmos/channel.ts"
+import { readErc20Allowance, increaseErc20Allowance } from "../src/evm/erc20.js"
+import { waitForTransactionReceipt } from "../src/evm/receipts.js"
+import { CosmosChannelDestination } from "../src/cosmos/channel.js"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {

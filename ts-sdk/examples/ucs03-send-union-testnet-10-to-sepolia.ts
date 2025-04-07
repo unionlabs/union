@@ -17,7 +17,7 @@ import { Batch, encodeAbi } from "../src/ucs03/instruction.js"
 import { sendInstructionCosmos } from "../src/ucs03/send-instruction.js"
 import { EvmChannelDestination } from "../src/evm/channel.js"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
-import { CosmosChannelSource } from "../src/cosmos/channel.ts"
+import { CosmosChannelSource } from "../src/cosmos/channel.js"
 import { Decimal } from "@cosmjs/math"
 
 // @ts-ignore
