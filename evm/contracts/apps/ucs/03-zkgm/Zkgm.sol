@@ -1134,9 +1134,16 @@ contract UCS03Zkgm is
         address,
         uint32 channelId,
         uint32,
-        string calldata,
+        string calldata counterpartyVersion,
         address
-    ) external virtual override onlyIBC {}
+    ) external virtual override onlyIBC {
+        if (
+            EfficientHashLib.hash(bytes(counterpartyVersion))
+                != ZkgmLib.IBC_VERSION
+        ) {
+            revert ZkgmLib.ErrInvalidIBCVersion();
+        }
+    }
 
     function onChanOpenConfirm(
         address,
