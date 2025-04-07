@@ -13,10 +13,10 @@ import {
   createViemPublicClient,
   createViemWalletClient,
   ViemWalletClient
-} from "../src/evm/index.js"
-import { Instruction, sendInstructionEvm, createEvmToCosmosFungibleAssetOrder } from "../src/ucs03/index.js"
-import { CosmosChannelDestination, CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/index.js"
-import { AddressCosmosZkgm, AddressEvmZkgm } from "../src/schema/address.js"
+} from "@unionlabs/sdk/evm"
+import { Instruction, sendInstructionEvm, createEvmToCosmosFungibleAssetOrder } from "@unionlabs/sdk/ucs03"
+import { CosmosChannelDestination, CosmWasmClientDestination, createCosmWasmClient } from "@unionlabs/sdk/cosmos"
+import { AddressCosmosZkgm, AddressEvmZkgm } from "@unionlabs/sdk/schema"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -70,7 +70,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
     const currentAllowance = yield* readErc20Allowance(
       transfer.baseToken,
       transfer.sender,
-      MINTER_UCS03_ADDRESS // TODO: should be ucs03 minter address from map (only on cosmos)
+      MINTER_UCS03_ADDRESS
     )
 
     yield* Effect.log(`current ${transfer.baseToken} allowance: ${currentAllowance}`)
@@ -82,7 +82,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
       // Approve exact amount needed
       const txHash = yield* increaseErc20Allowance(
         transfer.baseToken,
-        MINTER_UCS03_ADDRESS, // todo: same as above
+        MINTER_UCS03_ADDRESS,
         transfer.baseAmount
       )
 
@@ -97,7 +97,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
       const newAllowance = yield* readErc20Allowance(
         transfer.baseToken,
         transfer.sender,
-        MINTER_UCS03_ADDRESS  // todo: same here
+        MINTER_UCS03_ADDRESS
       )
 
       yield* Effect.log(`new ${transfer.baseToken} allowance: ${newAllowance}`)
