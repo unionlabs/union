@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as Table from "#/components/svelte/ui/table/index.ts"
-import deployments from "~root/deployments/deployments-testnet-10.json" with { type: "json" }
+import deployments from "~root/deployments/deployments.json" with { type: "json" }
 </script>
 
 {#each deployments as network}
