@@ -71,6 +71,8 @@ contract UCS03Zkgm is
         address admin
     ) public initializer {
         __Ownable_init(admin);
+        __UUPSUpgradeable_init();
+        __Pausable_init();
         ibcHandler = _ibcHandler;
     }
 
