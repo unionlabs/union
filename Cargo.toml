@@ -110,6 +110,7 @@ members = [
   # "cosmwasm/ibc-union/lightclient/linea",
 
   "tools/devnet-utils",
+  "tools/build-evm-deployer-tx",
   "tools/parse-wasm-client-type",
   "tools/tidy",
   "tools/move-bindgen",
@@ -351,8 +352,6 @@ voyager-primitives = { path = "lib/voyager-primitives", default-features = false
 voyager-vm         = { path = "lib/voyager-vm", default-features = false }
 
 embed-commit = { path = "lib/embed-commit", default-features = false }
-
-ucs04 = { path = "lib/ucs04", default-features = false }
 
 consensus-primitives = { path = "lib/consensus-primitives", default-features = false }
 

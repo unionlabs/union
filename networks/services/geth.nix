@@ -18,6 +18,7 @@ let
       geth \
         --vmdebug \
         --verbosity=4 \
+        --rpc.allow-unprotected-txs=true \
         --http \
         --http.api=eth,debug,net,web3,admin,engine,txpool \
         --http.addr=0.0.0.0 \
