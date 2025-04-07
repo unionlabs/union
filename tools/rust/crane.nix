@@ -469,7 +469,8 @@
                   ++ (lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ])
                   ++ extraBuildInputs;
 
-                nativeBuildInputs = [ pkgs.breakpointHook ] ++ extraNativeBuildInputs;
+                # [ pkgs.breakpointHook ] ++
+                nativeBuildInputs = extraNativeBuildInputs;
 
                 cargoVendorDir = craneLib.vendorMultipleCargoDeps {
                   inherit (craneLib.findCargoFiles crateRepoSource) cargoConfigs;
