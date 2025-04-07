@@ -1,6 +1,6 @@
 import { Data } from "effect"
 import type { Instruction } from "@unionlabs/sdk/ucs03"
-import type { TokenRawDenom } from "@unionlabs/sdk/schema"
+import type { TokenRawAmount, TokenRawDenom } from "@unionlabs/sdk/schema"
 import type { ExtractTag } from "effect/Types"
 
 /**
@@ -10,8 +10,8 @@ export type TransferStep = Data.TaggedEnum<{
   Filling: {}
   ApprovalRequired: {
     readonly token: TokenRawDenom
-    readonly requiredAmount: bigint
-    readonly currentAllowance: bigint
+    readonly requiredAmount: TokenRawAmount
+    readonly currentAllowance: TokenRawAmount
   }
   SubmitInstruction: {
     readonly instruction: Instruction.Instruction

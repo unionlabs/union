@@ -1,10 +1,5 @@
 <script lang="ts">
-import {
-  getChain,
-  type Chain,
-  type TokenRawAmount,
-  type TokenRawDenom
-} from "@unionlabs/sdk/schema"
+import { getChain, TokenRawAmount, type Chain, type TokenRawDenom } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import Truncate from "$lib/components/ui/Truncate.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
@@ -54,6 +49,7 @@ const displayAmount = $derived(
   Option.match(Option.all([Option.fromNullable(amount), displayInfo]), {
     onNone: () => Option.none(),
     onSome: ([amt, info]) => {
+      if (!amt) return Option.some("0")
       const decimal = BigInt(10) ** BigInt(info.decimals)
       const whole = amt / decimal
       const fraction = amt % decimal
@@ -81,7 +77,7 @@ const displayDenom = $derived(
 <Tooltip>
   {#snippet trigger()}
     <div class="flex items-center gap-2 font-semibold">
-      {#if amount}
+      {#if amount !== undefined}
       <span>
         {Option.match(displayAmount, {
           onNone: () => amount === undefined ? "" : amount.toString(),

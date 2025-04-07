@@ -19,6 +19,7 @@ import {
   TransactionSubmissionCosmos
 } from "$lib/components/Transfer/state/cosmos.ts"
 import { getWalletClient } from "$lib/services/evm/clients.ts"
+import Label from "$lib/components/ui/Label.svelte"
 
 type Props = {
   stepIndex: number
@@ -129,26 +130,18 @@ const submit = Effect.gen(function* () {
 
 <div class="min-w-full p-4 flex flex-col justify-between h-full">
   {#if Option.isSome(step) && Option.isSome(sourceChain)}
-    <div class="flex-1">
-      <h3 class="text-lg font-semibold mb-4">Approve Token</h3>
-      <div class="bg-zinc-800 rounded-lg p-4 mb-4">
-        <div class="mb-2">
-          <span class="text-zinc-400">Token:</span>
-          <span class="font-mono text-sm ml-2">
-            <TokenComponent chain={sourceChain.value} denom={step.value.token}/>
-          </span>
-        </div>
-        <div class="mb-2">
-          <span class="text-zinc-400">Current Allowance:</span>
-          <span class="font-mono text-sm ml-2">{step.value.currentAllowance.toString()}</span>
-        </div>
-        <div>
-          <span class="text-zinc-400">Required Amount:</span>
-          <span class="font-mono text-sm ml-2">{step.value.requiredAmount.toString()}</span>
-        </div>
-      </div>
+    <div class="flex-1 flex flex-col gap-4">
+      <h3 class="text-lg font-semibold">Approve <TokenComponent chain={sourceChain.value} denom={step.value.token}/></h3>
+      <section>
+      <Label>Current</Label>
+      <TokenComponent chain={sourceChain.value} denom={step.value.token} amount={step.value.currentAllowance} />
+      </section>
+      <section>
+      <Label>Required</Label>
+      <TokenComponent chain={sourceChain.value} denom={step.value.token} amount={step.value.requiredAmount} />
+      </section>
       <p class="text-sm text-zinc-400">
-        You need to approve the smart contract to spend your tokens.
+        You need to approve Union to send <TokenComponent chain={sourceChain.value} denom={step.value.token}/>.
         This is a one-time approval for this token.
       </p>
     </div>
