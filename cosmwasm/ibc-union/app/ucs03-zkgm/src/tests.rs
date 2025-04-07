@@ -1,7 +1,7 @@
 use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_std::{
     testing::{message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
-    wasm_execute, Addr, Binary, Deps, DepsMut, Empty, Env, MessageInfo, OwnedDeps, Response,
+    wasm_execute, Addr, Binary, Coins, Deps, DepsMut, Empty, Env, MessageInfo, OwnedDeps, Response,
     StdError, StdResult,
 };
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
@@ -342,9 +342,11 @@ fn test_verify_internal_unsupported_version() {
     };
 
     let mut response = Response::new();
+    let mut funds = Coins::try_from(info.funds.clone()).unwrap();
     let result = verify_internal(
         deps.as_mut(),
         info,
+        &mut funds,
         ChannelId!(1),
         U256::ZERO,
         &instruction,
@@ -368,9 +370,11 @@ fn test_verify_internal_unknown_opcode() {
     };
 
     let mut response = Response::new();
+    let mut funds = Coins::try_from(info.funds.clone()).unwrap();
     let result = verify_internal(
         deps.as_mut(),
         info,
+        &mut funds,
         ChannelId!(1),
         U256::ZERO,
         &instruction,

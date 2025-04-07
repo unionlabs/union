@@ -14,17 +14,12 @@ sort_imports                 = false
 tab_width                    = 4
 wrap_comments                = false
 
-[profile.default.optimizer_details]
-constantOptimizer = true
-cse               = true
-yul               = true
-
 [profile.default]
 ast            = true
 fs_permissions = [{ access = "read", path = "./" }, { access = "write", path = "contracts.json" }]
 gas_reports    = ["*"]
 optimizer      = true
-optimizer_runs = 1_000
+optimizer_runs = 10_000
 solc_version   = "0.8.27"
 src            = "evm/scripts"
 test           = "evm/tests/src"

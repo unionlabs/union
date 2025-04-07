@@ -8,12 +8,15 @@ import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 import "solady/utils/CREATE3.sol";
 import "solady/utils/LibBit.sol";
 import "solady/utils/LibString.sol";
 import "solady/utils/LibBytes.sol";
 import "solady/utils/EfficientHashLib.sol";
+import "solady/utils/SafeTransferLib.sol";
+import "solady/utils/LibTransient.sol";
 
 import "../../Base.sol";
 import "../../../core/04-channel/IBCPacket.sol";
@@ -21,6 +24,7 @@ import "../../../core/05-port/IIBCModule.sol";
 import "../../../core/24-host/IBCCommitment.sol";
 import "../../../internal/Versioned.sol";
 
+import "./IWETH.sol";
 import "./IEurekaModule.sol";
 import "./IZkgmERC20.sol";
 import "./ZkgmERC20.sol";
@@ -55,12 +59,14 @@ contract UCS03Zkgm is
     using LibString for *;
     using LibBytes for *;
     using SafeERC20 for *;
+    using Address for *;
 
     IIBCModulePacket public ibcHandler;
     mapping(bytes32 => IBCPacket) public inFlightPacket;
     mapping(address => uint256) public tokenOrigin;
     mapping(uint32 => mapping(uint256 => mapping(address => uint256))) public
         channelBalance;
+    IWETH public weth;
 
     constructor() {
         _disableInitializers();
@@ -68,12 +74,18 @@ contract UCS03Zkgm is
 
     function initialize(
         IIBCModulePacket _ibcHandler,
-        address admin
+        address _admin
     ) public initializer {
-        __Ownable_init(admin);
+        __Ownable_init(_admin);
         __UUPSUpgradeable_init();
         __Pausable_init();
         ibcHandler = _ibcHandler;
+    }
+
+    function setWETH(
+        IWETH _weth
+    ) public onlyOwner {
+        weth = _weth;
     }
 
     function ibcAddress() public view virtual override returns (address) {
@@ -104,6 +116,8 @@ contract UCS03Zkgm is
         );
     }
 
+    // Increase the outstanding balance of a channel. This ensure that malicious
+    // channels can't unescrow/mint more tokens than previously escrowed/burnt.
     function increaseOutstanding(
         uint32 sourceChannelId,
         uint256 path,
@@ -113,11 +127,12 @@ contract UCS03Zkgm is
         channelBalance[sourceChannelId][path][token] += amount;
     }
 
-    // Decrease the outstanding balance of a (channel, path). We assume that the
-    // function is called when receiving funds, hence, to decrease we need to
-    // first inverse the path. If we increased the balance for (0, [1, 2, 3])
-    // and funds are sent back over [3, 2, 1], this will only work if the path
-    // is the inverse.
+    // Decrease the outstanding balance of a (channel, path). If the function is
+    // called when receiving funds, hence, to decrease we need to first inverse
+    // the path. If we increased the balance for (0, [1, 2, 3]) and funds are
+    // sent back over [3, 2, 1], this will only work if the path is the inverse.
+    // If the function is called on refund, simplify subtract the refunded
+    // amount.
     function decreaseOutstanding(
         uint32 sourceChannelId,
         uint256 path,
@@ -579,7 +594,7 @@ contract UCS03Zkgm is
         address caller,
         bytes calldata relayerMsg,
         address quoteToken,
-        address receiver,
+        address payable receiver,
         uint256 quoteAmount
     ) internal returns (bytes memory) {
         if (quoteAmount != 0) {
@@ -587,7 +602,26 @@ contract UCS03Zkgm is
             // revert for another MM to get a chance to fill. If we revert now
             // the entire packet would be considered to be "failed" and refunded
             // at origin, which we want to avoid.
-            if (
+            // Hence, in case of transfer failure, we yield the ack to notify the onRecvPacket.
+
+            // Special case for gas station where the user is asking for native
+            // gas token. The MM has to provide WETH funds that will be
+            // unwrapped, avoiding us from having to manage msg.value accross
+            // the stack.
+            if (quoteToken == ZkgmLib.NATIVE_ETH_MAGIC) {
+                // Transfert to protocol.
+                if (
+                    !weth.trySafeTransferFrom(caller, address(this), quoteAmount)
+                ) {
+                    return ZkgmLib.ACK_ERR_ONLYMAKER;
+                }
+                // Unwrap and send.
+                weth.withdraw(quoteAmount);
+                // We allow this call to fail because in such case the MM was
+                // able to provide the funds. A failure ACK will be written and
+                // refund will happen.
+                receiver.sendValue(quoteAmount);
+            } else if (
                 !IERC20(quoteToken).trySafeTransferFrom(
                     caller, receiver, quoteAmount
                 )
@@ -647,7 +681,7 @@ contract UCS03Zkgm is
             path, ibcPacket.destinationChannelId, order.baseToken
         );
         address quoteToken = address(bytes20(order.quoteToken));
-        address receiver = address(bytes20(order.receiver));
+        address payable receiver = payable(address(bytes20(order.receiver)));
         bool baseAmountCoversQuoteAmount = order.baseAmount >= order.quoteAmount;
         if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
             internalDeployWrappedToken(
@@ -1170,4 +1204,6 @@ contract UCS03Zkgm is
     function _authorizeUpgrade(
         address newImplementation
     ) internal override onlyOwner {}
+
+    receive() external payable {}
 }

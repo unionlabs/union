@@ -5,7 +5,7 @@ use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Binary,
-    CodeInfoResponse, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QueryRequest, Reply,
+    CodeInfoResponse, Coin, Coins, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QueryRequest, Reply,
     Response, StdError, StdResult, SubMsg, SubMsgResult, Uint256, WasmMsg,
 };
 use frissitheto::UpgradeMsg;
@@ -748,11 +748,13 @@ fn execute_packet(
     relayer: Addr,
     relayer_msg: Bytes,
 ) -> Result<Response, ContractError> {
+    let mut funds = Coins::try_from(info.funds.clone()).expect("impossible");
     let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
     execute_internal(
         deps.branch(),
         env,
         info,
+        &mut funds,
         caller,
         packet,
         relayer,
@@ -774,6 +776,7 @@ fn execute_internal(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    funds: &mut Coins,
     caller: Addr,
     packet: Packet,
     relayer: Addr,
@@ -794,6 +797,7 @@ fn execute_internal(
                 deps,
                 env,
                 info,
+                funds,
                 caller,
                 packet,
                 relayer,
@@ -814,6 +818,7 @@ fn execute_internal(
                 deps,
                 env,
                 info,
+                funds,
                 caller,
                 packet,
                 relayer,
@@ -1055,6 +1060,7 @@ fn execute_batch(
     mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
+    funds: &mut Coins,
     caller: Addr,
     packet: Packet,
     relayer: Addr,
@@ -1070,6 +1076,7 @@ fn execute_batch(
             deps.branch(),
             env.clone(),
             info.clone(),
+            funds,
             caller.clone(),
             packet.clone(),
             relayer.clone(),
@@ -1090,7 +1097,8 @@ fn execute_batch(
 fn execute_fungible_asset_order(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
+    funds: &mut Coins,
     caller: Addr,
     packet: Packet,
     relayer: Addr,
@@ -1237,6 +1245,21 @@ fn execute_fungible_asset_order(
     // Market Maker Fill - Any party can fill the order by providing the quote token
     else {
         if quote_amount > 0 {
+            /* Gas Station
+
+             Determine the native denom that we transfer to the minter contract.
+             The MM may fill multiple order within the packet, we need to
+             provide each token individually, subtracting from the total funds.
+            */
+            let mut funds_to_escrow = vec![];
+            if !funds.amount_of(&quote_token_str).is_zero() {
+                let native_denom = Coin {
+                    denom: quote_token_str.clone(),
+                    amount: quote_amount.into(),
+                };
+                funds.sub(native_denom.clone())?;
+                funds_to_escrow.push(native_denom);
+            }
             MARKET_MAKER.save(deps.storage, &relayer_msg)?;
             messages.push(SubMsg::reply_always(
                 wasm_execute(
@@ -1252,7 +1275,7 @@ fn execute_fungible_asset_order(
                                     amount: quote_amount.into(),
                                 },
                                 &minter,
-                                info.funds,
+                                funds_to_escrow,
                             )?,
                             // Release the funds to the user
                             make_wasm_msg(
@@ -1491,6 +1514,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
 pub fn verify_internal(
     deps: DepsMut,
     info: MessageInfo,
+    funds: &mut Coins,
     channel_id: ChannelId,
     path: U256,
     instruction: &Instruction,
@@ -1504,7 +1528,7 @@ pub fn verify_internal(
                 });
             }
             let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
-            verify_fungible_asset_order(deps, info, channel_id, path, &order, response)
+            verify_fungible_asset_order(deps, info, funds, channel_id, path, &order, response)
         }
         OP_BATCH => {
             if instruction.version > INSTR_VERSION_0 {
@@ -1513,7 +1537,7 @@ pub fn verify_internal(
                 });
             }
             let batch = Batch::abi_decode_params(&instruction.operand, true)?;
-            verify_batch(deps, info, channel_id, path, &batch, response)
+            verify_batch(deps, info, funds, channel_id, path, &batch, response)
         }
         OP_FORWARD => {
             if instruction.version > INSTR_VERSION_0 {
@@ -1522,7 +1546,7 @@ pub fn verify_internal(
                 });
             }
             let forward = Forward::abi_decode_params(&instruction.operand, true)?;
-            verify_forward(deps, info, channel_id, &forward, response)
+            verify_forward(deps, info, funds, channel_id, &forward, response)
         }
         OP_MULTIPLEX => {
             if instruction.version > INSTR_VERSION_0 {
@@ -1545,6 +1569,7 @@ pub fn verify_internal(
 fn verify_fungible_asset_order(
     deps: DepsMut,
     info: MessageInfo,
+    funds: &mut Coins,
     channel_id: ChannelId,
     path: U256,
     order: &FungibleAssetOrder,
@@ -1632,7 +1657,7 @@ fn verify_fungible_asset_order(
                 sender: info.sender,
             },
             &minter,
-            info.funds,
+            vec![],
         )?);
     } else {
         if !order.base_token_path.is_zero() {
@@ -1650,6 +1675,17 @@ fn verify_fungible_asset_order(
             base_token_str.to_string(),
             base_amount,
         )?;
+        let mut funds_to_escrow = vec![];
+        if !funds.amount_of(base_token_str).is_zero() {
+            let native_denom = Coin {
+                denom: base_token_str.to_string(),
+                amount: base_amount
+                    .try_into()
+                    .map_err(|_| ContractError::AmountOverflow)?,
+            };
+            funds.sub(native_denom.clone())?;
+            funds_to_escrow.push(native_denom);
+        }
         *response = response.clone().add_message(make_wasm_msg(
             LocalTokenMsg::Escrow {
                 from: info.sender.to_string(),
@@ -1660,7 +1696,7 @@ fn verify_fungible_asset_order(
                     .map_err(|_| ContractError::AmountOverflow)?,
             },
             &minter,
-            info.funds,
+            funds_to_escrow,
         )?);
     }
 
@@ -1672,6 +1708,7 @@ fn verify_fungible_asset_order(
 fn verify_batch(
     mut deps: DepsMut,
     info: MessageInfo,
+    funds: &mut Coins,
     channel_id: ChannelId,
     path: U256,
     batch: &Batch,
@@ -1684,6 +1721,7 @@ fn verify_batch(
         verify_internal(
             deps.branch(),
             info.clone(),
+            funds,
             channel_id,
             path,
             instruction,
@@ -1698,6 +1736,7 @@ fn verify_batch(
 pub fn verify_forward(
     deps: DepsMut,
     info: MessageInfo,
+    funds: &mut Coins,
     channel_id: ChannelId,
     forward: &Forward,
     response: &mut Response,
@@ -1710,6 +1749,7 @@ pub fn verify_forward(
     verify_internal(
         deps,
         info,
+        funds,
         channel_id,
         forward.path,
         &forward.instruction,
@@ -1756,10 +1796,12 @@ pub fn send(
     instruction: Instruction,
 ) -> Result<Response, ContractError> {
     let mut response = Response::new();
+    let mut funds = Coins::try_from(info.funds.clone()).expect("impossible");
     // Verify the instruction
     verify_internal(
         deps.branch(),
         info.clone(),
+        &mut funds,
         channel_id,
         U256::ZERO,
         &instruction,

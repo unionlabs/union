@@ -215,23 +215,30 @@ abstract contract UnionScript is UnionBase {
 
     function deployUCS03(
         IBCHandler handler,
-        address owner
+        address owner,
+        address weth
     ) internal returns (UCS03Zkgm) {
-        return UCS03Zkgm(
-            deploy(
-                Protocols.make(Protocols.UCS03),
-                abi.encode(
-                    address(new UCS03Zkgm()),
-                    abi.encodeCall(
-                        UCS03Zkgm.initialize, (IIBCModulePacket(handler), owner)
+        UCS03Zkgm zkgm = UCS03Zkgm(
+            payable(
+                deploy(
+                    Protocols.make(Protocols.UCS03),
+                    abi.encode(
+                        address(new UCS03Zkgm()),
+                        abi.encodeCall(
+                            UCS03Zkgm.initialize,
+                            (IIBCModulePacket(handler), owner)
+                        )
                     )
                 )
             )
         );
+        zkgm.setWETH(IWETH(weth));
+        return zkgm;
     }
 
     function deployIBC(
-        address owner
+        address owner,
+        address weth
     )
         internal
         returns (
@@ -254,7 +261,7 @@ abstract contract UnionScript is UnionBase {
         StateLensIcs23SmtClient stateLensIcs23SmtClient =
             deployStateLensIcs23SmtClient(handler, owner);
         PingPong pingpong = deployUCS00(handler, owner, 100000000000000);
-        UCS03Zkgm ucs03 = deployUCS03(handler, owner);
+        UCS03Zkgm ucs03 = deployUCS03(handler, owner, weth);
         Multicall multicall = deployMulticall();
         return (
             handler,
@@ -371,6 +378,7 @@ contract DeployUCS03 is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        address weth = vm.envAddress("WETH_ADDRESS");
 
         address owner = vm.addr(privateKey);
 
@@ -378,7 +386,7 @@ contract DeployUCS03 is UnionScript {
 
         vm.startBroadcast(privateKey);
 
-        UCS03Zkgm zkgm = deployUCS03(IBCHandler(handler), owner);
+        UCS03Zkgm zkgm = deployUCS03(IBCHandler(handler), owner, weth);
 
         vm.stopBroadcast();
 
@@ -487,6 +495,7 @@ contract DeployIBC is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        address weth = vm.envAddress("WETH_ADDRESS");
         vm.startBroadcast(privateKey);
 
         (
@@ -498,7 +507,7 @@ contract DeployIBC is UnionScript {
             PingPong pingpong,
             UCS03Zkgm ucs03,
             Multicall multicall
-        ) = deployIBC(vm.addr(privateKey));
+        ) = deployIBC(vm.addr(privateKey), weth);
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
@@ -540,6 +549,7 @@ contract DeployDeployerAndIBC is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        address weth = vm.envAddress("WETH_ADDRESS");
 
         vm.startBroadcast(privateKey);
 
@@ -554,7 +564,7 @@ contract DeployDeployerAndIBC is UnionScript {
             PingPong pingpong,
             UCS03Zkgm ucs03,
             Multicall multicall
-        ) = deployIBC(vm.addr(privateKey));
+        ) = deployIBC(vm.addr(privateKey), weth);
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
@@ -593,10 +603,12 @@ contract GetDeployed is VersionedScript {
 
     address immutable deployer;
     address immutable sender;
+    address immutable weth;
 
     constructor() {
         deployer = vm.envAddress("DEPLOYER");
         sender = vm.envAddress("SENDER");
+        weth = vm.envAddress("WETH_ADDRESS");
     }
 
     function getDeployed(
@@ -876,7 +888,9 @@ contract DryUpgradeUCS03 is VersionedScript {
 
         address newImplementation = address(new UCS03Zkgm());
         vm.prank(owner);
-        UCS03Zkgm(ucs03).upgradeToAndCall(newImplementation, new bytes(0));
+        UCS03Zkgm(payable(ucs03)).upgradeToAndCall(
+            newImplementation, new bytes(0)
+        );
     }
 }
 
@@ -909,7 +923,9 @@ contract UpgradeUCS03 is VersionedScript {
 
         vm.startBroadcast(privateKey);
         address newImplementation = address(new UCS03Zkgm());
-        UCS03Zkgm(ucs03).upgradeToAndCall(newImplementation, new bytes(0));
+        UCS03Zkgm(payable(ucs03)).upgradeToAndCall(
+            newImplementation, new bytes(0)
+        );
         vm.stopBroadcast();
     }
 }
