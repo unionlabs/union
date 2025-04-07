@@ -1,7 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-import { Effect, Match, Option } from "effect"
+import { Effect, Match, Option, Array, Struct } from "effect"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
 import { ApprovalRequired } from "../transfer-step.ts"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
@@ -20,6 +20,7 @@ import {
 } from "$lib/components/Transfer/state/cosmos.ts"
 import { getWalletClient } from "$lib/services/evm/clients.ts"
 import Label from "$lib/components/ui/Label.svelte"
+import { is } from "../transfer-step.ts"
 
 type Props = {
   stepIndex: number
@@ -32,18 +33,15 @@ const { stepIndex, onBack, onApprove, actionButtonText }: Props = $props()
 
 const lts = lockedTransferStore.get()
 
-// Get the step data from the locked transfer store
-const step: Option.Option<ReturnType<typeof ApprovalRequired>> = $derived.by(() => {
-  if (Option.isNone(lts)) return Option.none()
+const step = $derived(
+  lts.pipe(
+    Option.map(Struct.get("steps")),
+    Option.flatMap(Array.get(stepIndex)),
+    Option.filter(is("ApprovalRequired"))
+  )
+)
 
-  const steps = lts.value.steps
-  if (stepIndex < 0 || stepIndex >= steps.length) return Option.none()
-
-  const step = steps[stepIndex]
-  return step._tag === "ApprovalRequired" ? Option.some(step) : Option.none()
-})
-
-const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
+const sourceChain = $derived(lts.pipe(Option.map(Struct.get("sourceChain"))))
 
 let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
