@@ -503,8 +503,8 @@ _: {
             let
               name = "migrate-app-${app}";
               full-app = pkgs.lib.lists.findFirst (a: a.value.name == app) (throw "???") (
-                  pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
-                );
+                pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
+              );
             in
             {
               inherit name;
