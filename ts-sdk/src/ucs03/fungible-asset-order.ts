@@ -10,6 +10,7 @@ import { readFaTokenInfo } from "../aptos/fa.js"
 import { predictQuoteToken as predictCosmosQuoteToken } from "../cosmos/quote-token.js"
 import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-token.js"
 import { FungibleAssetOrder } from "./instruction.js"
+import { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
 
 export type FungibleAssetOrderIntent = {
   sender: Address
@@ -65,8 +66,8 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
  * Creates a fungible asset order from EVM to Cosmos
  */
 export const createEvmToCosmosFungibleAssetOrder = (intent: {
-  sender: Address
-  receiver: string
+  sender: AddressEvmZkgm
+  receiver: AddressCosmosZkgm
   baseToken: Hex
   baseAmount: bigint
   quoteAmount: bigint
@@ -87,7 +88,7 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
       _tag: "FungibleAssetOrder",
       operand: [
         intent.sender,
-        toHex(intent.receiver),
+        intent.receiver,
         intent.baseToken,
         intent.baseAmount,
         tokenMeta.symbol,
