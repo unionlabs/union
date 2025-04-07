@@ -133,7 +133,7 @@
                   step.value.token,
                   {
                     increase_allowance: {
-                      spender: fromHex(lts.value.channel.source_port_id, "string"),
+                      spender: "bbn1dy20pwy30hfqyxdzrmp33h47h4xdxht6phqecfp2jdnes6su9pysqq2kpw",
                       amount: step.value.requiredAmount,
                     }
                   }
