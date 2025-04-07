@@ -1,7 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { Effect, Match, Option } from "effect"
+import { Effect, Match, Option, Struct, Array } from "effect"
 import { SubmitInstruction } from "../transfer-step.ts"
 import {
   hasFailedExit as evmHasFailedExit,
@@ -30,6 +30,9 @@ import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction.ts"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { isValidBech32ContractAddress } from "$lib/utils"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import { is } from "../transfer-step.ts"
+import Label from "$lib/components/ui/Label.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 
 type Props = {
   stepIndex: number
@@ -42,19 +45,16 @@ const { stepIndex, onBack, onSubmit, actionButtonText }: Props = $props()
 
 const lts = lockedTransferStore.get()
 
-// Get the step data from the locked transfer store
-const step: Option.Option<ReturnType<typeof SubmitInstruction>> = $derived.by(() => {
-  if (Option.isNone(lts)) return Option.none()
+const step = $derived(
+  lts.pipe(
+    Option.map(Struct.get("steps")),
+    Option.flatMap(Array.get(stepIndex)),
+    Option.filter(is("SubmitInstruction"))
+  )
+)
 
-  const steps = lts.value.steps
-  if (stepIndex < 0 || stepIndex >= steps.length) return Option.none()
-
-  const step = steps[stepIndex]
-  return step._tag === "SubmitInstruction" ? Option.some(step) : Option.none()
-})
-
-const sourceChain = $derived(lts.pipe(Option.map(ltss => ltss.sourceChain)))
-const destinationChain = $derived(lts.pipe(Option.map(ltss => ltss.destinationChain)))
+const sourceChain = $derived(lts.pipe(Option.map(Struct.get("sourceChain"))))
+const destinationChain = $derived(lts.pipe(Option.map(Struct.get("destinationChain"))))
 
 let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
@@ -124,8 +124,8 @@ export const submit = Effect.gen(function* () {
                 functionName: "send",
                 args: [
                   lts.value.channel.source_channel_id,
-                  9007199254740991n, // Block height timeout
-                  0n, // Timeout Timestamp
+                  0n,
+                  9007199254740991n,
                   generateSalt("evm"),
                   {
                     opcode: step.value.instruction.opcode,
@@ -215,25 +215,20 @@ export const submit = Effect.gen(function* () {
 
 <div class="min-w-full p-4 flex flex-col justify-between h-full">
   {#if Option.isSome(step) && Option.isSome(sourceChain) && Option.isSome(destinationChain)}
-    <div class="flex-1">
-      <h3 class="text-lg font-semibold mb-4">Submit Transfer</h3>
-      <div class="bg-zinc-800 rounded-lg p-4 mb-4">
-        <p class="mb-2">
-          Ready to submit your transfer instruction to the blockchain.
-        </p>
-        <div class="text-sm text-zinc-400">
-          <div class="mb-1">
-            From: {sourceChain.value.display_name || "Unknown"}
-          </div>
-          <div class="mb-1">
-            To: {destinationChain.value.display_name || "Unknown"}
-          </div>
-          <div>Amount: (fix this)</div>
-        </div>
-      </div>
+    <div class="flex-1 flex flex-col gap-4">
+      <h3 class="text-lg font-semibold">Submit Transfer</h3>
+        <section>
+          <Label>From</Label>
+          <ChainComponent chain={sourceChain.value}/>
+        </section>
+
+        <section>
+          <Label>To</Label>
+          <ChainComponent chain={destinationChain.value}/>
+        </section>
       <p class="text-sm text-zinc-400">
-        This will initiate the transfer on the blockchain. You'll need to
-        confirm the transaction in your wallet.
+        This will initiate the transfer on <ChainComponent chain={sourceChain.value}/>. You'll need to
+        confirm the transfer in your wallet.
       </p>
     </div>
 
