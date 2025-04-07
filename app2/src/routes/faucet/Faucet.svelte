@@ -15,7 +15,7 @@ import { URLS } from "$lib/constants"
 import { Data } from "effect"
 
 // Define the faucet state type using Data.TaggedEnum.
-export type FaucetProcessState = Data.TaggedEnum<{
+type FaucetProcessState = Data.TaggedEnum<{
   Idle: {}
   Verifying: {}
   Verified: { token: string }
@@ -69,7 +69,6 @@ const handleTurnstileError = (e: CustomEvent<{ code: string }>) => {
 const submitFaucetRequest = async (token: string) => {
   faucetProcess.set(FaucetProcess.Submitting({ token }))
   try {
-    console.info("URLS().GRAPHQL: ", URLS().GRAPHQL)
     const result = await request(URLS().GRAPHQL, faucetUnoMutation, {
       chainId: "union-testnet-9",
       denom: "muno",
@@ -89,6 +88,7 @@ const submitFaucetRequest = async (token: string) => {
     faucetProcess.set(FaucetProcess.Success({ message: result.send }))
     showTurnstile = false
   } catch (error) {
+    console.info("error is:", error)
     faucetProcess.set(FaucetProcess.Failure({ error: `Faucet error: ${error}` }))
     showTurnstile = false
   }
@@ -152,7 +152,7 @@ const resetProcess = () => {
           <div class="flex flex-col items-center">
             <p class="text-xs">Tokens sent! Transaction hash:</p>
             <p class="text-xs break-all">
-              <a href={`https://explorer.testnet-10.union.build/union/tx/${$faucetProcess.message}`} target="_blank">
+              <a href={`https://explorer.testnet-9.union.build/union/tx/${$faucetProcess.message}`} target="_blank">
                 {$faucetProcess.message}
               </a>
             </p>
