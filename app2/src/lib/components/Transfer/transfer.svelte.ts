@@ -159,6 +159,31 @@ export class Transfer {
                 })
               )
           ),
+          Match.when(
+            {
+              sourceChain: { universal_chain_id: "babylon.bbn-test-5" },
+              destinationChain: { universal_chain_id: "bob.808813" }
+            },
+            ({
+              destinationChain: { universal_chain_id: destination_universal_chain_id },
+              sourceChain: { universal_chain_id: source_universal_chain_id }
+            }) =>
+              Option.some(
+                Schema.decodeSync(Channel)({
+                  destination_channel_id: 1,
+                  destination_client_id: 3,
+                  destination_connection_id: 6,
+                  source_port_id:
+                    "0x62626e31357a6370746c643837386c757834346c76633063687a687a376463646836326e68307865687761387937637a757a33796c6a6c73706d32726536",
+                  destination_universal_chain_id: destination_universal_chain_id.toString(),
+                  source_channel_id: 9,
+                  source_client_id: 5,
+                  source_connection_id: 2,
+                  destination_port_id: "0xe33534b7f8d38c6935a2f6ad35e09228da239962",
+                  source_universal_chain_id: source_universal_chain_id.toString()
+                })
+              )
+          ),
           Match.orElse(() =>
             Option.fromNullable(
               getChannelInfoSafe(
