@@ -15,6 +15,7 @@
       fs = pkgs.lib.fileset;
 
       writeTOML = (pkgs.formats.toml { }).generate;
+      writeJSON = (pkgs.formats.json { }).generate;
 
       # clean up the lib namespace for what we actually need
       lib = args.lib // {
@@ -148,8 +149,8 @@
           buildPhase = ''
             tree .
 
-            cp ${cargoLock} ./Cargo.lock
-            cp ${cargoToml} ./Cargo.toml
+            cp ${dbg cargoLock} ./Cargo.lock
+            cp ${dbg cargoToml} ./Cargo.toml
 
             ${builtins.concatStringsSep "\n\n" (
               lib.mapAttrsToList (
@@ -173,38 +174,78 @@
       workspaceCargoToml = lib.importTOML (root + "/Cargo.toml");
 
       # TODO: Assert version = 4;
-      normalizedCargoLock = builtins.foldl' (acc: p: lib.recursiveUpdate acc p) { } (
-        map (package: {
-          ${package.name} = {
-            ${package.version} =
-              package
-              // (lib.optionalAttrs (package ? source) (
-                let
-                  splitSource = lib.splitString "+" package.source;
-                  sourceType = builtins.head splitSource;
-                  sourceKey = # trim the commit ref if this is a git source
-                    # TODO: figure out how this is actually defined to work in the Cargo.lock schema/spec
-                    if sourceType == "git" then builtins.head (lib.splitString "#" package.source) else package.source;
-                in
-                {
-                  __source__.${sourceKey} = package;
-                }
-              ));
-          };
-        }) (lib.importTOML (root + "/Cargo.lock")).package
-      );
+      normalizedCargoLock =
+        let
+          cleanPackageSource =
+            source:
+            let
+              splitSource = lib.splitString "+" source;
+              sourceType = builtins.head splitSource;
+            in
+            # trim the commit ref if this is a git source
+            # TODO: figure out how this is actually defined to work in the Cargo.lock schema/spec
+            if sourceType == "git" then builtins.head (lib.splitString "#" source) else source;
+
+          mkPackageSpec =
+            p:
+            lib.concatStringsSep " " (
+              [
+                p.name
+              ]
+              ++ (lib.optionals (p ? version) p.version)
+              ++ (lib.optionals (p ? source) "(${cleanPackageSource p.source})")
+            );
+        in
+        {
+          # dependencies to completely remove from the lockfile. this will remove both the package entry, and any references to this package in other packages dependencies.
+          #
+          # [string]
+          removeDeps ? [ ],
+        }:
+        builtins.foldl' (acc: p: lib.recursiveUpdate acc p) { } (
+          map
+            (package: {
+              ${package.name} = {
+                ${package.version} =
+                  package
+                  // (lib.optionalAttrs (package ? source) (
+                    let
+                    in
+                    {
+                      __source__.${cleanPackageSource package.source} = package // {
+                        dependencies =
+                          lib.lists.subtractLists (dbg (map mkPackageSpec removeDeps))
+                            package.dependencies or [ ];
+                      };
+                    }
+                  ));
+              };
+            })
+            (
+              lib.filter (
+                package:
+                !(builtins.any (
+                  depToRemove:
+                  depToRemove.name == package.name
+                  && depToRemove.source or package.source == package.source
+                  && depToRemove.version or package.version == package.version
+                ) removeDeps)
+              ) (lib.importTOML (root + "/Cargo.lock")).package
+            )
+        );
 
       # get a single package entry from the Cargo.lock.
       #
       # sig :: string -> attrs
       getCargoLockPackageEntry =
         depAndVersion:
+        { removeDeps }:
         let
           split = lib.splitString " " depAndVersion;
           depName = builtins.head split;
           specifiedVersion = builtins.elemAt split 1;
           specifiedSource = builtins.head (builtins.match "[(](.*)[)]" (builtins.elemAt split 2));
-          fullDep = normalizedCargoLock.${depName};
+          fullDep = (normalizedCargoLock { inherit removeDeps; }).${depName};
         in
         builtins.removeAttrs (
           # dep name is just the dep name (no version or source)
@@ -242,20 +283,25 @@
         in
         go { } packageName;
 
-      cleanCargoLock = packages: {
-        version = 4;
-        package = lib.unique (
-          lib.flatten (map (x: builtins.attrValues (getAllPackageDependencies x)) packages)
-        );
-      };
+      cleanCargoLock =
+        packages:
+        { removeDeps }:
+        {
+          version = 4;
+          package = lib.unique (
+            lib.flatten (
+              map (x: builtins.attrValues (getAllPackageDependencies x { inherit removeDeps; })) packages
+            )
+          );
+        };
 
       # gets all the local (i.e. path) dependencies for a crate, recursively.
       #
       # note that to make this easier, we define all local dependencies as workspace dependencies.
       #
-      # sig :: [string] ->  [string]
+      # sig :: bool -> [string] ->  [string]
       getMemberDeps =
-        dirs:
+        dontRemoveDevDeps: dirs:
         let
           go =
             dir': foundSoFar:
@@ -265,8 +311,7 @@
             lib.pipe
               (
                 dirCargoToml.dependencies
-                # TODO: Remove dev-dependencies?
-                // dirCargoToml.dev-dependencies or { }
+                // (lib.optionalAttrs dontRemoveDevDeps dirCargoToml.dev-dependencies or { })
                 // dirCargoToml.build-dependencies or { }
               )
               [
@@ -295,13 +340,15 @@
 
       # gets all the dependencies for a crate, recursively.
       #
-      # sig :: [string] ->  attrs
+      # sig :: bool: [string] ->  attrs
       getAllDeps =
-        dirs:
-        lib.pipe (getMemberDeps dirs) [
+        dontRemoveDevDeps: dirs:
+        lib.pipe (getMemberDeps dontRemoveDevDeps dirs) [
           (map (
             path:
-            ((crateCargoToml path).dependencies or { }) // ((crateCargoToml path).build-dependencies or { })
+            ((crateCargoToml path).dependencies or { })
+            // (lib.optionalAttrs dontRemoveDevDeps (crateCargoToml path).dev-dependencies or { })
+            // ((crateCargoToml path).build-dependencies or { })
           ))
           (builtins.foldl' lib.recursiveUpdate { })
         ];
@@ -414,12 +461,14 @@
 
           cargoBuild = craneLib.overrideToolchain cargoBuildRustToolchain';
 
-          memberDepsForCrate = getMemberDeps crateDirsFromRoot';
+          memberDepsForCrate = getMemberDeps dontRemoveDevDeps crateDirsFromRoot';
           memberDepsForCrateCargoTomls = readMemberCargoTomls memberDepsForCrate;
 
-          patchedCargoLock = cleanCargoLock (map (dir: (crateCargoToml dir).package.name) crateDirsFromRoot');
+          patchedCargoLock = cleanCargoLock { removeDeps = [ ]; } (
+            map (dir: (crateCargoToml dir).package.name) crateDirsFromRoot'
+          );
 
-          allDepsForCrate = getAllDeps memberDepsForCrate;
+          allDepsForCrate = getAllDeps dontRemoveDevDeps memberDepsForCrate;
 
           patchedCargoToml = {
             workspace = workspaceCargoToml.workspace // {
@@ -728,14 +777,18 @@
         };
 
       # these are incredibly useful for debugging
-      # packages = {
-      #   cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "cosmwasm-deployer" ]);
-      #   getAllDeps = dbg (getAllDeps [ "cosmwasm/ibc-union/core" ]);
-      #   getDependency = dbg (
-      #     getCargoLockPackageEntry "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)"
-      #   );
-      #   normalizedCargoLock = writeJSON "normalized-Cargo.lock.json" normalizedCargoLock;
-      # };
+      packages = {
+        cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "ibc-union" ]);
+        getAllDeps = dbg (getAllDeps [ "cosmwasm/ibc-union/core" ]);
+        getDependency = dbg (
+          getCargoLockPackageEntry "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)"
+        );
+        normalizedCargoLock = writeJSON "normalized-Cargo.lock.json" (normalizedCargoLock {
+          removeDeps = [
+            { name = "tokio"; }
+          ];
+        });
+      };
 
       # FIXME: currently ICE, https://github.com/unionlabs/union/actions/runs/8882618404/job/24387814904
       # packages.rust-coverage =
