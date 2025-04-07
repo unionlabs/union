@@ -5,7 +5,7 @@
   import { lockedTransferStore } from "../locked-transfer.svelte.ts"
   import { ApprovalRequired } from "../transfer-step.ts"
   import { createViemPublicClient } from "@unionlabs/sdk/evm"
-  import {erc20Abi, fromHex, http} from "viem"
+  import {erc20Abi, fromHex, http, toHex} from "viem"
   import {
     hasFailedExit as evmHasFailedExit,
     isComplete as evmIsComplete,
@@ -164,7 +164,7 @@
   {#if Option.isSome(step) && Option.isSome(sourceChain)}
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">Approve
-        <TokenComponent chain={sourceChain.value} denom={step.value.token}/>
+        <TokenComponent chain={sourceChain.value} denom={toHex(step.value.token)}/>
       </h3>
       <section>
         <Label>Current</Label>
