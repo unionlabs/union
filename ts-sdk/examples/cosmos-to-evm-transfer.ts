@@ -1,15 +1,15 @@
 import { Effect } from "effect"
-import { ViemPublicClientDestination } from "../src/evm/client.ts"
+import { ViemPublicClientDestination } from "../src/evm/client.js"
 import { createPublicClient, http, parseEther } from "viem"
 import { sepolia } from "viem/chains"
-import { DestinationConfig } from "../src/evm/quote-token.ts"
-import { createCosmosToEvmFungibleAssetOrder } from "../src/evm/ucs03/fungible-asset-order.ts"
+import { DestinationConfig } from "../src/evm/quote-token.js"
+import { createCosmosToEvmFungibleAssetOrder } from "../src/evm/ucs03/fungible-asset-order.js"
 import {
   CosmWasmClientContext,
   CosmWasmClientSource,
   createCosmWasmClient
-} from "../src/cosmos/client.ts"
-import { readCw20TokenInfo, readCw20Balance } from "../src/cosmos/cw20.ts"
+} from "../src/cosmos/client.js"
+import { readCw20TokenInfo, readCw20Balance } from "../src/cosmos/cw20.js"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {

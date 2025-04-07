@@ -11,7 +11,7 @@ import { CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/c
 import { Batch } from "../src/ucs03/instruction.js"
 import { sendInstructionAptos } from "../src/ucs03/send-instruction.js"
 import { AptosChannelSource } from "../src/aptos/channel.js"
-import { CosmosChannelDestination } from "../src/cosmos/channel.ts"
+import { CosmosChannelDestination } from "../src/cosmos/channel.js"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {

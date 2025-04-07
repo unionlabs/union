@@ -11,7 +11,7 @@ import {
 import { Batch, encodeAbi } from "../src/ucs03/instruction.js"
 import { AptosChannelDestination } from "../src/aptos/channel.js"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
-import { CosmosChannelSource } from "../src/cosmos/channel.ts"
+import { CosmosChannelSource } from "../src/cosmos/channel.js"
 import { Decimal } from "@cosmjs/math"
 
 // @ts-ignore
