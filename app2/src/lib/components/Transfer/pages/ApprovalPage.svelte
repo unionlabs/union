@@ -168,15 +168,15 @@
       </h3>
       <section>
         <Label>Current</Label>
-        <TokenComponent chain={sourceChain.value} denom={step.value.token} amount={step.value.currentAllowance}/>
+        <TokenComponent chain={sourceChain.value} denom={toHex(step.value.token)} amount={step.value.currentAllowance}/>
       </section>
       <section>
         <Label>Required</Label>
-        <TokenComponent chain={sourceChain.value} denom={step.value.token} amount={step.value.requiredAmount}/>
+        <TokenComponent chain={sourceChain.value} denom={toHex(step.value.token)} amount={step.value.requiredAmount}/>
       </section>
       <p class="text-sm text-zinc-400">
         You need to approve Union to send
-        <TokenComponent chain={sourceChain.value} denom={step.value.token}/>
+        <TokenComponent chain={sourceChain.value} denom={toHex(step.value.token)}/>
         .
         This is a one-time approval for this token.
       </p>
