@@ -2,7 +2,6 @@ import { graphql } from "gql.tada"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { Schema } from "effect"
 import { URLS } from "$lib/constants"
-import type { Environment } from "$lib/constants"
 
 export const faucetUnoMutationDocument = graphql(`
   mutation UnoFaucetMutation(
@@ -24,7 +23,7 @@ export const faucetUnoMutation = ({
   chainId,
   denom,
   address,
-  captchaToken,
+  captchaToken
 }: {
   chainId: string
   denom: string
