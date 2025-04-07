@@ -103,7 +103,7 @@ async function toggleSearch() {
         <div class="flex flex-col gap-1 p-2 pb-16">
           {#each filteredTokens as token}
             {#key token.denom}
-              <TransferAsset {token} {selectAsset} />
+              <TransferAsset chain={transfer.sourceChain.value} {token} {selectAsset} />
             {/key}
           {/each}
         </div>
