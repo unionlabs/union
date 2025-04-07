@@ -244,10 +244,12 @@ function handleCosmosAllowances(
             console.log("lukas: Processing direct Bech32 address:", tokenAddress);
             const owner = yield* sourceChain.toCosmosDisplay(sender);
             const result = yield* Effect.tryPromise({
-              try: () =>
-                cosmwasmClient.queryContractSmart(tokenAddress, {
-                  allowance: { owner, spender }
-                }),
+              try: () => {
+                console.log('zkgm', {allowance: { owner, spender }})
+                return cosmwasmClient.queryContractSmart(tokenAddress, {
+                  allowance: { owner, spender: "bbn1dy20pwy30hfqyxdzrmp33h47h4xdxht6phqecfp2jdnes6su9pysqq2kpw" }
+                })
+              },
               catch: e => {
                 console.log("lukas: Error in queryContractSmart for direct address:", e);
                 return e;
