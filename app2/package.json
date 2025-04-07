@@ -50,6 +50,7 @@
     "jsdom": "^26.0.0",
     "svelte": "^5.20.1",
     "svelte-check": "^4.1.4",
+    "svelte-turnstile": "^0.10.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.6",
     "typescript-eslint": "^8.24.1",
