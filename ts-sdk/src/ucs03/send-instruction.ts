@@ -19,6 +19,8 @@ export const sendInstructionEvm = (instruction: Instruction) =>
     const walletClient = yield* ViemWalletClient
     const sourceConfig = yield* EvmChannelSource
 
+    yield* Effect.log("SENDING INSTRUCTION EVM W/ TIMEOTU")
+
     return yield* writeContractEvm(walletClient.client, {
       account: walletClient.account,
       abi: ucs03abi,
@@ -27,8 +29,8 @@ export const sendInstructionEvm = (instruction: Instruction) =>
       address: sourceConfig.ucs03address,
       args: [
         sourceConfig.channelId,
+        10000000000000001n,
         0n,
-        1000000000000n,
         generateSalt("evm"),
         {
           opcode: instruction.opcode,

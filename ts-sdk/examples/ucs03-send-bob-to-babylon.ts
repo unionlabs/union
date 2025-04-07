@@ -1,5 +1,5 @@
 import { Effect } from "effect"
-import { http } from "viem"
+import { http, toHex } from "viem"
 import { bobSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 
@@ -13,9 +13,10 @@ import {
   createViemPublicClient,
   createViemWalletClient,
   ViemWalletClient
-} from "@unionlabs/sdk/evm"
-import { Instruction, sendInstructionEvm, createEvmToCosmosFungibleAssetOrder } from "@unionlabs/sdk/ucs03"
-import { CosmosChannelDestination, CosmWasmClientDestination, createCosmWasmClient } from "@unionlabs/sdk/cosmos"
+} from "../src/evm/index.js"
+import { Instruction, sendInstructionEvm, createEvmToCosmosFungibleAssetOrder } from "../src/ucs03/index.js"
+import { CosmosChannelDestination, CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/index.js"
+import { AddressCosmosZkgm, AddressEvmZkgm } from "../src/schema/address.js"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -27,16 +28,15 @@ const PRIVATE_KEY =
   process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 // Define transfer parameters as constants for reuse
-const SENDER = "0xfaebe5bf141cc04a3f0598062b98d2df01ab3c4d"
-const RECEIVER = "0x52a648eF2157Fd3baFa90BbAc510b9a4870fDF36"
-const SOURCE_UCS03_ADDRESS = "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962" // UCS03 contract on Sepolia
+const SENDER = AddressEvmZkgm.make("0xfaebe5bf141cc04a3f0598062b98d2df01ab3c4d")
+const RECEIVER = AddressCosmosZkgm.make(toHex("bbn122ny3mep2l7nhtafpwav2y9e5jrslhekrn8frh"))
+const MINTER_UCS03_ADDRESS = "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962"
 
 // Define token transfers
 const TRANSFERS = [
   {
     sender: SENDER,
     receiver: RECEIVER,
-    // baseToken: "0x779877a7b0d9e8603169ddbd7836e478b4624789", // LINK on sepolia
     baseToken: "0x2be4bf88014a6574cb10df3b7826be8356aa2499", // uniBTCd on Bob
     baseAmount: 100n,
     quoteAmount: 100n
@@ -44,7 +44,6 @@ const TRANSFERS = [
   {
     sender: SENDER,
     receiver: RECEIVER,
-    // baseToken: "0x7b79995e5f793a07bc00c21412e50ecae098e7f9", // WETH on sepolia
     baseToken: "0x4200000000000000000000000000000000000006", // WETH on on BOB
     baseAmount: 50n,
     quoteAmount: 0n
@@ -71,7 +70,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
     const currentAllowance = yield* readErc20Allowance(
       transfer.baseToken,
       transfer.sender,
-      SOURCE_UCS03_ADDRESS
+      MINTER_UCS03_ADDRESS // TODO: should be ucs03 minter address from map (only on cosmos)
     )
 
     yield* Effect.log(`current ${transfer.baseToken} allowance: ${currentAllowance}`)
@@ -83,7 +82,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
       // Approve exact amount needed
       const txHash = yield* increaseErc20Allowance(
         transfer.baseToken,
-        SOURCE_UCS03_ADDRESS,
+        MINTER_UCS03_ADDRESS, // todo: same as above
         transfer.baseAmount
       )
 
@@ -98,7 +97,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
       const newAllowance = yield* readErc20Allowance(
         transfer.baseToken,
         transfer.sender,
-        SOURCE_UCS03_ADDRESS
+        MINTER_UCS03_ADDRESS  // todo: same here
       )
 
       yield* Effect.log(`new ${transfer.baseToken} allowance: ${newAllowance}`)
@@ -117,7 +116,7 @@ Effect.runPromiseExit(
 
     yield* Effect.log("creating clients")
     const cosmWasmClientDestination = yield* createCosmWasmClient(
-      "https://rpc.rpc-node.union-testnet-10.union.build"
+      "https://babylon-testnet-rpc.nodes.guru"
     )
 
     const publicSourceClient = yield* createViemPublicClient({
@@ -145,18 +144,18 @@ Effect.runPromiseExit(
       yield* checkAndIncreaseAllowances
       yield* Effect.log("allowances verified")
 
-      yield* Effect.log("sending batch")
+      yield* Effect.log("sending batch!")
       return yield* sendInstructionEvm(batch)
     }).pipe(
       Effect.provideService(ViemPublicClient, { client: publicSourceClient }),
       Effect.provideService(ViemPublicClientSource, { client: publicSourceClient }),
       Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
       Effect.provideService(CosmosChannelDestination, {
-        ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
-        channelId: 1
+        ucs03address: "bbn15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljlspm2re6",
+        channelId: 9
       }),
       Effect.provideService(EvmChannelSource, {
-        ucs03address: SOURCE_UCS03_ADDRESS,
+        ucs03address: "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
         channelId: 1
       }),
       Effect.provideService(ViemWalletClient, {
