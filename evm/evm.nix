@@ -303,7 +303,7 @@ _: {
           text = ''
             ${ensureAtRepositoryRoot}
 
-            DEPLOYMENTS_FILE="deployments/deployments-testnet-10.json"
+            DEPLOYMENTS_FILE="deployments/deployments.json"
             export DEPLOYMENTS_FILE
 
             CHAIN_ID="$(cast chain-id)"
