@@ -121,6 +121,10 @@ Effect.runPromiseExit(
     }).pipe(
       Effect.provideService(CosmWasmClientSource, { client: sourceClient }),
       Effect.provideService(CosmWasmClientDestination, { client: destClient }),
+      Effect.provideService(CosmosChannelDestination, {
+        ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
+        channelId: 1
+      }),
       Effect.provideService(CosmosDestinationConfig, {
         ucs03address: "union1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqz669ee",
         channelId: 4

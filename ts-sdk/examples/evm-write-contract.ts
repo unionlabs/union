@@ -5,6 +5,7 @@ import { createWalletClient, http, erc20Abi } from "viem"
 import { sepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
 
+// @ts-ignore
 BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
