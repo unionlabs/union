@@ -192,42 +192,101 @@ function handleCosmosAllowances(
     const rpcUrl = rpcUrlOpt.value;
     const cosmwasmClient = yield* createCosmWasmClient(rpcUrl);
 
-    // Filter out native tokens entirely
-    const cw20Addresses = tokenAddresses.filter(isHex);
+    // Function to identify native tokens (tokens that start with 'u' followed by letters)
+    const isNativeToken = (token: string): boolean => {
+      return /^u[a-zA-Z]+$/.test(token);
+    };
 
-    // If everything was native, we can just return an empty array
-    if (cw20Addresses.length === 0) {
-      console.log("lukas: All tokens are native → no allowances needed");
+    // Function to check if a token is a contract (either Bech32 or hex-encoded)
+    const isContractToken = (token: string): boolean => {
+      // Direct Bech32 contract check
+      if (isValidBech32ContractAddress(token)) {
+        return true;
+      }
+
+      // Hex-encoded contract check
+      if (isHex(token)) {
+        try {
+          const decoded = fromHex(token, "string");
+          return isValidBech32ContractAddress(decoded);
+        } catch {
+          return false;
+        }
+      }
+
+      return false;
+    };
+
+    // Filter to separate native tokens and contract tokens
+    const nativeTokens = tokenAddresses.filter(isNativeToken);
+    const contractTokenCandidates = tokenAddresses.filter(token => !isNativeToken(token));
+
+    // Further check which of the non-native tokens are valid contracts
+    const contractTokens = contractTokenCandidates.filter(isContractToken);
+
+    console.log("lukas: Identified native tokens:", nativeTokens);
+    console.log("lukas: Identified contract tokens:", contractTokens);
+
+    // If all tokens are native, return empty array (no approvals needed)
+    if (contractTokens.length === 0) {
+      console.log("lukas: No contract tokens to check allowances for");
       return Option.some([]);
     }
 
+    // Process contract tokens
     const checks = yield* Effect.all(
-      cw20Addresses.map(tokenAddress =>
+      contractTokens.map(tokenAddress =>
         Effect.gen(function* () {
-          console.log("lukas: Checking CW20 token:", tokenAddress);
-          const decoded = fromHex(tokenAddress, "string");
+          console.log("lukas: Checking contract token:", tokenAddress);
 
-          if (!isValidBech32ContractAddress(decoded)) {
-            console.log("lukas: Not valid bech32 contract address => skipping:", decoded);
-            return { token: tokenAddress, allowance: 0n };
+          // For direct Bech32 addresses
+          if (!isHex(tokenAddress) && isValidBech32ContractAddress(tokenAddress)) {
+            console.log("lukas: Processing direct Bech32 address:", tokenAddress);
+            const owner = yield* sourceChain.toCosmosDisplay(sender);
+            const result = yield* Effect.tryPromise({
+              try: () =>
+                cosmwasmClient.queryContractSmart(tokenAddress, {
+                  allowance: { owner, spender }
+                }),
+              catch: e => {
+                console.log("lukas: Error in queryContractSmart for direct address:", e);
+                return e;
+              }
+            });
+
+            const allowance = result?.allowance ? BigInt(result.allowance) : 0n;
+            console.log("lukas: Query result allowance for direct address:", allowance);
+            return { token: tokenAddress, allowance };
           }
 
-          const owner = yield* sourceChain.toCosmosDisplay(sender);
-          const result = yield* Effect.tryPromise({
-            try: () =>
-              cosmwasmClient.queryContractSmart(decoded, {
-                allowance: { owner, spender }
-              }),
-            catch: e => {
-              console.log("lukas: Error in queryContractSmart:", e);
-              return e;
+          // For hex-encoded addresses
+          if (isHex(tokenAddress)) {
+            const decoded = fromHex(tokenAddress, "string");
+
+            if (!isValidBech32ContractAddress(decoded)) {
+              console.log("lukas: Not valid bech32 contract address => skipping:", decoded);
+              return { token: tokenAddress, allowance: 0n };
             }
-          });
 
-          const allowance = result?.allowance ? BigInt(result.allowance) : 0n;
-          console.log("lukas: Query result allowance:", allowance);
+            const owner = yield* sourceChain.toCosmosDisplay(sender);
+            const result = yield* Effect.tryPromise({
+              try: () =>
+                cosmwasmClient.queryContractSmart(decoded, {
+                  allowance: { owner, spender }
+                }),
+              catch: e => {
+                console.log("lukas: Error in queryContractSmart:", e);
+                return e;
+              }
+            });
 
-          return { token: tokenAddress, allowance };
+            const allowance = result?.allowance ? BigInt(result.allowance) : 0n;
+            console.log("lukas: Query result allowance:", allowance);
+            return { token: tokenAddress, allowance };
+          }
+
+          // This should not happen given our filtering, but just in case
+          return { token: tokenAddress, allowance: 0n };
         }).pipe(
           Effect.provideService(CosmWasmClientSource, { client: cosmwasmClient })
         )
