@@ -6,13 +6,13 @@ import "solady/utils/LibBytes.sol";
 import "solady/utils/LibString.sol";
 
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "../../../contracts/core/Types.sol";
 import "../../../contracts/core/25-handler/IBCHandler.sol";
 import "../../../contracts/core/04-channel/IBCPacket.sol";
 import "../../../contracts/core/05-port/IIBCModule.sol";
+import "../../../contracts/apps/ucs/03-zkgm/IWETH.sol";
 import "../../../contracts/apps/ucs/03-zkgm/Zkgm.sol";
 import "../../../contracts/apps/Base.sol";
 
@@ -146,6 +146,36 @@ contract TestERC20 is ERC20 {
     }
 }
 
+contract TestWETH is IWETH, TestERC20 {
+    error ETHTransferFailed();
+
+    constructor() TestERC20("Wrapped Ether", "WETH", 18) {}
+
+    function deposit() public payable virtual {
+        _mint(msg.sender, msg.value);
+    }
+
+    function withdraw(
+        uint256 amount
+    ) public virtual {
+        _burn(msg.sender, amount);
+        assembly {
+            if iszero(
+                call(
+                    gas(), caller(), amount, codesize(), 0x00, codesize(), 0x00
+                )
+            ) {
+                mstore(0x00, 0xb12d13eb) // `ETHTransferFailed()`.
+                revert(0x1c, 0x04)
+            }
+        }
+    }
+
+    receive() external payable virtual {
+        deposit();
+    }
+}
+
 contract TestMultiplexTarget is IEurekaModule, IIBCModuleRecv {
     error ErrNotZkgm();
 
@@ -209,6 +239,7 @@ contract ZkgmTests is Test {
     TestMultiplexTarget multiplexTarget;
     TestIBCHandler handler;
     TestERC20 erc20;
+    TestWETH weth;
     TestZkgm zkgm;
 
     Instruction dummyMultiplex = Instruction({
@@ -225,6 +256,7 @@ contract ZkgmTests is Test {
     });
 
     function setUp() public {
+        weth = new TestWETH();
         erc20 = new TestERC20("Test", "T", 18);
         handler = new TestIBCHandler();
         TestZkgm implementation = new TestZkgm();
@@ -232,9 +264,12 @@ contract ZkgmTests is Test {
             address(implementation),
             abi.encodeCall(UCS03Zkgm.initialize, (handler, address(this)))
         );
-        zkgm = TestZkgm(address(proxy));
+        UCS03Zkgm(payable(address(proxy))).setWETH(weth);
+        zkgm = TestZkgm(payable(address(proxy)));
         multiplexTarget = new TestMultiplexTarget(address(zkgm));
     }
+
+    receive() external payable {}
 
     function test_proxyInitialization_ok(
         address handlerAddress,
@@ -250,8 +285,7 @@ contract ZkgmTests is Test {
                 (IIBCModulePacket(handlerAddress), ownerAddress)
             )
         );
-        TestZkgm _zkgm = TestZkgm(address(proxy));
-
+        TestZkgm _zkgm = TestZkgm(payable(address(proxy)));
         assertEq(address(_zkgm.ibcHandler()), handlerAddress);
         assertEq(_zkgm.owner(), ownerAddress);
     }
@@ -642,7 +676,7 @@ contract ZkgmTests is Test {
         uint32 connectionId,
         uint32 channelId,
         address relayer,
-        string calldata version
+        string memory version
     ) public {
         vm.assume(channelId != 0);
         vm.prank(address(handler));
@@ -695,7 +729,7 @@ contract ZkgmTests is Test {
         uint32 connectionId,
         uint32 channelId,
         uint32 counterpartyChannelId,
-        string calldata version,
+        string memory version,
         address relayer
     ) public {
         vm.assume(channelId != 0);
@@ -717,7 +751,7 @@ contract ZkgmTests is Test {
         uint32 connectionId,
         uint32 channelId,
         uint32 counterpartyChannelId,
-        string calldata counterpartyVersion,
+        string memory counterpartyVersion,
         address relayer
     ) public {
         vm.assume(channelId != 0);
@@ -2377,6 +2411,68 @@ contract ZkgmTests is Test {
                 marketMaker: relayerMsg
             })
         );
+    }
+
+    function test_onRecvPacket_marketMakerFill_gasStation_ok(
+        address marketMaker,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        bytes32 salt,
+        bytes memory sender,
+        bytes memory baseToken,
+        string memory baseTokenSymbol,
+        string memory baseTokenName,
+        uint8 baseTokenDecimals,
+        uint256 baseAmount,
+        uint128 quoteAmount
+    ) public {
+        vm.assume(marketMaker != address(0));
+        vm.assume(sourceChannelId != 0);
+        vm.assume(destinationChannelId != 0);
+        if (quoteAmount > 0) {
+            vm.deal(marketMaker, quoteAmount);
+            vm.startPrank(marketMaker);
+            weth.deposit{value: quoteAmount}();
+            weth.approve(address(zkgm), quoteAmount);
+            vm.stopPrank();
+            vm.expectEmit();
+            emit IERC20.Transfer(marketMaker, address(zkgm), quoteAmount);
+            vm.expectEmit();
+            emit IERC20.Transfer(address(zkgm), address(0), quoteAmount);
+        }
+        assertEq(quoteAmount, weth.balanceOf(marketMaker));
+        assertEq(0, address(zkgm).balance);
+        uint256 selfBalance = address(this).balance;
+        expectOnRecvTransferSuccessCustomAck(
+            marketMaker,
+            sourceChannelId,
+            destinationChannelId,
+            0,
+            salt,
+            relayer,
+            relayerMsg,
+            FungibleAssetOrder({
+                sender: sender,
+                receiver: abi.encodePacked(address(this)),
+                baseToken: baseToken,
+                baseTokenPath: 0,
+                baseTokenSymbol: baseTokenSymbol,
+                baseTokenName: baseTokenName,
+                baseTokenDecimals: baseTokenDecimals,
+                baseAmount: baseAmount,
+                quoteToken: abi.encodePacked(ZkgmLib.NATIVE_ETH_MAGIC),
+                quoteAmount: quoteAmount
+            }),
+            FungibleAssetOrderAck({
+                fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
+                marketMaker: relayerMsg
+            })
+        );
+        assertEq(0, weth.balanceOf(marketMaker));
+        assertEq(0, address(zkgm).balance);
+        assertEq(selfBalance + quoteAmount, address(this).balance);
     }
 
     function test_onRecvPacket_marketMakerFill_noAllowance_reverts_onlyMaker(

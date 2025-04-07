@@ -35,6 +35,9 @@ library ZkgmLib {
     bytes32 public constant FORWARD_SALT_MAGIC =
         0xC0DE00000000000000000000000000000000000000000000000000000000BABE;
 
+    address public constant NATIVE_ETH_MAGIC =
+        0xF000000000000000000000000000000000000001;
+
     string public constant IBC_VERSION_STR = "ucs03-zkgm-0";
     bytes32 public constant IBC_VERSION = keccak256(bytes(IBC_VERSION_STR));
 
