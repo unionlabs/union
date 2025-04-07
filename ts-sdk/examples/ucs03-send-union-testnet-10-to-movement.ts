@@ -8,11 +8,11 @@ import {
   createCosmWasmClient,
   createSigningCosmWasmClient
 } from "../src/cosmos/client.js"
-import { Batch, encodeAbi } from "../src/ucs03/instruction.js"
 import { AptosChannelDestination } from "../src/aptos/channel.js"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { CosmosChannelSource } from "../src/cosmos/channel.js"
 import { Decimal } from "@cosmjs/math"
+import { Instruction } from "@unionlabs/sdk/ucs03"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -40,7 +40,7 @@ const createBatch = Effect.gen(function* () {
   yield* Effect.log("creating transfer 1")
   const transfer1 = yield* createCosmosToAptosFungibleAssetOrder(TRANSFERS[0])
 
-  return Batch([transfer1])
+  return Instruction.Batch.make({ operand: [transfer1] })
 }).pipe(Effect.withLogSpan("batch creation"))
 
 Effect.runPromiseExit(
@@ -85,7 +85,7 @@ Effect.runPromiseExit(
       yield* Effect.log("creating batch")
       const batch = yield* createBatch
       yield* Effect.log("batch created", JSON.stringify(batch, null, 2))
-      yield* Effect.log("batch abi", encodeAbi(batch))
+      yield* Effect.log("batch abi", Instruction.encodeAbi(batch))
 
       // yield* Effect.log("sending batch")
       // return yield* sendInstructionCosmos(batch)

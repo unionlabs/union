@@ -64,7 +64,7 @@ const createBatch = Effect.gen(function* () {
   yield* Effect.log("creating transfer 3 (fee transfer)")
   const transferFee = yield* createEvmToCosmosFungibleAssetOrder(TRANSFERS[2])
 
-  return Batch([transfer1, transfer2, transferFee])
+  return Batch.make({ operand: [transfer1, transfer2, transferFee] })
 }).pipe(Effect.withLogSpan("batch creation"))
 
 // Check and increase allowances if needed

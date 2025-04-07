@@ -49,7 +49,7 @@ const createBatch = Effect.gen(function* () {
   const transfer1 = yield* createAptosToCosmosFungibleAssetOrder(TRANSFERS[0])
   yield* Effect.log("creating transfer 2")
   const transfer2 = yield* createAptosToCosmosFungibleAssetOrder(TRANSFERS[1])
-  return Batch([transfer1, transfer2])
+  return Batch.make({ operand: [transfer1, transfer2] })
 }).pipe(Effect.withLogSpan("batch creation"))
 
 Effect.runPromiseExit(

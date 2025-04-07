@@ -13,7 +13,7 @@ import {
   createCosmWasmClient,
   createSigningCosmWasmClient
 } from "../src/cosmos/client.js"
-import { Batch, encodeAbi } from "../src/ucs03/instruction.js"
+import { Instruction } from "@unionlabs/sdk/ucs03"
 import { sendInstructionCosmos } from "../src/ucs03/send-instruction.js"
 import { EvmChannelDestination } from "../src/evm/channel.js"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
@@ -46,7 +46,7 @@ const createBatch = Effect.gen(function* () {
   yield* Effect.log("creating transfer 1")
   const transfer1 = yield* createCosmosToEvmFungibleAssetOrder(TRANSFERS[0])
 
-  return Batch([transfer1])
+  return Instruction.Batch.make({ operand: [transfer1] })
 }).pipe(Effect.withLogSpan("batch creation"))
 
 // Check and increase allowances if needed
@@ -140,7 +140,7 @@ Effect.runPromiseExit(
       yield* Effect.log("creating batch")
       const batch = yield* createBatch
       yield* Effect.log("batch created", JSON.stringify(batch, null, 2))
-      yield* Effect.log("batch abi", encodeAbi(batch))
+      yield* Effect.log("batch abi", Instruction.encodeAbi(batch))
 
       // Check and increase allowances before sending the batch
       // yield* Effect.log("checking and increasing allowances if needed")
