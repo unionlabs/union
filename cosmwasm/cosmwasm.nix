@@ -131,7 +131,7 @@ _: {
           lightclients = [
             "arbitrum"
             "bob"
-            # "berachain"
+            "berachain"
             "ethereum"
             "trusted-mpt"
             "ethermint"
