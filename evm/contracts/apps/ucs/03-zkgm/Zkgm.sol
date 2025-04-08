@@ -4,6 +4,7 @@ import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -652,12 +653,19 @@ contract UCS03Zkgm is
         if (!ZkgmLib.isDeployed(wrappedToken)) {
             CREATE3.deployDeterministic(
                 abi.encodePacked(
-                    type(ZkgmERC20).creationCode,
+                    type(ERC1967Proxy).creationCode,
                     abi.encode(
-                        orderBaseTokenName,
-                        orderBaseTokenSymbol,
-                        orderBaseTokenDecimals,
-                        address(this)
+                        new ZkgmERC20(),
+                        abi.encodeCall(
+                            ZkgmERC20.initialize,
+                            (
+                                owner(),
+                                address(this),
+                                orderBaseTokenName,
+                                orderBaseTokenSymbol,
+                                orderBaseTokenDecimals
+                            )
+                        )
                     )
                 ),
                 wrappedTokenSalt

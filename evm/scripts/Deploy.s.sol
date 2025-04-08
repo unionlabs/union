@@ -9,7 +9,6 @@ import "solady/utils/LibString.sol";
 import "@openzeppelin-foundry-upgradeable/Upgrades.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../contracts/Manager.sol";
 import "../contracts/Multicall.sol";
@@ -260,18 +259,18 @@ abstract contract UnionScript is UnionBase {
             Manager
         )
     {
-        IBCHandler handler = deployIBCHandler(owner);
-        CometblsClient cometblsClient = deployCometbls(handler, owner);
-        StateLensIcs23MptClient stateLensIcs23MptClient =
-            deployStateLensIcs23MptClient(handler, owner);
-        StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
-            deployStateLensIcs23Ics23Client(handler, owner);
-        StateLensIcs23SmtClient stateLensIcs23SmtClient =
-            deployStateLensIcs23SmtClient(handler, owner);
-        PingPong pingpong = deployUCS00(handler, owner, 100000000000000);
-        UCS03Zkgm ucs03 = deployUCS03(handler, owner, weth);
-        Multicall multicall = deployMulticall();
         Manager manager = deployManager(owner);
+        IBCHandler handler = deployIBCHandler(address(manager));
+        CometblsClient cometblsClient = deployCometbls(handler, address(manager));
+        StateLensIcs23MptClient stateLensIcs23MptClient =
+            deployStateLensIcs23MptClient(handler, address(manager));
+        StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
+            deployStateLensIcs23Ics23Client(handler, address(manager));
+        StateLensIcs23SmtClient stateLensIcs23SmtClient =
+            deployStateLensIcs23SmtClient(handler, address(manager));
+        PingPong pingpong = deployUCS00(handler, address(manager), 100000000000000);
+        UCS03Zkgm ucs03 = deployUCS03(handler, address(manager), weth);
+        Multicall multicall = deployMulticall();
         return (
             handler,
             cometblsClient,
@@ -955,7 +954,8 @@ contract DryUpgradeUCS03 is VersionedScript {
     }
 
     function run() public {
-        address handler = getDeployed(IBC.BASED);
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
         UCS03Zkgm ucs03 =
             UCS03Zkgm(payable(getDeployed(Protocols.make(Protocols.UCS03))));
 
@@ -964,7 +964,7 @@ contract DryUpgradeUCS03 is VersionedScript {
         );
 
         address newImplementation =
-            address(new UCS03Zkgm(IIBCModulePacket(handler), ucs03.WETH()));
+            address(new UCS03Zkgm(handler, weth));
         vm.prank(owner);
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
     }
@@ -993,7 +993,8 @@ contract UpgradeUCS03 is VersionedScript {
     }
 
     function run() public {
-        address handler = getDeployed(IBC.BASED);
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
         UCS03Zkgm ucs03 =
             UCS03Zkgm(payable(getDeployed(Protocols.make(Protocols.UCS03))));
 
@@ -1003,7 +1004,7 @@ contract UpgradeUCS03 is VersionedScript {
 
         vm.startBroadcast(privateKey);
         address newImplementation =
-            address(new UCS03Zkgm(IIBCModulePacket(handler), ucs03.WETH()));
+            address(new UCS03Zkgm(handler, weth));
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }

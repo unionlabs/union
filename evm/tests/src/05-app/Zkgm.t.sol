@@ -5,8 +5,11 @@ import "forge-std/Test.sol";
 import "solady/utils/LibBytes.sol";
 import "solady/utils/LibString.sol";
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
+import "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 
 import "../../../contracts/core/Types.sol";
 import "../../../contracts/core/25-handler/IBCHandler.sol";
@@ -264,7 +267,10 @@ contract ZkgmTests is Test {
         weth = new TestWETH();
         erc20 = new TestERC20("Test", "T", 18);
         handler = new TestIBCHandler();
-        TestZkgm implementation = new TestZkgm(handler, weth);
+        TestZkgm implementation = new TestZkgm(
+            handler,
+            weth
+        );
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeCall(UCS03Zkgm.initialize, (address(this)))
@@ -282,8 +288,10 @@ contract ZkgmTests is Test {
     ) public {
         vm.assume(handlerAddress != address(0));
         vm.assume(ownerAddress != address(0));
-        TestZkgm implementation =
-            new TestZkgm(IIBCModulePacket(handlerAddress), IWETH(wethAddress));
+        TestZkgm implementation = new TestZkgm(
+            IIBCModulePacket(handlerAddress),
+            IWETH(wethAddress)
+        );
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeCall(UCS03Zkgm.initialize, (ownerAddress))
@@ -1990,6 +1998,7 @@ contract ZkgmTests is Test {
             })
         );
         assertTrue(ZkgmLib.isDeployed(quoteToken));
+        assertEq(Ownable2StepUpgradeable(quoteToken).owner(), address(this));
         return quoteToken;
     }
 
