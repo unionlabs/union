@@ -2,7 +2,7 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
 import "../core/02-client/ILightClient.sol";
@@ -198,7 +198,7 @@ contract CometblsClient is
     ILightClient,
     Initializable,
     UUPSUpgradeable,
-    OwnableUpgradeable,
+    Ownable2StepUpgradeable,
     PausableUpgradeable,
     Versioned
 {
