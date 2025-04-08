@@ -130,7 +130,7 @@ impl ConsensusModuleServer for Module {
             .await
             .map_err(json_rpc_error_to_error_object)?;
 
-        if finalized && commit_response.canonical {
+        if finalized && !commit_response.canonical {
             trace!(
                 "commit is not canonical and finalized timestamp was \
                 requested, fetching commit at previous block"
