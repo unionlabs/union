@@ -10,7 +10,7 @@ import { readFaTokenInfo } from "../aptos/fa.js"
 import { predictQuoteToken as predictCosmosQuoteToken } from "../cosmos/quote-token.js"
 import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-token.js"
 import { FungibleAssetOrder } from "./instruction.js"
-import { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
+import type { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
 
 export type FungibleAssetOrderIntent = {
   sender: Address

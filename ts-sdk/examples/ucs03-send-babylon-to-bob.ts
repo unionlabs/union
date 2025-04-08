@@ -7,7 +7,11 @@ import {
   createCosmWasmClient,
   createSigningCosmWasmClient
 } from "@unionlabs/sdk/cosmos"
-import { Instruction, sendInstructionCosmos, createCosmosToEvmFungibleAssetOrder } from "@unionlabs/sdk/ucs03"
+import {
+  Instruction,
+  sendInstructionCosmos,
+  createCosmosToEvmFungibleAssetOrder
+} from "@unionlabs/sdk/ucs03"
 import {
   EvmChannelDestination,
   ViemPublicClient,

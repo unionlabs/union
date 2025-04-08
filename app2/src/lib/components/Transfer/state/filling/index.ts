@@ -14,8 +14,8 @@ export type AllowanceData = {
 export type StateResult = {
   nextState: CreateTransferState | null
   message?: string
-  orders?: unknown[]
-  allowances?: AllowanceData[]
+  orders?: Array<unknown>
+  allowances?: Array<AllowanceData>
 }
 
 export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>
@@ -38,14 +38,14 @@ const { CreateIntents, CheckBalance, CheckAllowance, CreateOrders, CreateSteps }
 
 export const createTransferState = (cts: CreateTransferState, transfer: Transfer) => {
   if (
-    !Option.isSome(transfer.sourceChain) ||
-    !Option.isSome(transfer.destinationChain) ||
-    !Option.isSome(transfer.baseToken) ||
-    !Option.isSome(transfer.derivedSender) ||
-    !Option.isSome(transfer.parsedAmount) ||
-    !Option.isSome(transfer.ucs03address) ||
-    !Option.isSome(transfer.channel) ||
-    !Option.isSome(transfer.intents)
+    Option.isNone(transfer.sourceChain) ||
+    Option.isNone(transfer.destinationChain) ||
+    Option.isNone(transfer.baseToken) ||
+    Option.isNone(transfer.derivedSender) ||
+    Option.isNone(transfer.parsedAmount) ||
+    Option.isNone(transfer.ucs03address) ||
+    Option.isNone(transfer.channel) ||
+    Option.isNone(transfer.intents)
   ) {
     console.log("[CTS] Missing arguments")
     return Effect.succeed({

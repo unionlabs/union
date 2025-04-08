@@ -1,11 +1,6 @@
-import { Match, Option, Schema } from "effect"
+import { Match, Option } from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
-import {
-  Channel,
-  type AddressCanonicalBytes,
-  type Token,
-  type TokenRawDenom
-} from "@unionlabs/sdk/schema"
+import type { Channel, AddressCanonicalBytes, Token, TokenRawDenom } from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { type Address, fromHex, type Hex, isHex } from "viem"
@@ -14,7 +9,6 @@ import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
 import { validateTransfer, type ValidationResult } from "$lib/components/Transfer/validation.ts"
-import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 
 export type TransferIntent = {

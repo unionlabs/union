@@ -6,6 +6,6 @@
     "tsBuildInfoFile": ".tsbuildinfo/examples.tsbuildinfo",
     "noEmit": true,
     "types": ["node"],
-    "rootDir": "examples",
+    "rootDir": "examples"
   }
 }

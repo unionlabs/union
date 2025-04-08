@@ -1,59 +1,55 @@
 <script lang="ts">
-  import type { HTMLAttributes } from "svelte/elements";
-  import type { AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema";
-  import { truncate } from "$lib/utils/format";
-  import Tooltip from "$lib/components/ui/Tooltip.svelte";
-  import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte";
-  import { Effect } from "effect";
+import type { HTMLAttributes } from "svelte/elements"
+import type { AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema"
+import { truncate } from "$lib/utils/format"
+import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import { Effect } from "effect"
 
-  type Props = HTMLAttributes<HTMLDivElement> & {
-    address: AddressCanonicalBytes;
-    chain: Chain;
-    class?: string;
-    truncate?: boolean;
-    truncateChars?: number;
-    truncatePosition?: "start" | "middle" | "end";
-  };
+type Props = HTMLAttributes<HTMLDivElement> & {
+  address: AddressCanonicalBytes
+  chain: Chain
+  class?: string
+  truncate?: boolean
+  truncateChars?: number
+  truncatePosition?: "start" | "middle" | "end"
+}
 
-  const {
-    address,
-    chain,
-    class: className = "",
-    truncate: shouldTruncate = false,
-    truncateChars = 12,
-    truncatePosition = "middle",
-    ...rest
-  }: Props = $props();
+const {
+  address,
+  chain,
+  class: className = "",
+  truncate: shouldTruncate = false,
+  truncateChars = 12,
+  truncatePosition = "middle",
+  ...rest
+}: Props = $props()
 
-  const fullDisplayAddress = $derived(
-    Effect.runSync(chain.getDisplayAddress(address)),
-  );
-  // const fullDisplayAddress = address
-  const displayAddress = $derived(
-    shouldTruncate
-      ? truncate(fullDisplayAddress, truncateChars, truncatePosition)
-      : fullDisplayAddress,
-  );
+const fullDisplayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address)))
+// const fullDisplayAddress = address
+const displayAddress = $derived(
+  shouldTruncate
+    ? truncate(fullDisplayAddress, truncateChars, truncatePosition)
+    : fullDisplayAddress
+)
 
-  // Find the explorer URL for this address
-  const getExplorerUrl = () => {
-    if (chain.explorers.length === 0) {
-      return null;
-    }
+// Find the explorer URL for this address
+const getExplorerUrl = () => {
+  if (chain.explorers.length === 0) {
+    return null
+  }
 
-    // Use the first explorer by default
-    const explorer = chain.explorers[0];
-    // Replace {address} placeholder if it exists, otherwise append the address
-    const addressUrl = explorer.address_url.toString();
-    return addressUrl.includes("{address}")
-      ? addressUrl.replace("{address}", displayAddress)
-      : `${addressUrl}${displayAddress}`;
-  };
+  // Use the first explorer by default
+  const explorer = chain.explorers[0]
+  // Replace {address} placeholder if it exists, otherwise append the address
+  const addressUrl = explorer.address_url.toString()
+  return addressUrl.includes("{address}")
+    ? addressUrl.replace("{address}", displayAddress)
+    : `${addressUrl}${displayAddress}`
+}
 
-  const explorerUrl = $derived(getExplorerUrl());
-  const explorerName = $derived(
-    chain.explorers.length > 0 ? chain.explorers[0].display_name : null,
-  );
+const explorerUrl = $derived(getExplorerUrl())
+const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].display_name : null)
 </script>
 
 <Tooltip>

@@ -1,6 +1,6 @@
 import * as S from "effect/Schema"
 import { Chain, RpcType } from "./chain.js"
-import { EvmWethToken, TokenRawAmount, TokenRawDenom } from "./token.js"
+import { TokenRawAmount, TokenRawDenom } from "./token.js"
 import { ChannelId } from "./channel.js"
 
 const BaseTransferFields = {

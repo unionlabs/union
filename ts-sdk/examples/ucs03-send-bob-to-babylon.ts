@@ -14,8 +14,16 @@ import {
   createViemWalletClient,
   ViemWalletClient
 } from "@unionlabs/sdk/evm"
-import { Instruction, sendInstructionEvm, createEvmToCosmosFungibleAssetOrder } from "@unionlabs/sdk/ucs03"
-import { CosmosChannelDestination, CosmWasmClientDestination, createCosmWasmClient } from "@unionlabs/sdk/cosmos"
+import {
+  Instruction,
+  sendInstructionEvm,
+  createEvmToCosmosFungibleAssetOrder
+} from "@unionlabs/sdk/ucs03"
+import {
+  CosmosChannelDestination,
+  CosmWasmClientDestination,
+  createCosmWasmClient
+} from "@unionlabs/sdk/cosmos"
 import { AddressCosmosZkgm, AddressEvmZkgm } from "@unionlabs/sdk/schema"
 
 // @ts-ignore

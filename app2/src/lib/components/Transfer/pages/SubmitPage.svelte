@@ -1,7 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { Effect, Match, Option, Struct, Array } from "effect"
+import { Effect, Match, Option, Struct, Array as Arr } from "effect"
 import { SubmitInstruction } from "../transfer-step.ts"
 import {
   hasFailedExit as evmHasFailedExit,
@@ -48,7 +48,7 @@ const lts = lockedTransferStore.get()
 const step = $derived(
   lts.pipe(
     Option.map(Struct.get("steps")),
-    Option.flatMap(Array.get(stepIndex)),
+    Option.flatMap(Arr.get(stepIndex)),
     Option.filter(is("SubmitInstruction"))
   )
 )

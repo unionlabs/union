@@ -1,5 +1,5 @@
 import { Effect, identity, Option } from "effect"
-import { Chain } from "@unionlabs/sdk/schema"
+import type { Chain } from "@unionlabs/sdk/schema"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
 import { isHex, toHex } from "viem"

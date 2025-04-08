@@ -14,8 +14,16 @@ import {
   createViemWalletClient,
   ViemWalletClient
 } from "@unionlabs/sdk/evm"
-import { Instruction, sendInstructionEvm, createEvmToCosmosFungibleAssetOrder } from "@unionlabs/sdk/ucs03"
-import { CosmosChannelDestination, CosmWasmClientDestination, createCosmWasmClient } from "@unionlabs/sdk/cosmos"
+import {
+  Instruction,
+  sendInstructionEvm,
+  createEvmToCosmosFungibleAssetOrder
+} from "@unionlabs/sdk/ucs03"
+import {
+  CosmosChannelDestination,
+  CosmWasmClientDestination,
+  createCosmWasmClient
+} from "@unionlabs/sdk/cosmos"
 import { AddressCosmosZkgm, AddressEvmZkgm } from "@unionlabs/sdk/schema"
 
 // @ts-ignore
@@ -40,7 +48,7 @@ const TRANSFERS = [
     baseToken: "0x2be4bf88014a6574cb10df3b7826be8356aa2499",
     baseAmount: 100n,
     quoteAmount: 100n
-  },
+  }
 ] as const
 
 const createBatch = Effect.gen(function* () {
@@ -143,7 +151,7 @@ Effect.runPromiseExit(
       Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
       Effect.provideService(CosmosChannelDestination, {
         ucs03address: "bbn15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljlspm2re6",
-        channelId: 11 
+        channelId: 11
       }),
       Effect.provideService(EvmChannelSource, {
         ucs03address: "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
