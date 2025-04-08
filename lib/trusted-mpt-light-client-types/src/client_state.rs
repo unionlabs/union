@@ -1,4 +1,4 @@
-use unionlabs::primitives::{H160, U256};
+use unionlabs::primitives::{H160, H256, U256};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(
@@ -18,5 +18,5 @@ pub struct ClientStateV1 {
     pub chain_id: U256,
     pub latest_height: u64,
     pub ibc_contract_address: H160,
-    pub whitelisted_relayers: Vec<String>,
+    pub authorized_pubkey: H256,
 }

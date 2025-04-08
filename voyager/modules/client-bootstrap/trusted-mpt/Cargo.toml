@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 alloy                          = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+ed25519-dalek                  = { version = "2.1.0" }
 embed-commit                   = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["macros", "server", "tracing"] }
 serde                          = { workspace = true, features = ["derive"] }

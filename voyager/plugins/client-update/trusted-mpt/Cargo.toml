@@ -16,6 +16,7 @@ alloy                          = { workspace = true, features = ["rpc", "rpc-typ
 beacon-api                     = { workspace = true }
 beacon-api-types               = { workspace = true, features = ["serde"] }
 bitvec                         = { workspace = true }
+ed25519-dalek                  = { version = "2.1.0" }
 embed-commit                   = { workspace = true }
 enumorph                       = { workspace = true }
 ethereum-light-client-types    = { workspace = true, features = ["serde"] }
@@ -26,7 +27,7 @@ macros                         = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 tokio                          = { workspace = true }
 tracing                        = { workspace = true }
-trusted-mpt-light-client-types = { workspace = true, features = ["serde"] }
-unionlabs                      = { workspace = true }
+trusted-mpt-light-client-types = { workspace = true, features = ["serde", "bincode"] }
+unionlabs                      = { workspace = true, features = ["bincode"] }
 voyager-message                = { workspace = true }
 voyager-vm                     = { workspace = true }
