@@ -75,7 +75,9 @@ fn extract_wasm(bz: &[u8]) -> Result<Option<Rev>> {
 
     let instance = linker.instantiate(&mut store, &module)?;
 
-    let commit_hash_fn = instance.get_typed_func::<i32, ()>(&mut store, "commit_hash")?;
+    let Ok(commit_hash_fn) = instance.get_typed_func::<i32, ()>(&mut store, "commit_hash") else {
+        return Ok(None);
+    };
 
     commit_hash_fn.call(&mut store, 0)?;
 

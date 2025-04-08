@@ -32,6 +32,12 @@
       "tags": ["canonical"]
     }
   },
+  "corn.21000001": {
+    "5": {
+      "comments": "babylon.bbn-test-5 channel 11",
+      "tags": ["canonical"]
+    }
+  },
   "ethereum.11155111": {
     "2": {
       "comments": "union.union-testnet-10 channel 3",

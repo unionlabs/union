@@ -150,6 +150,7 @@ _: {
         corn-testnet = { key = "''${VERIFICATION_KEY}", chain = "21000001", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/21000001/public" }
         bob-mainnet = { key = "''${VERIFICATION_KEY}", chain = "60808", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/60808/public" }
         bob-testnet = { key = "''${VERIFICATION_KEY}", chain = "808813", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/808813/public" }
+        bepolia = { key = "''${VERIFICATION_KEY}", chain = "80094", url = "https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan" }
       '';
       compilers = pkgs.linkFarm "evm-libraries" [
         {
@@ -253,6 +254,14 @@ _: {
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
         }
         {
+          network = "bepolia";
+          rpc-url = "https://bepolia.rpc.berachain.com/";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+
+          verifier = "etherscan";
+          verification-key = ''"verifyContract"'';
+        }
+        {
           network = "0g-testnet";
           rpc-url = "https://evmrpc-testnet.0g.ai";
           private-key = ''"$1"'';
@@ -312,7 +321,7 @@ _: {
             echo "chain id: $CHAIN_ID"
 
             jq \
-              '. |= map(if .chain_id == $chain_id then .deployments.core.height = ($height | tonumber) else . end)' \
+              '. |= map(if .chain_id == $chain_id then .deployments.core.height = ($height | tonumber) | .deployments.core.commit = $commit else . end)' \
               "$DEPLOYMENTS_FILE" \
               --arg chain_id "$CHAIN_ID" \
               --arg height "$(( "$(
@@ -328,6 +337,15 @@ _: {
                   --json \
                 | jq -r '.[0].blockNumber'
               )" ))" \
+              --arg commit "$(
+                cast call "$(
+                  jq -r \
+                    '.[] | select(.chain_id == $chain_id) | .deployments.core.address' \
+                    "$DEPLOYMENTS_FILE" \
+                    --arg chain_id "$CHAIN_ID"
+                )" "gitRev()(string)" \
+                | jq -r || echo unknown
+              )" \
             | sponge "$DEPLOYMENTS_FILE"
 
             for key in lightclient app ; do
@@ -340,7 +358,7 @@ _: {
                 | while read -r subkey ; do
                   echo "$key: $subkey"
                   jq \
-                    '. |= map(if .chain_id == $chain_id then .deployments[$key][$subkey].height = ($height | tonumber) else . end)' \
+                    '. |= map(if .chain_id == $chain_id then .deployments[$key][$subkey].height = ($height | tonumber) | .deployments[$key][$subkey].commit = $commit else . end)' \
                     "$DEPLOYMENTS_FILE" \
                     --arg chain_id "$CHAIN_ID" \
                     --arg subkey "$subkey" \
@@ -360,6 +378,17 @@ _: {
                         --json \
                       | jq -r '.[0].blockNumber'
                     )" ))" \
+                    --arg commit "$(
+                      cast call "$(
+                        jq -r \
+                          '.[] | select(.chain_id == $chain_id) | .deployments[$key][$subkey].address' \
+                          "$DEPLOYMENTS_FILE" \
+                          --arg chain_id "$CHAIN_ID" \
+                          --arg subkey "$subkey" \
+                          --arg key "$key"
+                      )" "gitRev()(string)" \
+                      | jq -r || echo unknown
+                    )" \
                   | sponge "$DEPLOYMENTS_FILE"
                 done
             done
@@ -836,19 +865,19 @@ _: {
           })
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-verify-${args.network}";
+              name = "verify-${args.network}";
               value = verify args;
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-deploy-${args.network}-full";
+              name = "deploy-full-${args.network}";
               value = deploy-full args;
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-deploy-${args.network}";
+              name = "deploy-${args.network}";
               value = deploy args;
             }) networks
           )

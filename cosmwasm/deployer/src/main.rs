@@ -1151,9 +1151,9 @@ impl Deployer {
             .client()
             .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryContractInfoResponse>(
                 "/cosmwasm.wasm.v1.Query/ContractInfo",
-                &(protos::cosmwasm::wasm::v1::QueryContractInfoRequest {
+                &protos::cosmwasm::wasm::v1::QueryContractInfoRequest {
                     address: address.to_string(),
-                }),
+                },
                 None,
                 false,
             )

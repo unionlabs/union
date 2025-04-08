@@ -36,6 +36,32 @@ _: {
             "system"
           ];
 
+      # minified version of the protos found in https://github.com/CosmWasm/wasmd/tree/2e748fb4b860ee109123827f287949447f2cded7/proto/cosmwasm/wasm/v1
+      cosmwasmProtoDefs = pkgs.writeTextDir "/cosmwasm.proto" ''
+        syntax = "proto3";
+        package cosmwasm;
+
+        message QueryContractInfoRequest {
+          string address = 1;
+        }
+
+        message QueryContractInfoResponse {
+          ContractInfo contract_info = 2;
+        }
+
+        message ContractInfo {
+          uint64 code_id = 1;
+        }
+
+        message QueryCodeRequest {
+          uint64 code_id = 1;
+        }
+
+        message QueryCodeResponse {
+          bytes data = 2;
+        }
+      '';
+
       bytecode-base = pkgs.stdenv.mkDerivation {
         name = "base-bytecode";
         dontUnpack = true;
@@ -131,7 +157,7 @@ _: {
           lightclients = [
             "arbitrum"
             "bob"
-            # "berachain"
+            "berachain"
             "ethereum"
             "trusted-mpt"
             "ethermint"
@@ -365,6 +391,63 @@ _: {
           };
         };
       };
+
+      get-git-rev =
+        {
+          rpc_url,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "get-git-rev";
+          runtimeInputs = [
+            self'.packages.embed-commit-verifier
+            pkgs.buf
+            pkgs.xxd
+            pkgs.curl
+          ];
+          text = ''
+            embed-commit-verifier extract <(curl \
+              --silent \
+              '${rpc_url}/abci_query?path="/cosmwasm.wasm.v1.Query/Code"&data=0x'"$(
+                buf \
+                  convert \
+                  ${cosmwasmProtoDefs}/cosmwasm.proto \
+                  --type=cosmwasm.QueryCodeRequest \
+                  --from=<(
+                    echo "{\"code_id\":$(
+                      curl \
+                        --silent \
+                        '${rpc_url}/abci_query?path="/cosmwasm.wasm.v1.Query/ContractInfo"&data=0x'"$(
+                          buf \
+                            convert \
+                            ${cosmwasmProtoDefs}/cosmwasm.proto \
+                            --type=cosmwasm.QueryContractInfoRequest \
+                            --from=<(echo "{\"address\":\"$1\"}")#format=json \
+                            | xxd -c 0 -ps
+                        )" \
+                        | jq .result.response.value -r \
+                        | base64 -d \
+                        | buf \
+                          convert \
+                          ${cosmwasmProtoDefs}/cosmwasm.proto \
+                          --type=cosmwasm.QueryContractInfoResponse \
+                          --from=-#format=binpb \
+                        | jq '.contractInfo.codeId | tonumber'
+                    )}"
+                  )#format=json \
+                  | xxd -c 0 -ps
+                )" \
+                | jq .result.response.value -r \
+                | base64 -d \
+                | buf \
+                  convert \
+                  ${cosmwasmProtoDefs}/cosmwasm.proto \
+                  --type=cosmwasm.QueryCodeResponse \
+                  --from=-#format=binpb \
+                | jq .data -r \
+                | base64 -d)
+          '';
+        };
 
       deploy-full =
         args@{
@@ -650,6 +733,7 @@ _: {
           runtimeInputs = [
             cosmwasm-deployer
             ibc-union-contract-addresses
+            (get-git-rev { inherit rpc_url; })
             pkgs.jq
             pkgs.curl
             pkgs.moreutils
@@ -665,6 +749,8 @@ _: {
 
             HEIGHTS=$(cosmwasm-deployer init-heights --rpc-url "${rpc_url}" --addresses <(echo "$ADDRESSES"))
             echo "heights: $HEIGHTS"
+
+            echo "updating heights..."
 
             DEPLOYMENTS=$(echo "$ADDRESSES" | jq \
               --argjson heights "$HEIGHTS" \
@@ -711,7 +797,42 @@ _: {
 
             echo "deployments: $DEPLOYMENTS"
 
-            CHAIN_ID="$(curl ${rpc_url}/status | jq .result.node_info.network -r)"
+            echo "updating commits..."
+
+            DEPLOYMENTS=$(
+              echo "$DEPLOYMENTS" \
+                | jq '.core.commit = $commit' \
+                  --arg commit "$(get-git-rev "$(echo "$ADDRESSES" | jq .core -r)")"
+            )
+
+            for key in lightclient app ; do
+              echo "key: $key"
+                while read -r subkey ; do
+                  echo "$key: $subkey"
+                  DEPLOYMENTS=$(
+                    echo "$DEPLOYMENTS" \
+                      | jq '.[$key][$subkey].commit = $commit' \
+                        --arg subkey "$subkey" \
+                        --arg key "$key" \
+                        --arg commit "$(
+                          get-git-rev "$(
+                            echo "$ADDRESSES" \
+                              | jq -r '.[$key][$subkey]' \
+                                --arg subkey "$subkey" \
+                                --arg key "$key"
+                          )"
+                        )"
+                  )
+
+                  # echo "deployments: $DEPLOYMENTS"
+                done <<< "$(echo "$DEPLOYMENTS" \
+                  | jq -r '.[$key] | keys[]' \
+                    --arg key "$key")"
+            done
+
+            echo "deployments: $DEPLOYMENTS"
+
+            CHAIN_ID="$(curl --silent ${rpc_url}/status | jq .result.node_info.network -r)"
             export CHAIN_ID
 
             echo "chain id: $CHAIN_ID"
@@ -750,6 +871,7 @@ _: {
                     deploy-full = deploy-full chain;
                     update-deployments-json = update-deployments-json chain;
                     finalize-deployment = finalize-deployment chain;
+                    get-git-rev = get-git-rev chain;
                   }
                   // (chain-migration-scripts chain)
                   // (mkRootDrv chain.name);
