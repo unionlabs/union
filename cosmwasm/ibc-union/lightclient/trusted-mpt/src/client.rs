@@ -74,7 +74,7 @@ impl IbcClient for MptTrustedLightClient {
         let ClientState::V1(mut client_state) = ctx.read_self_client_state()?;
 
         let header = header
-            .unwrap_verified(client_state.authorized_pubkey, |msg, sig, pubkey| {
+            .unwrap_verified::<Bincode, _>(client_state.authorized_pubkey, |msg, sig, pubkey| {
                 ctx.deps
                     .api
                     .ed25519_verify(msg, sig.get().as_slice(), pubkey.get().as_slice())

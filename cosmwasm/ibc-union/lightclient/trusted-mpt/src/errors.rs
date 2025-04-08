@@ -1,4 +1,3 @@
-use cosmwasm_std::Addr;
 use ibc_union_light_client::IbcClientError;
 use unionlabs::primitives::{H256, U256};
 
