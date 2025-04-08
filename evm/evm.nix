@@ -12,6 +12,10 @@ _: {
       ...
     }:
     let
+      gitRevToUse = gitRev;
+      # use this to override the git rev. useful if verifying a contract off of a commit and the worktree is dirty for unrelated reasons (changing an rpc, adding a new explorer to verify on, etc)
+      # gitRevToUse = "";
+
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
         repo = "solidity-stringutils";
@@ -120,7 +124,7 @@ _: {
         '';
         fixupPhase = ''
           substitute $out/contracts/internal/Versioned.sol $out/contracts/internal/Versioned.sol \
-              --replace-fail 'dirty' '${gitRev}'
+              --replace-fail 'dirty' '${gitRevToUse}'
         '';
       };
       # Foundry FS permissions must be explicitly set in the config file
@@ -150,7 +154,7 @@ _: {
         corn-testnet = { key = "''${VERIFICATION_KEY}", chain = "21000001", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/21000001/public" }
         bob-mainnet = { key = "''${VERIFICATION_KEY}", chain = "60808", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/60808/public" }
         bob-testnet = { key = "''${VERIFICATION_KEY}", chain = "808813", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/808813/public" }
-        bepolia = { key = "''${VERIFICATION_KEY}", chain = "80094", url = "https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan" }
+        bepolia = { key = "''${VERIFICATION_KEY}", chain = "80069", url = "https://api.routescan.io/v2/network/testnet/evm/80069/etherscan" }
       '';
       compilers = pkgs.linkFarm "evm-libraries" [
         {
@@ -265,9 +269,10 @@ _: {
           network = "bepolia";
           rpc-url = "https://bepolia.rpc.berachain.com/";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x6969696969696969696969696969696969696969";
 
           verifier = "etherscan";
-          verification-key = ''"verifyContract"'';
+          verification-key = ''verifyContract'';
         }
         {
           network = "0g-testnet";
@@ -492,6 +497,7 @@ _: {
         {
           rpc-url,
           private-key,
+          weth,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -504,7 +510,7 @@ _: {
             runtimeInputs = [ wrappedForgeOnline ];
             text = ''
               ${ensureAtRepositoryRoot}
-              nix run .#evm-contracts-addresses -- "$1" "$2" ${rpc-url}
+              WETH_ADDRESS=${weth} nix run .#evm-contracts-addresses -- "$1" "$2" ${rpc-url}
 
               PROJECT_ROOT=$(pwd)
               OUT="$(mktemp -d)"
@@ -516,6 +522,7 @@ _: {
                 while IFS=$'\t' read -r address args contract; do
                   if [ "$address" != "0x0000000000000000000000000000000000000000" ]
                   then
+                    WETH_ADDRESS=${weth} \
                     VERIFICATION_KEY=${verification-key} \
                     PRIVATE_KEY=${private-key} \
                     FOUNDRY_LIBS='["libs"]' \
