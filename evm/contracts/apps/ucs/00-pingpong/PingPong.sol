@@ -7,7 +7,7 @@ import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
 import "../../Base.sol";
 import "../../../core/25-handler/IBCHandler.sol";
-import "../03-zkgm/IEurekaModule.sol";
+import "../03-zkgm/IZkgmable.sol";
 
 // Protocol specific packet
 struct PingPongPacket {
@@ -54,7 +54,7 @@ contract PingPong is
     UUPSUpgradeable,
     Ownable2StepUpgradeable,
     PausableUpgradeable,
-    IEurekaModule,
+    IZkgmable,
     Versioned
 {
     using PingPongLib for *;
