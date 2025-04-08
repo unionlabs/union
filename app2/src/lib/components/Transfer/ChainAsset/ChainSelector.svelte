@@ -78,7 +78,7 @@ const filteredChains = $derived(
           <span class="text-xs text-center truncate w-fit">{chain.display_name}</span>
 
           {#if isDisabled}
-            <span class="text-xs text-sky-400">From chain</span>
+            <span class="text-xs text-sky-400 -mt-2">From Chain</span>
           {/if}
         </button>
       {/each}
