@@ -14820,6 +14820,7 @@ name = "voyager-client-bootstrap-module-trusted-mpt"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "ed25519-dalek 2.1.1",
  "embed-commit",
  "jsonrpsee",
  "serde",

@@ -1,4 +1,5 @@
 use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
+use ed25519_dalek::SigningKey;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
@@ -7,7 +8,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::instrument;
 use trusted_mpt_light_client_types::{ClientState, ClientStateV1, ConsensusState};
-use unionlabs::{ibc::core::client::height::Height, primitives::H160};
+use unionlabs::{
+    ibc::core::client::height::Height,
+    primitives::{H160, H256},
+};
 use voyager_message::{
     ensure_null, into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
@@ -30,7 +34,7 @@ pub struct Module {
 
     pub provider: DynProvider,
 
-    pub whitelisted_relayers: Vec<String>,
+    pub private_key: SigningKey,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,7 +46,7 @@ pub struct Config {
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
 
-    pub whitelisted_relayers: Vec<String>,
+    pub private_key: H256,
 
     #[serde(default)]
     pub max_cache_size: u32,
@@ -67,11 +71,13 @@ impl ClientBootstrapModule for Module {
         info.ensure_chain_id(chain_id.to_string())?;
         info.ensure_client_type(ClientType::TRUSTED_MPT)?;
 
+        let private_key = SigningKey::from_bytes(config.private_key.get());
+
         Ok(Self {
             chain_id,
             ibc_handler_address: config.ibc_handler_address,
             provider,
-            whitelisted_relayers: config.whitelisted_relayers,
+            private_key,
         })
     }
 }
@@ -95,7 +101,7 @@ impl ClientBootstrapModuleServer for Module {
                 .expect("self.chain_id is a valid u256"),
             latest_height: height.height(),
             ibc_contract_address: self.ibc_handler_address,
-            whitelisted_relayers: self.whitelisted_relayers.clone(),
+            authorized_pubkey: H256::new(self.private_key.verifying_key().to_bytes()),
         }))
         .expect("infallible"))
     }
