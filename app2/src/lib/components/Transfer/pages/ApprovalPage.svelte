@@ -5,7 +5,7 @@
   import { lockedTransferStore } from "../locked-transfer.svelte.ts";
   import { ApprovalRequired } from "../transfer-step.ts";
   import { createViemPublicClient } from "@unionlabs/sdk/evm";
-  import { erc20Abi, fromHex, http, toHex } from "viem";
+  import { erc20Abi, fromHex, http, isHex, toHex } from "viem";
   import {
     hasFailedExit as evmHasFailedExit,
     isComplete as evmIsComplete,
@@ -170,6 +170,10 @@
       ),
     );
   });
+
+  const massagedDenom = $derived(
+    isHex(step.value.token) ? step.value.token : toHex(step.value.token),
+  );
 </script>
 
 <div class="min-w-full p-4 flex flex-col justify-between h-full">
@@ -177,13 +181,13 @@
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">
         Approve
-        <TokenComponent chain={sourceChain.value} denom={step.value.token} />
+        <TokenComponent chain={sourceChain.value} denom={massagedDenom} />
       </h3>
       <section>
         <Label>Current</Label>
         <TokenComponent
           chain={sourceChain.value}
-          denom={step.value.token}
+          denom={massagedDenom}
           amount={step.value.currentAllowance}
         />
       </section>
@@ -191,13 +195,13 @@
         <Label>Required</Label>
         <TokenComponent
           chain={sourceChain.value}
-          denom={step.value.token}
+          denom={massagedDenom}
           amount={step.value.requiredAmount}
         />
       </section>
       <p class="text-sm text-zinc-400">
         You need to approve Union to send
-        <TokenComponent chain={sourceChain.value} denom={step.value.token} />
+        <TokenComponent chain={sourceChain.value} denom={massagedDenom} />
         . This is a one-time approval for this token.
       </p>
     </div>
