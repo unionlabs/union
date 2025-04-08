@@ -11,24 +11,35 @@ pub struct SignedData<T> {
     signature: H512,
 }
 
+pub struct SignatureVerificationFailure;
+
 impl<T: Clone> SignedData<T> {
-    pub fn new(data: T, signature: H512) -> Self {
-        SignedData { data, signature }
+    pub fn sign<E, V: Fn(&[u8]) -> H512>(data: T, sign: V) -> Self
+    where
+        E: Encoding,
+        T: Encode<E>,
+    {
+        SignedData {
+            signature: sign(&data.clone().encode()),
+            data,
+        }
     }
 
     pub fn unwrap_verified<E, V: Fn(&[u8], H512, H256) -> Option<bool>>(
         self,
         pubkey: H256,
         verify_sig: V,
-    ) -> Result<T, ()>
+    ) -> Result<T, SignatureVerificationFailure>
     where
         E: Encoding,
         T: Encode<E>,
     {
-        if verify_sig(&self.data.clone().encode(), self.signature, pubkey).ok_or(())? {
+        if verify_sig(&self.data.clone().encode(), self.signature, pubkey)
+            .ok_or(SignatureVerificationFailure)?
+        {
             return Ok(self.data);
         }
 
-        Err(())
+        Err(SignatureVerificationFailure)
     }
 }

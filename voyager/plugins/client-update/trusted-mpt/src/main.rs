@@ -3,6 +3,7 @@
 use std::collections::VecDeque;
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
+use ed25519_dalek::{ed25519::signature::SignerMut, SigningKey};
 use ethereum_light_client_types::AccountProof;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -11,8 +12,13 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
-use trusted_mpt_light_client_types::Header;
-use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
+use trusted_mpt_light_client_types::{signed_data::SignedData, Header};
+use unionlabs::{
+    encoding::Bincode,
+    ibc::core::client::height::Height,
+    primitives::{H160, H256, H512},
+    ErrorReporter,
+};
 use voyager_message::{
     call::Call,
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
@@ -46,6 +52,8 @@ pub struct Module {
     pub ibc_handler_address: H160,
 
     pub provider: DynProvider,
+
+    pub private_key: SigningKey,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -61,6 +69,9 @@ pub struct Config {
 
     #[serde(default)]
     pub max_cache_size: u32,
+
+    /// Private key of the authorized caller
+    pub private_key: H256,
 }
 
 fn plugin_name(chain_id: &ChainId) -> String {
@@ -142,6 +153,7 @@ impl Plugin for Module {
             chain_id,
             ibc_handler_address: config.ibc_handler_address,
             provider,
+            private_key: SigningKey::from_bytes(config.private_key.get()),
         })
     }
 
@@ -265,12 +277,18 @@ impl Module {
             .fetch_account_update(update_to_block_number.height())
             .await?;
 
-        let header = Header {
-            state_root: header.state_root.0.into(),
-            ibc_account_proof,
-            height: update_to_block_number.height(),
-            timestamp: header.timestamp,
-        };
+        let header = SignedData::sign::<Bincode, _>(
+            Header {
+                state_root: header.state_root.0.into(),
+                ibc_account_proof,
+                height: update_to_block_number.height(),
+                timestamp: header.timestamp,
+            },
+            |msg| {
+                let mut private_key = self.private_key.clone();
+                H512::new(private_key.sign(msg).to_bytes())
+            },
+        );
 
         Ok(voyager_vm::data(OrderedHeaders {
             headers: vec![(

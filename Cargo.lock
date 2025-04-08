@@ -15279,6 +15279,7 @@ dependencies = [
  "beacon-api",
  "beacon-api-types",
  "bitvec 1.0.1",
+ "ed25519-dalek 2.1.1",
  "embed-commit",
  "enumorph",
  "ethereum-light-client-types",
