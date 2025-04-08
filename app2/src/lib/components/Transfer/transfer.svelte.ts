@@ -134,56 +134,56 @@ export class Transfer {
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
         Match.value({ channelsData, sourceChain, destinationChain }).pipe(
-          Match.when(
-            {
-              sourceChain: { universal_chain_id: "bob.808813" },
-              destinationChain: { universal_chain_id: "babylon.bbn-test-5" }
-            },
-            ({
-              destinationChain: { universal_chain_id: destination_universal_chain_id },
-              sourceChain: { universal_chain_id: source_universal_chain_id }
-            }) =>
-              Option.some(
-                Schema.decodeSync(Channel)({
-                  destination_channel_id: 9,
-                  destination_client_id: 3,
-                  destination_connection_id: 6,
-                  destination_port_id:
-                    "0x62626e31357a6370746c643837386c757834346c76633063687a687a376463646836326e68307865687761387937637a757a33796c6a6c73706d32726536",
-                  destination_universal_chain_id: destination_universal_chain_id.toString(),
-                  source_channel_id: 1,
-                  source_client_id: 5,
-                  source_connection_id: 2,
-                  source_port_id: "0xe33534b7f8d38c6935a2f6ad35e09228da239962",
-                  source_universal_chain_id: source_universal_chain_id.toString()
-                })
-              )
-          ),
-          Match.when(
-            {
-              sourceChain: { universal_chain_id: "babylon.bbn-test-5" },
-              destinationChain: { universal_chain_id: "bob.808813" }
-            },
-            ({
-              destinationChain: { universal_chain_id: destination_universal_chain_id },
-              sourceChain: { universal_chain_id: source_universal_chain_id }
-            }) =>
-              Option.some(
-                Schema.decodeSync(Channel)({
-                  destination_channel_id: 1,
-                  destination_client_id: 3,
-                  destination_connection_id: 6,
-                  source_port_id:
-                    "0x62626e31357a6370746c643837386c757834346c76633063687a687a376463646836326e68307865687761387937637a757a33796c6a6c73706d32726536",
-                  destination_universal_chain_id: destination_universal_chain_id.toString(),
-                  source_channel_id: 9,
-                  source_client_id: 5,
-                  source_connection_id: 2,
-                  destination_port_id: "0xe33534b7f8d38c6935a2f6ad35e09228da239962",
-                  source_universal_chain_id: source_universal_chain_id.toString()
-                })
-              )
-          ),
+          // Match.when(
+          //   {
+          //     sourceChain: { universal_chain_id: "bob.808813" },
+          //     destinationChain: { universal_chain_id: "babylon.bbn-test-5" }
+          //   },
+          //   ({
+          //     destinationChain: { universal_chain_id: destination_universal_chain_id },
+          //     sourceChain: { universal_chain_id: source_universal_chain_id }
+          //   }) =>
+          //     Option.some(
+          //       Schema.decodeSync(Channel)({
+          //         destination_channel_id: 9,
+          //         destination_client_id: 3,
+          //         destination_connection_id: 6,
+          //         destination_port_id:
+          //           "0x62626e31357a6370746c643837386c757834346c76633063687a687a376463646836326e68307865687761387937637a757a33796c6a6c73706d32726536",
+          //         destination_universal_chain_id: destination_universal_chain_id.toString(),
+          //         source_channel_id: 1,
+          //         source_client_id: 5,
+          //         source_connection_id: 2,
+          //         source_port_id: "0xe33534b7f8d38c6935a2f6ad35e09228da239962",
+          //         source_universal_chain_id: source_universal_chain_id.toString()
+          //       })
+          //     )
+          // ),
+          // Match.when(
+          //   {
+          //     sourceChain: { universal_chain_id: "babylon.bbn-test-5" },
+          //     destinationChain: { universal_chain_id: "bob.808813" }
+          //   },
+          //   ({
+          //     destinationChain: { universal_chain_id: destination_universal_chain_id },
+          //     sourceChain: { universal_chain_id: source_universal_chain_id }
+          //   }) =>
+          //     Option.some(
+          //       Schema.decodeSync(Channel)({
+          //         destination_channel_id: 1,
+          //         destination_client_id: 3,
+          //         destination_connection_id: 6,
+          //         source_port_id:
+          //           "0x62626e31357a6370746c643837386c757834346c76633063687a687a376463646836326e68307865687761387937637a757a33796c6a6c73706d32726536",
+          //         destination_universal_chain_id: destination_universal_chain_id.toString(),
+          //         source_channel_id: 9,
+          //         source_client_id: 5,
+          //         source_connection_id: 2,
+          //         destination_port_id: "0xe33534b7f8d38c6935a2f6ad35e09228da239962",
+          //         source_universal_chain_id: source_universal_chain_id.toString()
+          //       })
+          //     )
+          // ),
           Match.orElse(() =>
             Option.fromNullable(
               getChannelInfoSafe(
@@ -214,12 +214,12 @@ export class Transfer {
     )
   })
 
-  wethBaseToken = $derived.by(() => {
-    if (Option.isNone(this.sourceChain)) return Option.none()
-    return this.sourceChain.value.universal_chain_id in WETH_DENOMS
-      ? Option.some(WETH_DENOMS[this.sourceChain.value.universal_chain_id])
-      : Option.none()
-  })
+  // wethBaseToken = $derived.by(() => {
+  //   if (Option.isNone(this.sourceChain)) return Option.none()
+  //   return this.sourceChain.value.universal_chain_id in WETH_DENOMS
+  //     ? Option.some(WETH_DENOMS[this.sourceChain.value.universal_chain_id])
+  //     : Option.none()
+  // })
 
   args = $derived.by(() => {
     const {
@@ -229,8 +229,8 @@ export class Transfer {
       baseToken,
       parsedAmount,
       derivedReceiver,
-      ucs03address,
-      wethBaseToken
+      ucs03address
+      // wethBaseToken
     } = {
       sourceChain: Option.getOrNull(this.sourceChain),
       destinationChain: Option.getOrNull(this.destinationChain),
@@ -238,8 +238,8 @@ export class Transfer {
       baseToken: Option.getOrNull(this.baseToken),
       parsedAmount: Option.getOrNull(this.parsedAmount),
       derivedReceiver: Option.getOrNull(this.derivedReceiver),
-      ucs03address: Option.getOrNull(this.ucs03address),
-      wethBaseToken: Option.getOrNull(this.wethBaseToken)
+      ucs03address: Option.getOrNull(this.ucs03address)
+      // wethBaseToken: Option.getOrNull(this.wethBaseToken)
     }
 
     return {
@@ -254,8 +254,8 @@ export class Transfer {
       quoteAmount: parsedAmount,
       receiver: derivedReceiver,
       timeoutHeight: "0",
-      timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa",
-      wethBaseToken: wethBaseToken
+      timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa"
+      // wethBaseToken: wethBaseToken
     }
   })
 
@@ -268,11 +268,13 @@ export class Transfer {
     const sender = Option.getOrUndefined(this.derivedSender)
     if (!sender) return Option.none<TransferIntents>()
 
+    console.log("calculating intents")
+
     return Match.value(transferValue.sourceChain.rpc_type).pipe(
       Match.when("evm", () => {
-        if (Option.isNone(this.wethBaseToken)) return Option.none<TransferIntents>()
-        const wethToken = Option.getOrUndefined(this.wethBaseToken)
-        if (!wethToken) return Option.none<TransferIntents>()
+        // if (Option.isNone(this.wethBaseToken)) return Option.none<TransferIntents>()
+        // const wethToken = Option.getOrUndefined(this.wethBaseToken)
+        // if (!wethToken) return Option.none<TransferIntents>()
 
         return Option.some<TransferIntents>([
           {
@@ -281,14 +283,14 @@ export class Transfer {
             baseToken: transferValue.baseToken,
             baseAmount: transferValue.baseAmount,
             quoteAmount: transferValue.baseAmount
-          },
-          {
-            sender: sender,
-            receiver: transferValue.receiver,
-            baseToken: wethToken,
-            baseAmount: 500n,
-            quoteAmount: 0n
           }
+          // {
+          //   sender: sender,
+          //   receiver: transferValue.receiver,
+          //   baseToken: wethToken,
+          //   baseAmount: 500n,
+          //   quoteAmount: 0n
+          // }
         ])
       }),
 
