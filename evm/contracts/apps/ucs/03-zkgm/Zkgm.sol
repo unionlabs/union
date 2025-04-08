@@ -106,9 +106,7 @@ contract UCS03Zkgm is
             timeoutTimestamp,
             ZkgmLib.encode(
                 ZkgmPacket({
-                    salt: EfficientHashLib.hash(
-                        abi.encodePacked(abi.encodePacked(msg.sender), salt)
-                    ),
+                    salt: EfficientHashLib.hash(abi.encodePacked(msg.sender, salt)),
                     path: 0,
                     instruction: instruction
                 })
@@ -211,8 +209,7 @@ contract UCS03Zkgm is
         bool isInverseIntermediatePath =
             path == ZkgmLib.reverseChannelPath(intermediateChannelPath);
         bool isSendingBackToSameChannel = destinationChannelId == channelId;
-        bool isUnwrapping =
-            abi.encodePacked(order.baseToken).eq(abi.encodePacked(wrappedToken));
+        bool isUnwrapping = order.baseToken.eq(abi.encodePacked(wrappedToken));
         // If we take the same path starting from the same channel using the
         // wrapped asset, we unwrap.
         if (
