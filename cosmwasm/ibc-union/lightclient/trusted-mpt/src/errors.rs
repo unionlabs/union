@@ -9,8 +9,8 @@ pub enum Error {
     #[error("misbehaviour logic is not needed in a trusted setup")]
     NoMisbehaviourInTrustedClient,
 
-    #[error("the caller {0} is not authorized to update this client")]
-    Unauthorized(Addr),
+    #[error("unauthorized call")]
+    Unauthorized,
 
     #[error("invalid contract address proof")]
     InvalidContractAddressProof(#[source] evm_storage_verifier::error::Error),

@@ -4,7 +4,9 @@ use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
-use trusted_mpt_light_client_types::{ClientState, ConsensusState, Header};
+use trusted_mpt_light_client_types::{
+    signed_data::SignedData, ClientState, ConsensusState, Header,
+};
 use unionlabs::{
     encoding::Bincode,
     ethereum::ibc_commitment_key,
@@ -20,9 +22,9 @@ impl IbcClient for MptTrustedLightClient {
 
     type CustomQuery = Empty;
 
-    type Header = Header;
+    type Header = SignedData<Header>;
 
-    type Misbehaviour = Header;
+    type Misbehaviour = ();
 
     type ClientState = ClientState;
 
@@ -65,17 +67,20 @@ impl IbcClient for MptTrustedLightClient {
 
     fn verify_header(
         ctx: IbcClientCtx<Self>,
-        caller: Addr,
+        _caller: Addr,
         header: Self::Header,
         _relayer: Addr,
     ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
         let ClientState::V1(mut client_state) = ctx.read_self_client_state()?;
-        if !client_state
-            .whitelisted_relayers
-            .contains(&caller.to_string())
-        {
-            return Err(Error::Unauthorized(caller).into());
-        }
+
+        let header = header
+            .unwrap_verified(client_state.authorized_pubkey, |msg, sig, pubkey| {
+                ctx.deps
+                    .api
+                    .ed25519_verify(msg, sig.get().as_slice(), pubkey.get().as_slice())
+                    .ok()
+            })
+            .map_err(|_| Error::Unauthorized)?;
 
         // We still verify the account storage root since we only trust `state_root`
         evm_storage_verifier::verify_account_storage_root(
