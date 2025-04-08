@@ -6,6 +6,7 @@ import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
+import { Array as Arr } from "effect"
 
 type Props = {
   type: "source" | "destination"
@@ -29,12 +30,26 @@ function selectChain(chain: Chain) {
 
   onSelect()
 }
+
+// For btc.union.build, only show bitcoin chains
+const filteredChains = $derived(
+  chains.data.pipe(
+    Option.map(
+      Arr.filter(c =>
+        ["corn.21000001", "bob.60808", "bob.808813", "babylon.bbn-test-5"].includes(
+          c.universal_chain_id
+        )
+      )
+    )
+  )
+)
 </script>
 
 <div class="p-4">
-  {#if Option.isSome(chains.data)}
+  {#if Option.isSome(filteredChains)}
+  {@const chainss = filteredChains.value}
     <div class="grid grid-cols-3 gap-2">
-      {#each chains.data.value as chain}
+      {#each chainss as chain}
         {@const isSelected = (type === "source" && transfer.raw.source === chain.chain_id) ||
         (type === "destination" && transfer.raw.destination === chain.chain_id)}
         {@const isDisabled = type === "destination" && transfer.raw.source === chain.chain_id}

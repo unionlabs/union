@@ -45,7 +45,6 @@ export const isValid = (result: ValidationResult): boolean => result._tag === "S
 
 export function validateTransfer(args: unknown): ValidationResult {
   const decodeEither = Effect.runSync(Effect.either(decodeAll(args)))
-  console.log(decodeEither)
 
   if (Either.isRight(decodeEither)) {
     return ValidationResultInternal.Success({
