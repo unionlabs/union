@@ -150,7 +150,7 @@ _: {
         corn-testnet = { key = "''${VERIFICATION_KEY}", chain = "21000001", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/21000001/public" }
         bob-mainnet = { key = "''${VERIFICATION_KEY}", chain = "60808", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/60808/public" }
         bob-testnet = { key = "''${VERIFICATION_KEY}", chain = "808813", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/808813/public" }
-        bepolia = { key = "''${VERIFICATION_KEY}", chain = "80094", url = "https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan" }
+        bepolia = { key = "''${VERIFICATION_KEY}", chain = "80069", url = "https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan" }
       '';
       compilers = pkgs.linkFarm "evm-libraries" [
         {
