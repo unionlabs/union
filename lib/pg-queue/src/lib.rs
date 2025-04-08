@@ -295,7 +295,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             op.normalize()
                 .into_iter()
                 .partition_map(|op| match filter.check_interest(&op) {
-                    FilterResult::Interest(tag) => Either::Left((op, tag)),
+                    FilterResult::Interest(interest) => Either::Left((op, interest)),
                     FilterResult::NoInterest => Either::Right(op),
                 });
 
@@ -326,12 +326,16 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         )
         .bind(
             optimize
-                .clone()
-                .into_iter()
-                .map(|x| Json(x.0))
+                .iter()
+                .map(|x| Json(x.0.clone()))
                 .collect::<Vec<_>>(),
         )
-        .bind(optimize.into_iter().map(|x| x.1).collect::<Vec<_>>())
+        .bind(
+            optimize
+                .iter()
+                .flat_map(|x| x.1.tags.clone())
+                .collect::<Vec<_>>(),
+        )
         .try_map(|x| Id::from_row(&x))
         .fetch_all(tx.as_mut())
         .await?;
@@ -677,8 +681,21 @@ where
                     ",
                 )
                 .bind(vec![record.id])
-                .bind(optimize.iter().map(|(op, _)| Json(op)).collect::<Vec<_>>())
-                .bind(optimize.iter().map(|(_, tag)| *tag).collect::<Vec<_>>())
+                .bind(
+                    optimize
+                        .iter()
+                        .flat_map(|(op, interest)| {
+                            interest.tags.iter().map(|_| Json(op.clone())).clone()
+                        })
+                        .collect::<Vec<_>>(),
+                )
+                .bind(
+                    optimize
+                        .iter()
+                        .flat_map(|(_, interest)| &interest.tags)
+                        .copied()
+                        .collect::<Vec<_>>(),
+                )
                 .execute(tx.as_mut())
                 .await?;
             }

@@ -12,6 +12,7 @@ use tracing::{instrument, trace};
 use unionlabs::never::Never;
 use voyager_message::{
     data::Data,
+    filter::simple_take_filter,
     module::{PluginInfo, PluginServer},
     primitives::IbcSpec,
     DefaultCmd, Plugin, VoyagerMessage,
@@ -299,7 +300,7 @@ impl Module {
             .collect::<Vec<_>>()
             .join(" or ");
 
-        format!(
+        let filter = format!(
             r#"
 if ."@type" == "data" then
     ."@value" as $data |
@@ -348,7 +349,9 @@ else
 end
     "#,
             ibc_spec_id = IbcUnion::ID
-        )
+        );
+
+        simple_take_filter(filter)
     }
 }
 

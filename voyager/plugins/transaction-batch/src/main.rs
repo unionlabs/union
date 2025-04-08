@@ -34,6 +34,7 @@ use unionlabs::{
 use voyager_message::{
     call::WaitForHeight,
     data::{ChainEvent, Data, IbcDatagram},
+    filter::simple_take_filter,
     module::{PluginInfo, PluginServer},
     primitives::{ChainId, IbcSpec, QueryHeight},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
@@ -211,7 +212,7 @@ impl Plugin for Module {
 
         PluginInfo {
             name: module.plugin_name(),
-            interest_filter: format!(
+            interest_filter: simple_take_filter(format!(
                 r#"
 if ."@type" == "data" then
     ."@value" as $data |
@@ -295,7 +296,7 @@ end
                 clients_filter = module.client_configs.jaq_filter(),
                 ibc_v1_id = IbcClassic::ID,
                 ibc_union_id = IbcUnion::ID,
-            ),
+            )),
         }
     }
 

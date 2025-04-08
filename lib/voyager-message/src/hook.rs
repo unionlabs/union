@@ -4,6 +4,7 @@ use voyager_vm::Visit;
 
 use crate::{
     call::{Call, FetchUpdateHeaders, SubmitTx},
+    filter::simple_take_filter,
     VoyagerMessage,
 };
 
@@ -26,10 +27,10 @@ impl<'a, F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> UpdateHook<'a, F> {
 
 impl UpdateHook<'_, for<'b> fn(&'b FetchUpdateHeaders) -> Call> {
     pub fn filter(chain_id: &ChainId, client_type: &ClientType) -> String {
-        format!(
+        simple_take_filter(format!(
             r#"[.. | ."@type"? == "fetch_update_headers" and ."@value".chain_id == "{}" and ."@value".client_type == "{}"] | any"#,
             chain_id, client_type
-        )
+        ))
     }
 }
 
@@ -76,10 +77,10 @@ impl<'a, F: for<'b> Fn(&'b SubmitTx) -> Call> SubmitTxHook<'a, F> {
 
 impl SubmitTxHook<'_, for<'b> fn(&'b SubmitTx) -> Call> {
     pub fn filter(chain_id: &ChainId) -> String {
-        format!(
+        simple_take_filter(format!(
             r#"[.. | ."@type"? == "submit_tx" and ."@value".chain_id == "{}"] | any"#,
             chain_id
-        )
+        ))
     }
 
     pub fn filter_many<'a>(chain_ids: impl IntoIterator<Item = &'a ChainId>) -> String {
@@ -89,9 +90,9 @@ impl SubmitTxHook<'_, for<'b> fn(&'b SubmitTx) -> Call> {
             .collect::<Vec<_>>()
             .join(",");
 
-        format!(
+        simple_take_filter(format!(
             r#"[.. | . as $o | $o."@type"? == "submit_tx" and ([{chain_ids}] | any(. == $o."@value".chain_id))] | any"#,
-        )
+        ))
     }
 }
 

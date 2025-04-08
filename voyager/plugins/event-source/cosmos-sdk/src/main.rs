@@ -35,6 +35,7 @@ use unionlabs::{
 use voyager_message::{
     call::{Call, WaitForHeight},
     data::{ChainEvent, Data},
+    filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
     primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
@@ -143,10 +144,10 @@ impl Plugin for Module {
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
             name: plugin_name(&config.chain_id),
-            interest_filter: format!(
+            interest_filter: simple_take_filter(format!(
                 r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
                 config.chain_id
-            ),
+            )),
         }
     }
 
