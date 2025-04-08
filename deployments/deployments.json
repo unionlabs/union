@@ -65,30 +65,36 @@
     "deployments": {
       "core": {
         "address": "bbn1yajlxpen7eca7nsq6fyy2jam9w497x2x3umyr9xjx6fgav32ww7qlrtrr9",
-        "height": 606175
+        "height": 606175,
+        "commit": "55049a6c2d346d8a4545a675a6c09bf79a89d652"
       },
       "lightclient": {
         "cometbls": {
           "address": "bbn1y25ylxmven2ggl8wx5dv8jzx89narhjg2ffsdq66re6vndmnamhsc86zq8",
-          "height": 606181
+          "height": 606181,
+          "commit": "unknown"
         },
         "state-lens/ics23/mpt": {
           "address": "bbn15g5t8dwsccurc5v0krrxnzvtd6pawh7d8mpwcgfz8mm5jq9srk3snfqqtt",
-          "height": 606186
+          "height": 606186,
+          "commit": "136aa67566a75fd1c2e1518e198554473403f271"
         },
         "tendermint": {
           "address": "bbn10u2cn5mkq2eymewt4rsldk0h5qvq6w5qzetrw9xygjxlqc3vgjrsm9r56y",
-          "height": 606194
+          "height": 606194,
+          "commit": "0fc9df8b02512a53336b37a8a9f629ad67472401"
         },
         "trusted/evm/mpt": {
           "address": "bbn133gpl5ca3037jga3d2t0pjajtlagr4explm06ts8svlsw7dwyqvs6tpxgm",
-          "height": 606846
+          "height": 606846,
+          "commit": "unknown"
         }
       },
       "app": {
         "ucs03": {
           "address": "bbn15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljlspm2re6",
-          "height": 606202
+          "height": 606202,
+          "commit": "b858e891518847870d6308d6a83f1aae7c1ac8dc"
         }
       }
     }
