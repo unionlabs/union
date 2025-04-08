@@ -10,6 +10,7 @@ import { Option, pipe, Data, Match } from "effect"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { Chain } from "@unionlabs/sdk/schema"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
+import { constVoid } from "effect/Function"
 
 type Props = {
   onContinue: () => void
@@ -153,50 +154,54 @@ const isButtonEnabled = $derived.by(() => {
 // Handle button click based on state
 function handleButtonClick() {
   FillingState.$match(transferState, {
-    Loading: () => {},
+    Loading: constVoid,
     WalletNeeded: () => uiStore.openWalletModal(),
     ChainWalletNeeded: () => uiStore.openWalletModal(),
     ReadyToReview: ({ isValid }) => {
       if (isValid) onContinue()
     },
-    ChainNeeded: () => {},
-    AssetNeeded: () => {},
-    DestinationNeeded: () => {},
-    AmountNeeded: () => {},
-    ReceiverNeeded: () => {},
-    NoStepsAvailable: () => {}
+    ChainNeeded: constVoid,
+    AssetNeeded: constVoid,
+    DestinationNeeded: constVoid,
+    AmountNeeded: constVoid,
+    ReceiverNeeded: constVoid,
+    NoStepsAvailable: constVoid
   })
 }
 </script>
 
 <div class="min-w-full p-4 flex flex-col justify-between h-full">
   <div class="flex flex-col gap-4">
-    <ChainAsset type="source"/>
-    <ChainAsset type="destination"/>
-    <Amount type="source"/>
+    <ChainAsset type="source" />
+    <ChainAsset type="destination" />
+    <Amount type="source" />
   </div>
 
   <div class="flex flex-col items-end">
     <div class="flex items-center mr-5 text-zinc-400">
       {#if transfer.args.receiver && transfer.args.destinationChain}
         <p class="text-xs mb-2">
-          <AddressComponent truncate address={transfer.raw.receiver} chain={transfer.args.destinationChain}/>
+          <AddressComponent
+            truncate
+            address={transfer.raw.receiver}
+            chain={transfer.args.destinationChain}
+          />
         </p>
       {:else}
-        <p class="text-xs mb-2"> No receiver</p>
+        <p class="text-xs mb-2">No receiver</p>
       {/if}
-      <AngleArrowIcon class="rotate-270"/>
+      <AngleArrowIcon class="rotate-270" />
     </div>
     <div class="w-full items-end flex gap-2">
       <Button
-              class="flex-1"
-              variant="primary"
-              onclick={handleButtonClick}
-              disabled={!isButtonEnabled}
+        class="flex-1"
+        variant="primary"
+        onclick={handleButtonClick}
+        disabled={!isButtonEnabled}
       >
         {buttonText}
       </Button>
-      <Receiver/>
+      <Receiver />
     </div>
   </div>
 </div>
