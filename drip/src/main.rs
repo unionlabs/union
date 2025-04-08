@@ -38,28 +38,19 @@ const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 //
 // 1. Unified gas filler configuration types
 //
+// This replaces the old separate GasFillerMode and GasFillerConfig types.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum GasFillerMode {
-    Static,
-    Feemarket,
+#[serde(rename_all = "snake_case", tag = "type", content = "config")]
+pub enum AnyGasFillerConfig {
+    Static(StaticGasFiller),
+    Feemarket(FeemarketGasFillerConfig),
 }
 
+// New configuration type for the fee–market variant.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GasFillerConfig {
-    pub mode: GasFillerMode,
+pub struct FeemarketGasFillerConfig {
     pub max_gas: u64,
-    #[serde(default)]
-    pub min_gas: u64,
-    pub gas_multiplier: f64,
-    // Optional for static mode
-    #[serde(default)]
-    pub gas_price: Option<f64>,
-    #[serde(default)]
-    pub gas_denom: Option<String>,
-
-    // Optional for feemarket mode
-    #[serde(default)]
+    pub gas_multiplier: Option<f64>,
     pub fee_denom: Option<String>,
 }
 
@@ -89,31 +80,19 @@ impl GasFillerT for AnyGasFiller {
     }
 }
 
+// Conversion from the unified configuration type to an operational gas filler.
 impl AnyGasFiller {
-    pub async fn from_config(config: GasFillerConfig, rpc_url: String) -> Result<Self> {
-        match config.mode {
-            GasFillerMode::Static => {
-                let gas_price = config
-                    .gas_price
-                    .ok_or_else(|| format!("missing gas_price for static gas config"))?;
-                let gas_denom = config
-                    .gas_denom
-                    .clone()
-                    .ok_or_else(|| format!("missing gas_denom for static gas config"))?;
-                Ok(AnyGasFiller::Static(StaticGasFiller {
-                    gas_price,
-                    gas_denom,
-                    gas_multiplier: config.gas_multiplier,
-                    max_gas: config.max_gas,
-                    min_gas: config.min_gas,
-                }))
+    pub async fn from_config(config: AnyGasFillerConfig, rpc_url: String) -> Result<Self> {
+        match config {
+            AnyGasFillerConfig::Static(static_config) => {
+                Ok(AnyGasFiller::Static(static_config))
             }
-            GasFillerMode::Feemarket => {
+            AnyGasFillerConfig::Feemarket(feemarket_config) => {
                 let filler = FeemarketGasFiller::new(
                     rpc_url,
-                    config.max_gas,
-                    Some(config.gas_multiplier),
-                    config.fee_denom,
+                    feemarket_config.max_gas,
+                    feemarket_config.gas_multiplier,
+                    feemarket_config.fee_denom,
                 )
                 .await?;
                 Ok(AnyGasFiller::Feemarket(filler))
@@ -395,7 +374,7 @@ pub struct Chain {
     pub id: String,
     pub bech32_prefix: String,
     pub rpc_url: String,
-    pub gas_config: GasFillerConfig,
+    pub gas_config: AnyGasFillerConfig,
     pub signer: H256,
     pub coins: Vec<Coin>,
     pub memo: String,
