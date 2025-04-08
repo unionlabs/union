@@ -223,16 +223,16 @@ abstract contract UnionScript is UnionBase {
                 deploy(
                     Protocols.make(Protocols.UCS03),
                     abi.encode(
-                        address(new UCS03Zkgm()),
-                        abi.encodeCall(
-                            UCS03Zkgm.initialize,
-                            (IIBCModulePacket(handler), owner)
-                        )
+                        address(
+                            new UCS03Zkgm(
+                                IIBCModulePacket(handler), IWETH(weth)
+                            )
+                        ),
+                        abi.encodeCall(UCS03Zkgm.initialize, (owner))
                     )
                 )
             )
         );
-        zkgm.setWETH(IWETH(weth));
         return zkgm;
     }
 
@@ -764,10 +764,7 @@ contract GetDeployed is VersionedScript {
         proxyUCS03 = proxyUCS03.serialize(
             "args",
             abi.encode(
-                implOf(ucs03),
-                abi.encodeCall(
-                    UCS03Zkgm.initialize, (IIBCModulePacket(handler), sender)
-                )
+                implOf(ucs03), abi.encodeCall(UCS03Zkgm.initialize, (sender))
             )
         );
         impls.serialize(ucs03.toHexString(), proxyUCS03);
@@ -882,15 +879,17 @@ contract DryUpgradeUCS03 is VersionedScript {
     }
 
     function run() public {
-        address ucs03 = getDeployed(Protocols.make(Protocols.UCS03));
+        UCS03Zkgm ucs03 =
+            UCS03Zkgm(payable(getDeployed(Protocols.make(Protocols.UCS03))));
 
-        console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
-
-        address newImplementation = address(new UCS03Zkgm());
-        vm.prank(owner);
-        UCS03Zkgm(payable(ucs03)).upgradeToAndCall(
-            newImplementation, new bytes(0)
+        console.log(
+            string(abi.encodePacked("UCS03: ", address(ucs03).toHexString()))
         );
+
+        address newImplementation =
+            address(new UCS03Zkgm(ucs03.IBC_HANDLER(), ucs03.WETH()));
+        vm.prank(owner);
+        ucs03.upgradeToAndCall(newImplementation, new bytes(0));
     }
 }
 
@@ -917,15 +916,17 @@ contract UpgradeUCS03 is VersionedScript {
     }
 
     function run() public {
-        address ucs03 = getDeployed(Protocols.make(Protocols.UCS03));
+        UCS03Zkgm ucs03 =
+            UCS03Zkgm(payable(getDeployed(Protocols.make(Protocols.UCS03))));
 
-        console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
+        console.log(
+            string(abi.encodePacked("UCS03: ", address(ucs03).toHexString()))
+        );
 
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new UCS03Zkgm());
-        UCS03Zkgm(payable(ucs03)).upgradeToAndCall(
-            newImplementation, new bytes(0)
-        );
+        address newImplementation =
+            address(new UCS03Zkgm(ucs03.IBC_HANDLER(), ucs03.WETH()));
+        ucs03.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }
 }

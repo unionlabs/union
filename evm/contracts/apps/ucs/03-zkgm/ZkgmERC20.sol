@@ -6,17 +6,17 @@ import "./IZkgmERC20.sol";
 contract ZkgmERC20 is ERC20, IZkgmERC20 {
     error ERC20Unauthorized();
 
-    address public admin;
-    uint8 private _decimals;
+    address public immutable ADMIN;
+    uint8 public immutable DECIMALS;
 
     constructor(
-        string memory n,
-        string memory s,
-        uint8 d,
-        address a
-    ) ERC20(n, s) {
-        admin = a;
-        _decimals = d;
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals,
+        address _admin
+    ) ERC20(_name, _symbol) {
+        ADMIN = _admin;
+        DECIMALS = _decimals;
     }
 
     function decimals()
@@ -25,7 +25,7 @@ contract ZkgmERC20 is ERC20, IZkgmERC20 {
         override(ERC20, IERC20Metadata)
         returns (uint8)
     {
-        return _decimals;
+        return DECIMALS;
     }
 
     function mint(address to, uint256 amount) external onlyAdmin {
@@ -42,7 +42,7 @@ contract ZkgmERC20 is ERC20, IZkgmERC20 {
     }
 
     function _checkAdmin() internal view virtual {
-        if (msg.sender != admin) {
+        if (msg.sender != ADMIN) {
             revert ERC20Unauthorized();
         }
     }
