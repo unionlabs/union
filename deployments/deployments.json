@@ -355,5 +355,47 @@
         }
       }
     }
+  },
+  {
+    "universal_chain_id": "berachain.80069",
+    "chain_id": "80069",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": "0x795A17269e7aae13BA246E93104f5FCf4ada163b",
+      "deployer": "0xa76897C61d710C07De4D541C77c209578d64CEB9",
+      "sender": "0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2",
+      "core": {
+        "address": "0x06a409cbED33CaA9bf8181eF3afF2C504E1CfB95",
+        "commit": "77d3419fd9d7aeebe2bfa990172e44bef92d5fac"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x8df982115d392D1b28B1f30Ba0834817f8b518dc",
+          "commit": "77d3419fd9d7aeebe2bfa990172e44bef92d5fac"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0x77de6deae44d84f0c92b104a7e13e15fb3574f05",
+          "commit": "77d3419fd9d7aeebe2bfa990172e44bef92d5fac"
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0xb66972c8df9a185e0f0d34620f86dcb0dfeb1f3a",
+          "commit": "77d3419fd9d7aeebe2bfa990172e44bef92d5fac"
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd03953ff5730bd08684d529dc67630a0ad0dfc67",
+          "commit": "77d3419fd9d7aeebe2bfa990172e44bef92d5fac"
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x4163d3a8D115a7a68124f91B73855FBCEe76a8c6",
+          "commit": "77d3419fd9d7aeebe2bfa990172e44bef92d5fac"
+        },
+        "ucs03": {
+          "address": "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
+          "commit": "77d3419fd9d7aeebe2bfa990172e44bef92d5fac"
+        }
+      }
+    }
   }
 ]
