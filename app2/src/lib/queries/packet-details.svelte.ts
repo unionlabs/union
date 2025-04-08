@@ -72,12 +72,14 @@ export const packetDetailsQuery = (packetHash: PacketHash) =>
       data.pipe(
         Option.map(d => {
           if (d.v2_packets.length === 0) {
-            throw { _tag: "NotFound", message: "Packet not found" }
+            // TODO: make tagged error
+            throw new Error("Packet not found")
           }
           return d.v2_packets[0]
         }),
         Option.tap(packet => {
           packetDetails.data = Option.some(packet)
+          return Option.some(packet)
         })
       )
     },

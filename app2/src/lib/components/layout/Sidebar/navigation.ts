@@ -33,11 +33,11 @@ export const navigation: Array<NavSection> = [
           {
             path: "/transfers",
             title: "History"
-          },
-          {
-            path: "/faucet",
-            title: "Faucet"
           }
+          // {
+          //   path: "/faucet",
+          //   title: "Faucet"
+          // }
         ]
       }
     ]
@@ -56,19 +56,19 @@ export const navigation: Array<NavSection> = [
           {
             path: "/explorer/packets",
             title: "Packets"
-          },
-          {
-            path: "/explorer/connections",
-            title: "Connections"
-          },
-          {
-            path: "/explorer/channels",
-            title: "Channels"
-          },
-          {
-            path: "/explorer/clients",
-            title: "Clients"
           }
+          // {
+          //   path: "/explorer/connections",
+          //   title: "Connections"
+          // },
+          // {
+          //   path: "/explorer/channels",
+          //   title: "Channels"
+          // },
+          // {
+          //   path: "/explorer/clients",
+          //   title: "Clients"
+          // }
         ]
       }
     ]

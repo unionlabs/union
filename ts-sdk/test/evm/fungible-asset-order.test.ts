@@ -32,6 +32,7 @@ const mockCosmosQuoteToken = "0x123" as const
 // Mock clients
 const mockViemPublicClientSource = {
   client: {
+    // biome-ignore lint/suspicious/useAwait: reason
     readContract: async (params: any) => {
       // This simulates reading ERC20 metadata based on the function name
       if (params.functionName === "name") return mockErc20Meta.name
@@ -44,6 +45,7 @@ const mockViemPublicClientSource = {
 
 const mockViemPublicClientDestination = {
   client: {
+    // biome-ignore lint/suspicious/useAwait: reason
     readContract: async () => {
       // This simulates predicting a quote token
       return [mockEvmQuoteToken]
@@ -53,6 +55,7 @@ const mockViemPublicClientDestination = {
 
 const mockCosmWasmClientSource = {
   client: {
+    // biome-ignore lint/suspicious/useAwait: reason
     queryContractSmart: async (_contractAddress: string, query: any) => {
       // This simulates reading CW20 token info
       if (query.token_info) {
@@ -68,6 +71,7 @@ const mockCosmWasmClientSource = {
 
 const mockCosmWasmClientDestination = {
   client: {
+    // biome-ignore lint/suspicious/useAwait: reason
     queryContractSmart: async (_contractAddress: string, query: any) => {
       // This simulates predicting a quote token
       if (query.predict_wrapped_token) {
@@ -143,6 +147,7 @@ const EvmToEvmError = Layer.mergeAll(
   EvmToEvm,
   Layer.succeed(ViemPublicClientSource, {
     client: {
+      // biome-ignore lint/suspicious/useAwait: reason
       readContract: async () => {
         throw new Error("Mock error")
       }
@@ -154,6 +159,7 @@ const CosmosToCosmosError = Layer.mergeAll(
   CosmosToCosmos,
   Layer.succeed(CosmWasmClientSource, {
     client: {
+      // biome-ignore lint/suspicious/useAwait: reason
       queryContractSmart: async () => {
         throw new Error("Mock error")
       }
@@ -197,7 +203,7 @@ describe("Fungible Asset Order Tests", () => {
           version: 1,
           operand: [
             evmIntent.sender,
-            "0x3078313233",
+            "0x123",
             evmIntent.baseToken,
             evmIntent.baseAmount,
             mockErc20Meta.symbol,

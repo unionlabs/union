@@ -25,8 +25,8 @@ const {
   ...rest
 }: Props = $props()
 
-// const fullDisplayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address)))
-const fullDisplayAddress = address
+const fullDisplayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address)))
+// const fullDisplayAddress = address
 const displayAddress = $derived(
   shouldTruncate
     ? truncate(fullDisplayAddress, truncateChars, truncatePosition)
@@ -94,10 +94,10 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
         <section>
           <h3 class="text-white">Explorer</h3>
           <div>
-            <a 
-              href={explorerUrl} 
-              class="text-sky-400 hover:text-sky-300 underline" 
-              target="_blank" 
+            <a
+              href={explorerUrl}
+              class="text-sky-400 hover:text-sky-300 underline"
+              target="_blank"
               rel="noopener noreferrer"
             >
               View on {explorerName || "Explorer"}

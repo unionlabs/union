@@ -1,6 +1,6 @@
 import * as S from "effect/Schema"
 import { Chain, RpcType } from "./chain.js"
-import { EvmWethToken, TokenRawAmount, TokenRawDenom } from "./token.js"
+import { TokenRawAmount, TokenRawDenom } from "./token.js"
 import { ChannelId } from "./channel.js"
 
 const BaseTransferFields = {
@@ -32,7 +32,7 @@ const EvmTransferSchema = S.Struct({
   sourceRpcType: S.Literal("evm").annotations({
     message: () => "sourceRpcType must be 'evm'"
   }),
-  wethBaseToken: EvmWethToken,
+  // wethBaseToken: EvmWethToken,
   receiver: S.String.pipe(
     S.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )

@@ -44,7 +44,7 @@ const createBatch = Effect.gen(function* () {
     quoteAmount: 0n
   })
 
-  return Batch([transfer1, transfer2, transferFee])
+  return Batch.make({ operand: [transfer1, transfer2, transferFee] })
 })
 
 Effect.runPromiseExit(
@@ -61,7 +61,7 @@ Effect.runPromiseExit(
     const cosmWasmClientDestination = yield* createCosmWasmClient(
       "https://rpc.elgafar-1.stargaze-apis.com"
     )
-    const account = privateKeyToAccount(PRIVATE_KEY)
+    const account = privateKeyToAccount(PRIVATE_KEY as `0x${string}`)
     const walletClient = createWalletClient({
       account,
       chain: sepolia,

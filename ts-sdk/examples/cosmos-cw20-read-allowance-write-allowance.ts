@@ -4,8 +4,8 @@ import {
   createCosmWasmClient,
   createSigningCosmWasmClient,
   SigningCosmWasmClientContext
-} from "../src/cosmos/client.ts"
-import { readCw20Allowance, writeCw20IncreaseAllowance } from "../src/cosmos/cw20.ts"
+} from "../src/cosmos/client.js"
+import { readCw20Allowance, writeCw20IncreaseAllowance } from "../src/cosmos/cw20.js"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import type { SigningCosmWasmClientOptions } from "@cosmjs/cosmwasm-stargate"
 import { bytes } from "@scure/base"

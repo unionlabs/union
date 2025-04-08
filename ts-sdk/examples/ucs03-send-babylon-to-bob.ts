@@ -1,23 +1,25 @@
 import { Effect } from "effect"
-import {
-  ViemPublicClient,
-  createViemPublicClient,
-  ViemPublicClientDestination
-} from "../src/evm/client.js"
 import { http } from "viem"
 import { sepolia } from "viem/chains"
-import { createCosmosToEvmFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
 import {
   CosmWasmClientSource,
   SigningCosmWasmClientContext,
   createCosmWasmClient,
   createSigningCosmWasmClient
-} from "../src/cosmos/client.js"
-import { Instruction } from "@unionlabs/sdk/ucs03"
-import { sendInstructionCosmos } from "../src/ucs03/send-instruction.js"
-import { EvmChannelDestination } from "../src/evm/channel.js"
+} from "@unionlabs/sdk/cosmos"
+import {
+  Instruction,
+  sendInstructionCosmos,
+  createCosmosToEvmFungibleAssetOrder
+} from "@unionlabs/sdk/ucs03"
+import {
+  EvmChannelDestination,
+  ViemPublicClient,
+  createViemPublicClient,
+  ViemPublicClientDestination
+} from "@unionlabs/sdk/evm"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
-import { CosmosChannelSource } from "../src/cosmos/channel.js"
+import { CosmosChannelSource } from "@unionlabs/sdk/cosmos"
 import { Decimal } from "@cosmjs/math"
 
 // @ts-ignore
@@ -27,16 +29,21 @@ BigInt["prototype"].toJSON = function () {
 
 const MNEMONIC = process.env.MNEMONIC || "memo memo memo"
 
-const SENDER = "union1d95n4r6dnrfrps59szhl8mk7yqewsuzyw0zh5q"
-const RECEIVER = "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA"
-const UCS03_ADDRESS = "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6" // UCS03 contract on testnet 10
+const SENDER = "0x52a648ef2157fd3bafa90bbac510b9a4870fdf36"
+const RECEIVER = "0xfaebe5bf141cc04a3f0598062b98d2df01ab3c4d"
+const SOURCE_UCS03_ADDRESS = "bbn15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljlspm2re6"
+
+// toHex(intent.sender),
+// intent.receiver,
+// toHex(intent.baseToken),
 
 // Define token transfers
 const TRANSFERS = [
   {
     sender: SENDER,
     receiver: RECEIVER,
-    baseToken: "muno",
+    // baseToken: "bbn1nznl7srgmtx9juevnrasr2srslqzze3083g30w8ug96f96rjpeuqg8f6uw",
+    baseToken: "ubbn",
     baseAmount: 100n,
     quoteAmount: 100n
   }
@@ -45,6 +52,8 @@ const TRANSFERS = [
 const createBatch = Effect.gen(function* () {
   yield* Effect.log("creating transfer 1")
   const transfer1 = yield* createCosmosToEvmFungibleAssetOrder(TRANSFERS[0])
+
+  console.log(JSON.stringify(transfer1, null, 2))
 
   return Instruction.Batch.make({ operand: [transfer1] })
 }).pipe(Effect.withLogSpan("batch creation"))
@@ -62,7 +71,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
   //   const currentAllowance = yield* readErc20Allowance(
   //     transfer.baseToken,
   //     transfer.sender,
-  //     UCS03_ADDRESS
+  //     SOURCE_UCS03_ADDRESS
   //   )
 
   //   yield* Effect.log(`current ${transfer.baseToken} allowance: ${currentAllowance}`)
@@ -74,7 +83,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
   //     // Approve exact amount needed
   //     const txHash = yield* increaseErc20Allowance(
   //       transfer.baseToken,
-  //       UCS03_ADDRESS,
+  //       SOURCE_UCS03_ADDRESS,
   //       transfer.baseAmount
   //     )
 
@@ -89,7 +98,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
   //     const newAllowance = yield* readErc20Allowance(
   //       transfer.baseToken,
   //       transfer.sender,
-  //       UCS03_ADDRESS
+  //       SOURCE_UCS03_ADDRESS
   //     )
 
   //     yield* Effect.log(`new ${transfer.baseToken} allowance: ${newAllowance}`)
@@ -161,7 +170,7 @@ Effect.runPromiseExit(
         channelId: 1
       }),
       Effect.provideService(CosmosChannelSource, {
-        ucs03address: UCS03_ADDRESS,
+        ucs03address: SOURCE_UCS03_ADDRESS,
         channelId: 1
       })
     )

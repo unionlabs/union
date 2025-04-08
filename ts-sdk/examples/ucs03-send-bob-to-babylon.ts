@@ -1,56 +1,58 @@
 import { Effect } from "effect"
+import { http, toHex } from "viem"
+import { bobSepolia } from "viem/chains"
+import { privateKeyToAccount } from "viem/accounts"
+
 import {
+  EvmChannelSource,
+  readErc20Allowance,
+  increaseErc20Allowance,
+  waitForTransactionReceipt,
   ViemPublicClientSource,
   ViemPublicClient,
   createViemPublicClient,
-  createViemWalletClient
-} from "../src/evm/client.js"
-import { http } from "viem"
-import { sepolia } from "viem/chains"
-import { CosmosDestinationConfig } from "../src/cosmos/quote-token.js"
-import { createEvmToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
-import { CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/client.js"
-import { Batch } from "../src/ucs03/instruction.js"
-import { sendInstructionEvm } from "../src/ucs03/send-instruction.js"
-import { privateKeyToAccount } from "viem/accounts"
-import { ViemWalletClient } from "../src/evm/client.js"
-import { SourceConfig } from "../src/evm/quote-token.js"
-import { readErc20Allowance, increaseErc20Allowance } from "../src/evm/erc20.js"
-import { waitForTransactionReceipt } from "../src/evm/receipts.js"
+  createViemWalletClient,
+  ViemWalletClient
+} from "@unionlabs/sdk/evm"
+import {
+  Instruction,
+  sendInstructionEvm,
+  createEvmToCosmosFungibleAssetOrder
+} from "@unionlabs/sdk/ucs03"
+import {
+  CosmosChannelDestination,
+  CosmWasmClientDestination,
+  createCosmWasmClient
+} from "@unionlabs/sdk/cosmos"
+import { AddressCosmosZkgm, AddressEvmZkgm } from "@unionlabs/sdk/schema"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
 
+// SOURCE WALLET KEY
 const PRIVATE_KEY =
   process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 // Define transfer parameters as constants for reuse
-const SENDER = "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA"
-const RECEIVER = "stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4"
-const UCS03_ADDRESS = "0x84f074c15513f15baea0fbed3ec42f0bd1fb3efa" // UCS03 contract on Sepolia
+const SENDER = AddressEvmZkgm.make("0xfaebe5bf141cc04a3f0598062b98d2df01ab3c4d")
+const RECEIVER = AddressCosmosZkgm.make(toHex("bbn122ny3mep2l7nhtafpwav2y9e5jrslhekrn8frh"))
+const MINTER_UCS03_ADDRESS = "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962"
 
 // Define token transfers
 const TRANSFERS = [
   {
     sender: SENDER,
     receiver: RECEIVER,
-    baseToken: "0x779877a7b0d9e8603169ddbd7836e478b4624789", // LINK on sepolia
+    baseToken: "0x2be4bf88014a6574cb10df3b7826be8356aa2499", // uniBTCd on Bob
     baseAmount: 100n,
     quoteAmount: 100n
   },
   {
     sender: SENDER,
     receiver: RECEIVER,
-    baseToken: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238", // USDC on sepolia
-    baseAmount: 100n,
-    quoteAmount: 100n
-  },
-  {
-    sender: SENDER,
-    receiver: RECEIVER,
-    baseToken: "0x7b79995e5f793a07bc00c21412e50ecae098e7f9", // WETH on sepolia
+    baseToken: "0x4200000000000000000000000000000000000006", // WETH on on BOB
     baseAmount: 50n,
     quoteAmount: 0n
   }
@@ -59,18 +61,14 @@ const TRANSFERS = [
 const createBatch = Effect.gen(function* () {
   yield* Effect.log("creating transfer 1")
   const transfer1 = yield* createEvmToCosmosFungibleAssetOrder(TRANSFERS[0])
-  yield* Effect.log("creating transfer 2")
-  const transfer2 = yield* createEvmToCosmosFungibleAssetOrder(TRANSFERS[1])
-  yield* Effect.log("creating transfer 3 (fee transfer)")
-  const transferFee = yield* createEvmToCosmosFungibleAssetOrder(TRANSFERS[2])
+  yield* Effect.log("creating transfer 2 (fee transfer)")
+  const transferFee = yield* createEvmToCosmosFungibleAssetOrder(TRANSFERS[1])
 
-  return Batch.make({ operand: [transfer1, transfer2, transferFee] })
+  return Instruction.Batch.make({ operand: [transfer1, transferFee] })
 }).pipe(Effect.withLogSpan("batch creation"))
 
 // Check and increase allowances if needed
 const checkAndIncreaseAllowances = Effect.gen(function* () {
-  const publicClient = (yield* ViemPublicClient).client
-
   yield* Effect.log("Checking token allowances...")
 
   for (const transfer of TRANSFERS) {
@@ -80,7 +78,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
     const currentAllowance = yield* readErc20Allowance(
       transfer.baseToken,
       transfer.sender,
-      UCS03_ADDRESS
+      MINTER_UCS03_ADDRESS
     )
 
     yield* Effect.log(`current ${transfer.baseToken} allowance: ${currentAllowance}`)
@@ -92,7 +90,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
       // Approve exact amount needed
       const txHash = yield* increaseErc20Allowance(
         transfer.baseToken,
-        UCS03_ADDRESS,
+        MINTER_UCS03_ADDRESS,
         transfer.baseAmount
       )
 
@@ -107,7 +105,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
       const newAllowance = yield* readErc20Allowance(
         transfer.baseToken,
         transfer.sender,
-        UCS03_ADDRESS
+        MINTER_UCS03_ADDRESS
       )
 
       yield* Effect.log(`new ${transfer.baseToken} allowance: ${newAllowance}`)
@@ -126,18 +124,18 @@ Effect.runPromiseExit(
 
     yield* Effect.log("creating clients")
     const cosmWasmClientDestination = yield* createCosmWasmClient(
-      "https://rpc.elgafar-1.stargaze-apis.com"
+      "https://babylon-testnet-rpc.nodes.guru"
     )
 
     const publicSourceClient = yield* createViemPublicClient({
-      chain: sepolia,
+      chain: bobSepolia,
       transport: http()
     })
 
-    const account = privateKeyToAccount(PRIVATE_KEY)
+    const account = privateKeyToAccount(PRIVATE_KEY as `0x${string}`)
     const walletClient = yield* createViemWalletClient({
       account,
-      chain: sepolia,
+      chain: bobSepolia,
       transport: http()
     })
 
@@ -154,24 +152,24 @@ Effect.runPromiseExit(
       yield* checkAndIncreaseAllowances
       yield* Effect.log("allowances verified")
 
-      yield* Effect.log("sending batch")
+      yield* Effect.log("sending batch!")
       return yield* sendInstructionEvm(batch)
     }).pipe(
       Effect.provideService(ViemPublicClient, { client: publicSourceClient }),
       Effect.provideService(ViemPublicClientSource, { client: publicSourceClient }),
       Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
-      Effect.provideService(CosmosDestinationConfig, {
-        ucs03address: "stars1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqsnqksg",
-        channelId: 3
+      Effect.provideService(CosmosChannelDestination, {
+        ucs03address: "bbn15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljlspm2re6",
+        channelId: 9
       }),
-      Effect.provideService(SourceConfig, {
-        ucs03address: "0x84f074c15513f15baea0fbed3ec42f0bd1fb3efa",
-        channelId: 11
+      Effect.provideService(EvmChannelSource, {
+        ucs03address: "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
+        channelId: 1
       }),
       Effect.provideService(ViemWalletClient, {
         client: walletClient,
         account: account,
-        chain: sepolia
+        chain: bobSepolia
       })
     )
   })

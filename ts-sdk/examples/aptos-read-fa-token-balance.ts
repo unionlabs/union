@@ -1,6 +1,6 @@
 import { Effect } from "effect"
-import { AptosPublicClient, createAptosPublicClient } from "../src/aptos/client.ts"
-import { readFaBalance } from "../src/aptos/fa.ts"
+import { AptosPublicClient, createAptosPublicClient } from "../src/aptos/client.js"
+import { readFaBalance } from "../src/aptos/fa.js"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
 import { AptosConfig, Network } from "@aptos-labs/ts-sdk"
 

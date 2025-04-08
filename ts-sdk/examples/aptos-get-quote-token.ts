@@ -1,7 +1,7 @@
 import { Effect } from "effect"
-import { AptosPublicClientDestination, createAptosPublicClient } from "../src/aptos/client.ts"
-import { AptosChannelDestination } from "../src/aptos/channel.ts"
-import { predictQuoteToken } from "../src/aptos/quote-token.ts"
+import { AptosPublicClientDestination, createAptosPublicClient } from "../src/aptos/client.js"
+import { AptosChannelDestination } from "../src/aptos/channel.js"
+import { predictQuoteToken } from "../src/aptos/quote-token.js"
 import { AptosConfig, Network } from "@aptos-labs/ts-sdk"
 
 // @ts-ignore

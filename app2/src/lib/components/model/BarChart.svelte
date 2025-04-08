@@ -3,6 +3,7 @@ import { Option } from "effect"
 import type { DailyTransfer } from "@unionlabs/sdk/schema"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
+import { constVoid } from "effect/Function"
 
 type Props = {
   data: Option.Option<ReadonlyArray<DailyTransfer>>
@@ -11,7 +12,7 @@ type Props = {
   onHoverChange?: (day: Option.Option<DailyTransfer>) => void
 }
 
-const { data, error, class: className = "", onHoverChange = () => {} }: Props = $props()
+const { data, error, class: className = "", onHoverChange = constVoid }: Props = $props()
 
 // Format large numbers with commas (used for chart tooltips)
 function formatNumber(num: string | number): string {

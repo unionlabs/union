@@ -11,7 +11,7 @@ import { CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/c
 import { Batch } from "../src/ucs03/instruction.js"
 import { sendInstructionAptos } from "../src/ucs03/send-instruction.js"
 import { AptosChannelSource } from "../src/aptos/channel.js"
-import { CosmosChannelDestination } from "../src/cosmos/channel.ts"
+import { CosmosChannelDestination } from "../src/cosmos/channel.js"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -49,7 +49,7 @@ const createBatch = Effect.gen(function* () {
   const transfer1 = yield* createAptosToCosmosFungibleAssetOrder(TRANSFERS[0])
   yield* Effect.log("creating transfer 2")
   const transfer2 = yield* createAptosToCosmosFungibleAssetOrder(TRANSFERS[1])
-  return Batch([transfer1, transfer2])
+  return Batch.make({ operand: [transfer1, transfer2] })
 }).pipe(Effect.withLogSpan("batch creation"))
 
 Effect.runPromiseExit(

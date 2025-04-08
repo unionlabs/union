@@ -74,13 +74,14 @@ onMount(() => {
 <div class="relative h-full">
   <div
     bind:this={highlightElement}
-    class="absolute -z-10 bg-zinc-800 rounded-lg transition-all duration-300"
+    class="absolute -z-10 bg-babylon-orange rounded-lg transition-all duration-300"
   ></div>
 
 
 <div class="min-h-full flex flex-col overflow-y-auto">
-  <div class="px-6 flex items-center border-b-1 h-16 border-zinc-900">
+  <div class="px-6 flex items-center gap-2 border-b-1 h-16 border-zinc-900">
     <img class="h-10" src="/images/union-logo.svg" alt="Union" />
+    <div class="bg-babylon-orange px-2 py rounded text-sm font-mono font-bold">BTC</div>
   </div>
   <div class="flex flex-col flex-1">
   {#each navigation as section, i}
@@ -101,7 +102,7 @@ onMount(() => {
                 )}
               >
                 <item.icon 
-                  class="size-5 text-zinc-500" 
+                  class={cn(isCurrentPath(item.path) ?  "size-5 text-white" : "size-5 zinc-500")}
                 />
                 {item.title}
               </a>

@@ -6,7 +6,7 @@ import * as S from "effect/Schema"
  * Note: To be used ineroperably with `viem`.
  */
 export const Hex = S.NonEmptyString.pipe(
-  S.pattern(/^0x[0-9a-f]+$/),
+  S.pattern(/^0x[0-9a-fA-F]+$/), // TODO: remove uppercase
   S.minLength(3)
 ) as unknown as S.TemplateLiteral<`0x${string}`>
 export type Hex = typeof Hex.Type

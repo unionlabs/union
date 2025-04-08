@@ -1,37 +1,27 @@
 <script lang="ts">
-import { Option } from "effect"
-import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { ApprovalRequired } from "../transfer-step.ts"
+import { Option, Struct } from "effect"
 import Button from "$lib/components/ui/Button.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { goto } from "$app/navigation"
 import { truncate } from "$lib/utils/format.ts"
 import { fly } from "svelte/transition"
+import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
+import { lockedTransferStore } from "../locked-transfer.svelte"
 
 type Props = {
-  stepIndex: number
   newTransfer: () => void
 }
 
-const { stepIndex, newTransfer }: Props = $props()
-
-const lts = lockedTransferStore.get()
-
-const step: Option.Option<ReturnType<typeof ApprovalRequired>> = $derived.by(() => {
-  if (Option.isNone(lts)) return Option.none()
-
-  const steps = lts.value.steps
-  if (stepIndex < 0 || stepIndex >= steps.length) return Option.none()
-
-  const step = steps[stepIndex]
-  return step._tag === "ApprovalRequired" ? Option.some(step) : Option.none()
-})
+const { newTransfer }: Props = $props()
 
 $effect(() => {
   if (Option.isSome(transferHashStore.data)) {
     transferHashStore.stopPolling()
   }
 })
+
+const lts = lockedTransferStore.get()
+const sourceChain = $derived(lts.pipe(Option.map(Struct.get("sourceChain"))))
 
 const handleRedirect = () => {
   if (Option.isSome(transferHashStore.data)) {
@@ -80,7 +70,9 @@ const handleRedirect = () => {
         <div class="flex flex-col items-center justify-center h-full py-8">
           <div class="animate-spin rounded-full h-12 w-12 border-y-2 border-union mb-4"></div>
           <p class="text-lg font-medium text-zinc-400 mb-2">Waiting for indexer...</p>
-          <p class="text-sm text-zinc-500 font-mono px-3 py-1 rounded">{truncate(transferHashStore.hash, 8, "middle")}</p>
+          {#if Option.isSome(sourceChain)}
+            <TransactionHashComponent hash={transferHashStore.hash} chain={sourceChain.value}/>
+          {/if}
         </div>
       </div>
     {/if}
