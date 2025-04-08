@@ -35,10 +35,6 @@ mod turnstile;
 
 const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
-//
-// 1. Unified gas filler configuration types
-//
-// This replaces the old separate GasFillerMode and GasFillerConfig types.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type", content = "config")]
 pub enum AnyGasFillerConfig {
@@ -46,7 +42,6 @@ pub enum AnyGasFillerConfig {
     Feemarket(FeemarketGasFillerConfig),
 }
 
-// New configuration type for the fee–market variant.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FeemarketGasFillerConfig {
     pub max_gas: u64,
@@ -54,10 +49,6 @@ pub struct FeemarketGasFillerConfig {
     pub fee_denom: Option<String>,
 }
 
-//
-// 2. Gas filler abstraction over static and fee–market fillers
-//
-// We do not derive Clone here since FeemarketGasFiller is not Clone.
 #[derive(Debug)]
 pub enum AnyGasFiller {
     Static(StaticGasFiller),
@@ -80,13 +71,10 @@ impl GasFillerT for AnyGasFiller {
     }
 }
 
-// Conversion from the unified configuration type to an operational gas filler.
 impl AnyGasFiller {
     pub async fn from_config(config: AnyGasFillerConfig, rpc_url: String) -> Result<Self> {
         match config {
-            AnyGasFillerConfig::Static(static_config) => {
-                Ok(AnyGasFiller::Static(static_config))
-            }
+            AnyGasFillerConfig::Static(static_config) => Ok(AnyGasFiller::Static(static_config)),
             AnyGasFillerConfig::Feemarket(feemarket_config) => {
                 let filler = FeemarketGasFiller::new(
                     rpc_url,
