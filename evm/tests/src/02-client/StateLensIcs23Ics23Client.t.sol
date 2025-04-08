@@ -143,11 +143,11 @@ contract StateLensIcs23Ics23ClientTest is Test {
         ibcStore = new MockIbcStore();
         ibcHandler = address(ibcStore);
         StateLensIcs23Ics23Client implementation =
-            new StateLensIcs23Ics23Client();
+            new StateLensIcs23Ics23Client(ibcHandler);
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeWithSelector(
-                StateLensIcs23Ics23Client.initialize.selector, ibcHandler, admin
+                StateLensIcs23Ics23Client.initialize.selector, admin
             )
         );
         client = StateLensIcs23Ics23Client(address(proxy));

@@ -12,11 +12,12 @@ contract StateLensIcs23MptClientTest is Test {
 
     function setUp() public {
         ibcHandler = address(0xC0DE);
-        StateLensIcs23MptClient implementation = new StateLensIcs23MptClient();
+        StateLensIcs23MptClient implementation =
+            new StateLensIcs23MptClient(ibcHandler);
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeWithSelector(
-                StateLensIcs23MptClient.initialize.selector, ibcHandler, admin
+                StateLensIcs23MptClient.initialize.selector, admin
             )
         );
         client = StateLensIcs23MptClient(address(proxy));

@@ -89,23 +89,27 @@ contract StateLensIcs23Ics23Client is
 {
     using StateLensIcs23Ics23Lib for *;
 
-    address private ibcHandler;
+    address public immutable IBC_HANDLER;
 
+    address private _deprecated_ibcHandler;
     mapping(uint32 => ClientState) private clientStates;
     mapping(uint32 => mapping(uint64 => ConsensusState)) private consensusStates;
     mapping(uint32 => mapping(uint64 => ProcessedMoment)) private
         processedMoments;
 
-    constructor() {
+    constructor(
+        address _ibcHandler
+    ) {
         _disableInitializers();
+        IBC_HANDLER = _ibcHandler;
     }
 
     function initialize(
-        address _ibcHandler,
         address admin
     ) public initializer {
         __Ownable_init(admin);
-        ibcHandler = _ibcHandler;
+        __UUPSUpgradeable_init();
+        __Pausable_init();
     }
 
     function createClient(
@@ -181,7 +185,7 @@ contract StateLensIcs23Ics23Client is
         }
         ClientState storage clientState = clientStates[clientId];
         ILightClient l1Client =
-            IBCStore(ibcHandler).getClient(clientState.l1ClientId);
+            IBCStore(IBC_HANDLER).getClient(clientState.l1ClientId);
         // L₂[H₂] ∈ L₁[H₁]
         if (
             !l1Client.verifyMembership(
@@ -325,7 +329,7 @@ contract StateLensIcs23Ics23Client is
         uint32 clientId
     ) internal view returns (bool) {
         uint32 l1ClientId = clientStates[clientId].l1ClientId;
-        return IBCStore(ibcHandler).getClient(l1ClientId).isFrozen(l1ClientId);
+        return IBCStore(IBC_HANDLER).getClient(l1ClientId).isFrozen(l1ClientId);
     }
 
     function _authorizeUpgrade(
@@ -341,7 +345,7 @@ contract StateLensIcs23Ics23Client is
     }
 
     function _onlyIBC() internal view {
-        if (msg.sender != ibcHandler) {
+        if (msg.sender != IBC_HANDLER) {
             revert StateLensIcs23Ics23Lib.ErrNotIBC();
         }
     }

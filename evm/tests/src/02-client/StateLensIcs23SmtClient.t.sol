@@ -159,12 +159,13 @@ contract StateLensIcs23SmtClientTest is Test {
         ibcHandler = address(ibcStore);
 
         // Deploy the implementation
-        StateLensIcs23SmtClient implementation = new StateLensIcs23SmtClient();
+        StateLensIcs23SmtClient implementation =
+            new StateLensIcs23SmtClient(ibcHandler);
         // Deploy proxy
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeWithSelector(
-                StateLensIcs23SmtClient.initialize.selector, ibcHandler, admin
+                StateLensIcs23SmtClient.initialize.selector, admin
             )
         );
         // Cast proxy -> client

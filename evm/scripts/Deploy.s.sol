@@ -132,11 +132,8 @@ abstract contract UnionScript is UnionBase {
             deploy(
                 LightClients.make(LightClients.STATE_LENS_ICS23_MPT),
                 abi.encode(
-                    address(new StateLensIcs23MptClient()),
-                    abi.encodeCall(
-                        StateLensIcs23MptClient.initialize,
-                        (address(handler), owner)
-                    )
+                    address(new StateLensIcs23MptClient(address(handler))),
+                    abi.encodeCall(StateLensIcs23MptClient.initialize, (owner))
                 )
             )
         );
@@ -150,10 +147,9 @@ abstract contract UnionScript is UnionBase {
             deploy(
                 LightClients.make(LightClients.STATE_LENS_ICS23_ICS23),
                 abi.encode(
-                    address(new StateLensIcs23Ics23Client()),
+                    address(new StateLensIcs23Ics23Client(address(handler))),
                     abi.encodeCall(
-                        StateLensIcs23Ics23Client.initialize,
-                        (address(handler), owner)
+                        StateLensIcs23Ics23Client.initialize, (owner)
                     )
                 )
             )
@@ -168,11 +164,8 @@ abstract contract UnionScript is UnionBase {
             deploy(
                 LightClients.make(LightClients.STATE_LENS_ICS23_SMT),
                 abi.encode(
-                    address(new StateLensIcs23SmtClient()),
-                    abi.encodeCall(
-                        StateLensIcs23SmtClient.initialize,
-                        (address(handler), owner)
-                    )
+                    address(new StateLensIcs23SmtClient(address(handler))),
+                    abi.encodeCall(StateLensIcs23SmtClient.initialize, (owner))
                 )
             )
         );
@@ -186,10 +179,8 @@ abstract contract UnionScript is UnionBase {
             deploy(
                 LightClients.make(LightClients.COMETBLS),
                 abi.encode(
-                    address(new CometblsClient()),
-                    abi.encodeCall(
-                        CometblsClient.initialize, (address(handler), owner)
-                    )
+                    address(new CometblsClient(address(handler))),
+                    abi.encodeCall(CometblsClient.initialize, (owner))
                 )
             )
         );
@@ -709,7 +700,7 @@ contract GetDeployed is VersionedScript {
             "args",
             abi.encode(
                 implOf(cometblsClient),
-                abi.encodeCall(CometblsClient.initialize, (handler, sender))
+                abi.encodeCall(CometblsClient.initialize, (sender))
             )
         );
         impls.serialize(cometblsClient.toHexString(), proxyComet);
@@ -726,9 +717,7 @@ contract GetDeployed is VersionedScript {
             "args",
             abi.encode(
                 implOf(stateLensIcs23MptClient),
-                abi.encodeCall(
-                    StateLensIcs23MptClient.initialize, (handler, sender)
-                )
+                abi.encodeCall(StateLensIcs23MptClient.initialize, (sender))
             )
         );
         impls.serialize(
@@ -879,6 +868,7 @@ contract DryUpgradeUCS03 is VersionedScript {
     }
 
     function run() public {
+        address handler = getDeployed(IBC.BASED);
         UCS03Zkgm ucs03 =
             UCS03Zkgm(payable(getDeployed(Protocols.make(Protocols.UCS03))));
 
@@ -887,7 +877,7 @@ contract DryUpgradeUCS03 is VersionedScript {
         );
 
         address newImplementation =
-            address(new UCS03Zkgm(ucs03.IBC_HANDLER(), ucs03.WETH()));
+            address(new UCS03Zkgm(IIBCModulePacket(handler), ucs03.WETH()));
         vm.prank(owner);
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
     }
@@ -916,6 +906,7 @@ contract UpgradeUCS03 is VersionedScript {
     }
 
     function run() public {
+        address handler = getDeployed(IBC.BASED);
         UCS03Zkgm ucs03 =
             UCS03Zkgm(payable(getDeployed(Protocols.make(Protocols.UCS03))));
 
@@ -925,7 +916,7 @@ contract UpgradeUCS03 is VersionedScript {
 
         vm.startBroadcast(privateKey);
         address newImplementation =
-            address(new UCS03Zkgm(ucs03.IBC_HANDLER(), ucs03.WETH()));
+            address(new UCS03Zkgm(IIBCModulePacket(handler), ucs03.WETH()));
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }
@@ -1055,20 +1046,20 @@ contract DryUpgradeCometblsClient is VersionedScript {
     }
 
     function run() public {
-        address cometblsClient =
-            getDeployed(LightClients.make(LightClients.COMETBLS));
+        address handler = getDeployed(IBC.BASED);
+        CometblsClient cometblsClient = CometblsClient(
+            getDeployed(LightClients.make(LightClients.COMETBLS))
+        );
         console.log(
             string(
                 abi.encodePacked(
-                    "CometblsClient: ", cometblsClient.toHexString()
+                    "CometblsClient: ", address(cometblsClient).toHexString()
                 )
             )
         );
-        address newImplementation = address(new CometblsClient());
+        address newImplementation = address(new CometblsClient(handler));
         vm.prank(owner);
-        CometblsClient(cometblsClient).upgradeToAndCall(
-            newImplementation, new bytes(0)
-        );
+        cometblsClient.upgradeToAndCall(newImplementation, new bytes(0));
     }
 }
 
@@ -1095,20 +1086,20 @@ contract UpgradeCometblsClient is VersionedScript {
     }
 
     function run() public {
-        address cometblsClient =
-            getDeployed(LightClients.make(LightClients.COMETBLS));
+        address handler = getDeployed(IBC.BASED);
+        CometblsClient cometblsClient = CometblsClient(
+            getDeployed(LightClients.make(LightClients.COMETBLS))
+        );
         console.log(
             string(
                 abi.encodePacked(
-                    "CometblsClient: ", cometblsClient.toHexString()
+                    "CometblsClient: ", address(cometblsClient).toHexString()
                 )
             )
         );
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new CometblsClient());
-        CometblsClient(cometblsClient).upgradeToAndCall(
-            newImplementation, new bytes(0)
-        );
+        address newImplementation = address(new CometblsClient(handler));
+        cometblsClient.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }
 }
@@ -1136,19 +1127,23 @@ contract UpgradeStateLensIcs23MptClient is VersionedScript {
     }
 
     function run() public {
-        address stateLensIcs23MptClient =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_MPT));
+        address handler = getDeployed(IBC.BASED);
+        StateLensIcs23MptClient stateLensIcs23MptClient =
+        StateLensIcs23MptClient(
+            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_MPT))
+        );
         console.log(
             string(
                 abi.encodePacked(
                     "StateLensIcs23MptClient: ",
-                    stateLensIcs23MptClient.toHexString()
+                    address(stateLensIcs23MptClient).toHexString()
                 )
             )
         );
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new StateLensIcs23MptClient());
-        CometblsClient(stateLensIcs23MptClient).upgradeToAndCall(
+        address newImplementation =
+            address(new StateLensIcs23MptClient(handler));
+        stateLensIcs23MptClient.upgradeToAndCall(
             newImplementation, new bytes(0)
         );
         vm.stopBroadcast();
@@ -1178,19 +1173,23 @@ contract UpgradeStateLensIcs23Ics23Client is VersionedScript {
     }
 
     function run() public {
-        address stateLensIcs23Ics23Client =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_ICS23));
+        address handler = getDeployed(IBC.BASED);
+        StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
+        StateLensIcs23Ics23Client(
+            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_ICS23))
+        );
         console.log(
             string(
                 abi.encodePacked(
                     "StateLensIcs23Ics23Client: ",
-                    stateLensIcs23Ics23Client.toHexString()
+                    address(stateLensIcs23Ics23Client).toHexString()
                 )
             )
         );
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new StateLensIcs23Ics23Client());
-        StateLensIcs23Ics23Client(stateLensIcs23Ics23Client).upgradeToAndCall(
+        address newImplementation =
+            address(new StateLensIcs23Ics23Client(handler));
+        stateLensIcs23Ics23Client.upgradeToAndCall(
             newImplementation, new bytes(0)
         );
         vm.stopBroadcast();
@@ -1220,19 +1219,23 @@ contract UpgradeStateLensIcs23SmtClient is VersionedScript {
     }
 
     function run() public {
-        address stateLensIcs23SmtClient =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_SMT));
+        address handler = getDeployed(IBC.BASED);
+        StateLensIcs23SmtClient stateLensIcs23SmtClient =
+        StateLensIcs23SmtClient(
+            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_SMT))
+        );
         console.log(
             string(
                 abi.encodePacked(
                     "StateLensIcs23SmtClient: ",
-                    stateLensIcs23SmtClient.toHexString()
+                    address(stateLensIcs23SmtClient).toHexString()
                 )
             )
         );
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new StateLensIcs23SmtClient());
-        StateLensIcs23SmtClient(stateLensIcs23SmtClient).upgradeToAndCall(
+        address newImplementation =
+            address(new StateLensIcs23SmtClient(handler));
+        stateLensIcs23SmtClient.upgradeToAndCall(
             newImplementation, new bytes(0)
         );
         vm.stopBroadcast();
