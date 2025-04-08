@@ -8,7 +8,7 @@ import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import Label from "../ui/Label.svelte"
 import A from "../ui/A.svelte"
-import { pipe, Array, Struct, String } from "effect"
+import { pipe, Array as Arr, Struct, String as Str } from "effect"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   hash: string
@@ -27,16 +27,16 @@ const formattedHash = $derived(
 const explorerUrl = $derived(
   pipe(
     chain.explorers,
-    Array.head,
+    Arr.head,
     Option.map(Struct.get("tx_url")),
-    Option.map(String.concat(formattedHash))
+    Option.map(Str.concat(formattedHash))
   )
 )
 
 const explorerName = $derived(
   pipe(
     chain.explorers,
-    Array.head,
+    Arr.head,
     Option.map(Struct.get("display_name")),
     Option.getOrElse(() => "explorer")
   )
@@ -45,14 +45,20 @@ const explorerName = $derived(
 
 <Tooltip title={chain ? `Transaction on ${chain.display_name}` : "Transaction"}>
   {#snippet trigger()}
-    <Truncate class="font-mono text-xs break-all {className}" {...rest} showCopy={false} value={formattedHash} maxLength={12} />
+    <Truncate
+      class="font-mono text-xs break-all {className}"
+      {...rest}
+      showCopy={false}
+      value={formattedHash}
+      maxLength={12}
+    />
   {/snippet}
 
   {#snippet content()}
     {#if chain}
       <section>
         <Label>Chain</Label>
-        <ChainComponent chain={chain} />
+        <ChainComponent {chain} />
       </section>
     {/if}
 

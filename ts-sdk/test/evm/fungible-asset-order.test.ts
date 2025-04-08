@@ -32,7 +32,7 @@ const mockCosmosQuoteToken = "0x123" as const
 // Mock clients
 const mockViemPublicClientSource = {
   client: {
-    readContract: async (params: any) => {
+    readContract: (params: any) => {
       // This simulates reading ERC20 metadata based on the function name
       if (params.functionName === "name") return mockErc20Meta.name
       if (params.functionName === "symbol") return mockErc20Meta.symbol
@@ -44,7 +44,7 @@ const mockViemPublicClientSource = {
 
 const mockViemPublicClientDestination = {
   client: {
-    readContract: async () => {
+    readContract: () => {
       // This simulates predicting a quote token
       return [mockEvmQuoteToken]
     }
@@ -53,7 +53,7 @@ const mockViemPublicClientDestination = {
 
 const mockCosmWasmClientSource = {
   client: {
-    queryContractSmart: async (_contractAddress: string, query: any) => {
+    queryContractSmart: (_contractAddress: string, query: any) => {
       // This simulates reading CW20 token info
       if (query.token_info) {
         return mockCw20TokenInfo
@@ -68,7 +68,7 @@ const mockCosmWasmClientSource = {
 
 const mockCosmWasmClientDestination = {
   client: {
-    queryContractSmart: async (_contractAddress: string, query: any) => {
+    queryContractSmart: (_contractAddress: string, query: any) => {
       // This simulates predicting a quote token
       if (query.predict_wrapped_token) {
         return { wrapped_token: mockCosmosQuoteToken }
