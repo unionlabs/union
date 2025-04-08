@@ -36,6 +36,10 @@
     "5": {
       "comments": "babylon.bbn-test-5 channel 11",
       "tags": ["canonical"]
+    },
+    "6": {
+      "comments": "bob.808813 channel 3",
+      "tags": ["canonical"]
     }
   },
   "ethereum.11155111": {
