@@ -33,11 +33,11 @@ export const navigation: Array<NavSection> = [
           {
             path: "/transfers",
             title: "History"
-          },
-          {
-            path: "/faucet",
-            title: "Faucet"
           }
+          // {
+          //   path: "/faucet",
+          //   title: "Faucet"
+          // }
         ]
       }
     ]
