@@ -1204,5 +1204,13 @@ contract UCS03Zkgm is
         address newImplementation
     ) internal override onlyOwner {}
 
+    function pause() public onlyOwner {
+        _pause();
+    }
+
+    function unpause() public onlyOwner {
+        _unpause();
+    }
+
     receive() external payable {}
 }
