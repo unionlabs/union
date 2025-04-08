@@ -17,6 +17,11 @@ import "../../../contracts/apps/ucs/03-zkgm/Zkgm.sol";
 import "../../../contracts/apps/Base.sol";
 
 contract TestZkgm is UCS03Zkgm {
+    constructor(
+        IIBCModulePacket _ibcHandler,
+        IWETH _weth
+    ) UCS03Zkgm(_ibcHandler, _weth) {}
+
     function doExecuteForward(
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -259,12 +264,11 @@ contract ZkgmTests is Test {
         weth = new TestWETH();
         erc20 = new TestERC20("Test", "T", 18);
         handler = new TestIBCHandler();
-        TestZkgm implementation = new TestZkgm();
+        TestZkgm implementation = new TestZkgm(handler, weth);
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
-            abi.encodeCall(UCS03Zkgm.initialize, (handler, address(this)))
+            abi.encodeCall(UCS03Zkgm.initialize, (address(this)))
         );
-        UCS03Zkgm(payable(address(proxy))).setWETH(weth);
         zkgm = TestZkgm(payable(address(proxy)));
         multiplexTarget = new TestMultiplexTarget(address(zkgm));
     }
@@ -272,21 +276,21 @@ contract ZkgmTests is Test {
     receive() external payable {}
 
     function test_proxyInitialization_ok(
+        address wethAddress,
         address handlerAddress,
         address ownerAddress
     ) public {
         vm.assume(handlerAddress != address(0));
         vm.assume(ownerAddress != address(0));
-        TestZkgm implementation = new TestZkgm();
+        TestZkgm implementation =
+            new TestZkgm(IIBCModulePacket(handlerAddress), IWETH(wethAddress));
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
-            abi.encodeCall(
-                UCS03Zkgm.initialize,
-                (IIBCModulePacket(handlerAddress), ownerAddress)
-            )
+            abi.encodeCall(UCS03Zkgm.initialize, (ownerAddress))
         );
         TestZkgm _zkgm = TestZkgm(payable(address(proxy)));
-        assertEq(address(_zkgm.ibcHandler()), handlerAddress);
+        assertEq(address(_zkgm.IBC_HANDLER()), handlerAddress);
+        assertEq(address(_zkgm.WETH()), wethAddress);
         assertEq(_zkgm.owner(), ownerAddress);
     }
 

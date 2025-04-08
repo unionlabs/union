@@ -61,35 +61,30 @@ contract UCS03Zkgm is
     using SafeERC20 for *;
     using Address for *;
 
-    IIBCModulePacket public ibcHandler;
+    IIBCModulePacket public immutable IBC_HANDLER;
+    IWETH public immutable WETH;
+
     mapping(bytes32 => IBCPacket) public inFlightPacket;
     mapping(address => uint256) public tokenOrigin;
     mapping(uint32 => mapping(uint256 => mapping(address => uint256))) public
         channelBalance;
-    IWETH public weth;
 
-    constructor() {
+    constructor(IIBCModulePacket _ibcHandler, IWETH _weth) {
         _disableInitializers();
+        IBC_HANDLER = _ibcHandler;
+        WETH = _weth;
     }
 
     function initialize(
-        IIBCModulePacket _ibcHandler,
         address _admin
     ) public initializer {
         __Ownable_init(_admin);
         __UUPSUpgradeable_init();
         __Pausable_init();
-        ibcHandler = _ibcHandler;
-    }
-
-    function setWETH(
-        IWETH _weth
-    ) public onlyOwner {
-        weth = _weth;
     }
 
     function ibcAddress() public view virtual override returns (address) {
-        return address(ibcHandler);
+        return address(IBC_HANDLER);
     }
 
     function send(
@@ -100,7 +95,7 @@ contract UCS03Zkgm is
         Instruction calldata instruction
     ) public whenNotPaused {
         verifyInternal(channelId, 0, instruction);
-        ibcHandler.sendPacket(
+        IBC_HANDLER.sendPacket(
             channelId,
             timeoutHeight,
             timeoutTimestamp,
@@ -459,7 +454,7 @@ contract UCS03Zkgm is
                 )
             });
         }
-        IBCPacket memory sentPacket = ibcHandler.sendPacket(
+        IBCPacket memory sentPacket = IBC_HANDLER.sendPacket(
             nextSourceChannelId,
             forward.timeoutHeight,
             forward.timeoutTimestamp,
@@ -608,12 +603,12 @@ contract UCS03Zkgm is
             if (quoteToken == ZkgmLib.NATIVE_ETH_MAGIC) {
                 // Transfert to protocol.
                 if (
-                    !weth.trySafeTransferFrom(caller, address(this), quoteAmount)
+                    !WETH.trySafeTransferFrom(caller, address(this), quoteAmount)
                 ) {
                     return ZkgmLib.ACK_ERR_ONLYMAKER;
                 }
                 // Unwrap and send.
-                weth.withdraw(quoteAmount);
+                WETH.withdraw(quoteAmount);
                 // We allow this call to fail because in such case the MM was
                 // able to provide the funds. A failure ACK will be written and
                 // refund will happen.
@@ -732,7 +727,7 @@ contract UCS03Zkgm is
             IBCPacket memory parent = inFlightPacket[packetHash];
             if (parent.timeoutTimestamp != 0 || parent.timeoutHeight != 0) {
                 delete inFlightPacket[packetHash];
-                ibcHandler.writeAcknowledgement(parent, ack);
+                IBC_HANDLER.writeAcknowledgement(parent, ack);
                 return;
             }
         }
@@ -967,7 +962,7 @@ contract UCS03Zkgm is
                 // the parent such that we ensure refund happens as the parent
                 // wouldn't timeout itself.
                 delete inFlightPacket[packetHash];
-                ibcHandler.writeAcknowledgement(
+                IBC_HANDLER.writeAcknowledgement(
                     parent,
                     ZkgmLib.encodeAck(
                         Ack({
