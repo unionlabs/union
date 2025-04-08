@@ -197,6 +197,7 @@ _: {
           network = "devnet";
           rpc-url = "http://localhost:8545";
           private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
+          weth = "0x0000000000000000000000000000000000000000";
 
           verify = pkgs.lib.optionalString pkgs.stdenv.isx86_64;
           verifier = "blockscout";
@@ -207,6 +208,7 @@ _: {
           network = "berachain-devnet";
           rpc-url = "http://localhost:8545";
           private-key = "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306";
+          weth = "0x0000000000000000000000000000000000000000";
 
           verify = false;
         }
@@ -215,6 +217,7 @@ _: {
           network = "arbitrum-devnet";
           rpc-url = "http://localhost:8547";
           private-key = "0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659";
+          weth = "0x0000000000000000000000000000000000000000";
 
           verify = false;
         }
@@ -224,6 +227,7 @@ _: {
           network = "sepolia";
           rpc-url = "https://0xrpc.io/sep";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
 
           verifier = "etherscan";
           verification-key = ''"$1"'';
@@ -232,6 +236,7 @@ _: {
           network = "holesky";
           rpc-url = "https://holesky.gateway.tenderly.co";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
 
           verifier = "etherscan";
           verification-key = ''"$1"'';
@@ -240,6 +245,8 @@ _: {
           network = "corn-testnet";
           rpc-url = "https://testnet.corn-rpc.com";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          # TODO: find out
+          weth = "0x0000000000000000000000000000000000000000";
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -248,6 +255,7 @@ _: {
           network = "bob-testnet";
           rpc-url = "https://bob-sepolia.rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x4200000000000000000000000000000000000006";
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -256,6 +264,8 @@ _: {
           network = "0g-testnet";
           rpc-url = "https://evmrpc-testnet.0g.ai";
           private-key = ''"$1"'';
+          # TODO: find out
+          weth = "0x0000000000000000000000000000000000000000";
 
           verify = false;
         }
@@ -265,6 +275,7 @@ _: {
           network = "bob";
           rpc-url = "https://rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x4200000000000000000000000000000000000006";
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -275,17 +286,23 @@ _: {
           network = "scroll-testnet";
           rpc-url = "https://sepolia-rpc.scroll.io";
           private-key = ''"$1"'';
+          # TODO: find out
+          weth = "0x0000000000000000000000000000000000000000";
+
           verifier = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
         }
         {
           network = "arbitrum-testnet";
           rpc-url = "https://sepolia-rollup.arbitrum.io/rpc";
           private-key = ''"$1"'';
+          weth = "0x980b62da83eff3d4576c647993b0c1d7faf17c73";
         }
         {
           network = "berachain-testnet";
           rpc-url = "https://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1/";
           private-key = ''"$1"'';
+          # TODO: find out
+          weth = "0x0000000000000000000000000000000000000000";
         }
       ];
 
@@ -370,6 +387,7 @@ _: {
         {
           rpc-url,
           private-key,
+          weth,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -387,6 +405,7 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              WETH_ADDRESS=${weth} \
               VERIFICATION_KEY=${verification-key} \
               PRIVATE_KEY=${private-key} \
               DEPLOYER="$3" \
@@ -406,6 +425,7 @@ _: {
         {
           rpc-url,
           private-key,
+          weth,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -423,6 +443,7 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              WETH_ADDRESS=${weth} \
               VERIFICATION_KEY=${verification-key} \
               PRIVATE_KEY=${private-key} \
               FOUNDRY_LIBS='["libs"]' \
@@ -488,6 +509,7 @@ _: {
         {
           rpc-url,
           kind,
+          weth,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -522,6 +544,7 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              WETH_ADDRESS=${weth} \
               VERIFICATION_KEY=${verification-key} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
@@ -546,6 +569,7 @@ _: {
           rpc-url,
           protocol,
           private-key,
+          weth,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -583,6 +607,7 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              WETH_ADDRESS=${weth} \
               VERIFICATION_KEY=${verification-key} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
