@@ -32,7 +32,7 @@ const EvmTransferSchema = S.Struct({
   sourceRpcType: S.Literal("evm").annotations({
     message: () => "sourceRpcType must be 'evm'"
   }),
-  wethBaseToken: EvmWethToken,
+  // wethBaseToken: EvmWethToken,
   receiver: S.String.pipe(
     S.nonEmptyString({ message: () => "receiver must be a non-empty string" })
   )

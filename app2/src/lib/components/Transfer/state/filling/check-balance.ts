@@ -1,4 +1,4 @@
-import { Effect, Option } from "effect"
+import { Effect, identity, Option } from "effect"
 import { Chain } from "@unionlabs/sdk/schema"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
@@ -56,5 +56,5 @@ export const checkBalanceForIntents = (source: Chain, intents: TransferIntents) 
         })
       }
     )
-  ).pipe(Effect.map(results => results.every(result => result === true)))
+  ).pipe(Effect.map(results => results.every(identity)))
 }
