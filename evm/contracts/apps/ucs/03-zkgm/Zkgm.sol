@@ -66,6 +66,7 @@ contract UCS03Zkgm is
     IIBCModulePacket public immutable IBC_HANDLER;
     IWETH public immutable WETH;
 
+    IIBCModulePacket private _deprecated_ibcHandler;
     mapping(bytes32 => IBCPacket) public inFlightPacket;
     mapping(address => uint256) public tokenOrigin;
     mapping(uint32 => mapping(uint256 => mapping(address => uint256))) public
