@@ -150,6 +150,7 @@ _: {
         corn-testnet = { key = "''${VERIFICATION_KEY}", chain = "21000001", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/21000001/public" }
         bob-mainnet = { key = "''${VERIFICATION_KEY}", chain = "60808", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/60808/public" }
         bob-testnet = { key = "''${VERIFICATION_KEY}", chain = "808813", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/808813/public" }
+        bepolia = { key = "''${VERIFICATION_KEY}", chain = "80094", url = "https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan" }
       '';
       compilers = pkgs.linkFarm "evm-libraries" [
         {
@@ -251,6 +252,14 @@ _: {
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+        }
+        {
+          network = "bepolia";
+          rpc-url = "https://bepolia.rpc.berachain.com/";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+
+          verifier = "etherscan";
+          verification-key = ''"verifyContract"'';
         }
         {
           network = "0g-testnet";
@@ -836,19 +845,19 @@ _: {
           })
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-verify-${args.network}";
+              name = "verify-${args.network}";
               value = verify args;
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-deploy-${args.network}-full";
+              name = "deploy-full-${args.network}";
               value = deploy-full args;
             }) networks
           )
           // builtins.listToAttrs (
             builtins.map (args: {
-              name = "eth-deploy-${args.network}";
+              name = "deploy-${args.network}";
               value = deploy args;
             }) networks
           )
