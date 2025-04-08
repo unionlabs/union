@@ -2,6 +2,7 @@ import { Match, Option, Schema } from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
 import {
   Channel,
+  EVMTransfer,
   type AddressCanonicalBytes,
   type Token,
   type TokenRawDenom
@@ -16,15 +17,9 @@ import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
 import { validateTransfer, type ValidationResult } from "$lib/components/Transfer/validation.ts"
 import { WETH_DENOMS } from "$lib/constants/weth-denoms.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
+import type { EvmSourceIntent, FungibleAssetOrderIntent } from "@unionlabs/sdk/ucs03/fungible-asset-order.ts"
 
-export type TransferIntent = {
-  sender: AddressCanonicalBytes
-  receiver: string
-  baseToken: TokenRawDenom
-  baseAmount: bigint
-  quoteAmount: bigint
-}
-export type TransferIntents = Array<TransferIntent>
+export type TransferIntents = Array<FungibleAssetOrderIntent>
 
 export class Transfer {
   raw = new RawTransferSvelte()
@@ -268,28 +263,31 @@ export class Transfer {
     const sender = Option.getOrUndefined(this.derivedSender)
     if (!sender) return Option.none<TransferIntents>()
 
-    return Match.value(transferValue.sourceChain.rpc_type).pipe(
-      Match.when("evm", () => {
-        if (Option.isNone(this.wethBaseToken)) return Option.none<TransferIntents>()
-        const wethToken = Option.getOrUndefined(this.wethBaseToken)
-        if (!wethToken) return Option.none<TransferIntents>()
+    return Match.value(transferValue).pipe(
+      Match.whenAnd(
+        { sourceChain: { rpc_type: "evm" } },
+        Match.instanceOf(EVMTransfer),
+        (transferValue) => {
+          if (Option.isNone(this.wethBaseToken)) return Option.none<TransferIntents>()
+          const wethToken = Option.getOrUndefined(this.wethBaseToken)
+          if (!wethToken) return Option.none<TransferIntents>()
 
-        return Option.some<TransferIntents>([
-          {
-            sender: sender,
-            receiver: transferValue.receiver,
-            baseToken: transferValue.baseToken,
-            baseAmount: transferValue.baseAmount,
-            quoteAmount: transferValue.baseAmount
-          },
-          {
-            sender: sender,
-            receiver: transferValue.receiver,
-            baseToken: wethToken,
-            baseAmount: 500n,
-            quoteAmount: 0n
-          }
-        ])
+          return Option.some<EvmSourceIntent>([
+            {
+              sender: sender,
+              receiver: transferValue.receiver,
+              baseToken: transferValue.baseToken,
+              baseAmount: transferValue.baseAmount,
+              quoteAmount: transferValue.baseAmount
+            },
+            {
+              sender: sender,
+              receiver: transferValue.receiver,
+              baseToken: wethToken,
+              baseAmount: 500n,
+              quoteAmount: 0n
+            }
+          ])
       }),
 
       Match.when("cosmos", () => {

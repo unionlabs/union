@@ -19,9 +19,15 @@ importers:
       '@effect/language-service':
         specifier: ~0.5.1
         version: 0.5.1
+      '@effect/vitest':
+        specifier: ~0.19.10
+        version: 0.19.10(effect@3.14.2)(vitest@3.0.9(@types/debug@4.1.12)(@types/node@22.13.14)(jiti@2.4.2)(jsdom@26.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
       typescript:
         specifier: ~5.8.2
         version: 5.8.2
+      vitest:
+        specifier: ~3.0.9
+        version: 3.0.9(@types/debug@4.1.12)(@types/node@22.13.14)(jiti@2.4.2)(jsdom@26.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
 
   app2:
     devDependencies:
@@ -145,9 +151,6 @@ importers:
       vite:
         specifier: ^6.1.0
         version: 6.2.3(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
-      vitest:
-        specifier: ^3.0.5
-        version: 3.0.9(@types/debug@4.1.12)(@types/node@22.13.14)(jiti@2.4.2)(jsdom@26.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
 
   ts-sdk:
     dependencies:
@@ -179,9 +182,6 @@ importers:
       '@effect/build-utils':
         specifier: ^0.7.7
         version: 0.7.9
-      '@effect/vitest':
-        specifier: ~0.19.10
-        version: 0.19.10(effect@3.14.2)(vitest@3.0.9(@types/debug@4.1.12)(@types/node@22.13.14)(jiti@2.4.2)(jsdom@26.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
       '@types/node':
         specifier: ^22.13.1
         version: 22.13.14
@@ -203,9 +203,6 @@ importers:
       vite-node:
         specifier: ^3.1.1
         version: 3.1.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
-      vitest:
-        specifier: ^3.0.8
-        version: 3.0.9(@types/debug@4.1.12)(@types/node@22.13.14)(jiti@2.4.2)(jsdom@26.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
 
   typescript-sdk:
     dependencies:

@@ -23,7 +23,7 @@ const BaseTransferFields = {
     message: () => "destinationType must be a valid RPC type ('evm', 'cosmos', or 'aptos')"
   }),
   ucs03address: S.String,
-  timeoutHeight: S.BigInt, // XXX: Should probably be BigIntFromSelf
+  timeoutHeight: S.BigIntFromSelf,
   timeoutTimestamp: S.String
 }
 
@@ -40,6 +40,8 @@ const EvmTransferSchema = S.Struct({
 type EvmTransferSchema = typeof EvmTransferSchema.Type
 
 export class EVMTransfer extends S.Class<EVMTransfer>("EVMTransfer")(EvmTransferSchema) {}
+
+const a = S.TaggedStruct("EvmSourceTransfer")
 
 const CosmosTransferSchema = S.Struct({
   ...BaseTransferFields,
@@ -69,11 +71,17 @@ type AptosTransferSchema = typeof AptosTransferSchema.Type
 
 export class AptosTransfer extends S.Class<AptosTransfer>("AptosTransfer")(AptosTransferSchema) {}
 
-export const TransferSchema = S.Union(EVMTransfer, CosmosTransfer, AptosTransfer).annotations({
-  identifier: "Transfer",
-  title: "Transfer",
-  description: "transfer arguments"
-})
+export const TransferSchema = S.Union(
+  EVMTransfer,
+  CosmosTransfer,
+  AptosTransfer
+).pipe(
+  S.annotations({
+    identifier: "Transfer",
+    title: "Transfer",
+    description: "transfer arguments"
+  })
+)
 export type TransferS = typeof TransferSchema.Type
 
 export const ValidTransferS = S.Struct({
