@@ -16,7 +16,7 @@ use axum::{
 use chrono::{NaiveDateTime, Utc};
 use clap::Parser;
 use cosmos_client::{
-    gas::StaticGasFiller,
+    gas::{FeemarketGasFiller, GasFillerT, StaticGasFiller},
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
     TxClient,
@@ -34,6 +34,93 @@ use unionlabs::{
 mod turnstile;
 
 const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
+//
+// 1. Unified gas filler configuration types
+//
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum GasFillerMode {
+    Static,
+    Feemarket,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GasFillerConfig {
+    pub mode: GasFillerMode,
+    pub max_gas: u64,
+    #[serde(default)]
+    pub min_gas: u64,
+    pub gas_multiplier: f64,
+    // Optional for static mode
+    #[serde(default)]
+    pub gas_price: Option<f64>,
+    #[serde(default)]
+    pub gas_denom: Option<String>,
+
+    // Optional for feemarket mode
+    #[serde(default)]
+    pub fee_denom: Option<String>,
+}
+
+//
+// 2. Gas filler abstraction over static and fee–market fillers
+//
+// We do not derive Clone here since FeemarketGasFiller is not Clone.
+#[derive(Debug)]
+pub enum AnyGasFiller {
+    Static(StaticGasFiller),
+    Feemarket(FeemarketGasFiller),
+}
+
+impl GasFillerT for AnyGasFiller {
+    async fn max_gas(&self) -> u64 {
+        match self {
+            Self::Static(f) => f.max_gas().await,
+            Self::Feemarket(f) => f.max_gas().await,
+        }
+    }
+
+    async fn mk_fee(&self, gas: u64) -> unionlabs::cosmos::tx::fee::Fee {
+        match self {
+            Self::Static(f) => f.mk_fee(gas).await,
+            Self::Feemarket(f) => f.mk_fee(gas).await,
+        }
+    }
+}
+
+impl AnyGasFiller {
+    pub async fn from_config(config: GasFillerConfig, rpc_url: String) -> Result<Self> {
+        match config.mode {
+            GasFillerMode::Static => {
+                let gas_price = config
+                    .gas_price
+                    .ok_or_else(|| format!("missing gas_price for static gas config"))?;
+                let gas_denom = config
+                    .gas_denom
+                    .clone()
+                    .ok_or_else(|| format!("missing gas_denom for static gas config"))?;
+                Ok(AnyGasFiller::Static(StaticGasFiller {
+                    gas_price,
+                    gas_denom,
+                    gas_multiplier: config.gas_multiplier,
+                    max_gas: config.max_gas,
+                    min_gas: config.min_gas,
+                }))
+                    }
+            GasFillerMode::Feemarket => {
+                let filler = FeemarketGasFiller::new(
+                    rpc_url,
+                    config.max_gas,
+                    Some(config.gas_multiplier),
+                    config.fee_denom,
+                )
+                .await?;
+                Ok(AnyGasFiller::Feemarket(filler))
+            }
+        }
+    }
+}
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -308,7 +395,7 @@ pub struct Chain {
     pub id: String,
     pub bech32_prefix: String,
     pub rpc_url: String,
-    pub gas_config: StaticGasFiller,
+    pub gas_config: GasFillerConfig,
     pub signer: H256,
     pub coins: Vec<Coin>,
     pub memo: String,
@@ -327,7 +414,7 @@ pub struct CaptchaBypassSecret(pub String);
 #[derive(Clone)]
 struct ChainClient {
     pub chain: Chain,
-    pub cosmos_ctx: Arc<TxClient<LocalSigner, Rpc, StaticGasFiller>>,
+    pub cosmos_ctx: Arc<TxClient<LocalSigner, Rpc, AnyGasFiller>>,
 }
 
 impl ChainClient {
@@ -350,10 +437,14 @@ impl ChainClient {
             .unwrap()
             .bech32_prefix;
 
+        let gas_filler = AnyGasFiller::from_config(chain.gas_config.clone(), chain.rpc_url.clone())
+            .await
+            .expect("failed to build gas filler");
+
         let ctx = TxClient::new(
             LocalSigner::new(chain.signer, bech32_prefix),
             rpc,
-            chain.gas_config.clone(),
+            gas_filler,
         );
 
         let chain_id = ctx.rpc().chain_id();
