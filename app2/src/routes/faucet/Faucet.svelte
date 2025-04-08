@@ -38,15 +38,9 @@ let showTurnstile = false
 // When the user clicks "Claim", trigger verification.
 // For now, we bypass verification and use a dummy token.
 const startVerification = () => {
-  // console.info("verification started, passing verification part for now.")
-
   faucetProcess.set(FaucetProcess.Verifying())
   showTurnstile = true
   resetTurnstile?.() // resets/retriggers the Turnstile if available
-
-  // faucetProcess.set(FaucetProcess.Verified({ token }))
-  // // Immediately submit the faucet request.
-  // submitFaucetRequest(token)
 }
 
 // Callback for successful Turnstile captcha.
@@ -75,22 +69,25 @@ const submitFaucetRequest = async (token: string) => {
       wallet_addr = bech32.encode("union", words)
     }
     const result = await request(URLS().GRAPHQL, faucetUnoMutationDocument, {
-      chainId: "union-testnet-9",
+      chainId: "union-testnet-10",
       denom: "muno",
       address: wallet_addr,
       captchaToken: token
     })
-    if (!result || !result.send) {
+    console.info("faucet result is:", result)
+    if (!result || !result.drip_drop || !result.drip_drop.send) {
       faucetProcess.set(FaucetProcess.Failure({ error: "Empty faucet response" }))
       showTurnstile = false
       return
     }
-    if (result.send.startsWith("ERROR")) {
-      faucetProcess.set(FaucetProcess.Failure({ error: `Error from faucet: ${result.send}` }))
+
+    if (result.drip_drop.send.startsWith("ERROR")) {
+      faucetProcess.set(FaucetProcess.Failure({ error: `Error from faucet: ${result.drip_drop.send}` }))
       showTurnstile = false
       return
     }
-    faucetProcess.set(FaucetProcess.Success({ message: result.send }))
+    
+    faucetProcess.set(FaucetProcess.Success({ message: result.drip_drop.send }))
     showTurnstile = false
   } catch (error) {
     console.info("error is:", error)
@@ -158,7 +155,7 @@ const resetProcess = () => {
           <div class="flex flex-col items-center">
             <p class="text-xs">Tokens sent! Transaction hash:</p>
             <p class="text-xs break-all">
-              <a href={`https://explorer.testnet-9.union.build/union/tx/${$faucetProcess.message}`} target="_blank">
+              <a href={`https://explorer.testnet-10.union.build/union/tx/${$faucetProcess.message}`} target="_blank">
                 {$faucetProcess.message}
               </a>
             </p>
