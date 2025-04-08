@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import "../contracts/Manager.sol";
 import "../contracts/Multicall.sol";
 import "../contracts/core/OwnableIBCHandler.sol";
 import "../contracts/clients/CometblsClient.sol";
@@ -29,6 +30,7 @@ import "./Deployer.sol";
 library LIB {
     string constant NAMESPACE = "lib";
     string constant MULTICALL = "multicall";
+    string constant MANAGER = "manager";
 
     function make(
         string memory lib
@@ -106,6 +108,20 @@ abstract contract UnionScript is UnionBase {
                 LIB.make(LIB.MULTICALL),
                 abi.encodePacked(type(Multicall).creationCode),
                 0
+            )
+        );
+    }
+
+    function deployManager(
+        address owner
+    ) internal returns (Manager) {
+        return Manager(
+            deploy(
+                LIB.MANAGER,
+                abi.encode(
+                    address(new Manager()),
+                    abi.encodeCall(Manager.initialize, (owner))
+                )
             )
         );
     }
@@ -240,7 +256,8 @@ abstract contract UnionScript is UnionBase {
             StateLensIcs23SmtClient,
             PingPong,
             UCS03Zkgm,
-            Multicall
+            Multicall,
+            Manager
         )
     {
         IBCHandler handler = deployIBCHandler(owner);
@@ -254,6 +271,7 @@ abstract contract UnionScript is UnionBase {
         PingPong pingpong = deployUCS00(handler, owner, 100000000000000);
         UCS03Zkgm ucs03 = deployUCS03(handler, owner, weth);
         Multicall multicall = deployMulticall();
+        Manager manager = deployManager(owner);
         return (
             handler,
             cometblsClient,
@@ -262,7 +280,8 @@ abstract contract UnionScript is UnionBase {
             stateLensIcs23SmtClient,
             pingpong,
             ucs03,
-            multicall
+            multicall,
+            manager
         );
     }
 }
@@ -296,6 +315,45 @@ contract DeployMulticall is UnionScript {
         deployMulticall();
 
         vm.stopBroadcast();
+    }
+}
+
+contract DeployManager is UnionScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        address owner = vm.addr(privateKey);
+
+        vm.startBroadcast(privateKey);
+
+        Manager manager = deployManager(owner);
+
+        vm.stopBroadcast();
+
+        console.log("Manager: ", address(manager));
     }
 }
 
@@ -497,7 +555,8 @@ contract DeployIBC is UnionScript {
             StateLensIcs23SmtClient stateLensIcs23SmtClient,
             PingPong pingpong,
             UCS03Zkgm ucs03,
-            Multicall multicall
+            Multicall multicall,
+            Manager manager
         ) = deployIBC(vm.addr(privateKey), weth);
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
@@ -554,7 +613,8 @@ contract DeployDeployerAndIBC is UnionScript {
             StateLensIcs23SmtClient stateLensIcs23SmtClient,
             PingPong pingpong,
             UCS03Zkgm ucs03,
-            Multicall multicall
+            Multicall multicall,
+            Manager manager
         ) = deployIBC(vm.addr(privateKey), weth);
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
@@ -585,6 +645,7 @@ contract DeployDeployerAndIBC is UnionScript {
         console.log("UCS00: ", address(pingpong));
         console.log("UCS03: ", address(ucs03));
         console.log("Multicall: ", address(multicall));
+        console.log("Manager: ", address(manager));
     }
 }
 
@@ -620,6 +681,7 @@ contract GetDeployed is VersionedScript {
 
     function run() public {
         address multicall = getDeployed(LIB.make(LIB.MULTICALL));
+        address manager = getDeployed(LIB.make(LIB.MANAGER));
         address handler = getDeployed(IBC.BASED);
         address cometblsClient =
             getDeployed(LightClients.make(LightClients.COMETBLS));
@@ -634,6 +696,9 @@ contract GetDeployed is VersionedScript {
 
         console.log(
             string(abi.encodePacked("Multicall: ", multicall.toHexString()))
+        );
+        console.log(
+            string(abi.encodePacked("Manager: ", manager.toHexString()))
         );
         console.log(
             string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
@@ -673,6 +738,21 @@ contract GetDeployed is VersionedScript {
         console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
 
         string memory impls = "base";
+
+        string memory proxyManager = "proxyManager";
+        proxyManager.serialize(
+            "contract",
+            string(
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
+        );
+        proxyManager = proxyManager.serialize(
+            "args",
+            abi.encode(
+                implOf(handler), abi.encodeCall(Manager.initialize, sender)
+            )
+        );
+        impls.serialize(manager.toHexString(), proxyManager);
 
         string memory proxyHandler = "proxyHandler";
         proxyHandler.serialize(
@@ -764,6 +844,13 @@ contract GetDeployed is VersionedScript {
         );
         implMulticall = implMulticall.serialize("args", bytes(hex""));
         impls.serialize(multicall.toHexString(), implMulticall);
+
+        string memory implManager = "implManager";
+        implManager.serialize(
+            "contract", string("contracts/Manager.sol:Manager")
+        );
+        implManager = implManager.serialize("args", bytes(hex""));
+        impls.serialize(implOf(manager).toHexString(), implManager);
 
         string memory implHandler = "implHandler";
         implHandler.serialize(
