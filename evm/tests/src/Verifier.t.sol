@@ -12,7 +12,7 @@ contract VerifierProxy {
     CometblsClient client;
 
     constructor() {
-        client = new CometblsClient();
+        client = new CometblsClient(address(this));
     }
 
     function verifyZKP(

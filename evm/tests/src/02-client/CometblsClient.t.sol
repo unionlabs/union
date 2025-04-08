@@ -13,6 +13,10 @@ import "solidity-bytes-utils/BytesLib.sol";
 contract MockCometblsClient is CometblsClient {
     bool private zkpVerificationResult = true;
 
+    constructor(
+        address _ibcHandler
+    ) CometblsClient(_ibcHandler) {}
+
     function setZKPVerificationResult(
         bool result
     ) external {
@@ -37,14 +41,12 @@ contract CometblsClientTest is Test {
 
     function setUp() public {
         // Deploy the MockCometblsClient implementation
-        MockCometblsClient implementation = new MockCometblsClient();
+        MockCometblsClient implementation = new MockCometblsClient(ibcHandler);
 
         // Deploy the proxy and initialize it with the implementation
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
-            abi.encodeWithSelector(
-                CometblsClient.initialize.selector, ibcHandler, admin
-            )
+            abi.encodeWithSelector(CometblsClient.initialize.selector, admin)
         );
 
         // Cast the proxy as the CometblsClient
