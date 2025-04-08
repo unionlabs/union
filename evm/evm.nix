@@ -344,7 +344,7 @@ _: {
                     "$DEPLOYMENTS_FILE" \
                     --arg chain_id "$CHAIN_ID"
                 )" "gitRev()(string)" \
-                | jq -r
+                | jq -r || echo unknown
               )" \
             | sponge "$DEPLOYMENTS_FILE"
 
@@ -387,7 +387,7 @@ _: {
                           --arg subkey "$subkey" \
                           --arg key "$key"
                       )" "gitRev()(string)" \
-                      | jq -r
+                      | jq -r || echo unknown
                     )" \
                   | sponge "$DEPLOYMENTS_FILE"
                 done
