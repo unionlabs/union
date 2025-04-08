@@ -10,15 +10,8 @@ import { readFaTokenInfo } from "../aptos/fa.js"
 import { predictQuoteToken as predictCosmosQuoteToken } from "../cosmos/quote-token.js"
 import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-token.js"
 import { FungibleAssetOrder } from "./instruction.js"
-import type { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
-
-export type FungibleAssetOrderIntent = {
-  sender: Address
-  receiver: Address
-  baseToken: Hex
-  baseAmount: bigint
-  quoteAmount: bigint
-}
+import { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
+import { TokenRawDenom } from "../schema/token.js"
 
 const guardAgainstZeroAmount = (intent: { baseAmount: bigint; quoteAmount: bigint }) => {
   if (intent.baseAmount <= 0n) {
@@ -30,13 +23,16 @@ const guardAgainstZeroAmount = (intent: { baseAmount: bigint; quoteAmount: bigin
 /**
  * Creates a fungible asset order from EVM to EVM
  */
-export const createEvmToEvmFungibleAssetOrder = (intent: {
-  sender: Address
-  receiver: Address
-  baseToken: Hex
+type EvmToEvmIntent = {
+  sender: AddressEvmZkgm
+  receiver: AddressEvmZkgm
+  baseToken: TokenRawDenom
   baseAmount: bigint
   quoteAmount: bigint
-}) =>
+}
+export const createEvmToEvmFungibleAssetOrder = (
+  intent: EvmToEvmIntent
+) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* ViemPublicClientSource).client
@@ -65,13 +61,16 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
 /**
  * Creates a fungible asset order from EVM to Cosmos
  */
-export const createEvmToCosmosFungibleAssetOrder = (intent: {
+type EvmToCosmosIntent = {
   sender: AddressEvmZkgm
   receiver: AddressCosmosZkgm
-  baseToken: Hex
+  baseToken: TokenRawDenom
   baseAmount: bigint
   quoteAmount: bigint
-}) =>
+}
+export const createEvmToCosmosFungibleAssetOrder = (
+  intent: EvmToCosmosIntent
+) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
     yield* Effect.log("creating client")
@@ -104,13 +103,16 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
 /**
  * Creates a fungible asset order from Cosmos to EVM
  */
-export const createCosmosToEvmFungibleAssetOrder = (intent: {
+type CosmosToEvmIntent = {
   sender: string
   receiver: Address
   baseToken: string
   baseAmount: bigint
   quoteAmount: bigint
-}) =>
+}
+export const createCosmosToEvmFungibleAssetOrder = (
+  intent: CosmosToEvmIntent
+) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
@@ -150,13 +152,16 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
 /**
  * Creates a fungible asset order from Cosmos to Cosmos
  */
-export const createCosmosToCosmosFungibleAssetOrder = (intent: {
+type CosmosToCosmosIntent = {
   sender: string
   receiver: string
   baseToken: string
   baseAmount: bigint
   quoteAmount: bigint
-}) =>
+}
+export const createCosmosToCosmosFungibleAssetOrder = (
+  intent: CosmosToCosmosIntent
+) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
@@ -185,13 +190,16 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
 /**
  * Creates a fungible asset order from Aptos to Cosmos
  */
-export const createCosmosToAptosFungibleAssetOrder = (intent: {
+type CosmosToAptosIntent = {
   sender: string
   receiver: string
   baseToken: string
   baseAmount: bigint
   quoteAmount: bigint
-}) =>
+}
+export const createCosmosToAptosFungibleAssetOrder = (
+  intent: CosmosToAptosIntent
+) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
@@ -231,13 +239,16 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
 /**
  * Creates a fungible asset order from Cosmos to Aptos
  */
-export const createAptosToCosmosFungibleAssetOrder = (intent: {
+type AptosToCosmosIntent = {
   sender: string
   receiver: string
   baseToken: string
   baseAmount: bigint
   quoteAmount: bigint
-}) =>
+}
+export const createAptosToCosmosFungibleAssetOrder = (
+  intent: AptosToCosmosIntent
+) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* AptosPublicClient).client
@@ -262,3 +273,13 @@ export const createAptosToCosmosFungibleAssetOrder = (intent: {
       ]
     })
   })
+
+export type FungibleAssetOrderIntent =
+  | EvmToEvmIntent
+  | EvmToCosmosIntent
+  | CosmosToCosmosIntent
+  | CosmosToEvmIntent
+
+export type EvmSourceIntent =
+  | EvmToEvmIntent
+  | EvmToCosmosIntent

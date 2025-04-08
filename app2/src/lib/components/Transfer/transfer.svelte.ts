@@ -1,6 +1,6 @@
 import { Match, Option } from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
-import type { Channel, AddressCanonicalBytes, Token, TokenRawDenom } from "@unionlabs/sdk/schema"
+import type { Channel, Token } from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { type Address, fromHex, type Hex, isHex } from "viem"
@@ -10,15 +10,9 @@ import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/share
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
 import { validateTransfer, type ValidationResult } from "$lib/components/Transfer/validation.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
+import type { FungibleAssetOrderIntent } from "@unionlabs/sdk/ucs03/fungible-asset-order.ts"
 
-export type TransferIntent = {
-  sender: AddressCanonicalBytes
-  receiver: string
-  baseToken: TokenRawDenom
-  baseAmount: bigint
-  quoteAmount: bigint
-}
-export type TransferIntents = Array<TransferIntent>
+export type TransferIntents = Array<FungibleAssetOrderIntent>
 
 export class Transfer {
   raw = new RawTransferSvelte()
