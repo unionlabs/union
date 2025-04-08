@@ -16,7 +16,7 @@ use axum::{
 use chrono::{NaiveDateTime, Utc};
 use clap::Parser;
 use cosmos_client::{
-    gas::StaticGasFiller,
+    gas::{FeemarketGasFiller, GasFillerT, StaticGasFiller},
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
     TxClient,
@@ -34,6 +34,60 @@ use unionlabs::{
 mod turnstile;
 
 const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "type", content = "config")]
+pub enum AnyGasFillerConfig {
+    Static(StaticGasFiller),
+    Feemarket(FeemarketGasFillerConfig),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FeemarketGasFillerConfig {
+    pub max_gas: u64,
+    pub gas_multiplier: Option<f64>,
+    pub fee_denom: Option<String>,
+}
+
+#[derive(Debug)]
+pub enum AnyGasFiller {
+    Static(StaticGasFiller),
+    Feemarket(FeemarketGasFiller),
+}
+
+impl GasFillerT for AnyGasFiller {
+    async fn max_gas(&self) -> u64 {
+        match self {
+            Self::Static(f) => f.max_gas().await,
+            Self::Feemarket(f) => f.max_gas().await,
+        }
+    }
+
+    async fn mk_fee(&self, gas: u64) -> unionlabs::cosmos::tx::fee::Fee {
+        match self {
+            Self::Static(f) => f.mk_fee(gas).await,
+            Self::Feemarket(f) => f.mk_fee(gas).await,
+        }
+    }
+}
+
+impl AnyGasFiller {
+    pub async fn from_config(config: AnyGasFillerConfig, rpc_url: String) -> Result<Self> {
+        match config {
+            AnyGasFillerConfig::Static(static_config) => Ok(AnyGasFiller::Static(static_config)),
+            AnyGasFillerConfig::Feemarket(feemarket_config) => {
+                let filler = FeemarketGasFiller::new(
+                    rpc_url,
+                    feemarket_config.max_gas,
+                    feemarket_config.gas_multiplier,
+                    feemarket_config.fee_denom,
+                )
+                .await?;
+                Ok(AnyGasFiller::Feemarket(filler))
+            }
+        }
+    }
+}
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -308,7 +362,7 @@ pub struct Chain {
     pub id: String,
     pub bech32_prefix: String,
     pub rpc_url: String,
-    pub gas_config: StaticGasFiller,
+    pub gas_config: AnyGasFillerConfig,
     pub signer: H256,
     pub coins: Vec<Coin>,
     pub memo: String,
@@ -327,7 +381,7 @@ pub struct CaptchaBypassSecret(pub String);
 #[derive(Clone)]
 struct ChainClient {
     pub chain: Chain,
-    pub cosmos_ctx: Arc<TxClient<LocalSigner, Rpc, StaticGasFiller>>,
+    pub cosmos_ctx: Arc<TxClient<LocalSigner, Rpc, AnyGasFiller>>,
 }
 
 impl ChainClient {
@@ -350,10 +404,14 @@ impl ChainClient {
             .unwrap()
             .bech32_prefix;
 
+        let gas_filler = AnyGasFiller::from_config(chain.gas_config.clone(), chain.rpc_url.clone())
+            .await
+            .expect("failed to build gas filler");
+
         let ctx = TxClient::new(
             LocalSigner::new(chain.signer, bech32_prefix),
             rpc,
-            chain.gas_config.clone(),
+            gas_filler,
         );
 
         let chain_id = ctx.rpc().chain_id();
