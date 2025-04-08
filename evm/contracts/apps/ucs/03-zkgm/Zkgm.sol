@@ -61,6 +61,8 @@ contract UCS03Zkgm is
     using SafeERC20 for *;
     using Address for *;
 
+    uint256 public constant EXEC_MIN_GAS = 50_000;
+
     IIBCModulePacket public immutable IBC_HANDLER;
     IWETH public immutable WETH;
 
@@ -270,6 +272,10 @@ contract UCS03Zkgm is
         address relayer,
         bytes calldata relayerMsg
     ) external virtual override onlyIBC whenNotPaused returns (bytes memory) {
+        // Avoid gas-starvation trick. Enforce a minimum for griefing relayers.
+        if (gasleft() < EXEC_MIN_GAS) {
+            revert ZkgmLib.ErrMinimumExecutionGasNotRespected();
+        }
         (bool success, bytes memory returnData) = address(this).call(
             abi.encodeCall(this.execute, (caller, packet, relayer, relayerMsg))
         );
