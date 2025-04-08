@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use ethabi::{ParamType, Token};
 use ibc_union_msg::msg::MsgSendPacket;
-use ibc_union_spec::ChannelId;
+use ibc_union_spec::{ChannelId, Timestamp};
 
 use crate::{state::Config, ContractError};
 
@@ -37,7 +37,7 @@ impl UCS00PingPong {
     pub fn reverse(
         &self,
         config: &Config,
-        current_timestamp: u64,
+        current_timestamp: Timestamp,
         source_channel: ChannelId,
     ) -> ibc_union_msg::msg::ExecuteMsg {
         let counterparty_packet = UCS00PingPong {
@@ -47,7 +47,8 @@ impl UCS00PingPong {
         ibc_union_msg::msg::ExecuteMsg::PacketSend(MsgSendPacket {
             source_channel_id: source_channel,
             timeout_height: 0,
-            timeout_timestamp: current_timestamp + config.seconds_before_timeout * 1_000_000_000,
+            timeout_timestamp: current_timestamp
+                + Timestamp::from_secs(config.seconds_before_timeout),
             data: counterparty_packet.encode().into(),
         })
     }

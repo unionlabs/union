@@ -1,6 +1,6 @@
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, CosmosMsg, Uint256, Uint64};
-use ibc_union_spec::{ChannelId, Packet};
-use serde::{Deserialize, Serialize};
+use ibc_union_spec::{ChannelId, Packet, Timestamp};
 use unionlabs::primitives::{Bytes, H256};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -64,7 +64,7 @@ pub enum ExecuteMsg {
     Send {
         channel_id: ChannelId,
         timeout_height: Uint64,
-        timeout_timestamp: Uint64,
+        timeout_timestamp: Timestamp,
         salt: H256,
         instruction: Bytes,
     },

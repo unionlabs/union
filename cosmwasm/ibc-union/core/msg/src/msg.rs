@@ -1,4 +1,4 @@
-use ibc_union_spec::{Channel, ChannelId, ClientId, ConnectionId, Packet};
+use ibc_union_spec::{Channel, ChannelId, ClientId, ConnectionId, Packet, Timestamp};
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
 
@@ -225,6 +225,6 @@ pub struct MsgWriteAcknowledgement {
 pub struct MsgSendPacket {
     pub source_channel_id: ChannelId,
     pub timeout_height: u64,
-    pub timeout_timestamp: u64,
+    pub timeout_timestamp: Timestamp,
     pub data: Bytes,
 }

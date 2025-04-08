@@ -13,7 +13,7 @@ use ibc_union_msg::{
     module::IbcUnionMsg,
     msg::{MsgSendPacket, MsgWriteAcknowledgement},
 };
-use ibc_union_spec::{path::BatchPacketsPath, ChannelId, Packet};
+use ibc_union_spec::{path::BatchPacketsPath, ChannelId, Packet, Timestamp};
 use ucs03_zkgm_token_minter_api::{LocalTokenMsg, Metadata, MetadataResponse, WrappedTokenMsg};
 use unionlabs::{
     ethereum::keccak256,
@@ -1008,7 +1008,7 @@ fn execute_forward(
     let next_packet = MsgSendPacket {
         source_channel_id: next_source_channel_id,
         timeout_height: forward.timeout_height,
-        timeout_timestamp: forward.timeout_timestamp,
+        timeout_timestamp: Timestamp::from_nanos(forward.timeout_timestamp),
         data: ZkgmPacket {
             salt: derive_forward_salt(salt).into(),
             path: next_path,
@@ -1856,7 +1856,7 @@ pub fn send(
     info: MessageInfo,
     channel_id: ChannelId,
     timeout_height: u64,
-    timeout_timestamp: u64,
+    timeout_timestamp: Timestamp,
     salt: H256,
     instruction: Instruction,
 ) -> Result<Response, ContractError> {

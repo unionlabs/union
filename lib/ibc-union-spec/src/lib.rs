@@ -8,6 +8,8 @@ pub mod query;
 
 pub(crate) mod types;
 
+pub use voyager_primitives::Timestamp;
+
 pub use crate::types::{
     channel::{Channel, ChannelState},
     connection::{Connection, ConnectionState},

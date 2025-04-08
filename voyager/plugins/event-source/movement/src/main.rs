@@ -17,7 +17,7 @@ use ibc_union_spec::{
         PacketSend, UpdateClient, WriteAck,
     },
     path::{ChannelPath, ConnectionPath},
-    ChannelId, ClientId, Connection, ConnectionState, IbcUnion,
+    ChannelId, ClientId, Connection, ConnectionState, IbcUnion, Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -652,7 +652,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.packet.timeout_height,
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.packet.timeout_timestamp,
+                                    ),
                                 },
                             }
                             .into(),
@@ -682,7 +684,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.packet.timeout_height,
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.packet.timeout_timestamp,
+                                    ),
                                 },
                                 maker_msg: Default::default(),
                             }
@@ -713,7 +717,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.timeout_height,
-                                    timeout_timestamp: event.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.timeout_timestamp,
+                                    ),
                                 },
                             }
                             .into(),
@@ -743,7 +749,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.packet.timeout_height,
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.packet.timeout_timestamp,
+                                    ),
                                 },
                                 acknowledgement: event.acknowledgement.into(),
                             }

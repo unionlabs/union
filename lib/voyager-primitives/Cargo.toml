@@ -25,5 +25,6 @@ hex-literal = { workspace = true }
 [features]
 default = []
 
+bincode  = ["consensus-primitives/bincode"]
 schemars = ["dep:schemars", "consensus-primitives/schemars"]
 serde    = ["dep:serde", "consensus-primitives/serde"]

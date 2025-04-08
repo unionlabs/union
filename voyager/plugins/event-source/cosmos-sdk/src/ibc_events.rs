@@ -1,6 +1,6 @@
 use std::{io::Write, num::NonZeroU64};
 
-use ibc_union_spec::{ChannelId, ClientId, ConnectionId};
+use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use unionlabs::{
@@ -111,7 +111,7 @@ pub enum IbcEvent {
         packet_data_hex: Bytes<HexUnprefixed>,
         packet_timeout_height: Height,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         packet_sequence: NonZeroU64,
         packet_src_port: unionlabs::id::PortId,
@@ -127,7 +127,7 @@ pub enum IbcEvent {
         packet_data_hex: Bytes<HexUnprefixed>,
         packet_timeout_height: Height,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         packet_sequence: NonZeroU64,
         packet_src_port: unionlabs::id::PortId,
@@ -144,7 +144,7 @@ pub enum IbcEvent {
         packet_data_hex: Bytes<HexUnprefixed>,
         packet_timeout_height: Height,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         packet_sequence: NonZeroU64,
         packet_src_port: unionlabs::id::PortId,
@@ -160,7 +160,7 @@ pub enum IbcEvent {
     AcknowledgePacket {
         packet_timeout_height: Height,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         packet_sequence: NonZeroU64,
         packet_src_port: unionlabs::id::PortId,
@@ -176,7 +176,7 @@ pub enum IbcEvent {
     TimeoutPacket {
         packet_timeout_height: Height,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         packet_sequence: NonZeroU64,
         packet_src_port: unionlabs::id::PortId,
@@ -311,7 +311,7 @@ pub enum IbcEvent {
         #[serde(with = "serde_utils::string")]
         packet_timeout_height: u64,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         channel_id: ChannelId,
         packet_hash: H256,

@@ -69,14 +69,14 @@ pub enum ClientConfigs {
     Many(HashMap<RawClientId, ClientConfig>),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
     pub client_configs: ClientConfigsSerde,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ClientConfig {
     pub min_batch_size: usize,
@@ -84,14 +84,14 @@ pub struct ClientConfig {
     pub max_wait_time: Duration,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ClientConfigsSerde {
     Any(ClientConfig),
     Many(Vec<SpecificClientConfig>),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SpecificClientConfig {
     pub client_id: RawClientId,
@@ -756,13 +756,8 @@ async fn do_make_msg_union(
         }
 
         EventUnion::PacketSend(event) => {
-            let packet = Packet {
-                source_channel_id: event.packet.source_channel.channel_id,
-                destination_channel_id: event.packet.destination_channel.channel_id,
-                data: event.packet_data,
-                timeout_height: event.packet.timeout_height,
-                timeout_timestamp: event.packet.timeout_timestamp,
-            };
+            let packet = event.packet();
+
             let proof_try = voyager_client
                 .query_ibc_proof(
                     origin_chain_id,
@@ -797,13 +792,8 @@ async fn do_make_msg_union(
         }
 
         EventUnion::WriteAck(event) => {
-            let packet = Packet {
-                source_channel_id: event.packet.source_channel.channel_id,
-                destination_channel_id: event.packet.destination_channel.channel_id,
-                data: event.packet_data,
-                timeout_height: event.packet.timeout_height,
-                timeout_timestamp: event.packet.timeout_timestamp,
-            };
+            let packet = event.packet();
+
             let proof_try = voyager_client
                 .query_ibc_proof(
                     origin_chain_id,
@@ -1571,6 +1561,18 @@ mod tests {
           }
         });
 
-        let _config = serde_json::from_value::<Config>(config_json).unwrap();
+        let config = serde_json::from_value::<Config>(config_json).unwrap();
+
+        assert_eq!(
+            config,
+            Config {
+                chain_id: ChainId::new("union-devnet-1"),
+                client_configs: ClientConfigsSerde::Any(ClientConfig {
+                    min_batch_size: 1,
+                    max_batch_size: 3,
+                    max_wait_time: Duration::from_secs(10)
+                })
+            }
+        );
     }
 }

@@ -23,7 +23,10 @@ pub enum Call {
     // generic waiting logic
     WaitForHeight(WaitForHeight),
     WaitForTimestamp(WaitForTimestamp),
+
     WaitForTrustedHeight(WaitForTrustedHeight),
+    WaitForTrustedTimestamp(WaitForTrustedTimestamp),
+
     WaitForClientUpdate(WaitForClientUpdate),
 
     Plugin(PluginMessage),
@@ -138,6 +141,17 @@ pub struct WaitForTrustedHeight {
     pub ibc_spec_id: IbcSpecId,
     pub client_id: RawClientId,
     pub height: Height,
+    pub finalized: bool,
+}
+
+/// Wait for the client `.client_id` on `.chain_id` to trust a timestamp >=
+/// `.timestamp`.
+#[model]
+pub struct WaitForTrustedTimestamp {
+    pub chain_id: ChainId,
+    pub ibc_spec_id: IbcSpecId,
+    pub client_id: RawClientId,
+    pub timestamp: Timestamp,
     pub finalized: bool,
 }
 
@@ -314,6 +328,82 @@ impl CallT<VoyagerMessage> for Call {
                             Ok(noop())
                         } else {
                             Ok(continuation)
+                        }
+                    }
+                    None => {
+                        debug!("client {client_id} not found on chain {chain_id}");
+                        Ok(continuation)
+                    }
+                }
+            }
+
+            Call::WaitForTrustedTimestamp(WaitForTrustedTimestamp {
+                chain_id,
+                ibc_spec_id,
+                client_id,
+                timestamp,
+                finalized,
+            }) => {
+                let trusted_client_state_meta = ctx
+                    .rpc_server
+                    .with_id(Some(ctx.id()))
+                    .client_state_meta(
+                        &chain_id,
+                        &ibc_spec_id,
+                        if finalized {
+                            QueryHeight::Finalized
+                        } else {
+                            QueryHeight::Latest
+                        },
+                        client_id.clone(),
+                    )
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                let continuation = seq([
+                    // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
+                    // require a new method on chain
+                    defer(now() + 1),
+                    call(WaitForTrustedTimestamp {
+                        chain_id: chain_id.clone(),
+                        ibc_spec_id: ibc_spec_id.clone(),
+                        client_id: client_id.clone(),
+                        timestamp,
+                        finalized,
+                    }),
+                ]);
+
+                match trusted_client_state_meta {
+                    Some(trusted_client_state_meta) => {
+                        let trusted_consensus_state_meta = ctx
+                            .rpc_server
+                            .with_id(Some(ctx.id()))
+                            .consensus_state_meta(
+                                &chain_id,
+                                &ibc_spec_id,
+                                if finalized {
+                                    QueryHeight::Finalized
+                                } else {
+                                    QueryHeight::Latest
+                                },
+                                client_id.clone(),
+                                trusted_client_state_meta.counterparty_height,
+                            )
+                            .await
+                            .map_err(error_object_to_queue_error)?;
+
+                        match trusted_consensus_state_meta {
+                            Some(trusted_consensus_state_meta)
+                                if trusted_consensus_state_meta.timestamp >= timestamp =>
+                            {
+                                debug!(
+                                    "client timestamp reached ({} >= {})",
+                                    trusted_client_state_meta.counterparty_height, timestamp
+                                );
+
+                                Ok(noop())
+                            }
+                            _ => Ok(continuation),
                         }
                     }
                     None => {

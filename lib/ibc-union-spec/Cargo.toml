@@ -32,7 +32,7 @@ ibc-union-spec = { workspace = true, features = ["ethabi", "schemars", "serde", 
 [features]
 default = []
 
-bincode             = ["dep:bincode", "unionlabs/bincode"]
+bincode             = ["dep:bincode", "voyager-primitives/bincode", "unionlabs/bincode"]
 ethabi              = ["dep:alloy-sol-types", "unionlabs/ethabi"]
 ibc-solidity-compat = ["dep:ibc-solidity"]
 schemars            = ["dep:schemars", "voyager-primitives/schemars", "unionlabs/schemars"]

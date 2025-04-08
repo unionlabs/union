@@ -950,7 +950,7 @@ impl Module {
                                 destination_channel,
                                 channel_ordering,
                                 timeout_height: packet_timeout_height,
-                                timeout_timestamp: packet_timeout_timestamp,
+                                timeout_timestamp: packet_timeout_timestamp.as_nanos(),
                             },
                         }
                         .into(),
@@ -1001,7 +1001,7 @@ impl Module {
                                 destination_channel,
                                 channel_ordering,
                                 timeout_height: packet_timeout_height,
-                                timeout_timestamp: packet_timeout_timestamp,
+                                timeout_timestamp: packet_timeout_timestamp.as_nanos(),
                             },
                         }
                         .into(),
@@ -1052,7 +1052,7 @@ impl Module {
                                 destination_channel,
                                 channel_ordering,
                                 timeout_height: packet_timeout_height,
-                                timeout_timestamp: packet_timeout_timestamp,
+                                timeout_timestamp: packet_timeout_timestamp.as_nanos(),
                             },
                         }
                         .into(),
@@ -1107,7 +1107,7 @@ impl Module {
                                 destination_channel,
                                 channel_ordering,
                                 timeout_height: packet_timeout_height,
-                                timeout_timestamp: packet_timeout_timestamp,
+                                timeout_timestamp: packet_timeout_timestamp.as_nanos(),
                             },
                         }
                         .into(),
@@ -1160,7 +1160,7 @@ impl Module {
                                 destination_channel,
                                 channel_ordering,
                                 timeout_height: packet_timeout_height,
-                                timeout_timestamp: packet_timeout_timestamp,
+                                timeout_timestamp: packet_timeout_timestamp.as_nanos(),
                             },
                         }
                         .into(),

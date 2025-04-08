@@ -15600,6 +15600,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-plugin-packet-timeout"
+version = "0.0.0"
+dependencies = [
+ "either",
+ "embed-commit",
+ "enumorph",
+ "futures",
+ "ibc-classic-spec",
+ "ibc-solidity",
+ "ibc-union-spec",
+ "itertools 0.13.0",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "serde_json",
+ "subset-of",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-plugin-transaction-batch"
 version = "0.0.0"
 dependencies = [

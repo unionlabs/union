@@ -665,17 +665,17 @@ fn process_msgs<'a>(
                         })
                         .clear_decoder(),
                 ),
-                // Datagram::TimeoutPacket(data) => (
-                //     msg,
-                //     ibc_handler
-                //         .timeoutPacket(MsgPacketTimeout {
-                //             packet: convert_packet(data.packet)?,
-                //             proof: data.proof_unreceived.into(),
-                //             proofHeight: data.proof_height.height(),
-                //             relayer: relayer.into(),
-                //         })
-                //         .clear_decoder(),
-                // ),
+                Datagram::PacketTimeout(data) => (
+                    msg,
+                    ibc_handler
+                        .timeoutPacket(ibc_solidity::MsgPacketTimeout {
+                            packet: data.packet.into(),
+                            proof: data.proof.into(),
+                            proof_height: data.proof_height,
+                            relayer: relayer.into(),
+                        })
+                        .clear_decoder(),
+                ),
                 _ => todo!(),
             })
         })
