@@ -9,6 +9,7 @@ import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import Label from "../ui/Label.svelte"
 import A from "../ui/A.svelte"
 import { pipe, Array, Struct, String } from "effect"
+import { cn } from "$lib/utils"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   hash: string
@@ -45,7 +46,7 @@ const explorerName = $derived(
 
 <Tooltip title={chain ? `Transaction on ${chain.display_name}` : "Transaction"}>
   {#snippet trigger()}
-    <Truncate class="font-mono text-xs break-all {className}" {...rest} showCopy={false} value={formattedHash} maxLength={12} />
+    <Truncate class={cn("font-mono break-all", className)} {...rest} showCopy={false} value={formattedHash} maxLength={12} />
   {/snippet}
 
   {#snippet content()}
