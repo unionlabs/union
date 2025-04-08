@@ -265,6 +265,7 @@ _: {
           network = "bepolia";
           rpc-url = "https://bepolia.rpc.berachain.com/";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x6969696969696969696969696969696969696969";
 
           verifier = "etherscan";
           verification-key = ''"verifyContract"'';
