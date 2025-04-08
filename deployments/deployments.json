@@ -6,54 +6,66 @@
     "deployments": {
       "core": {
         "address": "union1yajlxpen7eca7nsq6fyy2jam9w497x2x3umyr9xjx6fgav32ww7qqy5r79",
-        "height": 3018
+        "height": 3018,
+        "commit": "55049a6c2d346d8a4545a675a6c09bf79a89d652"
       },
       "lightclient": {
         "arbitrum": {
           "address": "union1wd2phywsdxf7k5g55s9dng6g8psnxrvty65a5asxsjwztqf68eyqdh9se2",
-          "height": 127944
+          "height": 127944,
+          "commit": "cf38579f02273cbc742e65db5ee271b37d9f4d4d"
         },
         "berachain": {
           "address": "union1k6022za4vld0q570ayhx8fklcvjp0umlruu3jzrkts2laenx6cjsztdagv",
-          "height": 314602
+          "height": 314602,
+          "commit": "7d72773f80b27018718758e84a47cdbff69d659e"
         },
         "bob": {
           "address": "union1x9z7teq50n7ngcn2nn4lagpmwjfanjzwtpz8tg5rmu2205wcjxkqxueaet",
-          "height": 277795
+          "height": 277795,
+          "commit": "382b6be37d31e8fc21391e30a3770793f4f26001"
         },
         "ethereum": {
           "address": "union12de3l5lxkc2xj5ujt6w080xx8d4pqsurza7rlapl3kqukualtuaq5ey8r8",
-          "height": 3021
+          "height": 3021,
+          "commit": "27ad6692188869dfe43b46f661841765ccd97970"
         },
         "ethermint": {
           "address": "union1t335sjsatede7nu4szsc8st34x7v5t7qlr6y3m3ctactxsuaujxs3ld8xq",
-          "height": 133169
+          "height": 133169,
+          "commit": "unknown"
         },
         "movement": {
           "address": "union1cdcyqflg55j57230n63h0qxng7xe5x258tckxm77j034wprwpdtsk3dk0t",
-          "height": 133175
+          "height": 133175,
+          "commit": "unknown"
         },
         "state-lens/ics23/mpt": {
           "address": "union15g5t8dwsccurc5v0krrxnzvtd6pawh7d8mpwcgfz8mm5jq9srk3svwlqkt",
-          "height": 133179
+          "height": 133179,
+          "commit": "136aa67566a75fd1c2e1518e198554473403f271"
         },
         "state-lens/ics23/smt": {
           "address": "union10mgmvryltmdy0szzmcp28sdp5wn9zeejrlmlx2qzz2n3ktkmk75qk9zlf6",
-          "height": 133185
+          "height": 133185,
+          "commit": "unknown"
         },
         "tendermint": {
           "address": "union10u2cn5mkq2eymewt4rsldk0h5qvq6w5qzetrw9xygjxlqc3vgjrsyzu58y",
-          "height": 133190
+          "height": 133190,
+          "commit": "0fc9df8b02512a53336b37a8a9f629ad67472401"
         },
         "trusted/evm/mpt": {
           "address": "union133gpl5ca3037jga3d2t0pjajtlagr4explm06ts8svlsw7dwyqvs9v7x4m",
-          "height": 131127
+          "height": 131127,
+          "commit": "unknown"
         }
       },
       "app": {
         "ucs03": {
           "address": "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
-          "height": 3027
+          "height": 3027,
+          "commit": "unknown"
         }
       }
     }
