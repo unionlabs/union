@@ -6,7 +6,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Binary,
     CodeInfoResponse, Coin, Coins, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QueryRequest, Reply,
-    Response, StdError, StdResult, SubMsg, SubMsgResult, Uint256, WasmMsg,
+    Response, StdError, StdResult, Storage, SubMsg, SubMsgResult, Uint256, WasmMsg,
 };
 use frissitheto::UpgradeMsg;
 use ibc_union_msg::{
@@ -1218,6 +1218,7 @@ fn execute_fungible_asset_order(
 
         // Transfer the quote amount to the receiver
         if quote_amount > 0 {
+            println!("brother telling u: {quote_amount}");
             messages.push(SubMsg::reply_never(make_wasm_msg(
                 LocalTokenMsg::Unescrow {
                     denom: quote_token_str.clone(),
@@ -1566,7 +1567,7 @@ pub fn verify_internal(
 /// Verifies a fungible asset order instruction.
 /// Checks token metadata matches and validates unwrapping conditions by comparing
 /// the token origin path with the current path and channel.
-fn verify_fungible_asset_order(
+pub fn verify_fungible_asset_order(
     deps: DepsMut,
     info: MessageInfo,
     funds: &mut Coins,
@@ -1669,7 +1670,7 @@ fn verify_fungible_asset_order(
         // Escrow tokens as the counterparty will mint them
         let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
         increase_channel_balance(
-            deps,
+            deps.storage,
             channel_id,
             path,
             base_token_str.to_string(),
@@ -1705,7 +1706,7 @@ fn verify_fungible_asset_order(
 
 /// Verifies a batch instruction by checking each sub-instruction is allowed and valid.
 /// Only certain instruction types are allowed in batches to prevent complex nested operations.
-fn verify_batch(
+pub fn verify_batch(
     mut deps: DepsMut,
     info: MessageInfo,
     funds: &mut Coins,
@@ -1923,15 +1924,15 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
 /// Increases the outstanding balance for a (channel, path, token) combination.
 /// This is used when escrowing tokens to track how many tokens can be unescrowed later.
 /// The balance is used to prevent double-spending and ensure token conservation across chains.
-fn increase_channel_balance(
-    deps: DepsMut,
+pub fn increase_channel_balance(
+    storage: &mut dyn Storage,
     channel_id: ChannelId,
     path: U256,
     base_token: String,
     base_amount: Uint256,
 ) -> Result<(), ContractError> {
     CHANNEL_BALANCE.update(
-        deps.storage,
+        storage,
         (
             channel_id.raw(),
             path.to_be_bytes::<32>().to_vec(),
