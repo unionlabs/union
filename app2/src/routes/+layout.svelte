@@ -54,9 +54,40 @@ $effect(() => {
   </aside>
   
   <!-- Main content area: Has margin to clear fixed sidebar -->
-  <main class="col-start-2 ml-64 max-w-[calc(100vw-calc(var(--spacing)*64))]">
+  <main class="col-start-2 ml-64 flex flex-col min-h-svh max-w-[calc(100vw-calc(var(--spacing)*64))]">
     <Header />
-    {@render children()}
+    
+    <!-- Children content with video background -->
+    <div class="relative flex-1">
+      <!-- Background video -->
+      <div class="absolute inset-0 z-0 overflow-hidden">
+        <video
+          id="glitch-video"
+          class="absolute w-full h-full object-cover"
+          loop
+          muted
+          autoplay
+          playsinline
+          data-video="glitch"
+          oncanplay={function() {
+            this.autoplay = true
+          }}
+          onloadeddata={function() {
+            this.autoplay = true
+          }}
+          onloadedmetadata={function() {
+            this.muted = true
+          }}
+        >
+          <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/btc-union-background.webm" type="video/webm" />
+        </video>
+      </div>
+      
+      <!-- Children content that appears above the video -->
+      <div class="relative z-10">
+        {@render children()}
+      </div>
+    </div>
   </main>
 </div>
 <Wallet/>
