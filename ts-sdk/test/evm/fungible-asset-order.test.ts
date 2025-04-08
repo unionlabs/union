@@ -29,10 +29,11 @@ const mockCw20TokenInfo = {
 const mockEvmQuoteToken = "0x123" as const
 const mockCosmosQuoteToken = "0x123" as const
 
+// biome-ignore-start lint/suspicious/useAwait: reason
 // Mock clients
 const mockViemPublicClientSource = {
   client: {
-    readContract: (params: any) => {
+    readContract: async (params: any) => {
       // This simulates reading ERC20 metadata based on the function name
       if (params.functionName === "name") return mockErc20Meta.name
       if (params.functionName === "symbol") return mockErc20Meta.symbol
@@ -44,7 +45,7 @@ const mockViemPublicClientSource = {
 
 const mockViemPublicClientDestination = {
   client: {
-    readContract: () => {
+    readContract: async () => {
       // This simulates predicting a quote token
       return [mockEvmQuoteToken]
     }
@@ -53,7 +54,7 @@ const mockViemPublicClientDestination = {
 
 const mockCosmWasmClientSource = {
   client: {
-    queryContractSmart: (_contractAddress: string, query: any) => {
+    queryContractSmart: async (_contractAddress: string, query: any) => {
       // This simulates reading CW20 token info
       if (query.token_info) {
         return mockCw20TokenInfo
@@ -68,7 +69,7 @@ const mockCosmWasmClientSource = {
 
 const mockCosmWasmClientDestination = {
   client: {
-    queryContractSmart: (_contractAddress: string, query: any) => {
+    queryContractSmart: async (_contractAddress: string, query: any) => {
       // This simulates predicting a quote token
       if (query.predict_wrapped_token) {
         return { wrapped_token: mockCosmosQuoteToken }
@@ -77,6 +78,7 @@ const mockCosmWasmClientDestination = {
     }
   }
 }
+// biome-ignore-end lint/suspicious/useAwait: reason
 
 // Test data
 const evmIntent = {
