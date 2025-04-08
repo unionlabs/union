@@ -107,7 +107,7 @@ impl AnyGasFiller {
                     max_gas: config.max_gas,
                     min_gas: config.min_gas,
                 }))
-                    }
+            }
             GasFillerMode::Feemarket => {
                 let filler = FeemarketGasFiller::new(
                     rpc_url,
