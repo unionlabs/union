@@ -82,11 +82,13 @@ const submitFaucetRequest = async (token: string) => {
     }
 
     if (result.drip_drop.send.startsWith("ERROR")) {
-      faucetProcess.set(FaucetProcess.Failure({ error: `Error from faucet: ${result.drip_drop.send}` }))
+      faucetProcess.set(
+        FaucetProcess.Failure({ error: `Error from faucet: ${result.drip_drop.send}` })
+      )
       showTurnstile = false
       return
     }
-    
+
     faucetProcess.set(FaucetProcess.Success({ message: result.drip_drop.send }))
     showTurnstile = false
   } catch (error) {
