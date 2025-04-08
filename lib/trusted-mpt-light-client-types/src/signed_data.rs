@@ -1,3 +1,6 @@
+use core::fmt::Display;
+
+use thiserror::Error;
 use unionlabs::{
     encoding::{Encode, Encoding},
     primitives::{H256, H512},
@@ -11,30 +14,39 @@ pub struct SignedData<T> {
     signature: H512,
 }
 
+#[derive(Debug, Error)]
 pub struct SignatureVerificationFailure;
 
+impl Display for SignatureVerificationFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "signature verification failure")
+    }
+}
+
 impl<T: Clone> SignedData<T> {
-    pub fn sign<E, V: Fn(&[u8]) -> H512>(data: T, sign: V) -> Self
+    pub fn sign<E, V>(data: T, sign: V) -> Self
     where
         E: Encoding,
-        T: Encode<E>,
+        for<'a> &'a T: Encode<E>,
+        V: Fn(&[u8]) -> H512,
     {
         SignedData {
-            signature: sign(&data.clone().encode()),
+            signature: sign(&data.encode()),
             data,
         }
     }
 
-    pub fn unwrap_verified<E, V: Fn(&[u8], H512, H256) -> Option<bool>>(
+    pub fn unwrap_verified<E, V>(
         self,
         pubkey: H256,
         verify_sig: V,
     ) -> Result<T, SignatureVerificationFailure>
     where
         E: Encoding,
-        T: Encode<E>,
+        for<'a> &'a T: Encode<E>,
+        V: Fn(&[u8], H512, H256) -> Option<bool>,
     {
-        if verify_sig(&self.data.clone().encode(), self.signature, pubkey)
+        if verify_sig(&self.data.encode(), self.signature, pubkey)
             .ok_or(SignatureVerificationFailure)?
         {
             return Ok(self.data);

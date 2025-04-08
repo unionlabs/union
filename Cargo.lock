@@ -14028,6 +14028,7 @@ dependencies = [
  "ethereum-light-client-types",
  "hex-literal",
  "serde",
+ "thiserror 2.0.12",
  "unionlabs",
 ]
 
