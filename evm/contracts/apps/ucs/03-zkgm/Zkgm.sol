@@ -25,7 +25,7 @@ import "../../../core/24-host/IBCCommitment.sol";
 import "../../../internal/Versioned.sol";
 
 import "./IWETH.sol";
-import "./IEurekaModule.sol";
+import "./IZkgmable.sol";
 import "./IZkgmERC20.sol";
 import "./ZkgmERC20.sol";
 import "./IZkgm.sol";
@@ -490,7 +490,7 @@ contract UCS03Zkgm is
     ) internal returns (bytes memory) {
         address contractAddress = address(bytes20(multiplex.contractAddress));
         if (!multiplex.eureka) {
-            IEurekaModule(contractAddress).onZkgm(
+            IZkgmable(contractAddress).onZkgm(
                 caller,
                 path,
                 ibcPacket.sourceChannelId,

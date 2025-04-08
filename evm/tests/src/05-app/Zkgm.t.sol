@@ -181,7 +181,7 @@ contract TestWETH is IWETH, TestERC20 {
     }
 }
 
-contract TestMultiplexTarget is IEurekaModule, IIBCModuleRecv {
+contract TestMultiplexTarget is IZkgmable, IIBCModuleRecv {
     error ErrNotZkgm();
 
     event OnZkgm(

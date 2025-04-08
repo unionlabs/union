@@ -1,6 +1,6 @@
 pragma solidity ^0.8.27;
 
-interface IEurekaModule {
+interface IZkgmable {
     function onZkgm(
         address caller,
         uint256 path,
