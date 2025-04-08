@@ -203,7 +203,7 @@ describe("Fungible Asset Order Tests", () => {
           version: 1,
           operand: [
             evmIntent.sender,
-            "0x3078313233",
+            "0x123",
             evmIntent.baseToken,
             evmIntent.baseAmount,
             mockErc20Meta.symbol,
