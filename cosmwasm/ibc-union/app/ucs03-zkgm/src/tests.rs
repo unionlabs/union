@@ -2,29 +2,35 @@ use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_std::{
     testing::{message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
     wasm_execute, Addr, Binary, Coin, Coins, Deps, DepsMut, Empty, Env, MessageInfo, OwnedDeps,
-    Response, StdError, StdResult,
+    Response, StdError, StdResult, Uint256,
 };
-use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
+use cw20::{Cw20Coin, Cw20QueryMsg};
+use cw20_token_minter::contract::save_native_token;
+use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor, SudoMsg};
 use cw_storage_plus::Map;
 use ibc_union_msg::module::IbcUnionMsg;
-use ibc_union_spec::{path::commit_packets, ChannelId, Packet};
+use ibc_union_spec::{path::commit_packets, ChannelId, ConnectionId, Packet};
 use unionlabs::primitives::{Bytes, H256};
 
 use crate::{
     com::{
-        Ack, FungibleAssetOrder, FungibleAssetOrderAck, Instruction, Multiplex, ZkgmPacket,
-        FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1,
-        OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
+        Ack, Batch, Forward, FungibleAssetOrder, FungibleAssetOrderAck, Instruction, Multiplex,
+        ZkgmPacket, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1,
+        OP_BATCH, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE,
+        TAG_ACK_SUCCESS,
     },
     contract::{
-        dequeue_channel_from_path, execute, instantiate, is_forwarded_packet, migrate,
-        pop_channel_from_path, query, reply, reverse_channel_path, tint_forward_salt,
-        update_channel_path, verify_internal, verify_multiplex,
+        dequeue_channel_from_path, execute, increase_channel_balance, instantiate,
+        is_forwarded_packet, migrate, pop_channel_from_path, query, reply, reverse_channel_path,
+        tint_forward_salt, update_channel_path, verify_batch, verify_forward, verify_internal,
+        verify_multiplex, PROTOCOL_VERSION,
     },
     msg::{Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, TokenMinterInitMsg},
-    state::{CONFIG, EXECUTING_PACKET, TOKEN_ORIGIN},
+    state::{CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, TOKEN_ORIGIN},
     ContractError,
 };
+
+const DEFAULT_IBC_HOST: &str = "blabla";
 
 #[test]
 fn test_dequeue_channel_from_path_ok_1() {
@@ -311,7 +317,129 @@ fn test_tint_forward_salt_preserves_data() {
 }
 
 #[test]
-fn test_verify_multiplex_sender() {
+fn test_verify_forward_ok() {
+    let sender = Addr::unchecked(DEFAULT_IBC_HOST);
+
+    let forward = Forward {
+        path: update_channel_path(
+            update_channel_path(U256::ZERO, ChannelId!(10)).unwrap(),
+            ChannelId!(1),
+        )
+        .unwrap(),
+        timeout_height: u64::MAX,
+        timeout_timestamp: 0,
+        instruction: Instruction {
+            version: INSTR_VERSION_0,
+            opcode: OP_MULTIPLEX,
+            operand: Multiplex {
+                sender: sender.as_bytes().to_vec().into(),
+                eureka: false,
+                contract_address: sender.as_bytes().to_vec().into(),
+                contract_calldata: vec![].into(),
+            }
+            .abi_encode_params()
+            .into(),
+        },
+    };
+
+    let (mut deps, _, info, _) = init();
+    let mut coins = Default::default();
+    let mut response = Response::new();
+
+    assert_eq!(
+        verify_forward(
+            deps.as_mut(),
+            info,
+            &mut coins,
+            ChannelId!(1),
+            &forward,
+            &mut response
+        ),
+        Ok(())
+    );
+
+    assert_eq!(response, Response::new());
+}
+
+#[test]
+fn test_verify_forward_invalid_version() {
+    let sender = Addr::unchecked(DEFAULT_IBC_HOST);
+
+    let forward = Forward {
+        path: update_channel_path(
+            update_channel_path(U256::ZERO, ChannelId!(10)).unwrap(),
+            ChannelId!(1),
+        )
+        .unwrap(),
+        timeout_height: u64::MAX,
+        timeout_timestamp: 0,
+        instruction: Instruction {
+            version: INSTR_VERSION_1,
+            opcode: OP_MULTIPLEX,
+            operand: Multiplex {
+                sender: sender.as_bytes().to_vec().into(),
+                eureka: false,
+                contract_address: sender.as_bytes().to_vec().into(),
+                contract_calldata: vec![].into(),
+            }
+            .abi_encode_params()
+            .into(),
+        },
+    };
+
+    let (mut deps, _, info, _) = init();
+    let mut coins = Default::default();
+
+    assert_eq!(
+        verify_forward(
+            deps.as_mut(),
+            info,
+            &mut coins,
+            ChannelId!(1),
+            &forward,
+            &mut Response::new()
+        ),
+        Err(ContractError::UnsupportedVersion {
+            version: INSTR_VERSION_1
+        })
+    );
+}
+
+#[test]
+fn test_verify_forward_invalid_instruction() {
+    let forward = Forward {
+        path: update_channel_path(
+            update_channel_path(U256::ZERO, ChannelId!(10)).unwrap(),
+            ChannelId!(1),
+        )
+        .unwrap(),
+        timeout_height: u64::MAX,
+        timeout_timestamp: 0,
+        instruction: Instruction {
+            version: INSTR_VERSION_0,
+            opcode: OP_FORWARD,
+            operand: Default::default(),
+        },
+    };
+
+    let (mut deps, _, info, _) = init();
+    let mut coins = Default::default();
+
+    assert_eq!(
+        verify_forward(
+            deps.as_mut(),
+            info,
+            &mut coins,
+            ChannelId!(1),
+            &forward,
+            &mut Response::new()
+        ),
+        Err(ContractError::InvalidForwardInstruction)
+    );
+}
+
+#[test]
+fn test_verify_multiplex_sender_ok() {
     let sender = Addr::unchecked("sender");
     // Test with matching sender
     let multiplex = Multiplex {
@@ -321,13 +449,85 @@ fn test_verify_multiplex_sender() {
         contract_calldata: vec![].into(),
     };
     let mut response = Response::new();
-    let result = verify_multiplex(&multiplex, sender.clone(), &mut response);
-    assert_eq!(result, Ok(()));
+    assert_eq!(
+        verify_multiplex(&multiplex, sender.clone(), &mut response),
+        Ok(())
+    );
     assert_eq!(response, Response::new());
-    // Test with non-matching sender
+}
+
+#[test]
+fn test_verify_multiplex_invalid_sender() {
+    let sender = Addr::unchecked("sender");
+    // Test with matching sender
+    let multiplex = Multiplex {
+        sender: sender.as_bytes().to_vec().into(),
+        eureka: false,
+        contract_address: Addr::unchecked("contract").as_bytes().to_vec().into(),
+        contract_calldata: vec![].into(),
+    };
     let wrong_sender = Addr::unchecked("wrong_sender");
-    let result = verify_multiplex(&multiplex, wrong_sender, &mut response);
+    let result = verify_multiplex(&multiplex, wrong_sender, &mut Response::new());
     assert!(matches!(result, Err(ContractError::InvalidMultiplexSender)));
+}
+
+#[test]
+fn test_verify_batch_ok() {
+    let sender = Addr::unchecked(DEFAULT_IBC_HOST);
+    // Test with matching sender
+    let multiplex = Instruction {
+        version: INSTR_VERSION_0,
+        opcode: OP_MULTIPLEX,
+        operand: Multiplex {
+            sender: sender.as_bytes().to_vec().into(),
+            eureka: false,
+            contract_address: Addr::unchecked("contract").as_bytes().to_vec().into(),
+            contract_calldata: vec![].into(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    let (mut deps, _, info, _) = init();
+    let mut response = Response::new();
+    let mut funds = Coins::try_from(info.funds.clone()).unwrap();
+    let result = verify_batch(
+        deps.as_mut(),
+        info,
+        &mut funds,
+        ChannelId!(1),
+        U256::ZERO,
+        &Batch {
+            instructions: vec![multiplex],
+        },
+        &mut response,
+    );
+
+    assert_eq!(result, Ok(()));
+}
+
+#[test]
+fn test_verify_batch_invalid_instruction() {
+    let (mut deps, _, info, _) = init();
+    let mut response = Response::new();
+    let mut funds = Coins::try_from(info.funds.clone()).unwrap();
+    let result = verify_batch(
+        deps.as_mut(),
+        info,
+        &mut funds,
+        ChannelId!(1),
+        U256::ZERO,
+        &Batch {
+            instructions: vec![Instruction {
+                version: INSTR_VERSION_0,
+                opcode: OP_BATCH,
+                operand: vec![].into(),
+            }],
+        },
+        &mut response,
+    );
+
+    assert_eq!(result, Err(ContractError::InvalidBatchInstruction));
 }
 
 #[test]
@@ -450,7 +650,7 @@ fn init() -> (
     let mut deps = mock_dependencies();
     deps.api = MockApi::default().with_prefix("union");
     let env = mock_env();
-    let ibc_host = Addr::unchecked("blabla");
+    let ibc_host = Addr::unchecked(DEFAULT_IBC_HOST);
     let info = message_info(&ibc_host, &[]);
     let config = Config {
         admin: Addr::unchecked(""),
@@ -461,6 +661,30 @@ fn init() -> (
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
     (deps, env, info, config)
+}
+
+#[test]
+fn test_on_recv_packet_only_ibc() {
+    let (mut deps, env, mut info, _) = init();
+    info.sender = Addr::unchecked("not_ibc");
+    let result = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+            caller: "".into(),
+            packet: Packet {
+                source_channel_id: ChannelId!(1),
+                destination_channel_id: ChannelId!(10),
+                data: Default::default(),
+                timeout_height: Default::default(),
+                timeout_timestamp: Default::default(),
+            },
+            relayer: "".into(),
+            relayer_msg: Default::default(),
+        }),
+    );
+    assert_eq!(result, Err(ContractError::OnlyIBCHost));
 }
 
 #[test]
@@ -880,6 +1104,11 @@ impl IncomingOrderBuilder {
 
     fn with_path(mut self, path: impl Into<U256>) -> Self {
         self.path = path.into();
+        self
+    }
+
+    fn with_base_token_path(mut self, base_token_path: impl Into<U256>) -> Self {
+        self.base_token_path = base_token_path.into();
         self
     }
 
@@ -1325,4 +1554,609 @@ fn test_recv_packet_native_quote_maker_fill_ok() {
             .unwrap(),
         quote_coin
     );
+}
+
+#[test]
+fn test_recv_packet_native_unwrap_wrapped_token_ok() {
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin.clone());
+    let path = U256::ONE;
+    let destination_channel_id = ChannelId!(10);
+    let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
+
+    let wrapped_token = st
+        .app
+        .instantiate_contract(
+            st.cw20_base_code_id,
+            admin.clone(),
+            &cw20_base::msg::InstantiateMsg {
+                name: "muno".to_string(),
+                symbol: "muno".to_string(),
+                decimals: 8,
+                initial_balances: vec![Cw20Coin {
+                    address: st.minter.to_string(),
+                    amount: (0xCAFEBABEu128 + 1000).into(),
+                }],
+                mint: None,
+                marketing: None,
+            },
+            &[],
+            "muno-token",
+            Some(admin.clone().to_string()),
+        )
+        .unwrap();
+
+    increase_channel_balance(
+        st.app.contract_storage_mut(&st.zkgm).as_mut(),
+        destination_channel_id,
+        reverse_channel_path(path).unwrap(),
+        wrapped_token.to_string(),
+        0xCAFEBABEu128.into(),
+    )
+    .unwrap();
+
+    let (order, msg, packet) = IncomingOrderBuilder::new(wrapped_token.as_bytes().into())
+        .with_base_token(base_token)
+        .with_destination_channel_id(destination_channel_id)
+        .with_path(path)
+        .with_base_token_path(reverse_channel_path(path).unwrap())
+        .build();
+
+    st.app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(st.zkgm.clone(), &msg, vec![]).unwrap().into(),
+        )
+        .unwrap();
+
+    // make sure transfer succeeded with the correct ack
+    assert_eq!(
+        PACKET_ACK
+            .load(
+                st.app.contract_storage(&st.ibc_host).as_ref(),
+                commit_packets(&[packet]).into(),
+            )
+            .unwrap(),
+        Ack {
+            tag: TAG_ACK_SUCCESS,
+            inner_ack: FungibleAssetOrderAck {
+                fill_type: FILL_TYPE_PROTOCOL,
+                market_maker: Default::default()
+            }
+            .abi_encode_params()
+            .into(),
+        }
+        .abi_encode_params()
+    );
+
+    // balance is reduced to 1000
+    assert_eq!(
+        st.balance_of(&wrapped_token.as_bytes().into(), st.minter.clone()),
+        1000
+    );
+
+    // receiver's balance is now 0xCAFEBABE
+    assert_eq!(
+        st.balance_of(&wrapped_token.as_bytes().into(), order.receiver),
+        0xCAFEBABE
+    );
+
+    let channel_balance = CHANNEL_BALANCE
+        .load(
+            st.app.contract_storage(&st.zkgm).as_ref(),
+            (
+                destination_channel_id.raw(),
+                reverse_channel_path(path)
+                    .unwrap()
+                    .to_be_bytes::<32>()
+                    .to_vec(),
+                wrapped_token.to_string(),
+            ),
+        )
+        .unwrap();
+
+    // outstanding is now 0
+    assert_eq!(channel_balance, Uint256::zero());
+}
+
+#[test]
+fn test_recv_packet_native_unwrap_native_token_ok() {
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin.clone());
+    let path = U256::ONE;
+    let destination_channel_id = ChannelId!(10);
+    let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
+
+    let wrapped_token = "muno";
+
+    st.app
+        .sudo(SudoMsg::Bank(cw_multi_test::BankSudo::Mint {
+            to_address: st.minter.to_string(),
+            amount: vec![Coin::new(0xCAFEBABEu128, wrapped_token)],
+        }))
+        .unwrap();
+
+    increase_channel_balance(
+        st.app.contract_storage_mut(&st.zkgm).as_mut(),
+        destination_channel_id,
+        reverse_channel_path(path).unwrap(),
+        wrapped_token.to_string(),
+        0xCAFEBABEu128.into(),
+    )
+    .unwrap();
+
+    save_native_token(
+        st.app.contract_storage_mut(&st.minter).as_mut(),
+        wrapped_token,
+    );
+
+    let (order, msg, packet) = IncomingOrderBuilder::new(wrapped_token.as_bytes().into())
+        .with_base_token(base_token)
+        .with_destination_channel_id(destination_channel_id)
+        .with_path(path)
+        .with_base_token_path(reverse_channel_path(path).unwrap())
+        .build();
+
+    st.app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(st.zkgm.clone(), &msg, vec![]).unwrap().into(),
+        )
+        .unwrap();
+
+    let balance = st
+        .app
+        .wrap()
+        .query_balance(order.receiver, wrapped_token)
+        .unwrap();
+    assert_eq!(balance.amount.u128(), 0xCAFEBABEu128);
+
+    // make sure transfer succeeded with the correct ack
+    assert_eq!(
+        PACKET_ACK
+            .load(
+                st.app.contract_storage(&st.ibc_host).as_ref(),
+                commit_packets(&[packet]).into(),
+            )
+            .unwrap(),
+        Ack {
+            tag: TAG_ACK_SUCCESS,
+            inner_ack: FungibleAssetOrderAck {
+                fill_type: FILL_TYPE_PROTOCOL,
+                market_maker: Default::default()
+            }
+            .abi_encode_params()
+            .into(),
+        }
+        .abi_encode_params()
+    );
+
+    let channel_balance = CHANNEL_BALANCE
+        .load(
+            st.app.contract_storage(&st.zkgm).as_ref(),
+            (
+                destination_channel_id.raw(),
+                reverse_channel_path(path)
+                    .unwrap()
+                    .to_be_bytes::<32>()
+                    .to_vec(),
+                wrapped_token.to_string(),
+            ),
+        )
+        .unwrap();
+
+    // outstanding is now 0
+    assert_eq!(channel_balance, Uint256::zero());
+}
+
+#[test]
+fn test_recv_packet_native_unwrap_channel_no_outstanding() {
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin.clone());
+    let path = U256::ONE;
+    let destination_channel_id = ChannelId!(10);
+    let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
+
+    let wrapped_token = st
+        .app
+        .instantiate_contract(
+            st.cw20_base_code_id,
+            admin.clone(),
+            &cw20_base::msg::InstantiateMsg {
+                name: "muno".to_string(),
+                symbol: "muno".to_string(),
+                decimals: 8,
+                initial_balances: vec![Cw20Coin {
+                    address: st.minter.to_string(),
+                    amount: (0xCAFEBABEu128 + 1000).into(),
+                }],
+                mint: None,
+                marketing: None,
+            },
+            &[],
+            "muno-token",
+            Some(admin.clone().to_string()),
+        )
+        .unwrap();
+
+    increase_channel_balance(
+        st.app.contract_storage_mut(&st.zkgm).as_mut(),
+        ChannelId!(20),
+        reverse_channel_path(path).unwrap(),
+        wrapped_token.to_string(),
+        0xCAFEBABEu128.into(),
+    )
+    .unwrap();
+
+    let (_, msg, packet) = IncomingOrderBuilder::new(wrapped_token.as_bytes().into())
+        .with_base_token(base_token)
+        .with_destination_channel_id(destination_channel_id)
+        .with_path(path)
+        .with_base_token_path(reverse_channel_path(path).unwrap())
+        .build();
+
+    st.app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(st.zkgm.clone(), &msg, vec![]).unwrap().into(),
+        )
+        .unwrap();
+
+    // make sure transfer succeeded with the correct ack
+    assert_eq!(
+        PACKET_ACK
+            .load(
+                st.app.contract_storage(&st.ibc_host).as_ref(),
+                commit_packets(&[packet]).into(),
+            )
+            .unwrap(),
+        Ack {
+            tag: TAG_ACK_FAILURE,
+            inner_ack: Default::default()
+        }
+        .abi_encode_params()
+    );
+    let balance: cw20::BalanceResponse = st
+        .app
+        .wrap()
+        .query_wasm_smart(
+            &wrapped_token,
+            &Cw20QueryMsg::Balance {
+                address: st.minter.to_string(),
+            },
+        )
+        .unwrap();
+    // no transfer is made
+    assert_eq!(balance.balance.u128(), 0xCAFEBABEu128 + 1000);
+}
+
+#[test]
+fn test_recv_packet_native_unwrap_path_no_outstanding() {
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin.clone());
+    let path = U256::ONE;
+    let destination_channel_id = ChannelId!(10);
+    let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
+
+    let wrapped_token = st
+        .app
+        .instantiate_contract(
+            st.cw20_base_code_id,
+            admin.clone(),
+            &cw20_base::msg::InstantiateMsg {
+                name: "muno".to_string(),
+                symbol: "muno".to_string(),
+                decimals: 8,
+                initial_balances: vec![Cw20Coin {
+                    address: st.minter.to_string(),
+                    amount: (0xCAFEBABEu128 + 1000).into(),
+                }],
+                mint: None,
+                marketing: None,
+            },
+            &[],
+            "muno-token",
+            Some(admin.clone().to_string()),
+        )
+        .unwrap();
+
+    increase_channel_balance(
+        st.app.contract_storage_mut(&st.zkgm).as_mut(),
+        destination_channel_id,
+        "100".parse().unwrap(),
+        wrapped_token.to_string(),
+        0xCAFEBABEu128.into(),
+    )
+    .unwrap();
+
+    let (_, msg, packet) = IncomingOrderBuilder::new(wrapped_token.as_bytes().into())
+        .with_base_token(base_token)
+        .with_destination_channel_id(destination_channel_id)
+        .with_path(path)
+        .with_base_token_path(reverse_channel_path(path).unwrap())
+        .build();
+
+    st.app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(st.zkgm.clone(), &msg, vec![]).unwrap().into(),
+        )
+        .unwrap();
+
+    // make sure transfer succeeded with the correct ack
+    assert_eq!(
+        PACKET_ACK
+            .load(
+                st.app.contract_storage(&st.ibc_host).as_ref(),
+                commit_packets(&[packet]).into(),
+            )
+            .unwrap(),
+        Ack {
+            tag: TAG_ACK_FAILURE,
+            inner_ack: Default::default()
+        }
+        .abi_encode_params()
+    );
+    let balance: cw20::BalanceResponse = st
+        .app
+        .wrap()
+        .query_wasm_smart(
+            &wrapped_token,
+            &Cw20QueryMsg::Balance {
+                address: st.minter.to_string(),
+            },
+        )
+        .unwrap();
+    // no transfer is made
+    assert_eq!(balance.balance.u128(), 0xCAFEBABEu128 + 1000);
+}
+
+#[test]
+fn test_on_channel_open_init_ok() {
+    let (mut deps, env, info, _) = init();
+    let result = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
+            caller: "".into(),
+            connection_id: ConnectionId!(1),
+            channel_id: ChannelId!(1),
+            version: PROTOCOL_VERSION.to_string(),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert_eq!(result, Ok(Response::default()));
+}
+
+#[test]
+fn test_on_channel_open_init_invalid_version() {
+    let (mut deps, env, info, _) = init();
+    let result = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
+            caller: "".into(),
+            connection_id: ConnectionId!(1),
+            channel_id: ChannelId!(1),
+            version: "im-invalid".to_string(),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert!(matches!(
+        result,
+        Err(ContractError::InvalidIbcVersion { .. })
+    ));
+}
+
+#[test]
+fn test_on_channel_open_init_only_ibc() {
+    let (mut deps, env, mut info, _) = init();
+    info.sender = Addr::unchecked("not_ibc");
+    let result = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
+            caller: "".into(),
+            connection_id: ConnectionId!(1),
+            channel_id: ChannelId!(1),
+            version: PROTOCOL_VERSION.to_string(),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert_eq!(result, Err(ContractError::OnlyIBCHost));
+}
+
+#[test]
+fn test_on_channel_open_try_ok() {
+    let (mut deps, env, info, _) = init();
+    let result = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+            caller: "".into(),
+            connection_id: ConnectionId!(1),
+            channel_id: ChannelId!(1),
+            version: PROTOCOL_VERSION.to_string(),
+            counterparty_version: PROTOCOL_VERSION.to_string(),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert_eq!(result, Ok(Response::default()));
+}
+
+#[test]
+fn test_on_channel_open_try_invalid_version() {
+    let (mut deps, env, info, _) = init();
+    let result = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+            caller: "".into(),
+            connection_id: ConnectionId!(1),
+            channel_id: ChannelId!(1),
+            version: "im-invalid".to_string(),
+            counterparty_version: PROTOCOL_VERSION.to_string(),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert!(matches!(
+        result,
+        Err(ContractError::InvalidIbcVersion { .. })
+    ));
+}
+
+#[test]
+fn test_on_channel_open_try_invalid_counterparty_version() {
+    let (mut deps, env, info, _) = init();
+    let result = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+            caller: "".into(),
+            connection_id: ConnectionId!(1),
+            channel_id: ChannelId!(1),
+            version: PROTOCOL_VERSION.to_string(),
+            counterparty_version: "im-invalid".to_string(),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert!(matches!(
+        result,
+        Err(ContractError::InvalidIbcVersion { .. })
+    ));
+}
+
+#[test]
+fn test_on_channel_open_try_only_ibc() {
+    let (mut deps, env, mut info, _) = init();
+    info.sender = Addr::unchecked("not_ibc");
+    let result = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+            caller: "".into(),
+            connection_id: ConnectionId!(1),
+            channel_id: ChannelId!(1),
+            version: PROTOCOL_VERSION.to_string(),
+            counterparty_version: PROTOCOL_VERSION.to_string(),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert_eq!(result, Err(ContractError::OnlyIBCHost));
+}
+
+#[test]
+fn test_on_channel_open_ack_and_confirm_noop() {
+    let (mut deps, env, info, _) = init();
+    let result = execute(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenAck {
+            caller: "".into(),
+            channel_id: ChannelId!(1),
+            counterparty_version: PROTOCOL_VERSION.to_string(),
+            relayer: "".to_string(),
+            counterparty_channel_id: ChannelId!(2),
+        }),
+    );
+
+    assert_eq!(result, Ok(Response::default()));
+
+    let result = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
+            caller: "".into(),
+            channel_id: ChannelId!(1),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert_eq!(result, Ok(Response::default()));
+}
+
+#[test]
+fn test_on_channel_close_init_impossible() {
+    let (mut deps, env, info, _) = init();
+    let result = execute(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
+            caller: "".into(),
+            channel_id: ChannelId!(1),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert!(matches!(result, Err(ContractError::Std(..))));
+}
+
+#[test]
+fn test_on_channel_close_init_only_ibc() {
+    let (mut deps, env, mut info, _) = init();
+    info.sender = Addr::unchecked("not_ibc");
+    let result = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
+            caller: "".into(),
+            channel_id: ChannelId!(1),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert_eq!(result, Err(ContractError::OnlyIBCHost));
+}
+
+#[test]
+fn test_on_channel_close_confirm_impossible() {
+    let (mut deps, env, info, _) = init();
+    let result = execute(
+        deps.as_mut(),
+        env.clone(),
+        info.clone(),
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseConfirm {
+            caller: "".into(),
+            channel_id: ChannelId!(1),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert!(matches!(result, Err(ContractError::Std(..))));
+}
+
+#[test]
+fn test_on_channel_close_confirm_only_ibc() {
+    let (mut deps, env, mut info, _) = init();
+    info.sender = Addr::unchecked("not_ibc");
+    let result = execute(
+        deps.as_mut(),
+        env,
+        info,
+        ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseConfirm {
+            caller: "".into(),
+            channel_id: ChannelId!(1),
+            relayer: "".to_string(),
+        }),
+    );
+
+    assert_eq!(result, Err(ContractError::OnlyIBCHost));
 }
