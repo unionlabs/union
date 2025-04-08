@@ -9,17 +9,17 @@ import "../../internal/Versioned.sol";
 
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+
 /**
  * @dev IBCHandler is a contract that implements [ICS-25](https://github.com/cosmos/ibc/tree/main/spec/core/ics-025-handler-interface).
  */
-
 abstract contract IBCHandler is
     Initializable,
     UUPSUpgradeable,
-    OwnableUpgradeable,
+    Ownable2StepUpgradeable,
     IBCStore,
     IBCClient,
     IBCConnectionImpl,
