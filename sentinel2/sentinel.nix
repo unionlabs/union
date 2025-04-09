@@ -137,12 +137,12 @@ in
             name = "sentinel2-dev-server";
             runtimeInputs = deps;
             text = ''
-                  ${ensureAtRepositoryRoot}
-                  cd sentinel2/
+                ${ensureAtRepositoryRoot}
+                cd sentinel2/
 
-                  npm install
-                  npm run build
-                node dist/src/sentinel2.js "$@"
+                npm install
+                npm run build
+              node dist/src/sentinel2.js "$@"
             '';
           };
         };
