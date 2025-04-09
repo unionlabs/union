@@ -127,7 +127,13 @@ abstract contract UnionScript is UnionBase {
     }
 
     function deployZkgmERC20() internal returns (ZkgmERC20) {
-        return ZkgmERC20(deploy(LIB.ZKGM_ERC20, hex""));
+        return ZkgmERC20(
+            getDeployer().deploy(
+                LIB.make(LIB.ZKGM_ERC20),
+                abi.encodePacked(type(ZkgmERC20).creationCode),
+                0
+            )
+        );
     }
 
     function deployIBCHandler(
