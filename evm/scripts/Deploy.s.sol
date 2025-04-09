@@ -30,6 +30,7 @@ library LIB {
     string constant NAMESPACE = "lib";
     string constant MULTICALL = "multicall";
     string constant MANAGER = "manager";
+    string constant ZKGM_ERC20 = "zkgm-erc20";
 
     function make(
         string memory lib
@@ -123,6 +124,10 @@ abstract contract UnionScript is UnionBase {
                 )
             )
         );
+    }
+
+    function deployZkgmERC20() internal returns (ZkgmERC20) {
+        return ZkgmERC20(deploy(LIB.ZKGM_ERC20, hex""));
     }
 
     function deployIBCHandler(
@@ -222,18 +227,15 @@ abstract contract UnionScript is UnionBase {
     function deployUCS03(
         IBCHandler handler,
         address owner,
-        address weth
+        IWETH weth,
+        ZkgmERC20 erc20
     ) internal returns (UCS03Zkgm) {
         UCS03Zkgm zkgm = UCS03Zkgm(
             payable(
                 deploy(
                     Protocols.make(Protocols.UCS03),
                     abi.encode(
-                        address(
-                            new UCS03Zkgm(
-                                IIBCModulePacket(handler), IWETH(weth)
-                            )
-                        ),
+                        address(new UCS03Zkgm(handler, weth, erc20)),
                         abi.encodeCall(UCS03Zkgm.initialize, (owner))
                     )
                 )
@@ -244,7 +246,7 @@ abstract contract UnionScript is UnionBase {
 
     function deployIBC(
         address owner,
-        address weth
+        IWETH weth
     )
         internal
         returns (
@@ -254,6 +256,7 @@ abstract contract UnionScript is UnionBase {
             StateLensIcs23Ics23Client,
             StateLensIcs23SmtClient,
             PingPong,
+            ZkgmERC20,
             UCS03Zkgm,
             Multicall,
             Manager
@@ -261,15 +264,19 @@ abstract contract UnionScript is UnionBase {
     {
         Manager manager = deployManager(owner);
         IBCHandler handler = deployIBCHandler(address(manager));
-        CometblsClient cometblsClient = deployCometbls(handler, address(manager));
+        CometblsClient cometblsClient =
+            deployCometbls(handler, address(manager));
         StateLensIcs23MptClient stateLensIcs23MptClient =
             deployStateLensIcs23MptClient(handler, address(manager));
         StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
             deployStateLensIcs23Ics23Client(handler, address(manager));
         StateLensIcs23SmtClient stateLensIcs23SmtClient =
             deployStateLensIcs23SmtClient(handler, address(manager));
-        PingPong pingpong = deployUCS00(handler, address(manager), 100000000000000);
-        UCS03Zkgm ucs03 = deployUCS03(handler, address(manager), weth);
+        PingPong pingpong =
+            deployUCS00(handler, address(manager), 100000000000000);
+        ZkgmERC20 zkgmERC20 = deployZkgmERC20();
+        UCS03Zkgm ucs03 =
+            deployUCS03(handler, address(manager), weth, zkgmERC20);
         Multicall multicall = deployMulticall();
         return (
             handler,
@@ -278,6 +285,7 @@ abstract contract UnionScript is UnionBase {
             stateLensIcs23Ics23Client,
             stateLensIcs23SmtClient,
             pingpong,
+            zkgmERC20,
             ucs03,
             multicall,
             manager
@@ -426,15 +434,16 @@ contract DeployUCS03 is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        address weth = vm.envAddress("WETH_ADDRESS");
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
 
         address owner = vm.addr(privateKey);
 
-        address handler = getDeployed(IBC.BASED);
+        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
+        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
 
         vm.startBroadcast(privateKey);
 
-        UCS03Zkgm zkgm = deployUCS03(IBCHandler(handler), owner, weth);
+        UCS03Zkgm zkgm = deployUCS03(handler, owner, weth, zkgmERC20);
 
         vm.stopBroadcast();
 
@@ -543,7 +552,7 @@ contract DeployIBC is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        address weth = vm.envAddress("WETH_ADDRESS");
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         vm.startBroadcast(privateKey);
 
         (
@@ -553,6 +562,7 @@ contract DeployIBC is UnionScript {
             StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
             StateLensIcs23SmtClient stateLensIcs23SmtClient,
             PingPong pingpong,
+            ZkgmERC20 zkgmERC20,
             UCS03Zkgm ucs03,
             Multicall multicall,
             Manager manager
@@ -585,7 +595,9 @@ contract DeployIBC is UnionScript {
         );
         console.log("UCS00: ", address(pingpong));
         console.log("UCS03: ", address(ucs03));
+        console.log("ZkgmERC20: ", address(zkgmERC20));
         console.log("Multicall: ", address(multicall));
+        console.log("Manager: ", address(manager));
     }
 }
 
@@ -598,7 +610,7 @@ contract DeployDeployerAndIBC is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        address weth = vm.envAddress("WETH_ADDRESS");
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
 
         vm.startBroadcast(privateKey);
 
@@ -611,6 +623,7 @@ contract DeployDeployerAndIBC is UnionScript {
             StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
             StateLensIcs23SmtClient stateLensIcs23SmtClient,
             PingPong pingpong,
+            ZkgmERC20 zkgmERC20,
             UCS03Zkgm ucs03,
             Multicall multicall,
             Manager manager
@@ -643,6 +656,7 @@ contract DeployDeployerAndIBC is UnionScript {
         );
         console.log("UCS00: ", address(pingpong));
         console.log("UCS03: ", address(ucs03));
+        console.log("ZkgmERC20: ", address(zkgmERC20));
         console.log("Multicall: ", address(multicall));
         console.log("Manager: ", address(manager));
     }
@@ -956,6 +970,7 @@ contract DryUpgradeUCS03 is VersionedScript {
     function run() public {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
+        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
         UCS03Zkgm ucs03 =
             UCS03Zkgm(payable(getDeployed(Protocols.make(Protocols.UCS03))));
 
@@ -964,7 +979,7 @@ contract DryUpgradeUCS03 is VersionedScript {
         );
 
         address newImplementation =
-            address(new UCS03Zkgm(handler, weth));
+            address(new UCS03Zkgm(handler, weth, zkgmERC20));
         vm.prank(owner);
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
     }
@@ -995,6 +1010,7 @@ contract UpgradeUCS03 is VersionedScript {
     function run() public {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
+        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
         UCS03Zkgm ucs03 =
             UCS03Zkgm(payable(getDeployed(Protocols.make(Protocols.UCS03))));
 
@@ -1004,7 +1020,7 @@ contract UpgradeUCS03 is VersionedScript {
 
         vm.startBroadcast(privateKey);
         address newImplementation =
-            address(new UCS03Zkgm(handler, weth));
+            address(new UCS03Zkgm(handler, weth, zkgmERC20));
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }

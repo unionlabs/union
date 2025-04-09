@@ -20,8 +20,8 @@ contract ZkgmERC20 is
 {
     error ERC20Unauthorized();
 
-    bytes32 private constant ZKGM_ERC20_STORAGE_SLOT = keccak256(
-                                                                 abi.encode(uint256(keccak256("union.storage.zkgm.erc20")) - 1)
+    bytes32 internal constant ZKGM_ERC20_STORAGE_SLOT = keccak256(
+        abi.encode(uint256(keccak256("union.storage.zkgm.erc20")) - 1)
     ) & ~bytes32(uint256(0xff));
 
     struct ZkgmERC20Storage {
@@ -29,15 +29,15 @@ contract ZkgmERC20 is
         uint8 decimals;
     }
 
-        function _getZkgmERC20Storage()
+    function _getZkgmERC20Storage()
         private
         pure
         returns (ZkgmERC20Storage storage $)
     {
         bytes32 slot = ZKGM_ERC20_STORAGE_SLOT;
         assembly {
-        $.slot := slot
-                }
+            $.slot := slot
+        }
     }
 
     constructor() {
@@ -45,22 +45,22 @@ contract ZkgmERC20 is
     }
 
     function initialize(
-                        address _admin,
-                        address _minter,
-                        string memory _name,
-                        string memory _symbol,
-                        uint8 _decimals
+        address _admin,
+        address _minter,
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals
     ) external initializer {
         __ZkgmERC20_init(_admin, _minter, _name, _symbol, _decimals);
     }
 
     function __ZkgmERC20_init(
-                              address _admin,
+        address _admin,
         address _minter,
         string memory _name,
         string memory _symbol,
         uint8 _decimals
-    ) internal {
+    ) internal onlyInitializing {
         __Ownable_init(_admin);
         __UUPSUpgradeable_init();
         __ERC20_init(_name, _symbol);

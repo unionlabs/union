@@ -66,6 +66,7 @@ contract UCS03Zkgm is
 
     IIBCModulePacket public immutable IBC_HANDLER;
     IWETH public immutable WETH;
+    ZkgmERC20 public immutable ERC20_IMPL;
 
     IIBCModulePacket private _deprecated_ibcHandler;
     mapping(bytes32 => IBCPacket) public inFlightPacket;
@@ -73,10 +74,15 @@ contract UCS03Zkgm is
     mapping(uint32 => mapping(uint256 => mapping(address => uint256))) public
         channelBalance;
 
-    constructor(IIBCModulePacket _ibcHandler, IWETH _weth) {
+    constructor(
+        IIBCModulePacket _ibcHandler,
+        IWETH _weth,
+        ZkgmERC20 _erc20Impl
+    ) {
         _disableInitializers();
         IBC_HANDLER = _ibcHandler;
         WETH = _weth;
+        ERC20_IMPL = _erc20Impl;
     }
 
     function initialize(
@@ -655,7 +661,7 @@ contract UCS03Zkgm is
                 abi.encodePacked(
                     type(ERC1967Proxy).creationCode,
                     abi.encode(
-                        new ZkgmERC20(),
+                        ERC20_IMPL,
                         abi.encodeCall(
                             ZkgmERC20.initialize,
                             (
