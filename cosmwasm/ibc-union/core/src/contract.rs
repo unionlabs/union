@@ -5,7 +5,7 @@ use alloy::sol_types::SolValue;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, wasm_execute, Addr, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo,
-    OverflowError, OverflowOperation, Response, StdError, StdResult,
+    OverflowError, OverflowOperation, Response, StdError, StdResult, Storage,
 };
 use depolama::{RawStore, StorageExt};
 use frissitheto::{UpgradeError, UpgradeMsg};
@@ -42,7 +42,7 @@ use crate::{
     state::{
         ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
         ClientStore, ClientTypes, Commitments, Connections, ContractChannels, NextChannelId,
-        NextClientId, NextConnectionId, QueryStore,
+        NextClientId, NextConnectionId, QueryStore, WhitelistedRelayers, WhitelistedRelayersAdmin,
     },
     ContractError,
 };
@@ -143,6 +143,22 @@ fn packet_to_attr_hash(channel_id: ChannelId, packet: &Packet) -> [Attribute; 2]
     .map(Into::into)
 }
 
+fn ensure_relayer_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+    if sender != storage.read_item::<WhitelistedRelayersAdmin>()? {
+        Err(ContractError::OnlyRelayerAdmin)
+    } else {
+        Ok(())
+    }
+}
+
+fn ensure_relayer(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+    if storage.read::<WhitelistedRelayers>(sender).is_ok() {
+        Ok(())
+    } else {
+        Err(ContractError::OnlyWhitelistedRelayer)
+    }
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     mut deps: DepsMut,
@@ -155,6 +171,7 @@ pub fn execute(
             client_type,
             client_address,
         }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
             let address = deps.api.addr_validate(&client_address)?;
             register_client(deps.branch(), client_type, address)
         }
@@ -164,6 +181,7 @@ pub fn execute(
             consensus_state_bytes,
             relayer,
         }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
             create_client(
                 deps.branch(),
@@ -179,6 +197,7 @@ pub fn execute(
             client_message,
             relayer,
         }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
             update_client(
                 deps.branch(),
@@ -331,17 +350,20 @@ pub fn execute(
             relayer,
             proof,
             proof_height,
-        }) => process_receive(
-            deps,
-            env,
-            info,
-            packets,
-            relayer_msgs.into_iter().map(Into::into).collect(),
-            relayer,
-            proof.into(),
-            proof_height,
-            false,
-        ),
+        }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
+            process_receive(
+                deps,
+                env,
+                info,
+                packets,
+                relayer_msgs.into_iter().map(Into::into).collect(),
+                relayer,
+                proof.into(),
+                proof_height,
+                false,
+            )
+        }
         ExecuteMsg::PacketAck(MsgPacketAcknowledgement {
             packets,
             acknowledgements,
@@ -349,6 +371,7 @@ pub fn execute(
             proof_height,
             relayer,
         }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
             acknowledge_packet(
                 deps.branch(),
@@ -366,6 +389,7 @@ pub fn execute(
             proof_height,
             relayer,
         }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
             timeout_packet(
                 deps.branch(),
@@ -381,17 +405,20 @@ pub fn execute(
             market_maker_msgs,
             market_maker,
             empty_proof,
-        }) => process_receive(
-            deps,
-            env,
-            info,
-            packets,
-            market_maker_msgs.into_iter().map(Into::into).collect(),
-            market_maker,
-            empty_proof.into(),
-            0,
-            true,
-        ),
+        }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
+            process_receive(
+                deps,
+                env,
+                info,
+                packets,
+                market_maker_msgs.into_iter().map(Into::into).collect(),
+                market_maker,
+                empty_proof.into(),
+                0,
+                true,
+            )
+        }
         ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
             packet,
             acknowledgement,
@@ -414,8 +441,12 @@ pub fn execute(
             timeout_timestamp,
             data.into_vec(),
         ),
-        ExecuteMsg::BatchSend(MsgBatchSend { packets }) => batch_send(deps, packets),
+        ExecuteMsg::BatchSend(MsgBatchSend { packets }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
+            batch_send(deps, packets)
+        }
         ExecuteMsg::BatchAcks(MsgBatchAcks { packets, acks }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
             batch_acks(deps, packets, acks.into_iter().collect())
         }
         ExecuteMsg::MigrateState(MsgMigrateState {
@@ -431,6 +462,26 @@ pub fn execute(
             consensus_state,
             height,
         ),
+        ExecuteMsg::AddRelayer(relayer) => {
+            ensure_relayer_admin(deps.storage, &info.sender)?;
+            let relayer = deps.api.addr_validate(&relayer)?;
+            deps.storage.write::<WhitelistedRelayers>(&relayer, &());
+            Ok(Response::new().add_event(
+                Event::new("whitelisted_relayers")
+                    .add_attribute("action", "grant")
+                    .add_attribute("relayer", relayer),
+            ))
+        }
+        ExecuteMsg::RemoveRelayer(relayer) => {
+            ensure_relayer_admin(deps.storage, &info.sender)?;
+            let relayer = deps.api.addr_validate(&relayer)?;
+            deps.storage.delete::<WhitelistedRelayers>(&relayer);
+            Ok(Response::new().add_event(
+                Event::new("whitelisted_relayers")
+                    .add_attribute("action", "revoke")
+                    .add_attribute("relayer", relayer),
+            ))
+        }
     }
 }
 
@@ -510,13 +561,24 @@ pub fn migrate(
 
 pub(crate) fn init(
     deps: DepsMut<'_>,
-    InitMsg {}: InitMsg,
+    InitMsg {
+        relayers_admin,
+        relayers,
+    }: InitMsg,
 ) -> Result<(Response, Option<NonZeroU32>), ContractError> {
     deps.storage.write_item::<NextChannelId>(&ChannelId!(1));
     deps.storage
         .write_item::<NextConnectionId>(&ConnectionId!(1));
     deps.storage.write_item::<NextClientId>(&ClientId!(1));
-
+    if let Some(relayers_admin) = relayers_admin {
+        let relayers_admin = deps.api.addr_validate(&relayers_admin)?;
+        deps.storage
+            .write_item::<WhitelistedRelayersAdmin>(&relayers_admin);
+    }
+    for relayer in relayers {
+        let relayer = deps.api.addr_validate(&relayer)?;
+        deps.storage.write::<WhitelistedRelayers>(&relayer, &());
+    }
     Ok((Response::default(), None))
 }
 

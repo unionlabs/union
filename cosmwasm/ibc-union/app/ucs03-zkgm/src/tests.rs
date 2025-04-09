@@ -456,6 +456,8 @@ fn init() -> (
         admin: Addr::unchecked(""),
         ibc_host,
         token_minter_code_id: 0,
+        rate_limit_admin: Addr::unchecked("blabla"),
+        rate_limit_operators: vec![],
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
     (deps, env, info, config)
@@ -669,6 +671,7 @@ struct TestState {
     ibc_host: Addr,
     minter: Addr,
     zkgm: Addr,
+    rate_limiter: Addr,
 }
 
 impl TestState {
@@ -715,6 +718,7 @@ fn init_test_state(admin: Addr) -> TestState {
             b"zkgm",
         )
         .unwrap();
+    let rate_limiter = Addr::unchecked("union1ml67yhc5kp8qrxssfnqz8pxqvjyln5fus654vk");
     app.migrate_contract(
         admin.clone(),
         zkgm.clone(),
@@ -723,6 +727,8 @@ fn init_test_state(admin: Addr) -> TestState {
                 admin,
                 ibc_host: ibc_host.clone(),
                 token_minter_code_id: cw20_minter_code_id,
+                rate_limit_admin: Addr::unchecked("hola"),
+                rate_limit_operators: vec![rate_limiter.clone()],
             },
             minter_init_msg: TokenMinterInitMsg::Cw20 {
                 cw20_base_code_id,
@@ -746,6 +752,7 @@ fn init_test_state(admin: Addr) -> TestState {
         ibc_host,
         minter,
         zkgm,
+        rate_limiter,
     }
 }
 
@@ -965,11 +972,28 @@ fn test_recv_packet_native_new_wrapped() {
         .wrapped_token;
     let quote_token_addr = Addr::unchecked(std::str::from_utf8(&quote_token).unwrap());
     assert!(st.app.contract_data(&quote_token_addr).is_err());
-    let (_, msg, packet) = IncomingOrderBuilder::new(quote_token)
+    let (order, msg, packet) = IncomingOrderBuilder::new(quote_token)
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
         .build();
+    st.app
+        .execute(
+            st.rate_limiter.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::SetBucketConfig {
+                    denom: std::str::from_utf8(&order.quote_token).unwrap().into(),
+                    capacity: order.quote_amount.into(),
+                    refill_rate: 1u32.into(),
+                    reset: false,
+                },
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap();
     st.app
         .execute(
             st.ibc_host.clone(),
@@ -1028,6 +1052,23 @@ fn test_recv_packet_native_new_wrapped_relative_supply() {
         .build();
     st.app
         .execute(
+            st.rate_limiter.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::SetBucketConfig {
+                    denom: std::str::from_utf8(&order.quote_token).unwrap().into(),
+                    capacity: order.quote_amount.into(),
+                    refill_rate: 1u32.into(),
+                    reset: false,
+                },
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap();
+    st.app
+        .execute(
             st.ibc_host.clone(),
             wasm_execute(st.zkgm.clone(), &msg, vec![]).unwrap().into(),
         )
@@ -1069,6 +1110,23 @@ fn test_recv_packet_native_new_wrapped_split_fee() {
         .build();
     st.app
         .execute(
+            st.rate_limiter.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::SetBucketConfig {
+                    denom: std::str::from_utf8(&order.quote_token).unwrap().into(),
+                    capacity: order.quote_amount.into(),
+                    refill_rate: 1u32.into(),
+                    reset: false,
+                },
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap();
+    st.app
+        .execute(
             st.ibc_host.clone(),
             wasm_execute(st.zkgm.clone(), &msg, vec![]).unwrap().into(),
         )
@@ -1107,11 +1165,28 @@ fn test_recv_packet_native_new_wrapped_origin_set() {
         )
         .unwrap()
         .wrapped_token;
-    let (_, msg, _) = IncomingOrderBuilder::new(quote_token.clone())
+    let (order, msg, _) = IncomingOrderBuilder::new(quote_token.clone())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
         .build();
+    st.app
+        .execute(
+            st.rate_limiter.clone(),
+            wasm_execute(
+                st.zkgm.clone(),
+                &ExecuteMsg::SetBucketConfig {
+                    denom: std::str::from_utf8(&order.quote_token).unwrap().into(),
+                    capacity: order.quote_amount.into(),
+                    refill_rate: 1u32.into(),
+                    reset: false,
+                },
+                vec![],
+            )
+            .unwrap()
+            .into(),
+        )
+        .unwrap();
     st.app
         .execute(
             st.ibc_host.clone(),

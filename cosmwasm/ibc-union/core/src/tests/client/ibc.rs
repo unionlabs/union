@@ -29,6 +29,14 @@ fn new_client_registered_event(client_type: &str, client_address: &Addr) -> Even
 #[test]
 fn register_client_ok() {
     let mut deps = mock_dependencies();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     let res = register_client(deps.as_mut()).unwrap();
 
     assert!(res
@@ -47,6 +55,14 @@ fn register_client_ok() {
 #[test]
 fn register_client_fails_when_duplicate() {
     let mut deps = mock_dependencies();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     register_client(deps.as_mut()).unwrap();
     assert_eq!(
         register_client(deps.as_mut()),
@@ -58,7 +74,14 @@ fn register_client_fails_when_duplicate() {
 fn create_client_ok() {
     let mut deps = mock_dependencies();
 
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -79,7 +102,14 @@ fn create_client_ok() {
 fn create_client_commitments_saved() {
     let mut deps = mock_dependencies();
 
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -131,7 +161,14 @@ fn create_client_commitments_saved() {
 fn update_client_ok() {
     let mut deps = mock_dependencies();
 
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -184,7 +221,14 @@ fn update_client_ok() {
 fn update_client_ko() {
     let mut deps = mock_dependencies();
 
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -232,7 +276,14 @@ fn update_client_ko() {
 fn update_client_commitments_saved() {
     let mut deps = mock_dependencies();
 
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {

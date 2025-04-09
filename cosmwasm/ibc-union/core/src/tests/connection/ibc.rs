@@ -15,7 +15,14 @@ use crate::{contract::init, state::Connections};
 #[test]
 fn connection_open_init_ok() {
     let mut deps = mock_dependencies();
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -46,7 +53,14 @@ fn connection_open_init_ok() {
 #[test]
 fn connection_open_init_commitment_saved() {
     let mut deps = mock_dependencies();
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -76,7 +90,14 @@ fn connection_open_init_commitment_saved() {
 #[test]
 fn connection_open_try_ok() {
     let mut deps = mock_dependencies();
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -112,7 +133,14 @@ fn connection_open_try_ok() {
 #[test]
 fn connection_open_try_client_not_found() {
     let mut deps = mock_dependencies();
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -156,7 +184,14 @@ fn connection_open_try_client_not_found() {
 #[test]
 fn connection_open_try_commitment_saved() {
     let mut deps = mock_dependencies();
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -202,7 +237,14 @@ fn connection_open_try_commitment_saved() {
 #[test]
 fn connection_open_ack_ok() {
     let mut deps = mock_dependencies();
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -243,7 +285,14 @@ fn connection_open_ack_ok() {
 #[test]
 fn connection_open_ack_commitment_saved() {
     let mut deps = mock_dependencies();
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -289,7 +338,14 @@ fn connection_open_ack_commitment_saved() {
 #[test]
 fn connection_open_confirm_ok() {
     let mut deps = mock_dependencies();
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -329,7 +385,14 @@ fn connection_open_confirm_ok() {
 #[test]
 fn connection_open_try_confirm_commitment_saved() {
     let mut deps = mock_dependencies();
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {

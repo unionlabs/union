@@ -57,6 +57,14 @@ enum App {
         permissioned: bool,
         #[command(flatten)]
         gas_config: GasFillerArgs,
+        #[arg(long)]
+        relayers_admin: Bech32<Bytes>,
+        #[arg(long)]
+        relayers: Vec<Bech32<Bytes>>,
+        #[arg(long)]
+        rate_limit_admin: Bech32<Bytes>,
+        #[arg(long)]
+        rate_limit_operators: Vec<Bech32<Bytes>>,
     },
     Migrate {
         #[arg(long)]
@@ -326,6 +334,10 @@ async fn do_main() -> Result<()> {
             output,
             permissioned,
             gas_config,
+            relayers_admin,
+            relayers,
+            rate_limit_admin,
+            rate_limit_operators,
         } => {
             let contracts = serde_json::from_slice::<ContractPaths>(
                 &std::fs::read(contracts).context("reading contracts path")?,
@@ -384,7 +396,10 @@ async fn do_main() -> Result<()> {
                 .deploy_and_initiate(
                     std::fs::read(contracts.core)?,
                     bytecode_base_code_id,
-                    ibc_union_msg::msg::InitMsg {},
+                    ibc_union_msg::msg::InitMsg {
+                        relayers_admin: Some(relayers_admin.to_string()),
+                        relayers: relayers.into_iter().map(|r| r.to_string()).collect(),
+                    },
                     CORE.to_owned(),
                 )
                 .await?;
@@ -599,6 +614,11 @@ async fn do_main() -> Result<()> {
                                 admin: Addr::unchecked(ctx.wallet().address().to_string()),
                                 ibc_host: Addr::unchecked(core_address.to_string()),
                                 token_minter_code_id: minter_code_id.into(),
+                                rate_limit_admin: Addr::unchecked(rate_limit_admin.to_string()),
+                                rate_limit_operators: rate_limit_operators
+                                    .into_iter()
+                                    .map(|o| Addr::unchecked(o.to_string()))
+                                    .collect(),
                             },
                             minter_init_msg,
                         },

@@ -249,7 +249,7 @@ pub fn execute(
             refill_rate,
             reset,
         } => {
-            if CONFIG
+            if !CONFIG
                 .load(deps.storage)?
                 .rate_limit_operators
                 .contains(&info.sender)
