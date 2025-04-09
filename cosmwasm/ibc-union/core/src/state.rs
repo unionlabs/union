@@ -384,3 +384,42 @@ fn read_fixed_bytes<const N: usize>(raw: &Bytes) -> StdResult<[u8; N]> {
 fn invalid_id() -> StdError {
     StdError::generic_err("invalid id, must be > 0")
 }
+
+pub enum WhitelistedRelayersAdmin {}
+impl Store for WhitelistedRelayersAdmin {
+    const PREFIX: Prefix = Prefix::new(b"whitelisted_relayers_admin");
+
+    type Key = ();
+    type Value = Addr;
+}
+addr_value!(WhitelistedRelayersAdmin);
+
+pub enum WhitelistedRelayers {}
+impl Store for WhitelistedRelayers {
+    const PREFIX: Prefix = Prefix::new(b"whitelisted_relayers");
+
+    type Key = Addr;
+    type Value = ();
+}
+
+impl KeyCodec<Addr> for WhitelistedRelayers {
+    fn encode_key(key: &Addr) -> Bytes {
+        key.as_bytes().into()
+    }
+
+    fn decode_key(raw: &Bytes) -> StdResult<Addr> {
+        String::from_utf8(raw.to_vec())
+            .map(Addr::unchecked)
+            .map_err(|e| StdError::generic_err(format!("invalid key: {e}")))
+    }
+}
+
+impl ValueCodec<()> for WhitelistedRelayers {
+    fn encode_value(_: &()) -> Bytes {
+        Bytes::new(&[0])
+    }
+
+    fn decode_value(_: &Bytes) -> StdResult<()> {
+        Ok(())
+    }
+}

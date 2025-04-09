@@ -19,6 +19,10 @@ pub struct Config {
     pub ibc_host: Addr,
     /// The code id of the `ucs03-zkgm-token-minter-api` implementor. This will be instantiated by `ucs03-zkgm` and used to mint and burn tokens.
     pub token_minter_code_id: u64,
+    /// The address that can update the rate limiters.
+    pub rate_limit_admin: Addr,
+    /// Addresses allowed to update token buckets for rate limiting
+    pub rate_limit_operators: Vec<Addr>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -42,6 +46,18 @@ pub enum TokenMinterInitMsg {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    /// Update the set of rate limiters.
+    SetRateLimitOperators {
+        rate_limit_operators: Vec<Addr>,
+    },
+    /// Update a token bucket for rate limiting.
+    SetBucketConfig {
+        denom: String,
+        capacity: Uint256,
+        refill_rate: Uint256,
+        // Indicates whether the currently available amount must be refilled to maximum capacity
+        reset: bool,
+    },
     /// Send a custom instruction across chains.
     /// Allows sending any zkgm instruction (forward, multiplex, batch, etc)
     /// with custom timeout and salt parameters.

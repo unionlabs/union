@@ -3,7 +3,7 @@ use cw_storage_plus::{Item, Map};
 use ibc_union_spec::Packet;
 use unionlabs::primitives::Bytes;
 
-use crate::msg::Config;
+use crate::{msg::Config, token_bucket::TokenBucket};
 
 /// Stores the configuration for the contract.
 // TODO: Remove? Replace with IBC_HOST? Only the ibc_host field is read
@@ -50,3 +50,5 @@ pub const HASH_TO_FOREIGN_TOKEN: Map<String, Bytes> = Map::new("hash_to_foreign_
 pub const IN_FLIGHT_PACKET: Map<Vec<u8>, Packet> = Map::new("in_flight_packet");
 
 pub const MARKET_MAKER: Item<Bytes> = Item::new("market_maker");
+
+pub const TOKEN_BUCKET: Map<String, TokenBucket> = Map::new("token_bucket");

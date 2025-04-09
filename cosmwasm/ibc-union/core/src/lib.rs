@@ -155,6 +155,10 @@ pub enum ContractError {
         ContractErrorKind::from(self)
     )]
     BatchSameChannelOnly,
+    #[error("sender is not a whitelisted relayer")]
+    OnlyWhitelistedRelayer,
+    #[error("sender is not the relayer admin")]
+    OnlyRelayerAdmin,
 }
 
 impl ContractErrorKind {

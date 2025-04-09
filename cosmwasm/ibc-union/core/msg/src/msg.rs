@@ -2,9 +2,12 @@ use ibc_union_spec::{Channel, ChannelId, ClientId, ConnectionId, Packet};
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct InitMsg {}
+pub struct InitMsg {
+    pub relayers_admin: Option<String>,
+    pub relayers: Vec<String>,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -16,6 +19,8 @@ pub struct MsgRegisterClient {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
+    AddRelayer(String),
+    RemoveRelayer(String),
     RegisterClient(MsgRegisterClient),
     CreateClient(MsgCreateClient),
     UpdateClient(MsgUpdateClient),
