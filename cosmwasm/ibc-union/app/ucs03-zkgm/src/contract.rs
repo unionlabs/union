@@ -27,7 +27,7 @@ use crate::{
         FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1, OP_BATCH, OP_FORWARD,
         OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
     },
-    msg::{EurekaMsg, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg},
+    msg::{ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, ZkgmMsg},
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, EXECUTING_PACKET_IS_BATCH,
         EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN, IN_FLIGHT_PACKET, MARKET_MAKER, TOKEN_MINTER,
@@ -226,8 +226,8 @@ pub fn execute(
             deps,
             info,
             channel_id,
-            timeout_height,
-            timeout_timestamp,
+            timeout_height.u64(),
+            timeout_timestamp.u64(),
             salt,
             Instruction::abi_decode_params(&instruction, true)?,
         ),
@@ -1036,7 +1036,7 @@ fn execute_multiplex(
         Ok(Response::new()
             .add_message(wasm_execute(
                 contract_address,
-                &EurekaMsg::OnZkgm {
+                &ZkgmMsg::OnZkgm {
                     path: Uint256::from_be_bytes(path.to_be_bytes()),
                     source_channel_id: packet.source_channel_id,
                     destination_channel_id: packet.destination_channel_id,
