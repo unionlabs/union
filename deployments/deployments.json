@@ -7,7 +7,7 @@
       "core": {
         "address": "union1yajlxpen7eca7nsq6fyy2jam9w497x2x3umyr9xjx6fgav32ww7qqy5r79",
         "height": 3018,
-        "commit": "55049a6c2d346d8a4545a675a6c09bf79a89d652"
+        "commit": "82fa983b66052f3b7f54280a552fed5ccc7a7ccb"
       },
       "lightclient": {
         "arbitrum": {
@@ -65,7 +65,7 @@
         "ucs03": {
           "address": "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
           "height": 3027,
-          "commit": "unknown"
+          "commit": "4fa220d62f8e88c44bc7f1683c0eb058ccba087c"
         }
       }
     }
@@ -78,7 +78,7 @@
       "core": {
         "address": "bbn1yajlxpen7eca7nsq6fyy2jam9w497x2x3umyr9xjx6fgav32ww7qlrtrr9",
         "height": 606175,
-        "commit": "55049a6c2d346d8a4545a675a6c09bf79a89d652"
+        "commit": "82fa983b66052f3b7f54280a552fed5ccc7a7ccb"
       },
       "lightclient": {
         "cometbls": {
@@ -106,7 +106,7 @@
         "ucs03": {
           "address": "bbn15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljlspm2re6",
           "height": 606202,
-          "commit": "b858e891518847870d6308d6a83f1aae7c1ac8dc"
+          "commit": "4fa220d62f8e88c44bc7f1683c0eb058ccba087c"
         }
       }
     }

@@ -1,7 +1,8 @@
 use ibc_union_spec::{ChannelId, ConnectionId, Packet};
+use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum IbcUnionMsg {
     OnChannelOpenInit {
@@ -66,7 +67,7 @@ pub enum IbcUnionMsg {
     },
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
     IbcUnionMsg(IbcUnionMsg),
