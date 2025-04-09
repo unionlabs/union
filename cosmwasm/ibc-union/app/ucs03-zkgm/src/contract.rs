@@ -5,8 +5,8 @@ use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Binary,
-    CodeInfoResponse, Coin, Coins, CosmosMsg, Deps, DepsMut, Env, MessageInfo, QueryRequest, Reply,
-    Response, StdError, StdResult, SubMsg, SubMsgResult, Uint256, WasmMsg,
+    CodeInfoResponse, Coin, Coins, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, QueryRequest,
+    Reply, Response, StdError, StdResult, Storage, SubMsg, SubMsgResult, Uint256, WasmMsg,
 };
 use frissitheto::UpgradeMsg;
 use ibc_union_msg::{
@@ -30,9 +30,10 @@ use crate::{
     msg::{ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, ZkgmMsg},
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, EXECUTING_PACKET_IS_BATCH,
-        EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN, IN_FLIGHT_PACKET, MARKET_MAKER, TOKEN_MINTER,
-        TOKEN_ORIGIN,
+        EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN, IN_FLIGHT_PACKET, MARKET_MAKER, TOKEN_BUCKET,
+        TOKEN_MINTER, TOKEN_ORIGIN,
     },
+    token_bucket::TokenBucket,
     ContractError,
 };
 
@@ -231,6 +232,54 @@ pub fn execute(
             salt,
             Instruction::abi_decode_params(&instruction, true)?,
         ),
+        ExecuteMsg::SetRateLimitOperators {
+            rate_limit_operators,
+        } => {
+            if info.sender != CONFIG.load(deps.storage)?.rate_limit_admin {
+                return Err(ContractError::OnlyRateLimitAdmin);
+            }
+            let mut config = CONFIG.load(deps.storage)?;
+            config.rate_limit_operators = rate_limit_operators;
+            CONFIG.save(deps.storage, &config)?;
+            Ok(Response::new().add_event(Event::new("rate_limit_operators_update")))
+        }
+        ExecuteMsg::SetBucketConfig {
+            denom,
+            capacity,
+            refill_rate,
+            reset,
+        } => {
+            if CONFIG
+                .load(deps.storage)?
+                .rate_limit_operators
+                .contains(&info.sender)
+            {
+                return Err(ContractError::OnlyRateLimitOperator);
+            }
+            let token_bucket = TOKEN_BUCKET.update(
+                deps.storage,
+                denom.clone(),
+                |entry| -> Result<_, ContractError> {
+                    match entry {
+                        Some(mut token_bucket) => {
+                            token_bucket.update(capacity, refill_rate, reset)?;
+                            Ok(token_bucket)
+                        }
+                        None => Ok(TokenBucket::new(
+                            capacity,
+                            refill_rate,
+                            env.block.time.seconds(),
+                        )?),
+                    }
+                },
+            )?;
+            Ok(Response::new().add_event(
+                Event::new("token_bucket_update")
+                    .add_attribute("denom", denom)
+                    .add_attribute("capacity", token_bucket.capacity)
+                    .add_attribute("refill_rate", token_bucket.refill_rate),
+            ))
+        }
     }
 }
 
@@ -1143,6 +1192,14 @@ fn execute_fungible_asset_order(
 
     // Protocol Fill - If the quote token matches the wrapped version of the base token and base amount >= quote amount
     if quote_token_str == wrapped_denom && base_covers_quote {
+        // Ensure rate limit is respected
+        rate_limit(
+            deps.storage,
+            wrapped_denom.clone(),
+            quote_amount,
+            env.block.time.seconds(),
+        )?;
+
         // For new assets: Deploy wrapped token contract and mint quote amount to receiver
         if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_denom.clone()) {
             // Create the wrapped token if it doesn't exist
@@ -1207,6 +1264,14 @@ fn execute_fungible_asset_order(
     }
     // Unwrapping - For returning assets: Unwrap base token and transfer quote amount to receiver
     else if order.base_token_path != U256::ZERO && base_covers_quote {
+        // Ensure rate limit is respected
+        rate_limit(
+            deps.storage,
+            quote_token_str.clone(),
+            quote_amount,
+            env.block.time.seconds(),
+        )?;
+
         // Decrease the outstanding balance for this channel and path
         decrease_channel_balance(
             deps,
@@ -1918,6 +1983,24 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
             Ok(to_json_binary(&minter)?)
         }
     }
+}
+
+fn rate_limit(
+    storage: &mut dyn Storage,
+    denom: String,
+    amount: impl Into<Uint256>,
+    now: impl Into<Uint256>,
+) -> Result<(), ContractError> {
+    TOKEN_BUCKET.update(storage, denom.clone(), |entry| match entry {
+        Some(mut token_bucket) => {
+            token_bucket.rate_limit(amount.into(), now.into())?;
+            Ok(token_bucket)
+        }
+        None => Err(ContractError::TokenBucketIsAbsent {
+            token: denom.clone(),
+        }),
+    })?;
+    Ok(())
 }
 
 /// Increases the outstanding balance for a (channel, path, token) combination.

@@ -4,6 +4,7 @@ pub mod msg;
 mod state;
 #[cfg(test)]
 mod tests;
+pub mod token_bucket;
 use alloy::primitives::{ruint::ParseError, U256};
 use cosmwasm_std::StdError;
 use frissitheto::UpgradeError;
@@ -114,4 +115,12 @@ pub enum ContractError {
     InvalidMultiplexSender,
     #[error("async acknowledgements are not allowed in batches as they are atomic")]
     BatchMustBeSync,
+    #[error("token bucket is absent for {token}")]
+    TokenBucketIsAbsent { token: String },
+    #[error(transparent)]
+    TokenBucket(#[from] token_bucket::Error),
+    #[error("invalid operation, sender must be the rate limit admin")]
+    OnlyRateLimitAdmin,
+    #[error("invalid operation, sender must be a rate limit operator")]
+    OnlyRateLimitOperator,
 }
