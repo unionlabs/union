@@ -47,7 +47,7 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
     const signingClient = yield* SigningCosmWasmClientContext
     const sourceConfig = yield* CosmosChannelSource
 
-    const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow()
+    const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
 
     return yield* executeContract(
       signingClient.client,
@@ -56,7 +56,7 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
       {
         send: {
           channel_id: sourceConfig.channelId,
-          timeout_height: 0,
+          timeout_height: "0",
           timeout_timestamp,
           salt: generateSalt("cosmos"),
           instruction: encodeAbiParameters(instructionAbi, [
