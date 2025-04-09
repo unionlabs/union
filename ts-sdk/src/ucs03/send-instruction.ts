@@ -13,13 +13,14 @@ import { SigningCosmWasmClientContext } from "../cosmos/client.js"
 import { CosmosChannelSource } from "../cosmos/channel.js"
 import { encodeAbiParameters } from "viem"
 import { instructionAbi } from "../evm/abi/index.js"
+import { getTimeoutInNanoseconds24HoursFromNow } from "../utils/timeout.js"
 
 export const sendInstructionEvm = (instruction: Instruction) =>
   Effect.gen(function* () {
     const walletClient = yield* ViemWalletClient
     const sourceConfig = yield* EvmChannelSource
 
-    yield* Effect.log("SENDING INSTRUCTION EVM W/ TIMEOTU")
+    const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
 
     return yield* writeContractEvm(walletClient.client, {
       account: walletClient.account,
@@ -29,8 +30,8 @@ export const sendInstructionEvm = (instruction: Instruction) =>
       address: sourceConfig.ucs03address,
       args: [
         sourceConfig.channelId,
-        10000000000000001n,
         0n,
+        timeoutTimestamp,
         generateSalt("evm"),
         {
           opcode: instruction.opcode,
@@ -46,6 +47,8 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
     const signingClient = yield* SigningCosmWasmClientContext
     const sourceConfig = yield* CosmosChannelSource
 
+    const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow()
+
     return yield* executeContract(
       signingClient.client,
       signingClient.address,
@@ -53,8 +56,8 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
       {
         send: {
           channel_id: sourceConfig.channelId,
-          timeout_height: 10000000,
-          timeout_timestamp: 0,
+          timeout_height: 0,
+          timeout_timestamp,
           salt: generateSalt("cosmos"),
           instruction: encodeAbiParameters(instructionAbi, [
             instruction.version,
@@ -70,12 +73,14 @@ export const sendInstructionAptos = (instruction: Instruction) =>
   Effect.gen(function* () {
     const walletClient = yield* AptosWalletClient
     const sourceConfig = yield* AptosChannelSource
+    const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
+
     const module_name = "ibc_app"
     const function_name = "send"
     const function_arguments = [
       sourceConfig.channelId,
       0,
-      1000000000000,
+      timeoutTimestamp,
       generateSalt("aptos"),
       instruction.version,
       instruction.opcode,
