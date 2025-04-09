@@ -33,6 +33,7 @@ import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { is } from "../transfer-step.ts"
 import Label from "$lib/components/ui/Label.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
 
 type Props = {
   stepIndex: number
@@ -88,6 +89,7 @@ export const submit = Effect.gen(function* () {
 
   const sourceChainRpcType = lts.value.sourceChain.rpc_type
 
+  // This should be rewritten entirely. We should leverage the sendInstruction functions from the SDK that properly expose errors. All details get lost here.
   yield* Match.value(sourceChainRpcType).pipe(
     Match.when("evm", () =>
       Effect.gen(function* () {
@@ -114,6 +116,7 @@ export const submit = Effect.gen(function* () {
         })
 
         do {
+          const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
           ets = yield* Effect.tryPromise({
             try: () =>
               nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
@@ -125,7 +128,7 @@ export const submit = Effect.gen(function* () {
                 args: [
                   lts.value.channel.source_channel_id,
                   0n,
-                  9007199254740991n,
+                  timeoutTimestamp,
                   generateSalt("evm"),
                   {
                     opcode: step.value.instruction.opcode,
@@ -160,6 +163,8 @@ export const submit = Effect.gen(function* () {
         const isNative = !isValidBech32ContractAddress(fromHex(lts.value.baseToken.denom, "string"))
 
         do {
+          const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
+
           cts = yield* Effect.tryPromise(() =>
             nextStateCosmos(
               cts,
@@ -170,8 +175,8 @@ export const submit = Effect.gen(function* () {
               {
                 send: {
                   channel_id: lts.value.channel.source_channel_id,
-                  timeout_height: Number.MAX_SAFE_INTEGER,
-                  timeout_timestamp: 0,
+                  timeout_height: "0",
+                  timeout_timestamp,
                   salt: generateSalt("cosmos"),
                   instruction: encodeAbiParameters(instructionAbi, [
                     step.value.instruction.version,

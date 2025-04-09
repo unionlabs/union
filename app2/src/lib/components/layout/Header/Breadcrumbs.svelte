@@ -5,6 +5,7 @@ import { navigation } from "../Sidebar/navigation.ts"
 import { fade, fly } from "svelte/transition"
 import { quintOut } from "svelte/easing"
 import { flip } from "svelte/animate"
+import Truncate from "$lib/components/ui/Truncate.svelte"
 
 const toTitleCase = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1)
@@ -55,7 +56,7 @@ $effect(() => {
           in:fly={{ x: -30, duration: 200, delay: i * 100, easing: quintOut }}
           out:fly={{ x: 30, duration: 100 }}
         >
-          {crumb.title}
+          <Truncate value={crumb.title} showCopy={false} maxLength={16}/>
         </a>
         <span 
           class="text-zinc-600 ml-2"
