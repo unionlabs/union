@@ -1,15 +1,19 @@
 pragma solidity ^0.8.27;
 
+import "solady/utils/FixedPointMathLib.sol";
+
 /**
  * @title [TokenBucket](https://en.wikipedia.org/wiki/Token_bucket) (ERC-7201 Storage Compliant)
  * @dev Abstract contract implementing the Token Bucket algorithm with namespaced storage.
  */
 abstract contract TokenBucket {
+    using FixedPointMathLib for *;
+
     error ErrTokenBucketZeroCapacity();
     error ErrTokenBucketZeroRefillRate();
     error ErrTokenBucketRateLimitExceeded();
 
-    bytes32 internal constant _TOKEN_BUCKT_STORAGE_SLOT = keccak256(
+    bytes32 internal constant _TOKEN_BUCKET_STORAGE_SLOT = keccak256(
         abi.encode(uint256(keccak256("union.token-bucket.zkgm")) - 1)
     ) & ~bytes32(uint256(0xff));
 
@@ -33,13 +37,16 @@ abstract contract TokenBucket {
         pure
         returns (TokenBucketStorage storage $)
     {
-        bytes32 slot = _TOKEN_BUCKT_STORAGE_SLOT;
+        bytes32 slot = _TOKEN_BUCKET_STORAGE_SLOT;
         assembly {
             $.slot := slot
         }
     }
 
     function _rateLimit(address token, uint256 amount) internal {
+        if (amount == 0) {
+            return;
+        }
         _refill(token);
         Bucket storage $ = _getTokenBucketStorage().buckets[token];
         if ($.available < amount) {
@@ -57,9 +64,12 @@ abstract contract TokenBucket {
             return;
         }
         uint256 elapsed = block.timestamp - $.lastRefill;
-        uint256 toRefill = elapsed * $.refillRate;
+        uint256 toRefill = $.refillRate.saturatingMul(elapsed);
         if (toRefill > 0) {
-            $.available = _clampToCapacity($.capacity, $.available + toRefill);
+            $.available = _clampToCapacity(
+                $.capacity,
+                $.available.saturatingAdd(toRefill)
+            );
             $.lastRefill = block.timestamp;
         }
     }
@@ -85,7 +95,7 @@ abstract contract TokenBucket {
         }
     }
 
-    function getTokenBucket(
+    function getBucket(
         address token
     ) external view returns (Bucket memory) {
         return _getTokenBucketStorage().buckets[token];
