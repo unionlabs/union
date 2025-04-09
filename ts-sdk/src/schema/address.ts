@@ -2,7 +2,7 @@ import * as S from "effect/Schema"
 import { Hex, HexChecksum } from "./hex.js"
 import { Bech32 } from "./bech32.js"
 
-// For Reference, see: https://docs.union.build/concepts/address-types/
+// For Reference, see: https://docs.union.build/ucs/05
 // We always store bytes arrays as hex-encoded strings
 export const AddressCanonicalBytes = Hex.pipe(S.brand("CanonicalBytes"))
 export type AddressCanonicalBytes = typeof AddressCanonicalBytes.Type

@@ -13,6 +13,11 @@ Hex<T> = a `0x`-prefixed hex-string encoding of `T` where `T = Bytes | String`
 Hrp = a Bech32 Hrp
 ```
 
+:::note
+Within Union APIs and Standards, the terms **ZKGM** and **UCS03** are used interchangeably. They both refer to [the UCS03 - ZKGM spec](/ucs/03).
+:::
+
+
 ## EVM
 
 ```
@@ -74,4 +79,4 @@ receiver: DestinationChain.Zkgm
 
 ## Implementation Suggestion
 
-To be consistent across languages and implementations, ideally the types are flattened and called `Address<Ecosystem><Variant>`, for example `AddressCosmosCanonical`, `AddressEvmZkgm`.
+To be consistent across languages and implementation, ideally the types are flattened and called `Address<Ecosystem><Variant>`, for example `AddressCosmosCanonical`, `AddressEvmZkgm`.
