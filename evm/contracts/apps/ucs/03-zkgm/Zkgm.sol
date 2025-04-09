@@ -25,6 +25,7 @@ import "../../../core/05-port/IIBCModule.sol";
 import "../../../core/24-host/IBCCommitment.sol";
 import "../../../internal/Versioned.sol";
 
+import "./TokenBucket.sol";
 import "./IWETH.sol";
 import "./IZkgmable.sol";
 import "./IZkgmERC20.sol";
@@ -53,6 +54,7 @@ contract UCS03Zkgm is
     UUPSUpgradeable,
     Ownable2StepUpgradeable,
     PausableUpgradeable,
+    TokenBucket,
     Versioned,
     IZkgm
 {
@@ -104,7 +106,7 @@ contract UCS03Zkgm is
         bytes32 salt,
         Instruction calldata instruction
     ) public whenNotPaused {
-        verifyInternal(channelId, 0, instruction);
+        _verifyInternal(channelId, 0, instruction);
         IBC_HANDLER.sendPacket(
             channelId,
             timeoutHeight,
@@ -121,7 +123,7 @@ contract UCS03Zkgm is
 
     // Increase the outstanding balance of a channel. This ensure that malicious
     // channels can't unescrow/mint more tokens than previously escrowed/burnt.
-    function increaseOutstanding(
+    function _increaseOutstanding(
         uint32 sourceChannelId,
         uint256 path,
         address token,
@@ -136,7 +138,7 @@ contract UCS03Zkgm is
     // sent back over [3, 2, 1], this will only work if the path is the inverse.
     // If the function is called on refund, simplify subtract the refunded
     // amount.
-    function decreaseOutstanding(
+    function _decreaseOutstanding(
         uint32 sourceChannelId,
         uint256 path,
         address token,
@@ -145,7 +147,7 @@ contract UCS03Zkgm is
         channelBalance[sourceChannelId][path][token] -= amount;
     }
 
-    function verifyInternal(
+    function _verifyInternal(
         uint32 channelId,
         uint256 path,
         Instruction calldata instruction
@@ -156,24 +158,26 @@ contract UCS03Zkgm is
             }
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            verifyFungibleAssetOrder(channelId, path, order);
+            _verifyFungibleAssetOrder(channelId, path, order);
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            verifyBatch(
+            _verifyBatch(
                 channelId, path, ZkgmLib.decodeBatch(instruction.operand)
             );
         } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            verifyForward(channelId, ZkgmLib.decodeForward(instruction.operand));
+            _verifyForward(
+                channelId, ZkgmLib.decodeForward(instruction.operand)
+            );
         } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            verifyMultiplex(
+            _verifyMultiplex(
                 channelId, path, ZkgmLib.decodeMultiplex(instruction.operand)
             );
         } else {
@@ -181,7 +185,7 @@ contract UCS03Zkgm is
         }
     }
 
-    function verifyFungibleAssetOrder(
+    function _verifyFungibleAssetOrder(
         uint32 channelId,
         uint256 path,
         FungibleAssetOrder calldata order
@@ -208,7 +212,7 @@ contract UCS03Zkgm is
         // We compute the wrapped token from the destination to the source. If
         // the base token matches the predicted wrapper, we want to unwrap only
         // if it's being sent back through the same channel/path.
-        (address wrappedToken,) = internalPredictWrappedToken(
+        (address wrappedToken,) = _predictWrappedToken(
             intermediateChannelPath, channelId, order.quoteToken
         );
         bool isInverseIntermediatePath =
@@ -229,7 +233,7 @@ contract UCS03Zkgm is
             if (order.baseTokenPath != 0) {
                 revert ZkgmLib.ErrInvalidAssetOrigin();
             }
-            increaseOutstanding(
+            _increaseOutstanding(
                 channelId, path, address(baseToken), order.baseAmount
             );
             baseToken.safeTransferFrom(
@@ -238,7 +242,7 @@ contract UCS03Zkgm is
         }
     }
 
-    function verifyBatch(
+    function _verifyBatch(
         uint32 channelId,
         uint256 path,
         Batch calldata batch
@@ -250,21 +254,21 @@ contract UCS03Zkgm is
             ) {
                 revert ZkgmLib.ErrInvalidBatchInstruction();
             }
-            verifyInternal(channelId, path, batch.instructions[i]);
+            _verifyInternal(channelId, path, batch.instructions[i]);
         }
     }
 
-    function verifyForward(
+    function _verifyForward(
         uint32 channelId,
         Forward calldata forward
     ) internal {
         if (!ZkgmLib.isAllowedForwardInstruction(forward.instruction.opcode)) {
             revert ZkgmLib.ErrInvalidForwardInstruction();
         }
-        verifyInternal(channelId, forward.path, forward.instruction);
+        _verifyInternal(channelId, forward.path, forward.instruction);
     }
 
-    function verifyMultiplex(
+    function _verifyMultiplex(
         uint32 channelId,
         uint256 path,
         Multiplex calldata multiplex
@@ -324,7 +328,7 @@ contract UCS03Zkgm is
             revert ZkgmLib.ErrUnauthorized();
         }
         ZkgmPacket calldata zkgmPacket = ZkgmLib.decode(ibcPacket.data);
-        return executeInternal(
+        return _executeInternal(
             caller,
             ibcPacket,
             relayer,
@@ -335,7 +339,7 @@ contract UCS03Zkgm is
         );
     }
 
-    function executeInternal(
+    function _executeInternal(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -350,14 +354,14 @@ contract UCS03Zkgm is
             }
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            return executeFungibleAssetOrder(
+            return _executeFungibleAssetOrder(
                 caller, ibcPacket, relayer, relayerMsg, path, order
             );
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            return executeBatch(
+            return _executeBatch(
                 caller,
                 ibcPacket,
                 relayer,
@@ -370,7 +374,7 @@ contract UCS03Zkgm is
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            return executeForward(
+            return _executeForward(
                 ibcPacket,
                 relayer,
                 relayerMsg,
@@ -383,7 +387,7 @@ contract UCS03Zkgm is
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            return executeMultiplex(
+            return _executeMultiplex(
                 caller,
                 ibcPacket,
                 relayer,
@@ -397,7 +401,7 @@ contract UCS03Zkgm is
         }
     }
 
-    function executeBatch(
+    function _executeBatch(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -410,7 +414,7 @@ contract UCS03Zkgm is
         bytes[] memory acks = new bytes[](l);
         for (uint256 i = 0; i < l; i++) {
             Instruction calldata instruction = batch.instructions[i];
-            acks[i] = executeInternal(
+            acks[i] = _executeInternal(
                 caller,
                 ibcPacket,
                 relayer,
@@ -433,7 +437,7 @@ contract UCS03Zkgm is
         return ZkgmLib.encodeBatchAck(BatchAck({acknowledgements: acks}));
     }
 
-    function executeForward(
+    function _executeForward(
         IBCPacket calldata ibcPacket,
         address relayer,
         bytes calldata relayerMsg,
@@ -493,7 +497,7 @@ contract UCS03Zkgm is
         return ZkgmLib.ACK_EMPTY;
     }
 
-    function executeMultiplex(
+    function _executeMultiplex(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -534,7 +538,7 @@ contract UCS03Zkgm is
         }
     }
 
-    function internalPredictWrappedToken(
+    function _predictWrappedToken(
         uint256 path,
         uint32 channel,
         bytes calldata token
@@ -551,10 +555,10 @@ contract UCS03Zkgm is
         uint32 channel,
         bytes calldata token
     ) public view returns (address, bytes32) {
-        return internalPredictWrappedToken(path, channel, token);
+        return _predictWrappedToken(path, channel, token);
     }
 
-    function internalProtocolFill(
+    function _protocolFill(
         uint32 channelId,
         uint256 path,
         address wrappedToken,
@@ -575,7 +579,7 @@ contract UCS03Zkgm is
             }
         } else {
             // If the base token path is being unwrapped, it's going to be non-zero.
-            decreaseOutstanding(
+            _decreaseOutstanding(
                 channelId,
                 ZkgmLib.reverseChannelPath(path),
                 quoteToken,
@@ -596,7 +600,7 @@ contract UCS03Zkgm is
         );
     }
 
-    function internalMarketMakerFill(
+    function _marketMakerFill(
         address caller,
         bytes calldata relayerMsg,
         address quoteToken,
@@ -647,7 +651,7 @@ contract UCS03Zkgm is
         );
     }
 
-    function internalDeployWrappedToken(
+    function _deployWrappedToken(
         uint32 channelId,
         uint256 path,
         address wrappedToken,
@@ -681,7 +685,7 @@ contract UCS03Zkgm is
         }
     }
 
-    function executeFungibleAssetOrder(
+    function _executeFungibleAssetOrder(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -689,15 +693,15 @@ contract UCS03Zkgm is
         uint256 path,
         FungibleAssetOrder calldata order
     ) internal returns (bytes memory) {
-        (address wrappedToken, bytes32 wrappedTokenSalt) =
-        internalPredictWrappedToken(
+        (address wrappedToken, bytes32 wrappedTokenSalt) = _predictWrappedToken(
             path, ibcPacket.destinationChannelId, order.baseToken
         );
         address quoteToken = address(bytes20(order.quoteToken));
         address payable receiver = payable(address(bytes20(order.receiver)));
         bool baseAmountCoversQuoteAmount = order.baseAmount >= order.quoteAmount;
         if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
-            internalDeployWrappedToken(
+            _rateLimit(quoteToken, order.quoteAmount);
+            _deployWrappedToken(
                 ibcPacket.destinationChannelId,
                 path,
                 wrappedToken,
@@ -706,7 +710,7 @@ contract UCS03Zkgm is
                 order.baseTokenName,
                 order.baseTokenDecimals
             );
-            return internalProtocolFill(
+            return _protocolFill(
                 ibcPacket.destinationChannelId,
                 path,
                 wrappedToken,
@@ -718,7 +722,8 @@ contract UCS03Zkgm is
                 true
             );
         } else if (order.baseTokenPath != 0 && baseAmountCoversQuoteAmount) {
-            return internalProtocolFill(
+            _rateLimit(quoteToken, order.quoteAmount);
+            return _protocolFill(
                 ibcPacket.destinationChannelId,
                 path,
                 wrappedToken,
@@ -730,7 +735,7 @@ contract UCS03Zkgm is
                 false
             );
         } else {
-            return internalMarketMakerFill(
+            return _marketMakerFill(
                 caller, relayerMsg, quoteToken, receiver, order.quoteAmount
             );
         }
@@ -753,7 +758,7 @@ contract UCS03Zkgm is
             }
         }
         Ack calldata zkgmAck = ZkgmLib.decodeAck(ack);
-        acknowledgeInternal(
+        _acknowledgeInternal(
             caller,
             ibcPacket,
             relayer,
@@ -765,7 +770,7 @@ contract UCS03Zkgm is
         );
     }
 
-    function acknowledgeInternal(
+    function _acknowledgeInternal(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -781,7 +786,7 @@ contract UCS03Zkgm is
             }
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            acknowledgeFungibleAssetOrder(
+            _acknowledgeFungibleAssetOrder(
                 ibcPacket,
                 relayer,
                 path,
@@ -797,7 +802,7 @@ contract UCS03Zkgm is
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            acknowledgeBatch(
+            _acknowledgeBatch(
                 caller,
                 ibcPacket,
                 relayer,
@@ -811,7 +816,7 @@ contract UCS03Zkgm is
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            acknowledgeForward(
+            _acknowledgeForward(
                 caller,
                 ibcPacket,
                 relayer,
@@ -824,7 +829,7 @@ contract UCS03Zkgm is
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            acknowledgeMultiplex(
+            _acknowledgeMultiplex(
                 caller,
                 ibcPacket,
                 relayer,
@@ -839,7 +844,7 @@ contract UCS03Zkgm is
         }
     }
 
-    function acknowledgeBatch(
+    function _acknowledgeBatch(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -859,7 +864,7 @@ contract UCS03Zkgm is
             if (successful) {
                 syscallAck = batchAck.acknowledgements[i];
             }
-            acknowledgeInternal(
+            _acknowledgeInternal(
                 caller,
                 ibcPacket,
                 relayer,
@@ -872,7 +877,7 @@ contract UCS03Zkgm is
         }
     }
 
-    function acknowledgeForward(
+    function _acknowledgeForward(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -881,7 +886,7 @@ contract UCS03Zkgm is
         bool successful,
         bytes calldata ack
     ) internal {
-        acknowledgeInternal(
+        _acknowledgeInternal(
             caller,
             ibcPacket,
             relayer,
@@ -893,7 +898,7 @@ contract UCS03Zkgm is
         );
     }
 
-    function acknowledgeMultiplex(
+    function _acknowledgeMultiplex(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -918,7 +923,7 @@ contract UCS03Zkgm is
         }
     }
 
-    function acknowledgeFungibleAssetOrder(
+    function _acknowledgeFungibleAssetOrder(
         IBCPacket calldata ibcPacket,
         address relayer,
         uint256 path,
@@ -946,7 +951,7 @@ contract UCS03Zkgm is
                         marketMaker, orderBaseAmount
                     );
                 } else {
-                    decreaseOutstanding(
+                    _decreaseOutstanding(
                         ibcPacket.sourceChannelId,
                         path,
                         baseToken,
@@ -958,7 +963,7 @@ contract UCS03Zkgm is
                 revert ZkgmLib.ErrInvalidFillType();
             }
         } else {
-            refund(
+            _refund(
                 ibcPacket.sourceChannelId,
                 path,
                 orderSender,
@@ -995,12 +1000,12 @@ contract UCS03Zkgm is
                 return;
             }
         }
-        timeoutInternal(
+        _timeoutInternal(
             caller, ibcPacket, relayer, zkgmPacket.path, zkgmPacket.instruction
         );
     }
 
-    function timeoutInternal(
+    function _timeoutInternal(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -1013,7 +1018,7 @@ contract UCS03Zkgm is
             }
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            timeoutFungibleAssetOrder(
+            _timeoutFungibleAssetOrder(
                 ibcPacket,
                 path,
                 order.sender,
@@ -1025,7 +1030,7 @@ contract UCS03Zkgm is
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            timeoutBatch(
+            _timeoutBatch(
                 caller,
                 ibcPacket,
                 relayer,
@@ -1036,7 +1041,7 @@ contract UCS03Zkgm is
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            timeoutForward(
+            _timeoutForward(
                 caller,
                 ibcPacket,
                 relayer,
@@ -1046,7 +1051,7 @@ contract UCS03Zkgm is
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
                 revert ZkgmLib.ErrUnsupportedVersion();
             }
-            timeoutMultiplex(
+            _timeoutMultiplex(
                 caller,
                 ibcPacket,
                 relayer,
@@ -1058,7 +1063,7 @@ contract UCS03Zkgm is
         }
     }
 
-    function timeoutBatch(
+    function _timeoutBatch(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -1067,24 +1072,24 @@ contract UCS03Zkgm is
     ) internal {
         uint256 l = batch.instructions.length;
         for (uint256 i = 0; i < l; i++) {
-            timeoutInternal(
+            _timeoutInternal(
                 caller, ibcPacket, relayer, path, batch.instructions[i]
             );
         }
     }
 
-    function timeoutForward(
+    function _timeoutForward(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
         Forward calldata forward
     ) internal {
-        timeoutInternal(
+        _timeoutInternal(
             caller, ibcPacket, relayer, forward.path, forward.instruction
         );
     }
 
-    function timeoutMultiplex(
+    function _timeoutMultiplex(
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
@@ -1107,7 +1112,7 @@ contract UCS03Zkgm is
         }
     }
 
-    function timeoutFungibleAssetOrder(
+    function _timeoutFungibleAssetOrder(
         IBCPacket calldata ibcPacket,
         uint256 path,
         bytes calldata orderSender,
@@ -1115,7 +1120,7 @@ contract UCS03Zkgm is
         uint256 orderBaseTokenPath,
         uint256 orderBaseAmount
     ) internal {
-        refund(
+        _refund(
             ibcPacket.sourceChannelId,
             path,
             orderSender,
@@ -1125,7 +1130,7 @@ contract UCS03Zkgm is
         );
     }
 
-    function refund(
+    function _refund(
         uint32 sourceChannelId,
         uint256 path,
         bytes calldata orderSender,
@@ -1138,7 +1143,7 @@ contract UCS03Zkgm is
         if (orderBaseTokenPath != 0) {
             IZkgmERC20(address(baseToken)).mint(sender, orderBaseAmount);
         } else {
-            decreaseOutstanding(
+            _decreaseOutstanding(
                 sourceChannelId, path, baseToken, orderBaseAmount
             );
             IERC20(baseToken).safeTransfer(sender, orderBaseAmount);
