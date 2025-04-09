@@ -8,6 +8,7 @@ _: {
     {
       packages = {
         inherit (crane.buildWorkspaceMember "tools/devnet-utils" { }) devnet-utils;
+        inherit (crane.buildWorkspaceMember "tools/build-evm-deployer-tx" { }) build-evm-deployer-tx;
 
         ignite-cli = pkgs.buildGoModule {
           name = "ignite-cli";

@@ -13,7 +13,7 @@ _: {
     }:
     let
       gitRevToUse = gitRev;
-      # use this to override the git rev. useful if verifying a contract off of a commit and the worktree is dirty for unrelated reasons (changing an rpc, adding a new explorer to verify on, etc)
+      # use this to override the git rev. useful if verifying a contract off of a commit and the worktree is dirty for unrelated reasons (for example, changing an rpc)
       # gitRevToUse = "";
 
       solidity-stringutils = pkgs.fetchFromGitHub {
@@ -146,15 +146,6 @@ _: {
 
         [profile.test]
         test = "tests/src"
-
-        [etherscan]
-        local-devnet = { key = "''${VERIFICATION_KEY}", chain = "32382", url = "http://localhost/api" }
-        corn-testnet = { key = "''${VERIFICATION_KEY}", chain = "21000001", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/21000001/public" }
-        bob-mainnet = { key = "''${VERIFICATION_KEY}", chain = "60808", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/60808/public" }
-        bob-testnet = { key = "''${VERIFICATION_KEY}", chain = "808813", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/808813/public" }
-        bepolia = { key = "''${VERIFICATION_KEY}", chain = "80069", url = "https://api.routescan.io/v2/network/testnet/evm/80069/etherscan" }
-        holesky = { key = "''${VERIFICATION_KEY}", chain = "17000", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/17000/public" }
-        sepolia = { key = "''${VERIFICATION_KEY}", chain = "11155111", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/11155111/public" }
       '';
       compilers = pkgs.linkFarm "evm-libraries" [
         {
@@ -186,16 +177,23 @@ _: {
         '';
       };
 
+      mkTenderlyVerifierUrl =
+        chain-id:
+        "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/${chain-id}/public";
+
       # network           : plaintext name of network
+      # chain-id          : chain id of the network
       # rpc-url           : rpc url for this network, should support full eth_getLogs (for fetching the
       #                     deployment heights)
       # private-key       : bash expression that evaluates to the private key to use for deployments
+      # weth              : address of the WETH equivalent on this chain, to use for ucs03-zkgm
       #
       # verify            : whether this chain supports verification. defaults to true, if true then the
       #                     following args are also read:
       # verifier          : forge --verifier to use
       # verification-key  : bash expression that evaluates to the verification key, this will be available
       #                     in the $VERIFICATION_KEY env var
+      # verifier-url      : contract verification endpoint for this chain
       networks = [
         # devnets
         {
@@ -207,6 +205,7 @@ _: {
           verify = pkgs.lib.optionalString pkgs.stdenv.isx86_64;
           verifier = "blockscout";
           verification-key = "";
+          verifier-url = "http://localhost/api";
         }
         {
           # for use with the local berachain devnet from berachain/beacon-kit
@@ -229,6 +228,8 @@ _: {
 
         # testnets
         {
+          chain-id = "11155111";
+
           network = "sepolia";
           rpc-url = "https://0xrpc.io/sep";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
@@ -238,6 +239,8 @@ _: {
           verification-key = ''"$1"'';
         }
         {
+          chain-id = "17000";
+
           network = "holesky";
           rpc-url = "https://holesky.gateway.tenderly.co";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
@@ -246,7 +249,9 @@ _: {
           verifier = "etherscan";
           verification-key = ''"$1"'';
         }
-        {
+        rec {
+          chain-id = "21000001";
+
           network = "corn-testnet";
           rpc-url = "https://testnet.corn-rpc.com";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
@@ -255,8 +260,11 @@ _: {
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
-        {
+        rec {
+          chain-id = "808813";
+
           network = "bob-testnet";
           rpc-url = "https://bob-sepolia.rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
@@ -264,8 +272,11 @@ _: {
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
-        {
+        rec {
+          chain-id = "80069";
+
           network = "bepolia";
           rpc-url = "https://bepolia.rpc.berachain.com/";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
@@ -273,19 +284,22 @@ _: {
 
           verifier = "etherscan";
           verification-key = ''verifyContract'';
+          verifier-url = "https://api.routescan.io/v2/network/testnet/evm/${chain-id}/etherscan";
         }
-        {
-          network = "0g-testnet";
-          rpc-url = "https://evmrpc-testnet.0g.ai";
-          private-key = ''"$1"'';
-          # TODO: find out
-          weth = "0x0000000000000000000000000000000000000000";
+        # {
+        #   network = "0g-testnet";
+        #   rpc-url = "https://evmrpc-testnet.0g.ai";
+        #   private-key = ''"$1"'';
+        #   # TODO: find out
+        #   weth = "0x0000000000000000000000000000000000000000";
 
-          verify = false;
-        }
+        #   verify = false;
+        # }
 
         # mainnets
-        {
+        rec {
+          chain-id = "60808";
+
           network = "bob";
           rpc-url = "https://rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
@@ -293,32 +307,75 @@ _: {
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
 
         # NOTE: These haven't been tested since testnet 8 (or earlier), and as such are unlikely to work properly
-        {
-          network = "scroll-testnet";
-          rpc-url = "https://sepolia-rpc.scroll.io";
-          private-key = ''"$1"'';
-          # TODO: find out
-          weth = "0x0000000000000000000000000000000000000000";
+        # {
+        #   network = "scroll-testnet";
+        #   rpc-url = "https://sepolia-rpc.scroll.io";
+        #   private-key = ''"$1"'';
+        #   # TODO: find out
+        #   weth = "0x0000000000000000000000000000000000000000";
 
-          verifier = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
-        }
-        {
-          network = "arbitrum-testnet";
-          rpc-url = "https://sepolia-rollup.arbitrum.io/rpc";
-          private-key = ''"$1"'';
-          weth = "0x980b62da83eff3d4576c647993b0c1d7faf17c73";
-        }
-        {
-          network = "berachain-testnet";
-          rpc-url = "https://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1/";
-          private-key = ''"$1"'';
-          # TODO: find out
-          weth = "0x0000000000000000000000000000000000000000";
-        }
+        #   verifier = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
+        # }
+        # {
+        #   network = "arbitrum-testnet";
+        #   rpc-url = "https://sepolia-rollup.arbitrum.io/rpc";
+        #   private-key = ''"$1"'';
+        #   weth = "0x980b62da83eff3d4576c647993b0c1d7faf17c73";
+        # }
+        # {
+        #   network = "berachain-testnet";
+        #   rpc-url = "https://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1/";
+        #   private-key = ''"$1"'';
+        #   # TODO: find out
+        #   weth = "0x0000000000000000000000000000000000000000";
+        # }
       ];
+
+      # use in a script that can do contract verification. this allows for overwriting the verification args via the FOUNDRY_ETHERSCAN env var when calling said script via nix run.
+      #
+      # this also allows for overwriting the verifier via the $VERIFIER env var when calling said script via nix run.
+      #
+      # the verification key is expected to be available at $VERIFICATION_KEY
+      #
+      # the args to pass to the forge invocation are available in an array at "${VERIFICATION_ARGS[@]}"
+      #
+      # example:
+      #
+      # FOUNDRY_ETHERSCAN='{ chain = { key = "verifyContract", chain = "21000001", url = "https://api.routescan.io/v2/network/testnet/evm/21000001/etherscan" } }' nix run .#eth-scripts.verify-corn-testnet -L -- 0xa76897C61d710C07De4D541C77c209578d64CEB9 0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2
+      setupFoundryVerifcationVars =
+        verify:
+        {
+          chain-id,
+          verifier,
+          verifier-url,
+          with-verify-flag ? true,
+        }:
+        let
+          expr = pkgs.lib.optionalString verify ''{ chain = { key = \"\''${VERIFICATION_KEY}\", chain = \"${chain-id}\", url = \"${verifier-url}\" } }'';
+        in
+        ''
+          # shellcheck disable=SC2016
+          DEFAULT_FOUNDRY_ETHERSCAN="${expr}"
+          FOUNDRY_ETHERSCAN="''${FOUNDRY_ETHERSCAN:-$DEFAULT_FOUNDRY_ETHERSCAN}"
+
+          echo "$FOUNDRY_ETHERSCAN"
+
+          VERIFICATION_ARGS=()
+          # shellcheck disable=2050
+          # idk how else to compare against a bool from nix -> bash
+          if [ ${if verify then "1" else "0"} -eq 1 ] || [ -z "$VERIFIER" ]; then
+            # either default verifier, or specified verifier
+            if [ ${if with-verify-flag then "1" else "0"} -eq 1 ]; then
+              VERIFICATION_ARGS+=("--verify")
+            fi
+            VERIFICATION_ARGS+=("--verifier")
+            VERIFICATION_ARGS+=("''${VERIFIER:-${verifier}}")
+          fi
+        '';
 
       get-deployed-heights =
         { rpc-url, ... }:
@@ -419,6 +476,7 @@ _: {
 
       deploy =
         {
+          chain-id,
           rpc-url,
           private-key,
           weth,
@@ -426,6 +484,7 @@ _: {
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
           verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -434,20 +493,26 @@ _: {
             runtimeInputs = [ self'.packages.forge ];
             text = ''
               ${ensureAtRepositoryRoot}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+              }}
+
               OUT="$(mktemp -d)"
               pushd "$OUT"
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
-              WETH_ADDRESS=${weth} \
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
+              WETH_ADDRESS=${weth} \
               PRIVATE_KEY=${private-key} \
               DEPLOYER="$3" \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployIBC \
                 -vvvv \
                 --rpc-url ${rpc-url} \
-                --broadcast ${pkgs.lib.optionalString verify "--verify --verifier ${verifier}"}
+                --broadcast "''${VERIFICATION_ARGS[@]}"
 
               popd
               rm -rf "$OUT"
@@ -457,6 +522,7 @@ _: {
 
       deploy-full =
         {
+          chain-id,
           rpc-url,
           private-key,
           weth,
@@ -464,6 +530,7 @@ _: {
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
           verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -472,20 +539,26 @@ _: {
             runtimeInputs = [ self'.packages.forge ];
             text = ''
               ${ensureAtRepositoryRoot}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+              }}
+
               OUT="$(mktemp -d)"
               pushd "$OUT"
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
-              WETH_ADDRESS=${weth} \
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
+              WETH_ADDRESS=${weth} \
               PRIVATE_KEY=${private-key} \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
                 -vvvv \
                 --rpc-url ${rpc-url} \
-                --broadcast ${pkgs.lib.optionalString verify "--verify --verifier ${verifier}"}
+                --broadcast "''${VERIFICATION_ARGS[@]}"
 
               popd
               rm -rf "$OUT"
@@ -493,8 +566,9 @@ _: {
           }
         );
 
-      verify =
+      verify-all-contracts =
         {
+          chain-id,
           rpc-url,
           private-key,
           weth,
@@ -502,6 +576,7 @@ _: {
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
           verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -510,6 +585,12 @@ _: {
             runtimeInputs = [ wrappedForgeOnline ];
             text = ''
               ${ensureAtRepositoryRoot}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+                with-verify-flag = false;
+              }}
+
               WETH_ADDRESS=${weth} nix run .#evm-contracts-addresses -- "$1" "$2" ${rpc-url}
 
               PROJECT_ROOT=$(pwd)
@@ -518,12 +599,15 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+
               jq -r 'to_entries | map([.key, .value.args, .value.contract]) | .[] | @tsv' "$PROJECT_ROOT"/contracts.json | \
                 while IFS=$'\t' read -r address args contract; do
                   if [ "$address" != "0x0000000000000000000000000000000000000000" ]
                   then
-                    WETH_ADDRESS=${weth} \
+                    # shellcheck disable=SC2005
+                    FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
                     VERIFICATION_KEY=${verification-key} \
+                    WETH_ADDRESS=${weth} \
                     PRIVATE_KEY=${private-key} \
                     FOUNDRY_LIBS='["libs"]' \
                     FOUNDRY_PROFILE="script" \
@@ -531,7 +615,7 @@ _: {
                         --force \
                         --watch "$address" "$contract" \
                         --constructor-args "$args" \
-                        --rpc-url ${rpc-url} ${pkgs.lib.optionalString verify "--verifier ${verifier}"} || true
+                        --rpc-url ${rpc-url} "''${VERIFICATION_ARGS[@]}" || true
                   fi
                 done
 
@@ -543,13 +627,16 @@ _: {
 
       deploy-single =
         {
-          rpc-url,
           kind,
+
+          chain-id,
+          rpc-url,
           weth,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
           verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -575,13 +662,19 @@ _: {
             ];
             text = ''
               ${ensureAtRepositoryRoot}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+              }}
+
               OUT="$(mktemp -d)"
               pushd "$OUT"
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
-              WETH_ADDRESS=${weth} \
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
+              WETH_ADDRESS=${weth} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               PRIVATE_KEY="$argc_private_key" \
@@ -590,7 +683,7 @@ _: {
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
                 -vvvv \
                 --rpc-url "${rpc-url}" \
-                --broadcast ${pkgs.lib.optionalString verify "--verify --verifier ${verifier}"}
+                --broadcast "''${VERIFICATION_ARGS[@]}"
 
               popd
               rm -rf "$OUT"
@@ -602,14 +695,17 @@ _: {
       upgrade =
         {
           dry ? false,
-          rpc-url,
           protocol,
+
+          chain-id,
           private-key,
+          rpc-url,
           weth,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
           verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -643,7 +739,13 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+                with-verify-flag = false;
+              }}
+
               WETH_ADDRESS=${weth} \
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
@@ -653,7 +755,7 @@ _: {
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
                   --rpc-url ${rpc-url} \
-                  --broadcast ${pkgs.lib.optionalString verify "--verify --verifier ${verifier}"}
+                  --broadcast "''${VERIFICATION_ARGS[@]}"
 
               rm -rf "$OUT"
               popd
@@ -797,7 +899,7 @@ _: {
           // builtins.listToAttrs (
             builtins.map (args: {
               name = "verify-${args.network}";
-              value = verify args;
+              value = verify-all-contracts args;
             }) networks
           )
           // builtins.listToAttrs (
