@@ -108,37 +108,47 @@ fn verify_non_existence(
     root: &[u8],
     key: &[u8],
 ) -> Result<(), VerifyError> {
-    let left_ops = |left: &ExistenceProof| -> Result<(), VerifyError> {
+    let left_key = if let Some(left) = &non_existence_proof.left {
         verify_existence_proof(left, spec, root, &left.key, &left.value)?;
-
-        if key_for_comparison(spec, key)? <= key_for_comparison(spec, &left.key)? {
-            return Err(VerifyError::KeyIsNotRightOfLeftProof);
-        }
-
-        if !is_right_most(&spec.inner_spec, &left.path).map_err(VerifyError::NeighborSearch)? {
-            return Err(VerifyError::RightProofMissing);
-        }
-
-        Ok(())
+        left.key.clone()
+    } else {
+        Default::default()
     };
 
-    let right_ops = |right: &ExistenceProof| -> Result<(), VerifyError> {
+    let right_key = if let Some(right) = &non_existence_proof.right {
         verify_existence_proof(right, spec, root, &right.key, &right.value)?;
+        right.key.clone()
+    } else {
+        Default::default()
+    };
 
-        if key_for_comparison(spec, key)? >= key_for_comparison(spec, &right.key)? {
+    if left_key.is_empty() && right_key.is_empty() {
+        return Err(VerifyError::BothProofsMissing);
+    }
+
+    if !right_key.is_empty() {
+        if key_for_comparison(spec, key)? >= key_for_comparison(spec, &right_key)? {
             return Err(VerifyError::KeyIsNotLeftOfRightProof);
         }
+    }
 
-        if !is_left_most(&spec.inner_spec, &right.path).map_err(VerifyError::NeighborSearch)? {
-            return Err(VerifyError::LeftProofMissing);
+    if !left_key.is_empty() {
+        if key_for_comparison(spec, key)? <= key_for_comparison(spec, &left_key)? {
+            return Err(VerifyError::KeyIsNotRightOfLeftProof);
         }
-
-        Ok(())
-    };
+    }
 
     match (&non_existence_proof.left, &non_existence_proof.right) {
-        (None, Some(right)) => right_ops(right)?,
-        (Some(left), None) => left_ops(left)?,
+        (Some(left), None) => {
+            if !is_right_most(&spec.inner_spec, &left.path).map_err(VerifyError::NeighborSearch)? {
+                return Err(VerifyError::RightProofMissing);
+            }
+        }
+        (None, Some(right)) => {
+            if !is_left_most(&spec.inner_spec, &right.path).map_err(VerifyError::NeighborSearch)? {
+                return Err(VerifyError::LeftProofMissing);
+            }
+        }
         (Some(left), Some(right)) => {
             if !is_left_neighbor(&spec.inner_spec, &left.path, &right.path)
                 .map_err(VerifyError::NeighborSearch)?
