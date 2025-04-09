@@ -65,7 +65,7 @@
         "ucs03": {
           "address": "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
           "height": 3027,
-          "commit": "unknown"
+          "commit": "4fa220d62f8e88c44bc7f1683c0eb058ccba087c"
         }
       }
     }
@@ -106,7 +106,7 @@
         "ucs03": {
           "address": "bbn15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljlspm2re6",
           "height": 606202,
-          "commit": "b858e891518847870d6308d6a83f1aae7c1ac8dc"
+          "commit": "4fa220d62f8e88c44bc7f1683c0eb058ccba087c"
         }
       }
     }
