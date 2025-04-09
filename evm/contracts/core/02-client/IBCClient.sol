@@ -30,7 +30,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
     function registerClient(
         string calldata clientType,
         ILightClient client
-    ) external override {
+    ) external override restricted {
         if (address(clientRegistry[clientType]) != address(0)) {
             revert IBCErrors.ErrClientTypeAlreadyExists();
         }
@@ -45,7 +45,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
      */
     function createClient(
         IBCMsgs.MsgCreateClient calldata msg_
-    ) external override returns (uint32) {
+    ) external override restricted returns (uint32) {
         address clientImpl = clientRegistry[msg_.clientType];
         if (clientImpl == address(0)) {
             revert IBCErrors.ErrClientTypeNotFound();
@@ -77,7 +77,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
      */
     function updateClient(
         IBCMsgs.MsgUpdateClient calldata msg_
-    ) external override {
+    ) external override restricted {
         ConsensusStateUpdate memory update = getClientInternal(msg_.clientId)
             .updateClient(
             msg.sender, msg_.clientId, msg_.clientMessage, msg_.relayer
@@ -95,7 +95,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
      */
     function misbehaviour(
         IBCMsgs.MsgMisbehaviour calldata msg_
-    ) external override {
+    ) external override restricted {
         getClientInternal(msg_.clientId).misbehaviour(
             msg.sender, msg_.clientId, msg_.clientMessage, msg_.relayer
         );

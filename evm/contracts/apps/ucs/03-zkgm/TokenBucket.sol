@@ -67,8 +67,7 @@ abstract contract TokenBucket {
         uint256 toRefill = $.refillRate.saturatingMul(elapsed);
         if (toRefill > 0) {
             $.available = _clampToCapacity(
-                $.capacity,
-                $.available.saturatingAdd(toRefill)
+                $.capacity, $.available.saturatingAdd(toRefill)
             );
             $.lastRefill = block.timestamp;
         }

@@ -58,7 +58,7 @@ contract CometblsClientTest is Test {
         // assertEq(cometblsClient.ibcHandler(), ibcHandler);
 
         // Verify the admin address
-        assertEq(cometblsClient.owner(), admin);
+        assertEq(cometblsClient.authority(), admin);
     }
 
     function test_createClient_success(

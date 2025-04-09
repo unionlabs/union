@@ -3,8 +3,8 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
-import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 
 import "../../../internal/Versioned.sol";
 
@@ -13,7 +13,7 @@ import "./IZkgmERC20.sol";
 contract ZkgmERC20 is
     Initializable,
     UUPSUpgradeable,
-    Ownable2StepUpgradeable,
+    AccessManagedUpgradeable,
     ERC20Upgradeable,
     Versioned,
     IZkgmERC20
@@ -45,23 +45,23 @@ contract ZkgmERC20 is
     }
 
     function initialize(
-        address _admin,
+        address _authority,
         address _minter,
         string memory _name,
         string memory _symbol,
         uint8 _decimals
     ) external initializer {
-        __ZkgmERC20_init(_admin, _minter, _name, _symbol, _decimals);
+        __ZkgmERC20_init(_authority, _minter, _name, _symbol, _decimals);
     }
 
     function __ZkgmERC20_init(
-        address _admin,
+        address _authority,
         address _minter,
         string memory _name,
         string memory _symbol,
         uint8 _decimals
     ) internal onlyInitializing {
-        __Ownable_init(_admin);
+        __AccessManaged_init(_authority);
         __UUPSUpgradeable_init();
         __ERC20_init(_name, _symbol);
         ZkgmERC20Storage storage $ = _getZkgmERC20Storage();
@@ -95,5 +95,5 @@ contract ZkgmERC20 is
 
     function _authorizeUpgrade(
         address newImplementation
-    ) internal override onlyOwner {}
+    ) internal override restricted {}
 }

@@ -1,5 +1,8 @@
 pragma solidity ^0.8.27;
 
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
+
 import "../02-client/ILightClient.sol";
 import "../05-port/IIBCModule.sol";
 import "../Types.sol";
@@ -12,7 +15,7 @@ library IBCStoreLib {
     uint256 public constant IBC_UNION_EVM_COMMITMENT_SLOT = 0;
 }
 
-abstract contract IBCStore {
+abstract contract IBCStore is AccessManagedUpgradeable {
     // Commitments
     // keccak256(IBC-compatible-store-path) => keccak256(IBC-compatible-commitment)
     mapping(bytes32 => bytes32) public commitments;

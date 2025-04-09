@@ -2,7 +2,8 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -52,7 +53,7 @@ contract UCS03Zkgm is
     IBCAppBase,
     Initializable,
     UUPSUpgradeable,
-    Ownable2StepUpgradeable,
+    AccessManagedUpgradeable,
     PausableUpgradeable,
     TokenBucket,
     Versioned,
@@ -88,9 +89,9 @@ contract UCS03Zkgm is
     }
 
     function initialize(
-        address _admin
+        address _authority
     ) public initializer {
-        __Ownable_init(_admin);
+        __AccessManaged_init(_authority);
         __UUPSUpgradeable_init();
         __Pausable_init();
     }
@@ -669,7 +670,7 @@ contract UCS03Zkgm is
                         abi.encodeCall(
                             ZkgmERC20.initialize,
                             (
-                                owner(),
+                                authority(),
                                 address(this),
                                 orderBaseTokenName,
                                 orderBaseTokenSymbol,
@@ -1221,14 +1222,23 @@ contract UCS03Zkgm is
 
     function _authorizeUpgrade(
         address newImplementation
-    ) internal override onlyOwner {}
+    ) internal override restricted {}
 
-    function pause() public onlyOwner {
+    function pause() public restricted {
         _pause();
     }
 
-    function unpause() public onlyOwner {
+    function unpause() public restricted {
         _unpause();
+    }
+
+    function setBucketConfig(
+        address token,
+        uint256 capacity,
+        uint256 refillRate,
+        bool reset
+    ) public restricted {
+        _setBucketConfig(token, capacity, refillRate, reset);
     }
 
     receive() external payable {}

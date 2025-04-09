@@ -132,11 +132,6 @@ _: {
       };
       # Foundry FS permissions must be explicitly set in the config file
       foundryConfig = pkgs.writeTextDir "/foundry.toml" ''
-        [profile.default.optimizer_details]
-        cse = true
-        constantOptimizer = true
-        yul = true
-
         [profile.default]
         fs_permissions = [{ access = "read", path = "./" }, { access = "write", path = "contracts.json" }]
         libs = ["libs"]
@@ -144,7 +139,7 @@ _: {
         via_ir = true
         ast = true
         optimizer = true
-        optimizer_runs = 1_000
+        optimizer_runs = 10_000
 
         [profile.script]
         src = "scripts"
@@ -708,7 +703,7 @@ _: {
                 cd $out
 
                 jq --compact-output --slurp 'map(.abi) | add' \
-                  ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json > core.json
+                  ${contracts}/out/IBCHandler.sol/IBCHandler.json > core.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/Zkgm.sol/AbiExport.json \

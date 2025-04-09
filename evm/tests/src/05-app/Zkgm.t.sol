@@ -8,8 +8,8 @@ import "solady/utils/LibString.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-
-import "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 
 import "../../../contracts/core/Types.sol";
 import "../../../contracts/core/25-handler/IBCHandler.sol";
@@ -290,20 +290,20 @@ contract ZkgmTests is Test {
     function test_proxyInitialization_ok(
         address wethAddress,
         address handlerAddress,
-        address ownerAddress
+        address authorityAddress
     ) public {
         vm.assume(handlerAddress != address(0));
-        vm.assume(ownerAddress != address(0));
+        vm.assume(authorityAddress != address(0));
         TestZkgm implementation =
             new TestZkgm(IIBCModulePacket(handlerAddress), IWETH(wethAddress));
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
-            abi.encodeCall(UCS03Zkgm.initialize, (ownerAddress))
+            abi.encodeCall(UCS03Zkgm.initialize, (authorityAddress))
         );
         TestZkgm _zkgm = TestZkgm(payable(address(proxy)));
         assertEq(address(_zkgm.IBC_HANDLER()), handlerAddress);
         assertEq(address(_zkgm.WETH()), wethAddress);
-        assertEq(_zkgm.owner(), ownerAddress);
+        assertEq(_zkgm.authority(), authorityAddress);
     }
 
     function test_channelPath_ok(
@@ -2008,7 +2008,9 @@ contract ZkgmTests is Test {
             })
         );
         assertTrue(ZkgmLib.isDeployed(quoteToken));
-        assertEq(Ownable2StepUpgradeable(quoteToken).owner(), address(this));
+        assertEq(
+            AccessManagedUpgradeable(quoteToken).authority(), address(this)
+        );
         return quoteToken;
     }
 

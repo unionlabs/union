@@ -24,6 +24,6 @@ contract StateLensIcs23MptClientTest is Test {
     }
 
     function test_initialize_ok() public {
-        assertEq(client.owner(), admin);
+        assertEq(client.authority(), admin);
     }
 }

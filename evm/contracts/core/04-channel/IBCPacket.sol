@@ -114,7 +114,7 @@ library IBCPacketLib {
 abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
     function batchSend(
         IBCMsgs.MsgBatchSend calldata msg_
-    ) external override {
+    ) external override restricted {
         uint256 l = msg_.packets.length;
         // No reason to batch less than 2 packets as they are already individually committed.
         if (l < 2) {
@@ -147,7 +147,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
 
     function batchAcks(
         IBCMsgs.MsgBatchAcks calldata msg_
-    ) external override {
+    ) external override restricted {
         uint256 l = msg_.packets.length;
         // No reason to batch less than 2 packets as they are already individually committed.
         if (l < 2) {
@@ -318,7 +318,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
 
     function recvPacket(
         IBCMsgs.MsgPacketRecv calldata msg_
-    ) external {
+    ) external restricted {
         processReceive(
             msg_.packets,
             msg_.relayer,
@@ -331,7 +331,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
 
     function recvIntentPacket(
         IBCMsgs.MsgIntentPacketRecv calldata msg_
-    ) external override {
+    ) external override restricted {
         processReceive(
             msg_.packets,
             msg_.marketMaker,
@@ -378,7 +378,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
 
     function acknowledgePacket(
         IBCMsgs.MsgPacketAcknowledgement calldata msg_
-    ) external override {
+    ) external override restricted {
         uint256 l = msg_.packets.length;
         if (l == 0) {
             revert IBCErrors.ErrNotEnoughPackets();
@@ -423,7 +423,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
 
     function timeoutPacket(
         IBCMsgs.MsgPacketTimeout calldata msg_
-    ) external override {
+    ) external override restricted {
         IBCPacket calldata packet = msg_.packet;
         uint32 sourceChannelId = packet.sourceChannelId;
         IBCChannel storage channel = ensureChannelState(sourceChannelId);

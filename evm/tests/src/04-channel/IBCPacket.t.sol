@@ -2,18 +2,22 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
+import "@openzeppelin/contracts/utils/math/Math.sol";
+
+import "../core/UnionTests.sol";
 import "../core/IBCHandler.sol";
 import "../core/LightClient.sol";
 import "../core/Module.sol";
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import "../../../contracts/Manager.sol";
 
-contract IBCPacketTests is Test {
+contract IBCPacketTests is UnionTests {
     string public constant CLIENT_TYPE = "zkgm";
     string public constant VERSION = "zkgm-1";
     uint32 public constant COUNTERPARTY_CHANNEL_ID = 0xDEADC0DE;
     bytes public constant COUNTERPARTY_PORT_ID = "wasm.abcdef";
 
+    Manager manager;
     TestIBCHandler handler;
     TestLightClient lightClient;
     TestModule module;
@@ -23,7 +27,7 @@ contract IBCPacketTests is Test {
     uint32 channelId;
 
     function setUp() public {
-        handler = new TestIBCHandler();
+        (manager, handler) = setupHandler();
         lightClient = new TestLightClient();
         module = new TestModule(handler);
 
