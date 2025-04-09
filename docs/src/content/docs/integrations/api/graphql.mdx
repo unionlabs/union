@@ -103,7 +103,7 @@ query GetLatest10Transfers @cached(ttl: 1) {
 
 It provides information on the sender, receiver, current stage of the transfer, and asset metadata.
 
-To query for specific addresses (either sender or receiver), add the [canonical](/concepts/address-types/) address to the `p_addresses_canonical` args clause:
+To query for specific addresses (either sender or receiver), add the [canonical](/ucs/05/) address to the `p_addresses_canonical` args clause:
 
 ```graphql
 query GetLatest10UserTransfers @cached(ttl: 1) {
