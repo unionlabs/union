@@ -64,6 +64,8 @@ interface ConfigFile {
 
 // A module-level set to keep track of already reported packet send transaction hashes.
 const reportedSendTxHashes = new Set<string>()
+// Variable to track sleep cycles
+let sleepCycleCount = 0
 
 const HASURA_ENDPOINT = "https://development.graphql.union.build/v1/graphql"
 
@@ -558,38 +560,42 @@ export const checkPackets = (sourceChain: string, destinationChain: string, time
   }).pipe(Effect.withLogSpan("checkPackets"))
 
 
-const runIbcChecksForever = Effect.repeat(
-  Effect.gen(function* (_) {
-    // TODO: Uncomment below. Commented out for now
-    let config = (yield* Config).config
-    const chainPairs: Array<ChainPair> = config.interactions
-    yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
-    for (const pair of chainPairs) {
-      if (!pair.enabled) {
-        yield* Effect.log("Checking task is disabled. Skipping.")
-        continue
+  const runIbcChecksForever = Effect.gen(function* (_) {
+    const { config } = yield* Config
+  
+    const schedule = Schedule.spaced(`${config.cycleIntervalMs / 1000 / 60} minutes`)
+  
+    const effectToRepeat = Effect.gen(function* (_) {
+      const chainPairs: Array<ChainPair> = config.interactions
+  
+      yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
+      for (const pair of chainPairs) {
+        if (!pair.enabled) {
+          yield* Effect.log("Checking task is disabled. Skipping.")
+          continue
+        }
+        yield* Effect.log(
+          `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
+        )
+  
+        yield* checkPackets(
+          pair.sourceChain,
+          pair.destinationChain,
+          pair.timeframeMs
+        )
       }
-      yield* Effect.log(
-        `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
-      )
-
-      yield * checkPackets(
-        pair.sourceChain,
-        pair.destinationChain,
-        pair.timeframeMs
-      )
-      // // Simulating an IBC check
-      // if (Math.random() > 0.3) {
-      //   yield* Effect.log("IBC Check successful!")
-      // } else {
-      //   yield* Effect.log("IBC Check failed due to network error")
-      // }
-    }
-    yield* Effect.log("IBC Checks done (or skipped). Sleeping 10 minutes...")
-  }),
-  Schedule.spaced("5 seconds")
-)
-
+  
+      yield* Effect.log(`IBC Checks done (or skipped). Sleeping ${config.cycleIntervalMs / 1000 / 60} minutes...`)
+      sleepCycleCount++
+      if (sleepCycleCount % 10 === 0) {
+        reportedSendTxHashes.clear()
+        yield* Effect.log("Cleared reported block hashes.")
+      }
+    })
+  
+    return yield* Effect.repeat(effectToRepeat, schedule)
+  })
+  
 const mainEffect = Effect.gen(function* (_) {
   const argv = yield* Effect.sync(() =>
     yargs(hideBin(process.argv))
