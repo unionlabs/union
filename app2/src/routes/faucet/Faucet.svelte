@@ -3,7 +3,8 @@ import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
-import { Option, Effect } from "effect"
+import { Option, Effect, Data, pipe } from "effect"
+import type { NoSuchElementException } from "effect/Cause"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
@@ -12,8 +13,8 @@ import request from "graphql-request"
 import { writable } from "svelte/store"
 import { faucetUnoMutationDocument } from "$lib/queries/faucet"
 import { URLS } from "$lib/constants"
-import { Data } from "effect"
 import { bech32, bytes } from "@scure/base"
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
 
 // Define the faucet state type using Data.TaggedEnum.
 type FaucetProcessState = Data.TaggedEnum<{
@@ -59,36 +60,58 @@ const handleTurnstileError = (e: CustomEvent<{ code: string }>) => {
   showTurnstile = false
 }
 
-const submitFaucetRequest = (token: string) => {
-  // Update the state to "Submitting" before starting the effect
-  faucetProcess.set(FaucetProcess.Submitting({ token }))
+class Bech32DecodeError extends Data.TaggedError("Bech32DecodeError")<{
+  message: string
+  cause: unknown
+}> {}
 
-  const faucetEffect = Effect.gen(function* (env) {
-    let wallet_addr = ""
-    if (Option.isSome(wallets.cosmosAddress)) {
-      wallet_addr = yield* Effect.try({
-        try: () => {
-          // Remove the "0x" prefix then convert to words and re-encode with bech32
-          const hex = wallets.cosmosAddress.value.slice(2)
-          const wordArray = bech32.toWords(bytes("hex", hex))
-          return bech32.encode("union", wordArray)
-        },
-        catch: cause => new Error(`Failed to prepare wallet address: ${cause}`)
-      })
-    }
+class FetchWalletError extends Data.TaggedError("FetchWalletError")<{
+  message: string
+  cause: unknown
+}> {}
 
-    const result = yield* Effect.tryPromise({
-      try: () =>
-        request(URLS().GRAPHQL, faucetUnoMutationDocument, {
-          chainId: "union-testnet-10",
-          denom: "muno",
-          address: wallet_addr,
-          captchaToken: token
-        }),
-      catch: cause => new Error(`GraphQL request failed: ${cause}`)
+const faucetEffect = (
+  token: string
+): Effect.Effect<
+  void,
+  Bech32DecodeError | Error | FetchWalletError | NoSuchElementException,
+  never
+> =>
+  Effect.gen(function* () {
+    const addr = yield* wallets.cosmosAddress
+
+    const encodeAddr = Effect.try({
+      try: () => {
+        const hex = addr.slice(2)
+        const wordArray = bech32.toWords(bytes("hex", hex))
+        return bech32.encode("union", wordArray)
+      },
+      catch: cause =>
+        new Bech32DecodeError({
+          message: `Failed to prepare wallet address: ${cause}`,
+          cause: extractErrorDetails(cause as Error)
+        })
     })
 
-    if (!result || !result.drip_drop || !result.drip_drop.send) {
+    const fetchWallet = (addr: string) =>
+      Effect.tryPromise({
+        try: () =>
+          request(URLS().GRAPHQL, faucetUnoMutationDocument, {
+            chainId: "union-testnet-10",
+            denom: "muno",
+            address: addr,
+            captchaToken: token
+          }),
+        catch: cause =>
+          new FetchWalletError({
+            message: `graphql request failed to fetch wallet with addr ${addr}`,
+            cause: extractErrorDetails(cause)
+          })
+      })
+
+    const result = yield* pipe(encodeAddr, Effect.flatMap(fetchWallet))
+
+    if (!result.drip_drop || !result.drip_drop.send) {
       return yield* Effect.fail(new Error("Empty faucet response"))
     }
     if (result.drip_drop.send.startsWith("ERROR")) {
@@ -98,13 +121,17 @@ const submitFaucetRequest = (token: string) => {
     yield* Effect.log("Faucet response:", result)
 
     // Wrap the store update and other side effects in Effect.sync
-    yield* Effect.sync(() => {
+    return yield* Effect.sync(() => {
       faucetProcess.set(FaucetProcess.Success({ message: result.drip_drop.send }))
       showTurnstile = false
     })
   })
 
-  Effect.runPromise(faucetEffect).catch(error => {
+const submitFaucetRequest = (token: string) => {
+  // Update the state to "Submitting" before starting the effect
+  faucetProcess.set(FaucetProcess.Submitting({ token }))
+
+  Effect.runPromise(faucetEffect(token)).catch(error => {
     console.info("Faucet error:", error)
     faucetProcess.set(FaucetProcess.Failure({ error: `Faucet error: ${error}` }))
     showTurnstile = false
