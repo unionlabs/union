@@ -5,7 +5,10 @@ import { ConnectionId } from "./connection.js"
 import { Schema } from "effect"
 import { ClientId } from "./client.js"
 
-export const ChannelId = S.Int.pipe(S.brand("ChannelId"))
+export const ChannelId = S.Int.pipe(
+  S.brand("ChannelId"),
+  S.positive(),
+)
 export type ChannelId = typeof ChannelId.Type
 
 export const ChannelVersion = S.String.pipe(S.brand("ChannelVersion"))

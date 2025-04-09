@@ -1,4 +1,4 @@
-import { toHex, type Address, type Hex } from "viem"
+import { toHex, type Address } from "viem"
 import { Effect, Schema as S } from "effect"
 import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
 import { readErc20Meta } from "../evm/erc20.js"
@@ -12,6 +12,7 @@ import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-toke
 import { FungibleAssetOrder } from "./instruction.js"
 import { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
 import { TokenRawDenom } from "../schema/token.js"
+import { ensureHex } from "../utils/index.js"
 
 const guardAgainstZeroAmount = (intent: { baseAmount: bigint; quoteAmount: bigint }) => {
   if (intent.baseAmount <= 0n) {
@@ -83,12 +84,17 @@ export const createEvmToCosmosFungibleAssetOrder = (
     const quoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
     yield* Effect.log("quote token", quoteToken)
 
+    console.log("[FAO]", {
+      sender: intent.sender,
+      receiver: intent.receiver,
+    })
+
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
         intent.sender,
         intent.receiver,
-        intent.baseToken,
+        ensureHex(intent.baseToken),
         intent.baseAmount,
         tokenMeta.symbol,
         tokenMeta.name,
@@ -104,8 +110,8 @@ export const createEvmToCosmosFungibleAssetOrder = (
  * Creates a fungible asset order from Cosmos to EVM
  */
 type CosmosToEvmIntent = {
-  sender: string
-  receiver: Address
+  sender: AddressCosmosZkgm
+  receiver: AddressEvmZkgm
   baseToken: string
   baseAmount: bigint
   quoteAmount: bigint
@@ -135,9 +141,9 @@ export const createCosmosToEvmFungibleAssetOrder = (
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
-        toHex(intent.sender),
+        intent.sender,
         intent.receiver,
-        toHex(intent.baseToken),
+        ensureHex(intent.baseToken),
         intent.baseAmount,
         tokenMeta.symbol,
         tokenMeta.name,
@@ -153,12 +159,13 @@ export const createCosmosToEvmFungibleAssetOrder = (
  * Creates a fungible asset order from Cosmos to Cosmos
  */
 type CosmosToCosmosIntent = {
-  sender: string
-  receiver: string
+  sender: AddressCosmosZkgm,
+  receiver: AddressCosmosZkgm
   baseToken: string
   baseAmount: bigint
   quoteAmount: bigint
 }
+
 export const createCosmosToCosmosFungibleAssetOrder = (
   intent: CosmosToCosmosIntent
 ) =>
@@ -173,9 +180,9 @@ export const createCosmosToCosmosFungibleAssetOrder = (
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
-        toHex(intent.sender),
-        toHex(intent.receiver),
-        toHex(intent.baseToken),
+        intent.sender,
+        intent.receiver,
+        ensureHex(intent.baseToken),
         intent.baseAmount,
         tokenMeta.symbol,
         tokenMeta.name,

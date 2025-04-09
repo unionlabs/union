@@ -1,6 +1,8 @@
 import { bech32, bytes } from "@scure/base"
 import { Effect, ParseResult, pipe, Schema as S } from "effect"
 import { Hex } from "./hex.js"
+import { AddressCanonicalBytes } from "./address.js"
+import { HRP } from "./chain.js"
 
 export const Bech32 = S.NonEmptyString.pipe(
   S.brand("Bech32"),
@@ -31,8 +33,11 @@ export class Bech32DecodeError extends S.TaggedClass<Bech32DecodeError>()(
   }
 ) {}
 
-export const Bech32FromHexWithPrefix = <const T extends string>(prefix: T) => S.transformOrFail(
-  Hex,
+export const Bech32FromAddressCanonicalBytesWithPrefix = (
+  // TODO(ehegnes): also validate HRP
+  prefix: HRP
+) => S.transformOrFail(
+  AddressCanonicalBytes,
   Bech32,
   {
     strict: true,
@@ -64,7 +69,7 @@ export const Bech32FromHexWithPrefix = <const T extends string>(prefix: T) => S.
               arr => arr.reduce((str, byte) => str + byte.toString(16).padStart(2, "0"), "0x"),
               hex => hex as Hex
             )
-          return bytesToCanonicalHex(bytes)
+          return AddressCanonicalBytes.make(bytesToCanonicalHex(bytes))
         }),
         Effect.mapError((e) => new ParseResult.Type(ast, toI, e.message))
       )

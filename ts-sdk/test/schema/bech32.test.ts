@@ -1,6 +1,6 @@
 import { assert, describe, it } from "vitest"
 import { Either, Schema as S } from "effect"
-import { Bech32 } from "@unionlabs/sdk/schema"
+import { AddressCosmosDisplay, AddressCosmosZkgm, Bech32, Bech32FromAddressCanonicalBytesWithPrefix, HexFromString } from "@unionlabs/sdk/schema"
 
 /**
  * This test suite implements a subset of tests from
@@ -34,5 +34,18 @@ describe("Bech32", () => {
     Buffer.from('6465316c67377774ff', 'hex').toString('binary'),
   ])("fails invaild address %s", (s) => {
     assert.isTrue(Either.isLeft(S.decodeEither(Bech32)(s)))
+  })
+
+
+  it.only("thing", () => {
+    const addr = "0x52a648ef2157fd3bafa90bbac510b9a4870fdf36"
+    const transform = Bech32FromAddressCanonicalBytesWithPrefix("bbn").pipe(
+      S.compose(HexFromString),
+      S.compose(AddressCosmosZkgm),
+    )
+
+    const result = S.decodeUnknownSync(transform)(addr)
+
+    console.log(result)
   })
 })

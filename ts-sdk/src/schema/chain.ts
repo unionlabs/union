@@ -6,6 +6,7 @@ import { bech32, bytes } from "@scure/base"
 
 export const ChainId = S.String.pipe(S.brand("ChainId"))
 // e.g. union.union-testnet-9
+// TODO: narrow filter for arbitraries
 export const UniversalChainId = S.String.pipe(S.pattern(/^[^:]+\.[^:]+$/)).pipe(
   S.brand("UniversalChainId")
 )
@@ -68,7 +69,7 @@ const HRP = S.String.pipe(
   }, {
     description: "HRP must be between 1 to 83 US-ASCII characters, inclusive"
   }),
-  S.pattern(/^[\x21-\x7E]$/, {
+  S.pattern(/^[\x21-\x7E]+$/, {
     description: "HRP characters must be within the range [33-126], inclusive"
   })
 )

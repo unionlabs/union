@@ -1,9 +1,9 @@
-import { Match, Option } from "effect"
+import { Array as Arr, Either, Match, Option, ParseResult, Schema, Struct, pipe } from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
-import type { Channel, Token } from "@unionlabs/sdk/schema"
+import { AddressCanonicalBytes, TransferT, type Channel, type Token } from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
-import { type Address, fromHex, type Hex, isHex } from "viem"
+import { type Address, fromHex, type Hex } from "viem"
 import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
@@ -11,6 +11,7 @@ import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
 import { validateTransfer, type ValidationResult } from "$lib/components/Transfer/validation.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { FungibleAssetOrderIntent } from "@unionlabs/sdk/ucs03/fungible-asset-order.ts"
+import { ensureHex } from "@unionlabs/sdk/utils/index.ts"
 
 export type TransferIntents = Array<FungibleAssetOrderIntent>
 
@@ -71,7 +72,9 @@ export class Transfer {
     this.baseToken.pipe(Option.flatMap(bt => getParsedAmountSafe(this.raw.amount, bt)))
   )
 
-  derivedReceiver = $derived(getDerivedReceiverSafe(this.raw.receiver))
+  derivedReceiver = $derived(getDerivedReceiverSafe(this.raw.receiver).pipe(
+    Option.map(ensureHex)
+  ))
 
   derivedSender = $derived(
     Option.isNone(this.sourceChain)
@@ -210,6 +213,33 @@ export class Transfer {
   // })
 
   args = $derived.by(() => {
+    const heck = Option.all({
+      sourceChain: this.sourceChain,
+      destinationChain: this.destinationChain,
+      sender: this.derivedSender,
+      receiver: this.derivedReceiver,
+      baseAmount: this.parsedAmount,
+      baseToken: this.baseToken,
+      quoteAmount: this.parsedAmount,
+      ucs03address: this.ucs03address,
+      timeoutHeight: Option.some(0n),
+      timeoutTimestamp: Option.some("0x000000000000000000000000000000000000000000000000fffffffffffffffa")
+    }).pipe(
+      Option.map(Struct.evolve({
+        sender: AddressCanonicalBytes.make,
+        receiver: AddressCanonicalBytes.make,
+        baseToken: (x) => x.denom,
+        // baseAmount: flow(
+        //   BigInt,
+        //   TokenRawAmount.make
+        // ),
+        // quoteAmount: flow(
+        //   BigInt,
+        //   TokenRawAmount.make
+        // )
+      }))
+    )
+
     const {
       sourceChain,
       destinationChain,
@@ -230,7 +260,7 @@ export class Transfer {
       // wethBaseToken: Option.getOrNull(this.wethBaseToken)
     }
 
-    return {
+    const original = {
       sourceChain,
       destinationChain,
       sourceRpcType: sourceChain?.rpc_type,
@@ -241,66 +271,89 @@ export class Transfer {
       baseAmount: parsedAmount,
       quoteAmount: parsedAmount,
       receiver: derivedReceiver,
-      timeoutHeight: "0",
+      timeoutHeight: 0n,
+      // TODO: use cor's 24hr fn
       timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa"
       // wethBaseToken: wethBaseToken
     }
+
+    console.log({
+      original,
+      heck: Option.getOrNull(heck)
+    })
+
+    return heck
   })
 
-  intents = $derived.by(() => {
-    if (this.validation._tag !== "Success") return Option.none<TransferIntents>()
-    const transferValue = this.validation.value
-
-    if (Option.isNone(this.derivedSender)) return Option.none<TransferIntents>()
-
-    const sender = Option.getOrUndefined(this.derivedSender)
-    if (!sender) return Option.none<TransferIntents>()
+  intents: Option.Option<TransferIntents> = $derived.by(() => {
+    if (Option.isNone(this.args)) return Option.none()
+    if (Either.isLeft(this.validation)) {
+      console.log(
+        "[intents] validation failed",
+        pipe(
+          this.validation.left,
+          ParseResult.TreeFormatter.formatErrorSync
+        )
+      )
+      return Option.none()
+    }
 
     console.log("calculating intents")
 
-    return Match.value(transferValue.sourceChain.rpc_type).pipe(
-      Match.when("evm", () => {
-        // if (Option.isNone(this.wethBaseToken)) return Option.none<TransferIntents>()
-        // const wethToken = Option.getOrUndefined(this.wethBaseToken)
-        // if (!wethToken) return Option.none<TransferIntents>()
+    const result = Schema.decodeSync(TransferT)(this.args.value)
 
-        return Option.some<TransferIntents>([
-          {
-            sender: sender,
-            receiver: transferValue.receiver,
-            baseToken: transferValue.baseToken,
-            baseAmount: transferValue.baseAmount,
-            quoteAmount: transferValue.baseAmount
-          }
-          // {
-          //   sender: sender,
-          //   receiver: transferValue.receiver,
-          //   baseToken: wethToken,
-          //   baseAmount: 500n,
-          //   quoteAmount: 0n
-          // }
-        ])
-      }),
+    console.log("intents", result)
 
-      Match.when("cosmos", () => {
-        return Option.some<TransferIntents>([
-          {
-            sender: sender,
-            receiver: transferValue.receiver.toLowerCase(),
-            baseToken: isHex(transferValue.baseToken)
-              ? fromHex(transferValue.baseToken, "string")
-              : transferValue.baseToken,
-            baseAmount: transferValue.baseAmount,
-            quoteAmount: transferValue.baseAmount
-          }
-        ])
-      }),
+    return Option.some(Arr.ensure(result))
 
-      Match.orElse(() => Option.none<TransferIntents>())
-    )
+
+    // return Match.value(transferValue.sourceChain.rpc_type).pipe(
+    //   Match.when("evm", () => {
+    //     // if (Option.isNone(this.wethBaseToken)) return Option.none<TransferIntents>()
+    //     // const wethToken = Option.getOrUndefined(this.wethBaseToken)
+    //     // if (!wethToken) return Option.none<TransferIntents>()
+
+    //     return Option.some<TransferIntents>([
+    //       {
+    //         sender: sender,
+    //         receiver: transferValue.receiver,
+    //         baseToken: transferValue.baseToken,
+    //         baseAmount: transferValue.baseAmount,
+    //         quoteAmount: transferValue.baseAmount
+    //       }
+    //       // {
+    //       //   sender: sender,
+    //       //   receiver: transferValue.receiver,
+    //       //   baseToken: wethToken,
+    //       //   baseAmount: 500n,
+    //       //   quoteAmount: 0n
+    //       // }
+    //     ])
+    //   }),
+
+    //   Match.when("cosmos", () => {
+    //     return Option.some<TransferIntents>([
+    //       {
+    //         sender: sender,
+    //         receiver: transferValue.receiver.toLowerCase(),
+    //         baseToken: isHex(transferValue.baseToken)
+    //           ? fromHex(transferValue.baseToken, "string")
+    //           : transferValue.baseToken,
+    //         baseAmount: transferValue.baseAmount,
+    //         quoteAmount: transferValue.baseAmount
+    //       }
+    //     ])
+    //   }),
+
+    //   Match.orElse(() => Option.none<TransferIntents>())
+    // )
   })
 
-  validation = $derived.by<ValidationResult>(() => validateTransfer(this.args))
+  validation = $derived(pipe(
+    this.args,
+    Either.fromOption(() => void 0 as unknown as ParseResult.ParseError),
+    Either.flatMap(validateTransfer),
+  ))
 }
 
 export const transfer = new Transfer()

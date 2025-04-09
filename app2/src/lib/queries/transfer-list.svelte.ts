@@ -8,7 +8,7 @@ import { TransferList } from "@unionlabs/sdk/schema"
 
 export const LIMIT = 10
 
-export let transferListLatestQuery = (limit = LIMIT) =>
+export const transferListLatestQuery = (limit = LIMIT) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_transfers: TransferList }),
     document: graphql(

@@ -1,6 +1,7 @@
 import * as S from "effect/Schema"
-import { Hex, HexChecksum } from "./hex.js"
-import { Bech32, Bech32FromHexWithPrefix } from "./bech32.js"
+import { Hex, HexChecksum, HexFromString } from "./hex.js"
+import { Bech32, Bech32FromAddressCanonicalBytesWithPrefix } from "./bech32.js"
+import { pipe } from "effect"
 
 // For Reference, see: https://docs.union.build/ucs/05
 // We always store bytes arrays as hex-encoded strings
@@ -17,11 +18,16 @@ export type AddressCosmosDisplay = typeof AddressCosmosDisplay.Type
 export const AddressCosmosZkgm = Hex.pipe(S.brand("AddressCosmosZkgm")) // TODO: Hex<Bech32<Hrp, Cosmos.Canonical>>
 export type AddressCosmosZkgm = typeof AddressCosmosZkgm.Type
 
-/**
- * TODO: how to get appropriate prefix (?)
- */
+export const AddressCosmosZkgmFromAddressCanonicalBytesWithPrefix = (
+  prefix: string
+) => pipe(
+  Bech32FromAddressCanonicalBytesWithPrefix(prefix),
+  S.compose(HexFromString),
+  S.compose(AddressCosmosZkgm)
+)
+
 export const AddressCosmosDisplayFromHex = S.compose(
-  Bech32FromHexWithPrefix("cosmos"),
+  Bech32FromAddressCanonicalBytesWithPrefix("cosmos"),
   AddressCosmosDisplay,
 )
 export type AddressCosmosDisplayFromHex = typeof AddressCosmosDisplayFromHex.Type
