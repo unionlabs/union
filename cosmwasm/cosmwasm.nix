@@ -10,32 +10,6 @@ _: {
       ...
     }:
     let
-      mkRootDrv =
-        name:
-        builtins.removeAttrs
-          (derivation {
-            inherit name system;
-            builder = "${pkgs.bash}/bin/bash";
-            args = [
-              (builtins.toFile "builder.sh" ''
-                echo "this object (${name}) only has subattributes"
-
-
-
-                exit 1
-              '')
-            ];
-          })
-          [
-            "all"
-            "out"
-            "name"
-            "args"
-            "drvAttrs"
-            "outputName"
-            "system"
-          ];
-
       # minified version of the protos found in https://github.com/CosmWasm/wasmd/tree/2e748fb4b860ee109123827f287949447f2cded7/proto/cosmwasm/wasm/v1
       cosmwasmProtoDefs = pkgs.writeTextDir "/cosmwasm.proto" ''
         syntax = "proto3";
@@ -449,7 +423,7 @@ _: {
           '';
         };
 
-      deploy-full =
+      deploy =
         args@{
           name,
           rpc_url,
@@ -862,22 +836,23 @@ _: {
             {
               inherit ibc-union-contract-addresses;
             }
-            // (builtins.listToAttrs (
-              map (chain: {
-                inherit (chain) name;
-                value =
-                  {
-                    chain-deployments-json = chain-deployments-json chain;
-                    deploy-full = deploy-full chain;
-                    update-deployments-json = update-deployments-json chain;
-                    finalize-deployment = finalize-deployment chain;
-                    get-git-rev = get-git-rev chain;
-                  }
-                  // (chain-migration-scripts chain)
-                  // (mkRootDrv chain.name);
-              }) networks
-            ))
-            // (mkRootDrv "cosmwasm-scripts");
+            // (pkgs.mkRootDrv "cosmwasm-scripts" (
+              builtins.listToAttrs (
+                map (chain: {
+                  inherit (chain) name;
+                  value = pkgs.mkRootDrv chain.name (
+                    {
+                      chain-deployments-json = chain-deployments-json chain;
+                      deploy = deploy chain;
+                      update-deployments-json = update-deployments-json chain;
+                      finalize-deployment = finalize-deployment chain;
+                      get-git-rev = get-git-rev chain;
+                    }
+                    // (chain-migration-scripts chain)
+                  );
+                }) networks
+              )
+            ));
         }
         //
           # all light clients

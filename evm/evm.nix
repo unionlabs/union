@@ -9,6 +9,7 @@ _: {
       system,
       mkCi,
       gitRev,
+      dbg,
       ...
     }:
     let
@@ -181,7 +182,7 @@ _: {
         chain-id:
         "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/${chain-id}/public";
 
-      # network           : plaintext name of network
+      # name              : plaintext name of network
       # chain-id          : chain id of the network
       # rpc-url           : rpc url for this network, should support full eth_getLogs (for fetching the
       #                     deployment heights)
@@ -197,40 +198,42 @@ _: {
       networks = [
         # devnets
         {
-          network = "devnet";
+          chain-id = "32382";
+
+          name = "devnet";
           rpc-url = "http://localhost:8545";
           private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
           weth = "0x0000000000000000000000000000000000000000";
 
-          verify = pkgs.lib.optionalString pkgs.stdenv.isx86_64;
+          verify = pkgs.stdenv.isx86_64;
           verifier = "blockscout";
-          verification-key = "";
+          verification-key = ''""'';
           verifier-url = "http://localhost/api";
         }
-        {
-          # for use with the local berachain devnet from berachain/beacon-kit
-          network = "berachain-devnet";
-          rpc-url = "http://localhost:8545";
-          private-key = "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306";
-          weth = "0x0000000000000000000000000000000000000000";
+        # {
+        #   # for use with the local berachain devnet from berachain/beacon-kit
+        #   name = "berachain-devnet";
+        #   rpc-url = "http://localhost:8545";
+        #   private-key = "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306";
+        #   weth = "0x0000000000000000000000000000000000000000";
 
-          verify = false;
-        }
-        {
-          # for use with the local arbitrum devnet from offchainlabs/nitro-testnode
-          network = "arbitrum-devnet";
-          rpc-url = "http://localhost:8547";
-          private-key = "0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659";
-          weth = "0x0000000000000000000000000000000000000000";
+        #   verify = false;
+        # }
+        # {
+        #   # for use with the local arbitrum devnet from offchainlabs/nitro-testnode
+        #   name = "arbitrum-devnet";
+        #   rpc-url = "http://localhost:8547";
+        #   private-key = "0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659";
+        #   weth = "0x0000000000000000000000000000000000000000";
 
-          verify = false;
-        }
+        #   verify = false;
+        # }
 
         # testnets
         {
           chain-id = "11155111";
 
-          network = "sepolia";
+          name = "sepolia";
           rpc-url = "https://0xrpc.io/sep";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
@@ -241,7 +244,7 @@ _: {
         {
           chain-id = "17000";
 
-          network = "holesky";
+          name = "holesky";
           rpc-url = "https://holesky.gateway.tenderly.co";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
@@ -252,7 +255,7 @@ _: {
         rec {
           chain-id = "21000001";
 
-          network = "corn-testnet";
+          name = "corn-testnet";
           rpc-url = "https://testnet.corn-rpc.com";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           # TODO: find out
@@ -265,7 +268,7 @@ _: {
         rec {
           chain-id = "808813";
 
-          network = "bob-testnet";
+          name = "bob-testnet";
           rpc-url = "https://bob-sepolia.rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x4200000000000000000000000000000000000006";
@@ -277,7 +280,7 @@ _: {
         rec {
           chain-id = "80069";
 
-          network = "bepolia";
+          name = "bepolia";
           rpc-url = "https://bepolia.rpc.berachain.com/";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x6969696969696969696969696969696969696969";
@@ -300,7 +303,7 @@ _: {
         rec {
           chain-id = "60808";
 
-          network = "bob";
+          name = "bob";
           rpc-url = "https://rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x4200000000000000000000000000000000000006";
@@ -345,7 +348,7 @@ _: {
       #
       # example:
       #
-      # FOUNDRY_ETHERSCAN='{ chain = { key = "verifyContract", chain = "21000001", url = "https://api.routescan.io/v2/network/testnet/evm/21000001/etherscan" } }' nix run .#eth-scripts.verify-corn-testnet -L -- 0xa76897C61d710C07De4D541C77c209578d64CEB9 0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2
+      # FOUNDRY_ETHERSCAN='{ chain = { key = "verifyContract", chain = "21000001", url = "https://api.routescan.io/v2/network/testnet/evm/21000001/etherscan" } }' nix run .#evm-scripts.verify-corn-testnet -L -- 0xa76897C61d710C07De4D541C77c209578d64CEB9 0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2
       setupFoundryVerifcationVars =
         verify:
         {
@@ -355,7 +358,11 @@ _: {
           with-verify-flag ? true,
         }:
         let
-          expr = pkgs.lib.optionalString verify ''{ chain = { key = \"\''${VERIFICATION_KEY}\", chain = \"${chain-id}\", url = \"${verifier-url}\" } }'';
+          expr =
+            if verify then
+              ''{ chain = { key = \"\''${VERIFICATION_KEY}\", chain = \"${chain-id}\", url = \"${verifier-url}\" } }''
+            else
+              "{}";
         in
         ''
           # shellcheck disable=SC2016
@@ -367,7 +374,7 @@ _: {
           VERIFICATION_ARGS=()
           # shellcheck disable=2050
           # idk how else to compare against a bool from nix -> bash
-          if [ ${if verify then "1" else "0"} -eq 1 ] || [ -z "$VERIFIER" ]; then
+          if [ ${if verify then "1" else "0"} -eq 1 ] || [ -z "''${VERIFIER:-}" ]; then
             # either default verifier, or specified verifier
             if [ ${if with-verify-flag then "1" else "0"} -eq 1 ]; then
               VERIFICATION_ARGS+=("--verify")
@@ -377,7 +384,7 @@ _: {
           fi
         '';
 
-      get-deployed-heights =
+      update-deployments-json =
         { rpc-url, ... }:
         pkgs.writeShellApplication {
           name = "get-deployed-heights";
@@ -476,6 +483,8 @@ _: {
 
       deploy =
         {
+          name,
+
           chain-id,
           rpc-url,
           private-key,
@@ -489,7 +498,7 @@ _: {
         }:
         mkCi false (
           pkgs.writeShellApplication {
-            name = "eth-deploy-ibc";
+            name = "eth-deploy-${name}";
             runtimeInputs = [ self'.packages.forge ];
             text = ''
               ${ensureAtRepositoryRoot}
@@ -507,7 +516,7 @@ _: {
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
               PRIVATE_KEY=${private-key} \
-              DEPLOYER="$3" \
+              DEPLOYER="{1:?deployer must be set to deploy with this script (first arg to this script)}" \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployIBC \
                 -vvvv \
@@ -520,9 +529,10 @@ _: {
           }
         );
 
-      deploy-full =
+      deploy-deployer-and-ibc =
         {
           chain-id,
+          name,
           rpc-url,
           private-key,
           weth,
@@ -535,7 +545,7 @@ _: {
         }:
         mkCi false (
           pkgs.writeShellApplication {
-            name = "eth-deploy-full";
+            name = "eth-deploy-deployer-and-ibc-${name}";
             runtimeInputs = [ self'.packages.forge ];
             text = ''
               ${ensureAtRepositoryRoot}
@@ -892,166 +902,66 @@ _: {
               };
             }
           );
-        eth-scripts =
-          (derivation {
-            name = "eth-scripts-empty-derivation-to-make-top-level-packages-happy";
-          })
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "verify-${args.network}";
-              value = verify-all-contracts args;
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "deploy-full-${args.network}";
-              value = deploy-full args;
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "deploy-${args.network}";
-              value = deploy args;
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "deploy-${args.network}-state-lens-ics23-mpt-client";
-              value = deploy-single ({ kind = "StateLensIcs23MptClient"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "deploy-${args.network}-state-lens-ics23-ics23-client";
-              value = deploy-single ({ kind = "StateLensIcs23Ics23Client"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "deploy-${args.network}-state-lens-ics23-smt-client";
-              value = deploy-single ({ kind = "StateLensIcs23SmtClient"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "deploy-${args.network}-ucs03";
-              value = deploy-single ({ kind = "UCS03"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "deploy-${args.network}-multicall";
-              value = deploy-single ({ kind = "Multicall"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "dryupgrade-${args.network}-ucs03";
-              value = upgrade (
+
+        evm-scripts = pkgs.mkRootDrv "evm-scripts" (
+          builtins.listToAttrs (
+            map (chain: {
+              inherit (chain) name;
+              value = pkgs.mkRootDrv chain.name (
                 {
-                  dry = true;
-                  protocol = "UCS03";
+                  verify-all-contracts = verify-all-contracts chain;
+                  deploy = deploy chain;
+                  deploy-deployer-and-ibc = deploy-deployer-and-ibc chain;
+                  update-deployments-json = update-deployments-json chain;
+                  # finalize-deployment = finalize-deployment chain;
+                  # get-git-rev = get-git-rev chain;
                 }
-                // args
+                // (pkgs.lib.mapAttrs'
+                  (name: kind: {
+                    name = "deploy-${name}";
+                    value = deploy-single (chain // { inherit kind; });
+                  })
+                  {
+                    ucs03 = "UCS03";
+                    cometbls-client = "CometblsClient";
+                    state-lens-ics23-mpt-client = "StateLensIcs23MptClient";
+                    state-lens-ics23-ics23-client = "StateLensIcs23Ics23Client";
+                    state-lens-ics23-smt-client = "StateLensIcs23SmtClient";
+                    multicall = "Multicall";
+                  }
+                )
+                // (builtins.foldl' (a: b: a // b) { } (
+                  pkgs.lib.flatten (
+                    pkgs.lib.mapAttrsToList
+                      (
+                        name: protocol:
+                        (map
+                          (dry: {
+                            ${"upgrade-${name}" + (pkgs.lib.optionalString dry "-dry")} = upgrade (
+                              chain // { inherit dry protocol; }
+                            );
+                          })
+                          [
+                            true
+                            false
+                          ]
+                        )
+                      )
+                      {
+                        ucs00 = "UCS00";
+                        ucs03 = "UCS03";
+                        cometbls-client = "CometblsClient";
+                        state-lens-ics23-mpt-client = "StateLensIcs23MptClient";
+                        state-lens-ics23-ics23-client = "StateLensIcs23Ics23Client";
+                        state-lens-ics23-smt-client = "StateLensIcs23SmtClient";
+                        core = "IBCHandler";
+                      }
+                  )
+                ))
               );
             }) networks
           )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "dryupgrade-${args.network}-cometbls-client";
-              value = upgrade (
-                {
-                  dry = true;
-                  protocol = "CometblsClient";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "upgrade-${args.network}-ucs03";
-              value = upgrade (
-                {
-                  dry = false;
-                  protocol = "UCS03";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "upgrade-${args.network}-state-lens-ics23-mpt-client";
-              value = upgrade (
-                {
-                  dry = false;
-                  protocol = "StateLensIcs23MptClient";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "upgrade-${args.network}-state-lens-ics23-ics23-client";
-              value = upgrade (
-                {
-                  dry = false;
-                  protocol = "StateLensIcs23Ics23Client";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "upgrade-${args.network}-state-lens-ics23-smt-client";
-              value = upgrade (
-                {
-                  dry = false;
-                  protocol = "StateLensIcs23SmtClient";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "dryupgrade-${args.network}-ibc";
-              value = upgrade (
-                {
-                  dry = true;
-                  protocol = "IBCHandler";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "upgrade-${args.network}-ucs00";
-              value = upgrade ({ protocol = "UCS00"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "upgrade-${args.network}-cometbls-client";
-              value = upgrade ({ protocol = "CometblsClient"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "get-deployed-heights-${args.network}";
-              value = get-deployed-heights args;
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "upgrade-${args.network}-ibc";
-              value = upgrade ({ protocol = "IBCHandler"; } // args);
-            }) networks
-          );
+        );
       };
     };
 }

@@ -262,6 +262,66 @@
                   foundry.overlay
                   (_: super: {
                     inherit (self'.packages) devnet-utils;
+                    mkRootDrv =
+                      name: subAttrs:
+                      subAttrs
+                      // (builtins.removeAttrs
+                        (pkgs.writeShellApplication {
+                          inherit name;
+                          text = ''
+                            echo "this object (${name}) only has the following subattributes:"
+
+                            ${pkgs.lib.concatMapStringsSep "\n" (a: "echo ${a}") (builtins.attrNames subAttrs)}
+
+                            exit 1
+                          '';
+                        })
+                        # cleanup the tab completion a bit
+                        [
+                          "checkPhase"
+                          "doCheck"
+                          "doInstallCheck"
+                          "passthru"
+                          "outputs"
+                          "preferLocalBuild"
+                          "propagatedBuildInputs"
+                          "propagatedNativeBuildInputs"
+                          "depsBuildBuild"
+                          "depsBuildBuildPropagated"
+                          "depsBuildTarget"
+                          "depsBuildTargetPropagated"
+                          "depsHostHost"
+                          "depsHostHostPropagated"
+                          "depsTargetTarget"
+                          "depsTargetTargetPropagated"
+                          "buildInputs"
+                          "nativeBuildInputs"
+                          "enableParallelBuilding"
+                          "enableParallelChecking"
+                          "enableParallelInstalling"
+                          "cmakeFlags"
+                          "configureFlags"
+                          "__ignoreNulls"
+                          "__structuredAttrs"
+                          "allowSubstitutes"
+                          "overrideAttrs"
+                          "drvAttrs"
+                          "meta"
+                          "mesonFlags"
+                          "passAsFile"
+                          "patches"
+                          "strictDeps"
+                          "inputDerivation"
+                          "executable"
+                          "userHook"
+                          "stdenv"
+                          "all"
+                          "out"
+                          "buildCommand"
+                          "args"
+                          "builder"
+                        ]
+                      );
 
                     writeShellApplicationWithArgs = import ./tools/writeShellApplicationWithArgs.nix {
                       pkgs = super;
