@@ -9,6 +9,7 @@ import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import fs from "node:fs"
 import type { Address } from "viem"
+import { request, gql } from "graphql-request"
 
 type Hex = `0x${string}`
 
@@ -36,6 +37,22 @@ interface TransferConfig {
   cosmosAccountType: string
 }
 
+interface Packet {
+  packet_send_timestamp: string | null
+  packet_recv_timestamp: string | null
+  write_ack_timestamp: string | null
+  packet_ack_timestamp: string | null
+  packet_send_transaction_hash?: string | null
+  packet_recv_transaction_hash?: string | null
+  write_ack_transaction_hash?: string | null
+  packet_ack_transaction_hash?: string | null
+  sort_order: string
+}
+
+interface HasuraResponse {
+  v1_ibc_union_packets: Packet[]
+}
+
 // Combined configuration shape
 interface ConfigFile {
   interactions: Array<ChainPair>
@@ -44,6 +61,11 @@ interface ConfigFile {
   privkeys_for_loadtest?: Array<string>
   load_test_enabled: boolean
 }
+
+// A module-level set to keep track of already reported packet send transaction hashes.
+const reportedSendTxHashes = new Set<string>()
+
+const HASURA_ENDPOINT = "https://development.graphql.union.build/v1/graphql"
 
 // export class Transfer extends Schema.Class<Transfer>("Transfer")({
 //   token: Schema.Literal("0x09B8aE6BB8D447bF910068E6c246A270F42b41be", "0x09B8aE6BB8D447bF910068E6c246A270F42b41be"),
@@ -310,10 +332,6 @@ const doTransfer = (task: TransferConfig) =>
     //     chain: sepolia
     //   })
     // )
-
-
-
-
   })
 
 const transferLoop = Effect.repeat(
@@ -336,28 +354,238 @@ const transferLoop = Effect.repeat(
   Schedule.spaced("3 seconds")
 )
 
+
+/**
+ * fetchPacketsUntilCutoff
+ *
+ * This helper function pages through packets—starting from the most recent (the first query)
+ * and then using the sort_order cursor (via the Next query) until it encounters a packet whose
+ * packet_send_timestamp is earlier than the provided cutoff timestamp.
+ *
+ * @param srcChain The source chain identifier.
+ * @param dstChain The destination chain identifier.
+ * @param cutoffTimestamp A string ISO date (e.g. "2025-04-09T06:44:46.971Z") acting as the lower bound.
+ *                        Only packets with a send timestamp >= cutoffTimestamp will be saved.
+ * @returns An Effect that resolves to an array of Packet.
+ */
+const fetchPacketsUntilCutoff = (srcChain: string, dstChain: string, cutoffTimestamp: string) =>
+  Effect.gen(function* () {
+    let allPackets: Packet[] = []
+    let cursor: string | undefined = undefined
+    let continueFetching = true
+
+    while (continueFetching) {
+      let response: any
+
+      if (!cursor) {
+        // First query: no cursor (assumes API returns the most recent packets).
+        const queryFirst = gql`
+          query First($srcChain: String!, $dstChain: String!) {
+            v2_packets(args: {
+              p_source_universal_chain_id: $srcChain,
+              p_destination_universal_chain_id: $dstChain
+            }) {
+              packet_send_timestamp
+              packet_recv_timestamp
+              write_ack_timestamp
+              packet_ack_timestamp
+              packet_send_transaction_hash
+              packet_recv_transaction_hash
+              write_ack_transaction_hash
+              packet_ack_transaction_hash
+              sort_order
+            }
+          }
+        `
+        response = yield* Effect.tryPromise({
+          try: () => request(HASURA_ENDPOINT, queryFirst, { srcChain, dstChain }),
+          catch: (error) => { 
+            console.info("Error in first query:", error)
+            throw error 
+          }
+        })
+      } else {
+        // Next query: use the last sort_order as a cursor.
+        const queryNext = gql`
+          query Next($sortOrder: String!, $srcChain: String!, $dstChain: String!) {
+            v2_packets(args: {
+              p_source_universal_chain_id: $srcChain,
+              p_destination_universal_chain_id: $dstChain,
+              p_sort_order: $sortOrder
+            }) {
+              packet_send_timestamp
+              packet_recv_timestamp
+              write_ack_timestamp
+              packet_ack_timestamp
+              packet_send_transaction_hash
+              packet_recv_transaction_hash
+              write_ack_transaction_hash
+              packet_ack_transaction_hash
+              sort_order
+            }
+          }
+        `
+        response = yield* Effect.tryPromise({
+          try: () => request(HASURA_ENDPOINT, queryNext, { sortOrder: cursor, srcChain, dstChain }),
+          catch: (error) => { 
+            console.info("Error in second query:", error)
+            throw error 
+          }
+        })
+      }
+
+      const currentPage: Packet[] = response?.v2_packets || []
+      if (currentPage.length === 0) break
+
+      for (const packet of currentPage) {
+        // If the packet's send timestamp is missing, include it (or decide otherwise).
+        if (packet.packet_send_timestamp) {
+          const packetTime = new Date(packet.packet_send_timestamp).getTime()
+          const cutoffTime = new Date(cutoffTimestamp).getTime()
+          // Stop paging once we encounter a packet older than the cutoff.
+          if (packetTime < cutoffTime) {
+            continueFetching = false
+            break
+          }
+        }
+        allPackets.push(packet)
+      }
+
+      // Set cursor for the next page based on the last packet.
+      if (continueFetching) {
+        cursor = currentPage[currentPage.length - 1]!.sort_order
+      }
+    }
+
+    return allPackets
+  })
+
+
+/**
+ * checkPackets
+ *
+ * This effectful function fetches IBC packet data from Hasura and then verifies that:
+ *
+ *  - Packets older than the provided timeframe have a valid reception, write_ack, and ack.
+ *  - If a packet’s timestamp differences exceed the provided SLA timeframe, it logs an error.
+ *  - It avoids duplicate logging by tracking already reported packet send transaction hashes.
+ *
+ * @param sourceChain - The source chain identifier
+ * @param destinationChain - The destination chain identifier
+ * @param timeframeMs - The maximum allowed timeframe (in milliseconds) for the packet to be confirmed
+ */
+export const checkPackets = (sourceChain: string, destinationChain: string, timeframeMs: number) =>
+  Effect.gen(function* () {
+    const now = Date.now()
+    const searchRangeMs = timeframeMs * 10
+    const sinceDate = new Date(now - searchRangeMs).toISOString()
+
+    yield* Effect.log(
+      `Querying Hasura for packets >= ${sinceDate}, chain-pair: ${sourceChain} <-> ${destinationChain}`
+    )   
+
+    const now_as_date = new Date(now).toISOString()
+    yield* Effect.log(
+      `now: ${now_as_date}`
+    )
+    
+    const first_packets: Packet[] = yield* fetchPacketsUntilCutoff(sourceChain, destinationChain, sinceDate)
+    const second_packets: Packet[] = yield* fetchPacketsUntilCutoff(destinationChain, sourceChain, sinceDate)
+    const packets = [...first_packets, ...second_packets]
+    yield* Effect.log(`Fetched ${packets.length} packets from Hasura`)
+        // Process each packet.
+        for (const p of packets) {
+          if (!p.packet_send_timestamp) continue
+            const sendTimeMs = new Date(p.packet_send_timestamp).getTime()
+            // Only process packets that are older than the allowed timeframe.
+            if (now - sendTimeMs < timeframeMs) continue
+
+            const sendTxHash = p.packet_send_transaction_hash ?? "?"
+            if (reportedSendTxHashes.has(sendTxHash)) continue
+            const sort_order_tx = p.sort_order.split("-")[1]
+
+            // 1) RECV check.
+            if (p.packet_recv_timestamp) {
+              const recvTimeMs = new Date(p.packet_recv_timestamp).getTime()
+              if (recvTimeMs - sendTimeMs > timeframeMs) {
+                // yield* Effect.log(
+                //   `[RECV TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, recv_time=${p.packet_recv_timestamp}, sendTxHash=${sendTxHash}`
+                // )
+                // reportedSendTxHashes.add(sendTxHash)
+              }
+            } else {
+              yield* Effect.log(
+                `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
+              )
+              reportedSendTxHashes.add(sendTxHash)
+              continue
+            }
+
+            // 2) WRITE_ACK check.
+            if (p.write_ack_timestamp) {
+              // const writeAckTimeMs = new Date(p.write_ack_timestamp).getTime()
+              // if (writeAckTimeMs - sendTimeMs > timeframeMs) {
+              //   yield* Effect.log(
+              //     `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, write_ack_time=${p.write_ack_timestamp}, sendTxHash=${sendTxHash}`
+              //   )
+              //   reportedSendTxHashes.add(sendTxHash)
+              // }
+            } else {
+              yield* Effect.log(
+                `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
+              )
+              reportedSendTxHashes.add(sendTxHash)
+              continue
+            }
+
+            // 3) ACK check.
+            if (p.packet_ack_timestamp) {
+              // const ackTimeMs = new Date(p.packet_ack_timestamp).getTime()
+              // if (ackTimeMs - sendTimeMs > timeframeMs) {
+              //   yield* Effect.log(
+              //     `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, ack_time=${p.packet_ack_timestamp}, sendTxHash=${sendTxHash}`
+              //   )
+              //   reportedSendTxHashes.add(sendTxHash)
+              // }
+            } else {
+              yield* Effect.log(
+                `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
+              )
+              reportedSendTxHashes.add(sendTxHash)
+            }
+          }
+        
+  }).pipe(Effect.withLogSpan("checkPackets"))
+
+
 const runIbcChecksForever = Effect.repeat(
   Effect.gen(function* (_) {
     // TODO: Uncomment below. Commented out for now
-    // let config = (yield* Config).config
-    // const chainPairs: Array<ChainPair> = config.interactions
-    // yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
-    // for (const pair of chainPairs) {
-    //   if (!pair.enabled) {
-    //     yield* Effect.log("Checking task is disabled. Skipping.")
-    //     continue
-    //   }
-    //   yield* Effect.log(
-    //     `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
-    //   )
-    //   // Simulating an IBC check
-    //   if (Math.random() > 0.3) {
-    //     yield* Effect.log("IBC Check successful!")
-    //   } else {
-    //     yield* Effect.log("IBC Check failed due to network error")
-    //   }
-    // }
-    // yield* Effect.log("IBC Checks done (or skipped). Sleeping 10 minutes...")
+    let config = (yield* Config).config
+    const chainPairs: Array<ChainPair> = config.interactions
+    yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
+    for (const pair of chainPairs) {
+      if (!pair.enabled) {
+        yield* Effect.log("Checking task is disabled. Skipping.")
+        continue
+      }
+      yield* Effect.log(
+        `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
+      )
+
+      yield * checkPackets(
+        pair.sourceChain,
+        pair.destinationChain,
+        pair.timeframeMs
+      )
+      // // Simulating an IBC check
+      // if (Math.random() > 0.3) {
+      //   yield* Effect.log("IBC Check successful!")
+      // } else {
+      //   yield* Effect.log("IBC Check failed due to network error")
+      // }
+    }
+    yield* Effect.log("IBC Checks done (or skipped). Sleeping 10 minutes...")
   }),
   Schedule.spaced("5 seconds")
 )
@@ -378,7 +606,7 @@ const mainEffect = Effect.gen(function* (_) {
 
   const config = yield* loadConfig(argv.config)
 
-  yield* Effect.all([transferLoop, runIbcChecksForever], { concurrency: "unbounded" }).pipe(
+  yield* Effect.all([/*transferLoop, */runIbcChecksForever], { concurrency: "unbounded" }).pipe(
     Effect.provideService(Config, { config })
   )
 })
