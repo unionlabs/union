@@ -157,7 +157,7 @@ contract StateLensIcs23Ics23ClientTest is Test {
 
     function test_initialize_ok() public {
         // Verify initialization
-        assertEq(client.owner(), admin);
+        assertEq(client.authority(), admin);
     }
 
     function test_createClient_success(

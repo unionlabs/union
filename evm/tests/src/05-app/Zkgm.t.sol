@@ -5,8 +5,11 @@ import "forge-std/Test.sol";
 import "solady/utils/LibBytes.sol";
 import "solady/utils/LibString.sol";
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 
 import "../../../contracts/core/Types.sol";
 import "../../../contracts/core/25-handler/IBCHandler.sol";
@@ -20,7 +23,7 @@ contract TestZkgm is UCS03Zkgm {
     constructor(
         IIBCModulePacket _ibcHandler,
         IWETH _weth
-    ) UCS03Zkgm(_ibcHandler, _weth) {}
+    ) UCS03Zkgm(_ibcHandler, _weth, new ZkgmERC20()) {}
 
     function doExecuteForward(
         IBCPacket calldata ibcPacket,
@@ -30,7 +33,7 @@ contract TestZkgm is UCS03Zkgm {
         uint256 path,
         Forward calldata forward
     ) public returns (bytes memory) {
-        return executeForward(
+        return _executeForward(
             ibcPacket,
             relayer,
             relayerMsg,
@@ -50,7 +53,7 @@ contract TestZkgm is UCS03Zkgm {
         bytes32 salt,
         Multiplex calldata multiplex
     ) public returns (bytes memory) {
-        return executeMultiplex(
+        return _executeMultiplex(
             caller, ibcPacket, relayer, relayerMsg, path, salt, multiplex
         );
     }
@@ -60,7 +63,7 @@ contract TestZkgm is UCS03Zkgm {
         uint256 path,
         Instruction calldata instruction
     ) public {
-        verifyInternal(channelId, path, instruction);
+        _verifyInternal(channelId, path, instruction);
     }
 
     function doIncreaseOutstanding(
@@ -69,7 +72,7 @@ contract TestZkgm is UCS03Zkgm {
         address token,
         uint256 amount
     ) public {
-        increaseOutstanding(sourceChannelId, path, token, amount);
+        _increaseOutstanding(sourceChannelId, path, token, amount);
     }
 
     function doDecreaseOutstanding(
@@ -78,7 +81,16 @@ contract TestZkgm is UCS03Zkgm {
         address token,
         uint256 amount
     ) public {
-        decreaseOutstanding(sourceChannelId, path, token, amount);
+        _decreaseOutstanding(sourceChannelId, path, token, amount);
+    }
+
+    function doSetBucketConfig(
+        address token,
+        uint256 capacity,
+        uint256 refillRate,
+        bool reset
+    ) public {
+        _setBucketConfig(token, capacity, refillRate, reset);
     }
 }
 
@@ -278,20 +290,20 @@ contract ZkgmTests is Test {
     function test_proxyInitialization_ok(
         address wethAddress,
         address handlerAddress,
-        address ownerAddress
+        address authorityAddress
     ) public {
         vm.assume(handlerAddress != address(0));
-        vm.assume(ownerAddress != address(0));
+        vm.assume(authorityAddress != address(0));
         TestZkgm implementation =
             new TestZkgm(IIBCModulePacket(handlerAddress), IWETH(wethAddress));
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
-            abi.encodeCall(UCS03Zkgm.initialize, (ownerAddress))
+            abi.encodeCall(UCS03Zkgm.initialize, (authorityAddress))
         );
         TestZkgm _zkgm = TestZkgm(payable(address(proxy)));
         assertEq(address(_zkgm.IBC_HANDLER()), handlerAddress);
         assertEq(address(_zkgm.WETH()), wethAddress);
-        assertEq(_zkgm.owner(), ownerAddress);
+        assertEq(_zkgm.authority(), authorityAddress);
     }
 
     function test_channelPath_ok(
@@ -1919,6 +1931,9 @@ contract ZkgmTests is Test {
         vm.assume(destinationChannelId != 0);
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
+        if (baseAmount > 0) {
+            zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
+        }
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1968,6 +1983,9 @@ contract ZkgmTests is Test {
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
         assertFalse(ZkgmLib.isDeployed(quoteToken));
+        if (baseAmount > 0) {
+            zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
+        }
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -1990,6 +2008,9 @@ contract ZkgmTests is Test {
             })
         );
         assertTrue(ZkgmLib.isDeployed(quoteToken));
+        assertEq(
+            AccessManagedUpgradeable(quoteToken).authority(), address(this)
+        );
         return quoteToken;
     }
 
@@ -2013,6 +2034,9 @@ contract ZkgmTests is Test {
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
         assertEq(zkgm.tokenOrigin(quoteToken), 0);
+        if (baseAmount > 0) {
+            zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
+        }
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -2060,6 +2084,9 @@ contract ZkgmTests is Test {
         vm.assume(destinationChannelId != 0);
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
+        if (baseAmount > 0) {
+            zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
+        }
         vm.expectEmit();
         emit IERC20.Transfer(address(0), address(this), baseAmount);
         expectOnRecvTransferSuccess(
@@ -2109,6 +2136,7 @@ contract ZkgmTests is Test {
         (address quoteToken,) =
             zkgm.predictWrappedToken(path, destinationChannelId, baseToken);
         if (quoteAmount > 0) {
+            zkgm.doSetBucketConfig(quoteToken, quoteAmount, 1, false);
             vm.expectEmit();
             emit IERC20.Transfer(address(0), address(this), quoteAmount);
         }
@@ -2180,6 +2208,9 @@ contract ZkgmTests is Test {
             quoteToken,
             baseAmount
         );
+        if (baseAmount > 0) {
+            zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
+        }
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -2230,6 +2261,9 @@ contract ZkgmTests is Test {
             quoteToken,
             baseAmount
         );
+        if (baseAmount > 0) {
+            zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
+        }
         expectOnRecvTransferSuccess(
             caller,
             sourceChannelId,
@@ -2382,14 +2416,15 @@ contract ZkgmTests is Test {
         vm.assume(marketMaker != address(0));
         vm.assume(sourceChannelId != 0);
         vm.assume(destinationChannelId != 0);
+        address quoteToken = address(erc20);
         if (quoteAmount > 0) {
             erc20.mint(marketMaker, quoteAmount);
             vm.prank(marketMaker);
             erc20.approve(address(zkgm), quoteAmount);
+            zkgm.doSetBucketConfig(quoteToken, quoteAmount, 1, false);
             vm.expectEmit();
             emit IERC20.Transfer(marketMaker, address(this), quoteAmount);
         }
-        address quoteToken = address(erc20);
         expectOnRecvTransferSuccessCustomAck(
             marketMaker,
             sourceChannelId,
@@ -2499,6 +2534,7 @@ contract ZkgmTests is Test {
         vm.assume(sourceChannelId != 0);
         vm.assume(destinationChannelId != 0);
         address quoteToken = address(erc20);
+        zkgm.doSetBucketConfig(quoteToken, quoteAmount, 1, false);
         expectOnRecvTransferFailure(
             marketMaker,
             sourceChannelId,

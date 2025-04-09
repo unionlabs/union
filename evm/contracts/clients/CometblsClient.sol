@@ -2,7 +2,8 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
 import "../core/02-client/ILightClient.sol";
@@ -198,7 +199,7 @@ contract CometblsClient is
     ILightClient,
     Initializable,
     UUPSUpgradeable,
-    Ownable2StepUpgradeable,
+    AccessManagedUpgradeable,
     PausableUpgradeable,
     Versioned
 {
@@ -206,7 +207,6 @@ contract CometblsClient is
 
     address public immutable IBC_HANDLER;
 
-    address private _deprecated_ibcHandler;
     mapping(uint32 => ClientState) private clientStates;
     mapping(uint32 => mapping(uint64 => ConsensusState)) private consensusStates;
 
@@ -218,9 +218,9 @@ contract CometblsClient is
     }
 
     function initialize(
-        address admin
+        address authority
     ) public initializer {
-        __Ownable_init(admin);
+        __AccessManaged_init(authority);
         __UUPSUpgradeable_init();
         __Pausable_init();
     }
@@ -235,6 +235,7 @@ contract CometblsClient is
         external
         override
         onlyIBC
+        whenNotPaused
         returns (
             ConsensusStateUpdate memory update,
             string memory counterpartyChainId
@@ -625,13 +626,13 @@ contract CometblsClient is
 
     function _authorizeUpgrade(
         address newImplementation
-    ) internal override onlyOwner {}
+    ) internal override restricted {}
 
-    function pause() public onlyOwner {
+    function pause() public restricted {
         _pause();
     }
 
-    function unpause() public onlyOwner {
+    function unpause() public restricted {
         _unpause();
     }
 

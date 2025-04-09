@@ -119,6 +119,9 @@ _: {
                 "contracts"
                 "tests"
               ];
+              exclude = [
+                "evm.nix"
+              ];
             }
           }/* $out/
         '';
@@ -129,11 +132,6 @@ _: {
       };
       # Foundry FS permissions must be explicitly set in the config file
       foundryConfig = pkgs.writeTextDir "/foundry.toml" ''
-        [profile.default.optimizer_details]
-        cse = true
-        constantOptimizer = true
-        yul = true
-
         [profile.default]
         fs_permissions = [{ access = "read", path = "./" }, { access = "write", path = "contracts.json" }]
         libs = ["libs"]
@@ -141,7 +139,7 @@ _: {
         via_ir = true
         ast = true
         optimizer = true
-        optimizer_runs = 1_000
+        optimizer_runs = 10_000
 
         [profile.script]
         src = "scripts"
@@ -155,6 +153,8 @@ _: {
         bob-mainnet = { key = "''${VERIFICATION_KEY}", chain = "60808", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/60808/public" }
         bob-testnet = { key = "''${VERIFICATION_KEY}", chain = "808813", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/808813/public" }
         bepolia = { key = "''${VERIFICATION_KEY}", chain = "80069", url = "https://api.routescan.io/v2/network/testnet/evm/80069/etherscan" }
+        holesky = { key = "''${VERIFICATION_KEY}", chain = "17000", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/17000/public" }
+        sepolia = { key = "''${VERIFICATION_KEY}", chain = "11155111", url = "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/11155111/public" }
       '';
       compilers = pkgs.linkFarm "evm-libraries" [
         {
@@ -703,7 +703,7 @@ _: {
                 cd $out
 
                 jq --compact-output --slurp 'map(.abi) | add' \
-                  ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json > core.json
+                  ${contracts}/out/IBCHandler.sol/IBCHandler.json > core.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/Zkgm.sol/AbiExport.json \

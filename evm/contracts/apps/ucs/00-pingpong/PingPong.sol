@@ -2,7 +2,8 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
 import "../../Base.sol";
@@ -52,7 +53,7 @@ contract PingPong is
     IBCAppBase,
     Initializable,
     UUPSUpgradeable,
-    Ownable2StepUpgradeable,
+    AccessManagedUpgradeable,
     PausableUpgradeable,
     IZkgmable,
     Versioned
@@ -69,10 +70,10 @@ contract PingPong is
 
     function initialize(
         IIBCPacket _ibcHandler,
-        address admin,
+        address _authority,
         uint64 _timeout
     ) public initializer {
-        __Ownable_init(admin);
+        __AccessManaged_init(_authority);
         ibcHandler = _ibcHandler;
         timeout = _timeout;
     }
@@ -210,11 +211,11 @@ contract PingPong is
 
     function _authorizeUpgrade(
         address newImplementation
-    ) internal override onlyOwner {}
+    ) internal override restricted {}
 
     function setZkgm(
         address zkgm
-    ) public onlyOwner {
+    ) public restricted {
         zkgmProtocol = zkgm;
     }
 
