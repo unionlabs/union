@@ -122,7 +122,7 @@ in
             export NODE_PATH="$out/lib/node_modules"
             EOF
 
-                        echo 'exec '"${pkgs.nodePackages_latest.nodejs}/bin/node"' sentinel2.js "$@"' >> $out/bin/sentinel2
+                        echo 'exec '"${pkgs.nodePackages_latest.nodejs}/bin/node"' src/sentinel2.js "$@"' >> $out/bin/sentinel2
 
                         chmod +x $out/bin/sentinel2
           '';
