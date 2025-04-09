@@ -712,13 +712,8 @@ pub mod multicall {
 #[cfg(test)]
 mod tests {
     use alloy::{
-        consensus::{
-            constants::GWEI_TO_WEI, SignableTransaction, Signed, TxEip1559, TxEnvelope, TxLegacy,
-        },
-        eips::Encodable2718,
         hex,
-        network::TxSignerSync,
-        primitives::{bytes, fixed_bytes, ruint, Bytes, LogData, TxKind},
+        primitives::{fixed_bytes, LogData},
     };
 
     use super::*;
