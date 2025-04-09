@@ -29,7 +29,7 @@ type FaucetProcessState = Data.TaggedEnum<{
 const FaucetProcess = Data.taggedEnum<FaucetProcessState>()
 
 // Initialize the faucet process state to Idle.
-const faucetProcess = writable(FaucetProcess.Idle())
+const faucetProcess = writable<FaucetProcessState>(FaucetProcess.Idle())
 
 // Variables for managing the Turnstile component.
 let resetTurnstile: () => void
