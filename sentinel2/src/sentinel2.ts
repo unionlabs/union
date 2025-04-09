@@ -1,10 +1,14 @@
 import { Effect, Schedule, Data, Context, Schema, Arbitrary, FastCheck } from "effect"
-import { createWalletClient, http, erc20Abi } from "viem"
+import { http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { sepolia } from "viem/chains"
-import { ViemWalletClient, writeContract , readErc20Allowance, increaseErc20Allowance, ViemPublicClientSource, createViemPublicClient, waitForTransactionReceipt, EvmChannelSource } from "@unionlabs/sdk/evm"
-import { CosmWasmClientDestination, createCosmWasmClient, CosmosChannelDestination } from "@unionlabs/sdk/cosmos"
-import { createEvmToCosmosFungibleAssetOrder, Batch, sendInstructionEvm, sendInstructionCosmos } from "@unionlabs/sdk/ucs03"
+import { ViemPublicClientSource, createViemPublicClient } from "@unionlabs/sdk/evm"
+import {
+  CosmWasmClientDestination,
+  createCosmWasmClient,
+  CosmosChannelDestination
+} from "@unionlabs/sdk/cosmos"
+import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import fs from "node:fs"
@@ -109,13 +113,15 @@ function loadConfig(configPath: string) {
   })
 }
 
-const createBatchFromTransfers = (transfers: readonly {
-  sender: Hex
-  receiver: Address
-  baseToken: Hex
-  baseAmount: bigint
-  quoteAmount: bigint
-}[]) =>
+const createBatchFromTransfers = (
+  transfers: readonly {
+    sender: Hex
+    receiver: Address
+    baseToken: Hex
+    baseAmount: bigint
+    quoteAmount: bigint
+  }[]
+) =>
   Effect.gen(function* () {
     const transferInstructions = []
     for (const transfer of transfers) {
@@ -126,7 +132,6 @@ const createBatchFromTransfers = (transfers: readonly {
     return Batch(transferInstructions)
   }).pipe(Effect.withLogSpan("batch creation"))
 
-  
 const doTransfer = (task: TransferConfig) =>
   Effect.gen(function* (_) {
     let chainType: "Cosmos" | "EVM" | "Aptos"
@@ -159,13 +164,11 @@ const doTransfer = (task: TransferConfig) =>
       transport: http()
     })
 
-
     // const walletClient = createWalletClient({
     //   account,
     //   chain: sepolia,
     //   transport: http()
     // })
-
 
     // const tx_hash = yield* writeContract(walletClient, {
     //   account,
@@ -184,7 +187,7 @@ const doTransfer = (task: TransferConfig) =>
     // Define hardcoded UCS03 addresses and channel ids for now
     const UCS03_ADDRESS = "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962" // UCS03 contract on Sepolia
     const CHANNEL_ID = 1 // Hardcoded channel ID
-    
+
     const TRANSFERS = [
       {
         sender: account.address,
@@ -199,33 +202,28 @@ const doTransfer = (task: TransferConfig) =>
     const cosmWasmClientDestination = yield* createCosmWasmClient(
       "https://rpc.rpc-node.union-testnet-10.union.build"
     ).pipe(
-      Effect.catchTag("CosmWasmClientError", (error) =>
+      Effect.catchTag("CosmWasmClientError", error =>
         Effect.gen(function* () {
           yield* Effect.logError("CosmWasm client creation failed:", error)
-          return yield* Effect.fail(
-            new DoTransferError({ cause: error })
-          )
+          return yield* Effect.fail(new DoTransferError({ cause: error }))
         })
       )
     )
-    
-    
-    yield* Effect.log("CosmWasm client created successfully")
 
+    yield* Effect.log("CosmWasm client created successfully")
 
     yield* Effect.log("Transfers to be made:", TRANSFERS)
 
     yield* Effect.gen(function* () {
       const batch = yield* createBatchFromTransfers(TRANSFERS)
       yield* Effect.log("Batch created:", batch)
-
     }).pipe(
-      Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination}),
+      Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
       Effect.provideService(ViemPublicClientSource, { client: publicSourceClient }),
       Effect.provideService(CosmosChannelDestination, {
         ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
         channelId: 1
-      }),
+      })
       // Effect.provideService(EvmChannelSource, {
       //   ucs03address: UCS03_ADDRESS,
       //   channelId: 1
@@ -238,7 +236,7 @@ const doTransfer = (task: TransferConfig) =>
     )
     // const createBatch = Effect.gen(function* () {
     //   const transferInstructions = []
-      
+
     //   for (const transfer of TRANSFERS) {
     //     yield* Effect.log(`creating transfer for ${transfer.baseToken}`)
     //     const transferInstruction = yield* createEvmToCosmosFungibleAssetOrder(transfer)
@@ -247,7 +245,6 @@ const doTransfer = (task: TransferConfig) =>
 
     //   return Batch(transferInstructions)
     // }).pipe(Effect.withLogSpan("batch creation"))
-
 
     // yield* Effect.log("Creating batch...")
     // const batch = yield* createBatch
@@ -354,7 +351,6 @@ const transferLoop = Effect.repeat(
   Schedule.spaced("3 seconds")
 )
 
-
 /**
  * fetchPacketsUntilCutoff
  *
@@ -371,40 +367,13 @@ const transferLoop = Effect.repeat(
 const fetchPacketsUntilCutoff = (srcChain: string, dstChain: string, cutoffTimestamp: string) =>
   Effect.gen(function* () {
     let allPackets: Packet[] = []
-    let cursor: string | undefined = undefined
+    let cursor: string | undefined
     let continueFetching = true
 
     while (continueFetching) {
       let response: any
 
-      if (!cursor) {
-        // First query: no cursor (assumes API returns the most recent packets).
-        const queryFirst = gql`
-          query First($srcChain: String!, $dstChain: String!) {
-            v2_packets(args: {
-              p_source_universal_chain_id: $srcChain,
-              p_destination_universal_chain_id: $dstChain
-            }) {
-              packet_send_timestamp
-              packet_recv_timestamp
-              write_ack_timestamp
-              packet_ack_timestamp
-              packet_send_transaction_hash
-              packet_recv_transaction_hash
-              write_ack_transaction_hash
-              packet_ack_transaction_hash
-              sort_order
-            }
-          }
-        `
-        response = yield* Effect.tryPromise({
-          try: () => request(HASURA_ENDPOINT, queryFirst, { srcChain, dstChain }),
-          catch: (error) => { 
-            console.info("Error in first query:", error)
-            throw error 
-          }
-        })
-      } else {
+      if (cursor) {
         // Next query: use the last sort_order as a cursor.
         const queryNext = gql`
           query Next($sortOrder: String!, $srcChain: String!, $dstChain: String!) {
@@ -427,9 +396,36 @@ const fetchPacketsUntilCutoff = (srcChain: string, dstChain: string, cutoffTimes
         `
         response = yield* Effect.tryPromise({
           try: () => request(HASURA_ENDPOINT, queryNext, { sortOrder: cursor, srcChain, dstChain }),
-          catch: (error) => { 
+          catch: error => {
             console.info("Error in second query:", error)
-            throw error 
+            throw error
+          }
+        })
+      } else {
+        // First query: no cursor (assumes API returns the most recent packets).
+        const queryFirst = gql`
+          query First($srcChain: String!, $dstChain: String!) {
+            v2_packets(args: {
+              p_source_universal_chain_id: $srcChain,
+              p_destination_universal_chain_id: $dstChain
+            }) {
+              packet_send_timestamp
+              packet_recv_timestamp
+              write_ack_timestamp
+              packet_ack_timestamp
+              packet_send_transaction_hash
+              packet_recv_transaction_hash
+              write_ack_transaction_hash
+              packet_ack_transaction_hash
+              sort_order
+            }
+          }
+        `
+        response = yield* Effect.tryPromise({
+          try: () => request(HASURA_ENDPOINT, queryFirst, { srcChain, dstChain }),
+          catch: error => {
+            console.info("Error in first query:", error)
+            throw error
           }
         })
       }
@@ -460,7 +456,6 @@ const fetchPacketsUntilCutoff = (srcChain: string, dstChain: string, cutoffTimes
     return allPackets
   })
 
-
 /**
  * checkPackets
  *
@@ -482,118 +477,120 @@ export const checkPackets = (sourceChain: string, destinationChain: string, time
 
     yield* Effect.log(
       `Querying Hasura for packets >= ${sinceDate}, chain-pair: ${sourceChain} <-> ${destinationChain}`
-    )   
+    )
 
     const now_as_date = new Date(now).toISOString()
-    yield* Effect.log(
-      `now: ${now_as_date}`
+    yield* Effect.log(`now: ${now_as_date}`)
+
+    const first_packets: Packet[] = yield* fetchPacketsUntilCutoff(
+      sourceChain,
+      destinationChain,
+      sinceDate
     )
-    
-    const first_packets: Packet[] = yield* fetchPacketsUntilCutoff(sourceChain, destinationChain, sinceDate)
-    const second_packets: Packet[] = yield* fetchPacketsUntilCutoff(destinationChain, sourceChain, sinceDate)
+    const second_packets: Packet[] = yield* fetchPacketsUntilCutoff(
+      destinationChain,
+      sourceChain,
+      sinceDate
+    )
     const packets = [...first_packets, ...second_packets]
     yield* Effect.log(`Fetched ${packets.length} packets from Hasura`)
-        // Process each packet.
-        for (const p of packets) {
-          if (!p.packet_send_timestamp) continue
-            const sendTimeMs = new Date(p.packet_send_timestamp).getTime()
-            // Only process packets that are older than the allowed timeframe.
-            if (now - sendTimeMs < timeframeMs) continue
+    // Process each packet.
+    for (const p of packets) {
+      if (!p.packet_send_timestamp) continue
+      const sendTimeMs = new Date(p.packet_send_timestamp).getTime()
+      // Only process packets that are older than the allowed timeframe.
+      if (now - sendTimeMs < timeframeMs) continue
 
-            const sendTxHash = p.packet_send_transaction_hash ?? "?"
-            if (reportedSendTxHashes.has(sendTxHash)) continue
-            const sort_order_tx = p.sort_order.split("-")[1]
+      const sendTxHash = p.packet_send_transaction_hash ?? "?"
+      if (reportedSendTxHashes.has(sendTxHash)) continue
+      const sort_order_tx = p.sort_order.split("-")[1]
 
-            // 1) RECV check.
-            if (p.packet_recv_timestamp) {
-              const recvTimeMs = new Date(p.packet_recv_timestamp).getTime()
-              if (recvTimeMs - sendTimeMs > timeframeMs) {
-                // yield* Effect.log(
-                //   `[RECV TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, recv_time=${p.packet_recv_timestamp}, sendTxHash=${sendTxHash}`
-                // )
-                // reportedSendTxHashes.add(sendTxHash)
-              }
-            } else {
-              yield* Effect.log(
-                `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
-              )
-              reportedSendTxHashes.add(sendTxHash)
-              continue
-            }
+      // 1) RECV check.
+      if (p.packet_recv_timestamp) {
+        const recvTimeMs = new Date(p.packet_recv_timestamp).getTime()
+        if (recvTimeMs - sendTimeMs > timeframeMs) {
+          // yield* Effect.log(
+          //   `[RECV TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, recv_time=${p.packet_recv_timestamp}, sendTxHash=${sendTxHash}`
+          // )
+          // reportedSendTxHashes.add(sendTxHash)
+        }
+      } else {
+        yield* Effect.log(
+          `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
+        )
+        reportedSendTxHashes.add(sendTxHash)
+        continue
+      }
 
-            // 2) WRITE_ACK check.
-            if (p.write_ack_timestamp) {
-              // const writeAckTimeMs = new Date(p.write_ack_timestamp).getTime()
-              // if (writeAckTimeMs - sendTimeMs > timeframeMs) {
-              //   yield* Effect.log(
-              //     `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, write_ack_time=${p.write_ack_timestamp}, sendTxHash=${sendTxHash}`
-              //   )
-              //   reportedSendTxHashes.add(sendTxHash)
-              // }
-            } else {
-              yield* Effect.log(
-                `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
-              )
-              reportedSendTxHashes.add(sendTxHash)
-              continue
-            }
+      // 2) WRITE_ACK check.
+      if (p.write_ack_timestamp) {
+        // const writeAckTimeMs = new Date(p.write_ack_timestamp).getTime()
+        // if (writeAckTimeMs - sendTimeMs > timeframeMs) {
+        //   yield* Effect.log(
+        //     `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, write_ack_time=${p.write_ack_timestamp}, sendTxHash=${sendTxHash}`
+        //   )
+        //   reportedSendTxHashes.add(sendTxHash)
+        // }
+      } else {
+        yield* Effect.log(
+          `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
+        )
+        reportedSendTxHashes.add(sendTxHash)
+        continue
+      }
 
-            // 3) ACK check.
-            if (p.packet_ack_timestamp) {
-              // const ackTimeMs = new Date(p.packet_ack_timestamp).getTime()
-              // if (ackTimeMs - sendTimeMs > timeframeMs) {
-              //   yield* Effect.log(
-              //     `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, ack_time=${p.packet_ack_timestamp}, sendTxHash=${sendTxHash}`
-              //   )
-              //   reportedSendTxHashes.add(sendTxHash)
-              // }
-            } else {
-              yield* Effect.log(
-                `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
-              )
-              reportedSendTxHashes.add(sendTxHash)
-            }
-          }
-        
+      // 3) ACK check.
+      if (p.packet_ack_timestamp) {
+        // const ackTimeMs = new Date(p.packet_ack_timestamp).getTime()
+        // if (ackTimeMs - sendTimeMs > timeframeMs) {
+        //   yield* Effect.log(
+        //     `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, ack_time=${p.packet_ack_timestamp}, sendTxHash=${sendTxHash}`
+        //   )
+        //   reportedSendTxHashes.add(sendTxHash)
+        // }
+      } else {
+        yield* Effect.log(
+          `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
+        )
+        reportedSendTxHashes.add(sendTxHash)
+      }
+    }
   }).pipe(Effect.withLogSpan("checkPackets"))
 
+const runIbcChecksForever = Effect.gen(function* (_) {
+  const { config } = yield* Config
 
-  const runIbcChecksForever = Effect.gen(function* (_) {
-    const { config } = yield* Config
-  
-    const schedule = Schedule.spaced(`${config.cycleIntervalMs / 1000 / 60} minutes`)
-  
-    const effectToRepeat = Effect.gen(function* (_) {
-      const chainPairs: Array<ChainPair> = config.interactions
-  
-      yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
-      for (const pair of chainPairs) {
-        if (!pair.enabled) {
-          yield* Effect.log("Checking task is disabled. Skipping.")
-          continue
-        }
-        yield* Effect.log(
-          `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
-        )
-  
-        yield* checkPackets(
-          pair.sourceChain,
-          pair.destinationChain,
-          pair.timeframeMs
-        )
+  const schedule = Schedule.spaced(`${config.cycleIntervalMs / 1000 / 60} minutes`)
+
+  const effectToRepeat = Effect.gen(function* (_) {
+    const chainPairs: Array<ChainPair> = config.interactions
+
+    yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
+    for (const pair of chainPairs) {
+      if (!pair.enabled) {
+        yield* Effect.log("Checking task is disabled. Skipping.")
+        continue
       }
-  
-      yield* Effect.log(`IBC Checks done (or skipped). Sleeping ${config.cycleIntervalMs / 1000 / 60} minutes...`)
-      sleepCycleCount++
-      if (sleepCycleCount % 10 === 0) {
-        reportedSendTxHashes.clear()
-        yield* Effect.log("Cleared reported block hashes.")
-      }
-    })
-  
-    return yield* Effect.repeat(effectToRepeat, schedule)
+      yield* Effect.log(
+        `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
+      )
+
+      yield* checkPackets(pair.sourceChain, pair.destinationChain, pair.timeframeMs)
+    }
+
+    yield* Effect.log(
+      `IBC Checks done (or skipped). Sleeping ${config.cycleIntervalMs / 1000 / 60} minutes...`
+    )
+    sleepCycleCount++
+    if (sleepCycleCount % 10 === 0) {
+      reportedSendTxHashes.clear()
+      yield* Effect.log("Cleared reported block hashes.")
+    }
   })
-  
+
+  return yield* Effect.repeat(effectToRepeat, schedule)
+})
+
 const mainEffect = Effect.gen(function* (_) {
   const argv = yield* Effect.sync(() =>
     yargs(hideBin(process.argv))
@@ -610,7 +607,7 @@ const mainEffect = Effect.gen(function* (_) {
 
   const config = yield* loadConfig(argv.config)
 
-  yield* Effect.all([/*transferLoop, */runIbcChecksForever], { concurrency: "unbounded" }).pipe(
+  yield* Effect.all([/*transferLoop, */ runIbcChecksForever], { concurrency: "unbounded" }).pipe(
     Effect.provideService(Config, { config })
   )
 })
