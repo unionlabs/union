@@ -305,11 +305,17 @@ abstract contract UnionScript is UnionBase {
         CometblsClient cometbls,
         UCS03Zkgm zkgm
     ) internal {
-        bytes4[] memory relayerSelectors = new bytes4[](4);
+        bytes4[] memory relayerSelectors = new bytes4[](10);
         relayerSelectors[0] = IBCClient.registerClient.selector;
         relayerSelectors[1] = IBCClient.createClient.selector;
         relayerSelectors[2] = IBCClient.updateClient.selector;
         relayerSelectors[3] = IBCClient.misbehaviour.selector;
+        relayerSelectors[4] = IBCPacketImpl.batchSend.selector;
+        relayerSelectors[5] = IBCPacketImpl.batchAcks.selector;
+        relayerSelectors[6] = IBCPacketImpl.recvPacket.selector;
+        relayerSelectors[7] = IBCPacketImpl.recvIntentPacket.selector;
+        relayerSelectors[8] = IBCPacketImpl.acknowledgePacket.selector;
+        relayerSelectors[9] = IBCPacketImpl.timeoutPacket.selector;
         manager.setTargetFunctionRole(
             address(handler), relayerSelectors, Roles.RELAYER
         );
