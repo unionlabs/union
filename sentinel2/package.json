@@ -1,9 +1,10 @@
 {
-  "name": "union-ts-sdk-example",
+  "name": "sentinel2",
   "version": "1.0.1",
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "start": "node dist/sentinel.js",
     "test": "vitest run",
     "test-watch": "vitest"
   },
