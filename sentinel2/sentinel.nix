@@ -49,6 +49,8 @@ let
                 pkgs.writeText "config.json" (
                   builtins.toJSON {
                     inherit (cfg) cycleIntervalMs;
+                    inherit (cfg) interactions;
+                    inherit (cfg) transfers;
                   }
                 )
               }
