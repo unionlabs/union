@@ -22,6 +22,14 @@ let
           type = types.number;
           description = "Interval between cycles in milliseconds";
         };
+        transfers = mkOption {
+          type = types.listOf types.attrs;
+          description = "Array for cross-chain transfers.";
+        };
+        interactions = mkOption {
+          type = types.listOf types.attrs;
+          description = "Interactions for cross-chain communication.";
+        };
         logLevel = mkOption {
           type = types.str;
           default = "info";

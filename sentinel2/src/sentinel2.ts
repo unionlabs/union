@@ -58,8 +58,6 @@ interface ConfigFile {
   interactions: Array<ChainPair>
   cycleIntervalMs: number
   transfers?: Array<TransferConfig>
-  privkeys_for_loadtest?: Array<string>
-  load_test_enabled: boolean
 }
 
 // A module-level set to keep track of already reported packet send transaction hashes.
