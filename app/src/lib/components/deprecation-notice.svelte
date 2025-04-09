@@ -29,7 +29,7 @@ import * as Card from "$lib/components/ui/card/index.ts"
         >
           <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/app1-thankyou.webm" type="video/webm" />
         </video>
-      <p>Thank you for testing Union! Thanks to your help, we processed <b>&gt55.555.555 transfers!</b> The testnet is temporarily paused for the V2 upgrade. Follow <a class="font-bold text-accent" href="https://x.com/union_build">@union_build</a> for updates.</p>
+      <p>Thank you for testing Union! Thanks to your help, we processed <b>&gt56,600,108 transfers!</b> The testnet is temporarily paused for the V2 upgrade. Follow <a class="font-bold text-accent" href="https://x.com/union_build">@union_build</a> for updates.</p>
     </Card.Content>
   </Card.Root>
 </main>
