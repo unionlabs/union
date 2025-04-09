@@ -20,7 +20,7 @@
 
 Error handling is what distinguishes production-grade apps from toys.
 
-Be extremely mindful and considerate of how you implement errors. 
+Be extremely mindful and considerate of how you implement errors.
 
 Always use Effect's Error system. If you have a function that can fail, it must be an `Effect`.
 Create new [Tagged Errors](https://effect.website/docs/error-management/expected-errors/) and `yield` them whenever an effect errors.
@@ -75,7 +75,7 @@ const myError; // coming from somewhere
 yield* new ReadContractError({ myErrorSpecificDetails: 4, cause: extractErrorDetails(myError) })
 ```
 
-> "But I cannot yield* an error in <context in which you encounter an error>!!!"
+> "But I cannot yield\* an error in <context in which you encounter an error>!!!"
 
 In that case, your function definition (context) is wrong. If your operation can error, it is an `Effect`.
 
@@ -83,12 +83,9 @@ In that case, your function definition (context) is wrong. If your operation can
 
 As an extension of the previous section, do make sure that the full error object with all of its details is always exposed to the user in the UI. It is not acceptable to leave out any of the details here. We cannot expect a user to open the browser console. You can use `<ErrorComponent/>` if you don't know how to display an error. Do not only show `error.message`, show the full error.
 
-
 ### Use `extractErrorDetails`
 
 When wrapping incoming unknown Errors into `Data.TaggedError`s, use [`extractErrorDetails`](https://github.com/unionlabs/union/blob/15a294f6ebbb06bd5ad404212c48c564dcd909b4/ts-sdk/src/utils/extract-error-details.ts#L1) to extract all details from that external error.
-
-
 
 ## Styling
 
