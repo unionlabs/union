@@ -1,6 +1,7 @@
 #![warn(clippy::unwrap_used)]
 
 use alloy::{
+    eips::BlockNumberOrTag,
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
     rpc::types::{TransactionInput, TransactionRequest},
     sol_types::{SolCall, SolValue},
@@ -21,7 +22,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{info, instrument};
+use tracing::{debug, info, instrument};
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{Bytes, H160, H256},
@@ -359,10 +360,18 @@ impl Module {
         channel_id: ChannelId,
         packet_hash: H256,
     ) -> RpcResult<Packet> {
-        self.ibc_handler()
+        let ibc_handler = self.ibc_handler();
+
+        let query = ibc_handler
             .PacketSend_filter()
             .topic1(alloy::primitives::U256::from(channel_id.raw()))
             .topic2(alloy::primitives::U256::from_be_bytes(*(packet_hash.get())))
+            .from_block(BlockNumberOrTag::Earliest)
+            .to_block(BlockNumberOrTag::Latest);
+
+        debug!(?query, "raw query");
+
+        query
             .query()
             .await
             .map_err(|e| {
@@ -394,7 +403,7 @@ impl Module {
                     Err(ErrorObject::owned(
                         -1,
                         format!(
-                        "error querying for packet {packet_hash}, expected 1 event but found {}",
+                            "error querying for packet {packet_hash}, expected 1 event but found {}",
                             packet_logs.len()
                         ),
                         None::<()>,

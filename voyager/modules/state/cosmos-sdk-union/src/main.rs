@@ -346,7 +346,15 @@ impl StateModuleServer<IbcUnion> for Module {
                     .map_err(rpc_error("error querying packet by packet hash", None))?;
 
                 if res.total_count != 1 {
-                    todo!()
+                    return Err(ErrorObject::owned(
+                        -1,
+                        format!(
+                            "error querying for packet {packet_hash}, \
+                            expected 1 event but found {}",
+                            res.total_count,
+                        ),
+                        None::<()>,
+                    ));
                 }
 
                 let res = res.txs.pop().unwrap();
