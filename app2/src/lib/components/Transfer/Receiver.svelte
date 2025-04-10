@@ -220,8 +220,8 @@ function useConnectedWallet() {
 
 function submitManualAddress() {
   if (manualAddress.trim()) {
-    const derivedReceiverAddr = getDerivedReceiverSafe(manualAddress);
-    const derived = Option.getOrNull(derivedReceiverAddr);
+    const derivedReceiverAddr = getDerivedReceiverSafe(manualAddress)
+    const derived = Option.getOrNull(derivedReceiverAddr)
     manualAddress = derived ?? manualAddress
     useAddress(manualAddress.trim(), bookmarkOnAdd)
   }
