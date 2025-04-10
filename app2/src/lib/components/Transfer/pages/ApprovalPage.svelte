@@ -91,18 +91,16 @@ const submit = Effect.gen(function* () {
         const walletClient = yield* getWalletClient(lts.value.sourceChain)
 
         do {
-          ets = yield* Effect.tryPromise({
-            try: () =>
-              nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
-                chain: viemChain.value,
-                account: walletClient.account,
-                address: step.value.token,
-                abi: erc20Abi,
-                functionName: "approve",
-                args: [lts.value.channel.source_port_id, step.value.requiredAmount]
-              }),
-            catch: error => (error instanceof Error ? error : new Error("Unknown error"))
-          })
+          ets = yield* Effect.promise(() =>
+            nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
+              chain: viemChain.value,
+              account: walletClient.account,
+              address: step.value.token,
+              abi: erc20Abi,
+              functionName: "approve",
+              args: [lts.value.channel.source_port_id, step.value.requiredAmount]
+            })
+          )
 
           if (evmIsComplete(ets)) {
             onApprove()
@@ -123,16 +121,14 @@ const submit = Effect.gen(function* () {
         const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
 
         do {
-          cts = yield* Effect.tryPromise({
-            try: () =>
-              nextStateCosmos(cts, lts.value.sourceChain, signingClient, sender, step.value.token, {
-                increase_allowance: {
-                  spender: "bbn1dy20pwy30hfqyxdzrmp33h47h4xdxht6phqecfp2jdnes6su9pysqq2kpw",
-                  amount: step.value.requiredAmount
-                }
-              }),
-            catch: error => (error instanceof Error ? error : new Error("Unknown error"))
-          })
+          cts = yield* Effect.promise(() =>
+            nextStateCosmos(cts, lts.value.sourceChain, signingClient, sender, step.value.token, {
+              increase_allowance: {
+                spender: "bbn1dy20pwy30hfqyxdzrmp33h47h4xdxht6phqecfp2jdnes6su9pysqq2kpw",
+                amount: step.value.requiredAmount
+              }
+            })
+          )
 
           if (cosmosIsComplete(cts)) {
             onApprove()
@@ -160,27 +156,27 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">
         Approve
-        <TokenComponent chain={sourceChain.value} denom={massagedDenom} />
+        <TokenComponent chain={sourceChain.value} denom={massagedDenom}/>
       </h3>
       <section>
         <Label>Current</Label>
         <TokenComponent
-          chain={sourceChain.value}
-          denom={massagedDenom}
-          amount={step.value.currentAllowance}
+                chain={sourceChain.value}
+                denom={massagedDenom}
+                amount={step.value.currentAllowance}
         />
       </section>
       <section>
         <Label>Required</Label>
         <TokenComponent
-          chain={sourceChain.value}
-          denom={massagedDenom}
-          amount={step.value.requiredAmount}
+                chain={sourceChain.value}
+                denom={massagedDenom}
+                amount={step.value.requiredAmount}
         />
       </section>
       <p class="text-sm text-zinc-400">
         You need to approve Union to send
-        <TokenComponent chain={sourceChain.value} denom={massagedDenom} />
+        <TokenComponent chain={sourceChain.value} denom={massagedDenom}/>
         . This is a one-time approval for this token.
       </p>
     </div>
@@ -190,9 +186,9 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
         Back
       </Button>
       <Button
-        variant="primary"
-        onclick={() => Effect.runPromise(submit)}
-        disabled={!isButtonEnabled}
+              variant="primary"
+              onclick={() => Effect.runPromise(submit)}
+              disabled={!isButtonEnabled}
       >
         {getSubmitButtonText}
       </Button>
@@ -203,3 +199,5 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
     </div>
   {/if}
 </div>
+
+

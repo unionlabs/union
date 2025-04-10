@@ -3,8 +3,12 @@ import type { Chain } from "@unionlabs/sdk/schema"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
 import { isHex, toHex } from "viem"
+import { BalanceLookupError } from "$lib/components/Transfer/state/errors.ts"
 
-export const checkBalanceForIntents = (source: Chain, intents: TransferIntents) => {
+export const checkBalanceForIntents = (
+  source: Chain,
+  intents: TransferIntents
+): Effect.Effect<boolean, BalanceLookupError> => {
   const grouped = intents.reduce(
     (acc, intent) => {
       const key = `${intent.sender}_${intent.baseToken}`
@@ -35,24 +39,24 @@ export const checkBalanceForIntents = (source: Chain, intents: TransferIntents) 
       ),
       balance => {
         if (!Option.isSome(balance)) {
-          console.log("[CTS] No balance found for grouping:", group)
-          return Effect.succeed(false)
+          return Effect.fail(
+            new BalanceLookupError({
+              reason: "No balance found",
+              token: group.baseToken,
+              sender: group.sender,
+              chainId: source.universal_chain_id
+            })
+          )
         }
         return Effect.try({
-          try: () => {
-            const balanceBigInt = BigInt(balance.value)
-            const enough = group.required <= balanceBigInt
-            console.log("[CTS] Balance check for grouping:", {
-              group,
-              balance: balanceBigInt.toString(),
-              enough
+          try: () => group.required <= BigInt(balance.value),
+          catch: () =>
+            new BalanceLookupError({
+              reason: "BigInt conversion failed",
+              token: group.baseToken,
+              sender: group.sender,
+              chainId: source.universal_chain_id
             })
-            return enough
-          },
-          catch: error => {
-            console.error("[CTS] Error converting balance to BigInt for grouping:", group, error)
-            return false
-          }
         })
       }
     )

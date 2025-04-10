@@ -2,7 +2,6 @@
 import Button from "$lib/components/ui/Button.svelte"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
 import { Effect, Match, Option, Struct, Array as Arr } from "effect"
-import { SubmitInstruction } from "../transfer-step.ts"
 import {
   hasFailedExit as evmHasFailedExit,
   isComplete as evmIsComplete,
@@ -29,7 +28,6 @@ import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction.ts"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { isValidBech32ContractAddress } from "$lib/utils"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { is } from "../transfer-step.ts"
 import Label from "$lib/components/ui/Label.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
@@ -37,12 +35,12 @@ import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/time
 
 type Props = {
   stepIndex: number
-  onBack: () => void
   onSubmit: () => void
+  onCancel?: () => void
   actionButtonText: string
 }
 
-const { stepIndex, onBack, onSubmit, actionButtonText }: Props = $props()
+const { stepIndex, onSubmit, onCancel, actionButtonText }: Props = $props()
 
 const lts = lockedTransferStore.get()
 
@@ -117,33 +115,30 @@ export const submit = Effect.gen(function* () {
 
         do {
           const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
-          ets = yield* Effect.tryPromise({
-            try: () =>
-              nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
-                chain: viemChain.value,
-                account: connectorClient.account,
-                address: lts.value.channel.source_port_id,
-                abi: ucs03ZkgmAbi,
-                functionName: "send",
-                args: [
-                  lts.value.channel.source_channel_id,
-                  0n,
-                  timeoutTimestamp,
-                  generateSalt("evm"),
-                  {
-                    opcode: step.value.instruction.opcode,
-                    version: step.value.instruction.version,
-                    operand: encodeAbi(step.value.instruction)
-                  }
-                ]
-              }),
-            catch: error => (error instanceof Error ? error : new Error("Unknown error"))
-          })
+          ets = yield* Effect.promise(() =>
+            nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
+              chain: viemChain.value,
+              account: connectorClient.account,
+              address: lts.value.channel.source_port_id,
+              abi: ucs03ZkgmAbi,
+              functionName: "send",
+              args: [
+                lts.value.channel.source_channel_id,
+                0n,
+                timeoutTimestamp,
+                generateSalt("evm"),
+                {
+                  opcode: step.value.instruction.opcode,
+                  version: step.value.instruction.version,
+                  operand: encodeAbi(step.value.instruction)
+                }
+              ]
+            })
+          )
 
           const result = evmIsComplete(ets)
           if (result) {
             transferHashStore.startPolling(result)
-            transfer.raw.reset()
             onSubmit()
             break
           }
@@ -165,7 +160,7 @@ export const submit = Effect.gen(function* () {
         do {
           const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
 
-          cts = yield* Effect.tryPromise(() =>
+          cts = yield* Effect.promise(() =>
             nextStateCosmos(
               cts,
               lts.value.sourceChain,
@@ -199,7 +194,6 @@ export const submit = Effect.gen(function* () {
           const result = cosmosIsComplete(cts)
           if (result) {
             transferHashStore.startPolling(`0x${result}`)
-            transfer.raw.reset()
             onSubmit()
             break
           }
@@ -222,24 +216,26 @@ export const submit = Effect.gen(function* () {
   {#if Option.isSome(step) && Option.isSome(sourceChain) && Option.isSome(destinationChain)}
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">Submit Transfer</h3>
-        <section>
-          <Label>From</Label>
-          <ChainComponent chain={sourceChain.value}/>
-        </section>
+      <section>
+        <Label>From</Label>
+        <ChainComponent chain={sourceChain.value}/>
+      </section>
 
-        <section>
-          <Label>To</Label>
-          <ChainComponent chain={destinationChain.value}/>
-        </section>
+      <section>
+        <Label>To</Label>
+        <ChainComponent chain={destinationChain.value}/>
+      </section>
       <p class="text-sm text-zinc-400">
-        This will initiate the transfer on <ChainComponent chain={sourceChain.value}/>. You'll need to
+        This will initiate the transfer on
+        <ChainComponent chain={sourceChain.value}/>
+        . You'll need to
         confirm the transfer in your wallet.
       </p>
     </div>
 
     <div class="flex justify-between mt-4">
-      <Button variant="secondary" onclick={onBack} disabled={!isButtonEnabled}>
-        Back
+      <Button variant="secondary" onclick={onCancel} disabled={!isButtonEnabled}>
+        Cancel
       </Button>
       <Button
               variant="primary"
