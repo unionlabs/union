@@ -1,6 +1,7 @@
 import { toHex, type Address, type Hex } from "viem"
 import { Effect, pipe, Schema as S } from "effect"
 import * as Either from "effect/Either"
+import { Effect, Schema as S, Array as Arr, Struct, Option, pipe } from "effect"
 import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
 import { readErc20Meta } from "../evm/erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js"
@@ -13,7 +14,7 @@ import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-toke
 import { FungibleAssetOrder } from "./instruction.js"
 import type { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
 import { ensureHex } from "../utils/index.js"
-import type { TokenRawDenom } from "../schema/token.js"
+import { TokenRawDenom } from "../schema/token.js"
 import { graphqlQuoteTokenUnwrapQuery } from "../graphql/unwrapped-quote-token.js"
 import { UniversalChainId } from "../schema/chain.js"
 import { ChannelId } from "../schema/channel.js"
@@ -98,11 +99,27 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
       sourceChannelId: ChannelId.make(1)
     })
 
+    const graphqlDenom = pipe(
+      graphqlQuoteToken,
+      Struct.get("v2_tokens"),
+      Arr.head,
+      Option.map(Struct.get("wrapping")),
+      Option.flatMap(Arr.head),
+      Option.map(Struct.get("unwrapped_denom"))
+    )
+
     yield* Effect.log("graphql quote", graphqlQuoteToken)
 
-    yield* Effect.log("predicting quote token")
-    const quoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
-    yield* Effect.log("quote token", quoteToken)
+    let finalQuoteToken: Hex
+
+    if (Option.isSome(graphqlDenom)) {
+      yield* Effect.log("using the graphql quote token unwrapped ", graphqlDenom.value)
+      finalQuoteToken = graphqlDenom.value
+    } else {
+      yield* Effect.log("predicting quote token")
+      finalQuoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
+      yield* Effect.log("quote token", finalQuoteToken)
+    }
 
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
@@ -114,8 +131,8 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
         tokenMeta.symbol,
         tokenMeta.name,
         tokenMeta.decimals,
-        0n, // channel if unwrapping
-        quoteToken,
+        1n, // TODO: don't hardcode channel if unwrapping
+        finalQuoteToken,
         intent.quoteAmount
       ]
     })

@@ -1,4 +1,4 @@
-import type { TokenRawDenom } from "../schema/token.js"
+import { TokenRawDenom } from "../schema/token.js"
 import type { UniversalChainId } from "../schema/chain.js"
 import { fetchDecodeGraphql } from "../utils/graphql-query.js"
 import { Schema } from "effect"
@@ -14,7 +14,7 @@ export const graphqlQuoteTokenUnwrapQuery = (args: {
     Schema.Struct({
       v2_tokens: Schema.Array(
         Schema.Struct({
-          wrapping: Schema.Array(Schema.Struct({ unwrapped_denom: Schema.String }))
+          wrapping: Schema.Array(Schema.Struct({ unwrapped_denom: TokenRawDenom }))
         })
       )
     }),
