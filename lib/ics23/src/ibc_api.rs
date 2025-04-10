@@ -1,6 +1,7 @@
 use unionlabs::{
     cosmos::ics23::{commitment_proof::CommitmentProof, proof_spec::ProofSpec},
     ibc::core::commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
+    primitives::Bytes,
 };
 
 pub use crate::proof_specs::{IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC};
@@ -18,7 +19,7 @@ pub enum VerifyMembershipError {
     #[error("{0}")]
     InnerVerification(verify::VerifyMembershipError),
     #[error("calculated root ({calculated}) does not match the given ({given}) value", calculated = serde_utils::to_hex(calculated), given = serde_utils::to_hex(found))]
-    InvalidRoot { found: Vec<u8>, calculated: Vec<u8> },
+    InvalidRoot { found: Bytes, calculated: Bytes },
     #[error("expected the size of proofs to be ({expected}), found ({found})")]
     InvalidProofsLength { expected: usize, found: usize },
     #[error("expected the size of key path to be ({expected}), found ({found})")]
@@ -152,8 +153,8 @@ fn verify_chained_membership_proof(
                 Ok(())
             } else {
                 Err(VerifyMembershipError::InvalidRoot {
-                    found: value,
-                    calculated: root.to_vec(),
+                    found: value.into(),
+                    calculated: root.to_vec().into(),
                 })
             }
         })
@@ -319,11 +320,24 @@ mod tests {
     #[test]
     fn account_non_existence() {
         let root = H256::new(hex!(
-            "C9A25B954FEF48EC601359591A28C9A2FD32A411421AEF2DC16DC8A68B3CFA98"
+            "79f694c8c821fdb4a6368635125c4f8754791d0cb18a3234d16846b8bd1b8af1"
         ));
-        let proof = hex!("0a96061293060a15014152090b0c95c948edc407995560feed4a9df88812fa020a15014152090b0c95c948edc407995560feed4a9df81e129e010a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e31673966716a7a63766a687935336d77797137763432633837613439666d37713772646568386312460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a2103820c4b94dccd7d74706216c426fe884d9a4404410df69d6421899595c5a9c122180420031a0b0801180120012a0300027822290801122502047820170c890f01b9fa9ab803511bbc7be7c25359309f04d021a72e0a9b93b8ff72c020222c0801120504089601201a21205f282a80f1d186fa1f7b237f81e8bc9a4bb40d5a03cbbdffdd421b1ad4cb16f4222c0801120506109601201a2120e9c65294b7106c7323dcabe4532232c319afc78cd373e338f12df43f8ecfa909222c080112050a309601201a2120a95af7890dba33514ea28a3db7b409f4887b058d6d1e43960c4cd45bb1d9bef81afc020a150143e46d91544517a037a8029b6c7f86f62bab389b129e010a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e3167306a786d79323567357436716461677132646b636c7578376334366b77796d38646563667712460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a21034611ea6606f6241fdeb0db1854a785eaa2fef5770694237daaf46057cadb3903180320031a0c0801180120012a0400029601222c0801120502049601201a2120532543090d1564b206e953fd6f97000d9b78bd5a8a424f551d483a58b3f54c57222a0801122604089601207e55a1ee8006e9c29c895a8de8ea8cdc6aaddc10e05ea3d3ee8fac786a73c02d20222c0801120506109601201a2120e9c65294b7106c7323dcabe4532232c319afc78cd373e338f12df43f8ecfa909222c080112050a309601201a2120a95af7890dba33514ea28a3db7b409f4887b058d6d1e43960c4cd45bb1d9bef80a80020afd010a0361636312205281c416bf4f80b9d99428a09f91ff311968a3b2adb199342d63c9db20a417e91a090801180120012a010022250801122101ba30cf8122e71a87fea08d0da9499e0373495a64e1648de8f08ca1a73e1fc1a8222708011201011a203489cd05a389a1d165f19003cea0994df9e55a5cb53b3d659417040be528b86d222708011201011a20e5c60ddccacb1c6b0be7957e8d7a86dc0f8bcec91c91d666d39eb1ebedd1bdf1222708011201011a2047a4c9a64496594e8b255443aa979293b2c7120150cf31e0eeeb8a2a987fd7e8222708011201011a2053bca15bed4becbdfd1b4cd0e63bd3845646022a99a2289a6678d8608f092207");
 
-        let proof = MerkleProof::decode_as::<Proto>(&proof).unwrap();
+        let proofs: cometbft_types::crypto::proof_ops::ProofOps = serde_json::from_str(r#"{"ops":[{"type":"ics23:iavl","key":"q80=","data":"ErkBCgKrzRKyAQoWbmV4dENvbm5lY3Rpb25TZXF1ZW5jZRIIAAAAAAAAAAAaCwgBGAEgASoDAAICIikIARIlAgQCIBbd8oOqTAzz2N37/K2H8sEXU4MpoF2tObMSWeovzgwrICIpCAESJQQIAiC/e92Vz+ipIjtfwS/AQClqyJTFZnFm9xT57lLBlJ2FOCAiKwgBEicGEKCcASB8yrzWR1APjhwhj/IN9xudq2d3bMqTdFQ3ibwBhyuVByA="},{"type":"ics23:simple","key":"aWJj","data":"CvkBCgNpYmMSIC+Djnty/u8Aq4yU7e+160oGfn5YDINR1/yvhhhIaHlfGgkIARgBIAEqAQAiJwgBEgEBGiDuCyeNLY+9uuuNJlej7iVn6FAZd3L1N6bBfGo4fe0rZCIlCAESIQFZckG8cRgqZGow7krfhYaPj1WV+NHi06jP3AzsgCQMBCIlCAESIQG6kYZ6dYB+K9horB1f2/t2QbzklLUPZX85JPwGiciHpyIlCAESIQF+bA9XuNY3FzraIK1ZiLenkCsDKJfYE1jU4jZmbVdDNSInCAESAQEaIGSuJu8jPsinlMyTZkCjypibd+BjdVz7PZEVK9p85uCF"}]}"#).unwrap();
+
+        let proofs = proofs
+            .ops
+            .into_iter()
+            .map(|op| {
+                <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(&*op.data)
+                    .unwrap()
+            })
+            .collect::<Vec<_>>();
+
+        let proof =
+            MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof { proofs })
+                .unwrap();
+
         let root = MerkleRoot { hash: root };
 
         assert_eq!(
@@ -331,7 +345,7 @@ mod tests {
                 &proof,
                 &SDK_SPECS,
                 &root,
-                &[b"acc".to_vec(), b"muh".to_vec()]
+                &[b"ibc".to_vec(), hex!("abcd").to_vec()]
             ),
             Ok(())
         );

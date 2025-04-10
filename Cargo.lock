@@ -7140,6 +7140,7 @@ name = "ics23"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "cometbft-types",
  "hex",
  "hex-literal",
  "prost 0.12.6",
