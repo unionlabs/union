@@ -18,6 +18,7 @@ import {
 import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
 import type { Batch } from "@unionlabs/sdk/ucs03/instruction.ts"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { constVoid } from "effect/Function"
 
 let currentPage = $state(0)
 let isLoading = $state(false)
@@ -86,7 +87,7 @@ function handleActionButtonClick() {
 
 function interruptFiber() {
   Option.match(currentFiber, {
-    onNone: () => {},
+    onNone: constVoid,
     onSome: fiber => Fiber.interruptFork(fiber)
   })
   currentFiber = Option.none()

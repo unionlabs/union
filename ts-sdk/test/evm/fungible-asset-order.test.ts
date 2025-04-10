@@ -172,7 +172,6 @@ const CosmosToCosmosError = Layer.mergeAll(
   CosmosToCosmos,
   Layer.succeed(CosmWasmClientSource, {
     client: {
-      // biome-ignore lint/suspicious/useAwait: reason
       queryContractSmart: () => Promise.reject({})
     }
   } as unknown as Context.Tag.Service<CosmWasmClientSource>)
