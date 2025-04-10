@@ -44,12 +44,12 @@ export function checkAllowances(
     const allowancesOpt = yield* Match.value(chain.rpc_type).pipe(
       Match.when("evm", () =>
         handleEvmAllowances(tokenAddresses, sender, spenderAddress, chain).pipe(
-          Effect.mapError(err => new AllowanceCheckError({ details: err }))
+          Effect.mapError(err => new AllowanceCheckError({ cause: err }))
         )
       ),
       Match.when("cosmos", () =>
         handleCosmosAllowances(tokenAddresses, sender, chain).pipe(
-          Effect.mapError(err => new AllowanceCheckError({ details: err }))
+          Effect.mapError(err => new AllowanceCheckError({ cause: err }))
         )
       ),
       Match.orElse(() => Effect.succeed(Option.none()))
@@ -104,14 +104,14 @@ function handleCosmosAllowances(
   tokenAddresses: Array<string>,
   sender: AddressCanonicalBytes,
   sourceChain: Chain
-): Effect.Effect<Option.Option<Array<{ token: string; allowance: bigint }>>, CosmosQueryError> {
+) {
   return Effect.gen(function* () {
     const rpcUrlOpt = sourceChain.getRpcUrl("rpc")
     if (Option.isNone(rpcUrlOpt) || !sourceChain.toCosmosDisplay) {
       return Option.none()
     }
 
-    const rpcUrl = rpcUrlOpt.value + 'c'
+    const rpcUrl = rpcUrlOpt.values
     const cosmwasmClient = yield* createCosmWasmClient(rpcUrl)
 
     const isNativeToken = (token: string): boolean => /^u[a-zA-Z]+$/.test(token)

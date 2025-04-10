@@ -2,7 +2,10 @@ import { Data, Effect, Option } from "effect"
 import type { Transfer, TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
 import { checkBalanceForIntents } from "$lib/components/Transfer/state/filling/check-balance.ts"
 import { createOrdersBatch } from "$lib/components/Transfer/state/filling/create-orders.ts"
-import { checkAllowances, ApprovalStep } from "$lib/components/Transfer/state/filling/check-allowance.ts"
+import {
+  checkAllowances,
+  type ApprovalStep
+} from "$lib/components/Transfer/state/filling/check-allowance.ts"
 import {
   InsufficientFundsError,
   MissingTransferFieldsError,
@@ -60,10 +63,7 @@ const complete = (
   error: Option.none<TransferFlowError>()
 })
 
-export const createTransferState = (
-  cts: CreateTransferState,
-  transfer: Transfer
-) => {
+export const createTransferState = (cts: CreateTransferState, transfer: Transfer) => {
   if (
     Option.isNone(transfer.sourceChain) ||
     Option.isNone(transfer.destinationChain) ||
@@ -75,10 +75,7 @@ export const createTransferState = (
     Option.isNone(transfer.intents)
   ) {
     return Effect.succeed(
-      fail(
-        "Missing arguments",
-        new MissingTransferFieldsError({ fields: [""] })
-      )
+      fail("Missing arguments", new MissingTransferFieldsError({ fields: [""] }))
     )
   }
 
@@ -98,15 +95,9 @@ export const createTransferState = (
   }
 
   return CreateTransferState.$match(cts, {
-    Filling: () =>
-      Effect.succeed(
-        ok(CreateIntents(), "Creating intents...")
-      ),
+    Filling: () => Effect.succeed(ok(CreateIntents(), "Creating intents...")),
 
-    CreateIntents: () =>
-      Effect.succeed(
-        ok(CheckBalance({ intents }), "Checking balance...")
-      ),
+    CreateIntents: () => Effect.succeed(ok(CheckBalance({ intents }), "Checking balance...")),
 
     CheckBalance: ({ intents }) =>
       checkBalanceForIntents(source, intents).pipe(
@@ -114,17 +105,15 @@ export const createTransferState = (
           hasEnough
             ? Effect.succeed(ok(CheckAllowance(), "Checking allowance..."))
             : Effect.succeed(
-              fail(
-                "Insufficient funds",
-                new InsufficientFundsError({
-                  cause: "Insufficient funds"
-                })
+                fail(
+                  "Insufficient funds",
+                  new InsufficientFundsError({
+                    cause: "Insufficient funds"
+                  })
+                )
               )
-            )
         ),
-        Effect.catchAll(error =>
-          Effect.succeed(fail("Balance check failed", error))
-        )
+        Effect.catchAll(error => Effect.succeed(fail("Balance check failed", error)))
       ),
 
     CheckAllowance: () =>
@@ -133,9 +122,7 @@ export const createTransferState = (
           const allowances = Option.getOrElse(allowancesOpt, () => [])
           return ok(CreateOrders({ allowances }), "Creating orders...")
         }),
-        Effect.catchAll(error =>
-          Effect.succeed(fail("Allowance check failed", error))
-        )
+        Effect.catchAll(error => Effect.succeed(fail("Allowance check failed", error)))
       ),
 
     CreateOrders: ({ allowances }) =>
@@ -155,14 +142,10 @@ export const createTransferState = (
             ok(CreateSteps({ allowances, orders: [...batch.operand] }), "Building final steps...")
           )
         }),
-        Effect.catchAll(error =>
-          Effect.succeed(fail("Order creation failed", error))
-        )
+        Effect.catchAll(error => Effect.succeed(fail("Order creation failed", error)))
       ),
 
     CreateSteps: ({ allowances, orders }) =>
-      Effect.succeed(
-        complete("Transfer complete", orders, allowances)
-      )
+      Effect.succeed(complete("Transfer complete", orders, allowances))
   })
 }
