@@ -5,6 +5,8 @@ import { truncate } from "$lib/utils/format"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import { Effect } from "effect"
+import Label from "../ui/Label.svelte"
+import A from "../ui/A.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   address: AddressCanonicalBytes
@@ -69,39 +71,30 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
       </section>
 
       <section>
-        <h3 class="text-white">Chain</h3>
+        <Label>Chain</Label>
         <div>{chain.display_name}</div>
-        <div class="text-xs">{chain.universal_chain_id}</div>
+      </section>
+      <section>
+        <Label>Display</Label>
+        <LongMonoWord>
+          {fullDisplayAddress}
+        </LongMonoWord>
       </section>
 
       <section>
-        <h3 class="text-white">Formats</h3>
-        <div>
-          <span class="text-white">Display:</span>
-          <LongMonoWord class="inline">
-            {fullDisplayAddress}
-          </LongMonoWord>
-        </div>
-        <div>
-          <span class="text-white">Canonical:</span>
-          <LongMonoWord class="inline">
-            {address}
-          </LongMonoWord>
-        </div>
+        <Label>Canonical</Label>
+        <LongMonoWord>
+          {address}
+        </LongMonoWord>
       </section>
 
       {#if explorerUrl}
         <section>
-          <h3 class="text-white">Explorer</h3>
+        <Label>Explorer</Label>
           <div>
-            <a
-              href={explorerUrl}
-              class="text-sky-400 hover:text-sky-300 underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <A class="underline"  href={explorerUrl}>
               View on {explorerName || "Explorer"}
-            </a>
+            </A>
           </div>
         </section>
       {/if}
