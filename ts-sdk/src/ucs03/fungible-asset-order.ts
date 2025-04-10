@@ -158,6 +158,8 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
   baseToken: string
   baseAmount: bigint
   quoteAmount: bigint
+  sourceChainId: UniversalChainId
+  sourceChannelId: ChannelId
 }) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
@@ -176,7 +178,25 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
       )
     )
 
-    const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
+    const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
+      baseToken: ensureHex(intent.baseToken),
+      sourceChainId: intent.sourceChainId,
+      sourceChannelId: intent.sourceChannelId
+    })
+
+    yield* Effect.log("graphql quote", graphqlDenom)
+    let finalQuoteToken: Hex
+    const unwrapping = Option.isSome(graphqlDenom)
+    if (unwrapping) {
+      yield* Effect.log("using the graphql quote token unwrapped", graphqlDenom.value)
+      finalQuoteToken = graphqlDenom.value
+    } else {
+      yield* Effect.log("predicting quote token on chain")
+      finalQuoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
+      yield* Effect.log("received quote token onchain", finalQuoteToken)
+    }
+
+    // const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
     console.log("here", intent)
     return yield* S.decode(FungibleAssetOrder)({
@@ -189,8 +209,8 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
         tokenMeta.symbol,
         tokenMeta.name,
         tokenMeta.decimals,
-        0n, // channel if unwrapping
-        quoteToken,
+        unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
+        finalQuoteToken,
         intent.quoteAmount
       ]
     })
@@ -205,14 +225,43 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
   baseToken: string
   baseAmount: bigint
   quoteAmount: bigint
+  sourceChainId: UniversalChainId
+  sourceChannelId: ChannelId
 }) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
-    const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
-      Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+
+    const tokenMeta = yield* pipe(
+      readCw20TokenInfo(intent.baseToken),
+      Effect.provideService(CosmWasmClientContext, { client: sourceClient }),
+      Effect.either,
+      Effect.map(
+        Either.getOrElse(() => ({
+          symbol: intent.baseToken,
+          name: intent.baseToken,
+          decimals: 0
+        }))
+      )
     )
-    const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
+
+    const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
+      baseToken: ensureHex(intent.baseToken),
+      sourceChainId: intent.sourceChainId,
+      sourceChannelId: intent.sourceChannelId
+    })
+
+    yield* Effect.log("graphql quote", graphqlDenom)
+    let finalQuoteToken: Hex
+    const unwrapping = Option.isSome(graphqlDenom)
+    if (unwrapping) {
+      yield* Effect.log("using the graphql quote token unwrapped", graphqlDenom.value)
+      finalQuoteToken = graphqlDenom.value
+    } else {
+      yield* Effect.log("predicting quote token on chain")
+      finalQuoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
+      yield* Effect.log("received quote token onchain", finalQuoteToken)
+    }
 
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
@@ -224,8 +273,8 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
         tokenMeta.symbol,
         tokenMeta.name,
         tokenMeta.decimals,
-        0n, // channel if unwrapping
-        quoteToken,
+        unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
+        finalQuoteToken,
         intent.quoteAmount
       ]
     })

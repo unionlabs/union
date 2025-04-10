@@ -4,9 +4,10 @@ import { fetchDecodeGraphql } from "../utils/graphql-query.js"
 import { Effect, Schema, Struct, Array as Arr, flow, Option } from "effect"
 import { graphql } from "gql.tada"
 import type { ChannelId } from "../schema/channel.js"
+import type { Hex } from "../schema/hex.js"
 
 export const graphqlQuoteTokenUnwrapQuery = (args: {
-  baseToken: TokenRawDenom
+  baseToken: Hex // token raw denom
   sourceChainId: UniversalChainId
   sourceChannelId: ChannelId
 }) =>
