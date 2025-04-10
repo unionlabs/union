@@ -14,7 +14,7 @@ pub enum FilterResult<'a> {
 
 /// Interest has been expressed in this Op, with the contained tag(s). It will be inserted into the optimization queue under these tag(s).
 pub struct Interest<'a> {
-    /// Tags that expresed interest in a copy of an Op.
+    /// Tags that expressed interest in a copy of an Op.
     pub tags: Vec<&'a str>,
     /// Whether or not to remove the Op from the queue.
     pub remove: bool,
