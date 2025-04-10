@@ -1,11 +1,12 @@
 <script lang="ts">
-import { Option, Struct } from "effect"
+import { Cause, Option, Struct } from "effect"
 import Button from "$lib/components/ui/Button.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { goto } from "$app/navigation"
 import { fly } from "svelte/transition"
 import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
 import { lockedTransferStore } from "../locked-transfer.svelte"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 
 type Props = {
   newTransfer: () => void
@@ -33,11 +34,11 @@ const handleRedirect = () => {
 
 <div class="min-w-full p-6 flex flex-col justify-between h-full">
   <div class="relative overflow-hidden flex-1">
-    {#if Option.isSome(transferHashStore.data)}
+    {#if Option.isSome(transferHashStore.data) && Option.isNone(transferHashStore.error)}
       <div
-              class="absolute inset-0 flex flex-col"
-              in:fly={{ x: 20, duration: 300, opacity: 0 }}
-              out:fly={{ x: -20, duration: 300, opacity: 0 }}
+        class="absolute inset-0 flex flex-col"
+        in:fly={{ x: 20, duration: 300, opacity: 0 }}
+        out:fly={{ x: -20, duration: 300, opacity: 0 }}
       >
         <div class="flex-1 flex items-center justify-center">
           <div class="text-center">
@@ -46,8 +47,12 @@ const handleRedirect = () => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 class="text-xl font-bold mb-1 text-zinc-400">Transfer Successful!</h3>
-            <p class="text-sm text-zinc-500">Your packet has been indexed and confirmed</p>
+            <h3 class="text-xl font-bold mb-1 text-zinc-400">
+              Transfer Successful!
+            </h3>
+            <p class="text-sm text-zinc-500">
+              Your packet has been indexed and confirmed
+            </p>
           </div>
         </div>
 
@@ -60,17 +65,23 @@ const handleRedirect = () => {
           </Button>
         </div>
       </div>
+    {:else if Option.isSome(transferHashStore.error) && Option.isNone(transferHashStore.data)}
+      {@const error = transferHashStore.error.value}
+      <ErrorComponent {error} />
     {:else}
       <div
-              class="absolute inset-0 flex flex-col"
-              in:fly={{ x: 20, duration: 300, opacity: 0 }}
-              out:fly={{ x: -20, duration: 300, opacity: 0 }}
+        class="absolute inset-0 flex flex-col"
+        in:fly={{ x: 20, duration: 300, opacity: 0 }}
+        out:fly={{ x: -20, duration: 300, opacity: 0 }}
       >
         <div class="flex flex-col items-center justify-center h-full py-8">
           <div class="animate-spin rounded-full h-12 w-12 border-y-2 border-babylon-orange mb-4"></div>
           <p class="text-lg font-medium text-zinc-400 mb-2">Waiting for indexer...</p>
           {#if Option.isSome(sourceChain)}
-            <TransactionHashComponent hash={transferHashStore.hash} chain={sourceChain.value}/>
+            <TransactionHashComponent
+              hash={transferHashStore.hash}
+              chain={sourceChain.value}
+            />
           {/if}
         </div>
       </div>

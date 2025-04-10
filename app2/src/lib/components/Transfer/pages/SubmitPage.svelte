@@ -218,29 +218,32 @@ export const submit = Effect.gen(function* () {
       <h3 class="text-lg font-semibold">Submit Transfer</h3>
       <section>
         <Label>From</Label>
-        <ChainComponent chain={sourceChain.value}/>
+        <ChainComponent chain={sourceChain.value} />
       </section>
 
       <section>
         <Label>To</Label>
-        <ChainComponent chain={destinationChain.value}/>
+        <ChainComponent chain={destinationChain.value} />
       </section>
       <p class="text-sm text-zinc-400">
         This will initiate the transfer on
-        <ChainComponent chain={sourceChain.value}/>
-        . You'll need to
-        confirm the transfer in your wallet.
+        <ChainComponent chain={sourceChain.value} />
+        . You'll need to confirm the transfer in your wallet.
       </p>
     </div>
 
     <div class="flex justify-between mt-4">
-      <Button variant="secondary" onclick={onCancel} disabled={!isButtonEnabled}>
+      <Button
+        variant="secondary"
+        onclick={onCancel}
+        disabled={!isButtonEnabled}
+      >
         Cancel
       </Button>
       <Button
-              variant="primary"
-              onclick={() => Effect.runPromise(submit)}
-              disabled={!isButtonEnabled}
+        variant="primary"
+        onclick={() => Effect.runPromise(submit)}
+        disabled={!isButtonEnabled}
       >
         {getSubmitButtonText}
       </Button>
