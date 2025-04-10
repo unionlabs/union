@@ -21,7 +21,7 @@ library IBCClientLib {
 }
 
 /**
- * @dev IBCClient is a contract that implements [ICS-2](https://github.com/cosmos/ibc/tree/main/spec/core/ics-002-client-semantics).
+ * @dev IBCClient is a router contract that forward calls to clients implementing [ICS-2](https://github.com/cosmos/ibc/tree/main/spec/core/ics-002-client-semantics).
  */
 abstract contract IBCClient is IBCStore, IIBCClient {
     /**
