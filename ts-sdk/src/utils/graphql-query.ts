@@ -1,5 +1,5 @@
-import { Effect, Option, pipe, Schema } from "effect"
-import { FetchHttpClient, HttpClient } from "@effect/platform"
+import { Effect, Schema } from "effect"
+import { HttpClient } from "@effect/platform"
 // import type { DurationInput } from "effect/Duration"
 // import type { HttpClientError } from "@effect/platform/HttpClientError"
 import type { ParseError } from "effect/ParseResult"
@@ -7,7 +7,6 @@ import type { TadaDocumentNode } from "gql.tada"
 import { request } from "graphql-request"
 import { GRAPHQL_URL } from "../constants/graphql.js"
 import type { TimeoutException, UnknownException } from "effect/Cause"
-
 
 // Deprecated, use the one from ts-sdk
 export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>

@@ -1,7 +1,6 @@
 import { toHex, type Address, type Hex } from "viem"
-import { Effect, pipe, Schema as S } from "effect"
 import * as Either from "effect/Either"
-import { Effect, Schema as S, Array as Arr, Struct, Option, pipe } from "effect"
+import { Effect, Schema as S, Option, pipe } from "effect"
 import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
 import { readErc20Meta } from "../evm/erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js"
@@ -14,10 +13,10 @@ import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-toke
 import { FungibleAssetOrder } from "./instruction.js"
 import type { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
 import { ensureHex } from "../utils/index.js"
-import { TokenRawDenom } from "../schema/token.js"
+import type { TokenRawDenom } from "../schema/token.js"
 import { graphqlQuoteTokenUnwrapQuery } from "../graphql/unwrapped-quote-token.js"
-import { UniversalChainId } from "../schema/chain.js"
-import { ChannelId } from "../schema/channel.js"
+import type { UniversalChainId } from "../schema/chain.js"
+import type { ChannelId } from "../schema/channel.js"
 
 export type FungibleAssetOrderIntent = {
   sender: Address
