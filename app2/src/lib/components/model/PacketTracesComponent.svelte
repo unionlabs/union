@@ -13,9 +13,19 @@ import { PACKET_TRACE_DISPLAY_NAMES } from "$lib/constants/packet-trace-names"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   packetTraces: ReadonlyArray<PacketTrace>
+  showAcks: boolean
 }
 
-const { packetTraces }: Props = $props()
+const { packetTraces, showAcks = true }: Props = $props()
+
+const packetTracesWithOrWithoutAck = showAcks
+  ? packetTraces
+  : packetTraces.filter((trace, index) => {
+      // Find the index of the first PACKET_RECV
+      const recvIndex = packetTraces.findIndex(t => t.type === "PACKET_RECV")
+      // Keep all traces before and including PACKET_RECV
+      return recvIndex === -1 || index <= recvIndex
+    })
 
 const toTraceName = (type: string) =>
   type in PACKET_TRACE_DISPLAY_NAMES ? PACKET_TRACE_DISPLAY_NAMES[type] : type
@@ -81,9 +91,9 @@ function getArrowSpan(
 </script>
 
 
-{#if packetTraces.length > 0 && Option.isSome(chains.data)}
+{#if packetTracesWithOrWithoutAck.length > 0 && Option.isSome(chains.data)}
 {@const chainsList = chains.data.value}
-{@const positions = getChainPositions(packetTraces)}
+{@const positions = getChainPositions(packetTracesWithOrWithoutAck)}
 {@const leftChain = Option.fromNullable(positions.left?.universal_chain_id)
   .pipe(Option.flatMap((id) => getChain(chainsList, id)))}
 {@const centerChain = Option.fromNullable(positions.center?.universal_chain_id)
@@ -119,11 +129,11 @@ function getArrowSpan(
         {/if}
         <!-- Traces and arrows -->
 
-        {#each packetTraces as trace, i}
+        {#each packetTracesWithOrWithoutAck as trace, i}
           {@const chain = getChain(chainsList, trace.chain.universal_chain_id)}
           {@const column = getTraceColumn(trace, positions)}
-          {@const nextTrace = packetTraces[i + 1]}
-          {@const prevTrace = Option.fromNullable(i > 0 ? packetTraces[i - 1] : null)}
+          {@const nextTrace = packetTracesWithOrWithoutAck[i + 1]}
+          {@const prevTrace = Option.fromNullable(i > 0 ? packetTracesWithOrWithoutAck[i - 1] : null)}
           {@const arrowSpan = getArrowSpan(trace, nextTrace, positions)}
           
             <!-- Trace card -->

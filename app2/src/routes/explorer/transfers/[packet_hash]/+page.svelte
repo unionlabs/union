@@ -142,7 +142,7 @@ onMount(() => {
             </section>
         </div>
 
-        <PacketTracesComponent packetTraces={transfer.traces}/>
+        <PacketTracesComponent packetTraces={transfer.traces} showAcks={false}/>
       </div>
     {/if}
     </div>
