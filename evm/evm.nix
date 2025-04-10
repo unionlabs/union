@@ -509,7 +509,7 @@ _: {
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
               PRIVATE_KEY=${private-key} \
-              DEPLOYER="{1:?deployer must be set to deploy with this script (first arg to this script)}" \
+              DEPLOYER="''${1:?deployer must be set to deploy with this script (first arg to this script)}" \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployIBC \
                 -vvvv \
