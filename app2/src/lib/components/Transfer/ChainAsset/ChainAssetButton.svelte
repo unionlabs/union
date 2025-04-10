@@ -69,7 +69,7 @@ const isChainLoading = $derived.by(() => {
             {@const chainLogo = chainLogoMap.get(selectedChain.value.universal_chain_id)}
             {#if chainLogo?.color}
               <div class="flex items-center">
-                <div class="size2 flex items-center justify-center overflow-hidden">
+                <div class="size-8 flex items-center justify-center overflow-hidden">
                   <img src={chainLogo.color} alt="">
                 </div>
               </div>
