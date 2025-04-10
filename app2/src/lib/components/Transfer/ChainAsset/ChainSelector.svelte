@@ -36,9 +36,13 @@ const filteredChains = $derived(
   chains.data.pipe(
     Option.map(
       Arr.filter(c =>
-        ["corn.21000001", "bob.60808", "bob.808813", "babylon.bbn-test-5"].includes(
-          c.universal_chain_id
-        )
+        [
+          "corn.21000001",
+          "bob.60808",
+          "bob.808813",
+          "babylon.bbn-test-5",
+          "ethereum.11155111"
+        ].includes(c.universal_chain_id)
       )
     )
   )

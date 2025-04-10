@@ -2,14 +2,23 @@ _: {
   perSystem =
     {
       pkgs,
+      pkgsUnstable,
       lib,
       self',
+      ensureAtRepositoryRoot,
       ...
     }:
     let
       buildPnpmPackage = import ../tools/typescript/buildPnpmPackage.nix {
         inherit pkgs lib;
       };
+      deps = with pkgsUnstable; [
+        python3
+        stdenv.cc
+        pkg-config
+        nodePackages_latest.nodejs
+        pnpm_10
+      ];
       pnpm = pkgs.pnpm_10;
     in
     {
@@ -43,6 +52,19 @@ _: {
             text = ''
               cd ${self'.packages.ts-sdk}/
               ${pnpm} publish --access='public'
+            '';
+          };
+        };
+        ts-sdk-fetch-schema = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "ts-sdk-fetch-schema";
+            runtimeInputs = deps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd ts-sdk/
+              pnpm dlx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://development.graphql.union.build/v1/graphql"
+              pnpm dlx gql.tada generate-output --disable-preprocessing --tsconfig ./tsconfig.json --output ./src/generated/graphql-env.d.ts
             '';
           };
         };
