@@ -1,11 +1,10 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-import { Effect, Match, Option, Array as Arr, Struct } from "effect"
+import { Effect, Match, Option, Array as Arr, Struct, Exit, Cause, Unify } from "effect"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { ApprovalRequired } from "../transfer-step.ts"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
-import { erc20Abi, fromHex, http, isHex, toHex } from "viem"
+import { erc20Abi, http, isHex, toHex } from "viem"
 import {
   hasFailedExit as evmHasFailedExit,
   isComplete as evmIsComplete,
@@ -24,6 +23,7 @@ import { is } from "../transfer-step.ts"
 import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 
 type Props = {
   stepIndex: number
@@ -48,6 +48,7 @@ const sourceChain = $derived(lts.pipe(Option.map(Struct.get("sourceChain"))))
 
 let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
+let error = $state<Option.Option<unknown>>(Option.none())
 
 const isButtonEnabled = $derived(
   (ets._tag === "Filling" && cts._tag === "Filling") ||
@@ -102,6 +103,19 @@ const submit = Effect.gen(function* () {
             })
           )
 
+          if ("exit" in ets) {
+            yield* Exit.matchEffect(Unify.unify(ets.exit), {
+              onFailure: cause =>
+                Effect.sync(() => {
+                  error = Option.some(Cause.squash(cause))
+                }),
+              onSuccess: () =>
+                Effect.sync(() => {
+                  error = Option.none()
+                })
+            })
+          }
+
           if (evmIsComplete(ets)) {
             onApprove()
             break
@@ -130,6 +144,19 @@ const submit = Effect.gen(function* () {
             })
           )
 
+          if ("exit" in cts) {
+            yield* Exit.matchEffect(Unify.unify(cts.exit), {
+              onFailure: cause =>
+                Effect.sync(() => {
+                  error = Option.some(Cause.squash(cause))
+                }),
+              onSuccess: () =>
+                Effect.sync(() => {
+                  error = Option.none()
+                })
+            })
+          }
+
           if (cosmosIsComplete(cts)) {
             onApprove()
             break
@@ -156,27 +183,27 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">
         Approve
-        <TokenComponent chain={sourceChain.value} denom={massagedDenom}/>
+        <TokenComponent chain={sourceChain.value} denom={massagedDenom} />
       </h3>
       <section>
         <Label>Current</Label>
         <TokenComponent
-                chain={sourceChain.value}
-                denom={massagedDenom}
-                amount={step.value.currentAllowance}
+          chain={sourceChain.value}
+          denom={massagedDenom}
+          amount={step.value.currentAllowance}
         />
       </section>
       <section>
         <Label>Required</Label>
         <TokenComponent
-                chain={sourceChain.value}
-                denom={massagedDenom}
-                amount={step.value.requiredAmount}
+          chain={sourceChain.value}
+          denom={massagedDenom}
+          amount={step.value.requiredAmount}
         />
       </section>
       <p class="text-sm text-zinc-400">
         You need to approve Union to send
-        <TokenComponent chain={sourceChain.value} denom={massagedDenom}/>
+        <TokenComponent chain={sourceChain.value} denom={massagedDenom} />
         . This is a one-time approval for this token.
       </p>
     </div>
@@ -186,9 +213,9 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
         Back
       </Button>
       <Button
-              variant="primary"
-              onclick={() => Effect.runPromise(submit)}
-              disabled={!isButtonEnabled}
+        variant="primary"
+        onclick={() => Effect.runPromise(submit)}
+        disabled={!isButtonEnabled}
       >
         {getSubmitButtonText}
       </Button>
@@ -198,6 +225,8 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
       <p class="text-zinc-400">Loading approval details...</p>
     </div>
   {/if}
+  {#if Option.isSome(error)}
+    {@const _error = error.value}
+    <ErrorComponent error={_error} />
+  {/if}
 </div>
-
-
