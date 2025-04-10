@@ -238,6 +238,7 @@ _: {
 
           verifier = "etherscan";
           verification-key = ''"''${ETHERSCAN_KEY:-etherscan api key must be set in the ETHERSCAN_KEY env var}"'';
+          verifier-url = "https://api.etherscan.io/api";
         }
         {
           chain-id = "17000";
@@ -249,6 +250,7 @@ _: {
 
           verifier = "etherscan";
           verification-key = ''"''${ETHERSCAN_KEY:-etherscan api key must be set in the ETHERSCAN_KEY env var}"'';
+          verifier-url = "https://api.etherscan.io/api";
         }
         rec {
           chain-id = "21000001";
