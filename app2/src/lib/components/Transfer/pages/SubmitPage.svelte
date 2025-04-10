@@ -1,7 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { Effect, Match, Option, Struct, Array as Arr } from "effect"
+import { Effect, Match, Option, Struct, Array as Arr, Exit, Cause, Unify } from "effect"
 import {
   hasFailedExit as evmHasFailedExit,
   isComplete as evmIsComplete,
@@ -32,6 +32,7 @@ import { is } from "../transfer-step.ts"
 import Label from "$lib/components/ui/Label.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 
 type Props = {
   stepIndex: number
@@ -57,15 +58,14 @@ const destinationChain = $derived(lts.pipe(Option.map(Struct.get("destinationCha
 
 let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
+let error = $state<Option.Option<unknown>>(Option.none())
 
-// Only disable the button when transaction is in progress AND no failures detected
 const isButtonEnabled = $derived(
   (ets._tag === "Filling" && cts._tag === "Filling") ||
     cosmosHasFailedExit(cts) ||
     evmHasFailedExit(ets)
 )
 
-// Button text based on current state
 const getSubmitButtonText = $derived(
   ets._tag === "SwitchChainInProgress"
     ? "Switching Chain..."
@@ -87,7 +87,6 @@ export const submit = Effect.gen(function* () {
 
   const sourceChainRpcType = lts.value.sourceChain.rpc_type
 
-  // This should be rewritten entirely. We should leverage the sendInstruction functions from the SDK that properly expose errors. All details get lost here.
   yield* Match.value(sourceChainRpcType).pipe(
     Match.when("evm", () =>
       Effect.gen(function* () {
@@ -136,6 +135,19 @@ export const submit = Effect.gen(function* () {
             })
           )
 
+          if ("exit" in ets) {
+            yield* Exit.matchEffect(Unify.unify(ets.exit), {
+              onFailure: cause =>
+                Effect.sync(() => {
+                  error = Option.some(Cause.squash(cause))
+                }),
+              onSuccess: () =>
+                Effect.sync(() => {
+                  error = Option.none()
+                })
+            })
+          }
+
           const result = evmIsComplete(ets)
           if (result) {
             transferHashStore.startPolling(result)
@@ -165,8 +177,8 @@ export const submit = Effect.gen(function* () {
               cts,
               lts.value.sourceChain,
               signingClient,
-              sender, //Sender address
-              fromHex(lts.value.channel.source_port_id, "string"), //contractAddress
+              sender,
+              fromHex(lts.value.channel.source_port_id, "string"),
               {
                 send: {
                   channel_id: lts.value.channel.source_channel_id,
@@ -190,6 +202,19 @@ export const submit = Effect.gen(function* () {
                 : undefined
             )
           )
+
+          if ("exit" in cts) {
+            yield* Exit.matchEffect(Unify.unify(cts.exit), {
+              onFailure: cause =>
+                Effect.sync(() => {
+                  error = Option.some(Cause.squash(cause))
+                }),
+              onSuccess: () =>
+                Effect.sync(() => {
+                  error = Option.none()
+                })
+            })
+          }
 
           const result = cosmosIsComplete(cts)
           if (result) {
@@ -234,16 +259,16 @@ export const submit = Effect.gen(function* () {
 
     <div class="flex justify-between mt-4">
       <Button
-        variant="secondary"
-        onclick={onCancel}
-        disabled={!isButtonEnabled}
+              variant="secondary"
+              onclick={onCancel}
+              disabled={!isButtonEnabled}
       >
         Cancel
       </Button>
       <Button
-        variant="primary"
-        onclick={() => Effect.runPromise(submit)}
-        disabled={!isButtonEnabled}
+              variant="primary"
+              onclick={() => Effect.runPromise(submit)}
+              disabled={!isButtonEnabled}
       >
         {getSubmitButtonText}
       </Button>
@@ -252,5 +277,9 @@ export const submit = Effect.gen(function* () {
     <div class="flex items-center justify-center h-full">
       <p class="text-zinc-400">Loading submission details...</p>
     </div>
+  {/if}
+  {#if Option.isSome(error)}
+    {@const _error = error.value}
+    <ErrorComponent error={_error} />
   {/if}
 </div>
