@@ -1,5 +1,6 @@
 import { toHex, type Address, type Hex } from "viem"
-import { Effect, Schema as S } from "effect"
+import { Effect, pipe, Schema as S } from "effect"
+import * as Either from "effect/Either"
 import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
 import { readErc20Meta } from "../evm/erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js"
@@ -117,17 +118,18 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
 
-    // HACK: special cased for ubbn for now
-    const tokenMeta =
-      intent.baseToken === "ubbn"
-        ? {
-            symbol: "ubbn",
-            name: "ubbn",
-            decimals: 0
-          }
-        : yield* readCw20TokenInfo(intent.baseToken).pipe(
-            Effect.provideService(CosmWasmClientContext, { client: sourceClient })
-          )
+    const tokenMeta = yield* pipe(
+      readCw20TokenInfo(intent.baseToken),
+      Effect.provideService(CosmWasmClientContext, { client: sourceClient }),
+      Effect.either,
+      Effect.map(
+        Either.getOrElse(() => ({
+          symbol: intent.baseToken,
+          name: intent.baseToken,
+          decimals: 0
+        }))
+      )
+    )
 
     const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
