@@ -1389,3 +1389,44 @@ contract UpgradeStateLensIcs23SmtClient is VersionedScript {
         vm.stopBroadcast();
     }
 }
+
+contract DeployRoles is UnionScript {
+    using LibString for *;
+
+    Deployer immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = Deployer(vm.envAddress("DEPLOYER"));
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return deployer;
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            address(deployer)
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        address owner = vm.addr(privateKey);
+
+        Manager manager = Manager(getDeployed(IBC.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
+        CometblsClient cometbls =
+            CometblsClient(getDeployed(LightClients.COMETBLS));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+
+        vm.startBroadcast(privateKey);
+        setupRoles(owner, manager, handler, cometbls, ucs03);
+        vm.stopBroadcast();
+    }
+}
