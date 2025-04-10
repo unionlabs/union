@@ -92,32 +92,6 @@ _: {
           ];
         }
         {
-          name = "union-testnet-9";
-          rpc_url = "https://rpc.testnet-9.union.build";
-          private_key = ''"$1"'';
-          gas_config = {
-            type = "static";
-            gas_denom = "muno";
-            gas_multiplier = "1.1";
-            gas_price = "1.0";
-            max_gas = 200000000;
-          };
-          apps = {
-            ucs03 = ucs03-configs.cw20;
-          };
-          bech32_prefix = "union";
-          lightclients = [
-            "arbitrum"
-            "berachain"
-            "ethereum"
-            "ethermint"
-            "tendermint-bls"
-            "movement"
-            "state-lens-ics23-mpt"
-            "state-lens-ics23-smt"
-          ];
-        }
-        {
           name = "union-testnet-10";
           rpc_url = "https://rpc.rpc-node.union-testnet-10.union.build";
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
@@ -139,6 +113,30 @@ _: {
             "movement"
             "state-lens-ics23-mpt"
             "state-lens-ics23-smt"
+          ];
+        }
+        {
+          name = "union";
+          rpc_url = "https://rpc.rpc-node.union-1.union.build";
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
+          gas_config = {
+            type = "feemarket";
+          };
+          apps = {
+            # ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "union";
+          lightclients = [
+            # "arbitrum"
+            # "bob"
+            # "berachain"
+            # "ethereum"
+            # "trusted-mpt"
+            # "ethermint"
+            # "tendermint-bls"
+            # "movement"
+            # "state-lens-ics23-mpt"
+            # "state-lens-ics23-smt"
           ];
         }
         {
