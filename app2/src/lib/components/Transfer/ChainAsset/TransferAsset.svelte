@@ -33,28 +33,36 @@ export const toDisplayName = (
 </script>
 
 <button
-        class={cn(
-                "flex flex-col items-start w-full overflow-x-scroll px-4 py-3 text-left bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer rounded",
-                isSelected ? "bg-zinc-700 text-white" : "text-zinc-300"
-              )}
-        onclick={() => {
-          console.log(token)
-         selectAsset(token)
-        }}
+  class={cn(
+    "flex flex-col items-start w-full overflow-x-auto px-4 py-3 text-left bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer rounded",
+    isSelected ? "bg-zinc-700 text-white" : "text-zinc-300",
+  )}
+  onclick={() => {
+    console.log(token);
+    selectAsset(token);
+  }}
 >
-    <div class="flex items-center gap-1 overflow-x-scroll text-sm text-zinc-200">
-      <div class="mr-1">
-        {#if isLoading}
-          <Skeleton class="h-3 w-16"/>
-        {:else if Option.isSome(tokenBalance) && Option.isSome(tokenBalance.value.error)}
-          <span class="text-red-400">Error</span>
-        {:else if Option.isSome(tokenBalance)}
-          {#if Option.isSome(tokenBalance.value.balance)}
-            <TokenComponent {chain} denom={token.denom} amount={tokenBalance.value.balance.value} />
-          {:else}
-            <TokenComponent {chain} denom={token.denom} amount={TokenRawAmount.make(0n)} />
-          {/if}
+  <div class="flex items-center gap-1 overflow-x-auto text-sm text-zinc-200">
+    <div class="mr-1">
+      {#if isLoading}
+        <Skeleton class="h-3 w-16" />
+      {:else if Option.isSome(tokenBalance) && Option.isSome(tokenBalance.value.error)}
+        <span class="text-red-400">Error</span>
+      {:else if Option.isSome(tokenBalance)}
+        {#if Option.isSome(tokenBalance.value.balance)}
+          <TokenComponent
+            {chain}
+            denom={token.denom}
+            amount={tokenBalance.value.balance.value}
+          />
+        {:else}
+          <TokenComponent
+            {chain}
+            denom={token.denom}
+            amount={TokenRawAmount.make(0n)}
+          />
         {/if}
-      </div>
+      {/if}
     </div>
+  </div>
 </button>

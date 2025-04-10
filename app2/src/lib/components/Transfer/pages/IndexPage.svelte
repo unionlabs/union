@@ -42,7 +42,7 @@ const handleRedirect = () => {
         <div class="flex-1 flex items-center justify-center">
           <div class="text-center">
             <div class="flex justify-center mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-union" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-babylon-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -52,10 +52,10 @@ const handleRedirect = () => {
         </div>
 
         <div class="flex flex-col justify-between gap-3 mt-6">
-          <Button onclick={newTransfer} variant="secondary" class="flex-1 py-3 rounded-lg hover:bg-gray-100 transition duration-200 border border-gray-300">
+          <Button onclick={newTransfer} variant="secondary">
             New transfer
           </Button>
-          <Button onclick={handleRedirect} variant="primary" class="flex-1 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition duration-200">
+          <Button onclick={handleRedirect} variant="primary">
             Check on explorer
           </Button>
         </div>
@@ -67,7 +67,7 @@ const handleRedirect = () => {
               out:fly={{ x: -20, duration: 300, opacity: 0 }}
       >
         <div class="flex flex-col items-center justify-center h-full py-8">
-          <div class="animate-spin rounded-full h-12 w-12 border-y-2 border-union mb-4"></div>
+          <div class="animate-spin rounded-full h-12 w-12 border-y-2 border-babylon-orange mb-4"></div>
           <p class="text-lg font-medium text-zinc-400 mb-2">Waiting for indexer...</p>
           {#if Option.isSome(sourceChain)}
             <TransactionHashComponent hash={transferHashStore.hash} chain={sourceChain.value}/>
