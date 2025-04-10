@@ -100,19 +100,26 @@ function handleEvmAllowances(
   })
 }
 
-function handleCosmosAllowances(
+export function handleCosmosAllowances(
   tokenAddresses: Array<string>,
   sender: AddressCanonicalBytes,
   sourceChain: Chain
-) {
+): Effect.Effect<Option.Option<Array<{ token: string; allowance: bigint }>>, CosmosQueryError> {
   return Effect.gen(function* () {
     const rpcUrlOpt = sourceChain.getRpcUrl("rpc")
     if (Option.isNone(rpcUrlOpt) || !sourceChain.toCosmosDisplay) {
-      return Option.none()
+      return yield* Effect.fail(
+        new CosmosQueryError({
+          token: "N/A",
+          cause: "Missing RPC URL or missing display converter"
+        })
+      )
     }
 
-    const rpcUrl = rpcUrlOpt.values
-    const cosmwasmClient = yield* createCosmWasmClient(rpcUrl)
+    const rpcUrl = rpcUrlOpt.value
+    const cosmwasmClient = yield* createCosmWasmClient(rpcUrl).pipe(
+      Effect.mapError(err => new CosmosQueryError({ token: "N/A", cause: err }))
+    )
 
     const isNativeToken = (token: string): boolean => /^u[a-zA-Z]+$/.test(token)
 
@@ -121,7 +128,11 @@ function handleCosmosAllowances(
         if (isValidBech32ContractAddress(token)) return true
         if (!isHex(token)) return false
 
-        const decoded = yield* Effect.try(() => fromHex(token, "string"))
+        const decoded = yield* Effect.try(() => fromHex(token, "string")).pipe(
+          Effect.mapError(
+            err => new CosmosQueryError({ token, cause: `Hex decoding failed: ${err}` })
+          )
+        )
         return isValidBech32ContractAddress(decoded)
       })
     }
@@ -136,16 +147,18 @@ function handleCosmosAllowances(
     const checks = yield* Effect.all(
       contractTokens.map(tokenAddress =>
         Effect.gen(function* () {
-          const owner = yield* sourceChain.toCosmosDisplay(sender)
-          const spender = cosmosSpenderAddresses[sourceChain.universal_chain_id]
+          const owner = yield* sourceChain
+            .toCosmosDisplay(sender)
+            .pipe(Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, cause: err })))
 
+          const spender = cosmosSpenderAddresses[sourceChain.universal_chain_id]
           let bech32Address: string | null = null
 
           if (!isHex(tokenAddress) && isValidBech32ContractAddress(tokenAddress)) {
             bech32Address = tokenAddress
           } else if (isHex(tokenAddress)) {
             const decoded = yield* Effect.try(() => fromHex(tokenAddress, "string")).pipe(
-              Effect.catchAll(() => Effect.succeed(""))
+              Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, cause: err }))
             )
             if (isValidBech32ContractAddress(decoded)) {
               bech32Address = decoded
@@ -153,7 +166,6 @@ function handleCosmosAllowances(
           }
 
           if (!bech32Address) {
-            console.warn(`[Cosmos][Allowance] Invalid token: ${tokenAddress} → Skipping.`)
             return { token: tokenAddress, allowance: 0n }
           }
 
@@ -161,13 +173,19 @@ function handleCosmosAllowances(
             cosmwasmClient.queryContractSmart(bech32Address, {
               allowance: { owner, spender }
             })
-          ).pipe(
-            Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, details: err }))
-          )
+          ).pipe(Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, cause: err })))
 
           const allowance = result.allowance ? BigInt(result.allowance) : 0n
           return { token: tokenAddress, allowance }
         }).pipe(Effect.provideService(CosmWasmClientSource, { client: cosmwasmClient }))
+      )
+    ).pipe(
+      Effect.mapError(
+        err =>
+          new CosmosQueryError({
+            token: "N/A",
+            cause: err
+          })
       )
     )
 

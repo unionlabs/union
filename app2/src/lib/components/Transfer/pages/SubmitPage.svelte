@@ -141,7 +141,6 @@ export const submit = Effect.gen(function* () {
           const result = evmIsComplete(ets)
           if (result) {
             transferHashStore.startPolling(result)
-            transfer.raw.reset()
             onSubmit()
             break
           }
@@ -197,7 +196,6 @@ export const submit = Effect.gen(function* () {
           const result = cosmosIsComplete(cts)
           if (result) {
             transferHashStore.startPolling(`0x${result}`)
-            transfer.raw.reset()
             onSubmit()
             break
           }
