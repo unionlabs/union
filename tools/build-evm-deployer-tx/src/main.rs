@@ -4,8 +4,7 @@ use alloy::{
     consensus::{constants::GWEI_TO_WEI, SignableTransaction, Signed, TxEnvelope, TxLegacy},
     eips::eip2718::Encodable2718,
     hex,
-    primitives::{Bytes, PrimitiveSignature, TxKind},
-    uint,
+    primitives::{Bytes, PrimitiveSignature, TxKind, U256},
 };
 use clap::Parser;
 
@@ -15,9 +14,9 @@ const TX: TxLegacy = TxLegacy {
     chain_id: None,
     nonce: 0,
     gas_price: (100 * GWEI_TO_WEI) as u128,
-    gas_limit: 1_000_000,
+    gas_limit: 300_000,
     to: TxKind::Create,
-    value: uint!(1_000_000_U256),
+    value: U256::ZERO,
     input: Bytes::from_static(DEPLOYER_BYTECODE),
 };
 
