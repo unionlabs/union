@@ -284,6 +284,29 @@ pub fn execute(
                 proof_init.to_vec(),
                 proof_height,
                 relayer,
+                true,
+            )
+        }
+        ExecuteMsg::ForceChannelOpenTry(MsgChannelOpenTry {
+            port_id,
+            channel,
+            counterparty_version,
+            proof_init,
+            proof_height,
+            relayer,
+        }) => {
+            ensure_relayer_admin(deps.storage, &info.sender)?;
+            let relayer = deps.api.addr_validate(&relayer)?;
+            channel_open_try(
+                deps.branch(),
+                info,
+                port_id,
+                channel,
+                counterparty_version,
+                proof_init.to_vec(),
+                proof_height,
+                relayer,
+                false,
             )
         }
         ExecuteMsg::ChannelOpenAck(MsgChannelOpenAck {
@@ -304,6 +327,29 @@ pub fn execute(
                 proof_try.to_vec(),
                 proof_height,
                 relayer,
+                true,
+            )
+        }
+        ExecuteMsg::ForceChannelOpenAck(MsgChannelOpenAck {
+            channel_id,
+            counterparty_version,
+            counterparty_channel_id,
+            proof_try,
+            proof_height,
+            relayer,
+        }) => {
+            ensure_relayer_admin(deps.storage, &info.sender)?;
+            let relayer = deps.api.addr_validate(&relayer)?;
+            channel_open_ack(
+                deps.branch(),
+                info,
+                channel_id,
+                counterparty_version,
+                counterparty_channel_id,
+                proof_try.to_vec(),
+                proof_height,
+                relayer,
+                false,
             )
         }
         ExecuteMsg::ChannelOpenConfirm(MsgChannelOpenConfirm {
@@ -320,6 +366,25 @@ pub fn execute(
                 proof_ack.to_vec(),
                 proof_height,
                 relayer,
+                true,
+            )
+        }
+        ExecuteMsg::ForceChannelOpenConfirm(MsgChannelOpenConfirm {
+            channel_id,
+            proof_ack,
+            proof_height,
+            relayer,
+        }) => {
+            ensure_relayer_admin(deps.storage, &info.sender)?;
+            let relayer = deps.api.addr_validate(&relayer)?;
+            channel_open_confirm(
+                deps.branch(),
+                info,
+                channel_id,
+                proof_ack.to_vec(),
+                proof_height,
+                relayer,
+                false,
             )
         }
         ExecuteMsg::ChannelCloseInit(MsgChannelCloseInit {
@@ -1234,6 +1299,7 @@ fn channel_open_try(
     proof_init: Vec<u8>,
     proof_height: u64,
     relayer: Addr,
+    verify: bool,
 ) -> ContractResult {
     if channel.state != ChannelState::TryOpen {
         return Err(ContractError::ChannelInvalidState {
@@ -1256,21 +1322,23 @@ fn channel_open_try(
     let counterparty_channel_id = channel
         .counterparty_channel_id
         .ok_or(ContractError::CounterpartyChannelIdInvalid)?;
-    query_light_client::<()>(
-        deps.as_ref(),
-        client_impl,
-        LightClientQuery::VerifyMembership {
-            client_id: connection.client_id,
-            height: proof_height,
-            proof: proof_init.into(),
-            path: ChannelPath {
-                channel_id: counterparty_channel_id,
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_channel.abi_encode()).into_bytes(),
-        },
-    )?;
+    if verify {
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id: connection.client_id,
+                height: proof_height,
+                proof: proof_init.into(),
+                path: ChannelPath {
+                    channel_id: counterparty_channel_id,
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_channel.abi_encode()).into_bytes(),
+            },
+        )?;
+    }
     let port_id = deps.api.addr_validate(&port_id)?;
     let (channel_id, channel) = create_channel(
         deps.branch(),
@@ -1323,6 +1391,7 @@ fn channel_open_ack(
     proof_try: Vec<u8>,
     proof_height: u64,
     relayer: Addr,
+    verify: bool,
 ) -> ContractResult {
     let mut channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::Init {
@@ -1343,21 +1412,23 @@ fn channel_open_ack(
         version: counterparty_version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    query_light_client::<()>(
-        deps.as_ref(),
-        client_impl,
-        LightClientQuery::VerifyMembership {
-            client_id: connection.client_id,
-            height: proof_height,
-            proof: proof_try.into(),
-            path: ChannelPath {
-                channel_id: counterparty_channel_id,
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_channel.abi_encode()).into_bytes(),
-        },
-    )?;
+    if verify {
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id: connection.client_id,
+                height: proof_height,
+                proof: proof_try.into(),
+                path: ChannelPath {
+                    channel_id: counterparty_channel_id,
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_channel.abi_encode()).into_bytes(),
+            },
+        )?;
+    }
     channel.state = ChannelState::Open;
     channel.version = counterparty_version.clone();
     channel.counterparty_channel_id = Some(counterparty_channel_id);
@@ -1396,6 +1467,7 @@ fn channel_open_confirm(
     proof_ack: Vec<u8>,
     proof_height: u64,
     relayer: Addr,
+    verify: bool,
 ) -> ContractResult {
     let mut channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::TryOpen {
@@ -1420,21 +1492,23 @@ fn channel_open_confirm(
     let counterparty_channel_id = channel
         .counterparty_channel_id
         .expect("channel state is try open; qed;");
-    query_light_client::<()>(
-        deps.as_ref(),
-        client_impl,
-        LightClientQuery::VerifyMembership {
-            client_id: connection.client_id,
-            height: proof_height,
-            proof: proof_ack.into(),
-            path: ChannelPath {
-                channel_id: counterparty_channel_id,
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_channel.abi_encode()).into_bytes(),
-        },
-    )?;
+    if verify {
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id: connection.client_id,
+                height: proof_height,
+                proof: proof_ack.into(),
+                path: ChannelPath {
+                    channel_id: counterparty_channel_id,
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_channel.abi_encode()).into_bytes(),
+            },
+        )?;
+    }
     channel.state = ChannelState::Open;
     save_channel(deps.branch(), channel_id, &channel)?;
     Ok(Response::new()
