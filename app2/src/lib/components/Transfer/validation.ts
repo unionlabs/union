@@ -1,9 +1,5 @@
 import { Data, Schema } from "effect"
-import {
-  BaseTransfer,
-  TransferSchema,
-  TransferT,
-} from "@unionlabs/sdk/schema"
+import { TransferT } from "@unionlabs/sdk/schema"
 import type { TransferSubmission as EvmTransferSubmission } from "$lib/services/transfer-ucs03-evm"
 import type { TransferSubmission as CosmosTransferSubmission } from "$lib/services/transfer-ucs03-cosmos"
 import type { TransferSubmission as AptosTransferSubmission } from "$lib/services/transfer-ucs03-aptos"
@@ -29,6 +25,4 @@ export type TransferStateUnion = TransferState
 /**
  * NOTE: We need to provide full set of validation errors to user, thus `errors: "all"`.
  */
-// export const validateTransfer = Schema.validateEither(BaseTransfer, { errors: "all" })
 export const validateTransfer = Schema.decodeEither(TransferT, { errors: "all" })
-// export const validateTransfer = Schema.validateEither(TransferSchema, { errors: "all" })

@@ -202,26 +202,3 @@ export const ValidTransferS = S.Struct({
 export type ValidTransferS = typeof ValidTransferS.Type
 
 export class ValidTransfer extends S.Class<ValidTransfer>("ValidTransfer")(ValidTransferS) {}
-
-// // Then create the union of those partial schemas
-// const PartialTransferUnionS = S.Union(
-//   S.partial(EvmTransferSchema),
-//   S.partial(CosmosTransferSchema),
-//   S.partial(AptosTransferSchema)
-// )
-// type PartialTransferUnionS = typeof PartialTransferUnionS.Type
-// 
-// // Finally create the NotValidTransfer schema
-// export const NotValidTransferS = S.Struct({
-//   isValid: S.Literal(false),
-//   args: PartialTransferUnionS
-// }).annotations({
-//   identifier: "NotValidTransfer",
-//   title: "Invalid Transfer",
-//   description: "An invalid transfer with partial arguments"
-// })
-// export type NotValidTransferS = typeof NotValidTransferS.Type
-// 
-// export class NotValidTransfer extends S.Class<NotValidTransfer>("NotValidTransfer")(
-//   NotValidTransferS
-// ) {}

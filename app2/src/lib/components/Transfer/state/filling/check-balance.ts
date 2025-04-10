@@ -1,8 +1,9 @@
-import { Effect, identity, Option } from "effect"
-import type { Chain } from "@unionlabs/sdk/schema"
+import { Effect, identity, Match, Option, Schema } from "effect"
+import { AddressCosmosZkgmFromAddressCanonicalBytesWithPrefix, type Chain } from "@unionlabs/sdk/schema"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
 import { isHex, toHex } from "viem"
+import { ensureHex } from "@unionlabs/sdk/utils"
 
 export const checkBalanceForIntents = (source: Chain, intents: TransferIntents) => {
   const grouped = intents.reduce(
@@ -12,7 +13,31 @@ export const checkBalanceForIntents = (source: Chain, intents: TransferIntents) 
         acc[key].required += intent.baseAmount
       } else {
         acc[key] = {
-          sender: intent.sender,
+          sender: Match.value({
+            sender: intent.sender,
+            source: source.rpc_type,
+            addr_prefix: source.addr_prefix,
+          }).pipe(
+            Match.when(
+              {
+                sender: Match.string,
+                source: "evm",
+              },
+              ({ sender }) => sender
+            ),
+            Match.when(
+              {
+                sender: Match.string,
+                addr_prefix: Match.string,
+                source: "cosmos",
+              },
+              ({ addr_prefix, sender }) => Schema.encodeSync(
+                AddressCosmosZkgmFromAddressCanonicalBytesWithPrefix(addr_prefix)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              )(sender as unknown as any)
+            ),
+            Match.orElseAbsurd,
+          ),
           baseToken: intent.baseToken,
           required: intent.baseAmount
         }
@@ -29,8 +54,9 @@ export const checkBalanceForIntents = (source: Chain, intents: TransferIntents) 
       Effect.sync(() =>
         balancesStore.getBalance(
           source.universal_chain_id,
+          // is zkgm
           group.sender,
-          isHex(group.baseToken) ? group.baseToken : toHex(group.baseToken)
+          ensureHex(group.baseToken)
         )
       ),
       balance => {

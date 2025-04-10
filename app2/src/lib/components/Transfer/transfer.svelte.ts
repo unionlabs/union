@@ -8,7 +8,7 @@ import { channels } from "$lib/stores/channels.svelte.ts"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
-import { validateTransfer, type ValidationResult } from "$lib/components/Transfer/validation.ts"
+import { validateTransfer } from "$lib/components/Transfer/validation.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { FungibleAssetOrderIntent } from "@unionlabs/sdk/ucs03/fungible-asset-order.ts"
 import { ensureHex } from "@unionlabs/sdk/utils/index.ts"
@@ -212,8 +212,7 @@ export class Transfer {
   //     : Option.none()
   // })
 
-  args = $derived.by(() => {
-    const heck = Option.all({
+  args = $derived(Option.all({
       sourceChain: this.sourceChain,
       destinationChain: this.destinationChain,
       sender: this.derivedSender,
@@ -229,61 +228,9 @@ export class Transfer {
         sender: AddressCanonicalBytes.make,
         receiver: AddressCanonicalBytes.make,
         baseToken: (x) => x.denom,
-        // baseAmount: flow(
-        //   BigInt,
-        //   TokenRawAmount.make
-        // ),
-        // quoteAmount: flow(
-        //   BigInt,
-        //   TokenRawAmount.make
-        // )
       }))
     )
-
-    const {
-      sourceChain,
-      destinationChain,
-      channel,
-      baseToken,
-      parsedAmount,
-      derivedReceiver,
-      ucs03address
-      // wethBaseToken
-    } = {
-      sourceChain: Option.getOrNull(this.sourceChain),
-      destinationChain: Option.getOrNull(this.destinationChain),
-      channel: Option.getOrNull(this.channel),
-      baseToken: Option.getOrNull(this.baseToken),
-      parsedAmount: Option.getOrNull(this.parsedAmount),
-      derivedReceiver: Option.getOrNull(this.derivedReceiver),
-      ucs03address: Option.getOrNull(this.ucs03address)
-      // wethBaseToken: Option.getOrNull(this.wethBaseToken)
-    }
-
-    const original = {
-      sourceChain,
-      destinationChain,
-      sourceRpcType: sourceChain?.rpc_type,
-      destinationRpcType: destinationChain?.rpc_type,
-      sourceChannelId: channel?.source_channel_id,
-      ucs03address,
-      baseToken: baseToken?.denom,
-      baseAmount: parsedAmount,
-      quoteAmount: parsedAmount,
-      receiver: derivedReceiver,
-      timeoutHeight: 0n,
-      // TODO: use cor's 24hr fn
-      timeoutTimestamp: "0x000000000000000000000000000000000000000000000000fffffffffffffffa"
-      // wethBaseToken: wethBaseToken
-    }
-
-    console.log({
-      original,
-      heck: Option.getOrNull(heck)
-    })
-
-    return heck
-  })
+  )
 
   intents: Option.Option<TransferIntents> = $derived.by(() => {
     if (Option.isNone(this.args)) return Option.none()
@@ -298,55 +245,13 @@ export class Transfer {
       return Option.none()
     }
 
-    console.log("calculating intents")
+    console.log("decoding intents...")
 
     const result = Schema.decodeSync(TransferT)(this.args.value)
 
-    console.log("intents", result)
+    console.log("intents decoded", result)
 
     return Option.some(Arr.ensure(result))
-
-
-    // return Match.value(transferValue.sourceChain.rpc_type).pipe(
-    //   Match.when("evm", () => {
-    //     // if (Option.isNone(this.wethBaseToken)) return Option.none<TransferIntents>()
-    //     // const wethToken = Option.getOrUndefined(this.wethBaseToken)
-    //     // if (!wethToken) return Option.none<TransferIntents>()
-
-    //     return Option.some<TransferIntents>([
-    //       {
-    //         sender: sender,
-    //         receiver: transferValue.receiver,
-    //         baseToken: transferValue.baseToken,
-    //         baseAmount: transferValue.baseAmount,
-    //         quoteAmount: transferValue.baseAmount
-    //       }
-    //       // {
-    //       //   sender: sender,
-    //       //   receiver: transferValue.receiver,
-    //       //   baseToken: wethToken,
-    //       //   baseAmount: 500n,
-    //       //   quoteAmount: 0n
-    //       // }
-    //     ])
-    //   }),
-
-    //   Match.when("cosmos", () => {
-    //     return Option.some<TransferIntents>([
-    //       {
-    //         sender: sender,
-    //         receiver: transferValue.receiver.toLowerCase(),
-    //         baseToken: isHex(transferValue.baseToken)
-    //           ? fromHex(transferValue.baseToken, "string")
-    //           : transferValue.baseToken,
-    //         baseAmount: transferValue.baseAmount,
-    //         quoteAmount: transferValue.baseAmount
-    //       }
-    //     ])
-    //   }),
-
-    //   Match.orElse(() => Option.none<TransferIntents>())
-    // )
   })
 
   validation = $derived(pipe(
