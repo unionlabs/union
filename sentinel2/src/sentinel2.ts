@@ -481,7 +481,7 @@ export const checkPackets = (
 ) =>
   Effect.gen(function* () {
     const now = Date.now()
-    const searchRangeMs = timeframeMs * 10
+    const searchRangeMs = timeframeMs * 2
     const sinceDate = new Date(now - searchRangeMs).toISOString()
 
     yield* Effect.log(
