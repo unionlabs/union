@@ -1,4 +1,4 @@
-import { Effect, Match, Option, pipe } from "effect"
+import { Effect, Match, Option, pipe, Schema } from "effect"
 import { fromHex, http } from "viem"
 import {
   createViemPublicClient,
@@ -19,7 +19,7 @@ import {
   createCosmosToCosmosFungibleAssetOrder
 } from "@unionlabs/sdk/ucs03"
 import { Batch } from "@unionlabs/sdk/ucs03/instruction"
-import type { Channel, Chain } from "@unionlabs/sdk/schema"
+import { type Channel, type Chain, FungibleIntent } from "@unionlabs/sdk/schema"
 import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
 
 export function createOrdersBatch(
@@ -126,6 +126,29 @@ export function createOrdersBatch(
 
     console.log("lukas: Setting up batchEffect for order creation...")
 
+    // need to op on array
+    const intentsInput = intents.map(x => ({
+      ...x,
+      sourceChain,
+      destinationChain,
+      ucs03address
+    }))
+
+    console.log({ intentsInput })
+
+    const newIntents = intentsInput.map(
+      Schema.decode(FungibleIntent.AssetOrderIntentFromTransferIntent, {
+        errors: "all",
+        onExcessProperty: "ignore"
+      })
+    )
+
+    const resolvedIntents = yield* Effect.all(newIntents, {
+      concurrency: "unbounded"
+    })
+
+    console.log({ resolvedIntents })
+
     // Build the orders using a Match over [source, destination].
     const batchEffect = Effect.gen(function* () {
       console.log(`lukas: Using Match with [${source}, ${destination}]`)
@@ -134,11 +157,11 @@ export function createOrdersBatch(
         Match.when(["evm", "cosmos"], () => {
           console.log("lukas: Matched EVM -> Cosmos pattern", intents.value)
           return Effect.all([
-            Effect.tap(createEvmToCosmosFungibleAssetOrder(intents[0]), order =>
+            Effect.tap(createEvmToCosmosFungibleAssetOrder(resolvedIntents[0]), order =>
               Effect.sync(() => console.log("lukas: First EVM->Cosmos order created", order))
             ),
             intents.length > 1
-              ? Effect.tap(createEvmToCosmosFungibleAssetOrder(intents[1]), order =>
+              ? Effect.tap(createEvmToCosmosFungibleAssetOrder(resolvedIntents[1]), order =>
                   Effect.sync(() => console.log("lukas: Second EVM->Cosmos order created", order))
                 )
               : Effect.succeed(null)
@@ -160,11 +183,11 @@ export function createOrdersBatch(
         Match.when(["evm", "evm"], () => {
           console.log("lukas: Matched EVM -> EVM pattern")
           return Effect.all([
-            Effect.tap(createEvmToEvmFungibleAssetOrder(intents[0]), order =>
+            Effect.tap(createEvmToEvmFungibleAssetOrder(resolvedIntents[0]), order =>
               Effect.sync(() => console.log("lukas: EVM->EVM first order created", order))
             ),
             intents.length > 1
-              ? Effect.tap(createEvmToEvmFungibleAssetOrder(intents[1]), order =>
+              ? Effect.tap(createEvmToEvmFungibleAssetOrder(resolvedIntents[1]), order =>
                   Effect.sync(() => console.log("lukas: EVM->EVM second order created", order))
                 )
               : Effect.succeed(null)
@@ -186,7 +209,7 @@ export function createOrdersBatch(
           console.log("lukas: Matched Cosmos -> EVM pattern")
           // Wrap in Effect.all to maintain consistency with other branches
           return Effect.all([
-            createCosmosToEvmFungibleAssetOrder(intents[0]).pipe(
+            createCosmosToEvmFungibleAssetOrder(resolvedIntents[0]).pipe(
               Effect.tap(order =>
                 Effect.sync(() => console.log("lukas: (Cosmos->EVM) order created", order))
               )
@@ -209,7 +232,7 @@ export function createOrdersBatch(
           console.log("lukas: Matched Cosmos -> Cosmos pattern")
           // Wrap in Effect.all to maintain consistency with other branches
           return Effect.all([
-            createCosmosToCosmosFungibleAssetOrder(intents[0]).pipe(
+            createCosmosToCosmosFungibleAssetOrder(resolvedIntents[0]).pipe(
               Effect.tap(order =>
                 Effect.sync(() => console.log("lukas: (Cosmos->Cosmos) order created", order))
               )

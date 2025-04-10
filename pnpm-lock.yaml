@@ -19,9 +19,15 @@ importers:
       '@effect/language-service':
         specifier: ~0.5.1
         version: 0.5.1
+      '@effect/vitest':
+        specifier: ~0.19.10
+        version: 0.19.10(effect@3.14.2)(vitest@3.0.9(@types/debug@4.1.12)(@types/node@22.13.14)(jiti@2.4.2)(jsdom@26.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
       typescript:
         specifier: ~5.8.2
         version: 5.8.2
+      vitest:
+        specifier: ~3.0.9
+        version: 3.0.9(@types/debug@4.1.12)(@types/node@22.13.14)(jiti@2.4.2)(jsdom@26.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
 
   app2:
     devDependencies:
@@ -145,9 +151,6 @@ importers:
       vite:
         specifier: ^6.1.0
         version: 6.2.3(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
-      vitest:
-        specifier: ^3.0.5
-        version: 3.0.9(@types/debug@4.1.12)(@types/node@22.13.14)(jiti@2.4.2)(jsdom@26.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
 
   ts-sdk:
     dependencies:
@@ -200,12 +203,6 @@ importers:
       viem:
         specifier: ^2.23.12
         version: 2.24.1(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.22.4)
-      vite-node:
-        specifier: ^3.1.1
-        version: 3.1.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
-      vitest:
-        specifier: ^3.0.8
-        version: 3.0.9(@types/debug@4.1.12)(@types/node@22.13.14)(jiti@2.4.2)(jsdom@26.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
 
   typescript-sdk:
     dependencies:
@@ -4240,11 +4237,6 @@ packages:
 
   vite-node@3.0.9:
     resolution: {integrity: sha512-w3Gdx7jDcuT9cNn9jExXgOyKmf5UOTb6WMHz8LGAm54eS1Elf5OuBhCxl6zJxGhEeIkgsE1WbHuoL0mj/UXqXg==}
-    engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
-    hasBin: true
-
-  vite-node@3.1.1:
-    resolution: {integrity: sha512-V+IxPAE2FvXpTCHXyNem0M+gWm6J7eRyWPR6vYoG/Gl+IscNOjXzztUhimQgTxaAoUoj40Qqimaa0NLIOOAH4w==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
     hasBin: true
 
@@ -9121,27 +9113,6 @@ snapshots:
       - zod
 
   vite-node@3.0.9(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0):
-    dependencies:
-      cac: 6.7.14
-      debug: 4.4.0
-      es-module-lexer: 1.6.0
-      pathe: 2.0.3
-      vite: 6.2.3(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
-    transitivePeerDependencies:
-      - '@types/node'
-      - jiti
-      - less
-      - lightningcss
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-      - tsx
-      - yaml
-
-  vite-node@3.1.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0):
     dependencies:
       cac: 6.7.14
       debug: 4.4.0

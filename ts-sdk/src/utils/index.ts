@@ -1,4 +1,4 @@
-import { toHex, type Hex } from "viem"
+import { isHex, toHex, type Hex } from "viem"
 
 export { extractErrorDetails } from "./extract-error-details.js"
 
@@ -14,3 +14,5 @@ export const generateSalt = (rpcType: RpcType): Hex => {
 
   return toHex(rawSalt) as Hex
 }
+
+export const ensureHex = <T extends string>(s: T) => (isHex(s) ? s : toHex(s))

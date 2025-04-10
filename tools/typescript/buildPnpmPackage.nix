@@ -24,10 +24,13 @@ let
       fileset = unions (
         [
           ../../package.json
+          ../../patches
           ../../pnpm-lock.yaml
           ../../pnpm-workspace.yaml
           ../../tsconfig.base.json
-          ../../patches
+          ../../vitest.setup.ts
+          ../../vitest.shared.ts
+          ../../vitest.workspace.ts
         ]
         ++ extraSrcs
       );

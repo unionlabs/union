@@ -1,4 +1,5 @@
 import * as S from "effect/Schema"
+import { fromHex, toHex } from "viem"
 
 /**
  * Describes `0x${string}` from non-empty string.
@@ -18,3 +19,10 @@ export const HexChecksum = S.NonEmptyString.pipe(
   S.minLength(3)
 ) as unknown as S.TemplateLiteral<`0x${string}`>
 export type HexChecksum = typeof HexChecksum.Type
+
+export const HexFromString = S.transform(S.String, Hex, {
+  strict: true,
+  decode: s => toHex(s),
+  encode: hex => fromHex(hex, "string")
+})
+export type HexFromString = typeof HexFromString.Type
