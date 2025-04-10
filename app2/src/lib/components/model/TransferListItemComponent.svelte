@@ -37,6 +37,7 @@ const handleClick = () => {
     <div>
       {#if Option.isSome(sourceChain)}
         <TokenComponent
+          showWrapping={false}
           chain={sourceChain.value}
           denom={transfer.base_token}
           amount={transfer.base_amount}

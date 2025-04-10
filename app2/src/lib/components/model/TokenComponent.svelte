@@ -6,7 +6,10 @@ import { tokensStore } from "$lib/stores/tokens.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import ArrowDownLeft from "$lib/components/icons/ArrowDownLeft.svelte"
+import SharpArrowLeft from "$lib/components/icons/SharpArrowLeft.svelte"
 import A from "../ui/A.svelte"
+import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
 
 interface Props {
   chain: Chain
@@ -88,12 +91,14 @@ const displayDenom = $derived(
       <Truncate value={displayDenom} maxLength={10} showCopy={false} />
     </div>
 
-    {#if Option.isSome(chains.data) && Option.isSome(token)}
-      <div class="text-xs text-zinc-400">
-      {#each token.value.wrapping as wrap}
+    {#if Option.isSome(chains.data) && Option.isSome(token) && showWrapping}
+      <div class="text-xs text-zinc-400 flex gap-1">
+      {#each token.value.wrapping as wrap, i}
+        {#if i === 0}<ArrowDownLeft class="size-3 rotate-90"/>{/if}
         {@const wrapChain = getChain(chains.data.value, wrap.unwrapped_chain.universal_chain_id)}
         {#if Option.isSome(wrapChain)}
-          <div>← <ChainComponent chain={wrapChain.value}/></div>
+          {#if i != 0}<SharpRightArrowIcon class="size-4 rotate-180"/>{/if}
+          <div> <ChainComponent chain={wrapChain.value}/></div>
         {/if}
       {/each}
       </div>
@@ -117,12 +122,28 @@ const displayDenom = $derived(
               </span>
             {/if}
           </section>
+
+            {#if Option.isSome(chains.data)}
+              <div class="text-xs text-zinc-400 flex gap-1 -mt-4">
+              {#each token.value.wrapping as wrap, i}
+                {#if i === 0}<ArrowDownLeft class="size-3 rotate-90"/>{/if}
+
+                {@const wrapChain = getChain(chains.data.value, wrap.unwrapped_chain.universal_chain_id)}
+                {#if Option.isSome(wrapChain)}
+                  {#if i !== 0}<SharpRightArrowIcon class="size-4 rotate-180"/>{/if}
+                  <div> <ChainComponent chain={wrapChain.value}/></div>
+                {/if}
+              {/each}
+            </div>
+          {:else}none
+          {/if}
+
           <section>
             <h3 class="text-white">Chain</h3>
             <ChainComponent chain={chain}/>
             <div class="mt-2">Raw Denom: {denom}</div>
             {#each token.value.wrapping as wrap}
-              <div>← {wrap.unwrapped_chain.universal_chain_id}</div>
+              <div><ArrowDownLeft/> {wrap.unwrapped_chain.universal_chain_id}</div>
             {/each}
           </section>
 
