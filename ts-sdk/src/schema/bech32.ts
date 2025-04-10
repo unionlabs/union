@@ -31,7 +31,7 @@ export const Bech32FromAddressCanonicalBytesWithPrefix = (
 ) =>
   S.transformOrFail(AddressCanonicalBytes, Bech32, {
     strict: true,
-    decode: (fromA, options, ast, fromI) =>
+    decode: (fromA, _options, ast, _fromI) =>
       Effect.try({
         try: () => {
           const words = bech32.toWords(bytes("hex", fromA.slice(2)))
@@ -44,7 +44,7 @@ export const Bech32FromAddressCanonicalBytesWithPrefix = (
           onFailure: e => new ParseResult.Type(ast, fromA, e.message)
         })
       ),
-    encode: (toI, options, ast, toA) => {
+    encode: (toI, _options, ast, _toA) => {
       const a = Effect.try({
         try: () => bech32.decode(toI),
         catch: cause => new Bech32DecodeError({ message: (cause as Error).message })

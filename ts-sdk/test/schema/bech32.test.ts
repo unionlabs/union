@@ -20,7 +20,7 @@ describe("Bech32", () => {
     "11qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc8247j",
     "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w",
     "?1ezyfcl"
-  ])("decodes vaild address %s", s => {
+  ])("decodes valid address %s", s => {
     assert.isTrue(Either.isRight(S.decodeUnknownEither(Bech32)(s)))
   })
 
@@ -37,11 +37,11 @@ describe("Bech32", () => {
     "11qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc8247j",
     "li1dgmt3",
     Buffer.from("6465316c67377774ff", "hex").toString("binary")
-  ])("fails invaild address %s", s => {
+  ])("fails invalid address %s", s => {
     assert.isTrue(Either.isLeft(S.decodeEither(Bech32)(s)))
   })
 
-  it.skip("Bech32FromAddressCanonicalBytesWithPrefix", () => {
+  it("Bech32FromAddressCanonicalBytesWithPrefix", () => {
     const addr = "0x52a648ef2157fd3bafa90bbac510b9a4870fdf36"
     const transform = Bech32FromAddressCanonicalBytesWithPrefix("bbn").pipe(
       S.compose(HexFromString),

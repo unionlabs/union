@@ -12,7 +12,7 @@ import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-toke
 import { FungibleAssetOrder } from "./instruction.js"
 import type { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
 import { ensureHex } from "../utils/index.js"
-import { TokenRawDenom } from "../schema/token.js"
+import type { TokenRawDenom } from "../schema/token.js"
 
 export type FungibleAssetOrderIntent = {
   sender: Address
