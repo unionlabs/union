@@ -15,5 +15,4 @@ export const generateSalt = (rpcType: RpcType): Hex => {
   return toHex(rawSalt) as Hex
 }
 
-export const ensureHex = <T extends string>(s: T) =>
-  isHex(s) ? s : toHex(s)
+export const ensureHex = <T extends string>(s: T) => (isHex(s) ? s : toHex(s))

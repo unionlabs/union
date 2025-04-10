@@ -20,13 +20,9 @@ export const HexChecksum = S.NonEmptyString.pipe(
 ) as unknown as S.TemplateLiteral<`0x${string}`>
 export type HexChecksum = typeof HexChecksum.Type
 
-export const HexFromString = S.transform(
-  S.String,
-  Hex,
-  {
-    strict: true,
-    decode: (s) => toHex(s),
-    encode: (hex) => fromHex(hex, "string"),
-  }
-)
+export const HexFromString = S.transform(S.String, Hex, {
+  strict: true,
+  decode: s => toHex(s),
+  encode: hex => fromHex(hex, "string")
+})
 export type HexFromString = typeof HexFromString.Type

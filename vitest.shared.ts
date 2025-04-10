@@ -1,4 +1,3 @@
-
 import * as path from "node:path"
 import type { ViteUserConfig } from "vitest/config"
 
@@ -17,7 +16,7 @@ const config: ViteUserConfig = {
     include: ["test/**/*.test.ts"],
     alias: {
       ["@unionlabs/sdk/test"]: path.join(__dirname, "ts-sdk", "test"),
-      ["@unionlabs/sdk"]: path.join(__dirname, "ts-sdk", "src"),
+      ["@unionlabs/sdk"]: path.join(__dirname, "ts-sdk", "src")
     }
   }
 }

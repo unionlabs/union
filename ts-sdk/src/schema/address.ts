@@ -1,7 +1,7 @@
 import * as S from "effect/Schema"
 import { Hex, HexChecksum, HexFromString } from "./hex.js"
 import { Bech32, Bech32FromAddressCanonicalBytesWithPrefix } from "./bech32.js"
-import { flow, pipe } from "effect"
+import { pipe } from "effect"
 
 // For Reference, see: https://docs.union.build/ucs/05
 // We always store bytes arrays as hex-encoded strings
@@ -23,13 +23,12 @@ export type AddressCosmosZkgm = typeof AddressCosmosZkgm.Type
 //   S.compose(AddressCosmosDisplay)
 // )
 
-export const AddressCosmosZkgmFromAddressCanonicalBytesWithPrefix = (
-  prefix: string
-) => pipe(
-  Bech32FromAddressCanonicalBytesWithPrefix(prefix),
-  S.compose(HexFromString),
-  S.compose(AddressCosmosZkgm)
-)
+export const AddressCosmosZkgmFromAddressCanonicalBytesWithPrefix = (prefix: string) =>
+  pipe(
+    Bech32FromAddressCanonicalBytesWithPrefix(prefix),
+    S.compose(HexFromString),
+    S.compose(AddressCosmosZkgm)
+  )
 
 // Evm Address Types
 export const AddressEvmCanonical = AddressCanonicalBytes.pipe(S.brand("AddressEvmCanonical"))

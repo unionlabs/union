@@ -63,12 +63,15 @@ export class CosmosAddressEncodeError extends Data.TaggedError("CosmosAddressEnc
 }> {}
 
 const HRP = S.String.pipe(
-  S.length({
-    min: 1,
-    max: 83,
-  }, {
-    description: "HRP must be between 1 to 83 US-ASCII characters, inclusive"
-  }),
+  S.length(
+    {
+      min: 1,
+      max: 83
+    },
+    {
+      description: "HRP must be between 1 to 83 US-ASCII characters, inclusive"
+    }
+  ),
   S.pattern(/^[\x21-\x7E]+$/, {
     description: "HRP characters must be within the range [33-126], inclusive"
   })

@@ -127,31 +127,25 @@ export function createOrdersBatch(
     console.log("lukas: Setting up batchEffect for order creation...")
 
     // need to op on array
-    const intentsInput = intents.map((x) => ({
+    const intentsInput = intents.map(x => ({
       ...x,
       sourceChain,
       destinationChain,
-      ucs03address,
+      ucs03address
     }))
 
     console.log({ intentsInput })
 
     const newIntents = intentsInput.map(
-      Schema.decode(
-        FungibleIntent.AssetOrderIntentFromTransferIntent,
-        {
-          errors: "all",
-          onExcessProperty: "ignore",
-        }
-      )
+      Schema.decode(FungibleIntent.AssetOrderIntentFromTransferIntent, {
+        errors: "all",
+        onExcessProperty: "ignore"
+      })
     )
 
-    const resolvedIntents = yield* Effect.all(
-      newIntents,
-      {
-        concurrency: "unbounded",
-      }
-    )
+    const resolvedIntents = yield* Effect.all(newIntents, {
+      concurrency: "unbounded"
+    })
 
     console.log({ resolvedIntents })
 
