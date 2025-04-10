@@ -10,6 +10,8 @@ import ArrowDownLeft from "$lib/components/icons/ArrowDownLeft.svelte"
 import SharpArrowLeft from "$lib/components/icons/SharpArrowLeft.svelte"
 import A from "../ui/A.svelte"
 import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
+import Label from "../ui/Label.svelte"
+import LongMonoWord from "../ui/LongMonoWord.svelte"
 
 interface Props {
   chain: Chain
@@ -19,7 +21,7 @@ interface Props {
   showWrapping?: boolean
 }
 
-const { chain, denom, amount = undefined, showRank = true, showWrapping = true }: Props = $props()
+const { chain, denom, amount = undefined, showRank, showWrapping = true }: Props = $props()
 
 // Start the query when the component mounts
 $effect(() => {
@@ -139,24 +141,37 @@ const displayDenom = $derived(
           {/if}
 
           <section>
-            <h3 class="text-white">Chain</h3>
+            <Label>Chain</Label>
             <ChainComponent chain={chain}/>
-            <div class="mt-2">Raw Denom: {denom}</div>
             {#each token.value.wrapping as wrap}
               <div><ArrowDownLeft/> {wrap.unwrapped_chain.universal_chain_id}</div>
             {/each}
           </section>
+          <section>
+            <Label>Raw Denom</Label>
+            <LongMonoWord>{denom}</LongMonoWord>
+          </section>
 
           {#each token.value.representations as rep}
             <section>
-              <div>Name: {rep.name}</div>
-              <div>Symbol: {rep.symbol}</div>
-              <div>Decimals: {rep.decimals}</div>
+              <Label>Name</Label>
+              <div>{rep.name}</div>
+            </section>
+            <section>
+              <Label>Symbol</Label>
+              <div>{rep.symbol}</div>
+            </section>
+            <section>
+              <Label>Decimals</Label>
+              <div>{rep.decimals}</div>
+            </section>
+            <section>
               {#each rep.sources as source}
                 {#if source.source.source_uri}
-                  <div>
-                    Source: <A class="underline" href={source.source.source_uri}>{source.source.name}</A>
-                  </div>
+                  <section>
+                    <Label>Source</Label>
+                    <A class="underline" href={source.source.source_uri}>{source.source.name}</A>
+                  </section>
                 {/if}
               {/each}
             </section>
