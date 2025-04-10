@@ -1,5 +1,5 @@
 import * as S from "effect/Schema"
-import { Chain } from "./chain.js"
+import { Chain, UniversalChainId } from "./chain.js"
 import { TokenRawAmountFromSelf } from "./token.js"
 import { Effect, Match, ParseResult, Struct, pipe } from "effect"
 import {
@@ -8,6 +8,7 @@ import {
   AddressCosmosZkgmFromAddressCanonicalBytesWithPrefix,
   AddressEvmZkgm
 } from "./address.js"
+import { ChannelId } from "./channel.js"
 
 export const BaseTransfer = S.Struct({
   sourceChain: Chain.annotations({
@@ -28,7 +29,9 @@ export const BaseTransfer = S.Struct({
   }),
   quoteAmount: TokenRawAmountFromSelf.annotations({
     message: () => 'quoteAmount must be a valid bigint string (e.g., "1000000")'
-  })
+  }),
+  sourceChainId: UniversalChainId,
+  sourceChannelId: ChannelId
 })
 export type BaseTransfer = typeof BaseTransfer.Type
 

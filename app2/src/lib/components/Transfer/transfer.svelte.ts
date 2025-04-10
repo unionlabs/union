@@ -1,6 +1,13 @@
 import { Match, Option } from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
-import type { Channel, AddressCanonicalBytes, Token, TokenRawDenom } from "@unionlabs/sdk/schema"
+import type {
+  Channel,
+  AddressCanonicalBytes,
+  Token,
+  TokenRawDenom,
+  UniversalChainId,
+  ChannelId
+} from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { type Address, fromHex, type Hex, isHex } from "viem"
@@ -17,6 +24,8 @@ export type TransferIntent = {
   baseToken: TokenRawDenom
   baseAmount: bigint
   quoteAmount: bigint
+  sourceChainId: UniversalChainId
+  sourceChannelId: ChannelId
 }
 export type TransferIntents = Array<TransferIntent>
 
@@ -269,6 +278,7 @@ export class Transfer {
         // if (Option.isNone(this.wethBaseToken)) return Option.none<TransferIntents>()
         // const wethToken = Option.getOrUndefined(this.wethBaseToken)
         // if (!wethToken) return Option.none<TransferIntents>()
+        console.log("yo cor", transferValue.sourceChain)
 
         return Option.some<TransferIntents>([
           {
@@ -276,7 +286,9 @@ export class Transfer {
             receiver: transferValue.receiver,
             baseToken: transferValue.baseToken,
             baseAmount: transferValue.baseAmount,
-            quoteAmount: transferValue.baseAmount
+            quoteAmount: transferValue.baseAmount,
+            sourceChainId: transferValue.sourceChain.universal_chain_id,
+            sourceChannelId: transferValue.sourceChannelId
           }
           // {
           //   sender: sender,
@@ -297,7 +309,9 @@ export class Transfer {
               ? fromHex(transferValue.baseToken, "string")
               : transferValue.baseToken,
             baseAmount: transferValue.baseAmount,
-            quoteAmount: transferValue.baseAmount
+            quoteAmount: transferValue.baseAmount,
+            sourceChainId: transferValue.sourceChain.universal_chain_id,
+            sourceChannelId: transferValue.sourceChannelId
           }
         ])
       }),

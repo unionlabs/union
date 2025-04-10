@@ -43,6 +43,8 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
   baseToken: TokenRawDenom
   baseAmount: bigint
   quoteAmount: bigint
+  sourceChainId: UniversalChainId
+  sourceChannelId: ChannelId
 }) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
@@ -50,7 +52,24 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
     const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
       Effect.provideService(ViemPublicClient, { client: sourceClient })
     )
-    const quoteToken = yield* predictEvmQuoteToken(intent.baseToken)
+
+    const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
+      baseToken: ensureHex(intent.baseToken),
+      sourceChainId: intent.sourceChainId,
+      sourceChannelId: intent.sourceChannelId
+    })
+
+    yield* Effect.log("graphql quote", graphqlDenom)
+    let finalQuoteToken: Hex
+    const unwrapping = Option.isSome(graphqlDenom)
+    if (unwrapping) {
+      yield* Effect.log("using the graphql quote token unwrapped", graphqlDenom.value)
+      finalQuoteToken = graphqlDenom.value
+    } else {
+      yield* Effect.log("predicting quote token on chain")
+      finalQuoteToken = yield* predictEvmQuoteToken(intent.baseToken)
+      yield* Effect.log("received quote token onchain", finalQuoteToken)
+    }
 
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
@@ -62,8 +81,8 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
         tokenMeta.symbol,
         tokenMeta.name,
         tokenMeta.decimals,
-        0n, // channel if unwrapping
-        quoteToken,
+        unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
+        finalQuoteToken,
         intent.quoteAmount
       ]
     })
@@ -78,6 +97,8 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
   baseToken: TokenRawDenom
   baseAmount: bigint
   quoteAmount: bigint
+  sourceChainId: UniversalChainId
+  sourceChannelId: ChannelId
 }) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
@@ -95,15 +116,14 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
 
     const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
       baseToken: ensureHex(intent.baseToken),
-      sourceChainId: UniversalChainId.make("bob.808813"),
-      sourceChannelId: ChannelId.make(1)
+      sourceChainId: intent.sourceChainId,
+      sourceChannelId: intent.sourceChannelId
     })
 
     yield* Effect.log("graphql quote", graphqlDenom)
-
     let finalQuoteToken: Hex
-
-    if (Option.isSome(graphqlDenom)) {
+    const unwrapping = Option.isSome(graphqlDenom)
+    if (unwrapping) {
       yield* Effect.log("using the graphql quote token unwrapped", graphqlDenom.value)
       finalQuoteToken = graphqlDenom.value
     } else {
@@ -122,7 +142,7 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
         tokenMeta.symbol,
         tokenMeta.name,
         tokenMeta.decimals,
-        1n, // TODO: don't hardcode channel if unwrapping
+        unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
         finalQuoteToken,
         intent.quoteAmount
       ]
