@@ -8,8 +8,8 @@ import
 library Roles {
     uint64 public constant RELAYER = 1;
     uint64 public constant PAUSER = 2;
-    uint64 public constant UNPAUSER = 2;
-    uint64 public constant RATE_LIMITER = 3;
+    uint64 public constant UNPAUSER = 3;
+    uint64 public constant RATE_LIMITER = 4;
 }
 
 contract Manager is Initializable, UUPSUpgradeable, AccessManagerUpgradeable {
