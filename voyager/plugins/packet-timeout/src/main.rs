@@ -17,18 +17,17 @@ use tracing::{debug, info, instrument};
 use unionlabs::{self, ibc::core::client::height::Height, traits::Member, ErrorReporter};
 use voyager_message::{
     call::{SubmitTx, WaitForTrustedHeight, WaitForTrustedTimestamp},
-    data::{ChainEvent, Data, IbcDatagram},
+    data::{Data, IbcDatagram},
     module::{PluginInfo, PluginServer},
     primitives::{ChainId, IbcSpec, QueryHeight},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
     FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, conc, data, noop, pass::PassResult, seq, BoxDynError, Op};
+use voyager_vm::{call, conc, noop, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{MakeMsgTimeout, ModuleCall, WaitForTimeoutOrReceipt},
     callback::ModuleCallback,
-    data::ModuleData,
 };
 
 pub mod call;
@@ -88,10 +87,10 @@ pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
 impl Module {
     fn plugin_name(&self) -> String {
-        format!("{PLUGIN_NAME}")
+        PLUGIN_NAME.to_string()
     }
 
-    pub fn new(config: Config) -> Self {
+    pub fn new(Config {}: Config) -> Self {
         Self {}
     }
 }

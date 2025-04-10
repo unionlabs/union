@@ -270,7 +270,7 @@ pub mod ethabi {
 
 #[cfg(test)]
 mod tests {
-    use alloy_sol_types::{abi::token::WordToken, private::U256, sol_data::Uint, SolValue};
+    use alloy_sol_types::{private::U256, SolValue};
     use unionlabs::primitives::H256;
 
     use super::*;

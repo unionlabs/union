@@ -228,7 +228,7 @@ pub fn execute(
             info,
             channel_id,
             timeout_height.u64(),
-            timeout_timestamp.u64(),
+            timeout_timestamp,
             salt,
             Instruction::abi_decode_params(&instruction, true)?,
         ),

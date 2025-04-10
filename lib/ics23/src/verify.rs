@@ -126,16 +126,16 @@ fn verify_non_existence(
         return Err(VerifyError::BothProofsMissing);
     }
 
-    if !right_key.is_empty() {
-        if key_for_comparison(spec, key)? >= key_for_comparison(spec, &right_key)? {
-            return Err(VerifyError::KeyIsNotLeftOfRightProof);
-        }
+    if !right_key.is_empty()
+        && key_for_comparison(spec, key)? >= key_for_comparison(spec, &right_key)?
+    {
+        return Err(VerifyError::KeyIsNotLeftOfRightProof);
     }
 
-    if !left_key.is_empty() {
-        if key_for_comparison(spec, key)? <= key_for_comparison(spec, &left_key)? {
-            return Err(VerifyError::KeyIsNotRightOfLeftProof);
-        }
+    if !left_key.is_empty()
+        && key_for_comparison(spec, key)? <= key_for_comparison(spec, &left_key)?
+    {
+        return Err(VerifyError::KeyIsNotRightOfLeftProof);
     }
 
     match (&non_existence_proof.left, &non_existence_proof.right) {
