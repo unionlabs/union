@@ -44,6 +44,7 @@ files.extend-exclude = [
   "moonlight-ii.json",
   "app/src/generated",
   "app2/src/generated",
+  "ts-sdk/src/generated",
   "typescript-sdk/src/generated",
   "app/scripts/_index.ts",
   "lib/pg-queue/migrations",

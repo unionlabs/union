@@ -10,6 +10,7 @@ import type { TimeoutException, UnknownException } from "effect/Cause"
 
 export type FetchDecodeError = HttpClientError | ParseError | TimeoutException
 
+// Deprecated, use the one from ts-sdk
 export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
   Effect.gen(function* () {
     const client = yield* HttpClient.HttpClient
@@ -20,6 +21,7 @@ export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
 
 export type FetchDecodeGraphqlError = UnknownException | ParseError | TimeoutException
 
+// Deprecated, use the one from ts-sdk
 export const fetchDecodeGraphql = <S, E, D, V extends object | undefined>(
   schema: Schema.Schema<S, E>,
   document: TadaDocumentNode<D, V>,

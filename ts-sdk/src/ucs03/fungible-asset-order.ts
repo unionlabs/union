@@ -1,6 +1,6 @@
 import { toHex, type Address, type Hex } from "viem"
-import { Effect, pipe, Schema as S } from "effect"
 import * as Either from "effect/Either"
+import { Effect, Schema as S, Option, pipe } from "effect"
 import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
 import { readErc20Meta } from "../evm/erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js"
@@ -14,6 +14,9 @@ import { FungibleAssetOrder } from "./instruction.js"
 import type { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
 import { ensureHex } from "../utils/index.js"
 import type { TokenRawDenom } from "../schema/token.js"
+import { graphqlQuoteTokenUnwrapQuery } from "../graphql/unwrapped-quote-token.js"
+import type { UniversalChainId } from "../schema/chain.js"
+import type { ChannelId } from "../schema/channel.js"
 
 export type FungibleAssetOrderIntent = {
   sender: Address
@@ -39,6 +42,8 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
   baseToken: TokenRawDenom
   baseAmount: bigint
   quoteAmount: bigint
+  sourceChainId: UniversalChainId
+  sourceChannelId: ChannelId
 }) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
@@ -46,7 +51,24 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
     const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
       Effect.provideService(ViemPublicClient, { client: sourceClient })
     )
-    const quoteToken = yield* predictEvmQuoteToken(intent.baseToken)
+
+    const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
+      baseToken: ensureHex(intent.baseToken),
+      sourceChainId: intent.sourceChainId,
+      sourceChannelId: intent.sourceChannelId
+    })
+
+    yield* Effect.log("graphql quote", graphqlDenom)
+    let finalQuoteToken: Hex
+    const unwrapping = Option.isSome(graphqlDenom)
+    if (unwrapping) {
+      yield* Effect.log("using the graphql quote token unwrapped", graphqlDenom.value)
+      finalQuoteToken = graphqlDenom.value
+    } else {
+      yield* Effect.log("predicting quote token on chain")
+      finalQuoteToken = yield* predictEvmQuoteToken(intent.baseToken)
+      yield* Effect.log("received quote token onchain", finalQuoteToken)
+    }
 
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
@@ -58,8 +80,8 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
         tokenMeta.symbol,
         tokenMeta.name,
         tokenMeta.decimals,
-        0n, // channel if unwrapping
-        quoteToken,
+        unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
+        finalQuoteToken,
         intent.quoteAmount
       ]
     })
@@ -74,6 +96,8 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
   baseToken: TokenRawDenom
   baseAmount: bigint
   quoteAmount: bigint
+  sourceChainId: UniversalChainId
+  sourceChannelId: ChannelId
 }) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
@@ -83,9 +107,29 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
     const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
       Effect.provideService(ViemPublicClient, { client: sourceClient })
     )
-    yield* Effect.log("predicting quote token")
-    const quoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
-    yield* Effect.log("quote token", quoteToken)
+
+    yield* Effect.log(
+      "checking if we should unwrap by querying graphql quote token",
+      ensureHex(intent.baseToken)
+    )
+
+    const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
+      baseToken: ensureHex(intent.baseToken),
+      sourceChainId: intent.sourceChainId,
+      sourceChannelId: intent.sourceChannelId
+    })
+
+    yield* Effect.log("graphql quote", graphqlDenom)
+    let finalQuoteToken: Hex
+    const unwrapping = Option.isSome(graphqlDenom)
+    if (unwrapping) {
+      yield* Effect.log("using the graphql quote token unwrapped", graphqlDenom.value)
+      finalQuoteToken = graphqlDenom.value
+    } else {
+      yield* Effect.log("predicting quote token on chain")
+      finalQuoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
+      yield* Effect.log("received quote token onchain", finalQuoteToken)
+    }
 
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
@@ -97,8 +141,8 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
         tokenMeta.symbol,
         tokenMeta.name,
         tokenMeta.decimals,
-        0n, // channel if unwrapping
-        quoteToken,
+        unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
+        finalQuoteToken,
         intent.quoteAmount
       ]
     })
@@ -113,6 +157,8 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
   baseToken: string
   baseAmount: bigint
   quoteAmount: bigint
+  sourceChainId: UniversalChainId
+  sourceChannelId: ChannelId
 }) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
@@ -131,7 +177,25 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
       )
     )
 
-    const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
+    const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
+      baseToken: ensureHex(intent.baseToken),
+      sourceChainId: intent.sourceChainId,
+      sourceChannelId: intent.sourceChannelId
+    })
+
+    yield* Effect.log("graphql quote", graphqlDenom)
+    let finalQuoteToken: Hex
+    const unwrapping = Option.isSome(graphqlDenom)
+    if (unwrapping) {
+      yield* Effect.log("using the graphql quote token unwrapped", graphqlDenom.value)
+      finalQuoteToken = graphqlDenom.value
+    } else {
+      yield* Effect.log("predicting quote token on chain")
+      finalQuoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
+      yield* Effect.log("received quote token onchain", finalQuoteToken)
+    }
+
+    // const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
     console.log("here", intent)
     return yield* S.decode(FungibleAssetOrder)({
@@ -144,8 +208,8 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
         tokenMeta.symbol,
         tokenMeta.name,
         tokenMeta.decimals,
-        0n, // channel if unwrapping
-        quoteToken,
+        unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
+        finalQuoteToken,
         intent.quoteAmount
       ]
     })
@@ -160,14 +224,43 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
   baseToken: string
   baseAmount: bigint
   quoteAmount: bigint
+  sourceChainId: UniversalChainId
+  sourceChannelId: ChannelId
 }) =>
   Effect.gen(function* () {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
-    const tokenMeta = yield* readCw20TokenInfo(intent.baseToken).pipe(
-      Effect.provideService(CosmWasmClientContext, { client: sourceClient })
+
+    const tokenMeta = yield* pipe(
+      readCw20TokenInfo(intent.baseToken),
+      Effect.provideService(CosmWasmClientContext, { client: sourceClient }),
+      Effect.either,
+      Effect.map(
+        Either.getOrElse(() => ({
+          symbol: intent.baseToken,
+          name: intent.baseToken,
+          decimals: 0
+        }))
+      )
     )
-    const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
+
+    const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
+      baseToken: ensureHex(intent.baseToken),
+      sourceChainId: intent.sourceChainId,
+      sourceChannelId: intent.sourceChannelId
+    })
+
+    yield* Effect.log("graphql quote", graphqlDenom)
+    let finalQuoteToken: Hex
+    const unwrapping = Option.isSome(graphqlDenom)
+    if (unwrapping) {
+      yield* Effect.log("using the graphql quote token unwrapped", graphqlDenom.value)
+      finalQuoteToken = graphqlDenom.value
+    } else {
+      yield* Effect.log("predicting quote token on chain")
+      finalQuoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
+      yield* Effect.log("received quote token onchain", finalQuoteToken)
+    }
 
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
@@ -179,8 +272,8 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
         tokenMeta.symbol,
         tokenMeta.name,
         tokenMeta.decimals,
-        0n, // channel if unwrapping
-        quoteToken,
+        unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
+        finalQuoteToken,
         intent.quoteAmount
       ]
     })

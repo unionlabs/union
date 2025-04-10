@@ -74,6 +74,9 @@
     "babel-plugin-annotate-pure-calls": "^0.5.0",
     "biome": "^0.3.3",
     "dpdm": "^3.14.0",
+    "@effect/platform": "^0.77.2",
+    "gql.tada": "^1.8.10",
+    "graphql-request": "^7.1.2",
     "effect": "^3.13.12",
     "viem": "^2.23.12"
   },
