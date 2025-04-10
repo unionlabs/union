@@ -182,21 +182,21 @@ pub fn validate_light_client_update<C: ChainSpec, V: BlsVerify>(
 
     // Verify that if the update contains the next sync committee, and the signature periods do match,
     // next sync committees match too.
-    if let (Some(next_sync_committee), Some(stored_next_sync_committee)) =
-        (&update.next_sync_committee, &next_sync_committee)
-    {
-        if update_attested_period == stored_period {
+    if let Some(update_next_sync_committee) = &update.next_sync_committee {
+        if let Some(stored_next_sync_committee) = &next_sync_committee
+            && update_attested_period == stored_period
+        {
             ensure(
-                &next_sync_committee == stored_next_sync_committee,
+                &update_next_sync_committee == stored_next_sync_committee,
                 Error::NextSyncCommitteeMismatch {
                     expected: stored_next_sync_committee.aggregate_pubkey,
-                    found: next_sync_committee.aggregate_pubkey,
+                    found: update_next_sync_committee.aggregate_pubkey,
                 },
             )?;
         }
         // This validates the given next sync committee against the attested header's state root.
         validate_merkle_branch(
-            &TryInto::<altair::SyncCommitteeSsz<C>>::try_into(next_sync_committee.clone())
+            &TryInto::<altair::SyncCommitteeSsz<C>>::try_into(update_next_sync_committee.clone())
                 .unwrap()
                 .tree_hash_root(),
             update
