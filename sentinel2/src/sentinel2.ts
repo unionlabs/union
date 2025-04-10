@@ -62,14 +62,13 @@ interface ConfigFile {
   interactions: Array<ChainPair>
   cycleIntervalMs: number
   transfers?: Array<TransferConfig>
+  hasuraEndpoint: string
 }
 
 // A module-level set to keep track of already reported packet send transaction hashes.
 const reportedSendTxHashes = new Set<string>()
 // Variable to track sleep cycles
 let sleepCycleCount = 0
-
-const HASURA_ENDPOINT = "https://development.graphql.union.build/v1/graphql"
 
 // export class Transfer extends Schema.Class<Transfer>("Transfer")({
 //   token: Schema.Literal("0x09B8aE6BB8D447bF910068E6c246A270F42b41be", "0x09B8aE6BB8D447bF910068E6c246A270F42b41be"),
@@ -364,7 +363,7 @@ const transferLoop = Effect.repeat(
  *                        Only packets with a send timestamp >= cutoffTimestamp will be saved.
  * @returns An Effect that resolves to an array of Packet.
  */
-const fetchPacketsUntilCutoff = (srcChain: string, dstChain: string, cutoffTimestamp: string) =>
+const fetchPacketsUntilCutoff = (srcChain: string, dstChain: string, cutoffTimestamp: string, hasuraEndpoint: string) =>
   Effect.gen(function* () {
     let allPackets: Packet[] = []
     let cursor: string | undefined
@@ -395,7 +394,7 @@ const fetchPacketsUntilCutoff = (srcChain: string, dstChain: string, cutoffTimes
           }
         `
         response = yield* Effect.tryPromise({
-          try: () => request(HASURA_ENDPOINT, queryNext, { sortOrder: cursor, srcChain, dstChain }),
+          try: () => request(hasuraEndpoint, queryNext, { sortOrder: cursor, srcChain, dstChain }),
           catch: error => {
             console.info("Error in second query:", error)
             throw error
@@ -422,7 +421,7 @@ const fetchPacketsUntilCutoff = (srcChain: string, dstChain: string, cutoffTimes
           }
         `
         response = yield* Effect.tryPromise({
-          try: () => request(HASURA_ENDPOINT, queryFirst, { srcChain, dstChain }),
+          try: () => request(hasuraEndpoint, queryFirst, { srcChain, dstChain }),
           catch: error => {
             console.info("Error in first query:", error)
             throw error
@@ -469,7 +468,7 @@ const fetchPacketsUntilCutoff = (srcChain: string, dstChain: string, cutoffTimes
  * @param destinationChain - The destination chain identifier
  * @param timeframeMs - The maximum allowed timeframe (in milliseconds) for the packet to be confirmed
  */
-export const checkPackets = (sourceChain: string, destinationChain: string, timeframeMs: number) =>
+export const checkPackets = (sourceChain: string, destinationChain: string, timeframeMs: number, hasuraEndpoint: string) =>
   Effect.gen(function* () {
     const now = Date.now()
     const searchRangeMs = timeframeMs * 10
@@ -485,12 +484,14 @@ export const checkPackets = (sourceChain: string, destinationChain: string, time
     const first_packets: Packet[] = yield* fetchPacketsUntilCutoff(
       sourceChain,
       destinationChain,
-      sinceDate
+      sinceDate,
+      hasuraEndpoint
     )
     const second_packets: Packet[] = yield* fetchPacketsUntilCutoff(
       destinationChain,
       sourceChain,
-      sinceDate
+      sinceDate,
+      hasuraEndpoint
     )
     const packets = [...first_packets, ...second_packets]
     yield* Effect.log(`Fetched ${packets.length} packets from Hasura`)
@@ -575,7 +576,7 @@ const runIbcChecksForever = Effect.gen(function* (_) {
         `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
       )
 
-      yield* checkPackets(pair.sourceChain, pair.destinationChain, pair.timeframeMs)
+      yield* checkPackets(pair.sourceChain, pair.destinationChain, pair.timeframeMs, config.hasuraEndpoint)
     }
 
     yield* Effect.log(
@@ -606,6 +607,8 @@ const mainEffect = Effect.gen(function* (_) {
   )
 
   const config = yield* loadConfig(argv.config)
+
+  yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
   yield* Effect.all([/*transferLoop, */ runIbcChecksForever], { concurrency: "unbounded" }).pipe(
     Effect.provideService(Config, { config })
