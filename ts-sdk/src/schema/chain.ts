@@ -6,6 +6,7 @@ import { bech32, bytes } from "@scure/base"
 
 export const ChainId = S.String.pipe(S.brand("ChainId"))
 // e.g. union.union-testnet-9
+// TODO: narrow filter for arbitraries
 export const UniversalChainId = S.String.pipe(S.pattern(/^[^:]+\.[^:]+$/)).pipe(
   S.brand("UniversalChainId")
 )
@@ -61,12 +62,25 @@ export class CosmosAddressEncodeError extends Data.TaggedError("CosmosAddressEnc
   prefix: string
 }> {}
 
+const HRP = S.String.pipe(
+  S.length({
+    min: 1,
+    max: 83,
+  }, {
+    description: "HRP must be between 1 to 83 US-ASCII characters, inclusive"
+  }),
+  S.pattern(/^[\x21-\x7E]+$/, {
+    description: "HRP characters must be within the range [33-126], inclusive"
+  })
+)
+export type HRP = typeof HRP.Type
+
 export class Chain extends S.Class<Chain>("Chain")({
   chain_id: ChainId,
   universal_chain_id: UniversalChainId,
   display_name: ChainDisplayName,
   rpc_type: RpcType,
-  addr_prefix: S.String,
+  addr_prefix: HRP,
   testnet: S.Boolean,
   features: S.Array(ChainFeatures),
   rpcs: S.Array(Rpc),

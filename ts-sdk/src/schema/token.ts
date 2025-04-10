@@ -13,6 +13,9 @@ export type CosmosBankDenom = typeof CosmosBankDenom.Type
 export const TokenRawAmount = Schema.BigInt.pipe(Schema.brand("TokenRawAmount"))
 export type TokenRawAmount = typeof TokenRawAmount.Type
 
+export const TokenRawAmountFromSelf = Schema.BigIntFromSelf.pipe(Schema.brand("TokenRawAmount"))
+export type TokenRawAmountFromSelf = typeof TokenRawAmountFromSelf.Type
+
 export class TokenSource extends Schema.Class<TokenSource>("TokenSource")({
   name: Schema.String,
   logo_uri: Schema.OptionFromNullOr(Schema.String),

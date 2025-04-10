@@ -11,6 +11,7 @@ import { predictQuoteToken as predictCosmosQuoteToken } from "../cosmos/quote-to
 import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-token.js"
 import { FungibleAssetOrder } from "./instruction.js"
 import type { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
+import { ensureHex } from "../utils/index.js"
 
 export type FungibleAssetOrderIntent = {
   sender: Address
@@ -50,7 +51,7 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
       operand: [
         intent.sender,
         intent.receiver,
-        intent.baseToken,
+        ensureHex(intent.baseToken),
         intent.baseAmount,
         tokenMeta.symbol,
         tokenMeta.name,
@@ -89,7 +90,7 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
       operand: [
         intent.sender,
         intent.receiver,
-        intent.baseToken,
+        ensureHex(intent.baseToken),
         intent.baseAmount,
         tokenMeta.symbol,
         tokenMeta.name,
@@ -133,9 +134,9 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
-        toHex(intent.sender),
+        intent.sender,
         intent.receiver,
-        toHex(intent.baseToken),
+        ensureHex(intent.baseToken),
         intent.baseAmount,
         tokenMeta.symbol,
         tokenMeta.name,
@@ -168,9 +169,9 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
-        toHex(intent.sender),
-        toHex(intent.receiver),
-        toHex(intent.baseToken),
+        intent.sender,
+        intent.receiver,
+        ensureHex(intent.baseToken),
         intent.baseAmount,
         tokenMeta.symbol,
         tokenMeta.name,
@@ -214,9 +215,9 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
-        toHex(intent.sender),
-        toHex(intent.receiver),
-        toHex(intent.baseToken),
+        intent.sender,
+        intent.receiver,
+        ensureHex(intent.baseToken),
         intent.baseAmount,
         tokenMeta.symbol,
         tokenMeta.name,
@@ -249,9 +250,9 @@ export const createAptosToCosmosFungibleAssetOrder = (intent: {
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
-        toHex(intent.sender),
-        toHex(intent.receiver),
-        toHex(intent.baseToken),
+        intent.sender,
+        intent.receiver,
+        ensureHex(intent.baseToken),
         intent.baseAmount,
         tokenMeta.symbol,
         tokenMeta.name,
