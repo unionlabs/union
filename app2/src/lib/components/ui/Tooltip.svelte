@@ -3,15 +3,17 @@ import { cn } from "$lib/utils"
 import type { HTMLAttributes } from "svelte/elements"
 import type { Snippet } from "svelte"
 import { scale } from "svelte/transition"
+import { Match } from "effect"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   trigger: Snippet
   content: Snippet
   title?: string
   class?: string
+  delay?: "quick" | undefined
 }
 
-let { trigger, content, title, class: className = "", ...rest }: Props = $props()
+let { trigger, content, title, class: className = "", delay, ...rest }: Props = $props()
 
 let tooltipElement: HTMLDivElement
 let isVisible = $state(false)
@@ -21,6 +23,12 @@ let isHoveringTrigger = $state(false)
 let lastMouseEvent: MouseEvent | undefined
 let tooltipReady = $state(false)
 let showTimeout: number | undefined
+
+let [enterDelay, leaveDelay] = Match.value(delay).pipe(
+  Match.when(Match.undefined, () => [750, 250]),
+  Match.when("quick", () => [100, 100]),
+  Match.exhaustive
+)
 
 $effect(() => {
   if (isVisible && tooltipElement && lastMouseEvent) {
@@ -49,7 +57,7 @@ function onTooltipLeave() {
     if (!(isHoveringTrigger || isHoveringTooltip)) {
       isVisible = false
     }
-  }, 200)
+  }, leaveDelay)
 }
 
 function onTriggerEnter(e: MouseEvent) {
@@ -59,7 +67,7 @@ function onTriggerEnter(e: MouseEvent) {
     if (isHoveringTrigger) {
       isVisible = true
     }
-  }, 750)
+  }, enterDelay)
 }
 
 function onTriggerLeave() {
@@ -68,7 +76,7 @@ function onTriggerLeave() {
     if (!isHoveringTooltip) {
       isVisible = false
     }
-  }, 200)
+  }, leaveDelay)
 }
 
 function updatePosition(e?: MouseEvent) {
@@ -110,8 +118,8 @@ const tooltipClasses = $derived(
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div 
-  class="inline-block cursor-pointer" 
+<div
+  class="inline-block cursor-pointer"
   onmouseenter={onTriggerEnter}
   onmouseleave={onTriggerLeave}
 >
@@ -119,29 +127,29 @@ const tooltipClasses = $derived(
 </div>
 
 {#if isVisible}
-<div 
-  bind:this={tooltipElement}
-  class={tooltipClasses}
-  onmouseenter={onTooltipEnter}
-  onmouseleave={onTooltipLeave}
-  onclick={(e) => e.stopPropagation()}
-  onmousedown={(e) => e.stopPropagation()}
-  transition:scale|local={{
-    duration: 150,
-    start: 0.95,
-    opacity: 0
-  }}
-  {...rest}
->
-  <div class="tooltip-content text-sm flex flex-col gap-4 text-left">
-    {#if title}
-      <section class="flex justify-between items-center">
-        <h2 class="text-white font-bold text-lg">{title}</h2>
-      </section>
-    {/if}
-    {@render content()}
+  <div
+    bind:this={tooltipElement}
+    class={tooltipClasses}
+    onmouseenter={onTooltipEnter}
+    onmouseleave={onTooltipLeave}
+    onclick={(e) => e.stopPropagation()}
+    onmousedown={(e) => e.stopPropagation()}
+    transition:scale|local={{
+      duration: 150,
+      start: 0.95,
+      opacity: 0,
+    }}
+    {...rest}
+  >
+    <div class="tooltip-content text-sm flex flex-col gap-4 text-left">
+      {#if title}
+        <section class="flex justify-between items-center">
+          <h2 class="text-white font-bold text-lg">{title}</h2>
+        </section>
+      {/if}
+      {@render content()}
+    </div>
   </div>
-</div>
 {/if}
 
 <style global>

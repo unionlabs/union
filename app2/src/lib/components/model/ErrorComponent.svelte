@@ -5,10 +5,17 @@ import type { ParseError } from "effect/ParseResult"
 import type { NoViemChainError } from "$lib/services/evm/clients"
 import type { FetchNativeBalanceError, ReadContractError } from "$lib/services/evm/balances"
 import type { CreatePublicClientError } from "$lib/services/transfer/errors"
-import type { Base64EncodeError, QueryBankBalanceError } from "$lib/services/cosmos/balances"
 import type { NoRpcError } from "@unionlabs/sdk/schema"
 import { slide } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
+import type { Base64EncodeError } from "$lib/utils/base64"
+import type { QueryBankBalanceError } from "$lib/services/cosmos/balances"
+import SharpContentCopyIcon from "../icons/SharpContentCopyIcon.svelte"
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import SharpOpenInBrowserIcon from "../icons/SharpOpenInBrowserIcon.svelte"
+import Modal from "../ui/Modal.svelte"
+import Tooltip from "../ui/Tooltip.svelte"
+import SharpErrorOutlineIcon from "../icons/SharpErrorOutlineIcon.svelte"
 
 interface Props {
   error:
@@ -28,6 +35,7 @@ interface Props {
 let { error }: Props = $props()
 let showDetails = $state(false)
 
+// TODO: replace me with an exhaustive matcher :)
 function getUserFriendlyMessage(error: Props["error"]): string {
   switch (error._tag) {
     case "RequestError":
@@ -58,25 +66,51 @@ function getUserFriendlyMessage(error: Props["error"]): string {
       return "Something went wrong. Please try again later."
   }
 }
+
+const writeToClipboard = () => {
+  navigator.clipboard.writeText(JSON.stringify(extractErrorDetails(error), null, 2))
+}
 </script>
 
-<div class="p-4 rounded bg-red-500 overflow-hidden flex flex-col">
-  <div class="flex justify-between gap-2">
-    <div>
-      <h3 class="text-xl font-bold">Error</h3>
-      <p>{getUserFriendlyMessage(error)}</p>
-    </div>
-    <Button
-      variant="secondary"
-      class="self-start mt-2"
-      onclick={() => (showDetails = !showDetails)}
-    >
-      {showDetails ? "Hide Details ↑" : "Show Details ↓"}
-    </Button>
+<div
+  class="p-4 rounded bg-zinc-925 border-2 border-red-500 overflow-hidden flex flex-col"
+>
+  <div class="flex justify-between items-center gap-2">
+    <SharpErrorOutlineIcon class="text-red-500 size-4" />
+    <p>{getUserFriendlyMessage(error)}</p>
+    <div class="grow"></div>
+    <Tooltip delay={"quick"}>
+      {#snippet trigger()}
+        <Button
+          variant="secondary"
+          onclick={() => (showDetails = !showDetails)}
+        >
+          <SharpOpenInBrowserIcon class="size-4" />
+        </Button>
+      {/snippet}
+
+      {#snippet content()}
+        Open Details
+      {/snippet}
+    </Tooltip>
+    <Tooltip delay={"quick"}>
+      {#snippet trigger()}
+        <Button variant="primary" onclick={writeToClipboard}>
+          <SharpContentCopyIcon class="size-4" />
+        </Button>
+      {/snippet}
+      {#snippet content()}
+        Copy to Clipboard
+      {/snippet}
+    </Tooltip>
   </div>
 
-  {#if showDetails}
-    <div in:slide out:slide|local={{ delay: 0 }}>
+  <Modal
+    isOpen={showDetails}
+    onClose={() => (showDetails = !showDetails)}
+    class="w-full max-w-4xl"
+  >
+    <div class="overflow-auto mt-6" in:slide out:slide|local={{ delay: 0 }}>
       <section class="mt-4">
         <h3 class="text-lg font-bold">Error Type</h3>
         <pre>{error._tag}</pre>
@@ -145,5 +179,5 @@ function getUserFriendlyMessage(error: Props["error"]): string {
         {/if}
       </section>
     </div>
-  {/if}
+  </Modal>
 </div>
