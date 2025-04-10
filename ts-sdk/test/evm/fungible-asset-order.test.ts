@@ -1,4 +1,4 @@
-import { assert, describe, it, expect } from "@effect/vitest"
+import { assert, describe, it } from "@effect/vitest"
 // TODO: fix mocking instancing
 import { vi } from "vitest"
 import { type Context, Effect, Exit, Layer } from "effect"
@@ -12,12 +12,11 @@ import {
   createCosmosToEvmFungibleAssetOrder,
   createCosmosToCosmosFungibleAssetOrder
 } from "../../src/ucs03/fungible-asset-order.js"
-import { toHex } from "viem"
 import { ensureHex } from "@unionlabs/sdk/utils/index"
 
-vi.mock('../../src/graphql/unwrapped-quote-token.js', async (importOriginal) => {
+vi.mock("../../src/graphql/unwrapped-quote-token.js", async importOriginal => {
   return {
-    ...await importOriginal<typeof import('../../src/graphql/unwrapped-quote-token.js')>(),
+    ...(await importOriginal<typeof import("../../src/graphql/unwrapped-quote-token.js")>()),
     graphqlQuoteTokenUnwrapQuery: () => Effect.succeed("0x12345")
   }
 })
@@ -100,7 +99,7 @@ const evmIntent = {
   baseAmount: 1000000000000000000n, // 1 token with 18 decimals
   quoteAmount: 500000000000000000n, // 0.5 token with 18 decimals
   sourceChainId: "chainId",
-  sourceChannelId: 999,
+  sourceChannelId: 999
 } as const
 
 const cosmosIntent = {
@@ -110,7 +109,7 @@ const cosmosIntent = {
   baseAmount: BigInt(1000000), // 1 token with 6 decimals
   quoteAmount: BigInt(500000), // 0.5 token with 6 decimals
   sourceChainId: "chainId",
-  sourceChannelId: 999,
+  sourceChannelId: 999
 } as const
 
 const EvmToEvm = Layer.mergeAll(
@@ -282,14 +281,18 @@ describe("Fungible Asset Order Tests", () => {
 
   describe("Error handling", () => {
     it.layer(EvmToEvmError)(it => {
-      it.effect("should handle errors when creating EVM to EVM fungible asset order with invalid input", () =>
-        Effect.gen(function* () {
-          const result = yield* Effect.exit(createEvmToEvmFungibleAssetOrder({
-            ...evmIntent,
-            sender: "nonHexSender"
-          } as unknown as any))
-          assert.isTrue(Exit.isFailure(result))
-        })
+      it.effect(
+        "should handle errors when creating EVM to EVM fungible asset order with invalid input",
+        () =>
+          Effect.gen(function* () {
+            const result = yield* Effect.exit(
+              createEvmToEvmFungibleAssetOrder({
+                ...evmIntent,
+                sender: "nonHexSender"
+              } as unknown as any)
+            )
+            assert.isTrue(Exit.isFailure(result))
+          })
       )
     })
 
