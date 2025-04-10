@@ -251,11 +251,3 @@
     </div>
   {/if}
 </div>
-
-<pre class="text-xs bg-zinc-100 dark:bg-zinc-800 p-2 rounded overflow-x-auto">
-  {JSON.stringify(ets, null, 2)}
-</pre>
-<pre class="text-xs bg-zinc-100 dark:bg-zinc-800 p-2 rounded overflow-x-auto">
-  {JSON.stringify(cts, null, 2)}
-</pre>
-
