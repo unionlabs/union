@@ -142,6 +142,8 @@ _: {
         ast = true
         optimizer = true
         optimizer_runs = 10_000
+        cbor_metadata = false
+        sparse_mode = false
 
         [profile.script]
         src = "scripts"
@@ -535,6 +537,7 @@ _: {
               WETH_ADDRESS=${weth} \
               PRIVATE_KEY=${private-key} \
               DEPLOYER="''${1:?deployer must be set to deploy with this script (first arg to this script)}" \
+              FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployIBC \
                 -vvvv \

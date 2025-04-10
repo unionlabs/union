@@ -16,11 +16,14 @@ wrap_comments                = false
 
 [profile.default]
 ast            = true
+bytecode_hash  = "none"
+cbor_metadata  = false
 fs_permissions = [{ access = "read", path = "./" }, { access = "write", path = "contracts.json" }]
 gas_reports    = ["*"]
 optimizer      = true
 optimizer_runs = 10_000
 solc_version   = "0.8.27"
+sparse_mode    = false
 src            = "evm/scripts"
 test           = "evm/tests/src"
 via_ir         = true
