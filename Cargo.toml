@@ -188,6 +188,7 @@ members = [
 
   "voyager/plugins/packet-filter",
   "voyager/plugins/transaction-batch",
+  "voyager/plugins/packet-timeout",
 
   "drip",
 

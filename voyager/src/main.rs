@@ -34,12 +34,12 @@ use voyager_message::{
         equivalent_chain_ids::EquivalentChainIds, get_plugin_info,
         ibc_spec_handler::IbcSpecHandler, Context, ModulesConfig,
     },
-    filter::{make_filter, run_filter, JaqInterestFilter},
+    filter::{make_filter, run_filter, JaqFilterResult, JaqInterestFilter},
     primitives::{IbcSpec, QueryHeight},
     rpc::{server::cache, IbcState, VoyagerRpcClient},
     VoyagerMessage,
 };
-use voyager_vm::{call, filter::FilterResult, promise, Op, Queue};
+use voyager_vm::{call, promise, Op, Queue};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -232,8 +232,13 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 );
 
                 match result {
-                    Ok(FilterResult::Interest(tag)) => println!("interest ({tag})"),
-                    Ok(FilterResult::NoInterest) => println!("no interest"),
+                    Ok(JaqFilterResult::Take(tag)) => {
+                        println!("interest (take, {tag})");
+                    }
+                    Ok(JaqFilterResult::Copy(tag)) => {
+                        println!("interest (copy, {tag})");
+                    }
+                    Ok(JaqFilterResult::NoInterest) => println!("no interest"),
                     Err(()) => println!("failed"),
                 }
             }

@@ -951,8 +951,22 @@ fn process_msgs(
                             funds: vec![],
                         })
                     }
-                    ibc_union_spec::datagram::Datagram::PacketTimeout(_msg_packet_timeout) => {
-                        todo!()
+                    ibc_union_spec::datagram::Datagram::PacketTimeout(msg_packet_timeout) => {
+                        let packet_recv = ibc_union_msg::msg::ExecuteMsg::PacketTimeout(
+                            ibc_union_msg::msg::MsgPacketTimeout {
+                                packet: msg_packet_timeout.packet,
+                                proof: msg_packet_timeout.proof,
+                                proof_height: msg_packet_timeout.proof_height,
+                                relayer: signer.to_string(),
+                            },
+                        );
+
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
+                            msg: serde_json::to_vec(&packet_recv).unwrap(),
+                            funds: vec![],
+                        })
                     }
                     ibc_union_spec::datagram::Datagram::IntentPacketRecv(
                         _msg_intent_packet_recv,

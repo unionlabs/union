@@ -18,6 +18,7 @@ use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
     callback::AggregateSubmitTxFromOrderedHeaders,
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
+    filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
@@ -72,10 +73,10 @@ impl Plugin for Module {
         PluginInfo {
             name: plugin_name(&config.state_lens_client_type),
             // inlined UpdateHook::filter, since we only care about client_type here
-            interest_filter: format!(
+            interest_filter: simple_take_filter(format!(
                 r#"[.. | ."@type"? == "fetch_update_headers" and ."@value".client_type == "{}"] | any"#,
                 config.state_lens_client_type
-            ),
+            )),
         }
     }
 

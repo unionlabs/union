@@ -275,7 +275,12 @@ pub struct MsgPacketAcknowledgement {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case", deny_unknown_fields)
 )]
-pub struct MsgPacketTimeout {}
+pub struct MsgPacketTimeout {
+    pub packet: Packet,
+    /// TODO: Should this be proof_unreceived?
+    pub proof: Bytes,
+    pub proof_height: u64,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]

@@ -9,7 +9,7 @@ mod tests;
 use cosmwasm_std::{Addr, StdError};
 use frissitheto::UpgradeError;
 use ibc_union_msg::lightclient::Status;
-use ibc_union_spec::{ChannelId, ChannelState, ClientId, ConnectionState};
+use ibc_union_spec::{ChannelId, ChannelState, ClientId, ConnectionState, Timestamp};
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
 
@@ -72,8 +72,8 @@ pub enum ContractError {
         ContractErrorKind::from(self)
     )]
     ReceivedTimedOutPacketTimestamp {
-        timeout_timestamp: u64,
-        current_timestamp: u64,
+        timeout_timestamp: Timestamp,
+        current_timestamp: Timestamp,
     },
     #[error(
         "{} caller ({caller}) is not the owner ({owner}) of the channel ({channel_id})",

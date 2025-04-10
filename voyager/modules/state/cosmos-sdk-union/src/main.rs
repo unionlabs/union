@@ -11,7 +11,7 @@ use cosmos_sdk_event::CosmosSdkEvent;
 use ibc_union_spec::{
     path::StorePath,
     query::{PacketByHash, Query},
-    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, Packet,
+    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, Packet, Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -463,7 +463,7 @@ pub enum IbcEvent {
         #[serde(with = "serde_utils::string")]
         packet_timeout_height: u64,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         channel_id: ChannelId,
         packet_hash: H256,

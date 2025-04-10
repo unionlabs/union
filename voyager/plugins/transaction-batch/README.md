@@ -13,8 +13,8 @@ For example, given the config:
       "min_batch_size": 1,
       "max_batch_size": 3,
       "max_wait_time": {
-			  "secs": 10,
-			  "nanos": 0
+        "secs": 10,
+        "nanos": 0
       }
     }
   ]

@@ -1,6 +1,7 @@
 use unionlabs::{
     cosmos::ics23::{commitment_proof::CommitmentProof, proof_spec::ProofSpec},
     ibc::core::commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
+    primitives::Bytes,
 };
 
 pub use crate::proof_specs::{IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC};
@@ -18,7 +19,7 @@ pub enum VerifyMembershipError {
     #[error("{0}")]
     InnerVerification(verify::VerifyMembershipError),
     #[error("calculated root ({calculated}) does not match the given ({given}) value", calculated = serde_utils::to_hex(calculated), given = serde_utils::to_hex(found))]
-    InvalidRoot { found: Vec<u8>, calculated: Vec<u8> },
+    InvalidRoot { found: Bytes, calculated: Bytes },
     #[error("expected the size of proofs to be ({expected}), found ({found})")]
     InvalidProofsLength { expected: usize, found: usize },
     #[error("expected the size of key path to be ({expected}), found ({found})")]
@@ -152,8 +153,8 @@ fn verify_chained_membership_proof(
                 Ok(())
             } else {
                 Err(VerifyMembershipError::InvalidRoot {
-                    found: value,
-                    calculated: root.to_vec(),
+                    found: value.into(),
+                    calculated: root.to_vec().into(),
                 })
             }
         })
@@ -319,11 +320,24 @@ mod tests {
     #[test]
     fn account_non_existence() {
         let root = H256::new(hex!(
-            "C9A25B954FEF48EC601359591A28C9A2FD32A411421AEF2DC16DC8A68B3CFA98"
+            "79f694c8c821fdb4a6368635125c4f8754791d0cb18a3234d16846b8bd1b8af1"
         ));
-        let proof = hex!("0a96061293060a15014152090b0c95c948edc407995560feed4a9df88812fa020a15014152090b0c95c948edc407995560feed4a9df81e129e010a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e31673966716a7a63766a687935336d77797137763432633837613439666d37713772646568386312460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a2103820c4b94dccd7d74706216c426fe884d9a4404410df69d6421899595c5a9c122180420031a0b0801180120012a0300027822290801122502047820170c890f01b9fa9ab803511bbc7be7c25359309f04d021a72e0a9b93b8ff72c020222c0801120504089601201a21205f282a80f1d186fa1f7b237f81e8bc9a4bb40d5a03cbbdffdd421b1ad4cb16f4222c0801120506109601201a2120e9c65294b7106c7323dcabe4532232c319afc78cd373e338f12df43f8ecfa909222c080112050a309601201a2120a95af7890dba33514ea28a3db7b409f4887b058d6d1e43960c4cd45bb1d9bef81afc020a150143e46d91544517a037a8029b6c7f86f62bab389b129e010a202f636f736d6f732e617574682e763162657461312e426173654163636f756e74127a0a2c756e696f6e3167306a786d79323567357436716461677132646b636c7578376334366b77796d38646563667712460a1f2f636f736d6f732e63727970746f2e736563703235366b312e5075624b657912230a21034611ea6606f6241fdeb0db1854a785eaa2fef5770694237daaf46057cadb3903180320031a0c0801180120012a0400029601222c0801120502049601201a2120532543090d1564b206e953fd6f97000d9b78bd5a8a424f551d483a58b3f54c57222a0801122604089601207e55a1ee8006e9c29c895a8de8ea8cdc6aaddc10e05ea3d3ee8fac786a73c02d20222c0801120506109601201a2120e9c65294b7106c7323dcabe4532232c319afc78cd373e338f12df43f8ecfa909222c080112050a309601201a2120a95af7890dba33514ea28a3db7b409f4887b058d6d1e43960c4cd45bb1d9bef80a80020afd010a0361636312205281c416bf4f80b9d99428a09f91ff311968a3b2adb199342d63c9db20a417e91a090801180120012a010022250801122101ba30cf8122e71a87fea08d0da9499e0373495a64e1648de8f08ca1a73e1fc1a8222708011201011a203489cd05a389a1d165f19003cea0994df9e55a5cb53b3d659417040be528b86d222708011201011a20e5c60ddccacb1c6b0be7957e8d7a86dc0f8bcec91c91d666d39eb1ebedd1bdf1222708011201011a2047a4c9a64496594e8b255443aa979293b2c7120150cf31e0eeeb8a2a987fd7e8222708011201011a2053bca15bed4becbdfd1b4cd0e63bd3845646022a99a2289a6678d8608f092207");
 
-        let proof = MerkleProof::decode_as::<Proto>(&proof).unwrap();
+        let proofs: cometbft_types::crypto::proof_ops::ProofOps = serde_json::from_str(r#"{"ops":[{"type":"ics23:iavl","key":"q80=","data":"ErkBCgKrzRKyAQoWbmV4dENvbm5lY3Rpb25TZXF1ZW5jZRIIAAAAAAAAAAAaCwgBGAEgASoDAAICIikIARIlAgQCIBbd8oOqTAzz2N37/K2H8sEXU4MpoF2tObMSWeovzgwrICIpCAESJQQIAiC/e92Vz+ipIjtfwS/AQClqyJTFZnFm9xT57lLBlJ2FOCAiKwgBEicGEKCcASB8yrzWR1APjhwhj/IN9xudq2d3bMqTdFQ3ibwBhyuVByA="},{"type":"ics23:simple","key":"aWJj","data":"CvkBCgNpYmMSIC+Djnty/u8Aq4yU7e+160oGfn5YDINR1/yvhhhIaHlfGgkIARgBIAEqAQAiJwgBEgEBGiDuCyeNLY+9uuuNJlej7iVn6FAZd3L1N6bBfGo4fe0rZCIlCAESIQFZckG8cRgqZGow7krfhYaPj1WV+NHi06jP3AzsgCQMBCIlCAESIQG6kYZ6dYB+K9horB1f2/t2QbzklLUPZX85JPwGiciHpyIlCAESIQF+bA9XuNY3FzraIK1ZiLenkCsDKJfYE1jU4jZmbVdDNSInCAESAQEaIGSuJu8jPsinlMyTZkCjypibd+BjdVz7PZEVK9p85uCF"}]}"#).unwrap();
+
+        let proofs = proofs
+            .ops
+            .into_iter()
+            .map(|op| {
+                <protos::cosmos::ics23::v1::CommitmentProof as prost::Message>::decode(&*op.data)
+                    .unwrap()
+            })
+            .collect::<Vec<_>>();
+
+        let proof =
+            MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof { proofs })
+                .unwrap();
+
         let root = MerkleRoot { hash: root };
 
         assert_eq!(
@@ -331,7 +345,7 @@ mod tests {
                 &proof,
                 &SDK_SPECS,
                 &root,
-                &[b"acc".to_vec(), b"muh".to_vec()]
+                &[b"ibc".to_vec(), hex!("abcd").to_vec()]
             ),
             Ok(())
         );
@@ -391,6 +405,31 @@ mod tests {
                     .collect(),
             ],
             hex!("1a06b8264038ba3c02560b22e19e55d102be9dd0c893c4219f9b9114607dabae").to_vec(),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn packet_timeout_non_membership() {
+        let proof = serde_json::from_str::<MerkleProof>(r#"{"proofs":[{"@type":"nonexist","@value":{"key":"0x0316d5260c4a4bc907b79822b792cf51c57f05f311f1e79309b7cc3ece4e277af300c8e8bda249383359718501c9fc5e6db0215edfd2ba8a8812b08665c226e57844","left":{"key":"0x0316d5260c4a4bc907b79822b792cf51c57f05f311f1e79309b7cc3ece4e277af300c8e6b50d683ea8bc68beb2a555a59bac272a6ebd8470d612d11b3eb26a4a5d","value":"0x01502841361a25f62632a8138da2f5da1948539832b0fc2bfb733cc7b081836e","leaf":{"hash":"sha256","prehash_key":"no_hash","prehash_value":"sha256","length":"var_proto","prefix":"0x0002b8a332"},"path":[{"hash":"sha256","prefix":"0x0204dc904220","suffix":"0x20aa4be3b4460f469a54a997e9fc0e4c5a15360c5ae1db92b49cacb4b22214ecb7"},{"hash":"sha256","prefix":"0x04088ec24220","suffix":"0x2014292d77fd88baf068c554db08686c7556f8d789473ee01e91c161718fde1488"},{"hash":"sha256","prefix":"0x060e8ec24220","suffix":"0x20192764ea5e79cb32fb3f11d53665d29a0d777f825a6491961880ba1e54340dcc"},{"hash":"sha256","prefix":"0x0a2686824820396ef3cfb88b312d20207809d07000efd88f2f7dc5229feb6cfda4d68265ceda20","suffix":"0x0"},{"hash":"sha256","prefix":"0x0e5eb2bc4d202060c7dd2d09459ea291a7e3f62d2c3360fcd3ea27086c028517b7e82e2e202920","suffix":"0x0"},{"hash":"sha256","prefix":"0x10a401d88b5120","suffix":"0x200299e87712cc651d04fad22c28362ad369aeaace382f114129927cebc5814b3f"},{"hash":"sha256","prefix":"0x12ee02d8f35420f2b92607b1b503d7b99066321684b44916ec3d8a259e9e5e455998c2a731af9520","suffix":"0x0"},{"hash":"sha256","prefix":"0x14a605dcc25520","suffix":"0x200adfc7b130f05f71c93a3c9279bfc0a5f02a7c4cc0cf8a0259da481133333ec0"},{"hash":"sha256","prefix":"0x169008dcc25520","suffix":"0x2069b0cf34242930daf1c8b4fac14678e5e15fc3887c9747a225da780b6e275290"},{"hash":"sha256","prefix":"0x18c610dcc25520","suffix":"0x20bd446e2cb44c82425f1f283d9ba42301e348822b2d5f91666afe3b94a4f9c662"},{"hash":"sha256","prefix":"0x1ad41da2e85520","suffix":"0x209e357f1f4b212b7f0cd13736eec2a20a094ff17e19f57065076c60325dc5d7f4"},{"hash":"sha256","prefix":"0x1ca836a2e855202011f44d3da40ce2d9b4d69ff3df4ba7b0f60bb4d74b45cdcfffe52a1d7e595920","suffix":"0x0"},{"hash":"sha256","prefix":"0x1eda5aa2e85520ebda986e64b5c8babb379a66e2df0ed13bf5ef0969912eaffbfc8922882774f420","suffix":"0x0"},{"hash":"sha256","prefix":"0x20fe9701a2e855201691ba603c7516af8f6e5e3870b2e9b5d93c15740f6a8b5e067d75ee01fe62c820","suffix":"0x0"},{"hash":"sha256","prefix":"0x228cdf02a4eb5520","suffix":"0x20406d8a6e864102c22e775f263a958ec616400989f622611c39a7acc6183d9b56"},{"hash":"sha256","prefix":"0x24aede05a4eb5520832741e67cb7525c0c6e44f08a2ccab31c4f6e471722e482ef339d3d3c3f993a20","suffix":"0x0"},{"hash":"sha256","prefix":"0x26b4920dd4eb5520f558704bc9c29285f8f12c297be86ab3deca125bb8a20217d82930625210b8cb20","suffix":"0x0"},{"hash":"sha256","prefix":"0x2ab2ab1bd4eb5520","suffix":"0x20337ac646c149de08f877f613c9d7798a96826cbf6977ed64f6ed21c36170ba8d"},{"hash":"sha256","prefix":"0x2ea4f736d4eb5520","suffix":"0x20717db97555e834d39eebe08926de9db1274bd0e4e4646e5fdbd3afd1649e0e62"},{"hash":"sha256","prefix":"0x30849ea701d4eb5520","suffix":"0x20f6d89b3895fbfb8b8d544bf6b55eeaafb38105d3300288f154e638e9de2b676d"},{"hash":"sha256","prefix":"0x34b8aeef02d4eb5520","suffix":"0x2016a4876d8857304b2b073839832c04e964558a6d4dbf276d5153ec910ad55069"},{"hash":"sha256","prefix":"0x36fec9e106d4eb5520","suffix":"0x20c65ebf738e8d4eafce3f004311c65b5eeda4af6fa1246c12b05255b888103801"}]},"right":{"key":"0x0316d5260c4a4bc907b79822b792cf51c57f05f311f1e79309b7cc3ece4e277af300c8ed3c81d8f763521509ba9b4d310c1f46dce8efe732a512cdd14de4ca7d6a","value":"0x01502841361a25f62632a8138da2f5da1948539832b0fc2bfb733cc7b081836e","leaf":{"hash":"sha256","prehash_key":"no_hash","prehash_value":"sha256","length":"var_proto","prefix":"0x0002eaba41"},"path":[{"hash":"sha256","prefix":"0x0204dc90422019e61e56713d298667526e3160efc7939ebec8acdba0a73a0a9a5d7d6e40c25820","suffix":"0x0"},{"hash":"sha256","prefix":"0x04088ec24220","suffix":"0x2014292d77fd88baf068c554db08686c7556f8d789473ee01e91c161718fde1488"},{"hash":"sha256","prefix":"0x060e8ec24220","suffix":"0x20192764ea5e79cb32fb3f11d53665d29a0d777f825a6491961880ba1e54340dcc"},{"hash":"sha256","prefix":"0x0a2686824820396ef3cfb88b312d20207809d07000efd88f2f7dc5229feb6cfda4d68265ceda20","suffix":"0x0"},{"hash":"sha256","prefix":"0x0e5eb2bc4d202060c7dd2d09459ea291a7e3f62d2c3360fcd3ea27086c028517b7e82e2e202920","suffix":"0x0"},{"hash":"sha256","prefix":"0x10a401d88b5120","suffix":"0x200299e87712cc651d04fad22c28362ad369aeaace382f114129927cebc5814b3f"},{"hash":"sha256","prefix":"0x12ee02d8f35420f2b92607b1b503d7b99066321684b44916ec3d8a259e9e5e455998c2a731af9520","suffix":"0x0"},{"hash":"sha256","prefix":"0x14a605dcc25520","suffix":"0x200adfc7b130f05f71c93a3c9279bfc0a5f02a7c4cc0cf8a0259da481133333ec0"},{"hash":"sha256","prefix":"0x169008dcc25520","suffix":"0x2069b0cf34242930daf1c8b4fac14678e5e15fc3887c9747a225da780b6e275290"},{"hash":"sha256","prefix":"0x18c610dcc25520","suffix":"0x20bd446e2cb44c82425f1f283d9ba42301e348822b2d5f91666afe3b94a4f9c662"},{"hash":"sha256","prefix":"0x1ad41da2e85520","suffix":"0x209e357f1f4b212b7f0cd13736eec2a20a094ff17e19f57065076c60325dc5d7f4"},{"hash":"sha256","prefix":"0x1ca836a2e855202011f44d3da40ce2d9b4d69ff3df4ba7b0f60bb4d74b45cdcfffe52a1d7e595920","suffix":"0x0"},{"hash":"sha256","prefix":"0x1eda5aa2e85520ebda986e64b5c8babb379a66e2df0ed13bf5ef0969912eaffbfc8922882774f420","suffix":"0x0"},{"hash":"sha256","prefix":"0x20fe9701a2e855201691ba603c7516af8f6e5e3870b2e9b5d93c15740f6a8b5e067d75ee01fe62c820","suffix":"0x0"},{"hash":"sha256","prefix":"0x228cdf02a4eb5520","suffix":"0x20406d8a6e864102c22e775f263a958ec616400989f622611c39a7acc6183d9b56"},{"hash":"sha256","prefix":"0x24aede05a4eb5520832741e67cb7525c0c6e44f08a2ccab31c4f6e471722e482ef339d3d3c3f993a20","suffix":"0x0"},{"hash":"sha256","prefix":"0x26b4920dd4eb5520f558704bc9c29285f8f12c297be86ab3deca125bb8a20217d82930625210b8cb20","suffix":"0x0"},{"hash":"sha256","prefix":"0x2ab2ab1bd4eb5520","suffix":"0x20337ac646c149de08f877f613c9d7798a96826cbf6977ed64f6ed21c36170ba8d"},{"hash":"sha256","prefix":"0x2ea4f736d4eb5520","suffix":"0x20717db97555e834d39eebe08926de9db1274bd0e4e4646e5fdbd3afd1649e0e62"},{"hash":"sha256","prefix":"0x30849ea701d4eb5520","suffix":"0x20f6d89b3895fbfb8b8d544bf6b55eeaafb38105d3300288f154e638e9de2b676d"},{"hash":"sha256","prefix":"0x34b8aeef02d4eb5520","suffix":"0x2016a4876d8857304b2b073839832c04e964558a6d4dbf276d5153ec910ad55069"},{"hash":"sha256","prefix":"0x36fec9e106d4eb5520","suffix":"0x20c65ebf738e8d4eafce3f004311c65b5eeda4af6fa1246c12b05255b888103801"}]}}},{"@type":"exist","@value":{"key":"0x7761736d","value":"0x4db0491378f725764de609a71a4136ab6be503d84ac8d5ffbab71999a3d1b289","leaf":{"hash":"sha256","prehash_key":"no_hash","prehash_value":"sha256","length":"var_proto","prefix":"0x00"},"path":[{"hash":"sha256","prefix":"0x01a88c8b9f6e116cf2bbefa4e6f8f2536baacb38fc74c2badbc0a80477a773366f","suffix":"0x0"},{"hash":"sha256","prefix":"0x01956cff3b80169c81f4fceb114009c474235f13fedca894f904eff4ade91d8e1f","suffix":"0x0"},{"hash":"sha256","prefix":"0x011f031994027f022042795f47eeda31f89e95cf5a2a8bf63ec239f35a05b5bf68","suffix":"0x0"}]}}]}"#).unwrap();
+
+        let root = MerkleRoot {
+            hash: "0x21c446360f0235662d8deed989f74eaee1c54827d1eeb9fd76208af2e7461e08"
+                .parse::<H256>()
+                .unwrap()
+                .into_encoding(),
+        };
+
+        dbg!(&root.hash.as_encoding::<HexUnprefixed>());
+
+        verify_non_membership(
+            &proof,
+            &SDK_SPECS,
+            &root,
+            &[
+                b"wasm".to_vec(),
+                hex!("0316d5260c4a4bc907b79822b792cf51c57f05f311f1e79309b7cc3ece4e277af300c8e8bda249383359718501c9fc5e6db0215edfd2ba8a8812b08665c226e57844").to_vec()
+            ],
         )
         .unwrap();
     }

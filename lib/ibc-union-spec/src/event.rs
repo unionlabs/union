@@ -1,6 +1,6 @@
 use enumorph::Enumorph;
 use unionlabs::primitives::Bytes;
-use voyager_primitives::ClientType;
+use voyager_primitives::{ClientType, Timestamp};
 
 use crate::{
     types::{ChannelId, ClientId, ConnectionId},
@@ -389,7 +389,7 @@ pub struct PacketMetadata {
     pub destination_channel: ChannelMetadata,
 
     pub timeout_height: u64,
-    pub timeout_timestamp: u64,
+    pub timeout_timestamp: Timestamp,
 }
 
 /// All metadata associated with a Channel.

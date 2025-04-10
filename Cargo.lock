@@ -7140,6 +7140,7 @@ name = "ics23"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "cometbft-types",
  "hex",
  "hex-literal",
  "prost 0.12.6",
@@ -14207,6 +14208,7 @@ dependencies = [
  "ibc-union-spec",
  "serde",
  "serde-json-wasm 1.0.1",
+ "serde-utils",
  "serde_json",
  "thiserror 2.0.12",
  "token-factory-api",
@@ -15592,6 +15594,30 @@ dependencies = [
  "regex",
  "serde",
  "serde_with",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-plugin-packet-timeout"
+version = "0.0.0"
+dependencies = [
+ "either",
+ "embed-commit",
+ "enumorph",
+ "futures",
+ "ibc-classic-spec",
+ "ibc-solidity",
+ "ibc-union-spec",
+ "itertools 0.13.0",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "serde_json",
+ "subset-of",
  "tokio",
  "tracing",
  "unionlabs",

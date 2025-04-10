@@ -17,7 +17,7 @@ use ibc_union_spec::{
         PacketSend, UpdateClient, WriteAck,
     },
     path::{ChannelPath, ConnectionPath},
-    ChannelId, ClientId, Connection, ConnectionState, IbcUnion,
+    ChannelId, ClientId, Connection, ConnectionState, IbcUnion, Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -32,6 +32,7 @@ use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReport
 use voyager_message::{
     call::{Call, WaitForHeight},
     data::{ChainEvent, Data},
+    filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
     primitives::{ChainId, ClientInfo, ClientType, IbcSpec},
@@ -96,10 +97,10 @@ impl Plugin for Module {
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
             name: plugin_name(&config.chain_id),
-            interest_filter: format!(
+            interest_filter: simple_take_filter(format!(
                 r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
                 config.chain_id
-            ),
+            )),
         }
     }
 
@@ -651,7 +652,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.packet.timeout_height,
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.packet.timeout_timestamp,
+                                    ),
                                 },
                             }
                             .into(),
@@ -681,7 +684,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.packet.timeout_height,
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.packet.timeout_timestamp,
+                                    ),
                                 },
                                 maker_msg: Default::default(),
                             }
@@ -712,7 +717,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.timeout_height,
-                                    timeout_timestamp: event.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.timeout_timestamp,
+                                    ),
                                 },
                             }
                             .into(),
@@ -742,7 +749,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.packet.timeout_height,
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.packet.timeout_timestamp,
+                                    ),
                                 },
                                 acknowledgement: event.acknowledgement.into(),
                             }

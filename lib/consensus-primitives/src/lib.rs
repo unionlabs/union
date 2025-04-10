@@ -3,7 +3,7 @@
 #![warn(clippy::pedantic, missing_docs, clippy::missing_const_for_fn)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use core::fmt;
+use core::{fmt, ops::Add, str::FromStr};
 
 /// Represents a timestamp, normalized to nanoseconds.
 ///
@@ -19,7 +19,7 @@ use core::fmt;
 /// This type can represent timestamps between **January 1, 1970 12:00:00 AM** and **July 21, 2554
 /// 11:34:33.709 PM** (about 529 years from the time of writing this). If this code is still in use
 /// at this time, good luck.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -30,6 +30,9 @@ use core::fmt;
 pub struct Timestamp(u64);
 
 impl Timestamp {
+    /// Zero timestamp.
+    pub const ZERO: Self = Timestamp(0);
+
     /// Construct a [`Timestamp`] from the given ***nanoseconds*** value.
     ///
     /// ```rust
@@ -73,10 +76,42 @@ impl Timestamp {
     pub const fn as_secs(&self) -> u64 {
         self.0 / 1_000_000_000
     }
+
+    /// Check if the timestamp is zero.
+    ///
+    /// Note that this checks against the ***nanos***. If the value is sub-second, this will return *false*, whereas [`Timestamp::as_secs()`] will return 0:
+    ///
+    /// ```rust
+    /// # use consensus_primitives::Timestamp;
+    /// let ts = Timestamp::from_nanos(123);
+    /// assert_eq!(ts.as_secs(), 0);
+    /// assert!(!ts.is_zero());
+    /// ```
+    #[must_use = "accessing the inner value has no effect"]
+    pub const fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+}
+
+impl FromStr for Timestamp {
+    type Err = <u64 as FromStr>::Err;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse().map(Self)
+    }
 }
 
 impl fmt::Display for Timestamp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl Add for Timestamp {
+    type Output = Self;
+
+    #[track_caller]
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
     }
 }

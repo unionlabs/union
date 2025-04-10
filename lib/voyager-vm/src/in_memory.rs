@@ -12,7 +12,7 @@ use tracing::{debug, error, info, info_span, trace, Instrument};
 use unionlabs::ErrorReporter;
 
 use crate::{
-    filter::{FilterResult, InterestFilter},
+    filter::{FilterResult, Interest, InterestFilter},
     pass::Pass,
     Captures, EnqueueResult, ItemId, Op, Queue, QueueError, QueueMessage,
 };
@@ -58,14 +58,26 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
 
         for op in op.normalize() {
             match filter.check_interest(&op) {
-                FilterResult::Interest(tag) => {
-                    optimizer_queue.entry(tag.to_owned()).or_default().insert(
-                        self.idx.fetch_add(1, Ordering::SeqCst),
-                        Item {
-                            parents: vec![],
-                            op,
-                        },
-                    );
+                FilterResult::Interest(Interest { tags, remove }) => {
+                    for tag in tags {
+                        optimizer_queue.entry(tag.to_owned()).or_default().insert(
+                            self.idx.fetch_add(1, Ordering::SeqCst),
+                            Item {
+                                parents: vec![],
+                                op: op.clone(),
+                            },
+                        );
+                    }
+
+                    if !remove {
+                        ready.insert(
+                            self.idx.fetch_add(1, Ordering::SeqCst),
+                            Item {
+                                parents: vec![],
+                                op,
+                            },
+                        );
+                    }
                 }
                 FilterResult::NoInterest => {
                     ready.insert(
@@ -129,20 +141,32 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
                     Ok(ops) => {
                         for op in ops.into_iter().flat_map(Op::normalize) {
                             match filter.check_interest(&op) {
-                                FilterResult::Interest(tag) => {
-                                    optimizer_queue.entry(tag.to_owned()).or_default().insert(
-                                        self.idx.fetch_add(1, Ordering::SeqCst),
-                                        Item {
-                                            parents: vec![item_id],
-                                            op,
-                                        },
-                                    );
+                                FilterResult::Interest(Interest { tags, remove }) => {
+                                    for tag in tags {
+                                        optimizer_queue.entry(tag.to_owned()).or_default().insert(
+                                            self.idx.fetch_add(1, Ordering::SeqCst),
+                                            Item {
+                                                parents: vec![],
+                                                op: op.clone(),
+                                            },
+                                        );
+                                    }
+
+                                    if !remove {
+                                        ready.insert(
+                                            self.idx.fetch_add(1, Ordering::SeqCst),
+                                            Item {
+                                                parents: vec![],
+                                                op,
+                                            },
+                                        );
+                                    }
                                 }
                                 FilterResult::NoInterest => {
                                     ready.insert(
                                         self.idx.fetch_add(1, Ordering::SeqCst),
                                         Item {
-                                            parents: vec![item_id],
+                                            parents: vec![],
                                             op,
                                         },
                                     );

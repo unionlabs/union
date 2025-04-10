@@ -50,7 +50,7 @@ impl Plugin for Module {
         PluginInfo {
             name: module.plugin_name(),
             // never interested in any messages since this plugin does not utilize a queue
-            interest_filter: "false".to_owned(),
+            interest_filter: "null".to_owned(),
         }
     }
 

@@ -9,7 +9,7 @@ use std::{
 use either::Either;
 use futures::{stream::FuturesOrdered, StreamExt};
 use ibc_classic_spec::IbcClassic;
-use ibc_union_spec::{Channel, ChannelState, IbcUnion, Packet};
+use ibc_union_spec::{Channel, ChannelState, IbcUnion};
 use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -34,6 +34,7 @@ use unionlabs::{
 use voyager_message::{
     call::WaitForHeight,
     data::{ChainEvent, Data, IbcDatagram},
+    filter::simple_take_filter,
     module::{PluginInfo, PluginServer},
     primitives::{ChainId, IbcSpec, QueryHeight},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
@@ -68,14 +69,14 @@ pub enum ClientConfigs {
     Many(HashMap<RawClientId, ClientConfig>),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
     pub client_configs: ClientConfigsSerde,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ClientConfig {
     pub min_batch_size: usize,
@@ -83,14 +84,14 @@ pub struct ClientConfig {
     pub max_wait_time: Duration,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ClientConfigsSerde {
     Any(ClientConfig),
     Many(Vec<SpecificClientConfig>),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SpecificClientConfig {
     pub client_id: RawClientId,
@@ -211,7 +212,7 @@ impl Plugin for Module {
 
         PluginInfo {
             name: module.plugin_name(),
-            interest_filter: format!(
+            interest_filter: simple_take_filter(format!(
                 r#"
 if ."@type" == "data" then
     ."@value" as $data |
@@ -295,7 +296,7 @@ end
                 clients_filter = module.client_configs.jaq_filter(),
                 ibc_v1_id = IbcClassic::ID,
                 ibc_union_id = IbcUnion::ID,
-            ),
+            )),
         }
     }
 
@@ -755,13 +756,8 @@ async fn do_make_msg_union(
         }
 
         EventUnion::PacketSend(event) => {
-            let packet = Packet {
-                source_channel_id: event.packet.source_channel.channel_id,
-                destination_channel_id: event.packet.destination_channel.channel_id,
-                data: event.packet_data,
-                timeout_height: event.packet.timeout_height,
-                timeout_timestamp: event.packet.timeout_timestamp,
-            };
+            let packet = event.packet();
+
             let proof_try = voyager_client
                 .query_ibc_proof(
                     origin_chain_id,
@@ -796,13 +792,8 @@ async fn do_make_msg_union(
         }
 
         EventUnion::WriteAck(event) => {
-            let packet = Packet {
-                source_channel_id: event.packet.source_channel.channel_id,
-                destination_channel_id: event.packet.destination_channel.channel_id,
-                data: event.packet_data,
-                timeout_height: event.packet.timeout_height,
-                timeout_timestamp: event.packet.timeout_timestamp,
-            };
+            let packet = event.packet();
+
             let proof_try = voyager_client
                 .query_ibc_proof(
                     origin_chain_id,
@@ -1570,6 +1561,18 @@ mod tests {
           }
         });
 
-        let _config = serde_json::from_value::<Config>(config_json).unwrap();
+        let config = serde_json::from_value::<Config>(config_json).unwrap();
+
+        assert_eq!(
+            config,
+            Config {
+                chain_id: ChainId::new("union-devnet-1"),
+                client_configs: ClientConfigsSerde::Any(ClientConfig {
+                    min_batch_size: 1,
+                    max_batch_size: 3,
+                    max_wait_time: Duration::from_secs(10)
+                })
+            }
+        );
     }
 }

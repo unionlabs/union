@@ -444,7 +444,10 @@ async fn process_msgs<
                             p.source_channel_id,
                             (
                                 p.destination_channel_id,
-                                (p.data.to_vec(), (p.timeout_height, p.timeout_timestamp)),
+                                (
+                                    p.data.to_vec(),
+                                    (p.timeout_height, p.timeout_timestamp.as_nanos()),
+                                ),
                             ),
                         )
                     })
@@ -487,7 +490,10 @@ async fn process_msgs<
                             p.source_channel_id,
                             (
                                 p.destination_channel_id,
-                                (p.data.to_vec(), (p.timeout_height, p.timeout_timestamp)),
+                                (
+                                    p.data.to_vec(),
+                                    (p.timeout_height, p.timeout_timestamp.as_nanos()),
+                                ),
                             ),
                         )
                     })

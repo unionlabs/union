@@ -35,6 +35,7 @@ use unionlabs::{
 use voyager_message::{
     call::{Call, WaitForHeight},
     data::{ChainEvent, Data},
+    filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
     primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
@@ -143,10 +144,10 @@ impl Plugin for Module {
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
             name: plugin_name(&config.chain_id),
-            interest_filter: format!(
+            interest_filter: simple_take_filter(format!(
                 r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
                 config.chain_id
-            ),
+            )),
         }
     }
 
@@ -949,7 +950,7 @@ impl Module {
                                 destination_channel,
                                 channel_ordering,
                                 timeout_height: packet_timeout_height,
-                                timeout_timestamp: packet_timeout_timestamp,
+                                timeout_timestamp: packet_timeout_timestamp.as_nanos(),
                             },
                         }
                         .into(),
@@ -1000,7 +1001,7 @@ impl Module {
                                 destination_channel,
                                 channel_ordering,
                                 timeout_height: packet_timeout_height,
-                                timeout_timestamp: packet_timeout_timestamp,
+                                timeout_timestamp: packet_timeout_timestamp.as_nanos(),
                             },
                         }
                         .into(),
@@ -1051,7 +1052,7 @@ impl Module {
                                 destination_channel,
                                 channel_ordering,
                                 timeout_height: packet_timeout_height,
-                                timeout_timestamp: packet_timeout_timestamp,
+                                timeout_timestamp: packet_timeout_timestamp.as_nanos(),
                             },
                         }
                         .into(),
@@ -1106,7 +1107,7 @@ impl Module {
                                 destination_channel,
                                 channel_ordering,
                                 timeout_height: packet_timeout_height,
-                                timeout_timestamp: packet_timeout_timestamp,
+                                timeout_timestamp: packet_timeout_timestamp.as_nanos(),
                             },
                         }
                         .into(),
@@ -1159,7 +1160,7 @@ impl Module {
                                 destination_channel,
                                 channel_ordering,
                                 timeout_height: packet_timeout_height,
-                                timeout_timestamp: packet_timeout_timestamp,
+                                timeout_timestamp: packet_timeout_timestamp.as_nanos(),
                             },
                         }
                         .into(),

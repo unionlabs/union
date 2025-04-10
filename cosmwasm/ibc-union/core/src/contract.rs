@@ -31,6 +31,7 @@ use ibc_union_spec::{
         ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
     },
     Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState, Packet,
+    Timestamp,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
@@ -666,7 +667,7 @@ fn timeout_packet(
 
     let proof_timestamp =
         get_timestamp_at_height(deps.as_ref(), connection.client_id, proof_height)?;
-    if proof_timestamp == 0 {
+    if proof_timestamp.is_zero() {
         return Err(ContractError::TimeoutProofTimestampNotFound);
     }
 
@@ -685,15 +686,15 @@ fn timeout_packet(
     )?;
     mark_packet_as_acknowledged(deps.branch(), &packet)?;
 
-    if packet.timeout_timestamp == 0 && packet.timeout_height == 0 {
+    if packet.timeout_timestamp.is_zero() && packet.timeout_height == 0 {
         return Err(ContractError::TimeoutMustBeSet);
     }
 
-    if packet.timeout_timestamp > 0 && packet.timeout_timestamp > proof_timestamp {
+    if !packet.timeout_timestamp.is_zero() && packet.timeout_timestamp > proof_timestamp {
         return Err(ContractError::TimeoutTimestampNotReached);
     }
 
-    if packet.timeout_height > 0 && packet.timeout_height > proof_height {
+    if !packet.timeout_timestamp.is_zero() && packet.timeout_height > proof_height {
         return Err(ContractError::TimeoutHeightNotReached);
     }
 
@@ -1636,8 +1637,8 @@ fn process_receive(
             });
         }
 
-        let current_timestamp = env.block.time.nanos();
-        if packet.timeout_timestamp != 0 && (current_timestamp >= packet.timeout_timestamp) {
+        let current_timestamp = Timestamp::from_nanos(env.block.time.nanos());
+        if !packet.timeout_timestamp.is_zero() && (current_timestamp >= packet.timeout_timestamp) {
             return Err(ContractError::ReceivedTimedOutPacketTimestamp {
                 timeout_timestamp: packet.timeout_timestamp,
                 current_timestamp,
@@ -1750,10 +1751,10 @@ fn send_packet(
     sender: Addr,
     source_channel_id: ChannelId,
     timeout_height: u64,
-    timeout_timestamp: u64,
+    timeout_timestamp: Timestamp,
     data: Vec<u8>,
 ) -> ContractResult {
-    if timeout_timestamp == 0 && timeout_height == 0 {
+    if timeout_timestamp.is_zero() && timeout_height == 0 {
         return Err(ContractError::TimeoutMustBeSet);
     }
 
@@ -1975,7 +1976,7 @@ fn get_timestamp_at_height(
     deps: Deps,
     client_id: ClientId,
     height: u64,
-) -> Result<u64, ContractError> {
+) -> Result<Timestamp, ContractError> {
     let client_impl = client_impl(deps, client_id)?;
     let timestamp = query_light_client(
         deps,
