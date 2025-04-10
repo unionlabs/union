@@ -12,16 +12,16 @@ import A from "../ui/A.svelte"
 import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
 import Label from "../ui/Label.svelte"
 import LongMonoWord from "../ui/LongMonoWord.svelte"
+import { fromHex } from "viem"
 
 interface Props {
   chain: Chain
   denom: TokenRawDenom
   amount?: TokenRawAmount
-  showRank?: boolean
   showWrapping?: boolean
 }
 
-const { chain, denom, amount = undefined, showRank, showWrapping = true }: Props = $props()
+const { chain, denom, amount = undefined, showWrapping = true }: Props = $props()
 
 // Start the query when the component mounts
 $effect(() => {
@@ -83,12 +83,9 @@ const displayDenom = $derived(
   {#snippet trigger()}
     <div class="flex items-center gap-2 font-semibold">
       {#if amount !== undefined}
-      <span>
-        {Option.match(displayAmount, {
-          onNone: () => amount === undefined ? "" : amount.toString(),
-          onSome: value => value
-        })}
-      </span>
+        <span>
+          {Option.getOrElse(displayAmount, () => amount === undefined ? "" : amount.toString())}
+        </span>
       {/if}
       <Truncate value={displayDenom} maxLength={10} showCopy={false} />
     </div>
@@ -112,21 +109,14 @@ const displayDenom = $derived(
   {#snippet content()}
     {#if Option.isSome(token)}
         <div class="text-sm flex flex-col gap-4 text-neutral-400 text-left">
-          <section class="flex justify-between items-center">
+          <section class="flex flex-col">
             {#if token.value.representations.length > 0}
               <h2 class="text-white font-bold text-lg">{token.value.representations[0].symbol}</h2>
               <span class="text-neutral-500">
-                {#if Option.isSome(token.value.rank)}
-                  Rank: #{token.value.rank.value}
-                {:else}
-                  Unranked
-                {/if}
               </span>
             {/if}
-          </section>
-
             {#if Option.isSome(chains.data)}
-              <div class="text-xs text-zinc-400 flex gap-1 -mt-4">
+              <div class="text-xs text-zinc-400 flex gap-1">
               {#each token.value.wrapping as wrap, i}
                 {#if i === 0}<ArrowDownLeft class="size-3 rotate-90"/>{/if}
 
@@ -135,22 +125,25 @@ const displayDenom = $derived(
                   {#if i !== 0}<SharpRightArrowIcon class="size-4 rotate-180"/>{/if}
                   <div> <ChainComponent chain={wrapChain.value}/></div>
                 {/if}
-              {/each}
-            </div>
-          {:else}none
-          {/if}
+                {/each}
+              </div>
+            {/if}
+          </section>
 
           <section>
             <Label>Chain</Label>
             <ChainComponent chain={chain}/>
-            {#each token.value.wrapping as wrap}
-              <div><ArrowDownLeft/> {wrap.unwrapped_chain.universal_chain_id}</div>
-            {/each}
           </section>
           <section>
             <Label>Raw Denom</Label>
             <LongMonoWord>{denom}</LongMonoWord>
           </section>
+          {#if chain.rpc_type === "cosmos"}
+            <section>
+              <Label>Denom</Label>
+              <LongMonoWord>{fromHex(denom, "string")}</LongMonoWord>
+            </section>
+          {/if}
 
           {#each token.value.representations as rep}
             <section>
@@ -164,6 +157,10 @@ const displayDenom = $derived(
             <section>
               <Label>Decimals</Label>
               <div>{rep.decimals}</div>
+            </section>
+            <section>
+              <Label>Rank</Label>
+              <div>{Option.getOrElse(token.value.rank, () => "Unranked")}</div>
             </section>
             <section>
               {#each rep.sources as source}
