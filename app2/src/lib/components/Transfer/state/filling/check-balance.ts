@@ -2,7 +2,6 @@ import { Effect, identity, Match, Option, Schema } from "effect"
 import { AddressCosmosZkgmFromAddressCanonicalBytesWithPrefix, type Chain } from "@unionlabs/sdk/schema"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
-import { isHex, toHex } from "viem"
 import { ensureHex } from "@unionlabs/sdk/utils"
 
 export const checkBalanceForIntents = (source: Chain, intents: TransferIntents) => {
@@ -20,14 +19,12 @@ export const checkBalanceForIntents = (source: Chain, intents: TransferIntents) 
           }).pipe(
             Match.when(
               {
-                sender: Match.string,
                 source: "evm",
               },
               ({ sender }) => sender
             ),
             Match.when(
               {
-                sender: Match.string,
                 addr_prefix: Match.string,
                 source: "cosmos",
               },

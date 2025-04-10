@@ -1,6 +1,6 @@
 import { Data } from "effect"
 import type { Instruction } from "@unionlabs/sdk/ucs03"
-import type { TokenRawAmount, TokenRawDenom } from "@unionlabs/sdk/schema"
+import type { AddressCosmosDisplay, AddressEvmCanonical, Chain, Channel, TokenRawAmount, TokenRawDenom } from "@unionlabs/sdk/schema"
 import type { ExtractTag } from "effect/Types"
 
 /**
@@ -9,11 +9,17 @@ import type { ExtractTag } from "effect/Types"
 export type TransferStep = Data.TaggedEnum<{
   Filling: {}
   ApprovalRequired: {
+    readonly spender: AddressCosmosDisplay | AddressEvmCanonical
+    readonly sourceChain: Chain
     readonly token: TokenRawDenom
     readonly requiredAmount: TokenRawAmount
     readonly currentAllowance: TokenRawAmount
   }
   SubmitInstruction: {
+    readonly ucs03Address: AddressCosmosDisplay | AddressEvmCanonical
+    readonly channel: Channel
+    readonly timeoutTimestamp: bigint
+    readonly sourceChain: Chain
     readonly instruction: Instruction.Instruction
   }
   WaitForIndex: {}

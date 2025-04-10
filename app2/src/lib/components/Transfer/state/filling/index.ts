@@ -14,8 +14,8 @@ export type AllowanceData = {
 export type StateResult = {
   nextState: CreateTransferState | null
   message?: string
-  orders?: Array<unknown>
-  allowances?: Array<AllowanceData>
+  // orders?: Array<unknown>
+  // allowances?: Array<AllowanceData>
 }
 
 export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>

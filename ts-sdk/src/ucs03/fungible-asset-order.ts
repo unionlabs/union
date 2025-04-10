@@ -135,7 +135,7 @@ export const createCosmosToEvmFungibleAssetOrder = (
             Effect.provideService(CosmWasmClientContext, { client: sourceClient })
           )
 
-    const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
+    const quoteToken = yield* predictEvmQuoteToken(ensureHex(intent.baseToken))
 
     console.log("here", intent)
     return yield* S.decode(FungibleAssetOrder)({
