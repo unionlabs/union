@@ -10,6 +10,7 @@ import TransactionHashComponent from "./TransactionHashComponent.svelte"
 import BlockHashComponent from "./BlockHashComponent.svelte"
 import ChainComponent from "./ChainComponent.svelte"
 import { PACKET_TRACE_DISPLAY_NAMES } from "$lib/constants/packet-trace-names"
+import SharpCheckIcon from "../icons/SharpCheckIcon.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   packetTraces: ReadonlyArray<PacketTrace>
@@ -149,14 +150,21 @@ function getArrowSpan(
               </div>
 
             {/if}
-              <div class="bg-zinc-800 flex flex-col items-center rounded px-2 py-1">
-                <div class="font-semibold text-sm">
-                  {toTraceName(trace.type)}
-                </div>
+              <div class="{Option.isSome(trace.height) && trace.type === 'PACKET_RECV' || trace.type === 'PACKET_ACK'  ? 'border-babylon-orange border-2' : ''} bg-zinc-800 flex flex-row items-center rounded px-2 py-1">
+                <div class="flex flex-col">
+                  <div class="font-semibold text-sm">
+                    {toTraceName(trace.type)}
+                  </div>
 
-                {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
-                  <div class="text-xs text-zinc-400">
-                    <TransactionHashComponent chain={chain.value} hash={trace.transaction_hash.value} />
+                  {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
+                    <div class="text-xs text-zinc-400">
+                      <TransactionHashComponent chain={chain.value} hash={trace.transaction_hash.value} />
+                    </div>
+                  {/if}
+                </div>
+                {#if Option.isSome(trace.height) && trace.type === "PACKET_RECV" || trace.type === 'PACKET_ACK'}
+                  <div class="bg-babylon-orange rounded-full ml-3 -mr-5">
+                    <SharpCheckIcon class="size-6"/>
                   </div>
                 {/if}
               </div>
