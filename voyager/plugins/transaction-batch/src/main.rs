@@ -9,7 +9,7 @@ use std::{
 use either::Either;
 use futures::{stream::FuturesOrdered, StreamExt};
 use ibc_classic_spec::IbcClassic;
-use ibc_union_spec::{Channel, ChannelState, IbcUnion, Packet};
+use ibc_union_spec::{Channel, ChannelState, IbcUnion};
 use itertools::Itertools;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
