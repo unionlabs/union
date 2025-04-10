@@ -9,16 +9,28 @@ import DateTimeComponent from "../ui/DateTimeComponent.svelte"
 import TransactionHashComponent from "./TransactionHashComponent.svelte"
 import BlockHashComponent from "./BlockHashComponent.svelte"
 import ChainComponent from "./ChainComponent.svelte"
-import { PACKET_TRACE_DISPLAY_NAMES } from "$lib/constants/packet-trace-names"
+import { PACKET_TRACE_DISPLAY_NAMES, type DisplayMode } from "$lib/constants/packet-trace-names"
+import SharpCheckIcon from "../icons/SharpCheckIcon.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   packetTraces: ReadonlyArray<PacketTrace>
+  showAcks: boolean
+  mode?: DisplayMode
 }
 
-const { packetTraces }: Props = $props()
+const { packetTraces, showAcks = true, mode = "packet" }: Props = $props()
+
+const packetTracesWithOrWithoutAck = showAcks
+  ? packetTraces
+  : packetTraces.filter((trace, index) => {
+      // Find the index of the first PACKET_RECV
+      const recvIndex = packetTraces.findIndex(t => t.type === "PACKET_RECV")
+      // Keep all traces before and including PACKET_RECV
+      return recvIndex === -1 || index <= recvIndex
+    })
 
 const toTraceName = (type: string) =>
-  type in PACKET_TRACE_DISPLAY_NAMES ? PACKET_TRACE_DISPLAY_NAMES[type] : type
+  type in PACKET_TRACE_DISPLAY_NAMES[mode] ? PACKET_TRACE_DISPLAY_NAMES[mode][type] : type
 
 function getChainPositions(traces: ReadonlyArray<PacketTrace>) {
   const hasL2Update = traces.some(t => t.type === "PACKET_SEND_LC_UPDATE_L2")
@@ -81,9 +93,9 @@ function getArrowSpan(
 </script>
 
 
-{#if packetTraces.length > 0 && Option.isSome(chains.data)}
+{#if packetTracesWithOrWithoutAck.length > 0 && Option.isSome(chains.data)}
 {@const chainsList = chains.data.value}
-{@const positions = getChainPositions(packetTraces)}
+{@const positions = getChainPositions(packetTracesWithOrWithoutAck)}
 {@const leftChain = Option.fromNullable(positions.left?.universal_chain_id)
   .pipe(Option.flatMap((id) => getChain(chainsList, id)))}
 {@const centerChain = Option.fromNullable(positions.center?.universal_chain_id)
@@ -119,11 +131,11 @@ function getArrowSpan(
         {/if}
         <!-- Traces and arrows -->
 
-        {#each packetTraces as trace, i}
+        {#each packetTracesWithOrWithoutAck as trace, i}
           {@const chain = getChain(chainsList, trace.chain.universal_chain_id)}
           {@const column = getTraceColumn(trace, positions)}
-          {@const nextTrace = packetTraces[i + 1]}
-          {@const prevTrace = Option.fromNullable(i > 0 ? packetTraces[i - 1] : null)}
+          {@const nextTrace = packetTracesWithOrWithoutAck[i + 1]}
+          {@const prevTrace = Option.fromNullable(i > 0 ? packetTracesWithOrWithoutAck[i - 1] : null)}
           {@const arrowSpan = getArrowSpan(trace, nextTrace, positions)}
           
             <!-- Trace card -->
@@ -139,14 +151,21 @@ function getArrowSpan(
               </div>
 
             {/if}
-              <div class="bg-zinc-800 flex flex-col items-center rounded px-2 py-1">
-                <div class="font-semibold text-sm">
-                  {toTraceName(trace.type)}
-                </div>
+              <div class="{Option.isSome(trace.transaction_hash) && (trace.type === 'PACKET_RECV' || trace.type === 'PACKET_ACK')  ? 'border-babylon-orange border-2' : ''} bg-zinc-800 flex flex-row items-center rounded px-2 py-1">
+                <div class="flex flex-col">
+                  <div class="font-semibold text-sm">
+                    {toTraceName(trace.type)}
+                  </div>
 
-                {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
-                  <div class="text-xs text-zinc-400">
-                    <TransactionHashComponent chain={chain.value} hash={trace.transaction_hash.value} />
+                  {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
+                    <div class="text-xs text-zinc-400">
+                      <TransactionHashComponent chain={chain.value} hash={trace.transaction_hash.value} />
+                    </div>
+                  {/if}
+                </div>
+                {#if Option.isSome(trace.transaction_hash) && (trace.type === "PACKET_RECV" || trace.type === 'PACKET_ACK')}
+                  <div class="bg-babylon-orange rounded-full ml-3 -mr-5">
+                    <SharpCheckIcon class="size-6"/>
                   </div>
                 {/if}
               </div>
@@ -154,9 +173,11 @@ function getArrowSpan(
 
             {#if arrowSpan}
               <div class="flex py-2 items-center {arrowSpan.isLeft ? 'flex-row-reverse' : 'flex-row'}" style="grid-row: {i * 2 + 3}; grid-column: {arrowSpan.gridColumn};">
-                  <div class="flex-1 h-0.5 bg-zinc-700">
+                  <div class="flex-1 h-0.5 {Option.isSome(nextTrace?.transaction_hash) ? 'bg-babylon-orange' : 'bg-zinc-700'}">
                   </div>
-                    <div class="border-[5px] border-transparent {arrowSpan.isLeft ? 'dark:border-r-zinc-700' : 'border-l-zinc-400 dark:border-l-zinc-700'}" ></div>
+                    <div class="border-[5px] border-transparent {arrowSpan.isLeft 
+                      ? (Option.isSome(nextTrace?.transaction_hash) ? 'dark:border-r-babylon-orange' : 'dark:border-r-zinc-700') 
+                      : (Option.isSome(nextTrace?.transaction_hash) ? 'border-l-babylon-orange dark:border-l-babylon-orange' : 'border-l-zinc-400 dark:border-l-zinc-700')}" ></div>
               </div>
             {/if}
         {/each}

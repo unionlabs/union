@@ -6,17 +6,22 @@ import { tokensStore } from "$lib/stores/tokens.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import ArrowDownLeft from "$lib/components/icons/ArrowDownLeft.svelte"
+import SharpArrowLeft from "$lib/components/icons/SharpArrowLeft.svelte"
 import A from "../ui/A.svelte"
+import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
+import Label from "../ui/Label.svelte"
+import LongMonoWord from "../ui/LongMonoWord.svelte"
+import { fromHex } from "viem"
 
 interface Props {
   chain: Chain
   denom: TokenRawDenom
   amount?: TokenRawAmount
-  showRank?: boolean
   showWrapping?: boolean
 }
 
-const { chain, denom, amount = undefined, showRank = true, showWrapping = true }: Props = $props()
+const { chain, denom, amount = undefined, showWrapping = true }: Props = $props()
 
 // Start the query when the component mounts
 $effect(() => {
@@ -78,22 +83,21 @@ const displayDenom = $derived(
   {#snippet trigger()}
     <div class="flex items-center gap-2 font-semibold">
       {#if amount !== undefined}
-      <span>
-        {Option.match(displayAmount, {
-          onNone: () => amount === undefined ? "" : amount.toString(),
-          onSome: value => value
-        })}
-      </span>
+        <span>
+          {Option.getOrElse(displayAmount, () => amount === undefined ? "" : amount.toString())}
+        </span>
       {/if}
       <Truncate value={displayDenom} maxLength={10} showCopy={false} />
     </div>
 
-    {#if Option.isSome(chains.data) && Option.isSome(token)}
-      <div class="text-xs text-zinc-400">
-      {#each token.value.wrapping as wrap}
+    {#if Option.isSome(chains.data) && Option.isSome(token) && showWrapping}
+      <div class="text-xs text-zinc-400 flex gap-1">
+      {#each token.value.wrapping as wrap, i}
+        {#if i === 0}<ArrowDownLeft class="size-3 rotate-90"/>{/if}
         {@const wrapChain = getChain(chains.data.value, wrap.unwrapped_chain.universal_chain_id)}
         {#if Option.isSome(wrapChain)}
-          <div>← <ChainComponent chain={wrapChain.value}/></div>
+          {#if i != 0}<SharpRightArrowIcon class="size-4 rotate-180"/>{/if}
+          <div> <ChainComponent chain={wrapChain.value}/></div>
         {/if}
       {/each}
       </div>
@@ -105,37 +109,66 @@ const displayDenom = $derived(
   {#snippet content()}
     {#if Option.isSome(token)}
         <div class="text-sm flex flex-col gap-4 text-neutral-400 text-left">
-          <section class="flex justify-between items-center">
+          <section class="flex flex-col">
             {#if token.value.representations.length > 0}
               <h2 class="text-white font-bold text-lg">{token.value.representations[0].symbol}</h2>
               <span class="text-neutral-500">
-                {#if Option.isSome(token.value.rank)}
-                  Rank: #{token.value.rank.value}
-                {:else}
-                  Unranked
-                {/if}
               </span>
             {/if}
+            {#if Option.isSome(chains.data)}
+              <div class="text-xs text-zinc-400 flex gap-1">
+              {#each token.value.wrapping as wrap, i}
+                {#if i === 0}<ArrowDownLeft class="size-3 rotate-90"/>{/if}
+
+                {@const wrapChain = getChain(chains.data.value, wrap.unwrapped_chain.universal_chain_id)}
+                {#if Option.isSome(wrapChain)}
+                  {#if i !== 0}<SharpRightArrowIcon class="size-4 rotate-180"/>{/if}
+                  <div> <ChainComponent chain={wrapChain.value}/></div>
+                {/if}
+                {/each}
+              </div>
+            {/if}
+          </section>
+
+          <section>
+            <Label>Chain</Label>
+            <ChainComponent chain={chain}/>
           </section>
           <section>
-            <h3 class="text-white">Chain</h3>
-            <ChainComponent chain={chain}/>
-            <div class="mt-2">Raw Denom: {denom}</div>
-            {#each token.value.wrapping as wrap}
-              <div>← {wrap.unwrapped_chain.universal_chain_id}</div>
-            {/each}
+            <Label>Raw Denom</Label>
+            <LongMonoWord>{denom}</LongMonoWord>
           </section>
+          {#if chain.rpc_type === "cosmos"}
+            <section>
+              <Label>Denom</Label>
+              <LongMonoWord>{fromHex(denom, "string")}</LongMonoWord>
+            </section>
+          {/if}
 
           {#each token.value.representations as rep}
             <section>
-              <div>Name: {rep.name}</div>
-              <div>Symbol: {rep.symbol}</div>
-              <div>Decimals: {rep.decimals}</div>
+              <Label>Name</Label>
+              <div>{rep.name}</div>
+            </section>
+            <section>
+              <Label>Symbol</Label>
+              <div>{rep.symbol}</div>
+            </section>
+            <section>
+              <Label>Decimals</Label>
+              <div>{rep.decimals}</div>
+            </section>
+            <section>
+              <Label>Rank</Label>
+              <div>{Option.getOrElse(token.value.rank, () => "Unranked")}</div>
+            </section>
+            <section>
               {#each rep.sources as source}
                 {#if source.source.source_uri}
-                  <div>
-                    Source: <A class="underline" href={source.source.source_uri}>{source.source.name}</A>
-                  </div>
+                  <section>
+                    <Label>Source</Label>
+                    <A class="underline" href={source.source.source_uri}>{source.source.name}</A>
+                  </section>
                 {/if}
               {/each}
             </section>

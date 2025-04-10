@@ -79,7 +79,7 @@ $effect(() => {
             this.muted = true
           }}
         >
-          <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/btc-union-background.webm" type="video/webm" />
+          <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/btc-union-background-2.webm" type="video/webm" />
         </video>
       </div>
       
