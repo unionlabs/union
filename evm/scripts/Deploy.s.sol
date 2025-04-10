@@ -28,7 +28,6 @@ import "./Deployer.sol";
 library LIB {
     string constant NAMESPACE = "lib";
     string constant MULTICALL = "multicall";
-    string constant MANAGER = "manager";
     string constant ZKGM_ERC20 = "zkgm-erc20";
 
     function make(
@@ -40,6 +39,7 @@ library LIB {
 
 library IBC {
     string constant BASED = "ibc-is-based";
+    string constant MANAGER = "manager";
 }
 
 library LightClients {
@@ -116,7 +116,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (Manager) {
         return Manager(
             deploy(
-                LIB.MANAGER,
+                IBC.MANAGER,
                 abi.encode(
                     address(new Manager()),
                     abi.encodeCall(Manager.initialize, (owner))
@@ -455,7 +455,7 @@ contract DeployStateLensIcs23MptClient is UnionScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        address manager = getDeployed(LIB.make(LIB.MANAGER));
+        address manager = getDeployed(IBC.MANAGER);
 
         address handler = getDeployed(IBC.BASED);
 
@@ -500,7 +500,7 @@ contract DeployUCS03 is UnionScript {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
 
-        address manager = getDeployed(LIB.make(LIB.MANAGER));
+        address manager = getDeployed(IBC.MANAGER);
 
         IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
         ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
@@ -542,7 +542,7 @@ contract DeployStateLensIcs23Ics23Client is UnionScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        address manager = getDeployed(LIB.make(LIB.MANAGER));
+        address manager = getDeployed(IBC.MANAGER);
 
         address handler = getDeployed(IBC.BASED);
 
@@ -586,7 +586,7 @@ contract DeployStateLensIcs23SmtClient is UnionScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        address manager = getDeployed(LIB.make(LIB.MANAGER));
+        address manager = getDeployed(IBC.MANAGER);
 
         address handler = getDeployed(IBC.BASED);
 
@@ -756,7 +756,7 @@ contract GetDeployed is VersionedScript {
 
     function run() public {
         address multicall = getDeployed(LIB.make(LIB.MULTICALL));
-        address manager = getDeployed(LIB.make(LIB.MANAGER));
+        address manager = getDeployed(IBC.MANAGER);
         address handler = getDeployed(IBC.BASED);
         address cometblsClient =
             getDeployed(LightClients.make(LightClients.COMETBLS));
@@ -770,10 +770,10 @@ contract GetDeployed is VersionedScript {
         address ucs03 = getDeployed(Protocols.make(Protocols.UCS03));
 
         console.log(
-            string(abi.encodePacked("Multicall: ", multicall.toHexString()))
+            string(abi.encodePacked("Manager: ", manager.toHexString()))
         );
         console.log(
-            string(abi.encodePacked("Manager: ", manager.toHexString()))
+            string(abi.encodePacked("Multicall: ", multicall.toHexString()))
         );
         console.log(
             string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
@@ -824,7 +824,7 @@ contract GetDeployed is VersionedScript {
         proxyManager = proxyManager.serialize(
             "args",
             abi.encode(
-                implOf(handler), abi.encodeCall(Manager.initialize, sender)
+                implOf(manager), abi.encodeCall(Manager.initialize, sender)
             )
         );
         impls.serialize(manager.toHexString(), proxyManager);
