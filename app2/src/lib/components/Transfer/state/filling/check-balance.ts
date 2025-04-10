@@ -1,9 +1,9 @@
-import {Effect, identity, Option} from "effect"
-import type {Chain} from "@unionlabs/sdk/schema"
-import {balancesStore} from "$lib/stores/balances.svelte.ts"
-import type {TransferIntents} from "$lib/components/Transfer/transfer.svelte.ts"
-import {isHex, toHex} from "viem"
-import {BalanceLookupError} from "$lib/components/Transfer/state/errors.ts"
+import { Effect, identity, Option } from "effect"
+import type { Chain } from "@unionlabs/sdk/schema"
+import { balancesStore } from "$lib/stores/balances.svelte.ts"
+import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
+import { isHex, toHex } from "viem"
+import { BalanceLookupError } from "$lib/components/Transfer/state/errors.ts"
 
 export const checkBalanceForIntents = (
   source: Chain,
@@ -60,7 +60,5 @@ export const checkBalanceForIntents = (
         })
       }
     )
-  ).pipe(
-    Effect.map(results => results.every(identity))
-  )
+  ).pipe(Effect.map(results => results.every(identity)))
 }

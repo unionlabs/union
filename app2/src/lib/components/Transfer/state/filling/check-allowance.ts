@@ -44,12 +44,12 @@ export function checkAllowances(
     const allowancesOpt = yield* Match.value(chain.rpc_type).pipe(
       Match.when("evm", () =>
         handleEvmAllowances(tokenAddresses, sender, spenderAddress, chain).pipe(
-          Effect.mapError((err) => new AllowanceCheckError({ details: err }))
+          Effect.mapError(err => new AllowanceCheckError({ details: err }))
         )
       ),
       Match.when("cosmos", () =>
         handleCosmosAllowances(tokenAddresses, sender, chain).pipe(
-          Effect.mapError((err) => new AllowanceCheckError({ details: err }))
+          Effect.mapError(err => new AllowanceCheckError({ details: err }))
         )
       ),
       Match.orElse(() => Effect.succeed(Option.none()))
@@ -144,24 +144,25 @@ function handleCosmosAllowances(
           if (!isHex(tokenAddress) && isValidBech32ContractAddress(tokenAddress)) {
             bech32Address = tokenAddress
           } else if (isHex(tokenAddress)) {
-            const decoded = fromHex(tokenAddress, "string")
+            const decoded = yield* Effect.try(() => fromHex(tokenAddress, "string")).pipe(
+              Effect.catchAll(() => Effect.succeed(""))
+            )
             if (isValidBech32ContractAddress(decoded)) {
               bech32Address = decoded
             }
           }
 
           if (!bech32Address) {
+            console.warn(`[Cosmos][Allowance] Invalid token: ${tokenAddress} → Skipping.`)
             return { token: tokenAddress, allowance: 0n }
           }
 
           const result = yield* Effect.tryPromise(() =>
-            cosmwasmClient.queryContractSmart(bech32Address!, {
+            cosmwasmClient.queryContractSmart(bech32Address, {
               allowance: { owner, spender }
             })
           ).pipe(
-            Effect.mapError((err) =>
-              new CosmosQueryError({ token: tokenAddress, details: err })
-            )
+            Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, details: err }))
           )
 
           const allowance = result.allowance ? BigInt(result.allowance) : 0n

@@ -34,7 +34,8 @@ export type CreateTransferState = Data.TaggedEnum<{
 }>
 
 export const CreateTransferState = Data.taggedEnum<CreateTransferState>()
-const { CreateIntents, CheckBalance, CheckAllowance, CreateOrders, CreateSteps } = CreateTransferState
+const { CreateIntents, CheckBalance, CheckAllowance, CreateOrders, CreateSteps } =
+  CreateTransferState
 
 export const createTransferState = (
   cts: CreateTransferState,
@@ -79,7 +80,10 @@ export const createTransferState = (
     Option.isNone(transfer.intents)
   ) {
     return Effect.succeed(
-      fail("Missing arguments", new MissingTransferFieldsError({ fields: ["sourceChain", "destinationChain", "..."] }))
+      fail(
+        "Missing arguments",
+        new MissingTransferFieldsError({ fields: ["sourceChain", "destinationChain", "..."] })
+      )
     )
   }
 
@@ -98,42 +102,52 @@ export const createTransferState = (
   return CreateTransferState.$match(cts, {
     Filling: () => Effect.succeed(ok(CreateIntents(), "Creating intents...")),
 
-    CreateIntents: () =>
-      Effect.succeed(ok(CheckBalance({ intents }), "Checking balance...")),
+    CreateIntents: () => Effect.succeed(ok(CheckBalance({ intents }), "Checking balance...")),
 
     CheckBalance: ({ intents }) =>
       checkBalanceForIntents(source, intents).pipe(
         Effect.flatMap(hasEnough =>
           hasEnough
             ? Effect.succeed(ok(CheckAllowance(), "Checking allowance..."))
-            : Effect.succeed(fail("Insufficient funds", new InsufficientFundsError({
-              reason: "Not enough balance for one or more intents."
-            })))
+            : Effect.succeed(
+                fail(
+                  "Insufficient funds",
+                  new InsufficientFundsError({
+                    reason: "Not enough balance for one or more intents."
+                  })
+                )
+              )
         ),
-        Effect.catchAll((error) => Effect.succeed(fail("Balance check failed", error)))
+        Effect.catchAll(error => Effect.succeed(fail("Balance check failed", error)))
       ),
 
     CheckAllowance: () =>
       checkAllowances(source, intents, sender, ucs03address).pipe(
-        Effect.map((allowancesOpt) => {
+        Effect.map(allowancesOpt => {
           const allowances = Option.getOrElse(allowancesOpt, () => [])
           return ok(CreateOrders({ allowances }), "Creating orders...")
         }),
-        Effect.catchAll((error) => Effect.succeed(fail("Allowance check failed", error)))
+        Effect.catchAll(error => Effect.succeed(fail("Allowance check failed", error)))
       ),
 
     CreateOrders: ({ allowances }) =>
       createOrdersBatch(source, destination, channel, ucs03address, intents).pipe(
-        Effect.flatMap((batchOpt) => {
+        Effect.flatMap(batchOpt => {
           if (Option.isNone(batchOpt)) {
-            return Effect.succeed(fail("Could not create orders", new OrderCreationError({ details: { reason: "No batch returned" } })))
+            return Effect.succeed(
+              fail(
+                "Could not create orders",
+                new OrderCreationError({ details: { reason: "No batch returned" } })
+              )
+            )
           }
 
           const batch = batchOpt.value
-          return Effect.succeed(ok(CreateSteps({ allowances, orders: batch.operand }), "Building final steps..."))
-
+          return Effect.succeed(
+            ok(CreateSteps({ allowances, orders: batch.operand }), "Building final steps...")
+          )
         }),
-        Effect.catchAll((error) => Effect.succeed(fail("Order creation failed", error)))
+        Effect.catchAll(error => Effect.succeed(fail("Order creation failed", error)))
       ),
 
     CreateSteps: ({ allowances, orders }) =>

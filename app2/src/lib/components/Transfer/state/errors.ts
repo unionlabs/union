@@ -1,7 +1,7 @@
 import { Data } from "effect"
 
 export class MissingTransferFieldsError extends Data.TaggedError("MissingTransferFieldsError")<{
-  fields: string[]
+  fields: Array<string>
 }> {}
 
 export class InsufficientFundsError extends Data.TaggedError("InsufficientFundsError")<{
@@ -40,4 +40,3 @@ export type TransferFlowError =
   | BalanceLookupError
   | CosmosQueryError
   | EvmAllowanceCheckError
-
