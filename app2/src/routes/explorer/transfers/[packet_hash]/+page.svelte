@@ -142,7 +142,7 @@ onMount(() => {
             </section>
         </div>
 
-        <PacketTracesComponent packetTraces={transfer.traces} showAcks={false}/>
+        <PacketTracesComponent packetTraces={transfer.traces} showAcks={false} mode="transfer"/>
       </div>
     {/if}
     </div>
@@ -160,7 +160,7 @@ onMount(() => {
     
     {#if showPacketDetails}
       <Card divided transition={false}>
-        <PacketComponent />
+        <PacketComponent/>
       </Card>
     {/if}
   </div>

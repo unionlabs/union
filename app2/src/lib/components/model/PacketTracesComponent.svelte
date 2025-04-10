@@ -9,15 +9,16 @@ import DateTimeComponent from "../ui/DateTimeComponent.svelte"
 import TransactionHashComponent from "./TransactionHashComponent.svelte"
 import BlockHashComponent from "./BlockHashComponent.svelte"
 import ChainComponent from "./ChainComponent.svelte"
-import { PACKET_TRACE_DISPLAY_NAMES } from "$lib/constants/packet-trace-names"
+import { PACKET_TRACE_DISPLAY_NAMES, type DisplayMode } from "$lib/constants/packet-trace-names"
 import SharpCheckIcon from "../icons/SharpCheckIcon.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   packetTraces: ReadonlyArray<PacketTrace>
   showAcks: boolean
+  mode?: DisplayMode
 }
 
-const { packetTraces, showAcks = true }: Props = $props()
+const { packetTraces, showAcks = true, mode = "packet" }: Props = $props()
 
 const packetTracesWithOrWithoutAck = showAcks
   ? packetTraces
@@ -29,7 +30,7 @@ const packetTracesWithOrWithoutAck = showAcks
     })
 
 const toTraceName = (type: string) =>
-  type in PACKET_TRACE_DISPLAY_NAMES ? PACKET_TRACE_DISPLAY_NAMES[type] : type
+  type in PACKET_TRACE_DISPLAY_NAMES[mode] ? PACKET_TRACE_DISPLAY_NAMES[mode][type] : type
 
 function getChainPositions(traces: ReadonlyArray<PacketTrace>) {
   const hasL2Update = traces.some(t => t.type === "PACKET_SEND_LC_UPDATE_L2")

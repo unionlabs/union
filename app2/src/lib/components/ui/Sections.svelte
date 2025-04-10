@@ -11,6 +11,6 @@ type Props = {
 const { children, class: className = "" }: Props = $props()
 </script>
 
-<div class="flex flex-col gap-4 p-4 md:gap-6 md:p-8 {className}">
+<div class="flex flex-col gap-4 p-4 md:gap-6 md:p-8 md:px-24 {className}">
   {@render children()}
 </div>
