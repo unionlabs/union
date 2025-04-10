@@ -237,7 +237,7 @@ _: {
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
 
           verifier = "etherscan";
-          verification-key = ''"''${ETHERSCAN_KEY:-etherscan api key must be set in the ETHERSCAN_KEY env var}"'';
+          verification-key = ''"''${ETHERSCAN_KEY:?etherscan api key must be set in the ETHERSCAN_KEY env var}"'';
           verifier-url = "https://api.etherscan.io/api";
         }
         {
@@ -249,7 +249,7 @@ _: {
           weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
 
           verifier = "etherscan";
-          verification-key = ''"''${ETHERSCAN_KEY:-etherscan api key must be set in the ETHERSCAN_KEY env var}"'';
+          verification-key = ''"''${ETHERSCAN_KEY:?etherscan api key must be set in the ETHERSCAN_KEY env var}"'';
           verifier-url = "https://api.etherscan.io/api";
         }
         rec {
