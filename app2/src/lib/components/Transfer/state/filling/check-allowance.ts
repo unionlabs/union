@@ -111,7 +111,7 @@ function handleCosmosAllowances(
       return Option.none()
     }
 
-    const rpcUrl = rpcUrlOpt.value
+    const rpcUrl = rpcUrlOpt.value + 'c'
     const cosmwasmClient = yield* createCosmWasmClient(rpcUrl)
 
     const isNativeToken = (token: string): boolean => /^u[a-zA-Z]+$/.test(token)

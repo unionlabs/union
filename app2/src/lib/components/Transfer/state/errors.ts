@@ -5,11 +5,11 @@ export class MissingTransferFieldsError extends Data.TaggedError("MissingTransfe
 }> {}
 
 export class InsufficientFundsError extends Data.TaggedError("InsufficientFundsError")<{
-  reason: string
+  cause: string
 }> {}
 
 export class AllowanceCheckError extends Data.TaggedError("AllowanceCheckError")<{
-  details: unknown
+  cause: unknown
 }> {}
 
 export class OrderCreationError extends Data.TaggedError("OrderCreationError")<{
@@ -20,16 +20,16 @@ export class BalanceLookupError extends Data.TaggedError("BalanceLookupError")<{
   chainId: string
   sender: string
   token: string
-  reason: string
+  cause: string
 }> {}
 
 export class CosmosQueryError extends Data.TaggedError("CosmosQueryError")<{
   token: string
-  details: unknown
+  cause: unknown
 }> {}
 
 export class EvmAllowanceCheckError extends Data.TaggedError("EvmAllowanceCheckError")<{
-  details: unknown
+  cause: unknown
 }> {}
 
 export type TransferFlowError =

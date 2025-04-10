@@ -2,25 +2,20 @@ import { Data, Effect, Option } from "effect"
 import type { Transfer, TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
 import { checkBalanceForIntents } from "$lib/components/Transfer/state/filling/check-balance.ts"
 import { createOrdersBatch } from "$lib/components/Transfer/state/filling/create-orders.ts"
-import { checkAllowances } from "$lib/components/Transfer/state/filling/check-allowance.ts"
+import { checkAllowances, ApprovalStep } from "$lib/components/Transfer/state/filling/check-allowance.ts"
 import {
   InsufficientFundsError,
   MissingTransferFieldsError,
   OrderCreationError,
   type TransferFlowError
 } from "$lib/components/Transfer/state/errors.ts"
-
-export type AllowanceData = {
-  token: string
-  requiredAmount: string
-  currentAllowance: string
-}
+import type { Instruction } from "@unionlabs/sdk/ucs03/instruction"
 
 export type StateResult = {
   nextState: Option.Option<CreateTransferState>
   message: string
-  orders: Option.Option<Array<unknown>>
-  allowances: Option.Option<Array<AllowanceData>>
+  orders: Option.Option<Array<Instruction>>
+  allowances: Option.Option<Array<ApprovalStep>>
   error: Option.Option<TransferFlowError>
 }
 
@@ -29,46 +24,46 @@ export type CreateTransferState = Data.TaggedEnum<{
   CreateIntents: {}
   CheckBalance: { intents: TransferIntents }
   CheckAllowance: {}
-  CreateOrders: { allowances: Array<AllowanceData> }
-  CreateSteps: { allowances: Array<AllowanceData>; orders: Array<unknown> }
+  CreateOrders: { allowances: Array<ApprovalStep> }
+  CreateSteps: { allowances: Array<ApprovalStep>; orders: Array<Instruction> }
 }>
 
 export const CreateTransferState = Data.taggedEnum<CreateTransferState>()
 const { CreateIntents, CheckBalance, CheckAllowance, CreateOrders, CreateSteps } =
   CreateTransferState
 
+const fail = (msg: string, err?: TransferFlowError): StateResult => ({
+  nextState: Option.none<CreateTransferState>(),
+  message: msg,
+  orders: Option.none<Array<Instruction>>(),
+  allowances: Option.none<Array<ApprovalStep>>(),
+  error: err ? Option.some<TransferFlowError>(err) : Option.none<TransferFlowError>()
+})
+
+const ok = (state: CreateTransferState, msg: string): StateResult => ({
+  nextState: Option.some<CreateTransferState>(state),
+  message: msg,
+  orders: Option.none<Array<Instruction>>(),
+  allowances: Option.none<Array<ApprovalStep>>(),
+  error: Option.none<TransferFlowError>()
+})
+
+const complete = (
+  msg: string,
+  orders: Array<Instruction>,
+  allowances: Array<ApprovalStep>
+): StateResult => ({
+  nextState: Option.none<CreateTransferState>(),
+  message: msg,
+  orders: Option.some<Array<Instruction>>(orders),
+  allowances: Option.some<Array<ApprovalStep>>(allowances),
+  error: Option.none<TransferFlowError>()
+})
+
 export const createTransferState = (
   cts: CreateTransferState,
   transfer: Transfer
-): Effect.Effect<StateResult, never> => {
-  const fail = (msg: string, err?: TransferFlowError): StateResult => ({
-    nextState: Option.none(),
-    message: msg,
-    orders: Option.none(),
-    allowances: Option.none(),
-    error: err ? Option.some(err) : Option.none()
-  })
-
-  const ok = (state: CreateTransferState, msg: string): StateResult => ({
-    nextState: Option.some(state),
-    message: msg,
-    orders: Option.none(),
-    allowances: Option.none(),
-    error: Option.none()
-  })
-
-  const complete = (
-    msg: string,
-    orders: Array<unknown>,
-    allowances: Array<AllowanceData>
-  ): StateResult => ({
-    nextState: Option.none(),
-    message: msg,
-    orders: Option.some(orders),
-    allowances: Option.some(allowances),
-    error: Option.none()
-  })
-
+) => {
   if (
     Option.isNone(transfer.sourceChain) ||
     Option.isNone(transfer.destinationChain) ||
@@ -82,11 +77,12 @@ export const createTransferState = (
     return Effect.succeed(
       fail(
         "Missing arguments",
-        new MissingTransferFieldsError({ fields: ["sourceChain", "destinationChain", "..."] })
+        new MissingTransferFieldsError({ fields: [""] })
       )
     )
   }
 
+  // Safe to access `.value` after validation
   const channel = transfer.channel.value
   const ucs03address = transfer.ucs03address.value
   const source = transfer.sourceChain.value
@@ -96,13 +92,21 @@ export const createTransferState = (
   const intents = transfer.intents.value
 
   if (amount === "0" || amount === "" || BigInt(amount) === BigInt(0)) {
-    return Effect.succeed(fail("Enter an amount"))
+    return Effect.succeed(
+      fail("Enter an amount", new InsufficientFundsError({ cause: "Amount is zero" }))
+    )
   }
 
   return CreateTransferState.$match(cts, {
-    Filling: () => Effect.succeed(ok(CreateIntents(), "Creating intents...")),
+    Filling: () =>
+      Effect.succeed(
+        ok(CreateIntents(), "Creating intents...")
+      ),
 
-    CreateIntents: () => Effect.succeed(ok(CheckBalance({ intents }), "Checking balance...")),
+    CreateIntents: () =>
+      Effect.succeed(
+        ok(CheckBalance({ intents }), "Checking balance...")
+      ),
 
     CheckBalance: ({ intents }) =>
       checkBalanceForIntents(source, intents).pipe(
@@ -110,15 +114,17 @@ export const createTransferState = (
           hasEnough
             ? Effect.succeed(ok(CheckAllowance(), "Checking allowance..."))
             : Effect.succeed(
-                fail(
-                  "Insufficient funds",
-                  new InsufficientFundsError({
-                    reason: "Not enough balance for one or more intents."
-                  })
-                )
+              fail(
+                "Insufficient funds",
+                new InsufficientFundsError({
+                  cause: "Insufficient funds"
+                })
               )
+            )
         ),
-        Effect.catchAll(error => Effect.succeed(fail("Balance check failed", error)))
+        Effect.catchAll(error =>
+          Effect.succeed(fail("Balance check failed", error))
+        )
       ),
 
     CheckAllowance: () =>
@@ -127,7 +133,9 @@ export const createTransferState = (
           const allowances = Option.getOrElse(allowancesOpt, () => [])
           return ok(CreateOrders({ allowances }), "Creating orders...")
         }),
-        Effect.catchAll(error => Effect.succeed(fail("Allowance check failed", error)))
+        Effect.catchAll(error =>
+          Effect.succeed(fail("Allowance check failed", error))
+        )
       ),
 
     CreateOrders: ({ allowances }) =>
@@ -137,20 +145,24 @@ export const createTransferState = (
             return Effect.succeed(
               fail(
                 "Could not create orders",
-                new OrderCreationError({ details: { reason: "No batch returned" } })
+                new OrderCreationError({ details: "No batch returned" })
               )
             )
           }
 
           const batch = batchOpt.value
           return Effect.succeed(
-            ok(CreateSteps({ allowances, orders: batch.operand }), "Building final steps...")
+            ok(CreateSteps({ allowances, orders: [...batch.operand] }), "Building final steps...")
           )
         }),
-        Effect.catchAll(error => Effect.succeed(fail("Order creation failed", error)))
+        Effect.catchAll(error =>
+          Effect.succeed(fail("Order creation failed", error))
+        )
       ),
 
     CreateSteps: ({ allowances, orders }) =>
-      Effect.succeed(complete("Transfer complete", orders, allowances))
+      Effect.succeed(
+        complete("Transfer complete", orders, allowances)
+      )
   })
 }
