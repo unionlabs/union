@@ -1,5 +1,6 @@
 import { toHex, type Address, type Hex } from "viem"
-import { Effect, Schema as S } from "effect"
+import { Effect, pipe, Schema as S } from "effect"
+import * as Either from "effect/Either";
 import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
 import { readErc20Meta } from "../evm/erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js"
@@ -123,16 +124,14 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
       Effect.either
     );
 
-    // Choose the cw20 metadata if successful; otherwise, fall back to native token metadata.
-    const tokenMeta =
-      tokenMetaEither._tag === "Left"
-        ? {
-            symbol: intent.baseToken,
-            name: intent.baseToken,
-            decimals: 0, 
-          }
-        : tokenMetaEither.right;
-
+    const tokenMeta = pipe(
+      tokenMetaEither,
+      Either.getOrElse(() => ({
+        symbol: intent.baseToken,
+        name: intent.baseToken,
+        decimals: 0, 
+      }))
+    );
     const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
     console.log("here", intent)
