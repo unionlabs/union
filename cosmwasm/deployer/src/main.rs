@@ -57,14 +57,14 @@ enum App {
         permissioned: bool,
         #[command(flatten)]
         gas_config: GasFillerArgs,
-        #[arg(long)]
-        relayers_admin: Bech32<Bytes>,
-        #[arg(long)]
-        relayers: Vec<Bech32<Bytes>>,
-        #[arg(long)]
-        rate_limit_admin: Bech32<Bytes>,
-        #[arg(long)]
-        rate_limit_operators: Vec<Bech32<Bytes>>,
+        // #[arg(long)]
+        // relayers_admin: Bech32<Bytes>,
+        // #[arg(long)]
+        // relayers: Vec<Bech32<Bytes>>,
+        // #[arg(long)]
+        // rate_limit_admin: Bech32<Bytes>,
+        // #[arg(long)]
+        // rate_limit_operators: Vec<Bech32<Bytes>>,
     },
     Migrate {
         #[arg(long)]
@@ -246,9 +246,9 @@ fn sha2(bz: impl AsRef<[u8]>) -> H256 {
     ::sha2::Sha256::new().chain_update(bz).finalize().into()
 }
 
-const CORE: &str = "core";
-const LIGHTCLIENT: &str = "lightclient";
-const APP: &str = "app";
+const CORE: &str = "ibc-is-based";
+const LIGHTCLIENT: &str = "lightclients";
+const APP: &str = "protocols";
 
 const UCS03: &str = "ucs03";
 
@@ -334,10 +334,10 @@ async fn do_main() -> Result<()> {
             output,
             permissioned,
             gas_config,
-            relayers_admin,
-            relayers,
-            rate_limit_admin,
-            rate_limit_operators,
+            // relayers_admin,
+            // relayers,
+            // rate_limit_admin,
+            // rate_limit_operators,
         } => {
             let contracts = serde_json::from_slice::<ContractPaths>(
                 &std::fs::read(contracts).context("reading contracts path")?,
@@ -397,8 +397,8 @@ async fn do_main() -> Result<()> {
                     std::fs::read(contracts.core)?,
                     bytecode_base_code_id,
                     ibc_union_msg::msg::InitMsg {
-                        relayers_admin: Some(relayers_admin.to_string()),
-                        relayers: relayers.into_iter().map(|r| r.to_string()).collect(),
+                        relayers_admin: Some(ctx.wallet().address().to_string()),
+                        relayers: vec![ctx.wallet().address().to_string()],
                     },
                     CORE.to_owned(),
                 )
@@ -614,11 +614,12 @@ async fn do_main() -> Result<()> {
                                 admin: Addr::unchecked(ctx.wallet().address().to_string()),
                                 ibc_host: Addr::unchecked(core_address.to_string()),
                                 token_minter_code_id: minter_code_id.into(),
-                                rate_limit_admin: Addr::unchecked(rate_limit_admin.to_string()),
-                                rate_limit_operators: rate_limit_operators
-                                    .into_iter()
-                                    .map(|o| Addr::unchecked(o.to_string()))
-                                    .collect(),
+                                rate_limit_admin: Addr::unchecked(
+                                    ctx.wallet().address().to_string(),
+                                ),
+                                rate_limit_operators: vec![Addr::unchecked(
+                                    ctx.wallet().address().to_string(),
+                                )],
                             },
                             minter_init_msg,
                         },
