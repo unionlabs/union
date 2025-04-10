@@ -37,3 +37,31 @@
 pre {
   font-family: var(--font-mono);
 }
+
+@layer scroll {
+  * {
+    scrollbar-gutter: stable;
+
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-button {
+      display: none;
+    }
+  }
+}
+
