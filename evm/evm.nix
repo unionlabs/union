@@ -231,7 +231,7 @@ _: {
         # }
 
         # testnets
-        {
+        rec {
           chain-id = "11155111";
 
           name = "sepolia";
@@ -240,10 +240,10 @@ _: {
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
 
           verifier = "etherscan";
-          verification-key = ''"''${ETHERSCAN_KEY:?etherscan api key must be set in the ETHERSCAN_KEY env var}"'';
-          verifier-url = "https://api.etherscan.io/api";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
-        {
+        rec {
           chain-id = "17000";
 
           name = "holesky";
@@ -252,8 +252,8 @@ _: {
           weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
 
           verifier = "etherscan";
-          verification-key = ''"''${ETHERSCAN_KEY:?etherscan api key must be set in the ETHERSCAN_KEY env var}"'';
-          verifier-url = "https://api.etherscan.io/api";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
         rec {
           chain-id = "21000001";
@@ -288,8 +288,8 @@ _: {
           weth = "0x6969696969696969696969696969696969696969";
 
           verifier = "etherscan";
-          verification-key = ''verifyContract'';
-          verifier-url = "https://api.routescan.io/v2/network/testnet/evm/${chain-id}/etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
         # {
         #   network = "0g-testnet";
@@ -635,6 +635,11 @@ _: {
                 while IFS=$'\t' read -r address args contract; do
                   if [ "$address" != "0x0000000000000000000000000000000000000000" ]
                   then
+                    echo
+                    echo "======================================================"
+                    echo " Verifying $address "
+                    echo "======================================================"
+                    echo
                     # shellcheck disable=SC2005
                     FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
                     VERIFICATION_KEY=${verification-key} \

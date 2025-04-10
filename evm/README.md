@@ -118,3 +118,67 @@ For example:
 ```bash
 nix run .\#eth-verify-holesky 0xa3cd41bff71ad19fddfd901a9773c975a0404d97 0x153919669Edc8A5D0c8D1E4507c9CE60435A1177 omitted
 ```
+
+## Verifying contracts
+
+By default, we verify all contracts on [tenderly](https://tenderly.co/) (for chains that are supported). Additional verifications can be done by threading through the `FOUNDRY_ETHERSCAN` and `VERIFIER` environment variables.
+
+TODO: Explain more here
+
+## Other supported explorers
+
+Other explorers that we verify on. This list is non-exhaustive.
+
+### `ethereum.1`
+
+<https://etherscan.io/>
+
+```sh
+# replace $KEY with your etherscan api key
+FOUNDRY_ETHERSCAN='{ chain = { key = "$KEY", chain = "1", url = "https://api.etherscan.io/api" } }' nix run .#evm-scripts.ethereum
+```
+
+<https://eth.blockscout.com/>
+
+```sh
+# key is empty for blockscout, but still required by the foundry config schema
+VERIFIER=blockscout FOUNDRY_ETHERSCAN='{ chain = { key = "", chain = "1", url = "https://eth.blockscout.com/api" } }' nix run .#evm-scripts.ethereum
+```
+
+<https://1.routescan.io/>
+
+```sh
+FOUNDRY_ETHERSCAN='{ chain = { key = "verifyContract", chain = "1", url = "https://api.routescan.io/v2/network/mainnet/evm/1/etherscan" } }' nix run .#evm-scripts.ethereum
+```
+
+### `bob.60808`
+
+<https://explorer.gobob.xyz/>
+
+```sh
+VERIFIER=blockscout FOUNDRY_ETHERSCAN='{ chain = { key = "", chain = "60808", url = "https://explorer.gobob.xyz/api" } }' nix run .#evm-scripts.bob
+```
+
+### `bob.808813`
+
+<https://bob-sepolia.explorer.gobob.xyz/>
+
+```sh
+VERIFIER=blockscout FOUNDRY_ETHERSCAN='{ chain = { key = "", chain = "808813", url = "https://bob-sepolia.explorer.gobob.xyz/api" } }' nix run .#evm-scripts.bob-sepolia
+```
+
+### `corn.21000000`
+
+<https://cornscan.io/>
+
+```sh
+FOUNDRY_ETHERSCAN='{ chain = { key = "verifyContract", chain = "21000000", url = "https://api.routescan.io/v2/network/mainnet/evm/21000000/etherscan" } }' nix run .#evm-scripts.corn
+```
+
+### `corn.21000001`
+
+<https://testnet.cornscan.io/>
+
+```sh
+FOUNDRY_ETHERSCAN='{ chain = { key = "verifyContract", chain = "21000001", url = "https://api.routescan.io/v2/network/testnet/evm/21000001/etherscan" } }' nix run .#evm-scripts.corn-testnet
+```
