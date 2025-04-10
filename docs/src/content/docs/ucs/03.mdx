@@ -228,7 +228,7 @@ Fields:
 The multiplex instruction has two modes:
 
 1. Standard Mode (eureka = false):
-   - Target must implement IEurekaModule interface
+   - Target must implement IZkgmable interface
    - Calls `onZkgm(path, sourceChannel, destChannel, sender, calldata)` on target
    - Returns success acknowledgement immediately
    - Fire-and-forget style, no callback to sender
@@ -244,9 +244,9 @@ If the target contract is invalid or calls fail:
 - IBC mode propagates target's error response
 
 :::tip
-Example of a contract implementing `IEurekaModule`:
+Example of a contract implementing `IZkgmable`:
 ```solidity
-contract MyEurekaContract is IEurekaModule {
+contract MyContract is IZkgmable {
     event MessageReceived(
         uint256 path,
         uint32 sourceChannelId,
@@ -264,6 +264,8 @@ contract MyEurekaContract is IEurekaModule {
     ) external {
         // Verify caller is zkgm contract
         require(msg.sender == address(zkgm), "Only zkgm");
+
+        // Verify that the sourceChannelId and sender are authorized...
 
         // Process the cross-chain message
         emit MessageReceived(
