@@ -1,13 +1,13 @@
-import { TokenRawDenom } from "../schema/token.js";
-import { UniversalChainId } from "../schema/chain.js";
-import { fetchDecodeGraphql } from "../utils/graphql-query.js";
-import { Schema } from "effect";
+import type { TokenRawDenom } from "../schema/token.js"
+import type { UniversalChainId } from "../schema/chain.js"
+import { fetchDecodeGraphql } from "../utils/graphql-query.js"
+import { Schema } from "effect"
 import { graphql } from "gql.tada"
 
 export const tokenWrappingQuery = ({
-  denom,
-  universal_chain_id
-}: { denom: TokenRawDenom; universal_chain_id: UniversalChainId }) =>
+  base_token: TokenRawDenom,
+  source_chain_id: UniversalChainId
+}: { base_token: TokenRawDenom; source_chain_id: UniversalChainId }) =>
   fetchDecodeGraphql(
     Schema.Struct({
       v2_tokens: Schema.Array(
@@ -17,19 +17,21 @@ export const tokenWrappingQuery = ({
       )
     }),
     graphql(/* GraphQL */ `
-        query TokenWrapping($denom: String!, $universal_chain_id: String!) {
-          v2_tokens(args: {
-            p_denom: $denom,
-            p_universal_chain_id: $universal_chain_id
-          }) {
-            wrapping {
-              unwrapped_denom
+      query QueryTokenWrapping($source_chain_id: String!, $base_token: String!, $destination_channel_id: Int!) {
+        v2_tokens(args: {p_universal_chain_id: $source_chain_id, p_denom: $base_token}) {
+          denom
+          wrapping(where: {destination_channel_id: {_eq: $destination_channel_id}}) {
+            destination_channel_id
+            unwrapped_chain {
+              universal_chain_id
             }
+            unwrapped_denom
           }
         }
+      }
     `),
     {
-      denom,
-      universal_chain_id
+      base_token,
+      source_chain_id
     }
   )
