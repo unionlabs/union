@@ -246,9 +246,9 @@ fn sha2(bz: impl AsRef<[u8]>) -> H256 {
     ::sha2::Sha256::new().chain_update(bz).finalize().into()
 }
 
-const CORE: &str = "core";
-const LIGHTCLIENT: &str = "lightclient";
-const APP: &str = "app";
+const CORE: &str = "ibc-is-based";
+const LIGHTCLIENT: &str = "lightclients";
+const APP: &str = "protocols";
 
 const UCS03: &str = "ucs03";
 
