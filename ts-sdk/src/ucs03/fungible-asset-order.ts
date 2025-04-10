@@ -93,32 +93,23 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
       ensureHex(intent.baseToken)
     )
 
-    const graphqlQuoteToken = yield* graphqlQuoteTokenUnwrapQuery({
+    const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
       baseToken: ensureHex(intent.baseToken),
       sourceChainId: UniversalChainId.make("bob.808813"),
       sourceChannelId: ChannelId.make(1)
     })
 
-    const graphqlDenom = pipe(
-      graphqlQuoteToken,
-      Struct.get("v2_tokens"),
-      Arr.head,
-      Option.map(Struct.get("wrapping")),
-      Option.flatMap(Arr.head),
-      Option.map(Struct.get("unwrapped_denom"))
-    )
-
-    yield* Effect.log("graphql quote", graphqlQuoteToken)
+    yield* Effect.log("graphql quote", graphqlDenom)
 
     let finalQuoteToken: Hex
 
     if (Option.isSome(graphqlDenom)) {
-      yield* Effect.log("using the graphql quote token unwrapped ", graphqlDenom.value)
+      yield* Effect.log("using the graphql quote token unwrapped", graphqlDenom.value)
       finalQuoteToken = graphqlDenom.value
     } else {
-      yield* Effect.log("predicting quote token")
+      yield* Effect.log("predicting quote token on chain")
       finalQuoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
-      yield* Effect.log("quote token", finalQuoteToken)
+      yield* Effect.log("received quote token onchain", finalQuoteToken)
     }
 
     return yield* S.decode(FungibleAssetOrder)({
