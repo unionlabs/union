@@ -2,66 +2,12 @@
   // - only register the 'init' side of the channel
   // - keep universal chain ids (string) and channel (number) in ascending order
   // - keep comments consistent, but don't parse them
-  "babylon.bbn-test-5": {
-    "4": {
-      "comments": "bob.60808 channel 3",
-      "tags": ["experimental"]
-    },
-    "5": {
-      "comments": "corn.21000001 channel 4",
-      "tags": ["experimental"]
-    },
-    "6": {
-      "comments": "ethereum.17000 channel 1",
-      "tags": ["canonical"]
-    },
-    "7": {
-      "comments": "union.union-testnet-10 channel 2",
-      "tags": ["canonical"]
-    }
-  },
-  "bob.60808": {
-    "2": {
-      "comments": "babylon.bbn-test-5 channel 3",
-      "tags": ["experimental"]
-    }
-  },
-  "bob.808813": {
-    "1": {
-      "comments": "babylon.bbn-test-5 channel 9",
-      "tags": ["canonical"]
-    }
-  },
-  "corn.21000001": {
-    "5": {
-      "comments": "babylon.bbn-test-5 channel 11",
-      "tags": ["canonical"]
-    },
-    "6": {
-      "comments": "bob.808813 channel 3",
-      "tags": ["canonical"]
-    }
-  },
-  "ethereum.11155111": {
-    "2": {
-      "comments": "union.union-testnet-10 channel 3",
-      "tags": ["canonical"]
-    },
-    "3": {
-      "comments": "babylon.bbn-test-5 channel 8",
-      "tags": ["canonical"]
-    }
-  },
-  "ethereum.17000": {
-    "2": {
-      "comments": "union.union-testnet-10 channel 4",
-      "tags": ["canonical"]
-    }
-  },
-  "union.union-testnet-10": {
-    "1": {
-      "comments": "ethereum.11155111 channel 1",
-      "tags": ["deprecated"]
-    }
-  }
+  //
+  // example:
+  // "bob.60808": {
+  //   "2": {
+  //     "comments": "babylon.bbn-test-5 channel 3",
+  //     "tags": ["experimental"]
+  //   }
+  // },
 }

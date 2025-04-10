@@ -138,6 +138,7 @@ _: {
         libs = ["libs"]
         gas_reports = ["*"]
         via_ir = true
+        bytecode_hash = "none"
         ast = true
         optimizer = true
         optimizer_runs = 10_000
@@ -203,7 +204,7 @@ _: {
           name = "devnet";
           rpc-url = "http://localhost:8545";
           private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
-          weth = "0x0000000000000000000000000000000000000000";
+          weth = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 
           verify = pkgs.stdenv.isx86_64;
           verifier = "blockscout";
@@ -215,7 +216,6 @@ _: {
         #   name = "berachain-devnet";
         #   rpc-url = "http://localhost:8545";
         #   private-key = "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306";
-        #   weth = "0x0000000000000000000000000000000000000000";
 
         #   verify = false;
         # }
@@ -224,7 +224,6 @@ _: {
         #   name = "arbitrum-devnet";
         #   rpc-url = "http://localhost:8547";
         #   private-key = "0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659";
-        #   weth = "0x0000000000000000000000000000000000000000";
 
         #   verify = false;
         # }
@@ -239,7 +238,8 @@ _: {
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
 
           verifier = "etherscan";
-          verification-key = ''"$1"'';
+          verification-key = ''"''${ETHERSCAN_KEY:?etherscan api key must be set in the ETHERSCAN_KEY env var}"'';
+          verifier-url = "https://api.etherscan.io/api";
         }
         {
           chain-id = "17000";
@@ -250,7 +250,8 @@ _: {
           weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
 
           verifier = "etherscan";
-          verification-key = ''"$1"'';
+          verification-key = ''"''${ETHERSCAN_KEY:?etherscan api key must be set in the ETHERSCAN_KEY env var}"'';
+          verifier-url = "https://api.etherscan.io/api";
         }
         rec {
           chain-id = "21000001";
@@ -258,8 +259,7 @@ _: {
           name = "corn-testnet";
           rpc-url = "https://testnet.corn-rpc.com";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
-          # TODO: find out
-          weth = "0x0000000000000000000000000000000000000000";
+          weth = "0xda5dDd7270381A7C2717aD10D1c0ecB19e3CDFb2";
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -268,7 +268,7 @@ _: {
         rec {
           chain-id = "808813";
 
-          name = "bob-testnet";
+          name = "bob-sepolia";
           rpc-url = "https://bob-sepolia.rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x4200000000000000000000000000000000000006";
@@ -293,13 +293,23 @@ _: {
         #   network = "0g-testnet";
         #   rpc-url = "https://evmrpc-testnet.0g.ai";
         #   private-key = ''"$1"'';
-        #   # TODO: find out
-        #   weth = "0x0000000000000000000000000000000000000000";
 
         #   verify = false;
         # }
 
         # mainnets
+        rec {
+          chain-id = "1";
+
+          name = "ethereum";
+          rpc-url = "https://eth-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+        }
         rec {
           chain-id = "60808";
 
@@ -312,14 +322,24 @@ _: {
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
         }
+        rec {
+          chain-id = "21000000";
+
+          name = "corn";
+          rpc-url = "https://mainnet.corn-rpc.com";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0xda5dDd7270381A7C2717aD10D1c0ecB19e3CDFb2";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+        }
 
         # NOTE: These haven't been tested since testnet 8 (or earlier), and as such are unlikely to work properly
         # {
         #   network = "scroll-testnet";
         #   rpc-url = "https://sepolia-rpc.scroll.io";
         #   private-key = ''"$1"'';
-        #   # TODO: find out
-        #   weth = "0x0000000000000000000000000000000000000000";
 
         #   verifier = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
         # }
@@ -333,8 +353,6 @@ _: {
         #   network = "berachain-testnet";
         #   rpc-url = "https://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1/";
         #   private-key = ''"$1"'';
-        #   # TODO: find out
-        #   weth = "0x0000000000000000000000000000000000000000";
         # }
       ];
 
@@ -516,7 +534,7 @@ _: {
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
               PRIVATE_KEY=${private-key} \
-              DEPLOYER="{1:?deployer must be set to deploy with this script (first arg to this script)}" \
+              DEPLOYER="''${1:?deployer must be set to deploy with this script (first arg to this script)}" \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployIBC \
                 -vvvv \
