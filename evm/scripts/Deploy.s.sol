@@ -261,6 +261,12 @@ abstract contract UnionScript is UnionBase {
         UCS03Zkgm ucs03 =
             deployUCS03(handler, address(manager), weth, zkgmERC20);
         Multicall multicall = deployMulticall();
+
+        manager.grantRole(Roles.RELAYER, address(multicall), 0);
+        manager.grantRole(Roles.PAUSER, address(multicall), 0);
+        manager.grantRole(Roles.UNPAUSER, address(multicall), 0);
+        manager.grantRole(Roles.RATE_LIMITER, address(multicall), 0);
+
         setupRoles(owner, manager, handler, cometblsClient, ucs03);
         return (
             handler,
