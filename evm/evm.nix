@@ -138,6 +138,7 @@ _: {
         libs = ["libs"]
         gas_reports = ["*"]
         via_ir = true
+        bytecode_hash = "none"
         ast = true
         optimizer = true
         optimizer_runs = 10_000
@@ -267,7 +268,7 @@ _: {
         rec {
           chain-id = "808813";
 
-          name = "bob-testnet";
+          name = "bob-sepolia";
           rpc-url = "https://bob-sepolia.rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x4200000000000000000000000000000000000006";
@@ -298,12 +299,36 @@ _: {
 
         # mainnets
         rec {
+          chain-id = "1";
+
+          name = "ethereum";
+          rpc-url = "https://eth-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+        }
+        rec {
           chain-id = "60808";
 
           name = "bob";
           rpc-url = "https://rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x4200000000000000000000000000000000000006";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+        }
+        rec {
+          chain-id = "21000000";
+
+          name = "corn";
+          rpc-url = "https://mainnet.corn-rpc.com";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0xda5dDd7270381A7C2717aD10D1c0ecB19e3CDFb2";
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
