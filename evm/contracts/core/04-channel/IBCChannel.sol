@@ -90,6 +90,43 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         return channelId;
     }
 
+    function _channelOpenTry(
+        IBCMsgs.MsgChannelOpenTry calldata msg_
+    ) internal returns (uint32) {
+        uint32 channelId = generateChannelIdentifier();
+        channels[channelId] = msg_.channel;
+        commitChannelCalldata(channelId, msg_.channel);
+        claimChannel(msg_.portId, channelId);
+        IIBCModule(msg_.portId).onChanOpenTry(
+            msg.sender,
+            msg_.channel.connectionId,
+            channelId,
+            msg_.channel.counterpartyChannelId,
+            msg_.channel.version,
+            msg_.counterpartyVersion,
+            msg_.relayer
+        );
+        emit IBCChannelLib.ChannelOpenTry(
+            msg_.portId,
+            channelId,
+            msg_.channel.counterpartyPortId,
+            msg_.channel.counterpartyChannelId,
+            msg_.channel.connectionId,
+            msg_.counterpartyVersion,
+            msg_.counterpartyVersion
+        );
+        return channelId;
+    }
+
+    function forceChannelOpenTry(
+        IBCMsgs.MsgChannelOpenTry calldata msg_
+    ) public restricted returns (uint32) {
+        if (msg_.channel.state != IBCChannelState.TryOpen) {
+            revert IBCErrors.ErrInvalidChannelState();
+        }
+        return _channelOpenTry(msg_);
+    }
+
     /**
      * @dev channelOpenTry is called by a module to accept the first step of a channel opening handshake initiated by a module on another chain.
      */
@@ -118,29 +155,45 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         ) {
             revert IBCErrors.ErrInvalidProof();
         }
-        uint32 channelId = generateChannelIdentifier();
-        channels[channelId] = msg_.channel;
-        commitChannelCalldata(channelId, msg_.channel);
-        claimChannel(msg_.portId, channelId);
-        IIBCModule(msg_.portId).onChanOpenTry(
+        return _channelOpenTry(msg_);
+    }
+
+    function _channelOpenAck(
+        IBCMsgs.MsgChannelOpenAck calldata msg_,
+        address portId
+    ) internal {
+        IBCChannel storage channel = channels[msg_.channelId];
+        if (channel.state != IBCChannelState.Init) {
+            revert IBCErrors.ErrInvalidChannelState();
+        }
+        channel.state = IBCChannelState.Open;
+        channel.version = msg_.counterpartyVersion;
+        channel.counterpartyChannelId = msg_.counterpartyChannelId;
+        commitChannel(msg_.channelId, channel);
+        IIBCModule(portId).onChanOpenAck(
             msg.sender,
-            msg_.channel.connectionId,
-            channelId,
-            msg_.channel.counterpartyChannelId,
-            msg_.channel.version,
+            msg_.channelId,
+            msg_.counterpartyChannelId,
             msg_.counterpartyVersion,
             msg_.relayer
         );
-        emit IBCChannelLib.ChannelOpenTry(
-            msg_.portId,
-            channelId,
-            msg_.channel.counterpartyPortId,
-            msg_.channel.counterpartyChannelId,
-            msg_.channel.connectionId,
-            msg_.counterpartyVersion,
-            msg_.counterpartyVersion
+        emit IBCChannelLib.ChannelOpenAck(
+            portId,
+            msg_.channelId,
+            channel.counterpartyPortId,
+            msg_.counterpartyChannelId,
+            channel.connectionId
         );
-        return channelId;
+    }
+
+    function forceChannelOpenAck(
+        IBCMsgs.MsgChannelOpenAck calldata msg_
+    ) public restricted {
+        IBCChannel storage channel = channels[msg_.channelId];
+        if (channel.state != IBCChannelState.Init) {
+            revert IBCErrors.ErrInvalidChannelState();
+        }
+        _channelOpenAck(msg_, channelOwner[msg_.channelId]);
     }
 
     /**
@@ -173,24 +226,36 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         ) {
             revert IBCErrors.ErrInvalidProof();
         }
+        _channelOpenAck(msg_, portId);
+    }
+
+    function _channelOpenConfirm(
+        IBCMsgs.MsgChannelOpenConfirm calldata msg_,
+        IBCChannel storage channel,
+        address portId
+    ) internal {
         channel.state = IBCChannelState.Open;
-        channel.version = msg_.counterpartyVersion;
-        channel.counterpartyChannelId = msg_.counterpartyChannelId;
         commitChannel(msg_.channelId, channel);
-        IIBCModule(portId).onChanOpenAck(
-            msg.sender,
-            msg_.channelId,
-            msg_.counterpartyChannelId,
-            msg_.counterpartyVersion,
-            msg_.relayer
+        IIBCModule(portId).onChanOpenConfirm(
+            msg.sender, msg_.channelId, msg_.relayer
         );
-        emit IBCChannelLib.ChannelOpenAck(
+        emit IBCChannelLib.ChannelOpenConfirm(
             portId,
             msg_.channelId,
             channel.counterpartyPortId,
-            msg_.counterpartyChannelId,
+            channel.counterpartyChannelId,
             channel.connectionId
         );
+    }
+
+    function forceChannelOpenConfirm(
+        IBCMsgs.MsgChannelOpenConfirm calldata msg_
+    ) public restricted {
+        IBCChannel storage channel = channels[msg_.channelId];
+        if (channel.state != IBCChannelState.TryOpen) {
+            revert IBCErrors.ErrInvalidChannelState();
+        }
+        _channelOpenConfirm(msg_, channel, channelOwner[msg_.channelId]);
     }
 
     /**
@@ -223,18 +288,7 @@ abstract contract IBCChannelImpl is IBCStore, IIBCChannel {
         ) {
             revert IBCErrors.ErrInvalidProof();
         }
-        channel.state = IBCChannelState.Open;
-        commitChannel(msg_.channelId, channel);
-        IIBCModule(portId).onChanOpenConfirm(
-            msg.sender, msg_.channelId, msg_.relayer
-        );
-        emit IBCChannelLib.ChannelOpenConfirm(
-            portId,
-            msg_.channelId,
-            channel.counterpartyPortId,
-            channel.counterpartyChannelId,
-            channel.connectionId
-        );
+        _channelOpenConfirm(msg_, channel, portId);
     }
 
     /**

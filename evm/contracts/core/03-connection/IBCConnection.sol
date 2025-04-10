@@ -54,36 +54,15 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         return connectionId;
     }
 
-    /**
-     * @dev connectionOpenTry relays notice of a connection attempt on chain A to chain B (this
-     * code is executed on chain B).
-     */
-    function connectionOpenTry(
+    function _connectionOpenTry(
         IBCMsgs.MsgConnectionOpenTry calldata msg_
-    ) external override returns (uint32) {
+    ) internal returns (uint32) {
         uint32 connectionId = generateConnectionIdentifier();
         IBCConnection storage connection = connections[connectionId];
         connection.clientId = msg_.clientId;
         connection.state = IBCConnectionState.TryOpen;
         connection.counterpartyClientId = msg_.counterpartyClientId;
         connection.counterpartyConnectionId = msg_.counterpartyConnectionId;
-        IBCConnection memory expectedConnection = IBCConnection({
-            state: IBCConnectionState.Init,
-            clientId: msg_.counterpartyClientId,
-            counterpartyClientId: msg_.clientId,
-            counterpartyConnectionId: 0
-        });
-        if (
-            !verifyConnectionState(
-                connection,
-                msg_.proofHeight,
-                msg_.proofInit,
-                msg_.counterpartyConnectionId,
-                expectedConnection
-            )
-        ) {
-            revert IBCErrors.ErrInvalidProof();
-        }
         commitConnection(connectionId, connection);
         emit IBCConnectionLib.ConnectionOpenTry(
             connectionId,
@@ -94,34 +73,43 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         return connectionId;
     }
 
+    function forceConnectionOpenTry(
+        IBCMsgs.MsgConnectionOpenTry calldata msg_
+    ) public restricted returns (uint32) {
+        return _connectionOpenTry(msg_);
+    }
+
     /**
-     * @dev connectionOpenAck relays acceptance of a connection open attempt from chain B back
-     * to chain A (this code is executed on chain A).
+     * @dev connectionOpenTry relays notice of a connection attempt on chain A to chain B (this
+     * code is executed on chain B).
      */
-    function connectionOpenAck(
-        IBCMsgs.MsgConnectionOpenAck calldata msg_
-    ) external override {
-        IBCConnection storage connection = connections[msg_.connectionId];
-        if (connection.state != IBCConnectionState.Init) {
-            revert IBCErrors.ErrInvalidConnectionState();
-        }
+    function connectionOpenTry(
+        IBCMsgs.MsgConnectionOpenTry calldata msg_
+    ) external override returns (uint32) {
         IBCConnection memory expectedConnection = IBCConnection({
-            state: IBCConnectionState.TryOpen,
-            clientId: connection.counterpartyClientId,
-            counterpartyClientId: connection.clientId,
-            counterpartyConnectionId: msg_.connectionId
+            state: IBCConnectionState.Init,
+            clientId: msg_.counterpartyClientId,
+            counterpartyClientId: msg_.clientId,
+            counterpartyConnectionId: 0
         });
         if (
             !verifyConnectionState(
-                connection,
+                msg_.clientId,
                 msg_.proofHeight,
-                msg_.proofTry,
+                msg_.proofInit,
                 msg_.counterpartyConnectionId,
                 expectedConnection
             )
         ) {
             revert IBCErrors.ErrInvalidProof();
         }
+        return _connectionOpenTry(msg_);
+    }
+
+    function _connectionOpenAck(
+        IBCMsgs.MsgConnectionOpenAck calldata msg_,
+        IBCConnection storage connection
+    ) internal {
         connection.state = IBCConnectionState.Open;
         connection.counterpartyConnectionId = msg_.counterpartyConnectionId;
         commitConnection(msg_.connectionId, connection);
@@ -133,34 +121,48 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         );
     }
 
+    function forceConnectionOpenAck(
+        IBCMsgs.MsgConnectionOpenAck calldata msg_
+    ) public restricted {
+        _connectionOpenAck(
+            msg_,
+            ensureHandshakeState(msg_.connectionId, IBCConnectionState.Init)
+        );
+    }
+
     /**
-     * @dev connectionOpenConfirm confirms opening of a connection on chain A to chain B, after
-     * which the connection is open on both chains (this code is executed on chain B).
+     * @dev connectionOpenAck relays acceptance of a connection open attempt from chain B back
+     * to chain A (this code is executed on chain A).
      */
-    function connectionOpenConfirm(
-        IBCMsgs.MsgConnectionOpenConfirm calldata msg_
+    function connectionOpenAck(
+        IBCMsgs.MsgConnectionOpenAck calldata msg_
     ) external override {
-        IBCConnection storage connection = connections[msg_.connectionId];
-        if (connection.state != IBCConnectionState.TryOpen) {
-            revert IBCErrors.ErrInvalidConnectionState();
-        }
+        IBCConnection storage connection =
+            ensureHandshakeState(msg_.connectionId, IBCConnectionState.Init);
         IBCConnection memory expectedConnection = IBCConnection({
-            state: IBCConnectionState.Open,
+            state: IBCConnectionState.TryOpen,
             clientId: connection.counterpartyClientId,
             counterpartyClientId: connection.clientId,
             counterpartyConnectionId: msg_.connectionId
         });
         if (
             !verifyConnectionState(
-                connection,
+                connection.clientId,
                 msg_.proofHeight,
-                msg_.proofAck,
-                connection.counterpartyConnectionId,
+                msg_.proofTry,
+                msg_.counterpartyConnectionId,
                 expectedConnection
             )
         ) {
             revert IBCErrors.ErrInvalidProof();
         }
+        _connectionOpenAck(msg_, connection);
+    }
+
+    function _connectionOpenConfirm(
+        IBCMsgs.MsgConnectionOpenConfirm calldata msg_,
+        IBCConnection storage connection
+    ) internal {
         connection.state = IBCConnectionState.Open;
         commitConnection(msg_.connectionId, connection);
         emit IBCConnectionLib.ConnectionOpenConfirm(
@@ -169,6 +171,44 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
             connection.counterpartyClientId,
             connection.counterpartyConnectionId
         );
+    }
+
+    function forceConnectionOpenConfirm(
+        IBCMsgs.MsgConnectionOpenConfirm calldata msg_
+    ) public restricted {
+        _connectionOpenConfirm(
+            msg_,
+            ensureHandshakeState(msg_.connectionId, IBCConnectionState.TryOpen)
+        );
+    }
+
+    /**
+     * @dev connectionOpenConfirm confirms opening of a connection on chain A to chain B, after
+     * which the connection is open on both chains (this code is executed on chain B).
+     */
+    function connectionOpenConfirm(
+        IBCMsgs.MsgConnectionOpenConfirm calldata msg_
+    ) external override {
+        IBCConnection storage connection =
+            ensureHandshakeState(msg_.connectionId, IBCConnectionState.TryOpen);
+        IBCConnection memory expectedConnection = IBCConnection({
+            state: IBCConnectionState.Open,
+            clientId: connection.counterpartyClientId,
+            counterpartyClientId: connection.clientId,
+            counterpartyConnectionId: msg_.connectionId
+        });
+        if (
+            !verifyConnectionState(
+                connection.clientId,
+                msg_.proofHeight,
+                msg_.proofAck,
+                connection.counterpartyConnectionId,
+                expectedConnection
+            )
+        ) {
+            revert IBCErrors.ErrInvalidProof();
+        }
+        _connectionOpenConfirm(msg_, connection);
     }
 
     function encodeConnection(
@@ -192,14 +232,14 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
     }
 
     function verifyConnectionState(
-        IBCConnection storage connection,
+        uint32 clientId,
         uint64 height,
         bytes calldata proof,
         uint32 connectionId,
         IBCConnection memory counterpartyConnection
     ) internal returns (bool) {
-        return getClientInternal(connection.clientId).verifyMembership(
-            connection.clientId,
+        return getClientInternal(clientId).verifyMembership(
+            clientId,
             height,
             proof,
             abi.encodePacked(
@@ -215,5 +255,16 @@ abstract contract IBCConnectionImpl is IBCStore, IIBCConnection {
         commitments[nextConnectionSequencePath] =
             bytes32(uint256(nextConnectionSequence + 1));
         return nextConnectionSequence;
+    }
+
+    function ensureHandshakeState(
+        uint32 connectionId,
+        IBCConnectionState state
+    ) internal view returns (IBCConnection storage) {
+        IBCConnection storage connection = connections[connectionId];
+        if (connection.state != state) {
+            revert IBCErrors.ErrInvalidConnectionState();
+        }
+        return connection;
     }
 }
