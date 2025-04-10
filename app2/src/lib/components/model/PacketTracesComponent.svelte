@@ -150,7 +150,7 @@ function getArrowSpan(
               </div>
 
             {/if}
-              <div class="{Option.isSome(trace.height) && trace.type === 'PACKET_RECV' || trace.type === 'PACKET_ACK'  ? 'border-babylon-orange border-2' : ''} bg-zinc-800 flex flex-row items-center rounded px-2 py-1">
+              <div class="{Option.isSome(trace.transaction_hash) && (trace.type === 'PACKET_RECV' || trace.type === 'PACKET_ACK')  ? 'border-babylon-orange border-2' : ''} bg-zinc-800 flex flex-row items-center rounded px-2 py-1">
                 <div class="flex flex-col">
                   <div class="font-semibold text-sm">
                     {toTraceName(trace.type)}
@@ -162,7 +162,7 @@ function getArrowSpan(
                     </div>
                   {/if}
                 </div>
-                {#if Option.isSome(trace.height) && trace.type === "PACKET_RECV" || trace.type === 'PACKET_ACK'}
+                {#if Option.isSome(trace.transaction_hash) && (trace.type === "PACKET_RECV" || trace.type === 'PACKET_ACK')}
                   <div class="bg-babylon-orange rounded-full ml-3 -mr-5">
                     <SharpCheckIcon class="size-6"/>
                   </div>
@@ -172,9 +172,11 @@ function getArrowSpan(
 
             {#if arrowSpan}
               <div class="flex py-2 items-center {arrowSpan.isLeft ? 'flex-row-reverse' : 'flex-row'}" style="grid-row: {i * 2 + 3}; grid-column: {arrowSpan.gridColumn};">
-                  <div class="flex-1 h-0.5 bg-zinc-700">
+                  <div class="flex-1 h-0.5 {Option.isSome(nextTrace?.transaction_hash) ? 'bg-babylon-orange' : 'bg-zinc-700'}">
                   </div>
-                    <div class="border-[5px] border-transparent {arrowSpan.isLeft ? 'dark:border-r-zinc-700' : 'border-l-zinc-400 dark:border-l-zinc-700'}" ></div>
+                    <div class="border-[5px] border-transparent {arrowSpan.isLeft 
+                      ? (Option.isSome(nextTrace?.transaction_hash) ? 'dark:border-r-babylon-orange' : 'dark:border-r-zinc-700') 
+                      : (Option.isSome(nextTrace?.transaction_hash) ? 'border-l-babylon-orange dark:border-l-babylon-orange' : 'border-l-zinc-400 dark:border-l-zinc-700')}" ></div>
               </div>
             {/if}
         {/each}
