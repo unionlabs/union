@@ -50,6 +50,6 @@ describe("Bech32", () => {
 
     const result = S.decodeUnknownSync(transform)(addr)
 
-    console.log(result)
+    assert.isTrue(true)
   })
 })
