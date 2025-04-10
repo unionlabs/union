@@ -22,6 +22,10 @@ let
           type = types.number;
           description = "Interval between cycles in milliseconds";
         };
+        hasuraEndpoint = mkOption {
+          type = types.str;
+          description = "Hasura endpoint for graphql requests.";
+        };
         transfers = mkOption {
           type = types.listOf types.attrs;
           description = "Array for cross-chain transfers.";
@@ -51,6 +55,7 @@ let
                     inherit (cfg) cycleIntervalMs;
                     inherit (cfg) interactions;
                     inherit (cfg) transfers;
+                    inherit (cfg) hasuraEndpoint;
                   }
                 )
               }
