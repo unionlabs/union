@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { HTMLAttributes } from "svelte/elements"
+import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 import { Chain } from "@unionlabs/sdk/schema"
 import { cn } from "$lib/utils"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
@@ -24,14 +25,43 @@ const classes = cn("text-md font-semibold", className)
     {chain.display_name}
   </div>
 {:else}
-  <Tooltip title={chain.display_name}>
+  <Tooltip>
     {#snippet trigger()}
+      {@const chainLogo = chainLogoMap.get(chain.universal_chain_id)}
+      <div class="flex gap-1 items-center">
+      <div>
+        {#if chainLogo?.color}
+          <div class="flex items-center">
+            <div class="size-4 flex items-center justify-center overflow-hidden">
+              <img src={chainLogo.color} alt="">
+            </div>
+          </div>
+        {/if}
+      </div>
       <div class={classes} {...rest}>
         {chain.display_name}
+      </div>
       </div>
     {/snippet}
 
     {#snippet content()}
+    {@const chainLogo = chainLogoMap.get(chain.universal_chain_id)}
+      <section>
+        <div class="flex gap-1 items-center text-lg">
+        <div>
+          {#if chainLogo?.color}
+            <div class="flex items-center">
+              <div class="size-5 flex items-center justify-center overflow-hidden">
+                <img src={chainLogo.color} alt="">
+              </div>
+            </div>
+          {/if}
+        </div>
+        <div class={classes} {...rest}>
+          {chain.display_name}
+        </div>
+        </div>
+      </section>
       <section>
         <Label>Universal Chain ID</Label>
         <LongMonoWord>{chain.universal_chain_id}</LongMonoWord>
@@ -48,11 +78,13 @@ const classes = cn("text-md font-semibold", className)
       {#if chain.explorers.length > 0}
         <section>
           <Label>Explorers</Label>
+          <div class="flex flex-col gap-1">
           {#each chain.explorers as explorer}
             <A href={explorer.home_url}>
               {explorer.display_name}
             </A>
           {/each}
+          </div>
         </section>
       {/if}
 
