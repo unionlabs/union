@@ -26,15 +26,8 @@ import "../contracts/lib/Hex.sol";
 import "./Deployer.sol";
 
 library LIB {
-    string constant NAMESPACE = "lib";
-    string constant MULTICALL = "multicall";
-    string constant ZKGM_ERC20 = "zkgm-erc20";
-
-    function make(
-        string memory lib
-    ) internal pure returns (string memory) {
-        return string(abi.encodePacked(NAMESPACE, "/", lib));
-    }
+    string constant MULTICALL = "lib/multicall";
+    string constant ZKGM_ERC20 = "lib/zkgm-erc20";
 }
 
 library IBC {
@@ -43,29 +36,16 @@ library IBC {
 }
 
 library LightClients {
-    string constant NAMESPACE = "lightclients";
-    string constant COMETBLS = "cometbls";
-    string constant STATE_LENS_ICS23_MPT = "state-lens/ics23/mpt";
-    string constant STATE_LENS_ICS23_ICS23 = "state-lens/ics23/ics23";
-    string constant STATE_LENS_ICS23_SMT = "state-lens/ics23/smt";
-
-    function make(
-        string memory lightClient
-    ) internal pure returns (string memory) {
-        return string(abi.encodePacked(NAMESPACE, "/", lightClient));
-    }
+    string constant COMETBLS = "lightclients/cometbls";
+    string constant STATE_LENS_ICS23_MPT = "lightclients/state-lens/ics23/mpt";
+    string constant STATE_LENS_ICS23_ICS23 =
+        "lightclients/state-lens/ics23/ics23";
+    string constant STATE_LENS_ICS23_SMT = "lightclients/state-lens/ics23/smt";
 }
 
 library Protocols {
-    string constant NAMESPACE = "protocols";
-    string constant UCS00 = "ucs00";
-    string constant UCS03 = "ucs03";
-
-    function make(
-        string memory protocol
-    ) internal pure returns (string memory) {
-        return string(abi.encodePacked(NAMESPACE, "/", protocol));
-    }
+    string constant UCS00 = "protocols/ucs00";
+    string constant UCS03 = "protocols/ucs03";
 }
 
 abstract contract VersionedScript is Script {
@@ -104,9 +84,7 @@ abstract contract UnionScript is UnionBase {
     function deployMulticall() internal returns (Multicall) {
         return Multicall(
             getDeployer().deploy(
-                LIB.make(LIB.MULTICALL),
-                abi.encodePacked(type(Multicall).creationCode),
-                0
+                LIB.MULTICALL, abi.encodePacked(type(Multicall).creationCode), 0
             )
         );
     }
@@ -128,7 +106,7 @@ abstract contract UnionScript is UnionBase {
     function deployZkgmERC20() internal returns (ZkgmERC20) {
         return ZkgmERC20(
             getDeployer().deploy(
-                LIB.make(LIB.ZKGM_ERC20),
+                LIB.ZKGM_ERC20,
                 abi.encodePacked(type(ZkgmERC20).creationCode),
                 0
             )
@@ -155,7 +133,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (StateLensIcs23MptClient) {
         return StateLensIcs23MptClient(
             deploy(
-                LightClients.make(LightClients.STATE_LENS_ICS23_MPT),
+                LightClients.STATE_LENS_ICS23_MPT,
                 abi.encode(
                     address(new StateLensIcs23MptClient(address(handler))),
                     abi.encodeCall(StateLensIcs23MptClient.initialize, (owner))
@@ -170,7 +148,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (StateLensIcs23Ics23Client) {
         return StateLensIcs23Ics23Client(
             deploy(
-                LightClients.make(LightClients.STATE_LENS_ICS23_ICS23),
+                LightClients.STATE_LENS_ICS23_ICS23,
                 abi.encode(
                     address(new StateLensIcs23Ics23Client(address(handler))),
                     abi.encodeCall(
@@ -187,7 +165,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (StateLensIcs23SmtClient) {
         return StateLensIcs23SmtClient(
             deploy(
-                LightClients.make(LightClients.STATE_LENS_ICS23_SMT),
+                LightClients.STATE_LENS_ICS23_SMT,
                 abi.encode(
                     address(new StateLensIcs23SmtClient(address(handler))),
                     abi.encodeCall(StateLensIcs23SmtClient.initialize, (owner))
@@ -202,7 +180,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (CometblsClient) {
         return CometblsClient(
             deploy(
-                LightClients.make(LightClients.COMETBLS),
+                LightClients.COMETBLS,
                 abi.encode(
                     address(new CometblsClient(address(handler))),
                     abi.encodeCall(CometblsClient.initialize, (owner))
@@ -218,7 +196,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (PingPong) {
         return PingPong(
             deploy(
-                Protocols.make(Protocols.UCS00),
+                Protocols.UCS00,
                 abi.encode(
                     address(new PingPong()),
                     abi.encodeCall(
@@ -238,7 +216,7 @@ abstract contract UnionScript is UnionBase {
         UCS03Zkgm zkgm = UCS03Zkgm(
             payable(
                 deploy(
-                    Protocols.make(Protocols.UCS03),
+                    Protocols.UCS03,
                     abi.encode(
                         address(new UCS03Zkgm(handler, weth, erc20)),
                         abi.encodeCall(UCS03Zkgm.initialize, (owner))
@@ -755,19 +733,22 @@ contract GetDeployed is VersionedScript {
     }
 
     function run() public {
-        address multicall = getDeployed(LIB.make(LIB.MULTICALL));
+        address multicall = getDeployed(LIB.MULTICALL);
+        address zkgmERC20 = getDeployed(LIB.ZKGM_ERC20);
+
         address manager = getDeployed(IBC.MANAGER);
         address handler = getDeployed(IBC.BASED);
-        address cometblsClient =
-            getDeployed(LightClients.make(LightClients.COMETBLS));
+
+        address cometblsClient = getDeployed(LightClients.COMETBLS);
         address stateLensIcs23MptClient =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_MPT));
+            getDeployed(LightClients.STATE_LENS_ICS23_MPT);
         address stateLensIcs23Ics23Client =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_ICS23));
+            getDeployed(LightClients.STATE_LENS_ICS23_ICS23);
         address stateLensIcs23SmtClient =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_SMT));
-        address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
-        address ucs03 = getDeployed(Protocols.make(Protocols.UCS03));
+            getDeployed(LightClients.STATE_LENS_ICS23_SMT);
+
+        address ucs00 = getDeployed(Protocols.UCS00);
+        address ucs03 = getDeployed(Protocols.UCS03);
 
         console.log(
             string(abi.encodePacked("Manager: ", manager.toHexString()))
@@ -920,6 +901,14 @@ contract GetDeployed is VersionedScript {
         implMulticall = implMulticall.serialize("args", bytes(hex""));
         impls.serialize(multicall.toHexString(), implMulticall);
 
+        string memory implZkgmERC20 = "implZkgmERC20";
+        implZkgmERC20.serialize(
+            "contract",
+            string("contracts/apps/ucs/03-zkgm/ZkgmERC20.sol:ZkgmERC20")
+        );
+        implZkgmERC20 = implZkgmERC20.serialize("args", bytes(hex""));
+        impls.serialize(zkgmERC20.toHexString(), implZkgmERC20);
+
         string memory implManager = "implManager";
         implManager.serialize(
             "contract", string("contracts/Manager.sol:Manager")
@@ -940,7 +929,7 @@ contract GetDeployed is VersionedScript {
             "contract",
             string("contracts/clients/CometblsClient.sol:CometblsClient")
         );
-        implComet = implComet.serialize("args", bytes(hex""));
+        implComet = implComet.serialize("args", abi.encode(handler));
         impls.serialize(implOf(cometblsClient).toHexString(), implComet);
 
         string memory implStateLensIcs23MptClient =
@@ -952,7 +941,7 @@ contract GetDeployed is VersionedScript {
             )
         );
         implStateLensIcs23MptClient =
-            implStateLensIcs23MptClient.serialize("args", bytes(hex""));
+            implStateLensIcs23MptClient.serialize("args", abi.encode(handler));
         impls.serialize(
             implOf(stateLensIcs23MptClient).toHexString(),
             implStateLensIcs23MptClient
@@ -967,7 +956,7 @@ contract GetDeployed is VersionedScript {
             )
         );
         implStateLensIcs23Ics23Client =
-            implStateLensIcs23Ics23Client.serialize("args", bytes(hex""));
+            implStateLensIcs23Ics23Client.serialize("args", abi.encode(handler));
         impls.serialize(
             implOf(stateLensIcs23Ics23Client).toHexString(),
             implStateLensIcs23Ics23Client
@@ -982,7 +971,7 @@ contract GetDeployed is VersionedScript {
             )
         );
         implStateLensIcs23SmtClient =
-            implStateLensIcs23SmtClient.serialize("args", bytes(hex""));
+            implStateLensIcs23SmtClient.serialize("args", abi.encode(handler));
         impls.serialize(
             implOf(stateLensIcs23SmtClient).toHexString(),
             implStateLensIcs23SmtClient
@@ -1000,7 +989,8 @@ contract GetDeployed is VersionedScript {
         implUCS03.serialize(
             "contract", string("contracts/apps/ucs/03-zkgm/Zkgm.sol:UCS03Zkgm")
         );
-        implUCS03 = implUCS03.serialize("args", bytes(hex""));
+        implUCS03 =
+            implUCS03.serialize("args", abi.encode(handler, weth, zkgmERC20));
         impls = impls.serialize(implOf(ucs03).toHexString(), implUCS03);
 
         impls.write(vm.envString("OUTPUT"));
@@ -1033,8 +1023,7 @@ contract DryUpgradeUCS03 is VersionedScript {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
         ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
-        UCS03Zkgm ucs03 =
-            UCS03Zkgm(payable(getDeployed(Protocols.make(Protocols.UCS03))));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         console.log(
             string(abi.encodePacked("UCS03: ", address(ucs03).toHexString()))
@@ -1073,8 +1062,7 @@ contract UpgradeUCS03 is VersionedScript {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
         ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
-        UCS03Zkgm ucs03 =
-            UCS03Zkgm(payable(getDeployed(Protocols.make(Protocols.UCS03))));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         console.log(
             string(abi.encodePacked("UCS03: ", address(ucs03).toHexString()))
@@ -1111,7 +1099,7 @@ contract UpgradeUCS00 is VersionedScript {
     }
 
     function run() public {
-        address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
+        address ucs00 = getDeployed(Protocols.UCS00);
 
         console.log(string(abi.encodePacked("UCS00: ", ucs00.toHexString())));
 
@@ -1213,9 +1201,8 @@ contract DryUpgradeCometblsClient is VersionedScript {
 
     function run() public {
         address handler = getDeployed(IBC.BASED);
-        CometblsClient cometblsClient = CometblsClient(
-            getDeployed(LightClients.make(LightClients.COMETBLS))
-        );
+        CometblsClient cometblsClient =
+            CometblsClient(getDeployed(LightClients.COMETBLS));
         console.log(
             string(
                 abi.encodePacked(
@@ -1253,9 +1240,8 @@ contract UpgradeCometblsClient is VersionedScript {
 
     function run() public {
         address handler = getDeployed(IBC.BASED);
-        CometblsClient cometblsClient = CometblsClient(
-            getDeployed(LightClients.make(LightClients.COMETBLS))
-        );
+        CometblsClient cometblsClient =
+            CometblsClient(getDeployed(LightClients.COMETBLS));
         console.log(
             string(
                 abi.encodePacked(
@@ -1295,9 +1281,7 @@ contract UpgradeStateLensIcs23MptClient is VersionedScript {
     function run() public {
         address handler = getDeployed(IBC.BASED);
         StateLensIcs23MptClient stateLensIcs23MptClient =
-        StateLensIcs23MptClient(
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_MPT))
-        );
+        StateLensIcs23MptClient(getDeployed(LightClients.STATE_LENS_ICS23_MPT));
         console.log(
             string(
                 abi.encodePacked(
@@ -1342,7 +1326,7 @@ contract UpgradeStateLensIcs23Ics23Client is VersionedScript {
         address handler = getDeployed(IBC.BASED);
         StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
         StateLensIcs23Ics23Client(
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_ICS23))
+            getDeployed(LightClients.STATE_LENS_ICS23_ICS23)
         );
         console.log(
             string(
@@ -1387,9 +1371,7 @@ contract UpgradeStateLensIcs23SmtClient is VersionedScript {
     function run() public {
         address handler = getDeployed(IBC.BASED);
         StateLensIcs23SmtClient stateLensIcs23SmtClient =
-        StateLensIcs23SmtClient(
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_SMT))
-        );
+        StateLensIcs23SmtClient(getDeployed(LightClients.STATE_LENS_ICS23_SMT));
         console.log(
             string(
                 abi.encodePacked(
