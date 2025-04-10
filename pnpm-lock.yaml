@@ -130,6 +130,9 @@ importers:
       svelte-check:
         specifier: ^4.1.4
         version: 4.1.5(picomatch@4.0.2)(svelte@5.25.3)(typescript@5.8.2)
+      svelte-turnstile:
+        specifier: ^0.10.0
+        version: 0.10.0(svelte@5.25.3)
       tailwind-merge:
         specifier: ^3.0.2
         version: 3.0.2
@@ -3900,6 +3903,11 @@ packages:
       svelte:
         optional: true
 
+  svelte-turnstile@0.10.0:
+    resolution: {integrity: sha512-IitCN42Wh2TaV3Ah+qEDTXsr3JuaZRmWO26dqhgd6fD2mm9/wNBs6kFkhXbtEDCYlHwH5Lge0pYk8ybcKLJGbA==}
+    peerDependencies:
+      svelte: ^3.58.0 || ^4.0.0 || ^5.0.0
+
   svelte@5.25.3:
     resolution: {integrity: sha512-J9rcZ/xVJonAoESqVGHHZhrNdVbrCfkdB41BP6eiwHMoFShD9it3yZXApVYMHdGfCshBsZCKsajwJeBbS/M1zg==}
     engines: {node: '>=18'}
@@ -4055,6 +4063,9 @@ packages:
 
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
+
+  turnstile-types@1.2.3:
+    resolution: {integrity: sha512-EDjhDB9TDwda2JRbhzO/kButPio3JgrC3gXMVAMotxldybTCJQVMvPNJ89rcAiN9vIrCb2i1E+VNBCqB8wue0A==}
 
   tweetnacl@0.14.5:
     resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==}
@@ -8825,6 +8836,11 @@ snapshots:
     optionalDependencies:
       svelte: 5.25.3
 
+  svelte-turnstile@0.10.0(svelte@5.25.3):
+    dependencies:
+      svelte: 5.25.3
+      turnstile-types: 1.2.3
+
   svelte@5.25.3:
     dependencies:
       '@ampproject/remapping': 2.3.0
@@ -8980,6 +8996,8 @@ snapshots:
   tunnel-agent@0.6.0:
     dependencies:
       safe-buffer: 5.2.1
+
+  turnstile-types@1.2.3: {}
 
   tweetnacl@0.14.5: {}
 
