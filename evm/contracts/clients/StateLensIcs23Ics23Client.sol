@@ -94,8 +94,6 @@ contract StateLensIcs23Ics23Client is
 
     mapping(uint32 => ClientState) private clientStates;
     mapping(uint32 => mapping(uint64 => ConsensusState)) private consensusStates;
-    mapping(uint32 => mapping(uint64 => ProcessedMoment)) private
-        processedMoments;
 
     constructor(
         address _ibcHandler
@@ -141,11 +139,6 @@ contract StateLensIcs23Ics23Client is
         }
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
-        // Normalize to nanosecond because ibc-go recvPacket expects nanos...
-        processedMoments[clientId][clientState.l2LatestHeight] = ProcessedMoment({
-            timestamp: block.timestamp * 1e9,
-            height: block.number
-        });
 
         emit CreateLensClient(
             clientId,
@@ -220,12 +213,6 @@ contract StateLensIcs23Ics23Client is
             consensusStates[clientId][header.l2Height];
         consensusState.timestamp = l2ConsensusState.timestamp;
         consensusState.appHash = l2ConsensusState.appHash;
-
-        // P[H₂] = now()
-        ProcessedMoment storage processed =
-            processedMoments[clientId][header.l2Height];
-        processed.timestamp = block.timestamp * 1e9;
-        processed.height = block.number;
 
         // commit(S₂)
         return ConsensusStateUpdate({
