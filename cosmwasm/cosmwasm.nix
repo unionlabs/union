@@ -443,7 +443,8 @@ _: {
               --contracts ${chain-deployments-json args} \
               ${if permissioned then "--permissioned " else ""} \
               --rpc-url ${rpc_url} \
-              ${mk-gas-args gas_config}
+              ${mk-gas-args gas_config} \
+              "$@"
           '';
         };
 
