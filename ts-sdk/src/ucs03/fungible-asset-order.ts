@@ -118,16 +118,20 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
     const sourceClient = (yield* CosmWasmClientSource).client
 
     // HACK: special cased for ubbn for now
+    const tokenMetaEither = yield* readCw20TokenInfo(intent.baseToken).pipe(
+      Effect.provideService(CosmWasmClientContext, { client: sourceClient }),
+      Effect.either
+    );
+
+    // Choose the cw20 metadata if successful; otherwise, fall back to native token metadata.
     const tokenMeta =
-      intent.baseToken === "ubbn"
+      tokenMetaEither._tag === "Left"
         ? {
-            symbol: "ubbn",
-            name: "ubbn",
-            decimals: 0
+            symbol: intent.baseToken,
+            name: intent.baseToken,
+            decimals: 0, 
           }
-        : yield* readCw20TokenInfo(intent.baseToken).pipe(
-            Effect.provideService(CosmWasmClientContext, { client: sourceClient })
-          )
+        : tokenMetaEither.right;
 
     const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
