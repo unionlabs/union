@@ -5,7 +5,7 @@
     "ibc_interface": "ibc-solidity",
     "deployments": {
       "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
-      "manager": "0xce0c8780e27c5a5731e1bed35265ce146a301c44",
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
@@ -55,7 +55,7 @@
     "ibc_interface": "ibc-solidity",
     "deployments": {
       "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
-      "manager": "0xce0c8780e27c5a5731e1bed35265ce146a301c44",
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
@@ -105,7 +105,7 @@
     "ibc_interface": "ibc-solidity",
     "deployments": {
       "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
-      "manager": "0xce0c8780e27c5a5731e1bed35265ce146a301c44",
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
@@ -155,7 +155,7 @@
     "ibc_interface": "ibc-solidity",
     "deployments": {
       "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
-      "manager": "0xce0c8780e27c5a5731e1bed35265ce146a301c44",
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
@@ -205,7 +205,7 @@
     "ibc_interface": "ibc-solidity",
     "deployments": {
       "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
-      "manager": "0xce0c8780e27c5a5731e1bed35265ce146a301c44",
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
@@ -255,7 +255,7 @@
     "ibc_interface": "ibc-solidity",
     "deployments": {
       "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
-      "manager": "0xce0c8780e27c5a5731e1bed35265ce146a301c44",
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
@@ -305,7 +305,7 @@
     "ibc_interface": "ibc-solidity",
     "deployments": {
       "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
-      "manager": "0xce0c8780e27c5a5731e1bed35265ce146a301c44",
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
