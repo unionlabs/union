@@ -47,19 +47,17 @@ const classes = cn("text-md font-semibold", className)
     {#snippet content()}
     {@const chainLogo = chainLogoMap.get(chain.universal_chain_id)}
       <section>
-        <div class="flex gap-1 items-center text-lg">
-        <div>
-          {#if chainLogo?.color}
-            <div class="flex items-center">
-              <div class="size-5 flex items-center justify-center overflow-hidden">
-                <img src={chainLogo.color} alt="">
+        <div class="flex gap-1 items-center text-lg text-white font-bold">
+          <div>
+            {#if chainLogo?.color}
+              <div class="flex items-center">
+                <div class="size-5 flex items-center justify-center overflow-hidden">
+                  <img src={chainLogo.color} alt="">
+                </div>
               </div>
-            </div>
-          {/if}
-        </div>
-        <div class={classes} {...rest}>
-          {chain.display_name}
-        </div>
+            {/if}
+          </div>
+          <div>{chain.display_name}</div>
         </div>
       </section>
       <section>
