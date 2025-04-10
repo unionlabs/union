@@ -14,6 +14,7 @@ import SharpCancelIcon from "$lib/components/icons/SharpCancelIcon.svelte"
 import SharpListRemoveIcon from "$lib/components/icons/SharpListRemoveIcon.svelte"
 import RestoreIcon from "$lib/components/icons/RestoreIcon.svelte"
 import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
+import { getDerivedReceiverSafe } from "$lib/services/shared"
 
 let destinationChain = $derived(
   Option.isSome(transfer.destinationChain) ? Option.getOrNull(transfer.destinationChain) : null
@@ -219,6 +220,9 @@ function useConnectedWallet() {
 
 function submitManualAddress() {
   if (manualAddress.trim()) {
+    const derivedReceiverAddr = getDerivedReceiverSafe(manualAddress)
+    const derived = Option.getOrNull(derivedReceiverAddr)
+    manualAddress = derived ?? manualAddress
     useAddress(manualAddress.trim(), bookmarkOnAdd)
   }
 }
