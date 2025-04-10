@@ -3,7 +3,9 @@
   "type": "module",
   "devDependencies": {
     "@effect/language-service": "~0.5.1",
-    "typescript": "~5.8.2"
+    "@effect/vitest": "~0.19.10",
+    "typescript": "~5.8.2",
+    "vitest": "~3.0.9"
   },
   "pnpm": {
     "patchedDependencies": {

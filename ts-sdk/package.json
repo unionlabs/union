@@ -75,9 +75,7 @@
     "biome": "^0.3.3",
     "dpdm": "^3.14.0",
     "effect": "^3.13.12",
-    "viem": "^2.23.12",
-    "vite-node": "^3.1.1",
-    "vitest": "^3.0.8"
+    "viem": "^2.23.12"
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "1.34.0",
