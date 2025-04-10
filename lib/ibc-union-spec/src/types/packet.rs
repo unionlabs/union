@@ -335,7 +335,7 @@ mod tests {
             source_channel_id: 0,
             destination_channel_id: 0,
             data: b"data".into(),
-            timeout_height: 1,
+            timeout_height: 0,
             timeout_timestamp: 0,
         };
 

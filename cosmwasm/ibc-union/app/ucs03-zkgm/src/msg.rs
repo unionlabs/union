@@ -64,6 +64,7 @@ pub enum ExecuteMsg {
     Send {
         channel_id: ChannelId,
         timeout_height: Uint64,
+        #[serde(with = "serde_utils::string")]
         timeout_timestamp: Timestamp,
         salt: H256,
         instruction: Bytes,

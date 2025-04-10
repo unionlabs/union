@@ -29,6 +29,7 @@ ibc-union-msg               = { workspace = true }
 ibc-union-spec              = { workspace = true, features = ["serde", "ethabi"] }
 serde                       = { workspace = true, features = ["derive"] }
 serde-json-wasm             = "1.0"
+serde-utils.workspace       = true
 thiserror                   = { workspace = true }
 token-factory-api           = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }

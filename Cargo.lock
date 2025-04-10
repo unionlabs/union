@@ -14208,6 +14208,7 @@ dependencies = [
  "ibc-union-spec",
  "serde",
  "serde-json-wasm 1.0.1",
+ "serde-utils",
  "serde_json",
  "thiserror 2.0.12",
  "token-factory-api",
