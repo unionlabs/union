@@ -14,6 +14,9 @@ import { FungibleAssetOrder } from "./instruction.js"
 import type { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
 import { ensureHex } from "../utils/index.js"
 import type { TokenRawDenom } from "../schema/token.js"
+import { graphqlQuoteTokenUnwrapQuery } from "../graphql/unwrapped-quote-token.js"
+import { UniversalChainId } from "../schema/chain.js"
+import { ChannelId } from "../schema/channel.js"
 
 export type FungibleAssetOrderIntent = {
   sender: Address
@@ -83,6 +86,20 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
     const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
       Effect.provideService(ViemPublicClient, { client: sourceClient })
     )
+
+    yield* Effect.log(
+      "checking if we should unwrap by querying graphql quote token",
+      ensureHex(intent.baseToken)
+    )
+
+    const graphqlQuoteToken = yield* graphqlQuoteTokenUnwrapQuery({
+      baseToken: ensureHex(intent.baseToken),
+      sourceChainId: UniversalChainId.make("bob.808813"),
+      sourceChannelId: ChannelId.make(1)
+    })
+
+    yield* Effect.log("graphql quote", graphqlQuoteToken)
+
     yield* Effect.log("predicting quote token")
     const quoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
     yield* Effect.log("quote token", quoteToken)

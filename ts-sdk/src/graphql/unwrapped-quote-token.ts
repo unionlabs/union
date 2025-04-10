@@ -3,16 +3,18 @@ import type { UniversalChainId } from "../schema/chain.js"
 import { fetchDecodeGraphql } from "../utils/graphql-query.js"
 import { Schema } from "effect"
 import { graphql } from "gql.tada"
+import type { ChannelId } from "../schema/channel.js"
 
-export const tokenWrappingQuery = ({
-  base_token: TokenRawDenom,
-  source_chain_id: UniversalChainId
-}: { base_token: TokenRawDenom; source_chain_id: UniversalChainId }) =>
+export const graphqlQuoteTokenUnwrapQuery = (args: {
+  baseToken: TokenRawDenom
+  sourceChainId: UniversalChainId
+  sourceChannelId: ChannelId
+}) =>
   fetchDecodeGraphql(
     Schema.Struct({
       v2_tokens: Schema.Array(
         Schema.Struct({
-          wrapping: Schema.Array(Schema.Struct({ unwrapped_denom: TokenRawDenom }))
+          wrapping: Schema.Array(Schema.Struct({ unwrapped_denom: Schema.String }))
         })
       )
     }),
@@ -31,7 +33,9 @@ export const tokenWrappingQuery = ({
       }
     `),
     {
-      base_token,
-      source_chain_id
+      base_token: args.baseToken,
+      source_chain_id: args.sourceChainId,
+      // Not a bug! It is the dest of the original transfer, so now a source
+      destination_channel_id: args.sourceChannelId
     }
   )
