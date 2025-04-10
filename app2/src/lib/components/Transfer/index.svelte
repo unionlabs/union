@@ -239,7 +239,7 @@ $effect(() => {
           {:else if TransferStep.is("SubmitInstruction")(step)}
             <SubmitPage
                     stepIndex={i + 1}
-                    onBack={goToPreviousPage}
+                    onCancel={newTransfer}
                     onSubmit={handleActionButtonClick}
                     {actionButtonText}
             />
