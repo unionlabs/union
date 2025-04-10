@@ -49,11 +49,13 @@ const sourceChain = $derived(lts.pipe(Option.map(Struct.get("sourceChain"))))
 let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
 let error = $state<Option.Option<unknown>>(Option.none())
+let isSubmitting = $state(false)
 
 const isButtonEnabled = $derived(
-  (ets._tag === "Filling" && cts._tag === "Filling") ||
-    evmHasFailedExit(ets) ||
-    cosmosHasFailedExit(cts)
+  !isSubmitting &&
+    ((ets._tag === "Filling" && cts._tag === "Filling") ||
+      evmHasFailedExit(ets) ||
+      cosmosHasFailedExit(cts))
 )
 
 const getSubmitButtonText = $derived(
@@ -75,105 +77,123 @@ const getSubmitButtonText = $derived(
 const submit = Effect.gen(function* () {
   if (Option.isNone(step) || Option.isNone(lts)) return
 
-  const sourceChainRpcType = lts.value.sourceChain.rpc_type
+  // Set submitting state
+  isSubmitting = true
+  error = Option.none()
 
-  yield* Match.value(sourceChainRpcType).pipe(
-    Match.when("evm", () =>
-      Effect.gen(function* () {
-        // Use the component-level state variable
-        const viemChain = lts.value.sourceChain.toViemChain()
-        if (Option.isNone(viemChain)) return Effect.succeed(null)
+  try {
+    const sourceChainRpcType = lts.value.sourceChain.rpc_type
 
-        const publicClient = yield* createViemPublicClient({
-          chain: viemChain.value,
-          transport: http()
+    yield* Match.value(sourceChainRpcType).pipe(
+      Match.when("evm", () =>
+        Effect.gen(function* () {
+          // Use the component-level state variable
+          const viemChain = lts.value.sourceChain.toViemChain()
+          if (Option.isNone(viemChain)) return Effect.succeed(null)
+
+          const publicClient = yield* createViemPublicClient({
+            chain: viemChain.value,
+            transport: http()
+          })
+
+          const walletClient = yield* getWalletClient(lts.value.sourceChain)
+
+          do {
+            ets = yield* Effect.promise(() =>
+              nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
+                chain: viemChain.value,
+                account: walletClient.account,
+                address: step.value.token,
+                abi: erc20Abi,
+                functionName: "approve",
+                args: [lts.value.channel.source_port_id, step.value.requiredAmount]
+              })
+            )
+
+            if ("exit" in ets) {
+              yield* Exit.matchEffect(Unify.unify(ets.exit), {
+                onFailure: cause =>
+                  Effect.sync(() => {
+                    error = Option.some(Cause.squash(cause))
+                  }),
+                onSuccess: () =>
+                  Effect.sync(() => {
+                    error = Option.none()
+                  })
+              })
+            }
+
+            if (evmIsComplete(ets)) {
+              onApprove()
+              break
+            }
+          } while (!evmHasFailedExit(ets))
+
+          return Effect.succeed(ets)
         })
-
-        const walletClient = yield* getWalletClient(lts.value.sourceChain)
-
-        do {
-          ets = yield* Effect.promise(() =>
-            nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
-              chain: viemChain.value,
-              account: walletClient.account,
-              address: step.value.token,
-              abi: erc20Abi,
-              functionName: "approve",
-              args: [lts.value.channel.source_port_id, step.value.requiredAmount]
-            })
+      ),
+      Match.when("cosmos", () =>
+        Effect.gen(function* () {
+          const signingClient = yield* getCosmWasmClient(
+            lts.value.sourceChain,
+            cosmosStore.connectedWallet
           )
 
-          if ("exit" in ets) {
-            yield* Exit.matchEffect(Unify.unify(ets.exit), {
-              onFailure: cause =>
-                Effect.sync(() => {
-                  error = Option.some(Cause.squash(cause))
-                }),
-              onSuccess: () =>
-                Effect.sync(() => {
-                  error = Option.none()
-                })
-            })
-          }
+          const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
 
-          if (evmIsComplete(ets)) {
-            onApprove()
-            break
-          }
-        } while (!evmHasFailedExit(ets))
+          do {
+            cts = yield* Effect.promise(() =>
+              nextStateCosmos(cts, lts.value.sourceChain, signingClient, sender, step.value.token, {
+                increase_allowance: {
+                  spender: "bbn1dy20pwy30hfqyxdzrmp33h47h4xdxht6phqecfp2jdnes6su9pysqq2kpw",
+                  amount: step.value.requiredAmount
+                }
+              })
+            )
 
-        return Effect.succeed(ets)
-      })
-    ),
-    Match.when("cosmos", () =>
-      Effect.gen(function* () {
-        const signingClient = yield* getCosmWasmClient(
-          lts.value.sourceChain,
-          cosmosStore.connectedWallet
-        )
+            if ("exit" in cts) {
+              yield* Exit.matchEffect(Unify.unify(cts.exit), {
+                onFailure: cause =>
+                  Effect.sync(() => {
+                    error = Option.some(Cause.squash(cause))
+                  }),
+                onSuccess: () =>
+                  Effect.sync(() => {
+                    error = Option.none()
+                  })
+              })
+            }
 
-        const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
+            if (cosmosIsComplete(cts)) {
+              onApprove()
+              break
+            }
+          } while (!cosmosHasFailedExit(cts))
 
-        do {
-          cts = yield* Effect.promise(() =>
-            nextStateCosmos(cts, lts.value.sourceChain, signingClient, sender, step.value.token, {
-              increase_allowance: {
-                spender: "bbn1dy20pwy30hfqyxdzrmp33h47h4xdxht6phqecfp2jdnes6su9pysqq2kpw",
-                amount: step.value.requiredAmount
-              }
-            })
-          )
-
-          if ("exit" in cts) {
-            yield* Exit.matchEffect(Unify.unify(cts.exit), {
-              onFailure: cause =>
-                Effect.sync(() => {
-                  error = Option.some(Cause.squash(cause))
-                }),
-              onSuccess: () =>
-                Effect.sync(() => {
-                  error = Option.none()
-                })
-            })
-          }
-
-          if (cosmosIsComplete(cts)) {
-            onApprove()
-            break
-          }
-        } while (!cosmosHasFailedExit(cts))
-
-        return Effect.succeed(cts)
-      })
-    ),
-    Match.orElse(() =>
-      Effect.gen(function* () {
-        yield* Effect.log("unknown chain type")
-        return Effect.succeed("unknown chain type")
-      })
+          return Effect.succeed(cts)
+        })
+      ),
+      Match.orElse(() =>
+        Effect.gen(function* () {
+          yield* Effect.log("Unknown chain type")
+          error = Option.some(new Error("Unsupported chain type"))
+          return Effect.succeed("unknown chain type")
+        })
+      )
     )
-  )
+  } finally {
+    // Reset submitting state when done, regardless of success/failure
+    isSubmitting = false
+  }
 })
+
+const handleSubmit = () => {
+  Effect.runPromise(submit).catch(err => {
+    console.error("Uncaught error in approval process:", err)
+    error = Option.some(err)
+    isSubmitting = false
+  })
+}
 
 const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHex(step.value.token))
 </script>
@@ -188,17 +208,17 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
       <section>
         <Label>Current</Label>
         <TokenComponent
-          chain={sourceChain.value}
-          denom={massagedDenom}
-          amount={step.value.currentAllowance}
+                chain={sourceChain.value}
+                denom={massagedDenom}
+                amount={step.value.currentAllowance}
         />
       </section>
       <section>
         <Label>Required</Label>
         <TokenComponent
-          chain={sourceChain.value}
-          denom={massagedDenom}
-          amount={step.value.requiredAmount}
+                chain={sourceChain.value}
+                denom={massagedDenom}
+                amount={step.value.requiredAmount}
         />
       </section>
       <p class="text-sm text-zinc-400">
@@ -213,9 +233,9 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
         Back
       </Button>
       <Button
-        variant="primary"
-        onclick={() => Effect.runPromise(submit)}
-        disabled={!isButtonEnabled}
+              variant="primary"
+              onclick={handleSubmit}
+              disabled={!isButtonEnabled}
       >
         {getSubmitButtonText}
       </Button>

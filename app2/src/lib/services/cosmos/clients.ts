@@ -8,60 +8,46 @@ import { GasPrice } from "@cosmjs/stargate"
 import { getGasPriceForChain } from "$lib/services/cosmos/chain-info"
 import { CosmWasmError } from "$lib/services/transfer-ucs03-cosmos"
 
-export const getCosmWasmClient = (chain: Chain, connectedWallet: CosmosWalletId) =>
+export const getCosmWasmClient = (
+  chain: Chain,
+  connectedWallet: CosmosWalletId
+): Effect.Effect<SigningCosmWasmClient, CosmWasmError, never> =>
   Effect.gen(function* () {
     if (!chain.rpcs) {
-      return yield* Effect.fail(
-        new CosmWasmError({
-          cause: "No RPCs available for chain"
-        })
-      )
+      return yield* Effect.fail(new CosmWasmError({ cause: "No RPCs available for chain" }))
     }
 
-    const offlineSigner = yield* Effect.mapError(
-      getCosmosOfflineSigner(chain, connectedWallet),
-      error =>
-        new CosmWasmError({
-          cause: String(error.cause) || "Failed to get offline signer"
-        })
+    const offlineSigner = yield* getCosmosOfflineSigner(chain, connectedWallet).pipe(
+      Effect.mapError(error => new CosmWasmError({ cause: String(error) }))
     )
 
-    if (!offlineSigner) {
-      return yield* Effect.fail(new CosmWasmError({ cause: "Offline signer is undefined" }))
-    }
-
-    const gasPriceInfo = yield* Effect.mapError(
-      getGasPriceForChain(chain, connectedWallet),
-      error =>
-        new CosmWasmError({
-          cause: `Failed to get gas price: ${error.cause}`
-        })
+    const gasPriceInfo = yield* getGasPriceForChain(chain, connectedWallet).pipe(
+      Effect.mapError(error => new CosmWasmError({ cause: String(error) }))
     )
 
     const gasPrice = GasPrice.fromString(`${gasPriceInfo.amount}${gasPriceInfo.denom}`)
 
-    const rpcUrl = chain.getRpcUrl("rpc")
-    if (Option.isNone(rpcUrl)) {
+    const maybeRpcUrl = chain.getRpcUrl("rpc")
+    if (Option.isNone(maybeRpcUrl)) {
       return yield* Effect.fail(
-        new CosmWasmError({
-          cause: "No RPC URL of type 'rpc' available for chain"
-        })
+        new CosmWasmError({ cause: "No RPC URL of type 'rpc' available for chain" })
       )
     }
 
+    const rpcUrl = maybeRpcUrl.value.toString()
+
     return yield* Effect.tryPromise({
       try: () =>
-        SigningCosmWasmClient.connectWithSigner(rpcUrl.value.toString(), offlineSigner, {
+        SigningCosmWasmClient.connectWithSigner(rpcUrl, offlineSigner, {
           gasPrice
         }),
-      catch: err =>
-        new CosmWasmError({
-          cause: String(err)
-        })
+      catch: err => new CosmWasmError({ cause: String(err) })
     })
   })
 
-export const getCosmosPublicClient = (rpc: URL | string) =>
+export const getCosmosPublicClient = (
+  rpc: URL | string
+): Effect.Effect<CosmWasmClient, CosmWasmError, never> =>
   Effect.tryPromise({
     try: () => {
       const rpcString = typeof rpc === "string" ? rpc : rpc.toString()
