@@ -31,7 +31,7 @@ export function createOrdersBatch(
   intents: TransferIntents
 ) {
   return Effect.gen(function* () {
-    if (!sourceChain || !destinationChain || !channel || !ucs03address || intents.length === 0) {
+    if (!(sourceChain && destinationChain && channel && ucs03address) || intents.length === 0) {
       console.log("lukas: Missing required params or no intents → returning Option.none")
       return Option.none<Batch>()
     }
@@ -49,17 +49,18 @@ export function createOrdersBatch(
       )
     )
 
-    const provideViemPublicClientDestination = destination === "evm"
-      ? Effect.provideServiceEffect(
-        ViemPublicClientDestination,
-        pipe(
-          destinationChain.toViemChain(),
-          Option.map(chain => createViemPublicClient({ chain, transport: http() })),
-          Effect.flatten,
-          Effect.map(client => ({ client }))
-        )
-      )
-      : Effect.succeed({})
+    const provideViemPublicClientDestination =
+      destination === "evm"
+        ? Effect.provideServiceEffect(
+            ViemPublicClientDestination,
+            pipe(
+              destinationChain.toViemChain(),
+              Option.map(chain => createViemPublicClient({ chain, transport: http() })),
+              Effect.flatten,
+              Effect.map(client => ({ client }))
+            )
+          )
+        : Effect.succeed({})
 
     const provideCosmWasmClientSource = Effect.provideServiceEffect(
       CosmWasmClientSource,
@@ -112,7 +113,9 @@ export function createOrdersBatch(
       Match.when(["evm", "cosmos"], () =>
         Effect.all([
           createEvmToCosmosFungibleAssetOrder(resolvedIntents[0]),
-          intents.length > 1 ? createEvmToCosmosFungibleAssetOrder(resolvedIntents[1]) : Effect.succeed(null)
+          intents.length > 1
+            ? createEvmToCosmosFungibleAssetOrder(resolvedIntents[1])
+            : Effect.succeed(null)
         ]).pipe(
           provideViemPublicClientSource,
           provideCosmWasmClientDestination,
@@ -122,7 +125,9 @@ export function createOrdersBatch(
       Match.when(["evm", "evm"], () =>
         Effect.all([
           createEvmToEvmFungibleAssetOrder(resolvedIntents[0]),
-          intents.length > 1 ? createEvmToEvmFungibleAssetOrder(resolvedIntents[1]) : Effect.succeed(null)
+          intents.length > 1
+            ? createEvmToEvmFungibleAssetOrder(resolvedIntents[1])
+            : Effect.succeed(null)
         ]).pipe(
           provideViemPublicClientSource,
           provideViemPublicClientDestination,
@@ -130,18 +135,14 @@ export function createOrdersBatch(
         )
       ),
       Match.when(["cosmos", "evm"], () =>
-        Effect.all([
-          createCosmosToEvmFungibleAssetOrder(resolvedIntents[0])
-        ]).pipe(
+        Effect.all([createCosmosToEvmFungibleAssetOrder(resolvedIntents[0])]).pipe(
           provideCosmWasmClientSource,
           provideViemPublicClientDestination,
           provideEvmChannelDestination
         )
       ),
       Match.when(["cosmos", "cosmos"], () =>
-        Effect.all([
-          createCosmosToCosmosFungibleAssetOrder(resolvedIntents[0])
-        ]).pipe(
+        Effect.all([createCosmosToCosmosFungibleAssetOrder(resolvedIntents[0])]).pipe(
           provideCosmWasmClientSource,
           provideCosmWasmClientDestination,
           provideCosmosChannelDestination
