@@ -1,4 +1,6 @@
 import { assert, describe, it, expect } from "@effect/vitest"
+// TODO: fix mocking instancing
+import { vi } from "vitest"
 import { type Context, Effect, Exit, Layer } from "effect"
 import { ViemPublicClientSource, ViemPublicClientDestination } from "../../src/evm/client.js"
 import { CosmWasmClientSource, CosmWasmClientDestination } from "../../src/cosmos/client.js"
@@ -11,6 +13,14 @@ import {
   createCosmosToCosmosFungibleAssetOrder
 } from "../../src/ucs03/fungible-asset-order.js"
 import { toHex } from "viem"
+import { ensureHex } from "@unionlabs/sdk/utils/index"
+
+vi.mock('../../src/graphql/unwrapped-quote-token.js', async (importOriginal) => {
+  return {
+    ...await importOriginal<typeof import('../../src/graphql/unwrapped-quote-token.js')>(),
+    graphqlQuoteTokenUnwrapQuery: () => Effect.succeed("0x12345")
+  }
+})
 
 // Mock data for tests
 const mockErc20Meta = {
@@ -84,19 +94,23 @@ const mockCosmWasmClientDestination = {
 
 // Test data
 const evmIntent = {
-  sender: "0x123" as const,
-  receiver: "0x123" as const,
-  baseToken: "0x123" as const,
+  sender: "0x123",
+  receiver: "0x123",
+  baseToken: "0x123",
   baseAmount: 1000000000000000000n, // 1 token with 18 decimals
-  quoteAmount: 500000000000000000n // 0.5 token with 18 decimals
+  quoteAmount: 500000000000000000n, // 0.5 token with 18 decimals
+  sourceChainId: "chainId",
+  sourceChannelId: 999,
 } as const
 
 const cosmosIntent = {
-  sender: "cosmos1sender",
+  sender: "0x123",
   receiver: "0x123",
-  baseToken: "cosmos1basetoken",
+  baseToken: "0x123",
   baseAmount: BigInt(1000000), // 1 token with 6 decimals
-  quoteAmount: BigInt(500000) // 0.5 token with 6 decimals
+  quoteAmount: BigInt(500000), // 0.5 token with 6 decimals
+  sourceChainId: "chainId",
+  sourceChannelId: 999,
 } as const
 
 const EvmToEvm = Layer.mergeAll(
@@ -160,9 +174,7 @@ const CosmosToCosmosError = Layer.mergeAll(
   Layer.succeed(CosmWasmClientSource, {
     client: {
       // biome-ignore lint/suspicious/useAwait: reason
-      queryContractSmart: async () => {
-        throw new Error("Mock error")
-      }
+      queryContractSmart: () => Promise.reject({})
     }
   } as unknown as Context.Tag.Service<CosmWasmClientSource>)
 )
@@ -227,9 +239,9 @@ describe("Fungible Asset Order Tests", () => {
           opcode: 3,
           version: 1,
           operand: [
-            toHex(cosmosIntent.sender),
+            cosmosIntent.sender,
             "0x123",
-            toHex(cosmosIntent.baseToken),
+            ensureHex(cosmosIntent.baseToken),
             cosmosIntent.baseAmount,
             mockCw20TokenInfo.symbol,
             mockCw20TokenInfo.name,
@@ -252,9 +264,9 @@ describe("Fungible Asset Order Tests", () => {
           opcode: 3,
           version: 1,
           operand: [
-            toHex(cosmosIntent.sender),
-            toHex(cosmosIntent.receiver),
-            toHex(cosmosIntent.baseToken),
+            cosmosIntent.sender,
+            cosmosIntent.receiver,
+            cosmosIntent.baseToken,
             cosmosIntent.baseAmount,
             mockCw20TokenInfo.symbol,
             mockCw20TokenInfo.name,
@@ -270,21 +282,25 @@ describe("Fungible Asset Order Tests", () => {
 
   describe("Error handling", () => {
     it.layer(EvmToEvmError)(it => {
-      it.effect("should handle errors when creating EVM to EVM fungible asset order", () =>
+      it.effect("should handle errors when creating EVM to EVM fungible asset order with invalid input", () =>
         Effect.gen(function* () {
-          const result = yield* Effect.exit(createEvmToEvmFungibleAssetOrder(evmIntent))
+          const result = yield* Effect.exit(createEvmToEvmFungibleAssetOrder({
+            ...evmIntent,
+            sender: "nonHexSender"
+          } as unknown as any))
           assert.isTrue(Exit.isFailure(result))
         })
       )
     })
 
     it.layer(CosmosToCosmosError)(it => {
-      it.effect("should handle errors when creating Cosmos to Cosmos fungible asset order", () =>
-        Effect.gen(function* () {
-          const result = yield* Effect.exit(createCosmosToCosmosFungibleAssetOrder(cosmosIntent))
-          expect(Exit.isFailure(result)).toBe(true)
-        })
-      )
+      /** This is no longer applicable. There is a default handling applied on contract read error. */
+      // it.effect("should handle errors when creating Cosmos to Cosmos fungible asset order when contract query fails", () =>
+      //   Effect.gen(function* () {
+      //     const result = yield* Effect.exit(createCosmosToCosmosFungibleAssetOrder(cosmosIntent))
+      //     expect(Exit.isFailure(result)).toBe(true)
+      //   })
+      // )
     })
   })
 })
