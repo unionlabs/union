@@ -666,6 +666,7 @@ _: {
           kind,
 
           chain-id,
+          private-key,
           rpc-url,
           weth,
 
@@ -684,11 +685,6 @@ _: {
                 arg = "deployer_pk";
                 required = true;
                 help = "The deployer contract address.";
-              }
-              {
-                arg = "private_key";
-                required = true;
-                help = "The contract owner private key.";
               }
               {
                 arg = "sender_pk";
@@ -713,7 +709,7 @@ _: {
               WETH_ADDRESS=${weth} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
-              PRIVATE_KEY="$argc_private_key" \
+              PRIVATE_KEY=${private-key} \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
@@ -942,6 +938,7 @@ _: {
                   # finalize-deployment = finalize-deployment chain;
                   # get-git-rev = get-git-rev chain;
                 }
+                # individual deployments
                 // (pkgs.lib.mapAttrs'
                   (name: kind: {
                     name = "deploy-${name}";
@@ -956,6 +953,17 @@ _: {
                     multicall = "Multicall";
                   }
                 )
+                # other various deployment scripts
+                // (pkgs.lib.mapAttrs'
+                  (name: kind: {
+                    name = "script-${name}";
+                    value = deploy-single (chain // { inherit kind; });
+                  })
+                  {
+                    roles = "Roles";
+                  }
+                )
+                # upgrades, all with a -dry version
                 // (builtins.foldl' (a: b: a // b) { } (
                   pkgs.lib.flatten (
                     pkgs.lib.mapAttrsToList
