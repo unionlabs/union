@@ -7994,6 +7994,15 @@ export type introspection = {
         "name": "v2_health_check_type",
         "fields": [
           {
+            "name": "environment",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "last_update",
             "type": {
               "kind": "SCALAR",
@@ -8052,6 +8061,13 @@ export type introspection = {
             }
           },
           {
+            "name": "environment",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
             "name": "last_update",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -8073,6 +8089,13 @@ export type introspection = {
         "name": "v2_health_check_type_order_by",
         "inputFields": [
           {
+            "name": "environment",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "last_update",
             "type": {
               "kind": "ENUM",
@@ -8093,6 +8116,10 @@ export type introspection = {
         "kind": "ENUM",
         "name": "v2_health_check_type_select_column",
         "enumValues": [
+          {
+            "name": "environment",
+            "isDeprecated": false
+          },
           {
             "name": "last_update",
             "isDeprecated": false
@@ -11752,6 +11779,15 @@ export type introspection = {
             "isDeprecated": false
           },
           {
+            "name": "logo_uri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
             "name": "name",
             "type": {
               "kind": "SCALAR",
@@ -11988,6 +12024,13 @@ export type introspection = {
             }
           },
           {
+            "name": "logo_uri",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
             "name": "name",
             "type": {
               "kind": "INPUT_OBJECT",
@@ -12023,6 +12066,13 @@ export type introspection = {
             }
           },
           {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "name",
             "type": {
               "kind": "ENUM",
@@ -12045,6 +12095,13 @@ export type introspection = {
         "inputFields": [
           {
             "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
             "type": {
               "kind": "ENUM",
               "name": "order_by"
@@ -12086,6 +12143,13 @@ export type introspection = {
             }
           },
           {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
             "name": "name",
             "type": {
               "kind": "ENUM",
@@ -12115,6 +12179,10 @@ export type introspection = {
         "enumValues": [
           {
             "name": "decimals",
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
             "isDeprecated": false
           },
           {

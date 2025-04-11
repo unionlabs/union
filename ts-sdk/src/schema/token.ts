@@ -36,6 +36,7 @@ export class TokenSourceInfo extends Schema.Class<TokenSourceInfo>("TokenSourceI
 }) {}
 
 export class TokenRepresentation extends Schema.Class<TokenRepresentation>("TokenRepresentation")({
+  logo_uri: Schema.OptionFromNonEmptyTrimmedString,
   name: Schema.String,
   symbol: Schema.String,
   decimals: Schema.Number,

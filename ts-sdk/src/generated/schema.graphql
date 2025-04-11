@@ -2255,6 +2255,7 @@ enum v2_explorers_select_column {
 columns and relationships of "v2.health_check_type"
 """
 type v2_health_check_type {
+  environment: String
   last_update: timestamptz
   status: String
 }
@@ -2266,12 +2267,14 @@ input v2_health_check_type_bool_exp {
   _and: [v2_health_check_type_bool_exp!]
   _not: v2_health_check_type_bool_exp
   _or: [v2_health_check_type_bool_exp!]
+  environment: String_comparison_exp
   last_update: timestamptz_comparison_exp
   status: String_comparison_exp
 }
 
 """Ordering options when selecting data from "v2.health_check_type"."""
 input v2_health_check_type_order_by {
+  environment: order_by
   last_update: order_by
   status: order_by
 }
@@ -2280,6 +2283,9 @@ input v2_health_check_type_order_by {
 select columns of table "v2.health_check_type"
 """
 enum v2_health_check_type_select_column {
+  """column name"""
+  environment
+
   """column name"""
   last_update
 
@@ -3257,6 +3263,7 @@ type v2_token_meta_representations {
   """An object relationship"""
   chain: v2_chains_view
   decimals: Int
+  logo_uri: String
   name: String
 
   """An array relationship"""
@@ -3312,6 +3319,7 @@ input v2_token_meta_representations_bool_exp {
   _or: [v2_token_meta_representations_bool_exp!]
   chain: v2_chains_view_bool_exp
   decimals: Int_comparison_exp
+  logo_uri: String_comparison_exp
   name: String_comparison_exp
   sources: v2_token_meta_representation_sources_bool_exp
   symbol: String_comparison_exp
@@ -3322,6 +3330,7 @@ order by max() on columns of table "v2.token_meta_representations"
 """
 input v2_token_meta_representations_max_order_by {
   decimals: order_by
+  logo_uri: order_by
   name: order_by
   symbol: order_by
 }
@@ -3331,6 +3340,7 @@ order by min() on columns of table "v2.token_meta_representations"
 """
 input v2_token_meta_representations_min_order_by {
   decimals: order_by
+  logo_uri: order_by
   name: order_by
   symbol: order_by
 }
@@ -3341,6 +3351,7 @@ Ordering options when selecting data from "v2.token_meta_representations".
 input v2_token_meta_representations_order_by {
   chain: v2_chains_view_order_by
   decimals: order_by
+  logo_uri: order_by
   name: order_by
   sources_aggregate: v2_token_meta_representation_sources_aggregate_order_by
   symbol: order_by
@@ -3352,6 +3363,9 @@ select columns of table "v2.token_meta_representations"
 enum v2_token_meta_representations_select_column {
   """column name"""
   decimals
+
+  """column name"""
+  logo_uri
 
   """column name"""
   name
