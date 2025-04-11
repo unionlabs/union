@@ -10,6 +10,7 @@ import {
 import { coinbaseWallet, injected, metaMask, walletConnect } from "@wagmi/connectors"
 import {
   mainnet,
+  corn,
   arbitrumSepolia,
   berachainTestnetbArtio,
   bob,
@@ -23,6 +24,7 @@ import { TESTNET_APP_INFO } from "$lib/config/app"
 
 export const chains = [
   mainnet,
+  corn
   sepolia,
   holesky,
   berachainTestnetbArtio,
@@ -127,6 +129,15 @@ export const wagmiConfig = createConfig({
         name: "unstable_connector-injected-bob"
       }),
       http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" })
+    ]),
+    [corn.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-corn",
+        name: "unstable_connector-injected-corn"
+      }),
+      http(bob.rpcUrls.default.http.at(0), { name: "default Corn RPC" })
     ]),
     [cornTestnet.id]: fallback([
       unstable_connector(injected, {
