@@ -15,5 +15,11 @@
       "comments": "union.union-testnet-10 channel 1",
       "tags": ["canonical"]
     }
+  },
+  "babylon.bbn-1": {
+    "1": {
+      "comments": "bob.60808 channel 1",
+      "tags": ["canonical"]
+    }
   }
 }
