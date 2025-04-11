@@ -8,7 +8,7 @@
       "core": {
         "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
         "height": 461578,
-        "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        "commit": "572203c24f508e14bae4ab7f0b46e9377cea8efb"
       },
       "lightclient": {
         "arbitrum": {
@@ -152,7 +152,7 @@
       "core": {
         "address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
         "height": 714672,
-        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
+        "commit": "572203c24f508e14bae4ab7f0b46e9377cea8efb"
       },
       "lightclient": {
         "cometbls": {
@@ -194,7 +194,7 @@
       "core": {
         "address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
         "height": 28972,
-        "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5"
+        "commit": "572203c24f508e14bae4ab7f0b46e9377cea8efb"
       },
       "lightclient": {
         "cometbls": {
