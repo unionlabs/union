@@ -1,6 +1,7 @@
 use std::{
     fmt::Debug,
     num::{NonZeroU64, ParseIntError},
+    time::Duration,
 };
 
 use ics23::ibc_api::SDK_SPECS;
@@ -12,7 +13,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tendermint_light_client_types::{ClientState, ConsensusState, Fraction};
-use tracing::{error, instrument};
+use tracing::{error, info, instrument};
 use unionlabs::{
     bech32::Bech32,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
@@ -40,9 +41,17 @@ pub struct Module {
     pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
 
-    pub ccv_consumer_chain: bool,
+    pub tendermint_chain_type: Option<TendermintChainType>,
 
     pub ibc_host_contract_address: H256,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum TendermintChainType {
+    CcvConsumer,
+    /// <https://github.com/babylonlabs-io/babylon/blob/112f4bd9b4c25cdb81c74fbae2911aa43bb6da14/docs/ibc-relayer.md#important-note-on-babylons-unbonding-period>
+    Babylon,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,7 +59,7 @@ pub struct Module {
 pub struct Config {
     pub rpc_url: String,
     #[serde(default)]
-    pub ccv_consumer_chain: bool,
+    pub tendermint_chain_type: Option<TendermintChainType>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
@@ -86,7 +95,7 @@ impl ClientBootstrapModule for Module {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            ccv_consumer_chain: config.ccv_consumer_chain,
+            tendermint_chain_type: config.tendermint_chain_type,
             ibc_host_contract_address: config
                 .ibc_host_contract_address
                 .map(|a| *a.data())
@@ -109,9 +118,10 @@ impl Module {
         Height::new_with_revision(self.chain_revision, height)
     }
 
-    async fn fetch_unbonding_period(&self, height: Height) -> std::time::Duration {
-        let unbonding_period = if self.ccv_consumer_chain {
-            let params = self
+    async fn fetch_unbonding_period(&self, height: Height) -> Duration {
+        match self.tendermint_chain_type {
+            Some(TendermintChainType::CcvConsumer) => {
+                let params = self
                 .cometbft_client
                 .grpc_abci_query::<_, protos::interchain_security::ccv::consumer::v1::QueryParamsResponse>(
                     "/interchain_security.ccv.consumer.v1.Query/QueryParams",
@@ -126,30 +136,68 @@ impl Module {
                 .params
                 .unwrap();
 
-            params.unbonding_period.clone().unwrap()
-        } else {
-            let params = self
-                .cometbft_client
-                .grpc_abci_query::<_, protos::cosmos::staking::v1beta1::QueryParamsResponse>(
-                    "/cosmos.staking.v1beta1.Query/Params",
-                    &protos::cosmos::staking::v1beta1::QueryParamsRequest {},
-                    Some(i64::try_from(height.height()).unwrap().try_into().unwrap()),
-                    false,
+                let unbonding_period = params.unbonding_period.clone().unwrap();
+
+                Duration::new(
+                    unbonding_period.seconds.try_into().unwrap(),
+                    unbonding_period.nanos.try_into().unwrap(),
                 )
-                .await
-                .unwrap()
-                .value
-                .unwrap()
-                .params
-                .unwrap();
+            }
+            Some(TendermintChainType::Babylon) => {
+                const BITCOIN_BLOCK_TIME: u32 = 10 * 60; // 10 minutes
 
-            params.unbonding_time.clone().unwrap()
-        };
+                let checkpointing_params = self
+                    .cometbft_client
+                    .grpc_abci_query::<_, protos::babylon::btccheckpoint::v1::QueryParamsResponse>(
+                        "/babylon.btccheckpoint.v1.Query/Params",
+                        &protos::babylon::btccheckpoint::v1::QueryParamsRequest {},
+                        Some(i64::try_from(height.height()).unwrap().try_into().unwrap()),
+                        false,
+                    )
+                    .await
+                    .unwrap()
+                    .value
+                    .unwrap()
+                    .params
+                    .unwrap();
 
-        std::time::Duration::new(
-            unbonding_period.seconds.try_into().unwrap(),
-            unbonding_period.nanos.try_into().unwrap(),
-        )
+                info!(
+                    btc_confirmation_depth = checkpointing_params.btc_confirmation_depth,
+                    checkpoint_finalization_timeout =
+                        checkpointing_params.checkpoint_finalization_timeout,
+                    checkpoint_tag = checkpointing_params.checkpoint_tag,
+                    "checkpointing params"
+                );
+
+                Duration::from_secs(
+                    (checkpointing_params.checkpoint_finalization_timeout * BITCOIN_BLOCK_TIME)
+                        as u64,
+                )
+            }
+            None => {
+                let params = self
+                    .cometbft_client
+                    .grpc_abci_query::<_, protos::cosmos::staking::v1beta1::QueryParamsResponse>(
+                        "/cosmos.staking.v1beta1.Query/Params",
+                        &protos::cosmos::staking::v1beta1::QueryParamsRequest {},
+                        Some(i64::try_from(height.height()).unwrap().try_into().unwrap()),
+                        false,
+                    )
+                    .await
+                    .unwrap()
+                    .value
+                    .unwrap()
+                    .params
+                    .unwrap();
+
+                let unbonding_period = params.unbonding_time.clone().unwrap();
+
+                Duration::new(
+                    unbonding_period.seconds.try_into().unwrap(),
+                    unbonding_period.nanos.try_into().unwrap(),
+                )
+            }
+        }
     }
 }
 
