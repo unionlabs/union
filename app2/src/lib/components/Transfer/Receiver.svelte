@@ -15,6 +15,7 @@ import SharpListRemoveIcon from "$lib/components/icons/SharpListRemoveIcon.svelt
 import RestoreIcon from "$lib/components/icons/RestoreIcon.svelte"
 import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import { getDerivedReceiverSafe } from "$lib/services/shared"
+import { Effect } from "effect"
 
 let destinationChain = $derived(
   Option.isSome(transfer.destinationChain) ? Option.getOrNull(transfer.destinationChain) : null
@@ -466,7 +467,9 @@ function hasBookmarks() {
                             onclick={() => useAddress(address)}
                             class="text-left flex-grow truncate text-zinc-200 hover:text-white text-sm cursor-pointer"
                     >
-                      {address}
+                    {destinationChain
+                      ? Effect.runSync(destinationChain.getDisplayAddress(address))
+                      : address}
                     </button>
                     <div class="flex items-center ml-2">
                       <button
