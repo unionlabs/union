@@ -21,7 +21,7 @@ import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { constVoid, flow, identity, pipe } from "effect/Function"
 import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
-import {beforeNavigate} from "$app/navigation";
+import { beforeNavigate } from "$app/navigation"
 
 let currentPage = $state(0)
 let isLoading = $state(false)
