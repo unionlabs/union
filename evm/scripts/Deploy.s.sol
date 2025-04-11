@@ -27,7 +27,7 @@ import "./Deployer.sol";
 
 library LIB {
     string constant MULTICALL = "lib/multicall-v2";
-    string constant ZKGM_ERC20 = "lib/zkgm-erc20";
+    string constant ZKGM_ERC20 = "lib/zkgm-erc20-v2";
 }
 
 library IBC {
@@ -479,6 +479,41 @@ contract DeployStateLensIcs23MptClient is UnionScript {
         console.log(
             "StateLensIcs23MptClient: ", address(stateLensIcs23MptClient)
         );
+    }
+}
+
+contract DeployZkgmERC20 is UnionScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        vm.startBroadcast(privateKey);
+        ZkgmERC20 zkgmERC20 = deployZkgmERC20();
+        vm.stopBroadcast();
+
+        console.log("ZkgmERC20: ", address(zkgmERC20));
     }
 }
 
