@@ -13,5 +13,11 @@
   },
   "ethereum.17000": {
     "1": "union.union-testnet-10"
+  },
+  "bob.60808": {
+    "1": "union.union-1"
+  },
+  "ethereum.1": {
+    "2": "union.union-1"
   }
 }
