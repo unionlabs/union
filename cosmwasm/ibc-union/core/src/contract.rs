@@ -219,12 +219,30 @@ pub fn execute(
             proof_init,
             proof_height,
         }) => connection_open_try(
+            info,
             deps.branch(),
             counterparty_client_id,
             counterparty_connection_id,
             client_id,
             proof_init.to_vec(),
             proof_height,
+            true,
+        ),
+        ExecuteMsg::ForceConnectionOpenTry(MsgConnectionOpenTry {
+            counterparty_client_id,
+            counterparty_connection_id,
+            client_id,
+            proof_init,
+            proof_height,
+        }) => connection_open_try(
+            info,
+            deps.branch(),
+            counterparty_client_id,
+            counterparty_connection_id,
+            client_id,
+            proof_init.to_vec(),
+            proof_height,
+            false,
         ),
         ExecuteMsg::ConnectionOpenAck(MsgConnectionOpenAck {
             connection_id,
@@ -232,21 +250,51 @@ pub fn execute(
             proof_try,
             proof_height,
         }) => connection_open_ack(
+            info,
             deps.branch(),
             connection_id,
             counterparty_connection_id,
             proof_try.to_vec(),
             proof_height,
+            true,
+        ),
+        ExecuteMsg::ForceConnectionOpenAck(MsgConnectionOpenAck {
+            connection_id,
+            counterparty_connection_id,
+            proof_try,
+            proof_height,
+        }) => connection_open_ack(
+            info,
+            deps.branch(),
+            connection_id,
+            counterparty_connection_id,
+            proof_try.to_vec(),
+            proof_height,
+            false,
         ),
         ExecuteMsg::ConnectionOpenConfirm(MsgConnectionOpenConfirm {
             connection_id,
             proof_ack,
             proof_height,
         }) => connection_open_confirm(
+            info,
             deps.branch(),
             connection_id,
             proof_ack.to_vec(),
             proof_height,
+            true,
+        ),
+        ExecuteMsg::ForceConnectionOpenConfirm(MsgConnectionOpenConfirm {
+            connection_id,
+            proof_ack,
+            proof_height,
+        }) => connection_open_confirm(
+            info,
+            deps.branch(),
+            connection_id,
+            proof_ack.to_vec(),
+            proof_height,
+            false,
         ),
         ExecuteMsg::ChannelOpenInit(MsgChannelOpenInit {
             port_id,
@@ -1070,13 +1118,16 @@ fn connection_open_init(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn connection_open_try(
+    info: MessageInfo,
     mut deps: DepsMut,
     counterparty_client_id: ClientId,
     counterparty_connection_id: ConnectionId,
     client_id: ClientId,
     proof_init: Vec<u8>,
     proof_height: u64,
+    verify: bool,
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
     let connection = Connection {
@@ -1085,30 +1136,32 @@ fn connection_open_try(
         counterparty_client_id,
         counterparty_connection_id: Some(counterparty_connection_id),
     };
-
     let expected_connection = Connection {
         state: ConnectionState::Init,
         client_id: counterparty_client_id,
         counterparty_client_id: client_id,
         counterparty_connection_id: None,
     };
-
-    let client_impl = client_impl(deps.as_ref(), client_id)?;
-    query_light_client::<()>(
-        deps.as_ref(),
-        client_impl,
-        LightClientQuery::VerifyMembership {
-            client_id,
-            height: proof_height,
-            proof: proof_init.into(),
-            path: ConnectionPath {
-                connection_id: counterparty_connection_id,
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_connection.abi_encode_params()).into_bytes(),
-        },
-    )?;
+    if verify {
+        let client_impl = client_impl(deps.as_ref(), client_id)?;
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id,
+                height: proof_height,
+                proof: proof_init.into(),
+                path: ConnectionPath {
+                    connection_id: counterparty_connection_id,
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_connection.abi_encode_params()).into_bytes(),
+            },
+        )?;
+    } else {
+        ensure_relayer_admin(deps.storage, &info.sender)?;
+    }
     save_connection(deps.branch(), connection_id, &connection)?;
     Ok(
         Response::new().add_event(Event::new(events::connection::OPEN_TRY).add_attributes([
@@ -1127,11 +1180,13 @@ fn connection_open_try(
 }
 
 fn connection_open_ack(
+    info: MessageInfo,
     mut deps: DepsMut,
     connection_id: ConnectionId,
     counterparty_connection_id: ConnectionId,
     proof_try: Vec<u8>,
     proof_height: u64,
+    verify: bool,
 ) -> ContractResult {
     let mut connection = deps.storage.read::<Connections>(&connection_id)?;
     if connection.state != ConnectionState::Init {
@@ -1140,28 +1195,32 @@ fn connection_open_ack(
             expected: ConnectionState::Init,
         });
     }
-    let expected_connection = Connection {
-        state: ConnectionState::TryOpen,
-        client_id: connection.counterparty_client_id,
-        counterparty_client_id: connection.client_id,
-        counterparty_connection_id: Some(connection_id),
-    };
-    let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    query_light_client::<()>(
-        deps.as_ref(),
-        client_impl,
-        LightClientQuery::VerifyMembership {
-            client_id: connection.client_id,
-            height: proof_height,
-            proof: proof_try.into(),
-            path: ConnectionPath {
-                connection_id: counterparty_connection_id,
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_connection.abi_encode_params()).into_bytes(),
-        },
-    )?;
+    if verify {
+        let expected_connection = Connection {
+            state: ConnectionState::TryOpen,
+            client_id: connection.counterparty_client_id,
+            counterparty_client_id: connection.client_id,
+            counterparty_connection_id: Some(connection_id),
+        };
+        let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id: connection.client_id,
+                height: proof_height,
+                proof: proof_try.into(),
+                path: ConnectionPath {
+                    connection_id: counterparty_connection_id,
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_connection.abi_encode_params()).into_bytes(),
+            },
+        )?;
+    } else {
+        ensure_relayer_admin(deps.storage, &info.sender)?;
+    }
     connection.state = ConnectionState::Open;
     connection.counterparty_connection_id = Some(counterparty_connection_id);
     save_connection(deps.branch(), connection_id, &connection)?;
@@ -1185,10 +1244,12 @@ fn connection_open_ack(
 }
 
 fn connection_open_confirm(
+    info: MessageInfo,
     mut deps: DepsMut,
     connection_id: ConnectionId,
     proof_ack: Vec<u8>,
     proof_height: u64,
+    verify: bool,
 ) -> ContractResult {
     let mut connection = deps.storage.read::<Connections>(&connection_id)?;
     if connection.state != ConnectionState::TryOpen {
@@ -1203,24 +1264,28 @@ fn connection_open_confirm(
         counterparty_client_id: connection.client_id,
         counterparty_connection_id: Some(connection_id),
     };
-    let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    query_light_client::<()>(
-        deps.as_ref(),
-        client_impl,
-        LightClientQuery::VerifyMembership {
-            client_id: connection.client_id,
-            height: proof_height,
-            proof: proof_ack.into(),
-            path: ConnectionPath {
-                connection_id: connection
-                    .counterparty_connection_id
-                    .expect("state is open, counterparty exists; qed;"),
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_connection.abi_encode_params()).into_bytes(),
-        },
-    )?;
+    if verify {
+        let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id: connection.client_id,
+                height: proof_height,
+                proof: proof_ack.into(),
+                path: ConnectionPath {
+                    connection_id: connection
+                        .counterparty_connection_id
+                        .expect("state is open, counterparty exists; qed;"),
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_connection.abi_encode_params()).into_bytes(),
+            },
+        )?;
+    } else {
+        ensure_relayer_admin(deps.storage, &info.sender)?;
+    }
     connection.state = ConnectionState::Open;
     save_connection(deps.branch(), connection_id, &connection)?;
     Ok(Response::new().add_event(
