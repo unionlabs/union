@@ -73,7 +73,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
         msg: M,
         memo: impl AsRef<str>,
     ) -> Result<(H256, M::Response), TxError<M::Response>> {
-        let (tx_hash, result) = self.broadcast_tx_commit([Any(msg)], memo, false).await?;
+        let (tx_hash, result) = self.broadcast_tx_commit([Any(msg)], memo, true).await?;
 
         let mut response = <abci::v1beta1::TxMsgData as Message>::decode(
             &*result.tx_result.data.unwrap_or_default(),
@@ -100,6 +100,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
     /// - submit tx
     /// - wait for inclusion
     /// - return (tx_hash, gas_used)
+    #[instrument(skip_all, fields(memo = %memo.as_ref(), %simulate))]
     pub async fn broadcast_tx_commit(
         &self,
         messages: impl IntoIterator<Item: Into<RawAny>> + Clone,

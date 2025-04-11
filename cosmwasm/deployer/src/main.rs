@@ -371,7 +371,9 @@ async fn do_main() -> Result<()> {
                     .unwrap(),
                 // contract does not exist on chain
                 None => {
-                    let (_, response) = ctx
+                    info!("bytecode-base has not yet been stored");
+
+                    let (tx_hash, store_code_response) = ctx
                         .tx(
                             MsgStoreCode {
                                 sender: ctx.wallet().address().map_data(Into::into),
@@ -383,23 +385,28 @@ async fn do_main() -> Result<()> {
                         .await
                         .context("store code")?;
 
-                    ctx.tx(
-                        MsgInstantiateContract2 {
-                            sender: ctx.wallet().address().map_data(Into::into),
-                            admin: ctx.wallet().address().map_data(Into::into),
-                            code_id: response.code_id,
-                            label: BYTECODE_BASE.to_string(),
-                            msg: b"{}".into(),
-                            salt: BYTECODE_BASE.as_bytes().into(),
-                            funds: vec![],
-                            fix_msg: false,
-                        },
-                        "",
-                    )
-                    .await
-                    .context("instantiate2")?;
+                    info!(%tx_hash, code_id = store_code_response.code_id, "stored bytecode-base");
 
-                    response.code_id
+                    let (tx_hash, instantiate_response) = ctx
+                        .tx(
+                            MsgInstantiateContract2 {
+                                sender: ctx.wallet().address().map_data(Into::into),
+                                admin: ctx.wallet().address().map_data(Into::into),
+                                code_id: store_code_response.code_id,
+                                label: BYTECODE_BASE.to_string(),
+                                msg: b"{}".into(),
+                                salt: BYTECODE_BASE.as_bytes().into(),
+                                funds: vec![],
+                                fix_msg: false,
+                            },
+                            "",
+                        )
+                        .await
+                        .context("instantiate2")?;
+
+                    info!(%tx_hash, address = %instantiate_response.address, "instantiated bytecode-base");
+
+                    store_code_response.code_id
                 }
             };
 

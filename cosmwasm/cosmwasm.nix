@@ -69,8 +69,17 @@ _: {
               gas_price,
               max_gas,
             }:
-            ''--gas static --gas-price ${toString gas_price} --gas-denom ${toString gas_denom} --gas-multiplier ${toString gas_multiplier} --max-gas ${toString max_gas}'';
-          feemarket = _: ''--gas feemarket'';
+            " --gas static --gas-price ${toString gas_price} --gas-denom ${toString gas_denom} --gas-multiplier ${toString gas_multiplier} --max-gas ${toString max_gas} ";
+          feemarket =
+            {
+              max_gas ? null,
+              gas_multiplier ? null,
+            }:
+            " --gas feemarket "
+            + (pkgs.lib.optionalString (max_gas != null) " --max-gas ${toString max_gas} ")
+            + (pkgs.lib.optionalString (
+              gas_multiplier != null
+            ) " --gas-multiplier ${toString gas_multiplier} ");
         }
         .${type}
           (builtins.removeAttrs config [ "type" ]);
@@ -129,22 +138,24 @@ _: {
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
           gas_config = {
             type = "feemarket";
+            max_gas = 10000000;
+            gas_multiplier = 1.4;
           };
           apps = {
-            # ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20;
           };
           bech32_prefix = "union";
           lightclients = [
-            # "arbitrum"
-            # "bob"
-            # "berachain"
-            # "ethereum"
-            # "trusted-mpt"
-            # "ethermint"
-            # "tendermint-bls"
-            # "movement"
-            # "state-lens-ics23-mpt"
-            # "state-lens-ics23-smt"
+            "arbitrum"
+            "bob"
+            "berachain"
+            "ethereum"
+            "trusted-mpt"
+            "ethermint"
+            "tendermint-bls"
+            "movement"
+            "state-lens-ics23-mpt"
+            "state-lens-ics23-smt"
           ];
         }
         {
@@ -763,8 +774,10 @@ _: {
             echo "updating heights..."
 
             DEPLOYMENTS=$(echo "$ADDRESSES" | jq \
+              --arg deployer "$1" \
               --argjson heights "$HEIGHTS" \
               '. as $in | {
+                deployer: $deployer,
                 core: {
                   address: .core,
                   height: $heights[.core]

@@ -1,7 +1,7 @@
 use num_rational::BigRational;
 use num_traits::cast::ToPrimitive;
 use serde::{Deserialize, Serialize};
-use tracing::debug;
+use tracing::{debug, instrument};
 use unionlabs::cosmos::{base::coin::Coin, tx::fee::Fee};
 
 pub trait GasFillerT {
@@ -65,7 +65,7 @@ fn u128_saturating_mul_f64(u: u128, f: f64) -> u128 {
 #[derive(Debug)]
 pub struct FeemarketGasFiller {
     max_gas: u64,
-    gas_multiplier: Option<f64>,
+    gas_multiplier: f64,
     denom: String,
     client: cometbft_rpc::Client,
 }
@@ -102,7 +102,7 @@ impl FeemarketGasFiller {
 
         Ok(Self {
             max_gas,
-            gas_multiplier,
+            gas_multiplier: gas_multiplier.unwrap_or(1.0),
             denom,
             client,
         })
@@ -139,14 +139,20 @@ impl GasFillerT for FeemarketGasFiller {
         self.max_gas
     }
 
+    #[instrument(
+        skip_all,
+        fields(
+            self.max_gas = %self.max_gas,
+            self.gas_multiplier = %self.gas_multiplier,
+            self.denom = %self.denom,
+            gas = %gas,
+        )
+    )]
     async fn mk_fee(&self, gas: u64) -> Fee {
         // gas limit = provided gas * multiplier, clamped between min_gas and max_gas
-        let gas = u64::try_from(u128_saturating_mul_f64(
-            gas.into(),
-            self.gas_multiplier.unwrap_or(1.0),
-        ))
-        .unwrap_or(self.max_gas)
-        .min(self.max_gas);
+        let gas = u64::try_from(u128_saturating_mul_f64(gas.into(), self.gas_multiplier))
+            .unwrap_or(self.max_gas)
+            .min(self.max_gas);
 
         let coin = self.get_gas_price().await;
 
