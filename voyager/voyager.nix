@@ -289,11 +289,11 @@
               };
             };
             users = {
-              users.${instance.name} = {
+              users.${name} = {
                 isSystemUser = true;
-                group = instance.name;
+                group = name;
               };
-              groups.${instance.name} = { };
+              groups.${name} = { };
             };
           }
         ) cfg.instances
