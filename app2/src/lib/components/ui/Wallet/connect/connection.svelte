@@ -5,6 +5,8 @@ import { type AptosWalletId } from "$lib/wallet/aptos"
 import { type EvmWalletId } from "$lib/wallet/evm"
 import { Schema } from "effect"
 import { RpcType } from "@unionlabs/sdk/schema"
+import BaselineCloseIcon from "$lib/components/icons/BaselineCloseIcon.svelte"
+import Truncate from "../../Truncate.svelte"
 
 type Chain = Schema.Schema.Type<typeof RpcType>
 type ChainConnectStatus = State["status"]
@@ -76,37 +78,27 @@ let connectedWallet = $derived(
 {#if connectStatus === "connected" && address?.length > 0}
   <!-- Wallet Card -->
   <div class="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 mb-4">
-    <div class="flex items-center justify-between mb-2">
-      <div class="flex items-center">
-        <div class="bg-zinc-700 rounded-lg p-2 mr-3">
-          {#if connectedWallet?.icon}
-            <img src={connectedWallet.icon} alt={connectedWallet.name} class="size-7" />
-          {:else}
-            <div class="size-7 bg-zinc-600 rounded-full"></div>
-          {/if}
+    <div class="flex items-center justify-between">
+      <div class="flex gap-2 flex-col">
+        <div class="flex items-center gap-4">
+          <div>
+            {#if connectedWallet?.icon}
+              <img src={connectedWallet.icon} alt={connectedWallet.name} class="size-7" />
+            {:else}
+              <div class="size-7 bg-zinc-600 rounded-full"></div>
+            {/if}
+          </div>
+          <div>
+            <h4 class="capitalize font-bold text-lg">{connectedWallet.name}</h4>
+          </div>
         </div>
-        <div>
-          <h4 class="capitalize font-bold text-lg">{connectedWallet.name}</h4>
-        </div>
+        <Truncate class="font-mono text-zinc-400" value={connectText} maxLength={16} showCopy={false}/>
       </div>
       <button
               class="text-zinc-400 hover:text-white focus:outline-none"
               onclick={() => onDisconnectClick()}
       >
-        <span>❌</span>
-      </button>
-    </div>
-    <div class="bg-zinc-700 rounded p-3 flex justify-between items-center">
-      <span class="font-mono text-sm truncate">{connectText}</span>
-      <button
-              class="p-1 hover:bg-zinc-600 rounded focus:outline-none"
-              onclick={() => onCopyClick()}
-      >
-        {#if copyClicked}
-          <p>✅</p>
-        {:else}
-          <p>📝</p>
-        {/if}
+        <BaselineCloseIcon class="size-8 text-red-500"/>
       </button>
     </div>
   </div>
