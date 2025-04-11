@@ -1023,6 +1023,7 @@ _: {
                     state-lens-ics23-ics23-client = "StateLensIcs23Ics23Client";
                     state-lens-ics23-smt-client = "StateLensIcs23SmtClient";
                     multicall = "Multicall";
+                    erc20 = "ZkgmERC20";
                   }
                 )
                 # other various deployment scripts

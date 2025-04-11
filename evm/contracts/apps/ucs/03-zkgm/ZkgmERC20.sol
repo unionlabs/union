@@ -26,6 +26,8 @@ contract ZkgmERC20 is
 
     struct ZkgmERC20Storage {
         address minter;
+        string name;
+        string symbol;
         uint8 decimals;
     }
 
@@ -66,7 +68,27 @@ contract ZkgmERC20 is
         __ERC20_init(_name, _symbol);
         ZkgmERC20Storage storage $ = _getZkgmERC20Storage();
         $.minter = _minter;
+        $.name = _name;
+        $.symbol = _symbol;
         $.decimals = _decimals;
+    }
+
+    function name()
+        public
+        view
+        override(ERC20Upgradeable, IERC20Metadata)
+        returns (string memory)
+    {
+        return _getZkgmERC20Storage().name;
+    }
+
+    function symbol()
+        public
+        view
+        override(ERC20Upgradeable, IERC20Metadata)
+        returns (string memory)
+    {
+        return _getZkgmERC20Storage().symbol;
     }
 
     function decimals()
@@ -84,6 +106,17 @@ contract ZkgmERC20 is
 
     function burn(address from, uint256 amount) external onlyMinter {
         _burn(from, amount);
+    }
+
+    function setMetadata(
+        string calldata _name,
+        string calldata _symbol,
+        uint8 _decimals
+    ) external restricted {
+        ZkgmERC20Storage storage $ = _getZkgmERC20Storage();
+        $.name = _name;
+        $.symbol = _symbol;
+        $.decimals = _decimals;
     }
 
     modifier onlyMinter() {
