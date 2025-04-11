@@ -7,7 +7,7 @@
       "core": {
         "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
         "height": 354875,
-        "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
         "arbitrum": {
@@ -78,7 +78,7 @@
       "core": {
         "address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
         "height": 714672,
-        "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
         "cometbls": {
@@ -116,14 +116,18 @@
     "chain_id": "1",
     "ibc_interface": "ibc-solidity",
     "deployments": {
-      "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 22242357,
+        "commit": "unknown"
+      },
       "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 22236429,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "height": 22242649,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
         "cometbls": {
@@ -166,14 +170,18 @@
     "chain_id": "17000",
     "ibc_interface": "ibc-solidity",
     "deployments": {
-      "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 3652159,
+        "commit": "unknown"
+      },
       "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 3646604,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "height": 3652380,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
         "cometbls": {
@@ -216,14 +224,18 @@
     "chain_id": "11155111",
     "ibc_interface": "ibc-solidity",
     "deployments": {
-      "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 8094177,
+        "commit": "unknown"
+      },
       "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 8088108,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "height": 8094466,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
         "cometbls": {
@@ -266,14 +278,18 @@
     "chain_id": "60808",
     "ibc_interface": "ibc-solidity",
     "deployments": {
-      "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 15736100,
+        "commit": "unknown"
+      },
       "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 15699438,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "height": 15737525,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
         "cometbls": {
@@ -316,14 +332,18 @@
     "chain_id": "808813",
     "ibc_interface": "ibc-solidity",
     "deployments": {
-      "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 10990865,
+        "commit": "unknown"
+      },
       "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 10951499,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "height": 10991622,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
         "cometbls": {
@@ -366,14 +386,18 @@
     "chain_id": "21000000",
     "ibc_interface": "ibc-solidity",
     "deployments": {
-      "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 396507,
+        "commit": "unknown"
+      },
       "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 392723,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "height": 396573,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
         "cometbls": {
@@ -416,14 +440,18 @@
     "chain_id": "21000001",
     "ibc_interface": "ibc-solidity",
     "deployments": {
-      "multicall": "0xd1bacdc64f3b3e070a69212ff0db6588861c6f12",
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 182363,
+        "commit": "unknown"
+      },
       "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
       "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 181413,
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "height": 182375,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
         "cometbls": {

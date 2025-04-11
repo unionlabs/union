@@ -235,7 +235,7 @@ _: {
           chain-id = "11155111";
 
           name = "sepolia";
-          rpc-url = "https://0xrpc.io/sep";
+          rpc-url = "https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
 
@@ -405,9 +405,9 @@ _: {
         '';
 
       update-deployments-json =
-        { rpc-url, ... }:
+        { rpc-url, name, ... }:
         pkgs.writeShellApplication {
-          name = "get-deployed-heights";
+          name = "update-deployments-json-${name}";
           runtimeInputs = [
             self'.packages.forge
             pkgs.moreutils
@@ -426,33 +426,38 @@ _: {
 
             echo "chain id: $CHAIN_ID"
 
-            jq \
-              '. |= map(if .chain_id == $chain_id then .deployments.core.height = ($height | tonumber) | .deployments.core.commit = $commit else . end)' \
-              "$DEPLOYMENTS_FILE" \
-              --arg chain_id "$CHAIN_ID" \
-              --arg height "$(( "$(
-                cast logs 'Initialized(uint64)' \
-                  --address "$(
-                    cast impl "$(
-                        jq -r \
-                          '.[] | select(.chain_id == $chain_id) | .deployments.core.address' \
-                          "$DEPLOYMENTS_FILE" \
-                          --arg chain_id "$CHAIN_ID"
-                      )"
-                  )" \
-                  --json \
-                | jq -r '.[0].blockNumber'
-              )" ))" \
-              --arg commit "$(
-                cast call "$(
-                  jq -r \
-                    '.[] | select(.chain_id == $chain_id) | .deployments.core.address' \
-                    "$DEPLOYMENTS_FILE" \
-                    --arg chain_id "$CHAIN_ID"
-                )" "gitRev()(string)" \
-                | jq -r || echo unknown
-              )" \
-            | sponge "$DEPLOYMENTS_FILE"
+            for key in core multicall ; do
+              jq \
+                '. |= map(if .chain_id == $chain_id then .deployments[$key].height = ($height | tonumber) | .deployments[$key].commit = $commit else . end)' \
+                "$DEPLOYMENTS_FILE" \
+                --arg chain_id "$CHAIN_ID" \
+                --arg key "$key" \
+                --arg height "$(( "$(
+                  cast logs 'Initialized(uint64)' \
+                    --address "$(
+                      cast impl "$(
+                          jq -r \
+                            '.[] | select(.chain_id == $chain_id) | .deployments[$key].address' \
+                            "$DEPLOYMENTS_FILE" \
+                            --arg chain_id "$CHAIN_ID" \
+                            --arg key "$key"
+                        )"
+                    )" \
+                    --json \
+                  | jq -r '.[0].blockNumber'
+                )" ))" \
+                --arg commit "$(
+                  cast call "$(
+                    jq -r \
+                      '.[] | select(.chain_id == $chain_id) | .deployments[$key].address' \
+                      "$DEPLOYMENTS_FILE" \
+                      --arg chain_id "$CHAIN_ID" \
+                      --arg key "$key"
+                  )" "gitRev()(string)" \
+                  | jq -r || echo unknown
+                )" \
+              | sponge "$DEPLOYMENTS_FILE"
+            done
 
             for key in lightclient app ; do
               echo "key: $key"
@@ -666,6 +671,7 @@ _: {
           kind,
 
           chain-id,
+          private-key,
           rpc-url,
           weth,
 
@@ -684,11 +690,6 @@ _: {
                 arg = "deployer_pk";
                 required = true;
                 help = "The deployer contract address.";
-              }
-              {
-                arg = "private_key";
-                required = true;
-                help = "The contract owner private key.";
               }
               {
                 arg = "sender_pk";
@@ -713,7 +714,7 @@ _: {
               WETH_ADDRESS=${weth} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
-              PRIVATE_KEY="$argc_private_key" \
+              PRIVATE_KEY=${private-key} \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
@@ -930,7 +931,30 @@ _: {
           );
 
         evm-scripts = pkgs.mkRootDrv "evm-scripts" (
-          builtins.listToAttrs (
+          {
+            update-deployments-json = pkgs.writeShellApplication {
+              name = "update-deployments-json";
+              text =
+                let
+                  deployments = builtins.filter (deployment: deployment.ibc_interface == "ibc-solidity") (
+                    builtins.fromJSON (builtins.readFile ../deployments/deployments.json)
+                  );
+                  getNetwork =
+                    chainId:
+                    pkgs.lib.lists.findSingle (network: network.chain-id == chainId)
+                      (throw "no network found with chain id ${chainId}")
+                      (throw "many networks with chain id ${chainId} found")
+                      networks;
+                in
+                pkgs.lib.concatMapStringsSep "\n\n" (deployment: ''
+                  echo "updating ${deployment.universal_chain_id}"
+                  ${pkgs.lib.getExe
+                    self'.packages.evm-scripts.${(getNetwork deployment.chain_id).name}.update-deployments-json
+                  }
+                '') deployments;
+            };
+          }
+          // (builtins.listToAttrs (
             map (chain: {
               inherit (chain) name;
               value = pkgs.mkRootDrv chain.name (
@@ -942,6 +966,7 @@ _: {
                   # finalize-deployment = finalize-deployment chain;
                   # get-git-rev = get-git-rev chain;
                 }
+                # individual deployments
                 // (pkgs.lib.mapAttrs'
                   (name: kind: {
                     name = "deploy-${name}";
@@ -956,6 +981,17 @@ _: {
                     multicall = "Multicall";
                   }
                 )
+                # other various deployment scripts
+                // (pkgs.lib.mapAttrs'
+                  (name: kind: {
+                    name = "script-${name}";
+                    value = deploy-single (chain // { inherit kind; });
+                  })
+                  {
+                    roles = "Roles";
+                  }
+                )
+                # upgrades, all with a -dry version
                 // (builtins.foldl' (a: b: a // b) { } (
                   pkgs.lib.flatten (
                     pkgs.lib.mapAttrsToList
@@ -986,7 +1022,7 @@ _: {
                 ))
               );
             }) networks
-          )
+          ))
         );
       };
     };
