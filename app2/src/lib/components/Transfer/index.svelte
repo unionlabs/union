@@ -21,6 +21,7 @@ import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { constVoid, flow, identity, pipe } from "effect/Function"
 import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
+import {beforeNavigate} from "$app/navigation";
 
 let currentPage = $state(0)
 let isLoading = $state(false)
@@ -65,6 +66,7 @@ function handleActionButtonClick() {
 
   if (TransferStep.is("Filling")(currentStep)) {
     if (Option.isNone(lockedTransferStore.get())) {
+      lockedTransferStore.reset()
       const newLockedTransfer = LockedTransfer.fromTransfer(
         transfer.sourceChain,
         transfer.destinationChain,
@@ -104,7 +106,8 @@ function newTransfer() {
   isLoading = false
   statusMessage = ""
   currentPage = 0
-  lockedTransferStore.unlock()
+  transfer.raw.reset()
+  lockedTransferStore.reset()
   transferHashStore.reset()
 }
 
@@ -238,6 +241,8 @@ const fillingError = $derived(
     )
   )
 )
+
+beforeNavigate(newTransfer)
 </script>
 
 <Card
