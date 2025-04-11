@@ -144,6 +144,14 @@ export const chainLogoMap = new Map([
     }
   ],
   [
+    "union.union-1",
+    {
+      color: "/logos/chains/color/UNION.svg",
+      light: "/logos/chains/light/UNION.svg",
+      dark: "/logos/chains/dark/UNION.svg"
+    }
+  ],
+  [
     "union.union-testnet-8",
     {
       color: "/logos/chains/color/UNION.svg",
