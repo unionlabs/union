@@ -1824,7 +1824,11 @@ fn process_receive(
                         relayer: deps.api.addr_validate(&relayer)?.into(),
                         relayer_msg: relayer_msg.to_vec().into(),
                     }),
-                    vec![],
+                    // TODO: this is incorrect and we should allow the relayer
+                    // to specify how to split the total funds individually for
+                    // each batched packet. because voyager does not do any
+                    // batching at ibc level, this will always work.
+                    info.funds.clone(),
                 )?);
             }
         }
