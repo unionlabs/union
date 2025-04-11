@@ -29,6 +29,7 @@ let transferSteps = $state<Option.Option<Array<TransferStep.TransferStep>>>(Opti
 let transferError = $state<Option.Option<TransferFlowError>>(Option.none())
 let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
 let statusMessage = $state("")
+let showDetails = $state(false)
 
 function goToNextPage() {
   if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
@@ -243,18 +244,17 @@ const fillingError = $derived(
 )
 
 beforeNavigate(newTransfer)
-
 </script>
 
 <Card
-  divided
-  class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden"
+        divided
+        class="w-sm mt-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden"
 >
   <div class="w-full">
     <StepProgressBar
-      class="w-full"
-      currentStep={currentPage + 1}
-      totalSteps={lockedTransferStore.get().pipe(
+            class="w-full"
+            currentStep={currentPage + 1}
+            totalSteps={lockedTransferStore.get().pipe(
         Option.map((lts) => lts.steps.length),
         Option.getOrElse(() =>
           transferSteps.pipe(
@@ -263,7 +263,7 @@ beforeNavigate(newTransfer)
           ),
         ),
       )}
-      stepDescriptions={lockedTransferStore.get().pipe(
+            stepDescriptions={lockedTransferStore.get().pipe(
         Option.map((lts) => lts.steps.map(TransferStep.description)),
         Option.orElse(() =>
           transferSteps.pipe(
@@ -277,45 +277,45 @@ beforeNavigate(newTransfer)
 
   <div class="relative flex-1 overflow-hidden">
     <div
-      class="absolute inset-0 flex transition-transform duration-300 ease-in-out"
-      style="transform: translateX(-{currentPage * 100}%);"
+            class="absolute inset-0 flex transition-transform duration-300 ease-in-out"
+            style="transform: translateX(-{currentPage * 100}%);"
     >
       <FillingPage
-        onContinue={handleActionButtonClick}
-        {actionButtonText}
-        topError={fillingError}
-        onErrorClose={() => {
+              onContinue={handleActionButtonClick}
+              {actionButtonText}
+              topError={fillingError}
+              onErrorClose={() => {
           transferError = Option.none();
         }}
-        gotSteps={Option.isSome(transferSteps) &&
+              gotSteps={Option.isSome(transferSteps) &&
           transferSteps.value.length > 1}
-        loading={isLoading}
+              loading={isLoading}
       />
 
       {#if Option.isSome(lockedTransferStore.get())}
         {#each lockedTransferStore.get().value.steps.slice(1) as step, i}
           {#if TransferStep.is("CheckReceiver")(step)}
             <CheckReceiverPage
-              stepIndex={i + 1}
-              onBack={goToPreviousPage}
-              onSubmit={goToNextPage}
+                    stepIndex={i + 1}
+                    onBack={goToPreviousPage}
+                    onSubmit={goToNextPage}
             />
           {:else if TransferStep.is("ApprovalRequired")(step)}
             <ApprovalPage
-              stepIndex={i + 1}
-              onBack={goToPreviousPage}
-              onApprove={handleActionButtonClick}
-              {actionButtonText}
+                    stepIndex={i + 1}
+                    onBack={goToPreviousPage}
+                    onApprove={handleActionButtonClick}
+                    {actionButtonText}
             />
           {:else if TransferStep.is("SubmitInstruction")(step)}
             <SubmitPage
-              stepIndex={i + 1}
-              onCancel={newTransfer}
-              onSubmit={handleActionButtonClick}
-              {actionButtonText}
+                    stepIndex={i + 1}
+                    onCancel={newTransfer}
+                    onSubmit={handleActionButtonClick}
+                    {actionButtonText}
             />
           {:else if TransferStep.is("WaitForIndex")(step)}
-            <IndexPage {newTransfer} />
+            <IndexPage {newTransfer}/>
           {/if}
         {/each}
       {/if}
@@ -323,19 +323,30 @@ beforeNavigate(newTransfer)
   </div>
 </Card>
 
-{#if Option.isSome(transferError)}
-  <strong>Error</strong>
-  <pre class="text-wrap">{JSON.stringify(transferError.value, null, 2)}</pre>
+{#if showDetails}
+  {#if Option.isSome(transferError)}
+    <strong>Error</strong>
+    <pre class="text-wrap">{JSON.stringify(transferError.value, null, 2)}</pre>
+  {/if}
+
+  {#key statusMessage}
+    <strong>{statusMessage}</strong>
+    <pre>{JSON.stringify(lockedTransferStore.transfer, null, 2)}</pre>
+  {/key}
+
+  {#if Option.isSome(transferSteps)}
+    <div class="mt-4">
+      <strong>Steps:</strong>
+      <pre>{JSON.stringify(transferSteps.value, null, 2)}</pre>
+    </div>
+  {/if}
 {/if}
 
-{#key statusMessage}
-  <strong>{statusMessage}</strong>
-  <pre>{JSON.stringify(lockedTransferStore.transfer, null, 2)}</pre>
-{/key}
+<button
+        class="flex items-center justify-center w-full gap-2 py-2 px-4 text-left hover:text-zinc-300 text-zinc-400 cursor-pointer transition-colors"
+        onclick={() => showDetails = !showDetails}
+>
+  <span>Packet Details</span>
+  <span class="transition-transform duration-300" style={showDetails ? "transform: rotate(180deg)" : ""}>↓</span>
+</button>
 
-{#if Option.isSome(transferSteps)}
-  <div class="mt-4">
-    <strong>Steps:</strong>
-    <pre>{JSON.stringify(transferSteps.value, null, 2)}</pre>
-  </div>
-{/if}
