@@ -24,7 +24,7 @@ export type FetchCosmosBalanceError =
   | Error
   | HttpClientError.HttpClientError
 
-class QueryBankBalanceError extends Data.TaggedError("QueryBankBalanceError")<{
+export class QueryBankBalanceError extends Data.TaggedError("QueryBankBalanceError")<{
   cause: unknown
 }> {}
 
