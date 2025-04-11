@@ -75,7 +75,7 @@ _: {
             text = ''
               ${ensureAtRepositoryRoot}
               cd app2/
-              pnpm dlx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://development.graphql.union.build/v1/graphql"
+              pnpm dlx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://graphql.union.build/v1/graphql"
               pnpm dlx gql.tada generate-output --disable-preprocessing --tsconfig ./tsconfig.json --output ./src/generated/graphql-env.d.ts
             '';
           };
