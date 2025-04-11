@@ -43,8 +43,19 @@ const handleRedirect = () => {
         <div class="flex-1 flex items-center justify-center">
           <div class="text-center">
             <div class="flex justify-center mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-babylon-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-10 w-10 text-babylon-orange"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
             <h3 class="text-xl font-bold mb-1 text-zinc-400">
@@ -67,7 +78,14 @@ const handleRedirect = () => {
       </div>
     {:else if Option.isSome(transferHashStore.error) && Option.isNone(transferHashStore.data)}
       {@const error = transferHashStore.error.value}
-      <ErrorComponent {error} />
+      <div class="absolute bottom-0 right-0 left-0">
+        <ErrorComponent
+          onClose={() => {
+            transferHashStore.error = Option.none();
+          }}
+          {error}
+        />
+      </div>
     {:else}
       <div
         class="absolute inset-0 flex flex-col"
@@ -75,8 +93,12 @@ const handleRedirect = () => {
         out:fly={{ x: -20, duration: 300, opacity: 0 }}
       >
         <div class="flex flex-col items-center justify-center h-full py-8">
-          <div class="animate-spin rounded-full h-12 w-12 border-y-2 border-babylon-orange mb-4"></div>
-          <p class="text-lg font-medium text-zinc-400 mb-2">Waiting for indexer...</p>
+          <div
+            class="animate-spin rounded-full h-12 w-12 border-y-2 border-babylon-orange mb-4"
+          ></div>
+          <p class="text-lg font-medium text-zinc-400 mb-2">
+            Waiting for indexer...
+          </p>
           {#if Option.isSome(sourceChain)}
             <TransactionHashComponent
               hash={transferHashStore.hash}

@@ -32,9 +32,10 @@ interface Props {
     | QueryBankBalanceError
     | Base64EncodeError
     | NoRpcError
+  onClose?: (() => void) | undefined
 }
 
-let { error }: Props = $props()
+let { error, onClose }: Props = $props()
 let showDetails = $state(false)
 let visible = $state(true)
 
@@ -91,8 +92,19 @@ const exportData = () => {
   <div
     class="p-4 rounded bg-zinc-925 border-2 border-red-500 overflow-hidden flex flex-col"
   >
+    {#if onClose}
+      <div class="flex flex-row mb-2">
+        <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4" />
+        <div class="grow"></div>
+        <Button class="self-end p-0 h-4" variant="outline" onclick={onClose}>
+          <BaselineCloseIcon height="1rem" width="1rem" />
+        </Button>
+      </div>
+    {/if}
     <div class="flex justify-between items-center gap-2">
-      <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4" />
+      {#if !onClose}
+        <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4" />
+      {/if}
       <p>{getUserFriendlyMessage(error)}</p>
       <div class="grow"></div>
       <Tooltip delay={"quick"}>

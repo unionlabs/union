@@ -296,11 +296,17 @@ const handleSubmit = () => {
 }
 </script>
 
-<div class="min-w-full p-4 flex flex-col justify-between h-full">
+<div class="relative min-w-full p-4 flex flex-col justify-between h-full">
   {#if Option.isSome(error)}
     {@const _error = error.value}
     <div class="absolute bottom-0 left-0 right-0">
-      <ErrorComponent class="absolute bottom-0 left-0 right-0" error={_error} />
+      <ErrorComponent
+        class="absolute bottom-0 left-0 right-0"
+        error={_error}
+        onClose={() => {
+          error = Option.none();
+        }}
+      />
     </div>
   {/if}
   {#if Option.isSome(step) && Option.isSome(sourceChain) && Option.isSome(destinationChain)}

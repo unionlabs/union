@@ -18,10 +18,17 @@ type Props = {
   actionButtonText: string
   gotSteps: boolean
   loading: boolean
+  onErrorClose?: () => void
   topError?: Option.Option<unknown> | undefined
 }
 
-const { onContinue, gotSteps, loading, topError = Option.none<unknown>() }: Props = $props()
+const {
+  onContinue,
+  gotSteps,
+  loading,
+  topError = Option.none<unknown>(),
+  onErrorClose = constVoid
+}: Props = $props()
 
 type FillingEnum = Data.TaggedEnum<{
   Loading: {}
@@ -209,6 +216,9 @@ function handleButtonClick() {
 </div>
 {#if topError && Option.isSome(topError)}
   <div class="absolute bottom-0 left-0 right-0">
-    <ErrorComponent error={topError.value as unknown as any} />
+    <ErrorComponent
+      onClose={onErrorClose}
+      error={topError.value as unknown as any}
+    />
   </div>
 {/if}

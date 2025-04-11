@@ -278,6 +278,9 @@ const fillingError = $derived(
         onContinue={handleActionButtonClick}
         {actionButtonText}
         topError={fillingError}
+        onErrorClose={() => {
+          transferError = Option.none();
+        }}
         gotSteps={Option.isSome(transferSteps) &&
           transferSteps.value.length > 1}
         loading={isLoading}

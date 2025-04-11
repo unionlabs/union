@@ -116,7 +116,7 @@ const submit = Effect.gen(function* () {
                 onFailure: cause =>
                   Effect.sync(() => {
                     error = Option.some(Cause.squash(cause))
-                    console.log(error)
+                    console.error(error)
                   }),
                 onSuccess: () =>
                   Effect.sync(() => {
@@ -205,7 +205,12 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
   {#if Option.isSome(error)}
     {@const _error = error.value}
     <div class="absolute bottom-0 left-0 right-0">
-      <ErrorComponent class="absolute bottom-0 left-0 right-0" error={_error} />
+      <ErrorComponent
+        error={_error}
+        onClose={() => {
+          error = Option.none();
+        }}
+      />
     </div>
   {/if}
   {#if Option.isSome(step) && Option.isSome(sourceChain)}
