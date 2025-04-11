@@ -24,7 +24,7 @@ import { TESTNET_APP_INFO } from "$lib/config/app"
 
 export const chains = [
   mainnet,
-  corn
+  corn,
   sepolia,
   holesky,
   berachainTestnetbArtio,
