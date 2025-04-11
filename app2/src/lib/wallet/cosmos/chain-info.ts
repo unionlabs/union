@@ -16,63 +16,66 @@ interface LeapExtendedInfo extends LeapChainInfo {
 
 //Keplr
 
-export const babylonMainnetKeplrChaininfo : KeplrChainInfo = {
-    "chainId": "bbn-1",
-    "chainName": "Babylon Genesis",
-    "chainSymbolImageUrl": "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
-    "rpc": "https://rpc-babylon.keplr.app",
-    "rest": "https://lcd-babylon.keplr.app",
-    "walletUrlForStaking": "https://wallet.keplr.app/chains/babylon-genesis",
-    "bip44": {
-    "coinType": 118
+export const babylonMainnetKeplrChaininfo: KeplrChainInfo = {
+  chainId: "bbn-1",
+  chainName: "Babylon Genesis",
+  chainSymbolImageUrl:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
+  rpc: "https://rpc-babylon.keplr.app",
+  rest: "https://lcd-babylon.keplr.app",
+  walletUrlForStaking: "https://wallet.keplr.app/chains/babylon-genesis",
+  bip44: {
+    coinType: 118
   },
-    "bech32Config": {
-    "bech32PrefixAccAddr": "bbn",
-      "bech32PrefixAccPub": "bbnpub",
-      "bech32PrefixValAddr": "bbnvaloper",
-      "bech32PrefixValPub": "bbnvaloperpub",
-      "bech32PrefixConsAddr": "bbnvalcons",
-      "bech32PrefixConsPub": "bbnvalconspub"
+  bech32Config: {
+    bech32PrefixAccAddr: "bbn",
+    bech32PrefixAccPub: "bbnpub",
+    bech32PrefixValAddr: "bbnvaloper",
+    bech32PrefixValPub: "bbnvaloperpub",
+    bech32PrefixConsAddr: "bbnvalcons",
+    bech32PrefixConsPub: "bbnvalconspub"
   },
-    "currencies": [
+  currencies: [
     {
-      "coinDenom": "BABY",
-      "coinMinimalDenom": "ubbn",
-      "coinDecimals": 6,
-      "coinGeckoId": "babylon",
-      "coinImageUrl": "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png"
+      coinDenom: "BABY",
+      coinMinimalDenom: "ubbn",
+      coinDecimals: 6,
+      coinGeckoId: "babylon",
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png"
     },
     {
-      "coinDenom": "LBTC",
-      "coinMinimalDenom": "ibc/89EE10FCF78800B572BAAC7080AEFA301B5F3BBC51C5371E907EB129C5B900E7",
-      "coinDecimals": 8,
-      "coinImageUrl": "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/LBTC.png"
+      coinDenom: "LBTC",
+      coinMinimalDenom: "ibc/89EE10FCF78800B572BAAC7080AEFA301B5F3BBC51C5371E907EB129C5B900E7",
+      coinDecimals: 8,
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/LBTC.png"
     }
   ],
-    "feeCurrencies": [
+  feeCurrencies: [
     {
-      "coinDenom": "BABY",
-      "coinMinimalDenom": "ubbn",
-      "coinDecimals": 6,
-      "coinGeckoId": "babylon",
-      "coinImageUrl": "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
-      "gasPriceStep": {
-        "low": 0.007,
-        "average": 0.007,
-        "high": 0.01
+      coinDenom: "BABY",
+      coinMinimalDenom: "ubbn",
+      coinDecimals: 6,
+      coinGeckoId: "babylon",
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
+      gasPriceStep: {
+        low: 0.007,
+        average: 0.007,
+        high: 0.01
       }
     }
   ],
-    "stakeCurrency": {
-    "coinDenom": "BABY",
-      "coinMinimalDenom": "ubbn",
-      "coinDecimals": 6,
-      "coinGeckoId": "babylon",
-      "coinImageUrl": "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png"
+  stakeCurrency: {
+    coinDenom: "BABY",
+    coinMinimalDenom: "ubbn",
+    coinDecimals: 6,
+    coinGeckoId: "babylon",
+    coinImageUrl:
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png"
   },
-    "features": [
-    "cosmwasm"
-  ]
+  features: ["cosmwasm"]
 }
 
 export const unionKeplrChainInfo: KeplrChainInfo = {
@@ -507,7 +510,8 @@ export const babylonMainnetLeapChainInfo: LeapExtendedInfo = {
     coinDecimals: 6,
     coinGeckoId: "babylon"
   },
-  image: "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
+  image:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
   theme: {
     primaryColor: "#fff",
     gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)"
