@@ -85,8 +85,13 @@
                   default = true;
                 };
                 name = mkOption {
-                  type = types.string;
+                  type = types.str;
                   default = "default";
+                };
+                noVoyagerNamePrefix = mkOption {
+                  type = types.bool;
+                  # default = "voyager-${cfg.name}";
+                  default = false;
                 };
                 package = mkOption {
                   type = types.package;
@@ -229,7 +234,9 @@
         map (
           instance:
           let
-            configJson = pkgs.writeText "config-${instance.name}.json" (
+            name = if instance.noVoyagerNamePrefix then instance.name else "voyager-${instance.name}";
+
+            configJson = pkgs.writeText "config-${name}.json" (
               builtins.toJSON (
                 lib.recursiveUpdate
                   (lib.filterAttrsRecursive (_n: v: v != null) {
@@ -250,18 +257,18 @@
           {
             environment.systemPackages = lib.mkIf (cfg.enable && instance.enable) [
               (pkgs.writeShellApplication {
-                name = "voyager-${instance.name}";
+                inherit name;
                 runtimeInputs = [ instance.package ];
                 text = ''
                   ${lib.getExe instance.package} --config-file-path ${configJson} "$@"
                 '';
               })
             ];
-            systemd.services."voyager-${instance.name}" = lib.mkIf (cfg.enable && instance.enable) {
-              description = "Voyager ${instance.name}";
+            systemd.services.${name} = lib.mkIf (cfg.enable && instance.enable) {
+              description = "Voyager ${name}";
               serviceConfig = {
                 Type = "simple";
-                User = instance.name;
+                User = name;
                 ExecStart = ''
                   ${lib.getExe instance.package} \
                     --config-file-path ${configJson} \

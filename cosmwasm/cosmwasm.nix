@@ -10,6 +10,17 @@ _: {
       ...
     }:
     let
+      getDeployment =
+        let
+          json = builtins.fromJSON (builtins.readFile ../deployments/deployments.json);
+        in
+        chainId:
+        (pkgs.lib.lists.findSingle (deployment: deployment.chain_id == chainId)
+          (throw "deployment for ${chainId} not found")
+          (throw "many deployments for ${chainId} found")
+          json
+        ).deployments;
+
       # minified version of the protos found in https://github.com/CosmWasm/wasmd/tree/2e748fb4b860ee109123827f287949447f2cded7/proto/cosmwasm/wasm/v1
       cosmwasmProtoDefs = pkgs.writeTextDir "/cosmwasm.proto" ''
         syntax = "proto3";
@@ -454,6 +465,30 @@ _: {
           '';
         };
 
+      whitelist-relayers =
+        {
+          name,
+          chain-id,
+          rpc_url,
+          gas_config,
+          private_key,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "${name}-whitelist-relayers";
+          runtimeInputs = [ cosmwasm-deployer ];
+          text = ''
+            PRIVATE_KEY=${private_key} \
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              tx \
+              whitelist-relayers \
+              --rpc-url ${rpc_url} \
+              --contract ${(getDeployment chain-id).core.address} \
+              ${mk-gas-args gas_config} "$@"
+          '';
+        };
+
       # migrate the admin to the multisig address
       finalize-deployment =
         {
@@ -877,6 +912,7 @@ _: {
                       update-deployments-json = update-deployments-json chain;
                       finalize-deployment = finalize-deployment chain;
                       get-git-rev = get-git-rev chain;
+                      whitelist-relayers = whitelist-relayers chain;
                     }
                     // (chain-migration-scripts chain)
                   );
