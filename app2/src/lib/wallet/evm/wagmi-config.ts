@@ -9,6 +9,7 @@ import {
 } from "@wagmi/core"
 import { coinbaseWallet, injected, metaMask, walletConnect } from "@wagmi/connectors"
 import {
+  mainnet,
   arbitrumSepolia,
   berachainTestnetbArtio,
   bob,
@@ -21,6 +22,7 @@ import {
 import { TESTNET_APP_INFO } from "$lib/config/app"
 
 export const chains = [
+  mainnet,
   sepolia,
   holesky,
   berachainTestnetbArtio,
@@ -45,6 +47,18 @@ export const wagmiConfig = createConfig({
   batch: { multicall: true },
   multiInjectedProviderDiscovery: true,
   transports: {
+    [mainnet.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-mainnet",
+        name: "unstable_connector-injected-mainnet"
+      }),
+      http(`https://rpc.1.ethereum.chain.kitchen`, {
+        name: "Chain Kitchen - Mainnet"
+      }),
+      http(sepolia.rpcUrls.default.http.at(0), { name: "default Mainnet RPC" })
+    ]),
     [sepolia.id]: fallback([
       unstable_connector(injected, {
         retryCount: 3,
