@@ -69,13 +69,7 @@ _: {
               gas_price,
               max_gas,
             }:
-            ''
-              --gas static \
-              --gas-price ${toString gas_price} \
-              --gas-denom ${toString gas_denom} \
-              --gas-multiplier ${toString gas_multiplier} \
-              --max-gas ${toString max_gas}
-            '';
+            ''--gas static --gas-price ${toString gas_price} --gas-denom ${toString gas_denom} --gas-multiplier ${toString gas_multiplier} --max-gas ${toString max_gas}'';
           feemarket = _: ''--gas feemarket'';
         }
         .${type}

@@ -1,8 +1,15 @@
 {
   "union.union-testnet-10": {
-    "1": "ethereum.11155111"
+    "1": "ethereum.11155111",
+    "2": "ethereum.17000"
+  },
+  "babylon.bbn-test-5": {
+    "1": "union.union-testnet-10"
   },
   "ethereum.11155111": {
+    "1": "union.union-testnet-10"
+  },
+  "ethereum.17000": {
     "1": "union.union-testnet-10"
   }
 }
