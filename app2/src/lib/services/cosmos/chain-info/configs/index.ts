@@ -1,6 +1,8 @@
 import {
-  babylonKeplrChaininfo,
-  babylonLeapChaininfo,
+  babylonTestnetKeplrChaininfo,
+  babylonTestnetLeapChaininfo,
+  babylonMainnetLeapChainInfo,
+  babylonMainnetKeplrChaininfo,
   elgafarKeplrChainInfo,
   elgafarLeapChainInfo,
   strideKeplrChainInfo,
@@ -25,13 +27,14 @@ export const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
   "union-testnet-10": unionKeplrChainInfo,
   "stride-internal-1": strideKeplrChainInfo,
   "elgafar-1": elgafarKeplrChainInfo,
-  "bbn-test-5": babylonKeplrChaininfo
+  "bbn-test-5": babylonTestnetKeplrChaininfo,
+  "bbn-1": babylonMainnetKeplrChaininfo
 }
 
 export const leapChainInfoMap: Record<string, LeapExtendedInfo> = {
   "union-testnet-10": unionLeapChainInfo,
   "stride-internal-1": strideLeapChainInfo,
   "elgafar-1": elgafarLeapChainInfo,
-  "bbn-test-5": babylonLeapChaininfo
-  // TODO: add stargaze leap definition
+  "bbn-test-5": babylonTestnetLeapChaininfo,
+  "bbn-1": babylonMainnetLeapChainInfo
 }
