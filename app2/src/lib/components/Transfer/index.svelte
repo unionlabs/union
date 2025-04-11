@@ -243,6 +243,7 @@ const fillingError = $derived(
 )
 
 beforeNavigate(newTransfer)
+
 </script>
 
 <Card
