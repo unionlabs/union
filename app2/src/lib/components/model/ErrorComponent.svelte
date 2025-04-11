@@ -1,98 +1,115 @@
 <script lang="ts">
-import type { HttpClientError } from "@effect/platform/HttpClientError"
-import type { TimeoutException, UnknownException } from "effect/Cause"
-import type { ParseError } from "effect/ParseResult"
-import type { NoViemChainError } from "$lib/services/evm/clients"
-import type { FetchNativeBalanceError, ReadContractError } from "$lib/services/evm/balances"
-import type { CreatePublicClientError } from "$lib/services/transfer/errors"
-import type { NoRpcError } from "@unionlabs/sdk/schema"
-import { slide } from "svelte/transition"
-import Button from "$lib/components/ui/Button.svelte"
-import type { Base64EncodeError } from "$lib/utils/base64"
-import type { QueryBankBalanceError } from "$lib/services/cosmos/balances"
-import SharpContentCopyIcon from "../icons/SharpContentCopyIcon.svelte"
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
-import SharpOpenInBrowserIcon from "../icons/SharpOpenInBrowserIcon.svelte"
-import Modal from "../ui/Modal.svelte"
-import Tooltip from "../ui/Tooltip.svelte"
-import SharpErrorOutlineIcon from "../icons/SharpErrorOutlineIcon.svelte"
-import SharpDownloadIcon from "../icons/SharpDownloadIcon.svelte"
-import BaselineCloseIcon from "../icons/BaselineCloseIcon.svelte"
+  import type { HttpClientError } from "@effect/platform/HttpClientError";
+  import type { TimeoutException, UnknownException } from "effect/Cause";
+  import type { ParseError } from "effect/ParseResult";
+  import type { NoViemChainError } from "$lib/services/evm/clients";
+  import type {
+    FetchNativeBalanceError,
+    ReadContractError,
+  } from "$lib/services/evm/balances";
+  import type { CreatePublicClientError } from "$lib/services/transfer/errors";
+  import type { NoRpcError } from "@unionlabs/sdk/schema";
+  import { slide } from "svelte/transition";
+  import Button from "$lib/components/ui/Button.svelte";
+  import type { Base64EncodeError } from "$lib/utils/base64";
+  import type { QueryBankBalanceError } from "$lib/services/cosmos/balances";
+  import SharpContentCopyIcon from "../icons/SharpContentCopyIcon.svelte";
+  import { extractErrorDetails } from "@unionlabs/sdk/utils";
+  import SharpOpenInBrowserIcon from "../icons/SharpOpenInBrowserIcon.svelte";
+  import Modal from "../ui/Modal.svelte";
+  import Tooltip from "../ui/Tooltip.svelte";
+  import SharpErrorOutlineIcon from "../icons/SharpErrorOutlineIcon.svelte";
+  import SharpDownloadIcon from "../icons/SharpDownloadIcon.svelte";
+  import BaselineCloseIcon from "../icons/BaselineCloseIcon.svelte";
 
-interface Props {
-  error:
-    | UnknownException
-    | HttpClientError
-    | ParseError
-    | TimeoutException
-    | NoViemChainError
-    | ReadContractError
-    | FetchNativeBalanceError
-    | CreatePublicClientError
-    | QueryBankBalanceError
-    | Base64EncodeError
-    | NoRpcError
-}
-
-let { error }: Props = $props()
-let showDetails = $state(false)
-let visible = $state(true)
-
-// TODO: replace me with an exhaustive matcher :)
-function getUserFriendlyMessage(error: Props["error"]): string {
-  switch (error._tag) {
-    case "RequestError":
-      return "Unable to connect to the server. Please check your internet connection."
-    case "ResponseError":
-      return "The server encountered an error processing your request."
-    case "ParseError":
-      return "There was an error processing the data from the server."
-    case "TimeoutException":
-      return "The request timed out because it took too long. Please try again."
-    case "UnknownException":
-      return "An unexpected error occurred."
-    case "NoViemChain":
-      return "Chain configuration not found for the selected network."
-    case "ReadContractError":
-      return "Failed to read contract data from the network."
-    case "FetchNativeBalanceError":
-      return "Failed to fetch native token balance."
-    case "CreatePublicClientError":
-      return "Failed to create network connection."
-    case "QueryBankBalanceError":
-      return "Failed to query bank balance from the network."
-    case "Base64EncodeError":
-      return "Failed to encode query parameters."
-    case "NoRpcError":
-      return `No ${error.type} endpoint available for ${error.chain.display_name}.`
-    default:
-      return "Something went wrong. Please try again later."
+  interface Props {
+    error:
+      | UnknownException
+      | HttpClientError
+      | ParseError
+      | TimeoutException
+      | NoViemChainError
+      | ReadContractError
+      | FetchNativeBalanceError
+      | CreatePublicClientError
+      | QueryBankBalanceError
+      | Base64EncodeError
+      | NoRpcError;
+    onClose?: (() => void) | undefined;
   }
-}
 
-const writeToClipboard = () => {
-  navigator.clipboard.writeText(JSON.stringify(extractErrorDetails(error), null, 2))
-}
+  let { error, onClose }: Props = $props();
+  let showDetails = $state(false);
+  let visible = $state(true);
 
-const exportData = () => {
-  const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "")
-  const data = JSON.stringify(extractErrorDetails(error), null, 2)
-  const blob = new Blob([data], { type: "application/json" })
-  const url = window.URL.createObjectURL(blob)
-  const anchor = document.createElement("a")
-  anchor.href = url
-  anchor.download = `union-log-${datetime}.json`
-  anchor.click()
-  window.URL.revokeObjectURL(anchor.href)
-}
+  // TODO: replace me with an exhaustive matcher :)
+  function getUserFriendlyMessage(error: Props["error"]): string {
+    switch (error._tag) {
+      case "RequestError":
+        return "Unable to connect to the server. Please check your internet connection.";
+      case "ResponseError":
+        return "The server encountered an error processing your request.";
+      case "ParseError":
+        return "There was an error processing the data from the server.";
+      case "TimeoutException":
+        return "The request timed out because it took too long. Please try again.";
+      case "UnknownException":
+        return "An unexpected error occurred.";
+      case "NoViemChain":
+        return "Chain configuration not found for the selected network.";
+      case "ReadContractError":
+        return "Failed to read contract data from the network.";
+      case "FetchNativeBalanceError":
+        return "Failed to fetch native token balance.";
+      case "CreatePublicClientError":
+        return "Failed to create network connection.";
+      case "QueryBankBalanceError":
+        return "Failed to query bank balance from the network.";
+      case "Base64EncodeError":
+        return "Failed to encode query parameters.";
+      case "NoRpcError":
+        return `No ${error.type} endpoint available for ${error.chain.display_name}.`;
+      default:
+        return "Something went wrong. Please try again later.";
+    }
+  }
+
+  const writeToClipboard = () => {
+    navigator.clipboard.writeText(
+      JSON.stringify(extractErrorDetails(error), null, 2),
+    );
+  };
+
+  const exportData = () => {
+    const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "");
+    const data = JSON.stringify(extractErrorDetails(error), null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `union-log-${datetime}.json`;
+    anchor.click();
+    window.URL.revokeObjectURL(anchor.href);
+  };
 </script>
 
 {#if visible}
   <div
     class="p-4 rounded bg-zinc-925 border-2 border-red-500 overflow-hidden flex flex-col"
   >
+    {#if onClose}
+      <div class="flex flex-row mb-2">
+        <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4" />
+        <div class="grow"></div>
+        <Button class="self-end p-0 h-4" variant="outline" onclick={onClose}>
+          <BaselineCloseIcon height="1rem" width="1rem" />
+        </Button>
+      </div>
+    {/if}
     <div class="flex justify-between items-center gap-2">
-      <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4" />
+      {#if !onClose}
+        <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4" />
+      {/if}
       <p>{getUserFriendlyMessage(error)}</p>
       <div class="grow"></div>
       <Tooltip delay={"quick"}>
