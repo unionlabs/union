@@ -1,8 +1,14 @@
-use std::{collections::VecDeque, panic::AssertUnwindSafe};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    ops::Deref,
+    panic::AssertUnwindSafe,
+    sync::Arc,
+};
 
 use alloy::{
     contract::{Error, RawCallBuilder},
     network::{AnyNetwork, EthereumWallet},
+    primitives::Address,
     providers::{
         fillers::RecommendedFillers, layers::CacheLayer, DynProvider, PendingTransactionError,
         Provider, ProviderBuilder,
@@ -12,27 +18,31 @@ use alloy::{
     transports::TransportError,
 };
 use bip32::secp256k1::ecdsa::{self, SigningKey};
+use clap::Subcommand;
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use ibc_solidity::Ibc::{self, IbcErrors};
 use ibc_union_spec::{datagram::Datagram, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    proc_macros::rpc,
     types::{ErrorObject, ErrorObjectOwned},
-    Extensions,
+    Extensions, MethodsError,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
 use unionlabs::{
-    primitives::{H160, H256},
+    primitives::{H160, H256, U256},
     ErrorReporter,
 };
 use voyager_message::{
     data::Data,
     hook::SubmitTxHook,
+    into_value,
     module::{PluginInfo, PluginServer},
     primitives::ChainId,
     vm::{call, defer, now, pass::PassResult, seq, BoxDynError, Op, Visit},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 use crate::{
@@ -51,7 +61,18 @@ async fn main() {
 }
 
 #[derive(Debug, Clone)]
-pub struct Module {
+pub struct Module(Arc<ModuleInner>);
+
+impl Deref for Module {
+    type Target = ModuleInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Debug)]
+pub struct ModuleInner {
     pub chain_id: ChainId,
     pub additional_chain_ids: Vec<ChainId>,
 
@@ -100,12 +121,18 @@ pub struct Config {
     pub max_cache_size: u32,
 }
 
+#[derive(Subcommand)]
+pub enum Cmd {
+    SignerAddresses,
+    SignerBalances,
+}
+
 impl Plugin for Module {
     type Call = ModuleCall;
     type Callback = ModuleCallback;
 
     type Config = Config;
-    type Cmd = DefaultCmd;
+    type Cmd = Cmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let provider = DynProvider::new(
@@ -127,7 +154,7 @@ impl Plugin for Module {
             .into());
         }
 
-        Ok(Self {
+        Ok(Self(Arc::new(ModuleInner {
             chain_id,
             additional_chain_ids: config.additional_chain_ids,
             ibc_handler_address: config.ibc_handler_address,
@@ -152,7 +179,7 @@ impl Plugin for Module {
             max_gas_price: config.max_gas_price,
             fixed_gas_price: config.fixed_gas_price,
             legacy: config.legacy,
-        })
+        })))
     }
 
     fn info(config: Self::Config) -> PluginInfo {
@@ -166,8 +193,59 @@ impl Plugin for Module {
         }
     }
 
-    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
-        match cmd {}
+    async fn cmd(config: Self::Config, cmd: Self::Cmd) {
+        let plugin = Self::new(config).await.unwrap();
+
+        match cmd {
+            Cmd::SignerAddresses => {
+                println!("{}", into_value(plugin.keyring.keys().collect::<Vec<_>>()))
+            }
+            Cmd::SignerBalances => {
+                let mut out = BTreeMap::new();
+
+                for address in plugin.keyring.keys() {
+                    let balance = plugin.provider.get_balance(*address).await.unwrap();
+
+                    out.insert(address, balance);
+                }
+
+                println!("{}", into_value(out))
+            }
+        }
+    }
+}
+
+#[rpc(server)]
+trait TransactionPlugin {
+    #[method(name = "signerAddresses")]
+    async fn signer_addresses(&self) -> RpcResult<Vec<Address>>;
+
+    #[method(name = "signerBalances")]
+    async fn signer_balances(&self) -> RpcResult<BTreeMap<Address, U256>>;
+}
+
+#[async_trait]
+impl TransactionPluginServer for Module {
+    async fn signer_addresses(&self) -> RpcResult<Vec<Address>> {
+        Ok(self.keyring.keys().cloned().collect())
+    }
+
+    async fn signer_balances(&self) -> RpcResult<BTreeMap<Address, U256>> {
+        let mut out = BTreeMap::new();
+
+        for address in self.keyring.keys() {
+            let balance = self.provider.get_balance(*address).await.map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching balance"),
+                    None::<()>,
+                )
+            })?;
+
+            out.insert(*address, balance.into());
+        }
+
+        Ok(out)
     }
 }
 
@@ -309,6 +387,26 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         _data: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}
+    }
+
+    #[instrument(skip_all, fiellds(chain_id = %self.chain_id))]
+    async fn custom(&self, _: &Extensions, method: String, params: Vec<Value>) -> RpcResult<Value> {
+        TransactionPluginServer::into_rpc(self.clone())
+            .call::<Vec<Value>, Value>(&method, params)
+            .await
+            .map_err(|e| match e {
+                MethodsError::Parse(error) => ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    ErrorReporter(error).with_message("error parsing ergs"),
+                    None::<()>,
+                ),
+                MethodsError::JsonRpc(error_object) => error_object,
+                MethodsError::InvalidSubscriptionId(_) => ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    "subscriptions are not supported",
+                    None::<()>,
+                ),
+            })
     }
 }
 

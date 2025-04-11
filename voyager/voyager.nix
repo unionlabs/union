@@ -268,7 +268,7 @@
               description = "Voyager ${name}";
               serviceConfig = {
                 Type = "simple";
-                User = name;
+                User = instance.name;
                 ExecStart = ''
                   ${lib.getExe instance.package} \
                     --config-file-path ${configJson} \
@@ -289,11 +289,11 @@
               };
             };
             users = {
-              users.${name} = {
+              users.${instance.name} = {
                 isSystemUser = true;
-                group = name;
+                group = instance.name;
               };
-              groups.${name} = { };
+              groups.${instance.name} = { };
             };
           }
         ) cfg.instances

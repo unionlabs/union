@@ -14,7 +14,7 @@ use futures::{
     Future, FutureExt, StreamExt, TryStreamExt,
 };
 use jsonrpsee::{
-    core::client::ClientT,
+    core::{client::ClientT, RpcResult},
     server::middleware::rpc::RpcServiceT,
     types::{ErrorObject, ErrorObjectOwned},
 };
@@ -54,8 +54,6 @@ pub mod ibc_spec_handler;
 pub struct Context {
     pub rpc_server: Server,
 
-    plugins: HashMap<String, ModuleRpcClient>,
-
     interest_filters: HashMap<String, String>,
 
     pub cancellation_token: CancellationToken,
@@ -76,6 +74,8 @@ pub struct Modules {
     chain_consensus_types: HashMap<ChainId, ConsensusType>,
 
     client_consensus_types: HashMap<ClientType, ConsensusType>,
+
+    plugins: HashMap<String, ModuleRpcClient>,
 
     equivalent_chain_ids: EquivalentChainIds,
 
@@ -290,11 +290,10 @@ impl Context {
             consensus_modules: Default::default(),
             chain_consensus_types: Default::default(),
             client_consensus_types: Default::default(),
+            plugins: Default::default(),
             equivalent_chain_ids,
             ibc_spec_handlers,
         };
-
-        let mut plugins = HashMap::default();
 
         let mut interest_filters = HashMap::default();
 
@@ -351,7 +350,7 @@ impl Context {
 
                     let rpc_client = ModuleRpcClient::new(&name, ipc_client_request_timeout);
 
-                    let prev = plugins.insert(name.clone(), rpc_client.clone());
+                    let prev = modules.plugins.insert(name.clone(), rpc_client.clone());
 
                     if prev.is_some() {
                         return future::ready(Err(anyhow!(
@@ -583,7 +582,8 @@ impl Context {
 
         info!("checking for plugin health...");
 
-        let futures = plugins
+        let futures = modules
+            .plugins
             .iter()
             .map(|(name, client)| async move {
                 match client
@@ -616,7 +616,6 @@ impl Context {
 
         Ok(Self {
             rpc_server: main_rpc_server,
-            plugins,
             interest_filters,
             cancellation_token,
         })
@@ -624,18 +623,15 @@ impl Context {
 
     pub async fn shutdown(self) {
         self.cancellation_token.cancel();
-
-        for (name, client) in self.plugins {
-            debug!("shutting down plugin client for {name}");
-            client.client.shutdown();
-        }
     }
 
     pub fn plugin(
         &self,
         name: impl AsRef<str>,
-    ) -> Result<&reconnecting_jsonrpc_ws_client::Client, PluginNotFound> {
+    ) -> RpcResult<&reconnecting_jsonrpc_ws_client::Client> {
         Ok(self
+            .rpc_server
+            .modules()?
             .plugins
             .get(name.as_ref())
             .ok_or_else(|| PluginNotFound {
@@ -644,15 +640,15 @@ impl Context {
             .client())
     }
 
-    pub fn plugin_client_raw(
-        &self,
-        name: impl AsRef<str>,
-    ) -> Result<&ModuleRpcClient, PluginNotFound> {
-        self.plugins
+    pub fn plugin_client_raw(&self, name: impl AsRef<str>) -> RpcResult<&ModuleRpcClient> {
+        self.rpc_server
+            .modules()?
+            .plugins
             .get(name.as_ref())
             .ok_or_else(|| PluginNotFound {
                 name: name.as_ref().into(),
             })
+            .map_err(Into::into)
     }
 
     pub fn interest_filters(&self) -> &HashMap<String, String> {
@@ -721,6 +717,19 @@ impl Modules {
             client,
             client_bootstrap,
         }
+    }
+
+    pub fn plugin<'a>(
+        &'a self,
+        name: &str,
+    ) -> Result<&'a reconnecting_jsonrpc_ws_client::Client, PluginNotFound> {
+        Ok(self
+            .plugins
+            .get(name)
+            .ok_or_else(|| PluginNotFound {
+                name: name.to_owned(),
+            })?
+            .client())
     }
 
     pub fn equivalent_chain_ids(&self) -> &EquivalentChainIds {

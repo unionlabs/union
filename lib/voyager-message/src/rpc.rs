@@ -174,6 +174,18 @@ pub trait VoyagerRpc {
         ibc_spec_id: IbcSpecId,
         consensus_state: Bytes,
     ) -> RpcResult<Value>;
+
+    // ===================
+    // custom plugin calls
+    // ===================
+
+    #[method(name = "pluginCustom", with_extensions)]
+    async fn plugin_custom(
+        &self,
+        plugin: String,
+        method: String,
+        params: Vec<Value>,
+    ) -> RpcResult<Value>;
 }
 
 #[model]

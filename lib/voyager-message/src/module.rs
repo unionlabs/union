@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use jsonrpsee::{core::RpcResult, proc_macros::rpc};
+use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject};
 use macros::model;
 use schemars::JsonSchema;
 use serde_json::Value;
@@ -14,7 +14,7 @@ use crate::{
         ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcSpec,
     },
     rpc::ProofType,
-    RawClientId, VoyagerMessage,
+    RawClientId, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 fn ok<T>(t: T) -> Result<T, BoxDynError> {
@@ -334,6 +334,18 @@ pub trait Plugin<C: Member, Cb: Member> {
     /// Handle a custom `Callback` message for this module.
     #[method(name = "callback", with_extensions)]
     async fn callback(&self, aggregate: Cb, data: VecDeque<Data>) -> RpcResult<Op<VoyagerMessage>>;
+
+    /// Handle a custom request for this module.
+    ///
+    /// The default implementetion returns an error.
+    #[method(name = "custom", with_extensions)]
+    async fn custom(&self, _method: String, _params: Vec<Value>) -> RpcResult<Value> {
+        Err(ErrorObject::owned(
+            FATAL_JSONRPC_ERROR_CODE,
+            "unimplemented",
+            None::<()>,
+        ))
+    }
 }
 
 #[rpc(

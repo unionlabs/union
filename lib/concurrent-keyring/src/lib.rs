@@ -77,10 +77,9 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
         }
     }
 
-    // TODO: Add this functionality back somehow
-    // pub fn keys(&self) -> impl Iterator<Item = (&str, &A)> {
-    //     self.key_to_address.iter().map(|(a, b)| (a.as_str(), b))
-    // }
+    pub fn keys(&self) -> impl Iterator<Item = &A> {
+        self.signers.keys()
+    }
 
     pub async fn with<'a, F, Fut>(&'a self, f: F) -> Option<Fut::Output>
     where

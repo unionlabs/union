@@ -273,6 +273,23 @@ fn init_log() {
     }
 }
 
+// #[rpc(client, server, namespace = "plugin")]
+// pub trait Foo {
+//     #[method(name = "runPass", with_extensions)]
+//     async fn run_pass(
+//         &self,
+//         msgs: Vec<Op<VoyagerMessage>>,
+//     ) -> RpcResult<PassResult<VoyagerMessage>>;
+
+//     /// Handle a custom `Call` message for this module.
+//     #[method(name = "call", with_extensions)]
+//     async fn call(&self, call: C) -> RpcResult<Op<VoyagerMessage>>;
+
+//     /// Handle a custom `Callback` message for this module.
+//     #[method(name = "callback", with_extensions)]
+//     async fn callback(&self, aggregate: Cb, data: VecDeque<Data>) -> RpcResult<Op<VoyagerMessage>>;
+// }
+
 #[allow(async_fn_in_trait)]
 pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
     type Call: Member;

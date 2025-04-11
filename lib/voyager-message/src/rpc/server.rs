@@ -24,7 +24,7 @@ use crate::{
     context::{LoadedModulesInfo, Modules, WithId},
     into_value,
     module::{
-        ClientBootstrapModuleClient, ClientModuleClient, ConsensusModuleClient,
+        ClientBootstrapModuleClient, ClientModuleClient, ConsensusModuleClient, PluginClient,
         RawProofModuleClient, RawStateModuleClient,
     },
     primitives::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
@@ -1165,6 +1165,30 @@ impl VoyagerRpcServer for Server {
         self.with_id(e.try_get().ok().cloned())
             .decode_consensus_state(&client_type, &ibc_interface, &ibc_spec_id, consensus_state)
             .await
+    }
+
+    #[instrument(skip_all, fields(%plugin, %method))]
+    async fn plugin_custom(
+        &self,
+        e: &Extensions,
+        plugin: String,
+        method: String,
+        params: Vec<Value>,
+    ) -> RpcResult<Value> {
+        debug!(?params);
+
+        PluginClient::<Value, Value>::custom(
+            self.with_id(e.try_get().ok().cloned())
+                .modules()?
+                .plugin(&plugin)?,
+            method,
+            params,
+        )
+        .await
+        .map_err(json_rpc_error_to_error_object)
+        // .request::<Value, Vec<Value>>(&method, params)
+        // .await
+        // .map_err(json_rpc_error_to_error_object)
     }
 }
 
