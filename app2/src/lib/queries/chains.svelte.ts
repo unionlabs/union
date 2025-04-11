@@ -42,7 +42,7 @@ export const chainsQuery = (environment: Environment) =>
     }
   `),
     variables: { environment },
-    refetchInterval: "10 minutes",
+    refetchInterval: "1 hour",
     writeData: data => {
       chains.data = data.pipe(Option.map(d => d.v2_chains))
     },

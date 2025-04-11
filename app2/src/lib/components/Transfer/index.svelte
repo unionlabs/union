@@ -19,6 +19,8 @@ import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts
 import type { Batch } from "@unionlabs/sdk/ucs03/instruction.ts"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { constVoid, flow, identity, pipe } from "effect/Function"
+import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
 
 let currentPage = $state(0)
 let isLoading = $state(false)
@@ -50,6 +52,7 @@ let actionButtonText = $derived.by(() => {
   if (currentPage === steps.length - 1) return "Complete"
   return TransferStep.match(currentStep, {
     Filling: () => "Continue",
+    CheckReceiver: () => "Continue",
     ApprovalRequired: () => "Approve",
     SubmitInstruction: () => "Submit",
     WaitForIndex: () => "Submit"
@@ -81,6 +84,7 @@ function handleActionButtonClick() {
     return
   }
 
+  if (TransferStep.is("CheckReceiver")(currentStep)) goToNextPage()
   if (TransferStep.is("ApprovalRequired")(currentStep)) goToNextPage()
   if (TransferStep.is("SubmitInstruction")(currentStep)) goToNextPage()
 }
@@ -122,6 +126,7 @@ $effect(() => {
     parsedAmount: transfer.parsedAmount,
     intents: transfer.intents,
     derivedSender: transfer.derivedSender,
+    derivedReceiver: transfer.derivedReceiver,
     ucs03address: transfer.ucs03address
   }
 
@@ -163,6 +168,31 @@ $effect(() => {
     }
 
     const steps: Array<TransferStep.TransferStep> = [TransferStep.Filling()]
+
+    const isReceiverInWallet = pipe(
+      Option.all({
+        destinationChain: frozenTransfer.destinationChain,
+        receiver: frozenTransfer.derivedReceiver
+      }),
+      Option.flatMap(({ destinationChain, receiver }) => {
+        const walletaddr = wallets.getAddressForChain(destinationChain)
+
+        console.log({ walletaddr, receiver })
+
+        return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
+      }),
+      Option.getOrElse(() => false)
+    )
+
+    if (!isReceiverInWallet) {
+      console.log({ frozenTransfer })
+      steps.push(
+        TransferStep.CheckReceiver({
+          receiver: frozenTransfer.derivedReceiver,
+          destinationChain: frozenTransfer.destinationChain
+        })
+      )
+    }
 
     steps.push(
       ...finalAllowances
@@ -255,7 +285,13 @@ const fillingError = $derived(
 
       {#if Option.isSome(lockedTransferStore.get())}
         {#each lockedTransferStore.get().value.steps.slice(1) as step, i}
-          {#if TransferStep.is("ApprovalRequired")(step)}
+          {#if TransferStep.is("CheckReceiver")(step)}
+            <CheckReceiverPage
+              stepIndex={i + 1}
+              onBack={goToPreviousPage}
+              onSubmit={goToNextPage}
+            />
+          {:else if TransferStep.is("ApprovalRequired")(step)}
             <ApprovalPage
               stepIndex={i + 1}
               onBack={goToPreviousPage}

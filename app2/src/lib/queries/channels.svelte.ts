@@ -27,7 +27,7 @@ export const channelsQuery = () =>
       }
   `),
     variables: {},
-    refetchInterval: "60 seconds",
+    refetchInterval: "1 hour",
     writeData: data => {
       channels.data = data.pipe(Option.map(d => d.v2_channels))
     },
