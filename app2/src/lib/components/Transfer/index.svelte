@@ -1,227 +1,213 @@
 <script lang="ts">
-  import Card from "$lib/components/ui/Card.svelte";
-  import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte";
-  import { LockedTransfer } from "./locked-transfer.ts";
-  import { transfer } from "$lib/components/Transfer/transfer.svelte.ts";
-  import FillingPage from "./pages/FillingPage.svelte";
-  import ApprovalPage from "./pages/ApprovalPage.svelte";
-  import SubmitPage from "./pages/SubmitPage.svelte";
-  import { lockedTransferStore } from "./locked-transfer.svelte.ts";
-  import { Effect, Option, Fiber, Match } from "effect";
-  import * as TransferStep from "./transfer-step.ts";
-  import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte";
-  import {
-    CreateTransferState,
-    createTransferState,
-    type StateResult,
-  } from "$lib/components/Transfer/state/filling/index.ts";
-  import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts";
-  import type { Batch } from "@unionlabs/sdk/ucs03/instruction.ts";
-  import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts";
-  import { constVoid, flow, identity, pipe } from "effect/Function";
+import Card from "$lib/components/ui/Card.svelte"
+import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
+import { LockedTransfer } from "./locked-transfer.ts"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import FillingPage from "./pages/FillingPage.svelte"
+import ApprovalPage from "./pages/ApprovalPage.svelte"
+import SubmitPage from "./pages/SubmitPage.svelte"
+import { lockedTransferStore } from "./locked-transfer.svelte.ts"
+import { Effect, Option, Fiber, Match } from "effect"
+import * as TransferStep from "./transfer-step.ts"
+import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
+import {
+  CreateTransferState,
+  createTransferState,
+  type StateResult
+} from "$lib/components/Transfer/state/filling/index.ts"
+import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
+import type { Batch } from "@unionlabs/sdk/ucs03/instruction.ts"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { constVoid, flow, identity, pipe } from "effect/Function"
 
-  let currentPage = $state(0);
-  let isLoading = $state(false);
-  let transferSteps = $state<Option.Option<Array<TransferStep.TransferStep>>>(
-    Option.none(),
-  );
-  let transferError = $state<Option.Option<TransferFlowError>>(Option.none());
-  let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> =
-    Option.none();
-  let statusMessage = $state("");
+let currentPage = $state(0)
+let isLoading = $state(false)
+let transferSteps = $state<Option.Option<Array<TransferStep.TransferStep>>>(Option.none())
+let transferError = $state<Option.Option<TransferFlowError>>(Option.none())
+let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
+let statusMessage = $state("")
 
-  function goToNextPage() {
-    if (
-      Option.isSome(transferSteps) &&
-      currentPage < transferSteps.value.length - 1
-    ) {
-      currentPage++;
+function goToNextPage() {
+  if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
+    currentPage++
+  }
+}
+
+function goToPreviousPage() {
+  if (currentPage > 0) {
+    currentPage--
+    if (currentPage === 0) {
+      lockedTransferStore.unlock()
     }
   }
+}
 
-  function goToPreviousPage() {
-    if (currentPage > 0) {
-      currentPage--;
-      if (currentPage === 0) {
-        lockedTransferStore.unlock();
+let actionButtonText = $derived.by(() => {
+  if (Option.isNone(transferSteps)) return "Submit"
+  const steps = transferSteps.value
+  if (currentPage < 0 || currentPage >= steps.length || !steps[currentPage]) return "Submit"
+  const currentStep = steps[currentPage]
+  if (currentPage === steps.length - 1) return "Complete"
+  return TransferStep.match(currentStep, {
+    Filling: () => "Continue",
+    ApprovalRequired: () => "Approve",
+    SubmitInstruction: () => "Submit",
+    WaitForIndex: () => "Submit"
+  })
+})
+
+function handleActionButtonClick() {
+  if (Option.isNone(transferSteps)) return
+  const currentStep = transferSteps.value[currentPage]
+
+  if (TransferStep.is("Filling")(currentStep)) {
+    if (Option.isNone(lockedTransferStore.get())) {
+      const newLockedTransfer = LockedTransfer.fromTransfer(
+        transfer.sourceChain,
+        transfer.destinationChain,
+        transfer.channel,
+        transfer.parsedAmount,
+        transfer.baseToken,
+        transferSteps
+      )
+      if (Option.isSome(newLockedTransfer)) {
+        lockedTransferStore.lock(newLockedTransfer.value)
+      } else {
+        console.error("Failed to lock transfer values")
+        return
       }
     }
+    goToNextPage()
+    return
   }
 
-  let actionButtonText = $derived.by(() => {
-    if (Option.isNone(transferSteps)) return "Submit";
-    const steps = transferSteps.value;
-    if (currentPage < 0 || currentPage >= steps.length || !steps[currentPage])
-      return "Submit";
-    const currentStep = steps[currentPage];
-    if (currentPage === steps.length - 1) return "Complete";
-    return TransferStep.match(currentStep, {
-      Filling: () => "Continue",
-      ApprovalRequired: () => "Approve",
-      SubmitInstruction: () => "Submit",
-      WaitForIndex: () => "Submit",
-    });
-  });
+  if (TransferStep.is("ApprovalRequired")(currentStep)) goToNextPage()
+  if (TransferStep.is("SubmitInstruction")(currentStep)) goToNextPage()
+}
 
-  function handleActionButtonClick() {
-    if (Option.isNone(transferSteps)) return;
-    const currentStep = transferSteps.value[currentPage];
+function interruptFiber() {
+  Option.match(currentFiber, {
+    onNone: constVoid,
+    onSome: fiber => Fiber.interruptFork(fiber)
+  })
+  currentFiber = Option.none()
+}
 
-    if (TransferStep.is("Filling")(currentStep)) {
-      if (Option.isNone(lockedTransferStore.get())) {
-        const newLockedTransfer = LockedTransfer.fromTransfer(
-          transfer.sourceChain,
-          transfer.destinationChain,
-          transfer.channel,
-          transfer.parsedAmount,
-          transfer.baseToken,
-          transferSteps,
-        );
-        if (Option.isSome(newLockedTransfer)) {
-          lockedTransferStore.lock(newLockedTransfer.value);
-        } else {
-          console.error("Failed to lock transfer values");
-          return;
-        }
+function newTransfer() {
+  interruptFiber()
+  transferSteps = Option.none()
+  transferError = Option.none()
+  isLoading = false
+  statusMessage = ""
+  currentPage = 0
+  lockedTransferStore.unlock()
+  transferHashStore.reset()
+}
+
+$effect(() => {
+  if (currentPage !== 0) return
+  interruptFiber()
+
+  isLoading = true
+  transferSteps = Option.none()
+  transferError = Option.none()
+  statusMessage = "Starting transfer process..."
+
+  const frozenTransfer = {
+    ...transfer,
+    sourceChain: transfer.sourceChain,
+    destinationChain: transfer.destinationChain,
+    baseToken: transfer.baseToken,
+    channel: transfer.channel,
+    parsedAmount: transfer.parsedAmount,
+    intents: transfer.intents,
+    derivedSender: transfer.derivedSender,
+    ucs03address: transfer.ucs03address
+  }
+
+  const machineEffect = Effect.gen(function* () {
+    let currentState: CreateTransferState = CreateTransferState.Filling()
+    let finalOrders: Array<Batch> = []
+    let finalAllowances: Array<{
+      token: string
+      requiredAmount: string
+      currentAllowance: string
+    }> = []
+
+    while (true) {
+      const result: StateResult = yield* createTransferState(currentState, frozenTransfer)
+      statusMessage = result.message
+
+      if (Option.isSome(result.error)) {
+        transferError = result.error
+        transferSteps = Option.none()
+        isLoading = false
+        currentFiber = Option.none()
+        return
       }
-      goToNextPage();
-      return;
+
+      if (Option.isSome(result.nextState)) {
+        currentState = result.nextState.value
+        continue
+      }
+
+      if (Option.isSome(result.orders)) {
+        finalOrders = result.orders.value
+      }
+
+      if (Option.isSome(result.allowances)) {
+        finalAllowances = result.allowances.value
+      }
+
+      break
     }
 
-    if (TransferStep.is("ApprovalRequired")(currentStep)) goToNextPage();
-    if (TransferStep.is("SubmitInstruction")(currentStep)) goToNextPage();
-  }
+    const steps: Array<TransferStep.TransferStep> = [TransferStep.Filling()]
 
-  function interruptFiber() {
-    Option.match(currentFiber, {
-      onNone: constVoid,
-      onSome: (fiber) => Fiber.interruptFork(fiber),
-    });
-    currentFiber = Option.none();
-  }
+    steps.push(
+      ...finalAllowances
+        .filter(
+          ({ requiredAmount, currentAllowance }) =>
+            BigInt(currentAllowance) < BigInt(requiredAmount)
+        )
+        .map(({ token, requiredAmount, currentAllowance }) =>
+          TransferStep.ApprovalRequired({
+            token,
+            requiredAmount: BigInt(requiredAmount),
+            currentAllowance: BigInt(currentAllowance)
+          })
+        )
+    )
 
-  function newTransfer() {
-    interruptFiber();
-    transferSteps = Option.none();
-    transferError = Option.none();
-    isLoading = false;
-    statusMessage = "";
-    currentPage = 0;
-    lockedTransferStore.unlock();
-    transferHashStore.reset();
-  }
+    if (finalOrders.length > 0) {
+      steps.push(TransferStep.SubmitInstruction({ instruction: finalOrders[0] }))
+      steps.push(TransferStep.WaitForIndex())
+    }
 
-  $effect(() => {
-    if (currentPage !== 0) return;
-    interruptFiber();
+    transferSteps = Option.some(steps)
+    isLoading = false
+    currentFiber = Option.none()
+  })
 
-    isLoading = true;
-    transferSteps = Option.none();
-    transferError = Option.none();
-    statusMessage = "Starting transfer process...";
+  const fiber = Effect.runFork(machineEffect as Effect.Effect<void, never, never>)
+  currentFiber = Option.some(fiber)
+})
 
-    const frozenTransfer = {
-      ...transfer,
-      sourceChain: transfer.sourceChain,
-      destinationChain: transfer.destinationChain,
-      baseToken: transfer.baseToken,
-      channel: transfer.channel,
-      parsedAmount: transfer.parsedAmount,
-      intents: transfer.intents,
-      derivedSender: transfer.derivedSender,
-      ucs03address: transfer.ucs03address,
-    };
-
-    const machineEffect = Effect.gen(function* () {
-      let currentState: CreateTransferState = CreateTransferState.Filling();
-      let finalOrders: Array<Batch> = [];
-      let finalAllowances: Array<{
-        token: string;
-        requiredAmount: string;
-        currentAllowance: string;
-      }> = [];
-
-      while (true) {
-        const result: StateResult = yield* createTransferState(
-          currentState,
-          frozenTransfer,
-        );
-        statusMessage = result.message;
-
-        if (Option.isSome(result.error)) {
-          transferError = result.error;
-          transferSteps = Option.none();
-          isLoading = false;
-          currentFiber = Option.none();
-          return;
-        }
-
-        if (Option.isSome(result.nextState)) {
-          currentState = result.nextState.value;
-          continue;
-        }
-
-        if (Option.isSome(result.orders)) {
-          finalOrders = result.orders.value;
-        }
-
-        if (Option.isSome(result.allowances)) {
-          finalAllowances = result.allowances.value;
-        }
-
-        break;
-      }
-
-      const steps: Array<TransferStep.TransferStep> = [TransferStep.Filling()];
-
-      steps.push(
-        ...finalAllowances
-          .filter(
-            ({ requiredAmount, currentAllowance }) =>
-              BigInt(currentAllowance) < BigInt(requiredAmount),
-          )
-          .map(({ token, requiredAmount, currentAllowance }) =>
-            TransferStep.ApprovalRequired({
-              token,
-              requiredAmount: BigInt(requiredAmount),
-              currentAllowance: BigInt(currentAllowance),
-            }),
-          ),
-      );
-
-      if (finalOrders.length > 0) {
-        steps.push(
-          TransferStep.SubmitInstruction({ instruction: finalOrders[0] }),
-        );
-        steps.push(TransferStep.WaitForIndex());
-      }
-
-      transferSteps = Option.some(steps);
-      isLoading = false;
-      currentFiber = Option.none();
-    });
-
-    const fiber = Effect.runFork(
-      machineEffect as Effect.Effect<void, never, never>,
-    );
-    currentFiber = Option.some(fiber);
-  });
-
-  const fillingError = $derived(
-    pipe(
-      transferError,
-      Option.flatMap(
-        flow(
-          Match.value,
-          Match.tags({
-            OrderCreationError: identity,
-          }),
-          Match.orElse(() => null),
-          Option.fromNullable,
-        ),
-      ),
-    ),
-  );
+const fillingError = $derived(
+  pipe(
+    transferError,
+    Option.flatMap(
+      flow(
+        Match.value,
+        Match.tags({
+          OrderCreationError: identity
+        }),
+        Match.orElse(() => null),
+        Option.fromNullable
+      )
+    )
+  )
+)
 </script>
 
 <Card
