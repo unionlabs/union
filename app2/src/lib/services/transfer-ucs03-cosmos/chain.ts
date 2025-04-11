@@ -9,16 +9,16 @@ export const switchChain = (chain: Chain) =>
     const wallet = yield* getCosmosWalletClient()
 
     if (!wallet) {
-      return Effect.fail(new SwitchChainError({ cause: "Wallet client is undefined" }))
+      return yield* Effect.fail(new SwitchChainError({ cause: "Wallet client is undefined" }))
     }
 
     if (!chain.chain_id) {
-      return Effect.fail(new SwitchChainError({ cause: "Invalid chain ID" }))
+      return yield* Effect.fail(new SwitchChainError({ cause: "Invalid chain ID" }))
     }
 
     const chainInfo = getCosmosChainInfo(chain.chain_id)
     if (!chainInfo) {
-      return Effect.fail(
+      return yield* Effect.fail(
         new SwitchChainError({ cause: `Chain info not found for ${chain.chain_id}` })
       )
     }
@@ -36,5 +36,5 @@ export const switchChain = (chain: Chain) =>
     // Not sure if this is needed here, but we do it for evm
     yield* Effect.sleep("1.5 seconds")
 
-    return { success: true, chainId: chain.chain_id }
+    return yield* Effect.succeed({ success: true, chainId: chain.chain_id })
   })

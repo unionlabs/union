@@ -1,11 +1,10 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-import { Effect, Match, Option, Array as Arr, Struct } from "effect"
+import { Effect, Match, Option, Array as Arr, Struct, Exit, Cause, Unify } from "effect"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { ApprovalRequired } from "../transfer-step.ts"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
-import { erc20Abi, fromHex, http, isHex, toHex } from "viem"
+import { erc20Abi, http, isHex, toHex } from "viem"
 import {
   hasFailedExit as evmHasFailedExit,
   isComplete as evmIsComplete,
@@ -24,6 +23,7 @@ import { is } from "../transfer-step.ts"
 import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 
 type Props = {
   stepIndex: number
@@ -48,11 +48,14 @@ const sourceChain = $derived(lts.pipe(Option.map(Struct.get("sourceChain"))))
 
 let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
+let error = $state<Option.Option<unknown>>(Option.none())
+let isSubmitting = $state(false)
 
 const isButtonEnabled = $derived(
-  (ets._tag === "Filling" && cts._tag === "Filling") ||
-    evmHasFailedExit(ets) ||
-    cosmosHasFailedExit(cts)
+  !isSubmitting &&
+    ((ets._tag === "Filling" && cts._tag === "Filling") ||
+      evmHasFailedExit(ets) ||
+      cosmosHasFailedExit(cts))
 )
 
 const getSubmitButtonText = $derived(
@@ -74,79 +77,123 @@ const getSubmitButtonText = $derived(
 const submit = Effect.gen(function* () {
   if (Option.isNone(step) || Option.isNone(lts)) return
 
-  const sourceChainRpcType = lts.value.sourceChain.rpc_type
+  // Set submitting state
+  isSubmitting = true
+  error = Option.none()
 
-  yield* Match.value(sourceChainRpcType).pipe(
-    Match.when("evm", () =>
-      Effect.gen(function* () {
-        // Use the component-level state variable
-        const viemChain = lts.value.sourceChain.toViemChain()
-        if (Option.isNone(viemChain)) return Effect.succeed(null)
+  try {
+    const sourceChainRpcType = lts.value.sourceChain.rpc_type
 
-        const publicClient = yield* createViemPublicClient({
-          chain: viemChain.value,
-          transport: http()
+    yield* Match.value(sourceChainRpcType).pipe(
+      Match.when("evm", () =>
+        Effect.gen(function* () {
+          // Use the component-level state variable
+          const viemChain = lts.value.sourceChain.toViemChain()
+          if (Option.isNone(viemChain)) return Effect.succeed(null)
+
+          const publicClient = yield* createViemPublicClient({
+            chain: viemChain.value,
+            transport: http()
+          })
+
+          const walletClient = yield* getWalletClient(lts.value.sourceChain)
+
+          do {
+            ets = yield* Effect.promise(() =>
+              nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
+                chain: viemChain.value,
+                account: walletClient.account,
+                address: step.value.token,
+                abi: erc20Abi,
+                functionName: "approve",
+                args: [lts.value.channel.source_port_id, step.value.requiredAmount]
+              })
+            )
+
+            if ("exit" in ets) {
+              yield* Exit.matchEffect(Unify.unify(ets.exit), {
+                onFailure: cause =>
+                  Effect.sync(() => {
+                    error = Option.some(Cause.squash(cause))
+                  }),
+                onSuccess: () =>
+                  Effect.sync(() => {
+                    error = Option.none()
+                  })
+              })
+            }
+
+            if (evmIsComplete(ets)) {
+              onApprove()
+              break
+            }
+          } while (!evmHasFailedExit(ets))
+
+          return Effect.succeed(ets)
         })
-
-        const walletClient = yield* getWalletClient(lts.value.sourceChain)
-
-        do {
-          ets = yield* Effect.promise(() =>
-            nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
-              chain: viemChain.value,
-              account: walletClient.account,
-              address: step.value.token,
-              abi: erc20Abi,
-              functionName: "approve",
-              args: [lts.value.channel.source_port_id, step.value.requiredAmount]
-            })
+      ),
+      Match.when("cosmos", () =>
+        Effect.gen(function* () {
+          const signingClient = yield* getCosmWasmClient(
+            lts.value.sourceChain,
+            cosmosStore.connectedWallet
           )
 
-          if (evmIsComplete(ets)) {
-            onApprove()
-            break
-          }
-        } while (!evmHasFailedExit(ets))
+          const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
 
-        return Effect.succeed(ets)
-      })
-    ),
-    Match.when("cosmos", () =>
-      Effect.gen(function* () {
-        const signingClient = yield* getCosmWasmClient(
-          lts.value.sourceChain,
-          cosmosStore.connectedWallet
-        )
+          do {
+            cts = yield* Effect.promise(() =>
+              nextStateCosmos(cts, lts.value.sourceChain, signingClient, sender, step.value.token, {
+                increase_allowance: {
+                  spender: "bbn1dy20pwy30hfqyxdzrmp33h47h4xdxht6phqecfp2jdnes6su9pysqq2kpw",
+                  amount: step.value.requiredAmount
+                }
+              })
+            )
 
-        const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
+            if ("exit" in cts) {
+              yield* Exit.matchEffect(Unify.unify(cts.exit), {
+                onFailure: cause =>
+                  Effect.sync(() => {
+                    error = Option.some(Cause.squash(cause))
+                  }),
+                onSuccess: () =>
+                  Effect.sync(() => {
+                    error = Option.none()
+                  })
+              })
+            }
 
-        do {
-          cts = yield* Effect.promise(() =>
-            nextStateCosmos(cts, lts.value.sourceChain, signingClient, sender, step.value.token, {
-              increase_allowance: {
-                spender: "bbn1dy20pwy30hfqyxdzrmp33h47h4xdxht6phqecfp2jdnes6su9pysqq2kpw",
-                amount: step.value.requiredAmount
-              }
-            })
-          )
+            if (cosmosIsComplete(cts)) {
+              onApprove()
+              break
+            }
+          } while (!cosmosHasFailedExit(cts))
 
-          if (cosmosIsComplete(cts)) {
-            onApprove()
-            break
-          }
-        } while (!cosmosHasFailedExit(cts))
-
-        return Effect.succeed(cts)
-      })
-    ),
-    Match.orElse(() =>
-      Effect.gen(function* () {
-        yield* Effect.log("unknown chain type")
-        return Effect.succeed("unknown chain type")
-      })
+          return Effect.succeed(cts)
+        })
+      ),
+      Match.orElse(() =>
+        Effect.gen(function* () {
+          yield* Effect.log("Unknown chain type")
+          error = Option.some(new Error("Unsupported chain type"))
+          return Effect.succeed("unknown chain type")
+        })
+      )
     )
-  )
+  } finally {
+    // Reset submitting state when done, regardless of success/failure
+    isSubmitting = false
+  }
 })
+
+const handleSubmit = () => {
+  Effect.runPromise(submit).catch(err => {
+    console.error("Uncaught error in approval process:", err)
+    error = Option.some(err)
+    isSubmitting = false
+  })
+}
 
 const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHex(step.value.token))
 </script>
@@ -156,7 +203,7 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">
         Approve
-        <TokenComponent chain={sourceChain.value} denom={massagedDenom}/>
+        <TokenComponent chain={sourceChain.value} denom={massagedDenom} />
       </h3>
       <section>
         <Label>Current</Label>
@@ -176,7 +223,7 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
       </section>
       <p class="text-sm text-zinc-400">
         You need to approve Union to send
-        <TokenComponent chain={sourceChain.value} denom={massagedDenom}/>
+        <TokenComponent chain={sourceChain.value} denom={massagedDenom} />
         . This is a one-time approval for this token.
       </p>
     </div>
@@ -187,7 +234,7 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
       </Button>
       <Button
               variant="primary"
-              onclick={() => Effect.runPromise(submit)}
+              onclick={handleSubmit}
               disabled={!isButtonEnabled}
       >
         {getSubmitButtonText}
@@ -198,6 +245,8 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
       <p class="text-zinc-400">Loading approval details...</p>
     </div>
   {/if}
+  {#if Option.isSome(error)}
+    {@const _error = error.value}
+    <ErrorComponent error={_error} />
+  {/if}
 </div>
-
-

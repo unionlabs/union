@@ -66,17 +66,17 @@ function getUserFriendlyMessage(error: Props["error"]): string {
       <h3 class="text-xl font-bold">Error</h3>
       <p>{getUserFriendlyMessage(error)}</p>
     </div>
-    <Button 
-      variant="secondary" 
+    <Button
+      variant="secondary"
       class="self-start mt-2"
-      onclick={() => showDetails = !showDetails}
+      onclick={() => (showDetails = !showDetails)}
     >
       {showDetails ? "Hide Details ↑" : "Show Details ↓"}
     </Button>
   </div>
 
   {#if showDetails}
-    <div in:slide out:slide|local={{delay: 0}}>
+    <div in:slide out:slide|local={{ delay: 0 }}>
       <section class="mt-4">
         <h3 class="text-lg font-bold">Error Type</h3>
         <pre>{error._tag}</pre>
@@ -107,7 +107,11 @@ function getUserFriendlyMessage(error: Props["error"]): string {
           <p>Method and URL: {error.methodAndUrl}</p>
         {:else if error._tag === "ParseError"}
           <p>Actual data that was parsed:</p>
-          <pre class="text-sm">{JSON.stringify(error.issue.actual, null, 2)}</pre>
+          <pre class="text-sm">{JSON.stringify(
+              error.issue.actual,
+              null,
+              2,
+            )}</pre>
         {:else if error._tag === "UnknownException"}
           <p>This is an unknown exception. Full details here:</p>
           <pre class="text-sm">{JSON.stringify(error, null, 2)}</pre>
@@ -133,10 +137,13 @@ function getUserFriendlyMessage(error: Props["error"]): string {
           <p>Chain: {error.chain.display_name}</p>
           <p>RPC Type: {error.type}</p>
           <p>Available RPC types:</p>
-          <pre class="text-sm">{JSON.stringify(error.chain.rpcs.map(r => r.type), null, 2)}</pre>
+          <pre class="text-sm">{JSON.stringify(
+              error.chain.rpcs.map((r) => r.type),
+              null,
+              2,
+            )}</pre>
         {/if}
       </section>
     </div>
   {/if}
 </div>
-
