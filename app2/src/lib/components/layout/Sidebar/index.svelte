@@ -135,10 +135,12 @@ onMount(() => {
 
   <div class="flex flex-col gap-2 p-6 border-t border-zinc-900">
     <ConnectWalletButton/>
+    <!--
     <Button variant="secondary" onclick={() => uiStore.openSettingsModal()}>
       <SharpSettingsIcon class="size-5"/>
       Settings
     </Button>
+    !-->
   </div>
 
 </div>

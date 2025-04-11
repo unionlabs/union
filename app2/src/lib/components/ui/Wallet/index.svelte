@@ -38,12 +38,14 @@ let currentWalletType = $state("all")
                     class="cursor-pointer rounded-md bg-zinc-800 px-3 py-1 text-sm font-medium text-zinc-500 hover:text-zinc-700">
               Cosmos
             </button>
+            <!--
             <button onclick={() => currentWalletType = "aptos"}
                     class:bg-zinc-200={currentWalletType === "aptos"}
                     class:bg-zinc-800={currentWalletType !== "aptos"}
                     class="cursor-pointer rounded-md bg-zinc-800 px-3 py-1 text-sm font-medium text-zinc-500"
                     aria-current="page">Aptos
             </button>
+            !-->
         </section>
 
         <section class="calch h-[calc(100%-133px)] overflow-y-scroll p-6 space-y-4">
@@ -67,6 +69,7 @@ let currentWalletType = $state("all")
                     onConnectClick={cosmosStore.connect}
                     onDisconnectClick={cosmosStore.disconnect}
             />
+            <!--
           {:else if currentWalletType === "aptos"}
             <Connection
                     chain="aptos"
@@ -77,6 +80,7 @@ let currentWalletType = $state("all")
                     onConnectClick={aptosStore.connect}
                     onDisconnectClick={aptosStore.disconnect}
             />
+            !-->
           {:else if currentWalletType === "all"}
             <Connection
                     chain="evm"
@@ -96,6 +100,7 @@ let currentWalletType = $state("all")
                     onConnectClick={cosmosStore.connect}
                     onDisconnectClick={cosmosStore.disconnect}
             />
+            <!--
             <Connection
                     chain="aptos"
                     address={aptosStore.address}
@@ -105,6 +110,7 @@ let currentWalletType = $state("all")
                     onConnectClick={aptosStore.connect}
                     onDisconnectClick={aptosStore.disconnect}
             />
+            !-->
           {/if}
         </section>
 </Modal>
