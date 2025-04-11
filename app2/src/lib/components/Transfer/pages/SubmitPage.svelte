@@ -58,7 +58,7 @@ const destinationChain = $derived(lts.pipe(Option.map(Struct.get("destinationCha
 
 let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
-let error = $state<Option.Option<{ _tag: string; cause: string }>>(Option.none())
+let error = $state<Option.Option<unknown>>(Option.none())
 let isSubmitting = $state(false)
 
 const needsRetry = $derived(evmHasFailedExit(ets) || cosmosHasFailedExit(cts))
@@ -165,11 +165,12 @@ export const submit = Effect.gen(function* () {
               })
             )
 
-            if ("exit" in ets) {
-              yield* Exit.matchEffect(Unify.unify(ets.exit), {
+            if (ets._tag === "SwitchChainComplete" || ets._tag === "WriteContractComplete") {
+              yield* Exit.matchEffect(ets.exit, {
                 onFailure: cause =>
                   Effect.sync(() => {
-                    error = Option.some(normalizeError(cause))
+                    error = Option.some(Cause.squash(cause))
+                    console.log(error)
                   }),
                 onSuccess: () =>
                   Effect.sync(() => {
@@ -235,11 +236,11 @@ export const submit = Effect.gen(function* () {
               )
             )
 
-            if ("exit" in cts) {
-              yield* Exit.matchEffect(Unify.unify(cts.exit), {
+            if (cts._tag === "SwitchChainComplete" || cts._tag === "WriteContractComplete") {
+              yield* Exit.matchEffect(cts.exit, {
                 onFailure: cause =>
                   Effect.sync(() => {
-                    error = Option.some(normalizeError(cause))
+                    error = Option.some(Cause.squash(cause))
                   }),
                 onSuccess: () =>
                   Effect.sync(() => {
@@ -299,7 +300,7 @@ const handleSubmit = () => {
   {#if Option.isSome(error)}
     {@const _error = error.value}
     <div class="absolute bottom-0 left-0 right-0">
-      <ErrorComponent error={_error} />
+      <ErrorComponent class="absolute bottom-0 left-0 right-0" error={_error} />
     </div>
   {/if}
   {#if Option.isSome(step) && Option.isSome(sourceChain) && Option.isSome(destinationChain)}

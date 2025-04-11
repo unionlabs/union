@@ -24,6 +24,7 @@ import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
 
 type Props = {
   stepIndex: number
@@ -110,11 +111,12 @@ const submit = Effect.gen(function* () {
               })
             )
 
-            if ("exit" in ets) {
-              yield* Exit.matchEffect(Unify.unify(ets.exit), {
+            if (ets._tag === "SwitchChainComplete" || ets._tag === "WriteContractComplete") {
+              yield* Exit.matchEffect(ets.exit, {
                 onFailure: cause =>
                   Effect.sync(() => {
                     error = Option.some(Cause.squash(cause))
+                    console.log(error)
                   }),
                 onSuccess: () =>
                   Effect.sync(() => {
@@ -140,19 +142,20 @@ const submit = Effect.gen(function* () {
           )
 
           const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
+          const spender = cosmosSpenderAddresses[lts.value.sourceChain.universal_chain_id]
 
           do {
             cts = yield* Effect.promise(() =>
               nextStateCosmos(cts, lts.value.sourceChain, signingClient, sender, step.value.token, {
                 increase_allowance: {
-                  spender: "bbn1dy20pwy30hfqyxdzrmp33h47h4xdxht6phqecfp2jdnes6su9pysqq2kpw",
+                  spender,
                   amount: step.value.requiredAmount
                 }
               })
             )
 
-            if ("exit" in cts) {
-              yield* Exit.matchEffect(Unify.unify(cts.exit), {
+            if (cts._tag === "SwitchChainComplete" || cts._tag === "WriteContractComplete") {
+              yield* Exit.matchEffect(cts.exit, {
                 onFailure: cause =>
                   Effect.sync(() => {
                     error = Option.some(Cause.squash(cause))
