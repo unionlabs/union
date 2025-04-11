@@ -11,6 +11,7 @@ use futures::{Future, FutureExt};
 use rand::prelude::SliceRandom;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info_span, warn, Instrument};
+use unionlabs::primitives::H256;
 
 pub trait ChainKeyring {
     type Address: Hash + Eq + Clone + Display + Send + Sync;
@@ -34,10 +35,6 @@ pub struct SignerBalance<A> {
 pub struct ConcurrentKeyring<A: Hash + Eq, S> {
     pub name: Arc<String>,
 
-    /// Bidirectional mapping of address <-> key name, allowing for accessing keys by either name or address.
-    address_to_key: Arc<HashMap<A, String>>,
-    key_to_address: Arc<HashMap<String, A>>,
-
     /// Ring buffer containing the addresses, used to index into `keys`. Items are popped out of this and then pushed to the back once they're finished being used.
     addresses_buffer: Arc<ArrayQueue<A>>,
 
@@ -45,7 +42,6 @@ pub struct ConcurrentKeyring<A: Hash + Eq, S> {
 }
 
 pub struct KeyringEntry<A, S> {
-    pub name: String,
     pub address: A,
     pub signer: S,
 }
@@ -56,8 +52,8 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
         name: impl Into<String>,
         entries: impl ExactSizeIterator<Item = KeyringEntry<A, S>>,
     ) -> Self {
-        let mut address_to_key = HashMap::new();
-        let mut key_to_address = HashMap::new();
+        // let mut address_to_key = HashMap::new();
+        // let mut key_to_address = HashMap::new();
         let mut signers = HashMap::new();
         let addresses_buffer = ArrayQueue::new(entries.len());
 
@@ -67,8 +63,6 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
         entries.shuffle(&mut rng);
 
         for key in entries {
-            key_to_address.insert(key.name.clone(), key.address.clone());
-            address_to_key.insert(key.address.clone(), key.name);
             signers.insert(key.address.clone(), key.signer);
             addresses_buffer
                 .push(key.address)
@@ -78,16 +72,15 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
 
         Self {
             name: Arc::new(name.into()),
-            address_to_key: Arc::new(address_to_key),
-            key_to_address: Arc::new(key_to_address),
             addresses_buffer: Arc::new(addresses_buffer),
             signers: Arc::new(signers),
         }
     }
 
-    pub fn keys(&self) -> impl Iterator<Item = (&str, &A)> {
-        self.key_to_address.iter().map(|(a, b)| (a.as_str(), b))
-    }
+    // TODO: Add this functionality back somehow
+    // pub fn keys(&self) -> impl Iterator<Item = (&str, &A)> {
+    //     self.key_to_address.iter().map(|(a, b)| (a.as_str(), b))
+    // }
 
     pub async fn with<'a, F, Fut>(&'a self, f: F) -> Option<Fut::Output>
     where
@@ -99,10 +92,6 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
             return None;
         };
 
-        let key_name = self
-            .address_to_key
-            .get(&address)
-            .expect("key is present; qed;");
         let secret = self.signers.get(&address).expect("key is present; qed;");
 
         let r = f(secret)
@@ -110,7 +99,6 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
             .instrument(info_span!(
                 "using signer",
                 keyring = %self.name,
-                %key_name,
                 %address
             ))
             .await;
@@ -138,7 +126,6 @@ impl<A: Hash + Eq + Clone + Display, S: 'static> ConcurrentKeyring<A, S> {
     }
 }
 
-#[derive(Default)] // NOTE: Default impl is temporary until the EthereumSignersConfig stuff gets removed/ refactored
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct KeyringConfig {
@@ -149,19 +136,13 @@ pub struct KeyringConfig {
 impl KeyringConfigEntry {
     pub fn value(&self) -> Vec<u8> {
         match &self {
-            KeyringConfigEntry::File { path: _ } => {
-                panic!("file keyring is currently unimplemented")
-            }
+            KeyringConfigEntry::File { path } => std::fs::read_to_string(path)
+                .expect("key does not exist")
+                .trim()
+                .parse::<H256>()
+                .expect("key is in an invalid format")
+                .into(),
             KeyringConfigEntry::Raw { name: _, key } => key.clone(),
-        }
-    }
-
-    pub fn name(&self) -> String {
-        match &self {
-            KeyringConfigEntry::File { path: _ } => {
-                panic!("file keyring is currently unimplemented")
-            }
-            KeyringConfigEntry::Raw { name, key: _ } => name.clone(),
         }
     }
 }
