@@ -17,17 +17,6 @@ _: {
       # use this to override the git rev. useful if verifying a contract off of a commit and the worktree is dirty for unrelated reasons (for example, changing an rpc)
       # gitRevToUse = "";
 
-      getDeployment =
-        let
-          json = builtins.fromJSON (builtins.readFile ../deployments/deployments.json);
-        in
-        chainId:
-        (pkgs.lib.lists.findSingle (deployment: deployment.chain_id == chainId)
-          (throw "deployment for ${chainId} not found")
-          (throw "many deployments for ${chainId} found")
-          json
-        ).deployments;
-
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
         repo = "solidity-stringutils";
