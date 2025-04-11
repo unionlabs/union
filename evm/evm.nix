@@ -645,6 +645,52 @@ _: {
           }
         );
 
+      verify-erc20 =
+        {
+          chain-id,
+          rpc-url,
+          private-key,
+          weth,
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplication {
+            name = "eth-verify";
+            runtimeInputs = [ wrappedForgeOnline ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+                with-verify-flag = false;
+              }}
+
+              OUT="$(mktemp -d)"
+              pushd "$OUT"
+              cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+              cp --no-preserve=mode -r ${evmSources}/* .
+
+              # shellcheck disable=SC2005
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
+              VERIFICATION_KEY=${verification-key} \
+              FOUNDRY_LIBS='["libs"]' \
+                forge verify-contract \
+                  --force \
+                  --watch "$1" "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy" \
+                  --constructor-args "0x00" \
+                  --rpc-url ${rpc-url} "''${VERIFICATION_ARGS[@]}"
+
+              popd
+              rm -rf "$OUT"
+            '';
+          }
+        );
+
       verify-all-contracts =
         {
           chain-id,
@@ -1003,6 +1049,7 @@ _: {
               value = pkgs.mkRootDrv chain.name (
                 {
                   verify-all-contracts = verify-all-contracts chain;
+                  verify-erc20 = verify-erc20 chain;
                   deploy = deploy chain;
                   deploy-deployer-and-ibc = deploy-deployer-and-ibc chain;
                   update-deployments-json = update-deployments-json chain;
