@@ -24,6 +24,14 @@ export const chainLogoMap = new Map([
     }
   ],
   [
+    "babylon.bbn-1",
+    {
+      color: "/logos/chains/color/BABYLON.svg",
+      light: "/logos/chains/light/BABYLON.svg",
+      dark: "/logos/chains/dark/BABYLON.svg"
+    }
+  ],
+  [
     "berachain.80084",
     {
       color: "/logos/chains/color/BERACHAIN.svg",
@@ -49,6 +57,14 @@ export const chainLogoMap = new Map([
   ],
   [
     "ethereum.11155111",
+    {
+      color: "/logos/chains/color/ETHEREUM.svg",
+      light: "/logos/chains/light/ETHEREUM.svg",
+      dark: "/logos/chains/dark/ETHEREUM.svg"
+    }
+  ],
+  [
+    "ethereum.1",
     {
       color: "/logos/chains/color/ETHEREUM.svg",
       light: "/logos/chains/light/ETHEREUM.svg",
@@ -193,6 +209,14 @@ export const chainLogoMap = new Map([
   ],
   [
     "corn.21000001",
+    {
+      color: "/logos/chains/color/CORN.svg",
+      light: "/logos/chains/light/CORN.svg",
+      dark: "/logos/chains/dark/CORN.svg"
+    }
+  ],
+  [
+    "corn.21000000",
     {
       color: "/logos/chains/color/CORN.svg",
       light: "/logos/chains/light/CORN.svg",
