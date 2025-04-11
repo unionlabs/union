@@ -15,6 +15,69 @@ interface LeapExtendedInfo extends LeapChainInfo {
 }
 
 //Keplr
+
+export const babylonMainnetKeplrChaininfo: KeplrChainInfo = {
+  chainId: "bbn-1",
+  chainName: "Babylon Genesis",
+  chainSymbolImageUrl:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
+  rpc: "https://rpc-babylon.keplr.app",
+  rest: "https://lcd-babylon.keplr.app",
+  walletUrlForStaking: "https://wallet.keplr.app/chains/babylon-genesis",
+  bip44: {
+    coinType: 118
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "bbn",
+    bech32PrefixAccPub: "bbnpub",
+    bech32PrefixValAddr: "bbnvaloper",
+    bech32PrefixValPub: "bbnvaloperpub",
+    bech32PrefixConsAddr: "bbnvalcons",
+    bech32PrefixConsPub: "bbnvalconspub"
+  },
+  currencies: [
+    {
+      coinDenom: "BABY",
+      coinMinimalDenom: "ubbn",
+      coinDecimals: 6,
+      coinGeckoId: "babylon",
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png"
+    },
+    {
+      coinDenom: "LBTC",
+      coinMinimalDenom: "ibc/89EE10FCF78800B572BAAC7080AEFA301B5F3BBC51C5371E907EB129C5B900E7",
+      coinDecimals: 8,
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/LBTC.png"
+    }
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "BABY",
+      coinMinimalDenom: "ubbn",
+      coinDecimals: 6,
+      coinGeckoId: "babylon",
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
+      gasPriceStep: {
+        low: 0.007,
+        average: 0.007,
+        high: 0.01
+      }
+    }
+  ],
+  stakeCurrency: {
+    coinDenom: "BABY",
+    coinMinimalDenom: "ubbn",
+    coinDecimals: 6,
+    coinGeckoId: "babylon",
+    coinImageUrl:
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png"
+  },
+  features: ["cosmwasm"]
+}
+
 export const unionKeplrChainInfo: KeplrChainInfo = {
   chainId: "union-testnet-10",
   chainName: "uniontestnet",
@@ -61,7 +124,7 @@ export const unionKeplrChainInfo: KeplrChainInfo = {
 }
 
 // source: https://github.com/chainapsis/keplr-chain-registry/blob/main/cosmos/bbn-test.json
-export const babylonKeplrChaininfo: KeplrChainInfo = {
+export const babylonTestnetKeplrChaininfo: KeplrChainInfo = {
   chainId: "bbn-test-5",
   chainName: "Babylon Phase-2 Testnet",
   chainSymbolImageUrl:
@@ -399,7 +462,64 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
     "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stride-internal/chain.png"
 }
 
-export const babylonLeapChaininfo: LeapExtendedInfo = {
+export const babylonMainnetLeapChainInfo: LeapExtendedInfo = {
+  chainId: "bbn-1",
+  chainName: "Babylon Genesis",
+  rest: "https://lcd-babylon.keplr.app",
+  rpc: "https://rpc-babylon.keplr.app",
+  bip44: {
+    coinType: 118
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "bbn",
+    bech32PrefixAccPub: "bbnpub",
+    bech32PrefixValAddr: "bbnvaloper",
+    bech32PrefixValPub: "bbnvaloperpub",
+    bech32PrefixConsAddr: "bbnvalcons",
+    bech32PrefixConsPub: "bbnvalconspub"
+  },
+  currencies: [
+    {
+      coinDenom: "BABY",
+      coinMinimalDenom: "ubbn",
+      coinDecimals: 6,
+      coinGeckoId: "babylon"
+    },
+    {
+      coinDenom: "LBTC",
+      coinMinimalDenom: "ibc/89EE10FCF78800B572BAAC7080AEFA301B5F3BBC51C5371E907EB129C5B900E7",
+      coinDecimals: 8
+    }
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "BABY",
+      coinMinimalDenom: "ubbn",
+      coinDecimals: 6,
+      coinGeckoId: "babylon",
+      gasPriceStep: {
+        low: 0.007,
+        average: 0.007,
+        high: 0.01
+      }
+    }
+  ],
+  stakeCurrency: {
+    coinDenom: "BABY",
+    coinMinimalDenom: "ubbn",
+    coinDecimals: 6,
+    coinGeckoId: "babylon"
+  },
+  image:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
+  theme: {
+    primaryColor: "#fff",
+    gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)"
+  },
+  features: ["cosmwasm"]
+}
+
+export const babylonTestnetLeapChaininfo: LeapExtendedInfo = {
   chainId: "bbn-test-5",
   chainName: "Babylon Phase-2 Testnet",
   rest: "https://babylon-testnet-api.nodes.guru",
@@ -455,15 +575,16 @@ const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
   "union-testnet-10": unionKeplrChainInfo,
   "stride-internal-1": strideKeplrChainInfo,
   "elgafar-1": elgafarKeplrChainInfo,
-  "bbn-test-5": babylonKeplrChaininfo
+  "bbn-test-5": babylonTestnetKeplrChaininfo,
+  "bbn-1": babylonMainnetKeplrChaininfo
 }
 
 const leapChainInfoMap: Record<string, LeapChainInfo> = {
   "union-testnet-10": unionLeapChainInfo,
   "stride-internal-1": strideLeapChainInfo,
   "elgafar-1": elgafarLeapChainInfo,
-  "bbn-test-5": babylonLeapChaininfo
-  // TODO: add stargaze leap definition
+  "bbn-test-5": babylonTestnetLeapChaininfo,
+  "bbn-1": babylonMainnetLeapChainInfo
 }
 
 //Helper functions
