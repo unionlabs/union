@@ -1,4 +1,6 @@
 import {
+  mainnet,
+  corn,
   arbitrumSepolia,
   berachainTestnetbArtio,
   holesky,
@@ -10,6 +12,8 @@ import {
 } from "viem/chains"
 
 export const VIEM_CHAINS = [
+  mainnet,
+  corn,
   sepolia,
   holesky,
   berachainTestnetbArtio,

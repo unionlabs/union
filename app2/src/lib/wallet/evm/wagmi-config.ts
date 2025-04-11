@@ -9,6 +9,8 @@ import {
 } from "@wagmi/core"
 import { coinbaseWallet, injected, metaMask, walletConnect } from "@wagmi/connectors"
 import {
+  mainnet,
+  corn,
   arbitrumSepolia,
   berachainTestnetbArtio,
   bob,
@@ -21,6 +23,8 @@ import {
 import { TESTNET_APP_INFO } from "$lib/config/app"
 
 export const chains = [
+  mainnet,
+  corn,
   sepolia,
   holesky,
   berachainTestnetbArtio,
@@ -45,6 +49,18 @@ export const wagmiConfig = createConfig({
   batch: { multicall: true },
   multiInjectedProviderDiscovery: true,
   transports: {
+    [mainnet.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-mainnet",
+        name: "unstable_connector-injected-mainnet"
+      }),
+      http(`https://rpc.1.ethereum.chain.kitchen`, {
+        name: "Chain Kitchen - Mainnet"
+      }),
+      http(sepolia.rpcUrls.default.http.at(0), { name: "default Mainnet RPC" })
+    ]),
     [sepolia.id]: fallback([
       unstable_connector(injected, {
         retryCount: 3,
@@ -113,6 +129,15 @@ export const wagmiConfig = createConfig({
         name: "unstable_connector-injected-bob"
       }),
       http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" })
+    ]),
+    [corn.id]: fallback([
+      unstable_connector(injected, {
+        retryCount: 3,
+        retryDelay: 100,
+        key: "unstable_connector-injected-corn",
+        name: "unstable_connector-injected-corn"
+      }),
+      http(bob.rpcUrls.default.http.at(0), { name: "default Corn RPC" })
     ]),
     [cornTestnet.id]: fallback([
       unstable_connector(injected, {
