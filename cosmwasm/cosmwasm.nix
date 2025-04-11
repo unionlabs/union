@@ -226,6 +226,29 @@ _: {
           ];
         }
         {
+          chain-id = "bbn-1";
+          name = "babylon";
+          rpc_url = "https://babylon-rpc.polkachu.com";
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
+          gas_config = {
+            type = "static";
+            gas_price = "0.003";
+            gas_denom = "ubbn";
+            gas_multiplier = "1.1";
+            max_gas = 10000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "bbn";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "trusted-mpt"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
           chain-id = "stride-internal-1";
           name = "stride-testnet";
           rpc_url = "https://stride-testnet-rpc.polkachu.com";

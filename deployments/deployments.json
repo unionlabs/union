@@ -186,6 +186,48 @@
     }
   },
   {
+    "universal_chain_id": "babylon.bbn-1",
+    "chain_id": "bbn-1",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "deployer": "bbn10c4yqddv6w7sphruvhxs5v0es8r9fcj5xgn904",
+      "core": {
+        "address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
+        "height": 28972,
+        "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "bbn1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqhe2fyg",
+          "height": 28982,
+          "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "bbn1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs2sd9j4",
+          "height": 28986,
+          "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5"
+        },
+        "tendermint": {
+          "address": "bbn1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzq7lmw0u",
+          "height": 28990,
+          "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5"
+        },
+        "trusted/evm/mpt": {
+          "address": "bbn16sq2k0k8pf9z6y4q8jrsuqraqdlnsl6da2aj9kl5e4u73ta9f75sjuq73q",
+          "height": 28994,
+          "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5"
+        }
+      },
+      "app": {
+        "ucs03": {
+          "address": "bbn1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292q77945h",
+          "height": 29000,
+          "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5"
+        }
+      }
+    }
+  },
+  {
     "universal_chain_id": "ethereum.1",
     "chain_id": "1",
     "ibc_interface": "ibc-solidity",
