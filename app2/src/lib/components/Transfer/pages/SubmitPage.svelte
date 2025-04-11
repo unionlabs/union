@@ -262,7 +262,10 @@ export const submit = Effect.gen(function* () {
       Match.orElse(() =>
         Effect.gen(function* () {
           yield* Effect.log("Unknown chain type")
-          error = Option.some({ _tag: "UnknownError", cause: "Unsupported chain type" })
+          error = Option.some({
+            _tag: "UnknownError",
+            cause: "Unsupported chain type"
+          })
           return Effect.succeed("unknown chain type")
         })
       )
@@ -293,6 +296,12 @@ const handleSubmit = () => {
 </script>
 
 <div class="min-w-full p-4 flex flex-col justify-between h-full">
+  {#if Option.isSome(error)}
+    {@const _error = error.value}
+    <div class="absolute bottom-0 left-0 right-0">
+      <ErrorComponent error={_error} />
+    </div>
+  {/if}
   {#if Option.isSome(step) && Option.isSome(sourceChain) && Option.isSome(destinationChain)}
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">Submit Transfer</h3>
@@ -307,15 +316,24 @@ const handleSubmit = () => {
       </section>
       <p class="text-sm text-zinc-400">
         This will initiate the transfer on
-        <ChainComponent chain={sourceChain.value} />. You'll need to confirm the transfer in your wallet.
+        <ChainComponent chain={sourceChain.value} />. You'll need to confirm the
+        transfer in your wallet.
       </p>
     </div>
 
     <div class="flex justify-between mt-4">
-      <Button variant="secondary" onclick={onCancel} disabled={!isButtonEnabled}>
+      <Button
+        variant="secondary"
+        onclick={onCancel}
+        disabled={!isButtonEnabled}
+      >
         Cancel
       </Button>
-      <Button variant="primary" onclick={handleSubmit} disabled={!isButtonEnabled}>
+      <Button
+        variant="primary"
+        onclick={handleSubmit}
+        disabled={!isButtonEnabled}
+      >
         {getSubmitButtonText}
       </Button>
     </div>
@@ -323,9 +341,5 @@ const handleSubmit = () => {
     <div class="flex items-center justify-center h-full">
       <p class="text-zinc-400">Loading submission details...</p>
     </div>
-  {/if}
-  {#if Option.isSome(error)}
-    {@const _error = error.value}
-    <ErrorComponent error={_error} />
   {/if}
 </div>

@@ -11,15 +11,17 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { Chain } from "@unionlabs/sdk/schema"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
 import { constVoid } from "effect/Function"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 
 type Props = {
   onContinue: () => void
   actionButtonText: string
   gotSteps: boolean
   loading: boolean
+  topError?: Option.Option<unknown> | undefined
 }
 
-const { onContinue, gotSteps, loading }: Props = $props()
+const { onContinue, gotSteps, loading, topError = Option.none<unknown>() }: Props = $props()
 
 type FillingEnum = Data.TaggedEnum<{
   Loading: {}
@@ -205,3 +207,8 @@ function handleButtonClick() {
     </div>
   </div>
 </div>
+{#if topError && Option.isSome(topError)}
+  <div class="absolute bottom-0 left-0 right-0">
+    <ErrorComponent error={topError.value as unknown as any} />
+  </div>
+{/if}

@@ -198,7 +198,13 @@ const handleSubmit = () => {
 const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHex(step.value.token))
 </script>
 
-<div class="min-w-full p-4 flex flex-col justify-between h-full">
+<div class="relative min-w-full p-4 flex flex-col justify-between h-full">
+  {#if Option.isSome(error)}
+    {@const _error = error.value}
+    <div class="absolute bottom-0 left-0 right-0">
+      <ErrorComponent class="absolute bottom-0 left-0 right-0" error={_error} />
+    </div>
+  {/if}
   {#if Option.isSome(step) && Option.isSome(sourceChain)}
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">
@@ -208,17 +214,17 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
       <section>
         <Label>Current</Label>
         <TokenComponent
-                chain={sourceChain.value}
-                denom={massagedDenom}
-                amount={step.value.currentAllowance}
+          chain={sourceChain.value}
+          denom={massagedDenom}
+          amount={step.value.currentAllowance}
         />
       </section>
       <section>
         <Label>Required</Label>
         <TokenComponent
-                chain={sourceChain.value}
-                denom={massagedDenom}
-                amount={step.value.requiredAmount}
+          chain={sourceChain.value}
+          denom={massagedDenom}
+          amount={step.value.requiredAmount}
         />
       </section>
       <p class="text-sm text-zinc-400">
@@ -233,9 +239,9 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
         Back
       </Button>
       <Button
-              variant="primary"
-              onclick={handleSubmit}
-              disabled={!isButtonEnabled}
+        variant="primary"
+        onclick={handleSubmit}
+        disabled={!isButtonEnabled}
       >
         {getSubmitButtonText}
       </Button>
@@ -244,9 +250,5 @@ const massagedDenom = $derived(isHex(step.value.token) ? step.value.token : toHe
     <div class="flex items-center justify-center h-full">
       <p class="text-zinc-400">Loading approval details...</p>
     </div>
-  {/if}
-  {#if Option.isSome(error)}
-    {@const _error = error.value}
-    <ErrorComponent error={_error} />
   {/if}
 </div>

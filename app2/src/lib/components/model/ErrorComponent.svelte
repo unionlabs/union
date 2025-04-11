@@ -16,6 +16,8 @@ import SharpOpenInBrowserIcon from "../icons/SharpOpenInBrowserIcon.svelte"
 import Modal from "../ui/Modal.svelte"
 import Tooltip from "../ui/Tooltip.svelte"
 import SharpErrorOutlineIcon from "../icons/SharpErrorOutlineIcon.svelte"
+import SharpDownloadIcon from "../icons/SharpDownloadIcon.svelte"
+import BaselineCloseIcon from "../icons/BaselineCloseIcon.svelte"
 
 interface Props {
   error:
@@ -34,6 +36,7 @@ interface Props {
 
 let { error }: Props = $props()
 let showDetails = $state(false)
+let visible = $state(true)
 
 // TODO: replace me with an exhaustive matcher :)
 function getUserFriendlyMessage(error: Props["error"]): string {
@@ -70,114 +73,138 @@ function getUserFriendlyMessage(error: Props["error"]): string {
 const writeToClipboard = () => {
   navigator.clipboard.writeText(JSON.stringify(extractErrorDetails(error), null, 2))
 }
+
+const exportData = () => {
+  const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "")
+  const data = JSON.stringify(extractErrorDetails(error), null, 2)
+  const blob = new Blob([data], { type: "application/json" })
+  const url = window.URL.createObjectURL(blob)
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = `union-log-${datetime}.json`
+  anchor.click()
+  window.URL.revokeObjectURL(anchor.href)
+}
 </script>
 
-<div
-  class="p-4 rounded bg-zinc-925 border-2 border-red-500 overflow-hidden flex flex-col"
->
-  <div class="flex justify-between items-center gap-2">
-    <SharpErrorOutlineIcon class="text-red-500 size-4" />
-    <p>{getUserFriendlyMessage(error)}</p>
-    <div class="grow"></div>
-    <Tooltip delay={"quick"}>
-      {#snippet trigger()}
-        <Button
-          variant="secondary"
-          onclick={() => (showDetails = !showDetails)}
-        >
-          <SharpOpenInBrowserIcon class="size-4" />
-        </Button>
-      {/snippet}
+{#if visible}
+  <div
+    class="p-4 rounded bg-zinc-925 border-2 border-red-500 overflow-hidden flex flex-col"
+  >
+    <div class="flex justify-between items-center gap-2">
+      <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4" />
+      <p>{getUserFriendlyMessage(error)}</p>
+      <div class="grow"></div>
+      <Tooltip delay={"quick"}>
+        {#snippet trigger()}
+          <Button
+            variant="secondary"
+            onclick={() => (showDetails = !showDetails)}
+          >
+            <SharpOpenInBrowserIcon class="size-4" />
+          </Button>
+        {/snippet}
 
-      {#snippet content()}
-        Open Details
-      {/snippet}
-    </Tooltip>
-    <Tooltip delay={"quick"}>
+        {#snippet content()}
+          Open Details
+        {/snippet}
+      </Tooltip>
+      <!-- <Tooltip delay={"quick"}>
       {#snippet trigger()}
-        <Button variant="primary" onclick={writeToClipboard}>
+        <Button variant="secondary" onclick={writeToClipboard}>
           <SharpContentCopyIcon class="size-4" />
         </Button>
       {/snippet}
       {#snippet content()}
         Copy to Clipboard
       {/snippet}
-    </Tooltip>
-  </div>
-
-  <Modal
-    isOpen={showDetails}
-    onClose={() => (showDetails = !showDetails)}
-    class="w-full max-w-4xl"
-  >
-    <div class="overflow-auto mt-6" in:slide out:slide|local={{ delay: 0 }}>
-      <section class="mt-4">
-        <h3 class="text-lg font-bold">Error Type</h3>
-        <pre>{error._tag}</pre>
-        <pre class="mt-2">{error.message}</pre>
-      </section>
-
-      {#if error.cause}
-        <section class="mt-4">
-          <h3 class="text-lg font-bold">Cause</h3>
-          <pre>{error.cause}</pre>
-        </section>
-      {/if}
-
-      {#if error.stack}
-        <section class="mt-4">
-          <h3 class="text-lg font-bold">Stack</h3>
-          <pre class="text-sm">{error.stack}</pre>
-        </section>
-      {/if}
-
-      <section class="mt-4">
-        <h3 class="text-lg font-bold">Additional Details</h3>
-        {#if error._tag === "RequestError"}
-          <p>{error.description}</p>
-          <p>Method and URL: {error.methodAndUrl}</p>
-        {:else if error._tag === "ResponseError"}
-          <p>{error.description}</p>
-          <p>Method and URL: {error.methodAndUrl}</p>
-        {:else if error._tag === "ParseError"}
-          <p>Actual data that was parsed:</p>
-          <pre class="text-sm">{JSON.stringify(
-              error.issue.actual,
-              null,
-              2,
-            )}</pre>
-        {:else if error._tag === "UnknownException"}
-          <p>This is an unknown exception. Full details here:</p>
-          <pre class="text-sm">{JSON.stringify(error, null, 2)}</pre>
-        {:else if error._tag === "NoViemChain"}
-          <p>Chain ID: {error.chain.chain_id}</p>
-          <p>Universal Chain ID: {error.chain.universal_chain_id}</p>
-        {:else if error._tag === "ReadContractError"}
-          <p>Error cause:</p>
-          <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
-        {:else if error._tag === "FetchNativeBalanceError"}
-          <p>Error cause:</p>
-          <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
-        {:else if error._tag === "CreatePublicClientError"}
-          <p>Error cause:</p>
-          <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
-        {:else if error._tag === "QueryBankBalanceError"}
-          <p>Error cause:</p>
-          <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
-        {:else if error._tag === "Base64EncodeError"}
-          <p>Error cause:</p>
-          <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
-        {:else if error._tag === "NoRpcError"}
-          <p>Chain: {error.chain.display_name}</p>
-          <p>RPC Type: {error.type}</p>
-          <p>Available RPC types:</p>
-          <pre class="text-sm">{JSON.stringify(
-              error.chain.rpcs.map((r) => r.type),
-              null,
-              2,
-            )}</pre>
-        {/if}
-      </section>
+    </Tooltip> -->
+      <Tooltip delay={"quick"}>
+        {#snippet trigger()}
+          <Button variant="primary" onclick={exportData}>
+            <SharpDownloadIcon class="size-4" />
+          </Button>
+        {/snippet}
+        {#snippet content()}
+          Download Log
+        {/snippet}
+      </Tooltip>
     </div>
-  </Modal>
-</div>
+
+    <Modal
+      isOpen={showDetails}
+      onClose={() => (showDetails = !showDetails)}
+      class="w-full max-w-4xl"
+    >
+      <div class="overflow-auto mt-6" in:slide out:slide|local={{ delay: 0 }}>
+        <section class="mt-4">
+          <h3 class="text-lg font-bold">Error Type</h3>
+          <pre>{error._tag}</pre>
+          <pre class="mt-2">{error.message}</pre>
+        </section>
+
+        {#if error.cause}
+          <section class="mt-4">
+            <h3 class="text-lg font-bold">Cause</h3>
+            <pre>{error.cause}</pre>
+          </section>
+        {/if}
+
+        {#if error.stack}
+          <section class="mt-4">
+            <h3 class="text-lg font-bold">Stack</h3>
+            <pre class="text-sm">{error.stack}</pre>
+          </section>
+        {/if}
+
+        <section class="mt-4">
+          <h3 class="text-lg font-bold">Additional Details</h3>
+          {#if error._tag === "RequestError"}
+            <p>{error.description}</p>
+            <p>Method and URL: {error.methodAndUrl}</p>
+          {:else if error._tag === "ResponseError"}
+            <p>{error.description}</p>
+            <p>Method and URL: {error.methodAndUrl}</p>
+          {:else if error._tag === "ParseError"}
+            <p>Actual data that was parsed:</p>
+            <pre class="text-sm">{JSON.stringify(
+                error.issue.actual,
+                null,
+                2,
+              )}</pre>
+          {:else if error._tag === "UnknownException"}
+            <p>This is an unknown exception. Full details here:</p>
+            <pre class="text-sm">{JSON.stringify(error, null, 2)}</pre>
+          {:else if error._tag === "NoViemChain"}
+            <p>Chain ID: {error.chain.chain_id}</p>
+            <p>Universal Chain ID: {error.chain.universal_chain_id}</p>
+          {:else if error._tag === "ReadContractError"}
+            <p>Error cause:</p>
+            <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+          {:else if error._tag === "FetchNativeBalanceError"}
+            <p>Error cause:</p>
+            <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+          {:else if error._tag === "CreatePublicClientError"}
+            <p>Error cause:</p>
+            <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+          {:else if error._tag === "QueryBankBalanceError"}
+            <p>Error cause:</p>
+            <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+          {:else if error._tag === "Base64EncodeError"}
+            <p>Error cause:</p>
+            <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+          {:else if error._tag === "NoRpcError"}
+            <p>Chain: {error.chain.display_name}</p>
+            <p>RPC Type: {error.type}</p>
+            <p>Available RPC types:</p>
+            <pre class="text-sm">{JSON.stringify(
+                error.chain.rpcs.map((r) => r.type),
+                null,
+                2,
+              )}</pre>
+          {/if}
+        </section>
+      </div>
+    </Modal>
+  </div>
+{/if}

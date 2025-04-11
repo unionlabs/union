@@ -7,7 +7,7 @@ import FillingPage from "./pages/FillingPage.svelte"
 import ApprovalPage from "./pages/ApprovalPage.svelte"
 import SubmitPage from "./pages/SubmitPage.svelte"
 import { lockedTransferStore } from "./locked-transfer.svelte.ts"
-import { Effect, Option, Fiber } from "effect"
+import { Effect, Option, Fiber, Match } from "effect"
 import * as TransferStep from "./transfer-step.ts"
 import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
 import {
@@ -18,7 +18,7 @@ import {
 import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
 import type { Batch } from "@unionlabs/sdk/ucs03/instruction.ts"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-import { constVoid } from "effect/Function"
+import { constVoid, flow, identity, pipe } from "effect/Function"
 
 let currentPage = $state(0)
 let isLoading = $state(false)
@@ -192,60 +192,85 @@ $effect(() => {
   const fiber = Effect.runFork(machineEffect as Effect.Effect<void, never, never>)
   currentFiber = Option.some(fiber)
 })
+
+const fillingError = $derived(
+  pipe(
+    transferError,
+    Option.flatMap(
+      flow(
+        Match.value,
+        Match.tags({
+          OrderCreationError: identity
+        }),
+        Match.orElse(() => null),
+        Option.fromNullable
+      )
+    )
+  )
+)
 </script>
 
 <Card
-        divided
-        class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden"
+  divided
+  class="w-sm my-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden"
 >
   <div class="w-full">
     <StepProgressBar
-            class="w-full"
-            currentStep={currentPage + 1}
-            totalSteps={lockedTransferStore.get().pipe(
+      class="w-full"
+      currentStep={currentPage + 1}
+      totalSteps={lockedTransferStore.get().pipe(
         Option.map((lts) => lts.steps.length),
         Option.getOrElse(() =>
-          transferSteps.pipe(Option.map((ts) => ts.length), Option.getOrElse(() => 1))
-        )
+          transferSteps.pipe(
+            Option.map((ts) => ts.length),
+            Option.getOrElse(() => 1),
+          ),
+        ),
       )}
-            stepDescriptions={lockedTransferStore.get().pipe(
+      stepDescriptions={lockedTransferStore.get().pipe(
         Option.map((lts) => lts.steps.map(TransferStep.description)),
-        Option.orElse(() => transferSteps.pipe(Option.map((ts) => ts.map(TransferStep.description)))),
-        Option.getOrElse(() => ["Configure your transfer"])
+        Option.orElse(() =>
+          transferSteps.pipe(
+            Option.map((ts) => ts.map(TransferStep.description)),
+          ),
+        ),
+        Option.getOrElse(() => ["Configure your transfer"]),
       )}
     />
   </div>
 
   <div class="relative flex-1 overflow-hidden">
     <div
-            class="absolute inset-0 flex transition-transform duration-300 ease-in-out"
-            style="transform: translateX(-{currentPage * 100}%);"
+      class="absolute inset-0 flex transition-transform duration-300 ease-in-out"
+      style="transform: translateX(-{currentPage * 100}%);"
     >
       <FillingPage
-              onContinue={handleActionButtonClick}
-              {actionButtonText}
-              gotSteps={Option.isSome(transferSteps) && transferSteps.value.length > 1}
-              loading={isLoading}
+        onContinue={handleActionButtonClick}
+        {actionButtonText}
+        topError={fillingError}
+        gotSteps={Option.isSome(transferSteps) &&
+          transferSteps.value.length > 1}
+        loading={isLoading}
       />
 
       {#if Option.isSome(lockedTransferStore.get())}
         {#each lockedTransferStore.get().value.steps.slice(1) as step, i}
           {#if TransferStep.is("ApprovalRequired")(step)}
             <ApprovalPage
-                    stepIndex={i + 1}
-                    onBack={goToPreviousPage}
-                    onApprove={handleActionButtonClick}
-                    {actionButtonText}
+              stepIndex={i + 1}
+              onBack={goToPreviousPage}
+              onApprove={handleActionButtonClick}
+              {actionButtonText}
             />
           {:else if TransferStep.is("SubmitInstruction")(step)}
             <SubmitPage
-                    stepIndex={i + 1}
-                    onCancel={newTransfer}
-                    onSubmit={handleActionButtonClick}
-                    {actionButtonText}
+              stepIndex={i + 1}
+              onCancel={newTransfer}
+              onSubmit={handleActionButtonClick}
+              {actionButtonText}
             />
           {:else if TransferStep.is("WaitForIndex")(step)}
-            <IndexPage {newTransfer}/>
+            <IndexPage {newTransfer} />
           {/if}
         {/each}
       {/if}
@@ -269,5 +294,3 @@ $effect(() => {
     <pre>{JSON.stringify(transferSteps.value, null, 2)}</pre>
   </div>
 {/if}
-
-
