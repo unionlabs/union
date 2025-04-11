@@ -145,8 +145,8 @@ class CosmosStore {
     }
 
     try {
-      await walletApi.experimentalSuggestChain(chainInfo)
-      await walletApi.enable(["bbn-test-5"])
+      // await walletApi.experimentalSuggestChain(chainInfo)
+      await walletApi.enable(["bbn-1"])
     } catch (e) {
       console.log(e)
       this.connectionStatus = "disconnected"
@@ -154,7 +154,7 @@ class CosmosStore {
       return
     }
 
-    const account = await walletApi.getKey("bbn-test-5")
+    const account = await walletApi.getKey("bbn-1")
     this.connectionStatus = "connected"
     this.address = account?.bech32Address
     this.rawAddress = account?.address
@@ -194,10 +194,10 @@ class CosmosStore {
 
     try {
       // Try to enable the chain
-      await walletApi.enable(["bbn-test-5"])
+      await walletApi.enable(["bbn-1"])
 
       // Get account information
-      const account = await walletApi.getKey("bbn-test-5")
+      const account = await walletApi.getKey("bbn-1")
 
       if (account?.bech32Address) {
         this.connectionStatus = "connected"
@@ -225,9 +225,9 @@ class CosmosStore {
 
     if (cosmosWalletId && window[cosmosWalletId]) {
       if (cosmosWalletId === "keplr") {
-        await window[cosmosWalletId]?.disable("bbn-test-5")
+        await window[cosmosWalletId]?.disable("bbn-1")
       } else if (cosmosWalletId === "leap") {
-        await window[cosmosWalletId]?.disconnect("bbn-test-5")
+        await window[cosmosWalletId]?.disconnect("bbn-1")
       }
 
       this.connectedWallet = undefined
