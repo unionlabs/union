@@ -294,7 +294,7 @@ abstract contract UnionScript is UnionBase {
         UCS03Zkgm zkgm,
         Multicall multicall
     ) internal {
-        bytes4[] memory relayerSelectors = new bytes4[](11);
+        bytes4[] memory relayerSelectors = new bytes4[](10);
         relayerSelectors[0] = IBCClient.registerClient.selector;
         relayerSelectors[1] = IBCClient.createClient.selector;
         relayerSelectors[2] = IBCClient.updateClient.selector;
@@ -305,10 +305,16 @@ abstract contract UnionScript is UnionBase {
         relayerSelectors[7] = IBCPacketImpl.recvIntentPacket.selector;
         relayerSelectors[8] = IBCPacketImpl.acknowledgePacket.selector;
         relayerSelectors[9] = IBCPacketImpl.timeoutPacket.selector;
-        relayerSelectors[10] = Multicall.multicall.selector;
         manager.setTargetFunctionRole(
             address(handler), relayerSelectors, Roles.RELAYER
         );
+
+        bytes4[] memory multicallSelectors = new bytes4[](1);
+        multicallSelectors[0] = Multicall.multicall.selector;
+        manager.setTargetFunctionRole(
+            address(multicall), multicallSelectors, Roles.RELAYER
+        );
+
         manager.labelRole(Roles.RELAYER, "RELAYER");
 
         // Pause selector is the same accross contracts

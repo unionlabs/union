@@ -1,1 +1,8 @@
-{}
+{
+  "union.union-testnet-10": {
+    "1": "ethereum.11155111"
+  },
+  "ethereum.11155111": {
+    "1": "union.union-testnet-10"
+  }
+}

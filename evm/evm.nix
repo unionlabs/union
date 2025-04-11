@@ -17,6 +17,17 @@ _: {
       # use this to override the git rev. useful if verifying a contract off of a commit and the worktree is dirty for unrelated reasons (for example, changing an rpc)
       # gitRevToUse = "";
 
+      getDeployment =
+        let
+          json = builtins.fromJSON (builtins.readFile ../deployments/deployments.json);
+        in
+        chainId:
+        (pkgs.lib.lists.findSingle (deployment: deployment.chain_id == chainId)
+          (throw "deployment for ${chainId} not found")
+          (throw "many deployments for ${chainId} found")
+          json
+        ).deployments;
+
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
         repo = "solidity-stringutils";
@@ -555,6 +566,38 @@ _: {
           }
         );
 
+      whitelist-relayers =
+        {
+          name,
+
+          chain-id,
+          rpc-url,
+          private-key,
+
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplication {
+            name = "whitelist-relayers-${name}";
+            runtimeInputs = [ pkgs.foundry-bin ];
+            text = ''
+              echo "whitelisting $# relayers"
+              for relayer in "$@"
+              do
+                cast \
+                  send \
+                  ${(getDeployment chain-id).manager} \
+                  "function grantRole(uint64,address,uint32)" \
+                  1 "$relayer" 0 \
+                  --private-key ${private-key} \
+                  --rpc-url ${rpc-url}
+
+                echo "whitelisted relayer $relayer"
+              done
+            '';
+          }
+        );
+
       deploy-deployer-and-ibc =
         {
           chain-id,
@@ -963,6 +1006,7 @@ _: {
                   deploy = deploy chain;
                   deploy-deployer-and-ibc = deploy-deployer-and-ibc chain;
                   update-deployments-json = update-deployments-json chain;
+                  whitelist-relayers = whitelist-relayers chain;
                   # finalize-deployment = finalize-deployment chain;
                   # get-git-rev = get-git-rev chain;
                 }

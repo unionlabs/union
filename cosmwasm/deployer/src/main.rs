@@ -163,6 +163,19 @@ enum QueryCmd {
 
 #[derive(clap::Subcommand)]
 enum TxCmd {
+    WhitelistRelayers {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long, env)]
+        private_key: H256,
+        #[arg(long)]
+        contract: Bech32<H256>,
+        /// The relayer(s) to whitelist.
+        #[arg(trailing_var_arg = true)]
+        relayer: Vec<Bech32<Bytes>>,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
+    },
     CreateSigners {
         #[arg(long)]
         rpc_url: String,
@@ -862,7 +875,70 @@ async fn do_main() -> Result<()> {
                 info!(%tx_hash, "admin migrated to {new_admin}");
             }
         }
+        App::StoreCode {
+            private_key,
+            bytecode,
+            rpc_url,
+            gas_config,
+            output,
+        } => {
+            let bytecode = std::fs::read(bytecode).context("reading bytecode path")?;
+
+            let deployer = Deployer::new(rpc_url.clone(), private_key, gas_config.clone()).await?;
+
+            let (tx_hash, response) = deployer
+                .tx(
+                    MsgStoreCode {
+                        sender: deployer.wallet().address().map_data(Into::into),
+                        wasm_byte_code: bytecode.into(),
+                        // TODO: Support permissions
+                        instantiate_permission: None,
+                    },
+                    "",
+                )
+                .await
+                .context("store code")?;
+
+            let code_id = response.code_id;
+
+            info!(%tx_hash, %code_id, "stored code");
+
+            write_output(output, code_id)?;
+        }
         App::Tx(tx_cmd) => match tx_cmd {
+            TxCmd::WhitelistRelayers {
+                rpc_url,
+                private_key,
+                contract,
+                relayer,
+                gas_config,
+            } => {
+                let ctx = Deployer::new(rpc_url, private_key, gas_config).await?;
+
+                info!("whitelisting {} relayers", relayer.len());
+
+                for relayer in relayer {
+                    let (tx_hash, _) = ctx
+                        .tx(
+                            MsgExecuteContract {
+                                sender: ctx.wallet().address().map_data(Into::into),
+                                contract: contract.clone(),
+                                msg: serde_json::to_vec(
+                                    &ibc_union_msg::msg::ExecuteMsg::AddRelayer(
+                                        relayer.to_string(),
+                                    ),
+                                )
+                                .unwrap()
+                                .into(),
+                                funds: vec![],
+                            },
+                            "",
+                        )
+                        .await?;
+
+                    info!(%tx_hash, "registered relayer {relayer}");
+                }
+            }
             TxCmd::CreateSigners {
                 rpc_url,
                 count,
@@ -986,36 +1062,6 @@ async fn do_main() -> Result<()> {
                 )?;
             }
         },
-        App::StoreCode {
-            private_key,
-            bytecode,
-            rpc_url,
-            gas_config,
-            output,
-        } => {
-            let bytecode = std::fs::read(bytecode).context("reading bytecode path")?;
-
-            let deployer = Deployer::new(rpc_url.clone(), private_key, gas_config.clone()).await?;
-
-            let (tx_hash, response) = deployer
-                .tx(
-                    MsgStoreCode {
-                        sender: deployer.wallet().address().map_data(Into::into),
-                        wasm_byte_code: bytecode.into(),
-                        // TODO: Support permissions
-                        instantiate_permission: None,
-                    },
-                    "",
-                )
-                .await
-                .context("store code")?;
-
-            let code_id = response.code_id;
-
-            info!(%tx_hash, %code_id, "stored code");
-
-            write_output(output, code_id)?;
-        }
     }
 
     Ok(())
