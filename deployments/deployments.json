@@ -1,9 +1,82 @@
 [
   {
+    "universal_chain_id": "union.union-1",
+    "chain_id": "union-1",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "deployer": "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a",
+      "core": {
+        "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
+        "height": 461578,
+        "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+      },
+      "lightclient": {
+        "arbitrum": {
+          "address": "union1xwfgw7n6vwgkyv8syjskzak7lh8kmrcthmv2jsmywhyunekmg3zqul8vsh",
+          "height": 461749,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "berachain": {
+          "address": "union12dx3w0pxkpyguf4xrx79zkhk0lvzewyqtjjngqmhuajjgu5qm6uq2rvlr7",
+          "height": 461753,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "bob": {
+          "address": "union1lsn5mm3hf9cxqetp2dx47x7tq4kvxpk66e7v8c4d2j4cajrg7hsq0v877s",
+          "height": 461757,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "ethereum": {
+          "address": "union1a3gz55rhudakew7p3hccjarn8rk70guxnuqrw58tl00f5x4kyl9qj8t3xw",
+          "height": 461762,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "ethermint": {
+          "address": "union1gla5cgcsk64cwsu3ca55yxjprtn5x6672mm4wm96vm9wyh6s2qcqc7amkh",
+          "height": 461766,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "movement": {
+          "address": "union1m2hhspxpqml6lujg0s38tdp3yfjasmfxnxvh9fnxpcjajucj0sgq54rs2g",
+          "height": 461794,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "union1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs4hj904",
+          "height": 461799,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "state-lens/ics23/smt": {
+          "address": "union1z7xnvelm23fx2qqj8jhx9kgaa6qr94dxt5ljnapeljszluun0e8sw67mtt",
+          "height": 461803,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "tendermint": {
+          "address": "union1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqpcywju",
+          "height": 461807,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "trusted/evm/mpt": {
+          "address": "union16sq2k0k8pf9z6y4q8jrsuqraqdlnsl6da2aj9kl5e4u73ta9f75sdml7vq",
+          "height": 461812,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        }
+      },
+      "app": {
+        "ucs03": {
+          "address": "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
+          "height": 461829,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        }
+      }
+    }
+  },
+  {
     "universal_chain_id": "union.union-testnet-10",
     "chain_id": "union-testnet-10",
     "ibc_interface": "ibc-cosmwasm",
     "deployments": {
+      "deployer": "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a",
       "core": {
         "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
         "height": 354875,
@@ -75,6 +148,7 @@
     "chain_id": "bbn-test-5",
     "ibc_interface": "ibc-cosmwasm",
     "deployments": {
+      "deployer": "bbn10c4yqddv6w7sphruvhxs5v0es8r9fcj5xgn904",
       "core": {
         "address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
         "height": 714672,

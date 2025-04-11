@@ -774,8 +774,10 @@ _: {
             echo "updating heights..."
 
             DEPLOYMENTS=$(echo "$ADDRESSES" | jq \
+              --arg deployer "$1" \
               --argjson heights "$HEIGHTS" \
               '. as $in | {
+                deployer: $deployer,
                 core: {
                   address: .core,
                   height: $heights[.core]
