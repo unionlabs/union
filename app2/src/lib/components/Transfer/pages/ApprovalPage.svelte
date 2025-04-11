@@ -24,7 +24,7 @@ import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import {cosmosSpenderAddresses} from "$lib/constants/spender-addresses.ts";
+import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
 
 type Props = {
   stepIndex: number
@@ -111,11 +111,12 @@ const submit = Effect.gen(function* () {
               })
             )
 
-            if ("exit" in ets) {
-              yield* Exit.matchEffect(Unify.unify(ets.exit), {
+            if (ets._tag === "SwitchChainComplete" || ets._tag === "WriteContractComplete") {
+              yield* Exit.matchEffect(ets.exit, {
                 onFailure: cause =>
                   Effect.sync(() => {
                     error = Option.some(Cause.squash(cause))
+                    console.log(error)
                   }),
                 onSuccess: () =>
                   Effect.sync(() => {
@@ -153,8 +154,8 @@ const submit = Effect.gen(function* () {
               })
             )
 
-            if ("exit" in cts) {
-              yield* Exit.matchEffect(Unify.unify(cts.exit), {
+            if (cts._tag === "SwitchChainComplete" || cts._tag === "WriteContractComplete") {
+              yield* Exit.matchEffect(cts.exit, {
                 onFailure: cause =>
                   Effect.sync(() => {
                     error = Option.some(Cause.squash(cause))
