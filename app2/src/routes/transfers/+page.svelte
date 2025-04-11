@@ -17,6 +17,7 @@ import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
+import WalletConnectedNoTransfers from "$lib/components/WalletConnectedNoTransfers.svelte"
 
 let transferFiber: Fiber.Fiber<any, any>
 let countFiber: Fiber.Fiber<any, any>
@@ -100,24 +101,28 @@ const onNextPage = async () => {
 <Sections>
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferListAddress.error)}
-      <ErrorComponent error={transferListAddress.error.value}/>
+      <ErrorComponent error={transferListAddress.error.value} />
     {/if}
     {#if Option.isSome(transferCount.error)}
-      <ErrorComponent error={transferCount.error.value}/>
+      <ErrorComponent error={transferCount.error.value} />
     {/if}
     {#if wallets.getCanonicalByteAddressList().length === 0}
-      <NoWalletConnected/>
+      <NoWalletConnected />
     {:else if Option.isSome(transferListAddress.data) && Option.isSome(chains.data)}
-      {#each transferListAddress.data.value as transfer(transfer.sort_order)}
-        <TransferListItemComponent {transfer} showSeconds={false}/>
-      {/each}
+      {#if transferListAddress.data.value.length > 0}
+        {#each transferListAddress.data.value as transfer (transfer.sort_order)}
+          <TransferListItemComponent {transfer} showSeconds={false} />
+        {/each}
+      {:else}
+        <WalletConnectedNoTransfers />
+      {/if}
     {:else}
       {#each Array(settingsStore.pageLimit).fill(0)}
         <TransferListItemComponentSkeleton />
       {/each}
     {/if}
   </Card>
-  <TransferListPagination 
+  <TransferListPagination
     data={transferListAddress.data}
     {onLive}
     {onPrevPage}
