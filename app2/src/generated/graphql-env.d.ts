@@ -1,531 +1,6 @@
 /* eslint-disable */
 /* prettier-ignore */
 
-export type introspection_types = {
-    'Boolean': unknown;
-    'Boolean_comparison_exp': { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; isOneOf: false; inputFields: [{ name: '_eq'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_gt'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_gte'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_in'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; }; }; defaultValue: null }, { name: '_is_null'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_lt'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_lte'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_neq'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_nin'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; }; }; defaultValue: null }]; };
-    'Float': unknown;
-    'Int': unknown;
-    'Int_comparison_exp': { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; isOneOf: false; inputFields: [{ name: '_eq'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: '_gt'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: '_gte'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: '_in'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; }; }; defaultValue: null }, { name: '_is_null'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_lt'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: '_lte'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: '_neq'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: '_nin'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; }; }; defaultValue: null }]; };
-    'PfmArgs': { kind: 'OBJECT'; name: 'PfmArgs'; fields: { 'channel': { name: 'channel'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'memo': { name: 'memo'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; } }; }; };
-    'PfmArgs_bool_exp_bool_exp': { kind: 'INPUT_OBJECT'; name: 'PfmArgs_bool_exp_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'PfmArgs_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'PfmArgs_bool_exp_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'PfmArgs_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'channel'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'memo'; type: { kind: 'INPUT_OBJECT'; name: 'jsonb_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'PfmArgs_enum_name': { name: 'PfmArgs_enum_name'; enumValues: 'channel' | 'memo'; };
-    'PfmArgs_order_by': { kind: 'INPUT_OBJECT'; name: 'PfmArgs_order_by'; isOneOf: false; inputFields: [{ name: 'channel'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'memo'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'Request': { kind: 'OBJECT'; name: 'Request'; fields: { 'address': { name: 'address'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'id': { name: 'id'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; } }; 'time': { name: 'time'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'txHash': { name: 'txHash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'String': unknown;
-    'String_comparison_exp': { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; isOneOf: false; inputFields: [{ name: '_eq'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_gt'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_gte'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_ilike'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_in'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; }; defaultValue: null }, { name: '_iregex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_is_null'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_like'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_lt'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_lte'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_neq'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_nilike'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_nin'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; }; defaultValue: null }, { name: '_niregex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_nlike'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_nregex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_nsimilar'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_regex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_similar'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'address_types': { kind: 'OBJECT'; name: 'address_types'; fields: { 'canonical': { name: 'canonical'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'display': { name: 'display'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'zkgm': { name: 'zkgm'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; }; };
-    'address_types_bool_exp_bool_exp': { kind: 'INPUT_OBJECT'; name: 'address_types_bool_exp_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'address_types_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'address_types_bool_exp_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'address_types_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'canonical'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'display'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'zkgm'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'address_types_enum_name': { name: 'address_types_enum_name'; enumValues: 'canonical' | 'display' | 'zkgm'; };
-    'address_types_order_by': { kind: 'INPUT_OBJECT'; name: 'address_types_order_by'; isOneOf: false; inputFields: [{ name: 'canonical'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'zkgm'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'bigint': unknown;
-    'bigint_comparison_exp': { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; isOneOf: false; inputFields: [{ name: '_eq'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: '_gt'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: '_gte'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: '_in'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; }; }; defaultValue: null }, { name: '_is_null'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_lt'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: '_lte'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: '_neq'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: '_nin'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; }; }; defaultValue: null }]; };
-    'bytea': unknown;
-    'bytea_comparison_exp': { kind: 'INPUT_OBJECT'; name: 'bytea_comparison_exp'; isOneOf: false; inputFields: [{ name: '_eq'; type: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; defaultValue: null }, { name: '_gt'; type: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; defaultValue: null }, { name: '_gte'; type: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; defaultValue: null }, { name: '_in'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; }; }; defaultValue: null }, { name: '_is_null'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_lt'; type: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; defaultValue: null }, { name: '_lte'; type: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; defaultValue: null }, { name: '_neq'; type: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; defaultValue: null }, { name: '_nin'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; }; }; defaultValue: null }]; };
-    'comparison': unknown;
-    'count': { kind: 'OBJECT'; name: 'count'; fields: { 'count': { name: 'count'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; }; };
-    'count_bool_exp_bool_exp': { kind: 'INPUT_OBJECT'; name: 'count_bool_exp_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'count_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'count_bool_exp_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'count_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'count'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'count_by_chain_id': { kind: 'OBJECT'; name: 'count_by_chain_id'; fields: { 'chain_id': { name: 'chain_id'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'count': { name: 'count'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; } }; }; };
-    'count_by_chain_id_bool_exp_bool_exp': { kind: 'INPUT_OBJECT'; name: 'count_by_chain_id_bool_exp_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'count_by_chain_id_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'count_by_chain_id_bool_exp_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'count_by_chain_id_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'count_by_chain_id_enum_name': { name: 'count_by_chain_id_enum_name'; enumValues: 'chain_id' | 'count'; };
-    'count_by_chain_id_order_by': { kind: 'INPUT_OBJECT'; name: 'count_by_chain_id_order_by'; isOneOf: false; inputFields: [{ name: 'chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'count_by_universal_chain_id': { kind: 'OBJECT'; name: 'count_by_universal_chain_id'; fields: { 'chain_id': { name: 'chain_id'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'count': { name: 'count'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; } }; 'phase': { name: 'phase'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'universal_chain_id': { name: 'universal_chain_id'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; }; };
-    'count_by_universal_chain_id_bool_exp_bool_exp': { kind: 'INPUT_OBJECT'; name: 'count_by_universal_chain_id_bool_exp_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'count_by_universal_chain_id_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'count_by_universal_chain_id_bool_exp_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'count_by_universal_chain_id_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'phase'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'count_by_universal_chain_id_enum_name': { name: 'count_by_universal_chain_id_enum_name'; enumValues: 'chain_id' | 'count' | 'phase' | 'universal_chain_id'; };
-    'count_by_universal_chain_id_order_by': { kind: 'INPUT_OBJECT'; name: 'count_by_universal_chain_id_order_by'; isOneOf: false; inputFields: [{ name: 'chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'phase'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'count_enum_name': { name: 'count_enum_name'; enumValues: 'count'; };
-    'count_order_by': { kind: 'INPUT_OBJECT'; name: 'count_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'cursor_ordering': { name: 'cursor_ordering'; enumValues: 'ASC' | 'DESC'; };
-    'date': unknown;
-    'date_comparison_exp': { kind: 'INPUT_OBJECT'; name: 'date_comparison_exp'; isOneOf: false; inputFields: [{ name: '_eq'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }, { name: '_gt'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }, { name: '_gte'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }, { name: '_in'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'date'; ofType: null; }; }; }; defaultValue: null }, { name: '_is_null'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_lt'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }, { name: '_lte'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }, { name: '_neq'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }, { name: '_nin'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'date'; ofType: null; }; }; }; defaultValue: null }]; };
-    'dydx_faucetMutation': { kind: 'OBJECT'; name: 'dydx_faucetMutation'; fields: { 'send': { name: 'send'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; }; };
-    'dydx_faucetQuery': { kind: 'OBJECT'; name: 'dydx_faucetQuery'; fields: { 'handledTransfers': { name: 'handledTransfers'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'Request'; ofType: null; }; }; }; } }; 'transfersForAddress': { name: 'transfersForAddress'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'Request'; ofType: null; }; }; }; } }; 'unhandledTransfers': { name: 'unhandledTransfers'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'Request'; ofType: null; }; }; }; } }; }; };
-    'get_address_types_for_display_address_arguments': { kind: 'INPUT_OBJECT'; name: 'get_address_types_for_display_address_arguments'; isOneOf: false; inputFields: [{ name: 'chain_type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'display_address'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; defaultValue: null }]; };
-    'get_route_arguments': { kind: 'INPUT_OBJECT'; name: 'get_route_arguments'; isOneOf: false; inputFields: [{ name: 'destination_chain_id'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; defaultValue: null }, { name: 'forward_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'receiver'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; defaultValue: null }]; };
-    'get_streaks_for_addresses_arguments': { kind: 'INPUT_OBJECT'; name: 'get_streaks_for_addresses_arguments'; isOneOf: false; inputFields: [{ name: 'addresses'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; }; defaultValue: null }]; };
-    'get_transfer_counts_for_addresses_arguments': { kind: 'INPUT_OBJECT'; name: 'get_transfer_counts_for_addresses_arguments'; isOneOf: false; inputFields: [{ name: 'addresses'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; }; defaultValue: null }]; };
-    'get_transfer_counts_for_addresses_by_dest_universal_chain_arguments': { kind: 'INPUT_OBJECT'; name: 'get_transfer_counts_for_addresses_by_dest_universal_chain_arguments'; isOneOf: false; inputFields: [{ name: 'p_addresses'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; }; defaultValue: null }, { name: 'p_phase'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; defaultValue: null }]; };
-    'get_transfer_counts_for_addresses_by_destination_chain_arguments': { kind: 'INPUT_OBJECT'; name: 'get_transfer_counts_for_addresses_by_destination_chain_arguments'; isOneOf: false; inputFields: [{ name: 'addresses'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; }; defaultValue: null }]; };
-    'hubble_streaks': { kind: 'OBJECT'; name: 'hubble_streaks'; fields: { 'address': { name: 'address'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; } }; 'end_timestamp': { name: 'end_timestamp'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; } }; 'internal_destination_chain_id': { name: 'internal_destination_chain_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'start_timestamp': { name: 'start_timestamp'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; } }; }; };
-    'hubble_streaks_bool_exp': { kind: 'INPUT_OBJECT'; name: 'hubble_streaks_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'hubble_streaks_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'hubble_streaks_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'hubble_streaks_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'address'; type: { kind: 'INPUT_OBJECT'; name: 'bytea_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'end_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'internal_destination_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'start_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'hubble_streaks_order_by': { kind: 'INPUT_OBJECT'; name: 'hubble_streaks_order_by'; isOneOf: false; inputFields: [{ name: 'address'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'end_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_destination_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'start_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'hubble_streaks_select_column': { name: 'hubble_streaks_select_column'; enumValues: 'address' | 'end_timestamp' | 'internal_destination_chain_id' | 'start_timestamp'; };
-    'hubble_streaks_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'hubble_streaks_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'hubble_streaks_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'hubble_streaks_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'hubble_streaks_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'address'; type: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; defaultValue: null }, { name: 'end_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'internal_destination_chain_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'start_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }]; };
-    'jsonb': unknown;
-    'jsonb_cast_exp': { kind: 'INPUT_OBJECT'; name: 'jsonb_cast_exp'; isOneOf: false; inputFields: [{ name: 'String'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'jsonb_comparison_exp': { kind: 'INPUT_OBJECT'; name: 'jsonb_comparison_exp'; isOneOf: false; inputFields: [{ name: '_cast'; type: { kind: 'INPUT_OBJECT'; name: 'jsonb_cast_exp'; ofType: null; }; defaultValue: null }, { name: '_contained_in'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: '_contains'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: '_eq'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: '_gt'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: '_gte'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: '_has_key'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: '_has_keys_all'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; }; defaultValue: null }, { name: '_has_keys_any'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; }; }; defaultValue: null }, { name: '_in'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; }; }; defaultValue: null }, { name: '_is_null'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_lt'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: '_lte'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: '_neq'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: '_nin'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; }; }; defaultValue: null }]; };
-    'latency_percentiles_scalar': unknown;
-    'latency_percentiles_scalar_comparison_exp': { kind: 'INPUT_OBJECT'; name: 'latency_percentiles_scalar_comparison_exp'; isOneOf: false; inputFields: [{ name: '_eq'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }, { name: '_gt'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }, { name: '_gte'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }, { name: '_in'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; }; }; defaultValue: null }, { name: '_is_null'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_lt'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }, { name: '_lte'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }, { name: '_neq'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }, { name: '_nin'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; }; }; defaultValue: null }]; };
-    'mutation_root': { kind: 'OBJECT'; name: 'mutation_root'; fields: { 'dydx_faucet': { name: 'dydx_faucet'; type: { kind: 'OBJECT'; name: 'dydx_faucetMutation'; ofType: null; } }; 'send': { name: 'send'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; }; };
-    'numeric': unknown;
-    'numeric_comparison_exp': { kind: 'INPUT_OBJECT'; name: 'numeric_comparison_exp'; isOneOf: false; inputFields: [{ name: '_eq'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: '_gt'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: '_gte'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: '_in'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; }; }; defaultValue: null }, { name: '_is_null'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_lt'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: '_lte'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: '_neq'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: '_nin'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; }; }; defaultValue: null }]; };
-    'order_by': { name: 'order_by'; enumValues: 'asc' | 'asc_nulls_first' | 'asc_nulls_last' | 'desc' | 'desc_nulls_first' | 'desc_nulls_last'; };
-    'query_root': { kind: 'OBJECT'; name: 'query_root'; fields: { 'dydx_faucet': { name: 'dydx_faucet'; type: { kind: 'OBJECT'; name: 'dydx_faucetQuery'; ofType: null; } }; 'get_address_types_for_display_address': { name: 'get_address_types_for_display_address'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'address_types'; ofType: null; }; }; }; } }; 'get_route': { name: 'get_route'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'PfmArgs'; ofType: null; }; }; }; } }; 'get_streaks_for_addresses': { name: 'get_streaks_for_addresses'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'streak'; ofType: null; }; }; }; } }; 'get_transfer_counts_for_addresses': { name: 'get_transfer_counts_for_addresses'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'count'; ofType: null; }; }; }; } }; 'get_transfer_counts_for_addresses_by_dest_universal_chain': { name: 'get_transfer_counts_for_addresses_by_dest_universal_chain'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'count_by_universal_chain_id'; ofType: null; }; }; }; } }; 'get_transfer_counts_for_addresses_by_destination_chain': { name: 'get_transfer_counts_for_addresses_by_destination_chain'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'count_by_chain_id'; ofType: null; }; }; }; } }; 'handledTransfers': { name: 'handledTransfers'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'Request'; ofType: null; }; }; }; } }; 'hubble_streaks': { name: 'hubble_streaks'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'hubble_streaks'; ofType: null; }; }; }; } }; 'transfersForAddress': { name: 'transfersForAddress'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'Request'; ofType: null; }; }; }; } }; 'unhandledTransfers': { name: 'unhandledTransfers'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'Request'; ofType: null; }; }; }; } }; 'v1_ibc_union_app_chain_configurations': { name: 'v1_ibc_union_app_chain_configurations'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_app_chain_configurations'; ofType: null; }; }; }; } }; 'v1_ibc_union_assets': { name: 'v1_ibc_union_assets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_assets'; ofType: null; }; }; }; } }; 'v1_ibc_union_chains': { name: 'v1_ibc_union_chains'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; }; }; }; } }; 'v1_ibc_union_channel_recommendations': { name: 'v1_ibc_union_channel_recommendations'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_channel_recommendations'; ofType: null; }; }; }; } }; 'v1_ibc_union_channels': { name: 'v1_ibc_union_channels'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_channels'; ofType: null; }; }; }; } }; 'v1_ibc_union_client_heights': { name: 'v1_ibc_union_client_heights'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_client_heights'; ofType: null; }; }; }; } }; 'v1_ibc_union_client_heights_max': { name: 'v1_ibc_union_client_heights_max'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_client_heights_max'; ofType: null; }; }; }; } }; 'v1_ibc_union_clients': { name: 'v1_ibc_union_clients'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_clients'; ofType: null; }; }; }; } }; 'v1_ibc_union_config': { name: 'v1_ibc_union_config'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_config'; ofType: null; }; }; }; } }; 'v1_ibc_union_connection_recommendations': { name: 'v1_ibc_union_connection_recommendations'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_connection_recommendations'; ofType: null; }; }; }; } }; 'v1_ibc_union_connections': { name: 'v1_ibc_union_connections'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_connections'; ofType: null; }; }; }; } }; 'v1_ibc_union_contracts': { name: 'v1_ibc_union_contracts'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_contracts'; ofType: null; }; }; }; } }; 'v1_ibc_union_cw20_instantiate': { name: 'v1_ibc_union_cw20_instantiate'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_cw20_instantiate'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_fungible_asset_order_global_stats_type': { name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_fungible_asset_order_stats_type': { name: 'v1_ibc_union_daily_fungible_asset_order_stats_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_fungible_asset_orders': { name: 'v1_ibc_union_daily_fungible_asset_orders'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_packets': { name: 'v1_ibc_union_daily_packets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_packets'; ofType: null; }; }; }; } }; 'v1_ibc_union_explorers': { name: 'v1_ibc_union_explorers'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_explorers'; ofType: null; }; }; }; } }; 'v1_ibc_union_faucets': { name: 'v1_ibc_union_faucets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_faucets'; ofType: null; }; }; }; } }; 'v1_ibc_union_fungible_asset_order_stats': { name: 'v1_ibc_union_fungible_asset_order_stats'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats'; ofType: null; }; }; }; } }; 'v1_ibc_union_fungible_asset_order_stats_2': { name: 'v1_ibc_union_fungible_asset_order_stats_2'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2'; ofType: null; }; }; }; } }; 'v1_ibc_union_fungible_asset_orders': { name: 'v1_ibc_union_fungible_asset_orders'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders'; ofType: null; }; }; }; } }; 'v1_ibc_union_fungible_asset_orders_aggregate': { name: 'v1_ibc_union_fungible_asset_orders_aggregate'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_aggregate'; ofType: null; }; } }; 'v1_ibc_union_get_address_stats': { name: 'v1_ibc_union_get_address_stats'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_get_global_stats': { name: 'v1_ibc_union_get_global_stats'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_health_check': { name: 'v1_ibc_union_health_check'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_health_check'; ofType: null; }; }; }; } }; 'v1_ibc_union_index_status': { name: 'v1_ibc_union_index_status'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_index_status'; ofType: null; }; }; }; } }; 'v1_ibc_union_missing_token_details': { name: 'v1_ibc_union_missing_token_details'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_missing_token_details'; ofType: null; }; }; }; } }; 'v1_ibc_union_packets': { name: 'v1_ibc_union_packets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_packets'; ofType: null; }; }; }; } }; 'v1_ibc_union_relayer_status': { name: 'v1_ibc_union_relayer_status'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_relayer_status'; ofType: null; }; }; }; } }; 'v1_ibc_union_rpcs': { name: 'v1_ibc_union_rpcs'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_rpcs'; ofType: null; }; }; }; } }; 'v1_ibc_union_statistics': { name: 'v1_ibc_union_statistics'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_statistics'; ofType: null; }; }; }; } }; 'v1_ibc_union_streaks': { name: 'v1_ibc_union_streaks'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_streaks'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_representation_source_unwrapping': { name: 'v1_ibc_union_token_representation_source_unwrapping'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_representation_sources': { name: 'v1_ibc_union_token_representation_sources'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representation_sources'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_representations': { name: 'v1_ibc_union_token_representations'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representations'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_sources': { name: 'v1_ibc_union_token_sources'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_sources'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_unwrapping': { name: 'v1_ibc_union_token_unwrapping'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_unwrapping'; ofType: null; }; }; }; } }; 'v1_ibc_union_tokens': { name: 'v1_ibc_union_tokens'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_tokens'; ofType: null; }; }; }; } }; 'v1_ibc_union_trace_previews_type': { name: 'v1_ibc_union_trace_previews_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_trace_previews_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_traces_type': { name: 'v1_ibc_union_traces_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_traces_type'; ofType: null; }; }; }; } }; 'v2_chains': { name: 'v2_chains'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_chain_type'; ofType: null; }; }; }; } }; 'v2_channels': { name: 'v2_channels'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_channel_type'; ofType: null; }; }; }; } }; 'v2_connections': { name: 'v2_connections'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_connection_type'; ofType: null; }; }; }; } }; 'v2_packets': { name: 'v2_packets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_packet_type'; ofType: null; }; }; }; } }; 'v2_stats_count': { name: 'v2_stats_count'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_type'; ofType: null; }; }; }; } }; 'v2_stats_packets_chain': { name: 'v2_stats_packets_chain'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_packets_chain_type'; ofType: null; }; }; }; } }; 'v2_stats_packets_chain_type': { name: 'v2_stats_packets_chain_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_packets_chain_type'; ofType: null; }; }; }; } }; 'v2_stats_packets_daily_count': { name: 'v2_stats_packets_daily_count'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_daily_count_type'; ofType: null; }; }; }; } }; 'v2_stats_transfers_address': { name: 'v2_stats_transfers_address'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_transfers_address_type'; ofType: null; }; }; }; } }; 'v2_stats_transfers_chain': { name: 'v2_stats_transfers_chain'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_transfers_chain_type'; ofType: null; }; }; }; } }; 'v2_stats_transfers_chain_type': { name: 'v2_stats_transfers_chain_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_transfers_chain_type'; ofType: null; }; }; }; } }; 'v2_stats_transfers_daily_count': { name: 'v2_stats_transfers_daily_count'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_daily_count_type'; ofType: null; }; }; }; } }; 'v2_tokens': { name: 'v2_tokens'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_token_meta'; ofType: null; }; }; }; } }; 'v2_transfers': { name: 'v2_transfers'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_transfer_type'; ofType: null; }; }; }; } }; }; };
-    'streak': { kind: 'OBJECT'; name: 'streak'; fields: { 'destination_chain_id': { name: 'destination_chain_id'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'destination_universal_chain_id': { name: 'destination_universal_chain_id'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; 'end_timestamp': { name: 'end_timestamp'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; } }; 'seconds': { name: 'seconds'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; } }; 'start_timestamp': { name: 'start_timestamp'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; } }; }; };
-    'streak_bool_exp_bool_exp': { kind: 'INPUT_OBJECT'; name: 'streak_bool_exp_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'streak_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'streak_bool_exp_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'streak_bool_exp_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'end_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'seconds'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'start_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'streak_enum_name': { name: 'streak_enum_name'; enumValues: 'destination_chain_id' | 'destination_universal_chain_id' | 'end_timestamp' | 'seconds' | 'start_timestamp'; };
-    'streak_order_by': { kind: 'INPUT_OBJECT'; name: 'streak_order_by'; isOneOf: false; inputFields: [{ name: 'destination_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'end_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'seconds'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'start_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'subscription_root': { kind: 'OBJECT'; name: 'subscription_root'; fields: { 'get_address_types_for_display_address': { name: 'get_address_types_for_display_address'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'address_types'; ofType: null; }; }; }; } }; 'get_route': { name: 'get_route'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'PfmArgs'; ofType: null; }; }; }; } }; 'get_streaks_for_addresses': { name: 'get_streaks_for_addresses'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'streak'; ofType: null; }; }; }; } }; 'get_transfer_counts_for_addresses': { name: 'get_transfer_counts_for_addresses'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'count'; ofType: null; }; }; }; } }; 'get_transfer_counts_for_addresses_by_dest_universal_chain': { name: 'get_transfer_counts_for_addresses_by_dest_universal_chain'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'count_by_universal_chain_id'; ofType: null; }; }; }; } }; 'get_transfer_counts_for_addresses_by_destination_chain': { name: 'get_transfer_counts_for_addresses_by_destination_chain'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'count_by_chain_id'; ofType: null; }; }; }; } }; 'hubble_streaks': { name: 'hubble_streaks'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'hubble_streaks'; ofType: null; }; }; }; } }; 'hubble_streaks_stream': { name: 'hubble_streaks_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'hubble_streaks'; ofType: null; }; }; }; } }; 'v1_ibc_union_app_chain_configurations': { name: 'v1_ibc_union_app_chain_configurations'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_app_chain_configurations'; ofType: null; }; }; }; } }; 'v1_ibc_union_app_chain_configurations_stream': { name: 'v1_ibc_union_app_chain_configurations_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_app_chain_configurations'; ofType: null; }; }; }; } }; 'v1_ibc_union_assets': { name: 'v1_ibc_union_assets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_assets'; ofType: null; }; }; }; } }; 'v1_ibc_union_assets_stream': { name: 'v1_ibc_union_assets_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_assets'; ofType: null; }; }; }; } }; 'v1_ibc_union_chains': { name: 'v1_ibc_union_chains'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; }; }; }; } }; 'v1_ibc_union_chains_stream': { name: 'v1_ibc_union_chains_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; }; }; }; } }; 'v1_ibc_union_channel_recommendations': { name: 'v1_ibc_union_channel_recommendations'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_channel_recommendations'; ofType: null; }; }; }; } }; 'v1_ibc_union_channel_recommendations_stream': { name: 'v1_ibc_union_channel_recommendations_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_channel_recommendations'; ofType: null; }; }; }; } }; 'v1_ibc_union_channels': { name: 'v1_ibc_union_channels'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_channels'; ofType: null; }; }; }; } }; 'v1_ibc_union_channels_stream': { name: 'v1_ibc_union_channels_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_channels'; ofType: null; }; }; }; } }; 'v1_ibc_union_client_heights': { name: 'v1_ibc_union_client_heights'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_client_heights'; ofType: null; }; }; }; } }; 'v1_ibc_union_client_heights_max': { name: 'v1_ibc_union_client_heights_max'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_client_heights_max'; ofType: null; }; }; }; } }; 'v1_ibc_union_client_heights_max_stream': { name: 'v1_ibc_union_client_heights_max_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_client_heights_max'; ofType: null; }; }; }; } }; 'v1_ibc_union_client_heights_stream': { name: 'v1_ibc_union_client_heights_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_client_heights'; ofType: null; }; }; }; } }; 'v1_ibc_union_clients': { name: 'v1_ibc_union_clients'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_clients'; ofType: null; }; }; }; } }; 'v1_ibc_union_clients_stream': { name: 'v1_ibc_union_clients_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_clients'; ofType: null; }; }; }; } }; 'v1_ibc_union_config': { name: 'v1_ibc_union_config'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_config'; ofType: null; }; }; }; } }; 'v1_ibc_union_config_stream': { name: 'v1_ibc_union_config_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_config'; ofType: null; }; }; }; } }; 'v1_ibc_union_connection_recommendations': { name: 'v1_ibc_union_connection_recommendations'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_connection_recommendations'; ofType: null; }; }; }; } }; 'v1_ibc_union_connection_recommendations_stream': { name: 'v1_ibc_union_connection_recommendations_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_connection_recommendations'; ofType: null; }; }; }; } }; 'v1_ibc_union_connections': { name: 'v1_ibc_union_connections'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_connections'; ofType: null; }; }; }; } }; 'v1_ibc_union_connections_stream': { name: 'v1_ibc_union_connections_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_connections'; ofType: null; }; }; }; } }; 'v1_ibc_union_contracts': { name: 'v1_ibc_union_contracts'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_contracts'; ofType: null; }; }; }; } }; 'v1_ibc_union_contracts_stream': { name: 'v1_ibc_union_contracts_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_contracts'; ofType: null; }; }; }; } }; 'v1_ibc_union_cw20_instantiate': { name: 'v1_ibc_union_cw20_instantiate'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_cw20_instantiate'; ofType: null; }; }; }; } }; 'v1_ibc_union_cw20_instantiate_stream': { name: 'v1_ibc_union_cw20_instantiate_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_cw20_instantiate'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_fungible_asset_order_global_stats_type': { name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_fungible_asset_order_global_stats_type_stream': { name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_fungible_asset_order_stats_type': { name: 'v1_ibc_union_daily_fungible_asset_order_stats_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_fungible_asset_order_stats_type_stream': { name: 'v1_ibc_union_daily_fungible_asset_order_stats_type_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_fungible_asset_orders': { name: 'v1_ibc_union_daily_fungible_asset_orders'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_fungible_asset_orders_stream': { name: 'v1_ibc_union_daily_fungible_asset_orders_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_packets': { name: 'v1_ibc_union_daily_packets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_packets'; ofType: null; }; }; }; } }; 'v1_ibc_union_daily_packets_stream': { name: 'v1_ibc_union_daily_packets_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_packets'; ofType: null; }; }; }; } }; 'v1_ibc_union_explorers': { name: 'v1_ibc_union_explorers'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_explorers'; ofType: null; }; }; }; } }; 'v1_ibc_union_explorers_stream': { name: 'v1_ibc_union_explorers_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_explorers'; ofType: null; }; }; }; } }; 'v1_ibc_union_faucets': { name: 'v1_ibc_union_faucets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_faucets'; ofType: null; }; }; }; } }; 'v1_ibc_union_faucets_stream': { name: 'v1_ibc_union_faucets_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_faucets'; ofType: null; }; }; }; } }; 'v1_ibc_union_fungible_asset_order_stats': { name: 'v1_ibc_union_fungible_asset_order_stats'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats'; ofType: null; }; }; }; } }; 'v1_ibc_union_fungible_asset_order_stats_2': { name: 'v1_ibc_union_fungible_asset_order_stats_2'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2'; ofType: null; }; }; }; } }; 'v1_ibc_union_fungible_asset_order_stats_2_stream': { name: 'v1_ibc_union_fungible_asset_order_stats_2_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2'; ofType: null; }; }; }; } }; 'v1_ibc_union_fungible_asset_order_stats_stream': { name: 'v1_ibc_union_fungible_asset_order_stats_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats'; ofType: null; }; }; }; } }; 'v1_ibc_union_fungible_asset_orders': { name: 'v1_ibc_union_fungible_asset_orders'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders'; ofType: null; }; }; }; } }; 'v1_ibc_union_fungible_asset_orders_aggregate': { name: 'v1_ibc_union_fungible_asset_orders_aggregate'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_aggregate'; ofType: null; }; } }; 'v1_ibc_union_fungible_asset_orders_stream': { name: 'v1_ibc_union_fungible_asset_orders_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders'; ofType: null; }; }; }; } }; 'v1_ibc_union_get_address_stats': { name: 'v1_ibc_union_get_address_stats'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_get_global_stats': { name: 'v1_ibc_union_get_global_stats'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_health_check': { name: 'v1_ibc_union_health_check'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_health_check'; ofType: null; }; }; }; } }; 'v1_ibc_union_health_check_stream': { name: 'v1_ibc_union_health_check_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_health_check'; ofType: null; }; }; }; } }; 'v1_ibc_union_index_status': { name: 'v1_ibc_union_index_status'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_index_status'; ofType: null; }; }; }; } }; 'v1_ibc_union_index_status_stream': { name: 'v1_ibc_union_index_status_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_index_status'; ofType: null; }; }; }; } }; 'v1_ibc_union_missing_token_details': { name: 'v1_ibc_union_missing_token_details'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_missing_token_details'; ofType: null; }; }; }; } }; 'v1_ibc_union_missing_token_details_stream': { name: 'v1_ibc_union_missing_token_details_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_missing_token_details'; ofType: null; }; }; }; } }; 'v1_ibc_union_packets': { name: 'v1_ibc_union_packets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_packets'; ofType: null; }; }; }; } }; 'v1_ibc_union_packets_stream': { name: 'v1_ibc_union_packets_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_packets'; ofType: null; }; }; }; } }; 'v1_ibc_union_relayer_status': { name: 'v1_ibc_union_relayer_status'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_relayer_status'; ofType: null; }; }; }; } }; 'v1_ibc_union_relayer_status_stream': { name: 'v1_ibc_union_relayer_status_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_relayer_status'; ofType: null; }; }; }; } }; 'v1_ibc_union_rpcs': { name: 'v1_ibc_union_rpcs'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_rpcs'; ofType: null; }; }; }; } }; 'v1_ibc_union_rpcs_stream': { name: 'v1_ibc_union_rpcs_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_rpcs'; ofType: null; }; }; }; } }; 'v1_ibc_union_statistics': { name: 'v1_ibc_union_statistics'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_statistics'; ofType: null; }; }; }; } }; 'v1_ibc_union_statistics_stream': { name: 'v1_ibc_union_statistics_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_statistics'; ofType: null; }; }; }; } }; 'v1_ibc_union_streaks': { name: 'v1_ibc_union_streaks'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_streaks'; ofType: null; }; }; }; } }; 'v1_ibc_union_streaks_stream': { name: 'v1_ibc_union_streaks_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_streaks'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_representation_source_unwrapping': { name: 'v1_ibc_union_token_representation_source_unwrapping'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_representation_source_unwrapping_stream': { name: 'v1_ibc_union_token_representation_source_unwrapping_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_representation_sources': { name: 'v1_ibc_union_token_representation_sources'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representation_sources'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_representation_sources_stream': { name: 'v1_ibc_union_token_representation_sources_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representation_sources'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_representations': { name: 'v1_ibc_union_token_representations'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representations'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_representations_stream': { name: 'v1_ibc_union_token_representations_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representations'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_sources': { name: 'v1_ibc_union_token_sources'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_sources'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_sources_stream': { name: 'v1_ibc_union_token_sources_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_sources'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_unwrapping': { name: 'v1_ibc_union_token_unwrapping'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_unwrapping'; ofType: null; }; }; }; } }; 'v1_ibc_union_token_unwrapping_stream': { name: 'v1_ibc_union_token_unwrapping_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_unwrapping'; ofType: null; }; }; }; } }; 'v1_ibc_union_tokens': { name: 'v1_ibc_union_tokens'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_tokens'; ofType: null; }; }; }; } }; 'v1_ibc_union_tokens_stream': { name: 'v1_ibc_union_tokens_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_tokens'; ofType: null; }; }; }; } }; 'v1_ibc_union_trace_previews_type': { name: 'v1_ibc_union_trace_previews_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_trace_previews_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_trace_previews_type_stream': { name: 'v1_ibc_union_trace_previews_type_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_trace_previews_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_traces_type': { name: 'v1_ibc_union_traces_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_traces_type'; ofType: null; }; }; }; } }; 'v1_ibc_union_traces_type_stream': { name: 'v1_ibc_union_traces_type_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_traces_type'; ofType: null; }; }; }; } }; 'v2_chains': { name: 'v2_chains'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_chain_type'; ofType: null; }; }; }; } }; 'v2_channels': { name: 'v2_channels'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_channel_type'; ofType: null; }; }; }; } }; 'v2_connections': { name: 'v2_connections'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_connection_type'; ofType: null; }; }; }; } }; 'v2_packets': { name: 'v2_packets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_packet_type'; ofType: null; }; }; }; } }; 'v2_stats_count': { name: 'v2_stats_count'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_type'; ofType: null; }; }; }; } }; 'v2_stats_packets_chain': { name: 'v2_stats_packets_chain'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_packets_chain_type'; ofType: null; }; }; }; } }; 'v2_stats_packets_chain_type': { name: 'v2_stats_packets_chain_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_packets_chain_type'; ofType: null; }; }; }; } }; 'v2_stats_packets_chain_type_stream': { name: 'v2_stats_packets_chain_type_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_packets_chain_type'; ofType: null; }; }; }; } }; 'v2_stats_packets_daily_count': { name: 'v2_stats_packets_daily_count'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_daily_count_type'; ofType: null; }; }; }; } }; 'v2_stats_transfers_address': { name: 'v2_stats_transfers_address'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_transfers_address_type'; ofType: null; }; }; }; } }; 'v2_stats_transfers_chain': { name: 'v2_stats_transfers_chain'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_transfers_chain_type'; ofType: null; }; }; }; } }; 'v2_stats_transfers_chain_type': { name: 'v2_stats_transfers_chain_type'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_transfers_chain_type'; ofType: null; }; }; }; } }; 'v2_stats_transfers_chain_type_stream': { name: 'v2_stats_transfers_chain_type_stream'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_transfers_chain_type'; ofType: null; }; }; }; } }; 'v2_stats_transfers_daily_count': { name: 'v2_stats_transfers_daily_count'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_stats_daily_count_type'; ofType: null; }; }; }; } }; 'v2_tokens': { name: 'v2_tokens'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_token_meta'; ofType: null; }; }; }; } }; 'v2_transfers': { name: 'v2_transfers'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_transfer_type'; ofType: null; }; }; }; } }; }; };
-    'timestamptz': unknown;
-    'timestamptz_comparison_exp': { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; isOneOf: false; inputFields: [{ name: '_eq'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: '_gt'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: '_gte'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: '_in'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; }; }; defaultValue: null }, { name: '_is_null'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: '_lt'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: '_lte'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: '_neq'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: '_nin'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; }; }; defaultValue: null }]; };
-    'v1_ibc_union_app_chain_configurations': { kind: 'OBJECT'; name: 'v1_ibc_union_app_chain_configurations'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'channel_list': { name: 'channel_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'connection_list': { name: 'connection_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'environment': { name: 'environment'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'index_status': { name: 'index_status'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'packet_list': { name: 'packet_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'transfer_list': { name: 'transfer_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'transfer_submission': { name: 'transfer_submission'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; }; };
-    'v1_ibc_union_app_chain_configurations_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_min_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_app_chain_configurations_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'channel_list'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'connection_list'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'environment'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'index_status'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_list'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'transfer_list'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'transfer_submission'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_app_chain_configurations_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_max_order_by'; isOneOf: false; inputFields: [{ name: 'environment'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_app_chain_configurations_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_min_order_by'; isOneOf: false; inputFields: [{ name: 'environment'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_app_chain_configurations_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'channel_list'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'connection_list'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'environment'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index_status'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_list'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transfer_list'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transfer_submission'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_app_chain_configurations_select_column': { name: 'v1_ibc_union_app_chain_configurations_select_column'; enumValues: 'channel_list' | 'connection_list' | 'environment' | 'index_status' | 'packet_list' | 'transfer_list' | 'transfer_submission'; };
-    'v1_ibc_union_app_chain_configurations_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_app_chain_configurations_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'channel_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'connection_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'environment'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'index_status'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'packet_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'transfer_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'transfer_submission'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets': { kind: 'OBJECT'; name: 'v1_ibc_union_assets'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'decimals': { name: 'decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'denom': { name: 'denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'display_name': { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'display_symbol': { name: 'display_symbol'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'faucets': { name: 'faucets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_faucets'; ofType: null; }; }; }; } }; 'gas_token': { name: 'gas_token'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'logo_uri': { name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'origin': { name: 'origin'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source': { name: 'source'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'unwrapped_chain': { name: 'unwrapped_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'unwrapped_denom': { name: 'unwrapped_denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_assets_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'avg'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_avg_order_by'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_min_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_stddev_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_stddev_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_stddev_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'sum'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_sum_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_var_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_var_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'variance'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_variance_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_avg_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_avg_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'decimals'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'display_symbol'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'faucets'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'gas_token'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'origin'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_max_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'origin'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_min_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'origin'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'faucets_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'gas_token'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'origin'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_select_column': { name: 'v1_ibc_union_assets_select_column'; enumValues: 'decimals' | 'denom' | 'display_name' | 'display_symbol' | 'gas_token' | 'logo_uri' | 'origin' | 'source' | 'unwrapped_denom'; };
-    'v1_ibc_union_assets_stddev_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_stddev_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_stddev_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_stddev_pop_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_stddev_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_stddev_samp_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'display_symbol'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'gas_token'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'origin'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_sum_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_sum_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_var_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_var_pop_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_var_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_var_samp_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_assets_variance_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_variance_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_chains': { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; fields: { 'addr_prefix': { name: 'addr_prefix'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'assets': { name: 'assets'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_assets'; ofType: null; }; }; }; } }; 'chain_id': { name: 'chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'display_name': { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'enabled': { name: 'enabled'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'enabled_staging': { name: 'enabled_staging'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'explorers': { name: 'explorers'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_explorers'; ofType: null; }; }; }; } }; 'features': { name: 'features'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_app_chain_configurations'; ofType: null; }; }; }; } }; 'index_status': { name: 'index_status'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_index_status'; ofType: null; } }; 'logo_uri': { name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'relayer_status': { name: 'relayer_status'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_relayer_status'; ofType: null; } }; 'rpc_type': { name: 'rpc_type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'rpcs': { name: 'rpcs'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_rpcs'; ofType: null; }; }; }; } }; 'testnet': { name: 'testnet'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'tokens': { name: 'tokens'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_tokens'; ofType: null; }; }; }; } }; 'universal_chain_id': { name: 'universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_chains_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'addr_prefix'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'assets'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'enabled'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'enabled_staging'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'explorers'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'features'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'index_status'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_index_status_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'relayer_status'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_relayer_status_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'rpc_type'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'rpcs'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'testnet'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'tokens'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_chains_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; isOneOf: false; inputFields: [{ name: 'addr_prefix'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'assets_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'enabled'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'enabled_staging'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'explorers_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'features_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_app_chain_configurations_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'index_status'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_index_status_order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'relayer_status'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_relayer_status_order_by'; ofType: null; }; defaultValue: null }, { name: 'rpc_type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'rpcs_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'testnet'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'tokens_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_chains_select_column': { name: 'v1_ibc_union_chains_select_column'; enumValues: 'addr_prefix' | 'chain_id' | 'display_name' | 'enabled' | 'enabled_staging' | 'logo_uri' | 'rpc_type' | 'testnet' | 'universal_chain_id'; };
-    'v1_ibc_union_chains_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_chains_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'addr_prefix'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'enabled'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'enabled_staging'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'rpc_type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'testnet'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_channel_recommendations': { kind: 'OBJECT'; name: 'v1_ibc_union_channel_recommendations'; fields: { 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'destination_chain_id': { name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_port_id': { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'source_chain_id': { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_port_id': { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'status': { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'version': { name: 'version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_channel_recommendations_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channel_recommendations_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channel_recommendations_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channel_recommendations_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channel_recommendations_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'version'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_channel_recommendations_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channel_recommendations_order_by'; isOneOf: false; inputFields: [{ name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'version'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_channel_recommendations_select_column': { name: 'v1_ibc_union_channel_recommendations_select_column'; enumValues: 'destination_chain_id' | 'destination_channel_id' | 'destination_client_id' | 'destination_connection_id' | 'destination_port_id' | 'source_chain_id' | 'source_channel_id' | 'source_client_id' | 'source_connection_id' | 'source_port_id' | 'status' | 'version'; };
-    'v1_ibc_union_channel_recommendations_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channel_recommendations_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channel_recommendations_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_channel_recommendations_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channel_recommendations_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_channels': { kind: 'OBJECT'; name: 'v1_ibc_union_channels'; fields: { 'connection': { name: 'connection'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_connections'; ofType: null; } }; 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'destination_chain_id': { name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_port_id': { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'internal_source_chain_id': { name: 'internal_source_chain_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'source_chain_id': { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_port_id': { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'status': { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'version': { name: 'version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_channels_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channels_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channels_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channels_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channels_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'connection'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connections_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'internal_source_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'version'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_channels_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channels_order_by'; isOneOf: false; inputFields: [{ name: 'connection'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connections_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'version'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_channels_select_column': { name: 'v1_ibc_union_channels_select_column'; enumValues: 'destination_chain_id' | 'destination_channel_id' | 'destination_client_id' | 'destination_connection_id' | 'destination_port_id' | 'internal_source_chain_id' | 'source_chain_id' | 'source_channel_id' | 'source_client_id' | 'source_connection_id' | 'source_port_id' | 'status' | 'version'; };
-    'v1_ibc_union_channels_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channels_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channels_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_channels_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_channels_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'internal_source_chain_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_client_heights': { kind: 'OBJECT'; name: 'v1_ibc_union_client_heights'; fields: { 'client_chain': { name: 'client_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'client_id': { name: 'client_id'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'counterparty_chain': { name: 'counterparty_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'max_counterparty_height': { name: 'max_counterparty_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; }; };
-    'v1_ibc_union_client_heights_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'client_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'client_id'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'counterparty_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'max_counterparty_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_client_heights_max': { kind: 'OBJECT'; name: 'v1_ibc_union_client_heights_max'; fields: { 'client_chain': { name: 'client_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'client_id': { name: 'client_id'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'counterparty_chain': { name: 'counterparty_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'max_counterparty_height': { name: 'max_counterparty_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; }; };
-    'v1_ibc_union_client_heights_max_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_max_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_max_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_max_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_max_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'client_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'client_id'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'counterparty_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'max_counterparty_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_client_heights_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_max_order_by'; isOneOf: false; inputFields: [{ name: 'client_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'counterparty_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'max_counterparty_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_client_heights_max_select_column': { name: 'v1_ibc_union_client_heights_max_select_column'; enumValues: 'client_id' | 'max_counterparty_height'; };
-    'v1_ibc_union_client_heights_max_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_max_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_max_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_client_heights_max_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_max_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'client_id'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'max_counterparty_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_client_heights_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_order_by'; isOneOf: false; inputFields: [{ name: 'client_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'counterparty_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'max_counterparty_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_client_heights_select_column': { name: 'v1_ibc_union_client_heights_select_column'; enumValues: 'client_id' | 'max_counterparty_height'; };
-    'v1_ibc_union_client_heights_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_client_heights_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_client_heights_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'client_id'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'max_counterparty_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_clients': { kind: 'OBJECT'; name: 'v1_ibc_union_clients'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'client_id': { name: 'client_id'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'counterparty_chain': { name: 'counterparty_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'trace_previews': { name: 'trace_previews'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_trace_previews_type'; ofType: null; }; }; } }; }; };
-    'v1_ibc_union_clients_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'client_id'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'counterparty_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'trace_previews'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_bool_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_clients_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'counterparty_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'trace_previews_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_aggregate_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_clients_select_column': { name: 'v1_ibc_union_clients_select_column'; enumValues: 'client_id'; };
-    'v1_ibc_union_clients_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_clients_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'client_id'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_config': { kind: 'OBJECT'; name: 'v1_ibc_union_config'; fields: { 'key': { name: 'key'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'value': { name: 'value'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_config_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_config_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_config_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_config_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_config_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'key'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'value'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_config_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_config_order_by'; isOneOf: false; inputFields: [{ name: 'key'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'value'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_config_select_column': { name: 'v1_ibc_union_config_select_column'; enumValues: 'key' | 'value'; };
-    'v1_ibc_union_config_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_config_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_config_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_config_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_config_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'key'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'value'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_connection_recommendations': { kind: 'OBJECT'; name: 'v1_ibc_union_connection_recommendations'; fields: { 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'destination_chain_id': { name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'source_chain_id': { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; }; };
-    'v1_ibc_union_connection_recommendations_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connection_recommendations_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connection_recommendations_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connection_recommendations_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connection_recommendations_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_connection_recommendations_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connection_recommendations_order_by'; isOneOf: false; inputFields: [{ name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_connection_recommendations_select_column': { name: 'v1_ibc_union_connection_recommendations_select_column'; enumValues: 'destination_chain_id' | 'destination_client_id' | 'destination_connection_id' | 'source_chain_id' | 'source_client_id' | 'source_connection_id'; };
-    'v1_ibc_union_connection_recommendations_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connection_recommendations_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connection_recommendations_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_connection_recommendations_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connection_recommendations_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_connections': { kind: 'OBJECT'; name: 'v1_ibc_union_connections'; fields: { 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'destination_chain_id': { name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_client': { name: 'destination_client'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_clients'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'source_chain_id': { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_client': { name: 'source_client'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_clients'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'status': { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'trace_previews': { name: 'trace_previews'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_trace_previews_type'; ofType: null; }; }; } }; }; };
-    'v1_ibc_union_connections_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connections_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connections_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connections_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connections_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_client'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_client'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'trace_previews'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_bool_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_connections_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connections_order_by'; isOneOf: false; inputFields: [{ name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_client'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_client'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_clients_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'trace_previews_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_aggregate_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_connections_select_column': { name: 'v1_ibc_union_connections_select_column'; enumValues: 'destination_chain_id' | 'destination_client_id' | 'destination_connection_id' | 'source_chain_id' | 'source_client_id' | 'source_connection_id' | 'status'; };
-    'v1_ibc_union_connections_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connections_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connections_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_connections_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_connections_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_contracts': { kind: 'OBJECT'; name: 'v1_ibc_union_contracts'; fields: { 'abi': { name: 'abi'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'address': { name: 'address'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'created_at': { name: 'created_at'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'description': { name: 'description'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'end_height': { name: 'end_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'start_height': { name: 'start_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'type': { name: 'type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'updated_at': { name: 'updated_at'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'version': { name: 'version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_contracts_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_contracts_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_contracts_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_contracts_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_contracts_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'abi'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'address'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'created_at'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'end_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'start_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'updated_at'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'version'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_contracts_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_contracts_order_by'; isOneOf: false; inputFields: [{ name: 'abi'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'address'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'created_at'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'end_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'start_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'updated_at'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'version'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_contracts_select_column': { name: 'v1_ibc_union_contracts_select_column'; enumValues: 'abi' | 'address' | 'created_at' | 'description' | 'end_height' | 'start_height' | 'type' | 'updated_at' | 'version'; };
-    'v1_ibc_union_contracts_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_contracts_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_contracts_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_contracts_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_contracts_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'abi'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'address'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'created_at'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'end_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'start_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'updated_at'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_cw20_instantiate': { kind: 'OBJECT'; name: 'v1_ibc_union_cw20_instantiate'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'cw20_token_address': { name: 'cw20_token_address'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'quote_token': { name: 'quote_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_cw20_instantiate_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_cw20_instantiate_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_cw20_instantiate_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_cw20_instantiate_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_cw20_instantiate_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'cw20_token_address'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'quote_token'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_cw20_instantiate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_cw20_instantiate_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'cw20_token_address'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'quote_token'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_cw20_instantiate_select_column': { name: 'v1_ibc_union_cw20_instantiate_select_column'; enumValues: 'cw20_token_address' | 'quote_token'; };
-    'v1_ibc_union_cw20_instantiate_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_cw20_instantiate_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_cw20_instantiate_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_cw20_instantiate_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_cw20_instantiate_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'cw20_token_address'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'quote_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_order_global_stats_type': { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type'; fields: { 'avg_orders_per_address': { name: 'avg_orders_per_address'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'day_date': { name: 'day_date'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; } }; 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'total_orders': { name: 'total_orders'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'unique_addresses': { name: 'unique_addresses'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; }; };
-    'v1_ibc_union_daily_fungible_asset_order_global_stats_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'avg_orders_per_address'; type: { kind: 'INPUT_OBJECT'; name: 'numeric_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'INPUT_OBJECT'; name: 'date_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'total_orders'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'unique_addresses'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_order_global_stats_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type_order_by'; isOneOf: false; inputFields: [{ name: 'avg_orders_per_address'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'total_orders'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unique_addresses'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_order_global_stats_type_select_column': { name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type_select_column'; enumValues: 'avg_orders_per_address' | 'day_date' | 'total_orders' | 'unique_addresses'; };
-    'v1_ibc_union_daily_fungible_asset_order_global_stats_type_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_order_global_stats_type_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_global_stats_type_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'avg_orders_per_address'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }, { name: 'total_orders'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'unique_addresses'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_order_stats_type': { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type'; fields: { 'addresses_with_same_rank': { name: 'addresses_with_same_rank'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'canonical_address': { name: 'canonical_address'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'day_date': { name: 'day_date'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; } }; 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'fungible_asset_order_count': { name: 'fungible_asset_order_count'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'rank': { name: 'rank'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'total_ranks': { name: 'total_ranks'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; }; };
-    'v1_ibc_union_daily_fungible_asset_order_stats_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'addresses_with_same_rank'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'canonical_address'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'INPUT_OBJECT'; name: 'date_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'fungible_asset_order_count'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'rank'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'total_ranks'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_order_stats_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type_order_by'; isOneOf: false; inputFields: [{ name: 'addresses_with_same_rank'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'canonical_address'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'fungible_asset_order_count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'rank'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'total_ranks'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_order_stats_type_select_column': { name: 'v1_ibc_union_daily_fungible_asset_order_stats_type_select_column'; enumValues: 'addresses_with_same_rank' | 'canonical_address' | 'day_date' | 'fungible_asset_order_count' | 'rank' | 'total_ranks'; };
-    'v1_ibc_union_daily_fungible_asset_order_stats_type_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_order_stats_type_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_order_stats_type_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'addresses_with_same_rank'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'canonical_address'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }, { name: 'fungible_asset_order_count'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'rank'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'total_ranks'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_orders': { kind: 'OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders'; fields: { 'count': { name: 'count'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'day': { name: 'day'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; } }; }; };
-    'v1_ibc_union_daily_fungible_asset_orders_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'count'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'day'; type: { kind: 'INPUT_OBJECT'; name: 'date_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_orders_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'day'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_orders_select_column': { name: 'v1_ibc_union_daily_fungible_asset_orders_select_column'; enumValues: 'count' | 'day'; };
-    'v1_ibc_union_daily_fungible_asset_orders_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_fungible_asset_orders_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_fungible_asset_orders_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'day'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_packets': { kind: 'OBJECT'; name: 'v1_ibc_union_daily_packets'; fields: { 'count': { name: 'count'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'day': { name: 'day'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; } }; }; };
-    'v1_ibc_union_daily_packets_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_packets_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_packets_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_packets_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_packets_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'count'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'day'; type: { kind: 'INPUT_OBJECT'; name: 'date_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_packets_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_packets_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'day'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_packets_select_column': { name: 'v1_ibc_union_daily_packets_select_column'; enumValues: 'count' | 'day'; };
-    'v1_ibc_union_daily_packets_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_packets_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_packets_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_daily_packets_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_daily_packets_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'day'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_explorers': { kind: 'OBJECT'; name: 'v1_ibc_union_explorers'; fields: { 'address_url': { name: 'address_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'block_url': { name: 'block_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'description': { name: 'description'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'display_name': { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'home_url': { name: 'home_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'logo_uri': { name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'name': { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'tx_url': { name: 'tx_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_explorers_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_min_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_explorers_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'address_url'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'block_url'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'home_url'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'tx_url'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_explorers_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_max_order_by'; isOneOf: false; inputFields: [{ name: 'address_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'block_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'home_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'tx_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_explorers_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_min_order_by'; isOneOf: false; inputFields: [{ name: 'address_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'block_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'home_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'tx_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_explorers_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_order_by'; isOneOf: false; inputFields: [{ name: 'address_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'block_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'home_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'tx_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_explorers_select_column': { name: 'v1_ibc_union_explorers_select_column'; enumValues: 'address_url' | 'block_url' | 'description' | 'display_name' | 'home_url' | 'logo_uri' | 'name' | 'tx_url'; };
-    'v1_ibc_union_explorers_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_explorers_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_explorers_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'address_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'block_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'home_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'tx_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_faucets': { kind: 'OBJECT'; name: 'v1_ibc_union_faucets'; fields: { 'asset': { name: 'asset'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_assets'; ofType: null; } }; 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'denom': { name: 'denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'display_name': { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'enabled': { name: 'enabled'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'url': { name: 'url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_faucets_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_min_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_faucets_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'asset'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'enabled'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_faucets_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_max_order_by'; isOneOf: false; inputFields: [{ name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_faucets_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_min_order_by'; isOneOf: false; inputFields: [{ name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_faucets_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_order_by'; isOneOf: false; inputFields: [{ name: 'asset'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_order_by'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'enabled'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_faucets_select_column': { name: 'v1_ibc_union_faucets_select_column'; enumValues: 'denom' | 'display_name' | 'enabled' | 'url'; };
-    'v1_ibc_union_faucets_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_faucets_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_faucets_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'enabled'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_order_stats': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats'; fields: { 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'interval_secs': { name: 'interval_secs'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'secs_until_packet_ack': { name: 'secs_until_packet_ack'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; } }; 'secs_until_packet_recv': { name: 'secs_until_packet_recv'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; } }; 'secs_until_write_ack': { name: 'secs_until_write_ack'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_order_stats_2': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2'; fields: { 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'packet_send_timestamp_from': { name: 'packet_send_timestamp_from'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'secs_until_packet_ack': { name: 'secs_until_packet_ack'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; } }; 'secs_until_packet_recv': { name: 'secs_until_packet_recv'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; } }; 'secs_until_write_ack': { name: 'secs_until_write_ack'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_order_stats_2_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_timestamp_from'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_ack'; type: { kind: 'INPUT_OBJECT'; name: 'latency_percentiles_scalar_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_recv'; type: { kind: 'INPUT_OBJECT'; name: 'latency_percentiles_scalar_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'secs_until_write_ack'; type: { kind: 'INPUT_OBJECT'; name: 'latency_percentiles_scalar_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_order_stats_2_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2_order_by'; isOneOf: false; inputFields: [{ name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_timestamp_from'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_ack'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_recv'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'secs_until_write_ack'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_order_stats_2_select_column': { name: 'v1_ibc_union_fungible_asset_order_stats_2_select_column'; enumValues: 'packet_send_timestamp_from' | 'secs_until_packet_ack' | 'secs_until_packet_recv' | 'secs_until_write_ack'; };
-    'v1_ibc_union_fungible_asset_order_stats_2_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_order_stats_2_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_2_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'packet_send_timestamp_from'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_ack'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_recv'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }, { name: 'secs_until_write_ack'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_order_stats_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'interval_secs'; type: { kind: 'INPUT_OBJECT'; name: 'numeric_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_ack'; type: { kind: 'INPUT_OBJECT'; name: 'latency_percentiles_scalar_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_recv'; type: { kind: 'INPUT_OBJECT'; name: 'latency_percentiles_scalar_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'secs_until_write_ack'; type: { kind: 'INPUT_OBJECT'; name: 'latency_percentiles_scalar_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_order_stats_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_order_by'; isOneOf: false; inputFields: [{ name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'interval_secs'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_ack'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_recv'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'secs_until_write_ack'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_order_stats_select_column': { name: 'v1_ibc_union_fungible_asset_order_stats_select_column'; enumValues: 'interval_secs' | 'secs_until_packet_ack' | 'secs_until_packet_recv' | 'secs_until_write_ack'; };
-    'v1_ibc_union_fungible_asset_order_stats_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_order_stats_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_order_stats_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'interval_secs'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_ack'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }, { name: 'secs_until_packet_recv'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }, { name: 'secs_until_write_ack'; type: { kind: 'SCALAR'; name: 'latency_percentiles_scalar'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_orders': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders'; fields: { 'ack_fill_type': { name: 'ack_fill_type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'ack_market_maker': { name: 'ack_market_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'ack_tag': { name: 'ack_tag'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'acknowledgement': { name: 'acknowledgement'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'acknowledgement_decoded': { name: 'acknowledgement_decoded'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; } }; 'base_amount': { name: 'base_amount'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token': { name: 'base_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'base_token_details': { name: 'base_token_details'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_assets'; ofType: null; } }; 'base_token_meta': { name: 'base_token_meta'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_tokens'; ofType: null; } }; 'base_token_name': { name: 'base_token_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_path': { name: 'base_token_path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_symbol': { name: 'base_token_symbol'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'channel_version': { name: 'channel_version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'data': { name: 'data'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'data_decoded': { name: 'data_decoded'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; } }; 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'destination_chain_id': { name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_port_id': { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'instruction_hash': { name: 'instruction_hash'; type: { kind: 'SCALAR'; name: 'bytea'; ofType: null; } }; 'instruction_path': { name: 'instruction_path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet': { name: 'packet'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_packets'; ofType: null; } }; 'packet_ack_block_hash': { name: 'packet_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_maker': { name: 'packet_ack_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_timestamp': { name: 'packet_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_transaction_hash': { name: 'packet_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_hash': { name: 'packet_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_block_hash': { name: 'packet_recv_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_maker': { name: 'packet_recv_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_maker_msg': { name: 'packet_recv_maker_msg'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_timestamp': { name: 'packet_recv_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_transaction_hash': { name: 'packet_recv_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_block_hash': { name: 'packet_send_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_timestamp': { name: 'packet_send_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_transaction_hash': { name: 'packet_send_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'path': { name: 'path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'quote_amount': { name: 'quote_amount'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'quote_token': { name: 'quote_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'quote_token_details': { name: 'quote_token_details'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_assets'; ofType: null; } }; 'quote_token_meta': { name: 'quote_token_meta'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_tokens'; ofType: null; } }; 'receiver': { name: 'receiver'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'receiver_display': { name: 'receiver_display'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'receiver_normalized': { name: 'receiver_normalized'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'salt': { name: 'salt'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender': { name: 'sender'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender_display': { name: 'sender_display'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender_normalized': { name: 'sender_normalized'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sort_order': { name: 'sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'source_chain_id': { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_port_id': { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'status': { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'traces': { name: 'traces'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_traces_type'; ofType: null; }; }; } }; 'write_ack_block_hash': { name: 'write_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_timestamp': { name: 'write_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_transaction_hash': { name: 'write_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_aggregate': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_aggregate'; fields: { 'aggregate': { name: 'aggregate'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_aggregate_fields'; ofType: null; } }; 'nodes': { name: 'nodes'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders'; ofType: null; }; }; }; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_aggregate_fields': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_aggregate_fields'; fields: { 'avg': { name: 'avg'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_avg_fields'; ofType: null; } }; 'count': { name: 'count'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; } }; 'max': { name: 'max'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_max_fields'; ofType: null; } }; 'min': { name: 'min'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_min_fields'; ofType: null; } }; 'stddev': { name: 'stddev'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_stddev_fields'; ofType: null; } }; 'stddev_pop': { name: 'stddev_pop'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_stddev_pop_fields'; ofType: null; } }; 'stddev_samp': { name: 'stddev_samp'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_stddev_samp_fields'; ofType: null; } }; 'sum': { name: 'sum'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_sum_fields'; ofType: null; } }; 'var_pop': { name: 'var_pop'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_var_pop_fields'; ofType: null; } }; 'var_samp': { name: 'var_samp'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_var_samp_fields'; ofType: null; } }; 'variance': { name: 'variance'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_variance_fields'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_avg_fields': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_avg_fields'; fields: { 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'ack_fill_type'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'ack_market_maker'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'ack_tag'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'acknowledgement'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'acknowledgement_decoded'; type: { kind: 'INPUT_OBJECT'; name: 'jsonb_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'base_amount'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token_decimals'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token_details'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token_meta'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token_name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token_path'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token_symbol'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'channel_version'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'data'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'data_decoded'; type: { kind: 'INPUT_OBJECT'; name: 'jsonb_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'instruction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'bytea_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'instruction_path'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_packets_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_maker'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker_msg'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'path'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'quote_amount'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'quote_token'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'quote_token_details'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'quote_token_meta'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'receiver'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'receiver_display'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'receiver_normalized'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'salt'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sender'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sender_display'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sender_normalized'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sort_order'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'timeout_height'; type: { kind: 'INPUT_OBJECT'; name: 'numeric_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'timeout_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'numeric_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'traces'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_orders_max_fields': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_max_fields'; fields: { 'ack_fill_type': { name: 'ack_fill_type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'ack_market_maker': { name: 'ack_market_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'ack_tag': { name: 'ack_tag'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'acknowledgement': { name: 'acknowledgement'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_amount': { name: 'base_amount'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token': { name: 'base_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'base_token_name': { name: 'base_token_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_path': { name: 'base_token_path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_symbol': { name: 'base_token_symbol'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'channel_version': { name: 'channel_version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'data': { name: 'data'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_chain_id': { name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_port_id': { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'instruction_path': { name: 'instruction_path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_block_hash': { name: 'packet_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_maker': { name: 'packet_ack_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_timestamp': { name: 'packet_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_transaction_hash': { name: 'packet_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_hash': { name: 'packet_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_block_hash': { name: 'packet_recv_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_maker': { name: 'packet_recv_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_maker_msg': { name: 'packet_recv_maker_msg'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_timestamp': { name: 'packet_recv_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_transaction_hash': { name: 'packet_recv_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_block_hash': { name: 'packet_send_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_timestamp': { name: 'packet_send_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_transaction_hash': { name: 'packet_send_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'path': { name: 'path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'quote_amount': { name: 'quote_amount'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'quote_token': { name: 'quote_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'receiver': { name: 'receiver'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'receiver_display': { name: 'receiver_display'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'receiver_normalized': { name: 'receiver_normalized'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'salt': { name: 'salt'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender': { name: 'sender'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender_display': { name: 'sender_display'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender_normalized': { name: 'sender_normalized'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sort_order': { name: 'sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_chain_id': { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_port_id': { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'status': { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'write_ack_block_hash': { name: 'write_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_timestamp': { name: 'write_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_transaction_hash': { name: 'write_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_min_fields': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_min_fields'; fields: { 'ack_fill_type': { name: 'ack_fill_type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'ack_market_maker': { name: 'ack_market_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'ack_tag': { name: 'ack_tag'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'acknowledgement': { name: 'acknowledgement'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_amount': { name: 'base_amount'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token': { name: 'base_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'base_token_name': { name: 'base_token_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_path': { name: 'base_token_path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_symbol': { name: 'base_token_symbol'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'channel_version': { name: 'channel_version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'data': { name: 'data'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_chain_id': { name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_port_id': { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'instruction_path': { name: 'instruction_path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_block_hash': { name: 'packet_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_maker': { name: 'packet_ack_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_timestamp': { name: 'packet_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_transaction_hash': { name: 'packet_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_hash': { name: 'packet_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_block_hash': { name: 'packet_recv_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_maker': { name: 'packet_recv_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_maker_msg': { name: 'packet_recv_maker_msg'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_timestamp': { name: 'packet_recv_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_transaction_hash': { name: 'packet_recv_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_block_hash': { name: 'packet_send_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_timestamp': { name: 'packet_send_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_transaction_hash': { name: 'packet_send_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'path': { name: 'path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'quote_amount': { name: 'quote_amount'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'quote_token': { name: 'quote_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'receiver': { name: 'receiver'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'receiver_display': { name: 'receiver_display'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'receiver_normalized': { name: 'receiver_normalized'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'salt': { name: 'salt'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender': { name: 'sender'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender_display': { name: 'sender_display'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender_normalized': { name: 'sender_normalized'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sort_order': { name: 'sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_chain_id': { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_port_id': { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'status': { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'write_ack_block_hash': { name: 'write_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_timestamp': { name: 'write_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_transaction_hash': { name: 'write_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_order_by'; isOneOf: false; inputFields: [{ name: 'ack_fill_type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'ack_market_maker'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'ack_tag'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'acknowledgement'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'acknowledgement_decoded'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'base_amount'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token_decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token_details'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token_meta'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token_path'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token_symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'channel_version'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'data'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'data_decoded'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'instruction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'instruction_path'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_packets_order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_maker'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker_msg'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'path'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'quote_amount'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'quote_token'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'quote_token_details'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_assets_order_by'; ofType: null; }; defaultValue: null }, { name: 'quote_token_meta'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_order_by'; ofType: null; }; defaultValue: null }, { name: 'receiver'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'receiver_display'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'receiver_normalized'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'salt'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sender'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sender_display'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sender_normalized'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sort_order'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timeout_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timeout_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'traces_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_orders_select_column': { name: 'v1_ibc_union_fungible_asset_orders_select_column'; enumValues: 'ack_fill_type' | 'ack_market_maker' | 'ack_tag' | 'acknowledgement' | 'acknowledgement_decoded' | 'base_amount' | 'base_token' | 'base_token_decimals' | 'base_token_name' | 'base_token_path' | 'base_token_symbol' | 'channel_version' | 'data' | 'data_decoded' | 'destination_chain_id' | 'destination_channel_id' | 'destination_client_id' | 'destination_connection_id' | 'destination_port_id' | 'instruction_hash' | 'instruction_path' | 'packet_ack_block_hash' | 'packet_ack_event_index' | 'packet_ack_height' | 'packet_ack_maker' | 'packet_ack_timestamp' | 'packet_ack_transaction_event_index' | 'packet_ack_transaction_hash' | 'packet_ack_transaction_index' | 'packet_hash' | 'packet_recv_block_hash' | 'packet_recv_event_index' | 'packet_recv_height' | 'packet_recv_maker' | 'packet_recv_maker_msg' | 'packet_recv_timestamp' | 'packet_recv_transaction_event_index' | 'packet_recv_transaction_hash' | 'packet_recv_transaction_index' | 'packet_send_block_hash' | 'packet_send_event_index' | 'packet_send_height' | 'packet_send_timestamp' | 'packet_send_transaction_event_index' | 'packet_send_transaction_hash' | 'packet_send_transaction_index' | 'path' | 'quote_amount' | 'quote_token' | 'receiver' | 'receiver_display' | 'receiver_normalized' | 'salt' | 'sender' | 'sender_display' | 'sender_normalized' | 'sort_order' | 'source_chain_id' | 'source_channel_id' | 'source_client_id' | 'source_connection_id' | 'source_port_id' | 'status' | 'timeout_height' | 'timeout_timestamp' | 'write_ack_block_hash' | 'write_ack_event_index' | 'write_ack_height' | 'write_ack_timestamp' | 'write_ack_transaction_event_index' | 'write_ack_transaction_hash' | 'write_ack_transaction_index'; };
-    'v1_ibc_union_fungible_asset_orders_stddev_fields': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_stddev_fields'; fields: { 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_stddev_pop_fields': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_stddev_pop_fields'; fields: { 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_stddev_samp_fields': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_stddev_samp_fields'; fields: { 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_orders_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'ack_fill_type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'ack_market_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'ack_tag'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'acknowledgement'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'acknowledgement_decoded'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: 'base_amount'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'base_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'base_token_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'base_token_path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'base_token_symbol'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'channel_version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'data'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'data_decoded'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'instruction_hash'; type: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; defaultValue: null }, { name: 'instruction_path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker_msg'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_send_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_send_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'quote_amount'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'quote_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'receiver'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'receiver_display'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'receiver_normalized'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'salt'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'sender'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'sender_display'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'sender_normalized'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: 'write_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'write_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_fungible_asset_orders_sum_fields': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_sum_fields'; fields: { 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_var_pop_fields': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_var_pop_fields'; fields: { 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_var_samp_fields': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_var_samp_fields'; fields: { 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; }; };
-    'v1_ibc_union_fungible_asset_orders_variance_fields': { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_variance_fields'; fields: { 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'Float'; ofType: null; } }; }; };
-    'v1_ibc_union_get_address_stats_args': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_get_address_stats_args'; isOneOf: false; inputFields: [{ name: 'addresses'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_health_check': { kind: 'OBJECT'; name: 'v1_ibc_union_health_check'; fields: { 'result': { name: 'result'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'test': { name: 'test'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_health_check_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_health_check_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_health_check_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_health_check_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_health_check_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'result'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'test'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_health_check_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_health_check_order_by'; isOneOf: false; inputFields: [{ name: 'result'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'test'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_health_check_select_column': { name: 'v1_ibc_union_health_check_select_column'; enumValues: 'result' | 'test'; };
-    'v1_ibc_union_health_check_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_health_check_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_health_check_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_health_check_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_health_check_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'result'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'test'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_index_status': { kind: 'OBJECT'; name: 'v1_ibc_union_index_status'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'chain_id': { name: 'chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'display_name': { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'height': { name: 'height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'status': { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'timestamp': { name: 'timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'tip_age_seconds': { name: 'tip_age_seconds'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; }; };
-    'v1_ibc_union_index_status_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_index_status_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_index_status_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_index_status_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_index_status_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'tip_age_seconds'; type: { kind: 'INPUT_OBJECT'; name: 'numeric_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_index_status_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_index_status_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'tip_age_seconds'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_index_status_select_column': { name: 'v1_ibc_union_index_status_select_column'; enumValues: 'chain_id' | 'display_name' | 'height' | 'status' | 'timestamp' | 'tip_age_seconds'; };
-    'v1_ibc_union_index_status_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_index_status_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_index_status_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_index_status_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_index_status_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'tip_age_seconds'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_missing_token_details': { kind: 'OBJECT'; name: 'v1_ibc_union_missing_token_details'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'last_timestamp': { name: 'last_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'last_transaction_hash': { name: 'last_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'token': { name: 'token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_missing_token_details_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_missing_token_details_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_missing_token_details_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_missing_token_details_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_missing_token_details_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'last_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'last_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'token'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_missing_token_details_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_missing_token_details_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'last_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'last_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'token'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_missing_token_details_select_column': { name: 'v1_ibc_union_missing_token_details_select_column'; enumValues: 'last_timestamp' | 'last_transaction_hash' | 'token'; };
-    'v1_ibc_union_missing_token_details_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_missing_token_details_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_missing_token_details_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_missing_token_details_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_missing_token_details_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'last_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'last_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_packets': { kind: 'OBJECT'; name: 'v1_ibc_union_packets'; fields: { 'acknowledgement': { name: 'acknowledgement'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'acknowledgement_decoded': { name: 'acknowledgement_decoded'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; } }; 'channel_version': { name: 'channel_version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'data': { name: 'data'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'data_decoded': { name: 'data_decoded'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; } }; 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'destination_chain_id': { name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_port_id': { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'fungible_asset_order': { name: 'fungible_asset_order'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_fungible_asset_orders'; ofType: null; } }; 'packet_ack_block_hash': { name: 'packet_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_event_index': { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_maker': { name: 'packet_ack_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_timestamp': { name: 'packet_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_ack_transaction_event_index': { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_ack_transaction_hash': { name: 'packet_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_transaction_index': { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_hash': { name: 'packet_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_block_hash': { name: 'packet_recv_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_event_index': { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_maker': { name: 'packet_recv_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_maker_msg': { name: 'packet_recv_maker_msg'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_timestamp': { name: 'packet_recv_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_recv_transaction_event_index': { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_recv_transaction_hash': { name: 'packet_recv_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_transaction_index': { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_block_hash': { name: 'packet_send_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_send_event_index': { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_timestamp': { name: 'packet_send_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_send_transaction_event_index': { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'packet_send_transaction_hash': { name: 'packet_send_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_send_transaction_index': { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'source_chain_id': { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_port_id': { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'status': { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; 'traces': { name: 'traces'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_traces_type'; ofType: null; }; }; } }; 'write_ack_block_hash': { name: 'write_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'write_ack_event_index': { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_timestamp': { name: 'write_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'write_ack_transaction_event_index': { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'write_ack_transaction_hash': { name: 'write_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'write_ack_transaction_index': { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; }; };
-    'v1_ibc_union_packets_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_packets_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_packets_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_packets_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_packets_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'acknowledgement'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'acknowledgement_decoded'; type: { kind: 'INPUT_OBJECT'; name: 'jsonb_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'channel_version'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'data'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'data_decoded'; type: { kind: 'INPUT_OBJECT'; name: 'jsonb_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'fungible_asset_order'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_maker'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker_msg'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'timeout_height'; type: { kind: 'INPUT_OBJECT'; name: 'numeric_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'timeout_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'numeric_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'traces'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_packets_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_packets_order_by'; isOneOf: false; inputFields: [{ name: 'acknowledgement'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'acknowledgement_decoded'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'channel_version'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'data'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'data_decoded'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'fungible_asset_order'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_fungible_asset_orders_order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_maker'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker_msg'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timeout_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timeout_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'traces_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_packets_select_column': { name: 'v1_ibc_union_packets_select_column'; enumValues: 'acknowledgement' | 'acknowledgement_decoded' | 'channel_version' | 'data' | 'data_decoded' | 'destination_chain_id' | 'destination_channel_id' | 'destination_client_id' | 'destination_connection_id' | 'destination_port_id' | 'packet_ack_block_hash' | 'packet_ack_event_index' | 'packet_ack_height' | 'packet_ack_maker' | 'packet_ack_timestamp' | 'packet_ack_transaction_event_index' | 'packet_ack_transaction_hash' | 'packet_ack_transaction_index' | 'packet_hash' | 'packet_recv_block_hash' | 'packet_recv_event_index' | 'packet_recv_height' | 'packet_recv_maker' | 'packet_recv_maker_msg' | 'packet_recv_timestamp' | 'packet_recv_transaction_event_index' | 'packet_recv_transaction_hash' | 'packet_recv_transaction_index' | 'packet_send_block_hash' | 'packet_send_event_index' | 'packet_send_height' | 'packet_send_timestamp' | 'packet_send_transaction_event_index' | 'packet_send_transaction_hash' | 'packet_send_transaction_index' | 'source_chain_id' | 'source_channel_id' | 'source_client_id' | 'source_connection_id' | 'source_port_id' | 'status' | 'timeout_height' | 'timeout_timestamp' | 'write_ack_block_hash' | 'write_ack_event_index' | 'write_ack_height' | 'write_ack_timestamp' | 'write_ack_transaction_event_index' | 'write_ack_transaction_hash' | 'write_ack_transaction_index'; };
-    'v1_ibc_union_packets_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_packets_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_packets_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_packets_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_packets_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'acknowledgement'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'acknowledgement_decoded'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: 'channel_version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'data'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'data_decoded'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker_msg'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_send_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_send_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_send_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'source_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }, { name: 'write_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'write_ack_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'write_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_relayer_status': { kind: 'OBJECT'; name: 'v1_ibc_union_relayer_status'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'chain_id': { name: 'chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'display_name': { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'message': { name: 'message'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'status': { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_relayer_status_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_relayer_status_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_relayer_status_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_relayer_status_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_relayer_status_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'message'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_relayer_status_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_relayer_status_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'message'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_relayer_status_select_column': { name: 'v1_ibc_union_relayer_status_select_column'; enumValues: 'chain_id' | 'display_name' | 'message' | 'status'; };
-    'v1_ibc_union_relayer_status_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_relayer_status_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_relayer_status_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_relayer_status_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_relayer_status_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'message'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_rpcs': { kind: 'OBJECT'; name: 'v1_ibc_union_rpcs'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'contact': { name: 'contact'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'description': { name: 'description'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'enabled': { name: 'enabled'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'type': { name: 'type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'url': { name: 'url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_rpcs_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_min_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_rpcs_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'contact'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'enabled'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_rpcs_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_max_order_by'; isOneOf: false; inputFields: [{ name: 'contact'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_rpcs_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_min_order_by'; isOneOf: false; inputFields: [{ name: 'contact'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_rpcs_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'contact'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'enabled'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_rpcs_select_column': { name: 'v1_ibc_union_rpcs_select_column'; enumValues: 'contact' | 'description' | 'enabled' | 'type' | 'url'; };
-    'v1_ibc_union_rpcs_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_rpcs_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_rpcs_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'contact'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'enabled'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_statistics': { kind: 'OBJECT'; name: 'v1_ibc_union_statistics'; fields: { 'name': { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'value': { name: 'value'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; } }; }; };
-    'v1_ibc_union_statistics_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_statistics_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_statistics_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_statistics_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_statistics_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'value'; type: { kind: 'INPUT_OBJECT'; name: 'numeric_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_statistics_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_statistics_order_by'; isOneOf: false; inputFields: [{ name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'value'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_statistics_select_column': { name: 'v1_ibc_union_statistics_select_column'; enumValues: 'name' | 'value'; };
-    'v1_ibc_union_statistics_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_statistics_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_statistics_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_statistics_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_statistics_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'value'; type: { kind: 'SCALAR'; name: 'numeric'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_streaks': { kind: 'OBJECT'; name: 'v1_ibc_union_streaks'; fields: { 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'end_timestamp': { name: 'end_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'seconds': { name: 'seconds'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'start_timestamp': { name: 'start_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; }; };
-    'v1_ibc_union_streaks_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_streaks_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_streaks_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_streaks_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_streaks_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'end_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'seconds'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'start_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_streaks_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_streaks_order_by'; isOneOf: false; inputFields: [{ name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'end_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'seconds'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'start_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_streaks_select_column': { name: 'v1_ibc_union_streaks_select_column'; enumValues: 'end_timestamp' | 'seconds' | 'start_timestamp'; };
-    'v1_ibc_union_streaks_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_streaks_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_streaks_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_streaks_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_streaks_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'end_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'seconds'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'start_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping': { kind: 'OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping'; fields: { 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'index': { name: 'index'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'internal_source_id': { name: 'internal_source_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'unwrapped_address_hex': { name: 'unwrapped_address_hex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'unwrapped_chain': { name: 'unwrapped_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'unwrapped_denom': { name: 'unwrapped_denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'wrapper': { name: 'wrapper'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_token_representation_source_unwrapping_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'avg'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_avg_order_by'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_min_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_stddev_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_stddev_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_stddev_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'sum'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_sum_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_var_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_var_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'variance'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_variance_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_avg_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_avg_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_address_hex'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_max_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_min_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_select_column': { name: 'v1_ibc_union_token_representation_source_unwrapping_select_column'; enumValues: 'destination_channel_id' | 'index' | 'internal_source_id' | 'unwrapped_address_hex' | 'unwrapped_denom' | 'wrapper'; };
-    'v1_ibc_union_token_representation_source_unwrapping_stddev_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_stddev_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_stddev_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_stddev_pop_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_stddev_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_stddev_samp_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_address_hex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_sum_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_sum_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_var_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_var_pop_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_var_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_var_samp_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_source_unwrapping_variance_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_variance_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'internal_source_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_sources': { kind: 'OBJECT'; name: 'v1_ibc_union_token_representation_sources'; fields: { 'source': { name: 'source'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_token_sources'; ofType: null; } }; 'update_timestamp': { name: 'update_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'updated_at': { name: 'updated_at'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'wrapping': { name: 'wrapping'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping'; ofType: null; }; }; }; } }; }; };
-    'v1_ibc_union_token_representation_sources_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_min_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_sources_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'source'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_sources_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'update_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'updated_at'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'wrapping'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_bool_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_sources_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_max_order_by'; isOneOf: false; inputFields: [{ name: 'update_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'updated_at'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_sources_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_min_order_by'; isOneOf: false; inputFields: [{ name: 'update_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'updated_at'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_sources_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_order_by'; isOneOf: false; inputFields: [{ name: 'source'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_sources_order_by'; ofType: null; }; defaultValue: null }, { name: 'update_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'updated_at'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapping_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_source_unwrapping_aggregate_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_sources_select_column': { name: 'v1_ibc_union_token_representation_sources_select_column'; enumValues: 'update_timestamp' | 'updated_at'; };
-    'v1_ibc_union_token_representation_sources_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representation_sources_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'update_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'updated_at'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations': { kind: 'OBJECT'; name: 'v1_ibc_union_token_representations'; fields: { 'address_hex': { name: 'address_hex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'decimals': { name: 'decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'name': { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sources': { name: 'sources'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representation_sources'; ofType: null; }; }; }; } }; 'symbol': { name: 'symbol'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_token_representations_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'avg'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_avg_order_by'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_min_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_stddev_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_stddev_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_stddev_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'sum'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_sum_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_var_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_var_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'variance'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_variance_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_avg_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_avg_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'address_hex'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'decimals'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sources'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_max_order_by'; isOneOf: false; inputFields: [{ name: 'address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_min_order_by'; isOneOf: false; inputFields: [{ name: 'address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_order_by'; isOneOf: false; inputFields: [{ name: 'address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sources_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representation_sources_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_select_column': { name: 'v1_ibc_union_token_representations_select_column'; enumValues: 'address_hex' | 'decimals' | 'name' | 'symbol'; };
-    'v1_ibc_union_token_representations_stddev_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_stddev_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_stddev_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_stddev_pop_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_stddev_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_stddev_samp_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'address_hex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_sum_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_sum_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_var_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_var_pop_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_var_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_var_samp_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_representations_variance_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_variance_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_sources': { kind: 'OBJECT'; name: 'v1_ibc_union_token_sources'; fields: { 'logo_uri': { name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'name': { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_uri': { name: 'source_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_token_sources_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_sources_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_sources_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_sources_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_sources_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_uri'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_sources_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_sources_order_by'; isOneOf: false; inputFields: [{ name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_sources_select_column': { name: 'v1_ibc_union_token_sources_select_column'; enumValues: 'logo_uri' | 'name' | 'source_uri'; };
-    'v1_ibc_union_token_sources_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_sources_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_sources_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_sources_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_sources_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping': { kind: 'OBJECT'; name: 'v1_ibc_union_token_unwrapping'; fields: { 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'index': { name: 'index'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'unwrapped_address_hex': { name: 'unwrapped_address_hex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'unwrapped_chain': { name: 'unwrapped_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'unwrapped_denom': { name: 'unwrapped_denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'wrapped_chain': { name: 'wrapped_chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'wrapper': { name: 'wrapper'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_token_unwrapping_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'avg'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_avg_order_by'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_min_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_stddev_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_stddev_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_stddev_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'sum'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_sum_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_var_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_var_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'variance'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_variance_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_avg_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_avg_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_address_hex'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'wrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_max_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_min_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_select_column': { name: 'v1_ibc_union_token_unwrapping_select_column'; enumValues: 'destination_channel_id' | 'index' | 'unwrapped_address_hex' | 'unwrapped_denom' | 'wrapper'; };
-    'v1_ibc_union_token_unwrapping_stddev_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_stddev_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_stddev_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_stddev_pop_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_stddev_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_stddev_samp_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_address_hex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_sum_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_sum_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_var_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_var_pop_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_var_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_var_samp_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_token_unwrapping_variance_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_variance_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_tokens': { kind: 'OBJECT'; name: 'v1_ibc_union_tokens'; fields: { 'address': { name: 'address'; type: { kind: 'SCALAR'; name: 'bytea'; ofType: null; } }; 'address_hex': { name: 'address_hex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'cw20': { name: 'cw20'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_cw20_instantiate'; ofType: null; } }; 'denom': { name: 'denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'representations': { name: 'representations'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_representations'; ofType: null; }; }; }; } }; 'wrapping': { name: 'wrapping'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v1_ibc_union_token_unwrapping'; ofType: null; }; }; }; } }; }; };
-    'v1_ibc_union_tokens_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_min_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_tokens_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'address'; type: { kind: 'INPUT_OBJECT'; name: 'bytea_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'address_hex'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'cw20'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_cw20_instantiate_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'representations'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'wrapping'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_bool_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_tokens_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_max_order_by'; isOneOf: false; inputFields: [{ name: 'address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_tokens_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_min_order_by'; isOneOf: false; inputFields: [{ name: 'address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_tokens_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_order_by'; isOneOf: false; inputFields: [{ name: 'address'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'address_hex'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'cw20'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_cw20_instantiate_order_by'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'representations_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_representations_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapping_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_token_unwrapping_aggregate_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_tokens_select_column': { name: 'v1_ibc_union_tokens_select_column'; enumValues: 'address' | 'address_hex' | 'denom'; };
-    'v1_ibc_union_tokens_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_tokens_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_tokens_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'address'; type: { kind: 'SCALAR'; name: 'bytea'; ofType: null; }; defaultValue: null }, { name: 'address_hex'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_trace_previews_type': { kind: 'OBJECT'; name: 'v1_ibc_union_trace_previews_type'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'type': { name: 'type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_trace_previews_type_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_min_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_trace_previews_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_trace_previews_type_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_max_order_by'; isOneOf: false; inputFields: [{ name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_trace_previews_type_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_min_order_by'; isOneOf: false; inputFields: [{ name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_trace_previews_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_trace_previews_type_select_column': { name: 'v1_ibc_union_trace_previews_type_select_column'; enumValues: 'type'; };
-    'v1_ibc_union_trace_previews_type_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_trace_previews_type_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_trace_previews_type_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type': { kind: 'OBJECT'; name: 'v1_ibc_union_traces_type'; fields: { 'block_hash': { name: 'block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v1_ibc_union_chains'; ofType: null; } }; 'event_index': { name: 'event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'height': { name: 'height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; } }; 'timestamp': { name: 'timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'transaction_hash': { name: 'transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'type': { name: 'type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v1_ibc_union_traces_type_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'avg'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_avg_order_by'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_min_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_stddev_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_stddev_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_stddev_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'sum'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_sum_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_var_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_var_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'variance'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_variance_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_avg_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_avg_order_by'; isOneOf: false; inputFields: [{ name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'event_index'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'INPUT_OBJECT'; name: 'bigint_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_max_order_by'; isOneOf: false; inputFields: [{ name: 'block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_min_order_by'; isOneOf: false; inputFields: [{ name: 'block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_order_by'; isOneOf: false; inputFields: [{ name: 'block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_chains_order_by'; ofType: null; }; defaultValue: null }, { name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_select_column': { name: 'v1_ibc_union_traces_type_select_column'; enumValues: 'block_hash' | 'event_index' | 'height' | 'timestamp' | 'transaction_hash' | 'type'; };
-    'v1_ibc_union_traces_type_stddev_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_stddev_order_by'; isOneOf: false; inputFields: [{ name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_stddev_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_stddev_pop_order_by'; isOneOf: false; inputFields: [{ name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_stddev_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_stddev_samp_order_by'; isOneOf: false; inputFields: [{ name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'event_index'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'SCALAR'; name: 'bigint'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; }; defaultValue: null }, { name: 'transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_sum_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_sum_order_by'; isOneOf: false; inputFields: [{ name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_var_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_var_pop_order_by'; isOneOf: false; inputFields: [{ name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_var_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_var_samp_order_by'; isOneOf: false; inputFields: [{ name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v1_ibc_union_traces_type_variance_order_by': { kind: 'INPUT_OBJECT'; name: 'v1_ibc_union_traces_type_variance_order_by'; isOneOf: false; inputFields: [{ name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_chain_features': { kind: 'OBJECT'; name: 'v2_chain_features'; fields: { 'channel_list': { name: 'channel_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'connection_list': { name: 'connection_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'environment': { name: 'environment'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'index_status': { name: 'index_status'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'packet_list': { name: 'packet_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'transfer_list': { name: 'transfer_list'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'transfer_submission': { name: 'transfer_submission'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; }; };
-    'v2_chain_features_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_min_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_chain_features_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'channel_list'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'connection_list'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'environment'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'index_status'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_list'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'transfer_list'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'transfer_submission'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_chain_features_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_max_order_by'; isOneOf: false; inputFields: [{ name: 'environment'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_chain_features_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_min_order_by'; isOneOf: false; inputFields: [{ name: 'environment'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_chain_features_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_order_by'; isOneOf: false; inputFields: [{ name: 'channel_list'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'connection_list'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'environment'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'index_status'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_list'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transfer_list'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transfer_submission'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_chain_features_select_column': { name: 'v2_chain_features_select_column'; enumValues: 'channel_list' | 'connection_list' | 'environment' | 'index_status' | 'packet_list' | 'transfer_list' | 'transfer_submission'; };
-    'v2_chain_type': { kind: 'OBJECT'; name: 'v2_chain_type'; fields: { 'addr_prefix': { name: 'addr_prefix'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'chain_id': { name: 'chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'display_name': { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'explorers': { name: 'explorers'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_explorers'; ofType: null; }; }; }; } }; 'features': { name: 'features'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_chain_features'; ofType: null; }; }; }; } }; 'logo_uri': { name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'rpc_type': { name: 'rpc_type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'rpcs': { name: 'rpcs'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_rpcs'; ofType: null; }; }; }; } }; 'testnet': { name: 'testnet'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'universal_chain_id': { name: 'universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_chain_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_chain_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_chain_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chain_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_chain_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'addr_prefix'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'explorers'; type: { kind: 'INPUT_OBJECT'; name: 'v2_explorers_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'features'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'rpc_type'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'rpcs'; type: { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'testnet'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_chain_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_chain_type_order_by'; isOneOf: false; inputFields: [{ name: 'addr_prefix'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'explorers_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v2_explorers_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'features_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chain_features_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'rpc_type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'rpcs_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'testnet'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_chain_type_select_column': { name: 'v2_chain_type_select_column'; enumValues: 'addr_prefix' | 'chain_id' | 'display_name' | 'logo_uri' | 'rpc_type' | 'testnet' | 'universal_chain_id'; };
-    'v2_chains_args': { kind: 'INPUT_OBJECT'; name: 'v2_chains_args'; isOneOf: false; inputFields: [{ name: 'p_comparison'; type: { kind: 'SCALAR'; name: 'comparison'; ofType: null; }; defaultValue: null }, { name: 'p_limit'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v2_chains_view': { kind: 'OBJECT'; name: 'v2_chains_view'; fields: { 'addr_prefix': { name: 'addr_prefix'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'chain_id': { name: 'chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'display_name': { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'logo_uri': { name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'rpc_type': { name: 'rpc_type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'testnet': { name: 'testnet'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'universal_chain_id': { name: 'universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_chains_view_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'addr_prefix'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'rpc_type'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'testnet'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_chains_view_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; isOneOf: false; inputFields: [{ name: 'addr_prefix'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'rpc_type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'testnet'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_channel_type': { kind: 'OBJECT'; name: 'v2_channel_type'; fields: { 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_port_id': { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_universal_chain_id': { name: 'destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sort_order': { name: 'sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_port_id': { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_universal_chain_id': { name: 'source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'version': { name: 'version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_channel_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_channel_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_channel_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_channel_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_channel_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sort_order'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'version'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_channel_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_channel_type_order_by'; isOneOf: false; inputFields: [{ name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sort_order'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'version'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_channel_type_select_column': { name: 'v2_channel_type_select_column'; enumValues: 'destination_channel_id' | 'destination_client_id' | 'destination_connection_id' | 'destination_port_id' | 'destination_universal_chain_id' | 'sort_order' | 'source_channel_id' | 'source_client_id' | 'source_connection_id' | 'source_port_id' | 'source_universal_chain_id' | 'version'; };
-    'v2_channels_args': { kind: 'INPUT_OBJECT'; name: 'v2_channels_args'; isOneOf: false; inputFields: [{ name: 'p_comparison'; type: { kind: 'SCALAR'; name: 'comparison'; ofType: null; }; defaultValue: null }, { name: 'p_destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_limit'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_recommended'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; defaultValue: null }, { name: 'p_sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v2_connection_type': { kind: 'OBJECT'; name: 'v2_connection_type'; fields: { 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_universal_chain_id': { name: 'destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sort_order': { name: 'sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_universal_chain_id': { name: 'source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_connection_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_connection_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_connection_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_connection_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_connection_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sort_order'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_connection_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_connection_type_order_by'; isOneOf: false; inputFields: [{ name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sort_order'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_connection_type_select_column': { name: 'v2_connection_type_select_column'; enumValues: 'destination_client_id' | 'destination_connection_id' | 'destination_universal_chain_id' | 'sort_order' | 'source_client_id' | 'source_connection_id' | 'source_universal_chain_id'; };
-    'v2_connections_args': { kind: 'INPUT_OBJECT'; name: 'v2_connections_args'; isOneOf: false; inputFields: [{ name: 'p_comparison'; type: { kind: 'SCALAR'; name: 'comparison'; ofType: null; }; defaultValue: null }, { name: 'p_destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_limit'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v2_explorers': { kind: 'OBJECT'; name: 'v2_explorers'; fields: { 'address_url': { name: 'address_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'block_url': { name: 'block_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'description': { name: 'description'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'display_name': { name: 'display_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'home_url': { name: 'home_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'logo_uri': { name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'name': { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'tx_url': { name: 'tx_url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_explorers_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_explorers_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v2_explorers_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v2_explorers_min_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_explorers_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_explorers_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_explorers_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_explorers_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_explorers_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'address_url'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'block_url'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'home_url'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'tx_url'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_explorers_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_explorers_max_order_by'; isOneOf: false; inputFields: [{ name: 'address_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'block_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'home_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'tx_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_explorers_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_explorers_min_order_by'; isOneOf: false; inputFields: [{ name: 'address_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'block_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'home_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'tx_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_explorers_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_explorers_order_by'; isOneOf: false; inputFields: [{ name: 'address_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'block_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'description'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'display_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'home_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'tx_url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_explorers_select_column': { name: 'v2_explorers_select_column'; enumValues: 'address_url' | 'block_url' | 'description' | 'display_name' | 'home_url' | 'logo_uri' | 'name' | 'tx_url'; };
-    'v2_packet_type': { kind: 'OBJECT'; name: 'v2_packet_type'; fields: { 'acknowledgement': { name: 'acknowledgement'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'channel_version': { name: 'channel_version'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'data': { name: 'data'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'decoded': { name: 'decoded'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; } }; 'decoded_flattened': { name: 'decoded_flattened'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; } }; 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'destination_chain_id': { name: 'destination_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_client_id': { name: 'destination_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_connection_id': { name: 'destination_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'destination_port_id': { name: 'destination_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_universal_chain_id': { name: 'destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_block_hash': { name: 'packet_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_height': { name: 'packet_ack_height'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_maker': { name: 'packet_ack_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_ack_timestamp': { name: 'packet_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_ack_transaction_hash': { name: 'packet_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_hash': { name: 'packet_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_block_hash': { name: 'packet_recv_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_height': { name: 'packet_recv_height'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_maker': { name: 'packet_recv_maker'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_maker_msg': { name: 'packet_recv_maker_msg'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_recv_timestamp': { name: 'packet_recv_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_recv_transaction_hash': { name: 'packet_recv_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_send_block_hash': { name: 'packet_send_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_send_height': { name: 'packet_send_height'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_send_timestamp': { name: 'packet_send_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'packet_send_transaction_hash': { name: 'packet_send_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sort_order': { name: 'sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'source_channel_id': { name: 'source_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_client_id': { name: 'source_client_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_connection_id': { name: 'source_connection_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_port_id': { name: 'source_port_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_universal_chain_id': { name: 'source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'status': { name: 'status'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'timeout_height': { name: 'timeout_height'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'timeout_timestamp': { name: 'timeout_timestamp'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'traces': { name: 'traces'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_traces_type'; ofType: null; }; }; } }; 'write_ack_block_hash': { name: 'write_ack_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'write_ack_height': { name: 'write_ack_height'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'write_ack_timestamp': { name: 'write_ack_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'write_ack_transaction_hash': { name: 'write_ack_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_packet_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_packet_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_packet_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_packet_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_packet_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'acknowledgement'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'channel_version'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'data'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'decoded'; type: { kind: 'INPUT_OBJECT'; name: 'jsonb_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'decoded_flattened'; type: { kind: 'INPUT_OBJECT'; name: 'jsonb_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_height'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_maker'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_height'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker_msg'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_height'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sort_order'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'timeout_height'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'timeout_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'traces'; type: { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_height'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_packet_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_packet_type_order_by'; isOneOf: false; inputFields: [{ name: 'acknowledgement'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'channel_version'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'data'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'decoded'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'decoded_flattened'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_maker'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_ack_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_maker_msg'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_recv_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_send_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sort_order'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_client_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_connection_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_port_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'status'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timeout_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timeout_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'traces_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'write_ack_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_packet_type_select_column': { name: 'v2_packet_type_select_column'; enumValues: 'acknowledgement' | 'channel_version' | 'data' | 'decoded' | 'decoded_flattened' | 'destination_chain_id' | 'destination_channel_id' | 'destination_client_id' | 'destination_connection_id' | 'destination_port_id' | 'destination_universal_chain_id' | 'packet_ack_block_hash' | 'packet_ack_height' | 'packet_ack_maker' | 'packet_ack_timestamp' | 'packet_ack_transaction_hash' | 'packet_hash' | 'packet_recv_block_hash' | 'packet_recv_height' | 'packet_recv_maker' | 'packet_recv_maker_msg' | 'packet_recv_timestamp' | 'packet_recv_transaction_hash' | 'packet_send_block_hash' | 'packet_send_height' | 'packet_send_timestamp' | 'packet_send_transaction_hash' | 'sort_order' | 'source_channel_id' | 'source_client_id' | 'source_connection_id' | 'source_port_id' | 'source_universal_chain_id' | 'status' | 'timeout_height' | 'timeout_timestamp' | 'write_ack_block_hash' | 'write_ack_height' | 'write_ack_timestamp' | 'write_ack_transaction_hash'; };
-    'v2_packets_args': { kind: 'INPUT_OBJECT'; name: 'v2_packets_args'; isOneOf: false; inputFields: [{ name: 'p_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_comparison'; type: { kind: 'SCALAR'; name: 'comparison'; ofType: null; }; defaultValue: null }, { name: 'p_limit'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_packet_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v2_rpcs': { kind: 'OBJECT'; name: 'v2_rpcs'; fields: { 'type': { name: 'type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'url': { name: 'url'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_rpcs_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_min_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_rpcs_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'type'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_rpcs_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_max_order_by'; isOneOf: false; inputFields: [{ name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_rpcs_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_min_order_by'; isOneOf: false; inputFields: [{ name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_rpcs_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_rpcs_order_by'; isOneOf: false; inputFields: [{ name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'url'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_rpcs_select_column': { name: 'v2_rpcs_select_column'; enumValues: 'type' | 'url'; };
-    'v2_stats_daily_count_type': { kind: 'OBJECT'; name: 'v2_stats_daily_count_type'; fields: { 'count': { name: 'count'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'day_date': { name: 'day_date'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; } }; }; };
-    'v2_stats_daily_count_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_stats_daily_count_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_daily_count_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_stats_daily_count_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_daily_count_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'count'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'INPUT_OBJECT'; name: 'date_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_daily_count_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_stats_daily_count_type_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_daily_count_type_select_column': { name: 'v2_stats_daily_count_type_select_column'; enumValues: 'count' | 'day_date'; };
-    'v2_stats_packets_chain_args': { kind: 'INPUT_OBJECT'; name: 'v2_stats_packets_chain_args'; isOneOf: false; inputFields: [{ name: 'p_days_back'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_packets_chain_type': { kind: 'OBJECT'; name: 'v2_stats_packets_chain_type'; fields: { 'day_date': { name: 'day_date'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; } }; 'destination_universal_chain_id': { name: 'destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_universal_chain_id': { name: 'source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'total_packets': { name: 'total_packets'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; }; };
-    'v2_stats_packets_chain_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_stats_packets_chain_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_packets_chain_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_stats_packets_chain_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_packets_chain_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'INPUT_OBJECT'; name: 'date_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'total_packets'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_packets_chain_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_stats_packets_chain_type_order_by'; isOneOf: false; inputFields: [{ name: 'day_date'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'total_packets'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_packets_chain_type_select_column': { name: 'v2_stats_packets_chain_type_select_column'; enumValues: 'day_date' | 'destination_universal_chain_id' | 'source_universal_chain_id' | 'total_packets'; };
-    'v2_stats_packets_chain_type_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v2_stats_packets_chain_type_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_packets_chain_type_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_packets_chain_type_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v2_stats_packets_chain_type_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'day_date'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'total_packets'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_packets_daily_count_args': { kind: 'INPUT_OBJECT'; name: 'v2_stats_packets_daily_count_args'; isOneOf: false; inputFields: [{ name: 'p_days_back'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_transfers_address_args': { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_address_args'; isOneOf: false; inputFields: [{ name: 'p_addresses_canonical'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: 'p_days_back'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_transfers_address_type': { kind: 'OBJECT'; name: 'v2_stats_transfers_address_type'; fields: { 'addresses_with_same_rank': { name: 'addresses_with_same_rank'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'canonical_address': { name: 'canonical_address'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'day_date': { name: 'day_date'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; } }; 'destination_universal_chain_id': { name: 'destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'rank': { name: 'rank'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'source_universal_chain_id': { name: 'source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'total_ranks': { name: 'total_ranks'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'transfer_count': { name: 'transfer_count'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; }; };
-    'v2_stats_transfers_address_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_address_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_address_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_address_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_address_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'addresses_with_same_rank'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'canonical_address'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'INPUT_OBJECT'; name: 'date_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'rank'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'total_ranks'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'transfer_count'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_transfers_address_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_address_type_order_by'; isOneOf: false; inputFields: [{ name: 'addresses_with_same_rank'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'canonical_address'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'rank'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'total_ranks'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transfer_count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_transfers_address_type_select_column': { name: 'v2_stats_transfers_address_type_select_column'; enumValues: 'addresses_with_same_rank' | 'canonical_address' | 'day_date' | 'destination_universal_chain_id' | 'rank' | 'source_universal_chain_id' | 'total_ranks' | 'transfer_count'; };
-    'v2_stats_transfers_chain_args': { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_chain_args'; isOneOf: false; inputFields: [{ name: 'p_days_back'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_transfers_chain_type': { kind: 'OBJECT'; name: 'v2_stats_transfers_chain_type'; fields: { 'day_date': { name: 'day_date'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; } }; 'destination_universal_chain_id': { name: 'destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_universal_chain_id': { name: 'source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'total_transfers': { name: 'total_transfers'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; }; };
-    'v2_stats_transfers_chain_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_chain_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_chain_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_chain_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_chain_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'day_date'; type: { kind: 'INPUT_OBJECT'; name: 'date_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'total_transfers'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_transfers_chain_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_chain_type_order_by'; isOneOf: false; inputFields: [{ name: 'day_date'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'total_transfers'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_transfers_chain_type_select_column': { name: 'v2_stats_transfers_chain_type_select_column'; enumValues: 'day_date' | 'destination_universal_chain_id' | 'source_universal_chain_id' | 'total_transfers'; };
-    'v2_stats_transfers_chain_type_stream_cursor_input': { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_chain_type_stream_cursor_input'; isOneOf: false; inputFields: [{ name: 'initial_value'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_chain_type_stream_cursor_value_input'; ofType: null; }; }; defaultValue: null }, { name: 'ordering'; type: { kind: 'ENUM'; name: 'cursor_ordering'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_transfers_chain_type_stream_cursor_value_input': { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_chain_type_stream_cursor_value_input'; isOneOf: false; inputFields: [{ name: 'day_date'; type: { kind: 'SCALAR'; name: 'date'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'total_transfers'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_transfers_daily_count_args': { kind: 'INPUT_OBJECT'; name: 'v2_stats_transfers_daily_count_args'; isOneOf: false; inputFields: [{ name: 'p_days_back'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_type': { kind: 'OBJECT'; name: 'v2_stats_type'; fields: { 'name': { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'value': { name: 'value'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_stats_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_stats_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_stats_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_stats_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'value'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_stats_type_order_by'; isOneOf: false; inputFields: [{ name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'value'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_stats_type_select_column': { name: 'v2_stats_type_select_column'; enumValues: 'name' | 'value'; };
-    'v2_token_meta': { kind: 'OBJECT'; name: 'v2_token_meta'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'denom': { name: 'denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'rank': { name: 'rank'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'representations': { name: 'representations'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_token_meta_representations'; ofType: null; }; }; }; } }; 'wrapping': { name: 'wrapping'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_token_meta_wrapping'; ofType: null; }; }; }; } }; }; };
-    'v2_token_meta_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'rank'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'representations'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'wrapping'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_bool_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'rank'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'representations_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapping_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_aggregate_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources': { kind: 'OBJECT'; name: 'v2_token_meta_representation_sources'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'decimals': { name: 'decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'denom': { name: 'denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'name': { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source': { name: 'source'; type: { kind: 'OBJECT'; name: 'v2_token_meta_sources'; ofType: null; } }; 'symbol': { name: 'symbol'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'update_timestamp': { name: 'update_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'wrapping': { name: 'wrapping'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_token_meta_representation_sources'; ofType: null; }; }; }; } }; }; };
-    'v2_token_meta_representation_sources_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'avg'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_avg_order_by'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_min_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_stddev_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_stddev_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_stddev_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'sum'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_sum_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_var_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_var_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'variance'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_variance_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_avg_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_avg_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'decimals'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_sources_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'update_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'wrapping'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_bool_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_max_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'update_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_min_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'update_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_sources_order_by'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'update_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapping_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_aggregate_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_select_column': { name: 'v2_token_meta_representation_sources_select_column'; enumValues: 'decimals' | 'denom' | 'name' | 'symbol' | 'update_timestamp'; };
-    'v2_token_meta_representation_sources_stddev_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_stddev_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_stddev_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_stddev_pop_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_stddev_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_stddev_samp_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_sum_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_sum_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_var_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_var_pop_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_var_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_var_samp_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representation_sources_variance_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_variance_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations': { kind: 'OBJECT'; name: 'v2_token_meta_representations'; fields: { 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'decimals': { name: 'decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'name': { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sources': { name: 'sources'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_token_meta_representation_sources'; ofType: null; }; }; }; } }; 'symbol': { name: 'symbol'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_token_meta_representations_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'avg'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_avg_order_by'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_min_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_stddev_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_stddev_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_stddev_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'sum'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_sum_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_var_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_var_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'variance'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_variance_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_avg_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_avg_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'decimals'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sources'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_max_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_min_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_order_by'; isOneOf: false; inputFields: [{ name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sources_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representation_sources_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_select_column': { name: 'v2_token_meta_representations_select_column'; enumValues: 'decimals' | 'name' | 'symbol'; };
-    'v2_token_meta_representations_stddev_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_stddev_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_stddev_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_stddev_pop_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_stddev_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_stddev_samp_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_sum_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_sum_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_var_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_var_pop_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_var_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_var_samp_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_representations_variance_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_representations_variance_order_by'; isOneOf: false; inputFields: [{ name: 'decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_select_column': { name: 'v2_token_meta_select_column'; enumValues: 'denom' | 'rank'; };
-    'v2_token_meta_sources': { kind: 'OBJECT'; name: 'v2_token_meta_sources'; fields: { 'logo_uri': { name: 'logo_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'name': { name: 'name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_uri': { name: 'source_uri'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_token_meta_sources_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_sources_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_sources_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_sources_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_sources_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'logo_uri'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_uri'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_sources_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_sources_order_by'; isOneOf: false; inputFields: [{ name: 'logo_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_uri'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping': { kind: 'OBJECT'; name: 'v2_token_meta_wrapping'; fields: { 'destination_channel_id': { name: 'destination_channel_id'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'unwrapped_chain': { name: 'unwrapped_chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'unwrapped_denom': { name: 'unwrapped_denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'wrapped_chain': { name: 'wrapped_chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'wrapper': { name: 'wrapper'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_token_meta_wrapping_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'avg'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_avg_order_by'; ofType: null; }; defaultValue: null }, { name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_min_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_stddev_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_stddev_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'stddev_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_stddev_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'sum'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_sum_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_pop'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_var_pop_order_by'; ofType: null; }; defaultValue: null }, { name: 'var_samp'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_var_samp_order_by'; ofType: null; }; defaultValue: null }, { name: 'variance'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_variance_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_avg_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_avg_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'destination_channel_id'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'wrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_max_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_min_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'unwrapped_denom'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapped_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'wrapper'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_select_column': { name: 'v2_token_meta_wrapping_select_column'; enumValues: 'destination_channel_id' | 'unwrapped_denom' | 'wrapper'; };
-    'v2_token_meta_wrapping_stddev_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_stddev_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_stddev_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_stddev_pop_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_stddev_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_stddev_samp_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_sum_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_sum_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_var_pop_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_var_pop_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_var_samp_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_var_samp_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_token_meta_wrapping_variance_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_wrapping_variance_order_by'; isOneOf: false; inputFields: [{ name: 'destination_channel_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_tokens_args': { kind: 'INPUT_OBJECT'; name: 'v2_tokens_args'; isOneOf: false; inputFields: [{ name: 'p_denom'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }]; };
-    'v2_traces_type': { kind: 'OBJECT'; name: 'v2_traces_type'; fields: { 'block_hash': { name: 'block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'chain': { name: 'chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'event_index': { name: 'event_index'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'height': { name: 'height'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'timestamp': { name: 'timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'transaction_hash': { name: 'transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'type': { name: 'type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'universal_chain_id': { name: 'universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_traces_type_aggregate_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_aggregate_order_by'; isOneOf: false; inputFields: [{ name: 'count'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'max'; type: { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_max_order_by'; ofType: null; }; defaultValue: null }, { name: 'min'; type: { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_min_order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_traces_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'block_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'event_index'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_traces_type_max_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_max_order_by'; isOneOf: false; inputFields: [{ name: 'block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_traces_type_min_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_min_order_by'; isOneOf: false; inputFields: [{ name: 'block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_traces_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_order_by'; isOneOf: false; inputFields: [{ name: 'block_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'event_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'height'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_traces_type_select_column': { name: 'v2_traces_type_select_column'; enumValues: 'block_hash' | 'event_index' | 'height' | 'timestamp' | 'transaction_hash' | 'type' | 'universal_chain_id'; };
-    'v2_transfer_type': { kind: 'OBJECT'; name: 'v2_transfer_type'; fields: { 'base_amount': { name: 'base_amount'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token': { name: 'base_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_decimals': { name: 'base_token_decimals'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'base_token_meta': { name: 'base_token_meta'; type: { kind: 'OBJECT'; name: 'v2_token_meta'; ofType: null; } }; 'base_token_name': { name: 'base_token_name'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_path': { name: 'base_token_path'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'base_token_symbol': { name: 'base_token_symbol'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'destination_chain': { name: 'destination_chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'destination_universal_chain_id': { name: 'destination_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'fee_amount': { name: 'fee_amount'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'fee_token': { name: 'fee_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'fee_token_meta': { name: 'fee_token_meta'; type: { kind: 'OBJECT'; name: 'v2_token_meta'; ofType: null; } }; 'fee_type': { name: 'fee_type'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_hash': { name: 'packet_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'packet_shape': { name: 'packet_shape'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'quote_amount': { name: 'quote_amount'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'quote_token': { name: 'quote_token'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'quote_token_meta': { name: 'quote_token_meta'; type: { kind: 'OBJECT'; name: 'v2_token_meta'; ofType: null; } }; 'receiver_canonical': { name: 'receiver_canonical'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'receiver_display': { name: 'receiver_display'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'receiver_zkgm': { name: 'receiver_zkgm'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender_canonical': { name: 'sender_canonical'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender_display': { name: 'sender_display'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sender_zkgm': { name: 'sender_zkgm'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'sort_order': { name: 'sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'source_chain': { name: 'source_chain'; type: { kind: 'OBJECT'; name: 'v2_chains_view'; ofType: null; } }; 'source_universal_chain_id': { name: 'source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'success': { name: 'success'; type: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; } }; 'traces': { name: 'traces'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'OBJECT'; name: 'v2_traces_type'; ofType: null; }; }; } }; 'transfer_index': { name: 'transfer_index'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; } }; 'transfer_recv_timestamp': { name: 'transfer_recv_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'transfer_recv_transaction_hash': { name: 'transfer_recv_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'transfer_send_timestamp': { name: 'transfer_send_timestamp'; type: { kind: 'SCALAR'; name: 'timestamptz'; ofType: null; } }; 'transfer_send_transaction_hash': { name: 'transfer_send_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; 'wrap_direction': { name: 'wrap_direction'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; } }; }; };
-    'v2_transfer_type_bool_exp': { kind: 'INPUT_OBJECT'; name: 'v2_transfer_type_bool_exp'; isOneOf: false; inputFields: [{ name: '_and'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_transfer_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: '_not'; type: { kind: 'INPUT_OBJECT'; name: 'v2_transfer_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: '_or'; type: { kind: 'LIST'; name: never; ofType: { kind: 'NON_NULL'; name: never; ofType: { kind: 'INPUT_OBJECT'; name: 'v2_transfer_type_bool_exp'; ofType: null; }; }; }; defaultValue: null }, { name: 'base_amount'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token_decimals'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token_meta'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token_name'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token_path'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'base_token_symbol'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'fee_amount'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'fee_token'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'fee_token_meta'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'fee_type'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'packet_shape'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'quote_amount'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'quote_token'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'quote_token_meta'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'receiver_canonical'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'receiver_display'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'receiver_zkgm'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sender_canonical'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sender_display'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sender_zkgm'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'sort_order'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'success'; type: { kind: 'INPUT_OBJECT'; name: 'Boolean_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'traces'; type: { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_bool_exp'; ofType: null; }; defaultValue: null }, { name: 'transfer_index'; type: { kind: 'INPUT_OBJECT'; name: 'Int_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'transfer_recv_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'transfer_recv_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'transfer_send_timestamp'; type: { kind: 'INPUT_OBJECT'; name: 'timestamptz_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'transfer_send_transaction_hash'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }, { name: 'wrap_direction'; type: { kind: 'INPUT_OBJECT'; name: 'String_comparison_exp'; ofType: null; }; defaultValue: null }]; };
-    'v2_transfer_type_order_by': { kind: 'INPUT_OBJECT'; name: 'v2_transfer_type_order_by'; isOneOf: false; inputFields: [{ name: 'base_amount'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token_decimals'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token_meta'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token_name'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token_path'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'base_token_symbol'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'destination_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'fee_amount'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'fee_token'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'fee_token_meta'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_order_by'; ofType: null; }; defaultValue: null }, { name: 'fee_type'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'packet_shape'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'quote_amount'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'quote_token'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'quote_token_meta'; type: { kind: 'INPUT_OBJECT'; name: 'v2_token_meta_order_by'; ofType: null; }; defaultValue: null }, { name: 'receiver_canonical'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'receiver_display'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'receiver_zkgm'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sender_canonical'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sender_display'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sender_zkgm'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'sort_order'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'source_chain'; type: { kind: 'INPUT_OBJECT'; name: 'v2_chains_view_order_by'; ofType: null; }; defaultValue: null }, { name: 'source_universal_chain_id'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'success'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'traces_aggregate'; type: { kind: 'INPUT_OBJECT'; name: 'v2_traces_type_aggregate_order_by'; ofType: null; }; defaultValue: null }, { name: 'transfer_index'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transfer_recv_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transfer_recv_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transfer_send_timestamp'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'transfer_send_transaction_hash'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }, { name: 'wrap_direction'; type: { kind: 'ENUM'; name: 'order_by'; ofType: null; }; defaultValue: null }]; };
-    'v2_transfer_type_select_column': { name: 'v2_transfer_type_select_column'; enumValues: 'base_amount' | 'base_token' | 'base_token_decimals' | 'base_token_name' | 'base_token_path' | 'base_token_symbol' | 'destination_universal_chain_id' | 'fee_amount' | 'fee_token' | 'fee_type' | 'packet_hash' | 'packet_shape' | 'quote_amount' | 'quote_token' | 'receiver_canonical' | 'receiver_display' | 'receiver_zkgm' | 'sender_canonical' | 'sender_display' | 'sender_zkgm' | 'sort_order' | 'source_universal_chain_id' | 'success' | 'transfer_index' | 'transfer_recv_timestamp' | 'transfer_recv_transaction_hash' | 'transfer_send_timestamp' | 'transfer_send_transaction_hash' | 'wrap_direction'; };
-    'v2_transfers_args': { kind: 'INPUT_OBJECT'; name: 'v2_transfers_args'; isOneOf: false; inputFields: [{ name: 'p_addresses_canonical'; type: { kind: 'SCALAR'; name: 'jsonb'; ofType: null; }; defaultValue: null }, { name: 'p_block_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_comparison'; type: { kind: 'SCALAR'; name: 'comparison'; ofType: null; }; defaultValue: null }, { name: 'p_limit'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }, { name: 'p_packet_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_sort_order'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_source_universal_chain_id'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_transaction_hash'; type: { kind: 'SCALAR'; name: 'String'; ofType: null; }; defaultValue: null }, { name: 'p_transfer_index'; type: { kind: 'SCALAR'; name: 'Int'; ofType: null; }; defaultValue: null }]; };
-};
-
 /** An IntrospectionQuery representation of your schema.
  *
  * @remarks
@@ -535,11 +10,14845 @@ export type introspection_types = {
  * instead save to a .ts instead of a .d.ts file.
  */
 export type introspection = {
-  name: never;
-  query: 'query_root';
-  mutation: 'mutation_root';
-  subscription: 'subscription_root';
-  types: introspection_types;
+  "__schema": {
+    "queryType": {
+      "name": "query_root"
+    },
+    "mutationType": {
+      "name": "mutation_root"
+    },
+    "subscriptionType": {
+      "name": "subscription_root"
+    },
+    "types": [
+      {
+        "kind": "SCALAR",
+        "name": "Boolean"
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "Boolean_comparison_exp",
+        "inputFields": [
+          {
+            "name": "_eq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_gt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_gte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_in",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean"
+                }
+              }
+            }
+          },
+          {
+            "name": "_is_null",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_lt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_lte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_neq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_nin",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean"
+                }
+              }
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "SCALAR",
+        "name": "Int"
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "Int_comparison_exp",
+        "inputFields": [
+          {
+            "name": "_eq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "_gt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "_gte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "_in",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              }
+            }
+          },
+          {
+            "name": "_is_null",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_lt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "_lte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "_neq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "_nin",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              }
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "Request",
+        "fields": [
+          {
+            "name": "address",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "id",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "time",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "txHash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "SCALAR",
+        "name": "String"
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "String_array_comparison_exp",
+        "inputFields": [
+          {
+            "name": "_contained_in",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_contains",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_eq",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_gt",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_gte",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_in",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "String"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "name": "_is_null",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_lt",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_lte",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_neq",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_nin",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "SCALAR",
+                      "name": "String"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "String_comparison_exp",
+        "inputFields": [
+          {
+            "name": "_eq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_gt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_gte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_ilike",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_in",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_iregex",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_is_null",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_like",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_lt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_lte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_neq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_nilike",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_nin",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_niregex",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_nlike",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_nregex",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_nsimilar",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_regex",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_similar",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "cursor_ordering",
+        "enumValues": [
+          {
+            "name": "ASC",
+            "isDeprecated": false
+          },
+          {
+            "name": "DESC",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "dashboard_count_by_chain_type",
+        "fields": [
+          {
+            "name": "count",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "phase",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "dashboard_count_by_chain_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "dashboard_count_by_chain_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "dashboard_count_by_chain_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "dashboard_count_by_chain_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "phase",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "dashboard_count_by_chain_type_order_by",
+        "inputFields": [
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "phase",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "dashboard_count_by_chain_type_select_column",
+        "enumValues": [
+          {
+            "name": "count",
+            "isDeprecated": false
+          },
+          {
+            "name": "phase",
+            "isDeprecated": false
+          },
+          {
+            "name": "universal_chain_id",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "dashboard_days_by_chain_type",
+        "fields": [
+          {
+            "name": "day_count",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "dashboard_days_by_chain_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "dashboard_days_by_chain_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "dashboard_days_by_chain_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "dashboard_days_by_chain_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "day_count",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "dashboard_days_by_chain_type_order_by",
+        "inputFields": [
+          {
+            "name": "day_count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "dashboard_days_by_chain_type_select_column",
+        "enumValues": [
+          {
+            "name": "day_count",
+            "isDeprecated": false
+          },
+          {
+            "name": "universal_chain_id",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "dashboard_transfer_count_by_chain_args",
+        "inputFields": [
+          {
+            "name": "p_addresses_dashboard",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "p_phase",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "dashboard_transfer_days_count_by_chain_args",
+        "inputFields": [
+          {
+            "name": "p_addresses_dashboard",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "SCALAR",
+        "name": "date"
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "date_comparison_exp",
+        "inputFields": [
+          {
+            "name": "_eq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "date"
+            }
+          },
+          {
+            "name": "_gt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "date"
+            }
+          },
+          {
+            "name": "_gte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "date"
+            }
+          },
+          {
+            "name": "_in",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "date"
+                }
+              }
+            }
+          },
+          {
+            "name": "_is_null",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_lt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "date"
+            }
+          },
+          {
+            "name": "_lte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "date"
+            }
+          },
+          {
+            "name": "_neq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "date"
+            }
+          },
+          {
+            "name": "_nin",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "date"
+                }
+              }
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "drip_dropMutation",
+        "fields": [
+          {
+            "name": "send",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String"
+              }
+            },
+            "args": [
+              {
+                "name": "address",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String"
+                  }
+                }
+              },
+              {
+                "name": "captchaToken",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String"
+                  }
+                }
+              },
+              {
+                "name": "chainId",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String"
+                  }
+                }
+              },
+              {
+                "name": "denom",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String"
+                  }
+                }
+              }
+            ],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "drip_dropQuery",
+        "fields": [
+          {
+            "name": "handledTransfers",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "Request"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offsetTime",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfersForAddress",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "Request"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "address",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String"
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offsetTime",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "unhandledTransfers",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "Request"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offsetTime",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            ],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "SCALAR",
+        "name": "jsonb"
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "jsonb_cast_exp",
+        "inputFields": [
+          {
+            "name": "String",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "jsonb_comparison_exp",
+        "inputFields": [
+          {
+            "name": "_cast",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "jsonb_cast_exp"
+            }
+          },
+          {
+            "name": "_contained_in",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "_contains",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "_eq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "_gt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "_gte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "_has_key",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "_has_keys_all",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_has_keys_any",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            }
+          },
+          {
+            "name": "_in",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "jsonb"
+                }
+              }
+            }
+          },
+          {
+            "name": "_is_null",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_lt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "_lte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "_neq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "_nin",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "jsonb"
+                }
+              }
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "SCALAR",
+        "name": "latency_percentiles_scalar"
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "latency_percentiles_scalar_comparison_exp",
+        "inputFields": [
+          {
+            "name": "_eq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "latency_percentiles_scalar"
+            }
+          },
+          {
+            "name": "_gt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "latency_percentiles_scalar"
+            }
+          },
+          {
+            "name": "_gte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "latency_percentiles_scalar"
+            }
+          },
+          {
+            "name": "_in",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "latency_percentiles_scalar"
+                }
+              }
+            }
+          },
+          {
+            "name": "_is_null",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_lt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "latency_percentiles_scalar"
+            }
+          },
+          {
+            "name": "_lte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "latency_percentiles_scalar"
+            }
+          },
+          {
+            "name": "_neq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "latency_percentiles_scalar"
+            }
+          },
+          {
+            "name": "_nin",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "latency_percentiles_scalar"
+                }
+              }
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "mutation_root",
+        "fields": [
+          {
+            "name": "drip_drop",
+            "type": {
+              "kind": "OBJECT",
+              "name": "drip_dropMutation"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "ENUM",
+        "name": "order_by",
+        "enumValues": [
+          {
+            "name": "asc",
+            "isDeprecated": false
+          },
+          {
+            "name": "asc_nulls_first",
+            "isDeprecated": false
+          },
+          {
+            "name": "asc_nulls_last",
+            "isDeprecated": false
+          },
+          {
+            "name": "desc",
+            "isDeprecated": false
+          },
+          {
+            "name": "desc_nulls_first",
+            "isDeprecated": false
+          },
+          {
+            "name": "desc_nulls_last",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "query_root",
+        "fields": [
+          {
+            "name": "dashboard_transfer_count_by_chain",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "dashboard_count_by_chain_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "dashboard_transfer_count_by_chain_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "dashboard_count_by_chain_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "dashboard_count_by_chain_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "dashboard_count_by_chain_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "dashboard_transfer_days_count_by_chain",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "dashboard_days_by_chain_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "dashboard_transfer_days_count_by_chain_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "dashboard_days_by_chain_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "dashboard_days_by_chain_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "dashboard_days_by_chain_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "drip_drop",
+            "type": {
+              "kind": "OBJECT",
+              "name": "drip_dropQuery"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_chains",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_chain_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chains_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_chain_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_chain_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chain_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_channels",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_channel_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_channels_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_channel_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_channel_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_channel_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_clients",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_client_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_clients_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_client_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_client_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_client_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_connections",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_connection_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_connections_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_connection_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_connection_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_connection_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_error_type",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_error_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_error_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_error_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_error_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_errors",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_error_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_error_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_error_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_error_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_health_check",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_health_check_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_health_check_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_health_check_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_health_check_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_packets",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_packet_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_packets_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_packet_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_packet_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_packet_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_count",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_latency",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_latency_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "v2_stats_latency_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_latency_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_latency_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_latency_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_packets_chain",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_packets_chain_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_packets_chain_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_packets_chain_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_packets_chain_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_packets_chain_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_packets_daily_count",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_daily_count_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_packets_daily_count_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_daily_count_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_daily_count_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_daily_count_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_transfers_address",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_transfers_address_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "v2_stats_transfers_address_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_transfers_address_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_transfers_address_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_address_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_transfers_chain",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_transfers_chain_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_chain_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_transfers_chain_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_transfers_chain_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_chain_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_transfers_daily_count",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_daily_count_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_daily_count_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_daily_count_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_daily_count_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_daily_count_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_tokens",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_token_meta"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_tokens_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_token_meta_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_token_meta_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_transfers",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_transfer_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_transfers_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_transfer_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_transfer_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_transfer_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_util_get_address_types_for_display_address",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_util_get_address_types_for_display_address_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "v2_util_get_address_types_for_display_address_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_util_get_address_types_for_display_address_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_util_get_address_types_for_display_address_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_util_get_address_types_for_display_address_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_util_get_transfer_request_details",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_util_get_transfer_request_details_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "v2_util_get_transfer_request_details_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_util_get_transfer_request_details_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_util_get_transfer_request_details_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_util_get_transfer_request_details_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "OBJECT",
+        "name": "subscription_root",
+        "fields": [
+          {
+            "name": "dashboard_transfer_count_by_chain",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "dashboard_count_by_chain_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "dashboard_transfer_count_by_chain_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "dashboard_count_by_chain_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "dashboard_count_by_chain_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "dashboard_count_by_chain_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "dashboard_transfer_days_count_by_chain",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "dashboard_days_by_chain_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "dashboard_transfer_days_count_by_chain_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "dashboard_days_by_chain_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "dashboard_days_by_chain_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "dashboard_days_by_chain_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_chains",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_chain_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chains_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_chain_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_chain_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chain_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_channels",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_channel_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_channels_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_channel_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_channel_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_channel_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_clients",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_client_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_clients_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_client_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_client_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_client_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_connections",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_connection_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_connections_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_connection_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_connection_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_connection_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_error_type",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_error_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_error_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_error_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_error_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_error_type_stream",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_error_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "batch_size",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int"
+                  }
+                }
+              },
+              {
+                "name": "cursor",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "LIST",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_error_type_stream_cursor_input"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_error_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_errors",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_error_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_error_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_error_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_error_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_health_check",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_health_check_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_health_check_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_health_check_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_health_check_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_packets",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_packet_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_packets_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_packet_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_packet_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_packet_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_count",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_latency",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_latency_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "v2_stats_latency_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_latency_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_latency_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_latency_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_packets_chain",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_packets_chain_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_packets_chain_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_packets_chain_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_packets_chain_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_packets_chain_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_packets_daily_count",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_daily_count_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_packets_daily_count_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_daily_count_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_daily_count_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_daily_count_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_transfers_address",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_transfers_address_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "v2_stats_transfers_address_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_transfers_address_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_transfers_address_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_address_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_transfers_chain",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_transfers_chain_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_chain_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_transfers_chain_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_transfers_chain_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_chain_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_stats_transfers_daily_count",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_stats_daily_count_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_daily_count_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_stats_daily_count_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_stats_daily_count_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_daily_count_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_tokens",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_token_meta"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_tokens_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_token_meta_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_token_meta_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_transfers",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_transfer_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_transfers_args"
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_transfer_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_transfer_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_transfer_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_util_get_address_types_for_display_address",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_util_get_address_types_for_display_address_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "v2_util_get_address_types_for_display_address_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_util_get_address_types_for_display_address_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_util_get_address_types_for_display_address_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_util_get_address_types_for_display_address_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "v2_util_get_transfer_request_details",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_util_get_transfer_request_details_type"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "args",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "INPUT_OBJECT",
+                    "name": "v2_util_get_transfer_request_details_args"
+                  }
+                }
+              },
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_util_get_transfer_request_details_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_util_get_transfer_request_details_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_util_get_transfer_request_details_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "SCALAR",
+        "name": "timestamptz"
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "timestamptz_comparison_exp",
+        "inputFields": [
+          {
+            "name": "_eq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            }
+          },
+          {
+            "name": "_gt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            }
+          },
+          {
+            "name": "_gte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            }
+          },
+          {
+            "name": "_in",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "timestamptz"
+                }
+              }
+            }
+          },
+          {
+            "name": "_is_null",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "_lt",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            }
+          },
+          {
+            "name": "_lte",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            }
+          },
+          {
+            "name": "_neq",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            }
+          },
+          {
+            "name": "_nin",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "timestamptz"
+                }
+              }
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_chain_features",
+        "fields": [
+          {
+            "name": "channel_list",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "connection_list",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "environment",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "index_status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_list",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_list",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_submission",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_features_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_features_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_features_min_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_features_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chain_features_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_features_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chain_features_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "channel_list",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
+            "name": "connection_list",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
+            "name": "environment",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "index_status",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_list",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
+            "name": "transfer_list",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
+            "name": "transfer_submission",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_features_max_order_by",
+        "inputFields": [
+          {
+            "name": "environment",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_features_min_order_by",
+        "inputFields": [
+          {
+            "name": "environment",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_features_order_by",
+        "inputFields": [
+          {
+            "name": "channel_list",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "connection_list",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "environment",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "index_status",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_list",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transfer_list",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transfer_submission",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_chain_features_select_column",
+        "enumValues": [
+          {
+            "name": "channel_list",
+            "isDeprecated": false
+          },
+          {
+            "name": "connection_list",
+            "isDeprecated": false
+          },
+          {
+            "name": "environment",
+            "isDeprecated": false
+          },
+          {
+            "name": "index_status",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_list",
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_list",
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_submission",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_chain_status_type",
+        "fields": [
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "avg",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_avg_order_by"
+            }
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_min_order_by"
+            }
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_stddev_order_by"
+            }
+          },
+          {
+            "name": "stddev_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_stddev_pop_order_by"
+            }
+          },
+          {
+            "name": "stddev_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_stddev_samp_order_by"
+            }
+          },
+          {
+            "name": "sum",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_sum_order_by"
+            }
+          },
+          {
+            "name": "var_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_var_pop_order_by"
+            }
+          },
+          {
+            "name": "var_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_var_samp_order_by"
+            }
+          },
+          {
+            "name": "variance",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_variance_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_avg_order_by",
+        "inputFields": [
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chain_status_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chain_status_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_max_order_by",
+        "inputFields": [
+          {
+            "name": "height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_min_order_by",
+        "inputFields": [
+          {
+            "name": "height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_order_by",
+        "inputFields": [
+          {
+            "name": "height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_chain_status_type_select_column",
+        "enumValues": [
+          {
+            "name": "height",
+            "isDeprecated": false
+          },
+          {
+            "name": "status",
+            "isDeprecated": false
+          },
+          {
+            "name": "timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "tip_age_seconds",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_stddev_order_by",
+        "inputFields": [
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_stddev_pop_order_by",
+        "inputFields": [
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_stddev_samp_order_by",
+        "inputFields": [
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_sum_order_by",
+        "inputFields": [
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_var_pop_order_by",
+        "inputFields": [
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_var_samp_order_by",
+        "inputFields": [
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_status_type_variance_order_by",
+        "inputFields": [
+          {
+            "name": "tip_age_seconds",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_chain_type",
+        "fields": [
+          {
+            "name": "addr_prefix",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "explorers",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_explorers"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_explorers_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_explorers_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_explorers_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "features",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_chain_features"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_chain_features_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_chain_features_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chain_features_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "rpc_type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "rpcs",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_rpcs"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_rpcs_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_rpcs_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_rpcs_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "v2_chain_status_type"
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_chain_status_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_chain_status_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chain_status_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "testnet",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chain_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chain_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "addr_prefix",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "explorers",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_explorers_bool_exp"
+            }
+          },
+          {
+            "name": "features",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_features_bool_exp"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "rpc_type",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "rpcs",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_rpcs_bool_exp"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_bool_exp"
+            }
+          },
+          {
+            "name": "testnet",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chain_type_order_by",
+        "inputFields": [
+          {
+            "name": "addr_prefix",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "explorers_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_explorers_aggregate_order_by"
+            }
+          },
+          {
+            "name": "features_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_features_aggregate_order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "rpc_type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "rpcs_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_rpcs_aggregate_order_by"
+            }
+          },
+          {
+            "name": "status_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chain_status_type_aggregate_order_by"
+            }
+          },
+          {
+            "name": "testnet",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_chain_type_select_column",
+        "enumValues": [
+          {
+            "name": "addr_prefix",
+            "isDeprecated": false
+          },
+          {
+            "name": "chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "display_name",
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
+            "isDeprecated": false
+          },
+          {
+            "name": "rpc_type",
+            "isDeprecated": false
+          },
+          {
+            "name": "testnet",
+            "isDeprecated": false
+          },
+          {
+            "name": "universal_chain_id",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chains_args",
+        "inputFields": [
+          {
+            "name": "p_comparison",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_limit",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_sort_order",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_chains_view",
+        "fields": [
+          {
+            "name": "addr_prefix",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "rpc_type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "testnet",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chains_view_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chains_view_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_chains_view_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "addr_prefix",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "rpc_type",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "testnet",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_chains_view_order_by",
+        "inputFields": [
+          {
+            "name": "addr_prefix",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "rpc_type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "testnet",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_channel_type",
+        "fields": [
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "tags",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "version",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_channel_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_channel_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_channel_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_channel_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_client_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "source_client_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "tags",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_array_comparison_exp"
+            }
+          },
+          {
+            "name": "version",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_channel_type_order_by",
+        "inputFields": [
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_client_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_client_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "tags",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "version",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_channel_type_select_column",
+        "enumValues": [
+          {
+            "name": "destination_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_client_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_port_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "sort_order",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_client_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_port_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "tags",
+            "isDeprecated": false
+          },
+          {
+            "name": "version",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_channels_args",
+        "inputFields": [
+          {
+            "name": "p_comparison",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_destination_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_destination_client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_destination_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_limit",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_recommended",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            }
+          },
+          {
+            "name": "p_sort_order",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_source_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_source_client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_source_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_source_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_tags",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "p_version",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_client_type",
+        "fields": [
+          {
+            "name": "client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "counterparty_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_client_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_client_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_client_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_client_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "client_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "counterparty_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_client_type_order_by",
+        "inputFields": [
+          {
+            "name": "client_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "counterparty_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_client_type_select_column",
+        "enumValues": [
+          {
+            "name": "client_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "counterparty_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "sort_order",
+            "isDeprecated": false
+          },
+          {
+            "name": "universal_chain_id",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_clients_args",
+        "inputFields": [
+          {
+            "name": "p_client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_comparison",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_counterparty_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_limit",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_sort_order",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_connection_type",
+        "fields": [
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_connection_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_connection_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_connection_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_connection_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "destination_client_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "source_client_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_connection_type_order_by",
+        "inputFields": [
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "destination_client_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "source_client_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_connection_type_select_column",
+        "enumValues": [
+          {
+            "name": "destination_client_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "sort_order",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_client_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_connections_args",
+        "inputFields": [
+          {
+            "name": "p_comparison",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_destination_client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_limit",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_sort_order",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_source_client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_source_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_error_type",
+        "fields": [
+          {
+            "name": "detail",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "hint",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "message",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "union_error_code",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_error_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_error_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_error_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_error_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "detail",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "hint",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "message",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "union_error_code",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_error_type_order_by",
+        "inputFields": [
+          {
+            "name": "detail",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "hint",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "message",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "union_error_code",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_error_type_select_column",
+        "enumValues": [
+          {
+            "name": "detail",
+            "isDeprecated": false
+          },
+          {
+            "name": "hint",
+            "isDeprecated": false
+          },
+          {
+            "name": "message",
+            "isDeprecated": false
+          },
+          {
+            "name": "union_error_code",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_error_type_stream_cursor_input",
+        "inputFields": [
+          {
+            "name": "initial_value",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "v2_error_type_stream_cursor_value_input"
+              }
+            }
+          },
+          {
+            "name": "ordering",
+            "type": {
+              "kind": "ENUM",
+              "name": "cursor_ordering"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_error_type_stream_cursor_value_input",
+        "inputFields": [
+          {
+            "name": "detail",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "hint",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "message",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "union_error_code",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_explorers",
+        "fields": [
+          {
+            "name": "address_url",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "block_url",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "description",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "home_url",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "tx_url",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_explorers_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_explorers_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_explorers_min_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_explorers_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_explorers_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_explorers_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_explorers_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "address_url",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "block_url",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "description",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "home_url",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "tx_url",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_explorers_max_order_by",
+        "inputFields": [
+          {
+            "name": "address_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "block_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "description",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "home_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "tx_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_explorers_min_order_by",
+        "inputFields": [
+          {
+            "name": "address_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "block_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "description",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "home_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "tx_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_explorers_order_by",
+        "inputFields": [
+          {
+            "name": "address_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "block_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "description",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display_name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "home_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "tx_url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_explorers_select_column",
+        "enumValues": [
+          {
+            "name": "address_url",
+            "isDeprecated": false
+          },
+          {
+            "name": "block_url",
+            "isDeprecated": false
+          },
+          {
+            "name": "description",
+            "isDeprecated": false
+          },
+          {
+            "name": "display_name",
+            "isDeprecated": false
+          },
+          {
+            "name": "home_url",
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
+            "isDeprecated": false
+          },
+          {
+            "name": "name",
+            "isDeprecated": false
+          },
+          {
+            "name": "tx_url",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_health_check_type",
+        "fields": [
+          {
+            "name": "environment",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "last_update",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_health_check_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_health_check_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_health_check_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_health_check_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "environment",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "last_update",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_health_check_type_order_by",
+        "inputFields": [
+          {
+            "name": "environment",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "last_update",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_health_check_type_select_column",
+        "enumValues": [
+          {
+            "name": "environment",
+            "isDeprecated": false
+          },
+          {
+            "name": "last_update",
+            "isDeprecated": false
+          },
+          {
+            "name": "status",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_packet_type",
+        "fields": [
+          {
+            "name": "acknowledgement",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "channel_version",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "decoded",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            },
+            "args": [
+              {
+                "name": "path",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "decoded_flattened",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            },
+            "args": [
+              {
+                "name": "path",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_ack_block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_ack_height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_ack_maker",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_ack_timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_ack_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_maker",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_maker_msg",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_send_block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_send_height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_send_timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_send_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_timeout_block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_timeout_height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_timeout_maker",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_timeout_timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_timeout_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_client_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "success",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "timeout_height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "timeout_timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "traces",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "v2_traces_type"
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_traces_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_traces_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_traces_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "write_ack_block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "write_ack_height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "write_ack_timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "write_ack_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_packet_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_packet_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_packet_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_packet_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "acknowledgement",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "channel_version",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "decoded",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "jsonb_comparison_exp"
+            }
+          },
+          {
+            "name": "decoded_flattened",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "jsonb_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_client_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_ack_block_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_ack_height",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_ack_maker",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_ack_timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_ack_transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_recv_block_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_recv_height",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_recv_maker",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_recv_maker_msg",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_recv_timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_recv_transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_send_block_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_send_height",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_send_timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_send_transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_timeout_block_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_timeout_height",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_timeout_maker",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_timeout_timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_timeout_transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "source_client_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "success",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
+            "name": "timeout_height",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "timeout_timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "traces",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_traces_type_bool_exp"
+            }
+          },
+          {
+            "name": "write_ack_block_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "write_ack_height",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "write_ack_timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "write_ack_transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_packet_type_order_by",
+        "inputFields": [
+          {
+            "name": "acknowledgement",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "channel_version",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "data",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decoded",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "decoded_flattened",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "destination_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_client_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_ack_block_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_ack_height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_ack_maker",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_ack_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_ack_transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_recv_block_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_recv_height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_recv_maker",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_recv_maker_msg",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_recv_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_recv_transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_send_block_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_send_height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_send_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_send_transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_timeout_block_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_timeout_height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_timeout_maker",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_timeout_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_timeout_transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_client_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_connection_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_port_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "success",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "timeout_height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "timeout_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "traces_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_traces_type_aggregate_order_by"
+            }
+          },
+          {
+            "name": "write_ack_block_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "write_ack_height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "write_ack_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "write_ack_transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_packet_type_select_column",
+        "enumValues": [
+          {
+            "name": "acknowledgement",
+            "isDeprecated": false
+          },
+          {
+            "name": "channel_version",
+            "isDeprecated": false
+          },
+          {
+            "name": "data",
+            "isDeprecated": false
+          },
+          {
+            "name": "decoded",
+            "isDeprecated": false
+          },
+          {
+            "name": "decoded_flattened",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_client_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_port_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_ack_block_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_ack_height",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_ack_maker",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_ack_timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_ack_transaction_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_block_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_height",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_maker",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_maker_msg",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_recv_transaction_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_send_block_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_send_height",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_send_timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_send_transaction_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_timeout_block_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_timeout_height",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_timeout_maker",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_timeout_timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_timeout_transaction_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "sort_order",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_client_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_connection_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_port_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "status",
+            "isDeprecated": false
+          },
+          {
+            "name": "success",
+            "isDeprecated": false
+          },
+          {
+            "name": "timeout_height",
+            "isDeprecated": false
+          },
+          {
+            "name": "timeout_timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "write_ack_block_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "write_ack_height",
+            "isDeprecated": false
+          },
+          {
+            "name": "write_ack_timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "write_ack_transaction_hash",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_packets_args",
+        "inputFields": [
+          {
+            "name": "p_block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_comparison",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_limit",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_packet_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_packet_send_timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            }
+          },
+          {
+            "name": "p_sort_order",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_rpcs",
+        "fields": [
+          {
+            "name": "type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_rpcs_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_rpcs_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_rpcs_min_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_rpcs_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_rpcs_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_rpcs_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_rpcs_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_rpcs_max_order_by",
+        "inputFields": [
+          {
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_rpcs_min_order_by",
+        "inputFields": [
+          {
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_rpcs_order_by",
+        "inputFields": [
+          {
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "url",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_rpcs_select_column",
+        "enumValues": [
+          {
+            "name": "type",
+            "isDeprecated": false
+          },
+          {
+            "name": "url",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_stats_daily_count_type",
+        "fields": [
+          {
+            "name": "count",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "SCALAR",
+              "name": "date"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_daily_count_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_daily_count_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_stats_daily_count_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_daily_count_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "date_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_daily_count_type_order_by",
+        "inputFields": [
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_stats_daily_count_type_select_column",
+        "enumValues": [
+          {
+            "name": "count",
+            "isDeprecated": false
+          },
+          {
+            "name": "day_date",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_latency_args",
+        "inputFields": [
+          {
+            "name": "p_destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_phase",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_stats_latency_type",
+        "fields": [
+          {
+            "name": "secs_until_packet_ack",
+            "type": {
+              "kind": "SCALAR",
+              "name": "latency_percentiles_scalar"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "secs_until_packet_recv",
+            "type": {
+              "kind": "SCALAR",
+              "name": "latency_percentiles_scalar"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "secs_until_write_ack",
+            "type": {
+              "kind": "SCALAR",
+              "name": "latency_percentiles_scalar"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_latency_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_latency_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_stats_latency_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_latency_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "secs_until_packet_ack",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "latency_percentiles_scalar_comparison_exp"
+            }
+          },
+          {
+            "name": "secs_until_packet_recv",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "latency_percentiles_scalar_comparison_exp"
+            }
+          },
+          {
+            "name": "secs_until_write_ack",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "latency_percentiles_scalar_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_latency_type_order_by",
+        "inputFields": [
+          {
+            "name": "secs_until_packet_ack",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "secs_until_packet_recv",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "secs_until_write_ack",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_stats_latency_type_select_column",
+        "enumValues": [
+          {
+            "name": "secs_until_packet_ack",
+            "isDeprecated": false
+          },
+          {
+            "name": "secs_until_packet_recv",
+            "isDeprecated": false
+          },
+          {
+            "name": "secs_until_write_ack",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_packets_chain_args",
+        "inputFields": [
+          {
+            "name": "p_days_back",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_stats_packets_chain_type",
+        "fields": [
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "SCALAR",
+              "name": "date"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "total_packets",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_packets_chain_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_packets_chain_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_stats_packets_chain_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_packets_chain_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "date_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "total_packets",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_packets_chain_type_order_by",
+        "inputFields": [
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "total_packets",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_stats_packets_chain_type_select_column",
+        "enumValues": [
+          {
+            "name": "day_date",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "total_packets",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_packets_daily_count_args",
+        "inputFields": [
+          {
+            "name": "p_days_back",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_transfers_address_args",
+        "inputFields": [
+          {
+            "name": "p_addresses_canonical",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "p_days_back",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_stats_transfers_address_type",
+        "fields": [
+          {
+            "name": "canonical_address",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "SCALAR",
+              "name": "date"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_count",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_transfers_address_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_address_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_stats_transfers_address_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_address_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "canonical_address",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "date_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "transfer_count",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_transfers_address_type_order_by",
+        "inputFields": [
+          {
+            "name": "canonical_address",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transfer_count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_stats_transfers_address_type_select_column",
+        "enumValues": [
+          {
+            "name": "canonical_address",
+            "isDeprecated": false
+          },
+          {
+            "name": "day_date",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_count",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_transfers_chain_args",
+        "inputFields": [
+          {
+            "name": "p_days_back",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_stats_transfers_chain_type",
+        "fields": [
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "SCALAR",
+              "name": "date"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "total_transfers",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_transfers_chain_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_chain_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_stats_transfers_chain_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_transfers_chain_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "date_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "total_transfers",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_transfers_chain_type_order_by",
+        "inputFields": [
+          {
+            "name": "day_date",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "total_transfers",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_stats_transfers_chain_type_select_column",
+        "enumValues": [
+          {
+            "name": "day_date",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "total_transfers",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_transfers_daily_count_args",
+        "inputFields": [
+          {
+            "name": "p_days_back",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_stats_type",
+        "fields": [
+          {
+            "name": "name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "value",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_stats_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_stats_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "value",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_stats_type_order_by",
+        "inputFields": [
+          {
+            "name": "name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "value",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_stats_type_select_column",
+        "enumValues": [
+          {
+            "name": "name",
+            "isDeprecated": false
+          },
+          {
+            "name": "value",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_token_meta",
+        "fields": [
+          {
+            "name": "chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "rank",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "representations",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_token_meta_representations"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_token_meta_representations_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_token_meta_representations_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_representations_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "wrapping",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_token_meta_wrapping"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_token_meta_wrapping_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_token_meta_wrapping_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_wrapping_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "rank",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "representations",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_bool_exp"
+            }
+          },
+          {
+            "name": "wrapping",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_bool_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_order_by",
+        "inputFields": [
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "rank",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "representations_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_aggregate_order_by"
+            }
+          },
+          {
+            "name": "wrapping_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_aggregate_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_token_meta_representation_sources",
+        "fields": [
+          {
+            "name": "chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_token_meta_sources"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "update_timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "wrapping",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_token_meta_representation_sources"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_token_meta_representation_sources_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_token_meta_representation_sources_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_representation_sources_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "avg",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_avg_order_by"
+            }
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_min_order_by"
+            }
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_stddev_order_by"
+            }
+          },
+          {
+            "name": "stddev_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_stddev_pop_order_by"
+            }
+          },
+          {
+            "name": "stddev_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_stddev_samp_order_by"
+            }
+          },
+          {
+            "name": "sum",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_sum_order_by"
+            }
+          },
+          {
+            "name": "var_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_var_pop_order_by"
+            }
+          },
+          {
+            "name": "var_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_var_samp_order_by"
+            }
+          },
+          {
+            "name": "variance",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_variance_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_avg_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_representation_sources_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_representation_sources_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_sources_bool_exp"
+            }
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "update_timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "wrapping",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_bool_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_max_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "update_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_min_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "update_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_order_by",
+        "inputFields": [
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_sources_order_by"
+            }
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "update_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "wrapping_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_aggregate_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_token_meta_representation_sources_select_column",
+        "enumValues": [
+          {
+            "name": "decimals",
+            "isDeprecated": false
+          },
+          {
+            "name": "denom",
+            "isDeprecated": false
+          },
+          {
+            "name": "name",
+            "isDeprecated": false
+          },
+          {
+            "name": "symbol",
+            "isDeprecated": false
+          },
+          {
+            "name": "update_timestamp",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_stddev_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_stddev_pop_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_stddev_samp_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_sum_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_var_pop_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_var_samp_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representation_sources_variance_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_token_meta_representations",
+        "fields": [
+          {
+            "name": "chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "sources",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "LIST",
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "v2_token_meta_representation_sources"
+                  }
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_token_meta_representation_sources_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_token_meta_representation_sources_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_representation_sources_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "avg",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_avg_order_by"
+            }
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_min_order_by"
+            }
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_stddev_order_by"
+            }
+          },
+          {
+            "name": "stddev_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_stddev_pop_order_by"
+            }
+          },
+          {
+            "name": "stddev_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_stddev_samp_order_by"
+            }
+          },
+          {
+            "name": "sum",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_sum_order_by"
+            }
+          },
+          {
+            "name": "var_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_var_pop_order_by"
+            }
+          },
+          {
+            "name": "var_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_var_samp_order_by"
+            }
+          },
+          {
+            "name": "variance",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_variance_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_avg_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_representations_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representations_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_representations_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "sources",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_bool_exp"
+            }
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_max_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_min_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_order_by",
+        "inputFields": [
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "sources_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_representation_sources_aggregate_order_by"
+            }
+          },
+          {
+            "name": "symbol",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_token_meta_representations_select_column",
+        "enumValues": [
+          {
+            "name": "decimals",
+            "isDeprecated": false
+          },
+          {
+            "name": "logo_uri",
+            "isDeprecated": false
+          },
+          {
+            "name": "name",
+            "isDeprecated": false
+          },
+          {
+            "name": "symbol",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_stddev_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_stddev_pop_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_stddev_samp_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_sum_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_var_pop_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_var_samp_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_representations_variance_order_by",
+        "inputFields": [
+          {
+            "name": "decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_token_meta_select_column",
+        "enumValues": [
+          {
+            "name": "denom",
+            "isDeprecated": false
+          },
+          {
+            "name": "rank",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_token_meta_sources",
+        "fields": [
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_uri",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_sources_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_sources_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_sources_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_sources_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_uri",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_sources_order_by",
+        "inputFields": [
+          {
+            "name": "logo_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_uri",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_token_meta_wrapping",
+        "fields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "unwrapped_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "unwrapped_denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "wrapped_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "wrapper",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "avg",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_avg_order_by"
+            }
+          },
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_min_order_by"
+            }
+          },
+          {
+            "name": "stddev",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_stddev_order_by"
+            }
+          },
+          {
+            "name": "stddev_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_stddev_pop_order_by"
+            }
+          },
+          {
+            "name": "stddev_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_stddev_samp_order_by"
+            }
+          },
+          {
+            "name": "sum",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_sum_order_by"
+            }
+          },
+          {
+            "name": "var_pop",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_var_pop_order_by"
+            }
+          },
+          {
+            "name": "var_samp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_var_samp_order_by"
+            }
+          },
+          {
+            "name": "variance",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_variance_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_avg_order_by",
+        "inputFields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_wrapping_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_wrapping_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_token_meta_wrapping_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "unwrapped_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "unwrapped_denom",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "wrapped_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "wrapper",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_max_order_by",
+        "inputFields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "unwrapped_denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "wrapper",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_min_order_by",
+        "inputFields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "unwrapped_denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "wrapper",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_order_by",
+        "inputFields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "unwrapped_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "unwrapped_denom",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "wrapped_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "wrapper",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_token_meta_wrapping_select_column",
+        "enumValues": [
+          {
+            "name": "destination_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "unwrapped_denom",
+            "isDeprecated": false
+          },
+          {
+            "name": "wrapper",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_stddev_order_by",
+        "inputFields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_stddev_pop_order_by",
+        "inputFields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_stddev_samp_order_by",
+        "inputFields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_sum_order_by",
+        "inputFields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_var_pop_order_by",
+        "inputFields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_var_samp_order_by",
+        "inputFields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_token_meta_wrapping_variance_order_by",
+        "inputFields": [
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_tokens_args",
+        "inputFields": [
+          {
+            "name": "p_denom",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_traces_type",
+        "fields": [
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "event_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_traces_type_aggregate_order_by",
+        "inputFields": [
+          {
+            "name": "count",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "max",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_traces_type_max_order_by"
+            }
+          },
+          {
+            "name": "min",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_traces_type_min_order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_traces_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_traces_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_traces_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_traces_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "event_index",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_traces_type_max_order_by",
+        "inputFields": [
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "event_index",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_traces_type_min_order_by",
+        "inputFields": [
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "event_index",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_traces_type_order_by",
+        "inputFields": [
+          {
+            "name": "block_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "event_index",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "height",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_traces_type_select_column",
+        "enumValues": [
+          {
+            "name": "block_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "event_index",
+            "isDeprecated": false
+          },
+          {
+            "name": "height",
+            "isDeprecated": false
+          },
+          {
+            "name": "timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "transaction_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "type",
+            "isDeprecated": false
+          },
+          {
+            "name": "universal_chain_id",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_transfer_type",
+        "fields": [
+          {
+            "name": "base_amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "base_token",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "base_token_decimals",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "base_token_meta",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_token_meta"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "base_token_name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "base_token_path",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "base_token_symbol",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "fee_amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "fee_token",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "fee_token_meta",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_token_meta"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "fee_type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_shape",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "quote_amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "quote_token",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "quote_token_meta",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_token_meta"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "receiver_canonical",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "receiver_display",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "receiver_zkgm",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "sender_canonical",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "sender_display",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "sender_zkgm",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "OBJECT",
+              "name": "v2_chains_view"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "success",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "traces",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "OBJECT",
+                  "name": "v2_traces_type"
+                }
+              }
+            },
+            "args": [
+              {
+                "name": "distinct_on",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "ENUM",
+                      "name": "v2_traces_type_select_column"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "offset",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int"
+                }
+              },
+              {
+                "name": "order_by",
+                "type": {
+                  "kind": "LIST",
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "v2_traces_type_order_by"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "where",
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_traces_type_bool_exp"
+                }
+              }
+            ],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_recv_timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_recv_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_send_timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_send_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_timeout_timestamp",
+            "type": {
+              "kind": "SCALAR",
+              "name": "timestamptz"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_timeout_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "wrap_direction",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_transfer_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_transfer_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_transfer_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_transfer_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "base_amount",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "base_token",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "base_token_decimals",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "base_token_meta",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_bool_exp"
+            }
+          },
+          {
+            "name": "base_token_name",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "base_token_path",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "base_token_symbol",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "fee_amount",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "fee_token",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "fee_token_meta",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_bool_exp"
+            }
+          },
+          {
+            "name": "fee_type",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "packet_shape",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "quote_amount",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "quote_token",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "quote_token_meta",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_bool_exp"
+            }
+          },
+          {
+            "name": "receiver_canonical",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "receiver_display",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "receiver_zkgm",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "sender_canonical",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "sender_display",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "sender_zkgm",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_bool_exp"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "success",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
+            "name": "traces",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_traces_type_bool_exp"
+            }
+          },
+          {
+            "name": "transfer_index",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "transfer_recv_timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "transfer_recv_transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "transfer_send_timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "transfer_send_transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "transfer_timeout_timestamp",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "timestamptz_comparison_exp"
+            }
+          },
+          {
+            "name": "transfer_timeout_transaction_hash",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "wrap_direction",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_transfer_type_order_by",
+        "inputFields": [
+          {
+            "name": "base_amount",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "base_token",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "base_token_decimals",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "base_token_meta",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_order_by"
+            }
+          },
+          {
+            "name": "base_token_name",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "base_token_path",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "base_token_symbol",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "fee_amount",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "fee_token",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "fee_token_meta",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_order_by"
+            }
+          },
+          {
+            "name": "fee_type",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "packet_shape",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "quote_amount",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "quote_token",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "quote_token_meta",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_token_meta_order_by"
+            }
+          },
+          {
+            "name": "receiver_canonical",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "receiver_display",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "receiver_zkgm",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "sender_canonical",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "sender_display",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "sender_zkgm",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "sort_order",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_chain",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_chains_view_order_by"
+            }
+          },
+          {
+            "name": "source_universal_chain_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "success",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "traces_aggregate",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_traces_type_aggregate_order_by"
+            }
+          },
+          {
+            "name": "transfer_index",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transfer_recv_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transfer_recv_transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transfer_send_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transfer_send_transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transfer_timeout_timestamp",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "transfer_timeout_transaction_hash",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "wrap_direction",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_transfer_type_select_column",
+        "enumValues": [
+          {
+            "name": "base_amount",
+            "isDeprecated": false
+          },
+          {
+            "name": "base_token",
+            "isDeprecated": false
+          },
+          {
+            "name": "base_token_decimals",
+            "isDeprecated": false
+          },
+          {
+            "name": "base_token_name",
+            "isDeprecated": false
+          },
+          {
+            "name": "base_token_path",
+            "isDeprecated": false
+          },
+          {
+            "name": "base_token_symbol",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "fee_amount",
+            "isDeprecated": false
+          },
+          {
+            "name": "fee_token",
+            "isDeprecated": false
+          },
+          {
+            "name": "fee_type",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "packet_shape",
+            "isDeprecated": false
+          },
+          {
+            "name": "quote_amount",
+            "isDeprecated": false
+          },
+          {
+            "name": "quote_token",
+            "isDeprecated": false
+          },
+          {
+            "name": "receiver_canonical",
+            "isDeprecated": false
+          },
+          {
+            "name": "receiver_display",
+            "isDeprecated": false
+          },
+          {
+            "name": "receiver_zkgm",
+            "isDeprecated": false
+          },
+          {
+            "name": "sender_canonical",
+            "isDeprecated": false
+          },
+          {
+            "name": "sender_display",
+            "isDeprecated": false
+          },
+          {
+            "name": "sender_zkgm",
+            "isDeprecated": false
+          },
+          {
+            "name": "sort_order",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_universal_chain_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "success",
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_index",
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_recv_timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_recv_transaction_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_send_timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_send_transaction_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_timeout_timestamp",
+            "isDeprecated": false
+          },
+          {
+            "name": "transfer_timeout_transaction_hash",
+            "isDeprecated": false
+          },
+          {
+            "name": "wrap_direction",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_transfers_args",
+        "inputFields": [
+          {
+            "name": "p_addresses_canonical",
+            "type": {
+              "kind": "SCALAR",
+              "name": "jsonb"
+            }
+          },
+          {
+            "name": "p_block_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_comparison",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_limit",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          },
+          {
+            "name": "p_packet_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_sort_order",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_transaction_hash",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_transfer_index",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_util_get_address_types_for_display_address_args",
+        "inputFields": [
+          {
+            "name": "p_chain_type",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_display_address",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_util_get_address_types_for_display_address_type",
+        "fields": [
+          {
+            "name": "canonical",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "display",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "zkgm",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_util_get_address_types_for_display_address_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_util_get_address_types_for_display_address_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_util_get_address_types_for_display_address_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_util_get_address_types_for_display_address_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "canonical",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "display",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "zkgm",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_util_get_address_types_for_display_address_type_order_by",
+        "inputFields": [
+          {
+            "name": "canonical",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "display",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "zkgm",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_util_get_address_types_for_display_address_type_select_column",
+        "enumValues": [
+          {
+            "name": "canonical",
+            "isDeprecated": false
+          },
+          {
+            "name": "display",
+            "isDeprecated": false
+          },
+          {
+            "name": "zkgm",
+            "isDeprecated": false
+          }
+        ]
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_util_get_transfer_request_details_args",
+        "inputFields": [
+          {
+            "name": "p_base_token",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_destination_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          },
+          {
+            "name": "p_source_universal_chain_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "OBJECT",
+        "name": "v2_util_get_transfer_request_details_type",
+        "fields": [
+          {
+            "name": "already_exists",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "quote_token",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int"
+            },
+            "args": [],
+            "isDeprecated": false
+          },
+          {
+            "name": "wrap_direction",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String"
+            },
+            "args": [],
+            "isDeprecated": false
+          }
+        ],
+        "interfaces": []
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_util_get_transfer_request_details_type_bool_exp",
+        "inputFields": [
+          {
+            "name": "_and",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_util_get_transfer_request_details_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "_not",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "v2_util_get_transfer_request_details_type_bool_exp"
+            }
+          },
+          {
+            "name": "_or",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "NON_NULL",
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "v2_util_get_transfer_request_details_type_bool_exp"
+                }
+              }
+            }
+          },
+          {
+            "name": "already_exists",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Boolean_comparison_exp"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "quote_token",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "Int_comparison_exp"
+            }
+          },
+          {
+            "name": "wrap_direction",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "String_comparison_exp"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "v2_util_get_transfer_request_details_type_order_by",
+        "inputFields": [
+          {
+            "name": "already_exists",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "destination_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "quote_token",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "source_channel_id",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          },
+          {
+            "name": "wrap_direction",
+            "type": {
+              "kind": "ENUM",
+              "name": "order_by"
+            }
+          }
+        ],
+        "isOneOf": false
+      },
+      {
+        "kind": "ENUM",
+        "name": "v2_util_get_transfer_request_details_type_select_column",
+        "enumValues": [
+          {
+            "name": "already_exists",
+            "isDeprecated": false
+          },
+          {
+            "name": "destination_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "quote_token",
+            "isDeprecated": false
+          },
+          {
+            "name": "source_channel_id",
+            "isDeprecated": false
+          },
+          {
+            "name": "wrap_direction",
+            "isDeprecated": false
+          }
+        ]
+      }
+    ],
+    "directives": []
+  }
 };
 
 import * as gqlTada from 'gql.tada';

@@ -17,6 +17,7 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
             rank
             denom
             representations {
+              logo_uri
               name
               symbol
               decimals
