@@ -24,6 +24,7 @@ import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import {cosmosSpenderAddresses} from "$lib/constants/spender-addresses.ts";
 
 type Props = {
   stepIndex: number
@@ -140,12 +141,13 @@ const submit = Effect.gen(function* () {
           )
 
           const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
+          const spender = cosmosSpenderAddresses[lts.value.sourceChain.universal_chain_id]
 
           do {
             cts = yield* Effect.promise(() =>
               nextStateCosmos(cts, lts.value.sourceChain, signingClient, sender, step.value.token, {
                 increase_allowance: {
-                  spender: "bbn1dy20pwy30hfqyxdzrmp33h47h4xdxht6phqecfp2jdnes6su9pysqq2kpw",
+                  spender,
                   amount: step.value.requiredAmount
                 }
               })
