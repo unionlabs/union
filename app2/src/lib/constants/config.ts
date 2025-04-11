@@ -1,1 +1,1 @@
-export const MODE: 'mainnet' | 'testnet' | 'all' = 'mainnet'
+export const MODE: "mainnet" | "testnet" | "all" = "mainnet"
