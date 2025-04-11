@@ -21,5 +21,21 @@
       "comments": "babylon.bbn-1 channel 1",
       "tags": ["canonical"]
     }
+  },
+  "corn.21000000": {
+    "1": {
+      "comments": "babylon.bbn-1 channel 2",
+      "tags": ["canonical"]
+    }
+  },
+  "babylon.bbn-1": {
+    "1": {
+      "comments": "bob.60808 channel 1",
+      "tags": ["canonical"]
+    },
+    "2": {
+      "comments": "corn.27000000 channel 1",
+      "tags": ["canonical"]
+    }
   }
 }

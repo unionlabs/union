@@ -11,5 +11,29 @@
   },
   "ethereum.17000": {
     "1": "union.union-testnet-10"
+  },
+  "union.union-1": {
+    "1": "ethereum.1",
+    "2": "bob.60808",
+    "3": "babylon.bbn-1",
+    "5": "corn.21000000"
+  },
+  "babylon.bbn-1": {
+    "1": "union.union-1",
+    "2": "bob.60808",
+    "4": "corn.21000000",
+    "5": "ethereum.1"
+  },
+  "bob.60808": {
+    "1": "union.union-1",
+    "3": "babylon.bbn-1"
+  },
+  "corn.21000000": {
+    "2": "union.union-1",
+    "3": "babylon.bbn-1"
+  },
+  "ethereum.1": {
+    "1": "union.union-1",
+    "4": "babylon.bbn-1"
   }
 }
