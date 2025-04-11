@@ -1,66 +1,64 @@
 <script lang="ts">
-import { flow, Option } from "effect"
-import { chains } from "$lib/stores/chains.svelte.ts"
-import { cn } from "$lib/utils"
-import { tokensStore } from "$lib/stores/tokens.svelte.ts"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import type { Chain } from "@unionlabs/sdk/schema"
-import { chainLogoMap } from "$lib/constants/chain-logos.ts"
-import { Array as Arr } from "effect"
-import { MODE } from "$lib/constants/config"
+  import { flow, Option } from "effect";
+  import { chains } from "$lib/stores/chains.svelte.ts";
+  import { cn } from "$lib/utils";
+  import { tokensStore } from "$lib/stores/tokens.svelte.ts";
+  import { transfer } from "$lib/components/Transfer/transfer.svelte.ts";
+  import type { Chain } from "@unionlabs/sdk/schema";
+  import { chainLogoMap } from "$lib/constants/chain-logos.ts";
+  import { Array as Arr } from "effect";
+  import { MODE } from "$lib/constants/config";
 
-type Props = {
-  type: "source" | "destination"
-  onSelect: () => void
-}
+  type Props = {
+    type: "source" | "destination";
+    onSelect: () => void;
+  };
 
-const { type, onSelect }: Props = $props()
+  const { type, onSelect }: Props = $props();
 
-function selectChain(chain: Chain) {
-  if (type === "destination" && chain.chain_id === transfer.raw.source) {
-    return // Don't allow selecting same chain as destination
-  }
-
-  transfer.raw.updateField(type, chain.chain_id)
-  if (type === "source") {
-    tokensStore.fetchTokens(chain.universal_chain_id)
-    if (transfer.raw.destination === chain.chain_id) {
-      transfer.raw.updateField("destination", "")
+  function selectChain(chain: Chain) {
+    if (type === "destination" && chain.chain_id === transfer.raw.source) {
+      return; // Don't allow selecting same chain as destination
     }
+
+    transfer.raw.updateField(type, chain.chain_id);
+    if (type === "source") {
+      tokensStore.fetchTokens(chain.universal_chain_id);
+      if (transfer.raw.destination === chain.chain_id) {
+        transfer.raw.updateField("destination", "");
+      }
+    }
+
+    onSelect();
   }
 
-  onSelect()
-}
+  const testnets = [
+    "ethereum.11155111",
+    "corn.21000001",
+    "bob.808813",
+    "babylon.bbn-test-5",
+  ];
 
-const testnetChainIds = ["ethereum.11155111", "babylon.bbn-test-5", "corn.21000001", "bob.808813"]
+  const mainnets = [
+    "bob.60808",
+    "corn.21000000",
+    "babylon.bbn-1",
+    "ethereum.1",
+  ];
 
-// For btc.union.build, only show bitcoin chains
-const filteredChains = $derived(
-  chains.data.pipe(
-    Option.map(
-      flow(
-        Arr.filter(c =>
-          [
-            "corn.21000001",
-            "bob.60808",
-            "bob.808813",
-            "babylon.bbn-test-5",
-            "ethereum.11155111"
-          ].includes(c.universal_chain_id)
+  // For btc.union.build, only show bitcoin chains
+  const filteredChains = $derived(
+    chains.data.pipe(
+      Option.map(
+        flow(
+          Arr.filter((c) => {
+            const allowed = MODE === "testnet" ? testnets : mainnets;
+            return allowed.includes(c.universal_chain_id);
+          }),
         ),
-        xs => {
-          if (MODE === "testnet") {
-            return xs.filter(x => testnetChainIds.includes(x.universal_chain_id))
-          }
-          if (MODE === "mainnet") {
-            return xs.filter(x => !testnetChainIds.includes(x.universal_chain_id))
-          }
-          return xs
-        }
-      )
-    )
-  )
-)
+      ),
+    ),
+  );
 </script>
 
 <div class="p-4">
