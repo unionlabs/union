@@ -28,7 +28,7 @@ use tracing::{debug, error, info, info_span, instrument, trace, warn};
 use unionlabs::{
     self,
     bech32::Bech32,
-    cosmos::tx::fee::Fee,
+    cosmos::{base::coin::Coin, tx::fee::Fee},
     google::protobuf::any::mk_any,
     option_unwrap,
     primitives::{Bytes, H160, H256},
@@ -66,6 +66,7 @@ pub struct Module {
     pub gas_config: AnyGasFiller,
     pub bech32_prefix: String,
     pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
+    pub gas_station_config: Vec<Coin>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -79,6 +80,8 @@ pub struct Config {
     /// A list of (codespace, code) tuples that are to be considered non-recoverable.
     #[serde(default)]
     pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
+    #[serde(default)]
+    pub gas_station_config: Vec<Coin>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -169,7 +172,6 @@ impl Plugin for Module {
                         LocalSigner::new(entry.value().try_into().unwrap(), bech32_prefix.clone());
 
                     KeyringEntry {
-                        name: entry.name(),
                         address: signer.address(),
                         signer,
                     }
@@ -199,6 +201,7 @@ impl Plugin for Module {
                         .map(|(codespace, code)| (((*codespace).to_owned(), *code), None)),
                 )
                 .collect(),
+            gas_station_config: config.gas_station_config,
         })
     }
 
@@ -239,7 +242,12 @@ impl Module {
                 let memo = format!("Voyager {}", env!("CARGO_PKG_VERSION"));
 
                 let ibc_host_contract_address = self.ibc_host_contract_address.clone();
-                let msgs = process_msgs(msgs, signer, ibc_host_contract_address);
+                let msgs = process_msgs(
+                    msgs,
+                    signer,
+                    ibc_host_contract_address,
+                    self.gas_station_config.clone(),
+                );
 
                 let msgs = msgs
                     .into_iter()
@@ -571,6 +579,7 @@ fn process_msgs(
     msgs: Vec<IbcMessage>,
     signer: &LocalSigner,
     ibc_host_contract_address: Bech32<H256>,
+    gas_station_config: Vec<Coin>,
 ) -> Vec<RpcResult<(IbcMessage, protos::google::protobuf::Any)>> {
     msgs.into_iter()
         .map(|msg| {
@@ -928,7 +937,14 @@ fn process_msgs(
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(&packet_recv).unwrap(),
-                            funds: vec![],
+                            funds: gas_station_config
+                                .clone()
+                                .into_iter()
+                                .map(|coin| protos::cosmos::base::v1beta1::Coin {
+                                    denom: coin.denom,
+                                    amount: coin.amount.to_string(),
+                                })
+                                .collect(),
                         })
                     }
                     ibc_union_spec::datagram::Datagram::PacketAcknowledgement(

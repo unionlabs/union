@@ -84,7 +84,6 @@ impl Plugin for Module {
                     .into();
 
                     KeyringEntry {
-                        name: config.name(),
                         address,
                         signer: Arc::new(pk),
                     }

@@ -144,7 +144,6 @@ impl Plugin for Module {
                     let signer = LocalSigner::from_signing_key(signing_key);
 
                     KeyringEntry {
-                        name: config.name(),
                         address: signer.address(),
                         signer,
                     }
