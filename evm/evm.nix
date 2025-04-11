@@ -17,6 +17,17 @@ _: {
       # use this to override the git rev. useful if verifying a contract off of a commit and the worktree is dirty for unrelated reasons (for example, changing an rpc)
       # gitRevToUse = "";
 
+      getDeployment =
+        let
+          json = builtins.fromJSON (builtins.readFile ../deployments/deployments.json);
+        in
+        chainId:
+        (pkgs.lib.lists.findSingle (deployment: deployment.chain_id == chainId)
+          (throw "deployment for ${chainId} not found")
+          (throw "many deployments for ${chainId} found")
+          json
+        ).deployments;
+
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
         repo = "solidity-stringutils";
@@ -235,7 +246,7 @@ _: {
           chain-id = "11155111";
 
           name = "sepolia";
-          rpc-url = "https://0xrpc.io/sep";
+          rpc-url = "https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
 
@@ -405,9 +416,9 @@ _: {
         '';
 
       update-deployments-json =
-        { rpc-url, ... }:
+        { rpc-url, name, ... }:
         pkgs.writeShellApplication {
-          name = "get-deployed-heights";
+          name = "update-deployments-json-${name}";
           runtimeInputs = [
             self'.packages.forge
             pkgs.moreutils
@@ -426,33 +437,38 @@ _: {
 
             echo "chain id: $CHAIN_ID"
 
-            jq \
-              '. |= map(if .chain_id == $chain_id then .deployments.core.height = ($height | tonumber) | .deployments.core.commit = $commit else . end)' \
-              "$DEPLOYMENTS_FILE" \
-              --arg chain_id "$CHAIN_ID" \
-              --arg height "$(( "$(
-                cast logs 'Initialized(uint64)' \
-                  --address "$(
-                    cast impl "$(
-                        jq -r \
-                          '.[] | select(.chain_id == $chain_id) | .deployments.core.address' \
-                          "$DEPLOYMENTS_FILE" \
-                          --arg chain_id "$CHAIN_ID"
-                      )"
-                  )" \
-                  --json \
-                | jq -r '.[0].blockNumber'
-              )" ))" \
-              --arg commit "$(
-                cast call "$(
-                  jq -r \
-                    '.[] | select(.chain_id == $chain_id) | .deployments.core.address' \
-                    "$DEPLOYMENTS_FILE" \
-                    --arg chain_id "$CHAIN_ID"
-                )" "gitRev()(string)" \
-                | jq -r || echo unknown
-              )" \
-            | sponge "$DEPLOYMENTS_FILE"
+            for key in core multicall ; do
+              jq \
+                '. |= map(if .chain_id == $chain_id then .deployments[$key].height = ($height | tonumber) | .deployments[$key].commit = $commit else . end)' \
+                "$DEPLOYMENTS_FILE" \
+                --arg chain_id "$CHAIN_ID" \
+                --arg key "$key" \
+                --arg height "$(( "$(
+                  cast logs 'Initialized(uint64)' \
+                    --address "$(
+                      cast impl "$(
+                          jq -r \
+                            '.[] | select(.chain_id == $chain_id) | .deployments[$key].address' \
+                            "$DEPLOYMENTS_FILE" \
+                            --arg chain_id "$CHAIN_ID" \
+                            --arg key "$key"
+                        )"
+                    )" \
+                    --json \
+                  | jq -r '.[0].blockNumber'
+                )" ))" \
+                --arg commit "$(
+                  cast call "$(
+                    jq -r \
+                      '.[] | select(.chain_id == $chain_id) | .deployments[$key].address' \
+                      "$DEPLOYMENTS_FILE" \
+                      --arg chain_id "$CHAIN_ID" \
+                      --arg key "$key"
+                  )" "gitRev()(string)" \
+                  | jq -r || echo unknown
+                )" \
+              | sponge "$DEPLOYMENTS_FILE"
+            done
 
             for key in lightclient app ; do
               echo "key: $key"
@@ -926,7 +942,30 @@ _: {
           );
 
         evm-scripts = pkgs.mkRootDrv "evm-scripts" (
-          builtins.listToAttrs (
+          {
+            update-deployments-json = pkgs.writeShellApplication {
+              name = "update-deployments-json";
+              text =
+                let
+                  deployments = builtins.filter (deployment: deployment.ibc_interface == "ibc-solidity") (
+                    builtins.fromJSON (builtins.readFile ../deployments/deployments.json)
+                  );
+                  getNetwork =
+                    chainId:
+                    pkgs.lib.lists.findSingle (network: network.chain-id == chainId)
+                      (throw "no network found with chain id ${chainId}")
+                      (throw "many networks with chain id ${chainId} found")
+                      networks;
+                in
+                pkgs.lib.concatMapStringsSep "\n\n" (deployment: ''
+                  echo "updating ${deployment.universal_chain_id}"
+                  ${pkgs.lib.getExe
+                    self'.packages.evm-scripts.${(getNetwork deployment.chain_id).name}.update-deployments-json
+                  }
+                '') deployments;
+            };
+          }
+          // (builtins.listToAttrs (
             map (chain: {
               inherit (chain) name;
               value = pkgs.mkRootDrv chain.name (
@@ -994,7 +1033,7 @@ _: {
                 ))
               );
             }) networks
-          )
+          ))
         );
       };
     };

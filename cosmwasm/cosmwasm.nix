@@ -72,6 +72,7 @@ _: {
 
       networks = [
         {
+          chain-id = "union-devnet-1";
           name = "union-devnet";
           rpc_url = "http://localhost:26657";
           # alice from the devnet keyring
@@ -92,6 +93,7 @@ _: {
           ];
         }
         {
+          chain-id = "union-testnet-10";
           name = "union-testnet-10";
           rpc_url = "https://rpc.rpc-node.union-testnet-10.union.build";
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
@@ -116,6 +118,7 @@ _: {
           ];
         }
         {
+          chain-id = "union-1";
           name = "union";
           rpc_url = "https://rpc.rpc-node.union-1.union.build";
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
@@ -140,6 +143,7 @@ _: {
           ];
         }
         {
+          chain-id = "elgafar-1";
           name = "stargaze-testnet";
           rpc_url = "https://rpc.elgafar-1.stargaze.chain.kitchen";
           private_key = ''"$1"'';
@@ -161,6 +165,7 @@ _: {
           ];
         }
         {
+          chain-id = "osmo-test-5";
           name = "osmosis-testnet";
           rpc_url = "https://osmosis-testnet-rpc.polkachu.com";
           private_key = ''"$1"'';
@@ -182,6 +187,7 @@ _: {
           ];
         }
         {
+          chain-id = "bbn-test-5";
           name = "babylon-testnet";
           rpc_url = "https://babylon-testnet-rpc.polkachu.com";
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
@@ -204,6 +210,7 @@ _: {
           ];
         }
         {
+          chain-id = "stride-internal-1";
           name = "stride-testnet";
           rpc_url = "https://stride-testnet-rpc.polkachu.com";
           private_key = ''"$1"'';
@@ -227,6 +234,7 @@ _: {
           ];
         }
         {
+          chain-id = "xion-testnet-2";
           name = "xion-testnet";
           rpc_url = "https://rpc.xion-testnet-2.burnt.com/";
           private_key = ''"$1"'';
@@ -248,6 +256,7 @@ _: {
           ];
         }
         {
+          chain-id = "mantra-dukong-1";
           name = "mantra-testnet";
           rpc_url = "https://rpc.dukong.mantrachain.io/";
           private_key = ''"$1"'';
@@ -833,6 +842,29 @@ _: {
           cosmwasm-scripts =
             {
               inherit ibc-union-contract-addresses;
+              update-deployments-json = pkgs.writeShellApplication {
+                name = "update-deployments-json";
+                text =
+                  # TODO: Merge this script with the one in evm.nix
+                  let
+                    deployments = builtins.filter (deployment: deployment.ibc_interface == "ibc-cosmwasm") (
+                      builtins.fromJSON (builtins.readFile ../deployments/deployments.json)
+                    );
+                    getNetwork =
+                      chainId:
+                      pkgs.lib.lists.findSingle (network: network.chain-id == chainId)
+                        (throw "no network found with chain id ${chainId}")
+                        (throw "many networks with chain id ${chainId} found")
+                        networks;
+                  in
+                  pkgs.lib.concatMapStringsSep "\n\n" (entry: ''
+                    echo "updating ${entry.universal_chain_id}"
+                    ${
+                      pkgs.lib.getExe
+                        self'.packages.cosmwasm-scripts.${(getNetwork entry.chain_id).name}.update-deployments-json
+                    } ${entry.deployments.deployer}
+                  '') deployments;
+              };
             }
             // (pkgs.mkRootDrv "cosmwasm-scripts" (
               builtins.listToAttrs (
