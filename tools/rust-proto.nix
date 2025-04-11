@@ -1,4 +1,5 @@
-_: {
+{ inputs, ... }:
+{
   perSystem =
     {
       self',
@@ -58,6 +59,9 @@ _: {
                   "prost"
                   "gzip"
                   "transport"
+                  "tls"
+                  "tls-roots"
+                  "tls-webpki-roots"
                 ];
                 optional = true;
               };
@@ -104,6 +108,16 @@ _: {
         '';
 
       all-protos-to-build = rec {
+        babylon = rec {
+          src = "${inputs.babylon}/proto";
+          proto-deps = [
+            "${proto.gogoproto}/protobuf"
+            src
+            # "${proto.cosmosproto}/proto"
+            # cosmos-sdk.src
+            # google.src
+          ];
+        };
         wasmd = rec {
           src = "${proto.wasmd}/proto";
           proto-deps = [
@@ -389,39 +403,6 @@ _: {
             ".ibc.lightclients.wasm.v1.ConsensusState.data" = [ serde_base64 ];
 
             ".ibc.lightclients.wasm.v1.Header.data" = [ serde_base64 ];
-
-            ".union.ibc.lightclients.ethereum.v1.SyncCommittee.aggregate_pubkey" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.SyncCommittee.pubkeys" = [ serde_inner_base64 ];
-
-            ".union.ibc.lightclients.ethereum.v1.BeaconBlockHeader.parent_root" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.BeaconBlockHeader.state_root" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.BeaconBlockHeader.body_root" = [ serde_base64 ];
-
-            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.parent_hash" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.fee_recipient" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.state_root" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.receipts_root" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.logs_bloom" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.prev_randao" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.extra_data" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.base_fee_per_gas" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.block_hash" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.transactions_root" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.ExecutionPayloadHeader.withdrawals_root" = [ serde_base64 ];
-
-            ".union.ibc.lightclients.ethereum.v1.LightClientHeader.execution_branch" = [ serde_inner_base64 ];
-
-            ".union.ibc.lightclients.ethereum.v1.LightClientUpdate.next_sync_committee_branch" = [
-              serde_inner_base64
-            ];
-            ".union.ibc.lightclients.ethereum.v1.LightClientUpdate.finality_branch" = [ serde_inner_base64 ];
-
-            ".union.ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_bits" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.SyncAggregate.sync_committee_signature" = [ serde_base64 ];
-
-            ".union.ibc.lightclients.ethereum.v1.Proof.key" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.Proof.value" = [ serde_base64 ];
-            ".union.ibc.lightclients.ethereum.v1.Proof.proof" = [ serde_inner_base64 ];
 
             ".cosmos.ics23.v1.LeafOp.hash" = [ serde_default ];
             ".cosmos.ics23.v1.LeafOp.prehash_key" = [ serde_default ];

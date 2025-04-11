@@ -6,6 +6,78 @@ pub mod amino {
     include!("amino.rs");
     // @@protoc_insertion_point(amino)
 }
+pub mod babylon {
+    pub mod btccheckpoint {
+        #[cfg(feature = "babylon+btccheckpoint+v1")]
+        // @@protoc_insertion_point(attribute:babylon.btccheckpoint.v1)
+        pub mod v1 {
+            include!("babylon.btccheckpoint.v1.rs");
+            // @@protoc_insertion_point(babylon.btccheckpoint.v1)
+        }
+    }
+    pub mod btclightclient {
+        #[cfg(feature = "babylon+btclightclient+v1")]
+        // @@protoc_insertion_point(attribute:babylon.btclightclient.v1)
+        pub mod v1 {
+            include!("babylon.btclightclient.v1.rs");
+            // @@protoc_insertion_point(babylon.btclightclient.v1)
+        }
+    }
+    pub mod btcstaking {
+        #[cfg(feature = "babylon+btcstaking+v1")]
+        // @@protoc_insertion_point(attribute:babylon.btcstaking.v1)
+        pub mod v1 {
+            include!("babylon.btcstaking.v1.rs");
+            // @@protoc_insertion_point(babylon.btcstaking.v1)
+        }
+    }
+    pub mod checkpointing {
+        #[cfg(feature = "babylon+checkpointing+v1")]
+        // @@protoc_insertion_point(attribute:babylon.checkpointing.v1)
+        pub mod v1 {
+            include!("babylon.checkpointing.v1.rs");
+            // @@protoc_insertion_point(babylon.checkpointing.v1)
+        }
+    }
+    pub mod epoching {
+        #[cfg(feature = "babylon+epoching+v1")]
+        // @@protoc_insertion_point(attribute:babylon.epoching.v1)
+        pub mod v1 {
+            include!("babylon.epoching.v1.rs");
+            // @@protoc_insertion_point(babylon.epoching.v1)
+        }
+    }
+    pub mod finality {
+        #[cfg(feature = "babylon+finality+v1")]
+        // @@protoc_insertion_point(attribute:babylon.finality.v1)
+        pub mod v1 {
+            include!("babylon.finality.v1.rs");
+            // @@protoc_insertion_point(babylon.finality.v1)
+        }
+    }
+    #[cfg(feature = "babylon+incentive")]
+    // @@protoc_insertion_point(attribute:babylon.incentive)
+    pub mod incentive {
+        include!("babylon.incentive.rs");
+        // @@protoc_insertion_point(babylon.incentive)
+    }
+    pub mod mint {
+        #[cfg(feature = "babylon+mint+v1")]
+        // @@protoc_insertion_point(attribute:babylon.mint.v1)
+        pub mod v1 {
+            include!("babylon.mint.v1.rs");
+            // @@protoc_insertion_point(babylon.mint.v1)
+        }
+    }
+    pub mod monitor {
+        #[cfg(feature = "babylon+monitor+v1")]
+        // @@protoc_insertion_point(attribute:babylon.monitor.v1)
+        pub mod v1 {
+            include!("babylon.monitor.v1.rs");
+            // @@protoc_insertion_point(babylon.monitor.v1)
+        }
+    }
+}
 pub mod capability {
     #[cfg(feature = "capability+v1")]
     // @@protoc_insertion_point(attribute:capability.v1)
