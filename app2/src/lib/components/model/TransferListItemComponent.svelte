@@ -23,7 +23,10 @@ const handleClick = () => {
 
 {#if Option.isSome(chains.data)}
   {@const chainss = chains.data.value}
-  {@const sourceChain = getChain(chainss, transfer.source_chain.universal_chain_id)}
+  {@const sourceChain = getChain(
+    chainss,
+    transfer.source_chain.universal_chain_id,
+  )}
   {@const destinationChain = getChain(
     chainss,
     transfer.destination_chain.universal_chain_id,

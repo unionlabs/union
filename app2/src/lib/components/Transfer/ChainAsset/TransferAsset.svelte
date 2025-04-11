@@ -1,48 +1,34 @@
 <script lang="ts">
-  import { cn } from "$lib/utils/index.js";
-  import { transfer } from "$lib/components/Transfer/transfer.svelte.js";
-  import {
-    TokenRawAmount,
-    type Chain,
-    type Token,
-  } from "@unionlabs/sdk/schema";
-  import { Option } from "effect";
-  import Skeleton from "$lib/components/ui/Skeleton.svelte";
-  import { chains } from "$lib/stores/chains.svelte.ts";
-  import SharpArrowLeft from "$lib/components/icons/SharpArrowLeft.svelte";
-  import TokenComponent from "$lib/components/model/TokenComponent.svelte";
-  import SharpLinkOffIcon from "$lib/components/icons/SharpLinkOffIcon.svelte";
-  import { chainLogoMap } from "$lib/constants/chain-logos";
+import { cn } from "$lib/utils/index.js"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.js"
+import { TokenRawAmount, type Chain, type Token } from "@unionlabs/sdk/schema"
+import { Option } from "effect"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import SharpLinkOffIcon from "$lib/components/icons/SharpLinkOffIcon.svelte"
 
-  type Props = {
-    token: Token;
-    chain: Chain;
-    selectAsset: (token: Token) => void;
-  };
+type Props = {
+  token: Token
+  chain: Chain
+  selectAsset: (token: Token) => void
+}
 
-  let { token, chain, selectAsset }: Props = $props();
+let { token, chain, selectAsset }: Props = $props()
 
-  let isSelected = $derived(transfer.raw.asset === token.denom);
+let isSelected = $derived(transfer.raw.asset === token.denom)
 
-  let tokenBalance = $derived.by(() => {
-    if (Option.isNone(transfer.sortedBalances)) return Option.none();
-    const found = transfer.sortedBalances.value.find(
-      (t) => t.token.denom === token.denom,
-    );
-    return found ? Option.some(found) : Option.none();
-  });
+let tokenBalance = $derived.by(() => {
+  if (Option.isNone(transfer.sortedBalances)) return Option.none()
+  const found = transfer.sortedBalances.value.find(t => t.token.denom === token.denom)
+  return found ? Option.some(found) : Option.none()
+})
 
-  let isLoading = $derived(
-    Option.isSome(transfer.sortedBalances) && Option.isNone(tokenBalance),
-  );
+let isLoading = $derived(Option.isSome(transfer.sortedBalances) && Option.isNone(tokenBalance))
 
-  export const toDisplayName = (
-    chain_id: string | undefined | null,
-    chains: ReadonlyArray<Chain>,
-  ): string =>
-    chains.find((c) => c.chain_id === chain_id)?.display_name ??
-    chain_id ??
-    "unknown chain";
+export const toDisplayName = (
+  chain_id: string | undefined | null,
+  chains: ReadonlyArray<Chain>
+): string => chains.find(c => c.chain_id === chain_id)?.display_name ?? chain_id ?? "unknown chain"
 </script>
 
 <button
@@ -60,29 +46,32 @@
       {#if isLoading}
         <Skeleton class="h-3 w-16" />
       {:else if Option.isSome(tokenBalance) && Option.isSome(tokenBalance.value.error)}
-        <span class="text-red-400">{tokenBalance.value.error}</span>
+        <span class="text-red-400">
+          {tokenBalance.value.error?.value._tag ?? "Error"}
+        </span>
       {:else if Option.isSome(tokenBalance)}
         {#if Option.isSome(tokenBalance.value.balance)}
+          {@const icon = token.representations[0].logo_uri}
           <TokenComponent
             {chain}
             denom={token.denom}
             amount={tokenBalance.value.balance.value}
+            {icon}
           />
         {:else}
+          {@const icon = token.representations[0].logo_uri}
           <TokenComponent
             {chain}
             denom={token.denom}
             amount={TokenRawAmount.make(0n)}
+            {icon}
           />
         {/if}
       {:else}
-        {@const uri = token.representations[0].logo_uri}
+        {@const icon = token.representations[0].logo_uri}
         <div class="flex flex-row items-center gap-2">
           <SharpLinkOffIcon />
-          {#if Option.isSome(uri)}
-            <img class="size-4" src={uri.value} alt="" />
-          {/if}
-          <TokenComponent {chain} denom={token.denom} />
+          <TokenComponent {chain} denom={token.denom} {icon} />
         </div>
       {/if}
     </div>
