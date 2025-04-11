@@ -1,1 +1,1 @@
-export const GRAPHQL_URL = "https://development.graphql.union.build/v1/graphql"
+export const GRAPHQL_URL = "https://graphql.union.build/v1/graphql"
