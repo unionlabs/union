@@ -1,12 +1,9 @@
 <script>
-import ChainList from "$lib/components/ChainList.svelte"
-import Sections from "$lib/components/ui/Sections.svelte"
-import SectionTitle from "$lib/components/ui/SectionTitle.svelte"
+import { onMount } from "svelte"
+import { goto } from "$app/navigation"
+
+onMount(() => {
+  goto("/transfer")
+})
 </script>
 
-<!--
-<Sections>
-  <SectionTitle>Chains</SectionTitle>
-  <ChainList/>
-</Sections>
-!-->
