@@ -1,8 +1,8 @@
 use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_std::{
     testing::{message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
-    wasm_execute, Addr, Binary, Coins, Deps, DepsMut, Empty, Env, MessageInfo, OwnedDeps, Response,
-    StdError, StdResult,
+    wasm_execute, Addr, Binary, Coin, Coins, Deps, DepsMut, Empty, Env, MessageInfo, OwnedDeps,
+    Response, StdError, StdResult,
 };
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor};
 use cw_storage_plus::Map;
@@ -1276,5 +1276,53 @@ fn test_recv_packet_native_to_native_only_maker() {
     assert_eq!(
         err.downcast_ref::<ContractError>().unwrap(),
         &ContractError::OnlyMaker
+    );
+}
+
+#[test]
+fn test_recv_packet_native_quote_maker_fill_ok() {
+    let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
+    let mut st = init_test_state(admin);
+    let path = U256::ZERO;
+    let destination_channel_id = ChannelId!(10);
+    let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
+    let quote_token = Bytes::from(b"muno");
+    let quote_token_addr = Addr::unchecked(std::str::from_utf8(&quote_token).unwrap());
+    assert!(st.app.contract_data(&quote_token_addr).is_err());
+    let (order, msg, _) = IncomingOrderBuilder::new(quote_token)
+        .with_base_token(base_token)
+        .with_destination_channel_id(destination_channel_id)
+        .with_path(path)
+        .build();
+    let quote_coin = Coin::new(order.quote_amount, quote_token_addr.clone());
+    assert_eq!(
+        st.app
+            .wrap()
+            .query_balance(&order.receiver, &quote_token_addr)
+            .unwrap(),
+        Coin::new(0u32, quote_token_addr.clone())
+    );
+    st.app
+        .sudo(cw_multi_test::SudoMsg::Bank(
+            cw_multi_test::BankSudo::Mint {
+                to_address: st.ibc_host.clone().to_string(),
+                amount: vec![quote_coin.clone()],
+            },
+        ))
+        .unwrap();
+    st.app
+        .execute(
+            st.ibc_host.clone(),
+            wasm_execute(st.zkgm.clone(), &msg, vec![quote_coin.clone()])
+                .unwrap()
+                .into(),
+        )
+        .unwrap();
+    assert_eq!(
+        st.app
+            .wrap()
+            .query_balance(order.receiver, quote_token_addr)
+            .unwrap(),
+        quote_coin
     );
 }

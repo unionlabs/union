@@ -143,7 +143,7 @@ pub fn execute(
                                     relayer,
                                     relayer_msg,
                                 },
-                                vec![],
+                                info.funds,
                             )?,
                             EXECUTE_REPLY_ID,
                         )))
