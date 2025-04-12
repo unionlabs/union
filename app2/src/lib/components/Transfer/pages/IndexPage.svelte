@@ -7,6 +7,7 @@ import { fly } from "svelte/transition"
 import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
 import { lockedTransferStore } from "../locked-transfer.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte";
 
 type Props = {
   newTransfer: () => void
@@ -93,9 +94,7 @@ const handleRedirect = () => {
         out:fly={{ x: -20, duration: 300, opacity: 0 }}
       >
         <div class="flex flex-col items-center justify-center h-full py-8">
-          <div
-            class="animate-spin rounded-full h-12 w-12 border-y-2 border-babylon-orange mb-4"
-          ></div>
+          <SpinnerIcon class="h-12 w-12"/>
           <p class="text-lg font-medium text-zinc-400 mb-2">
             Waiting for indexer...
           </p>
