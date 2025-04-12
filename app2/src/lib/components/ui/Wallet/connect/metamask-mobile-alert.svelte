@@ -17,7 +17,7 @@ function handleOutsideClick(event: MouseEvent) {
   <!-- Overlay -->
   <div
           class="dialog-overlay fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          on:click={handleOutsideClick}
+          onclick={handleOutsideClick}
   >
     <!-- Dialog Content -->
     <div
@@ -53,7 +53,7 @@ function handleOutsideClick(event: MouseEvent) {
       <div class="flex flex-col sm:flex-row gap-3 mt-6 antialiased">
         <button
                 class="w-full sm:w-1/2 py-2 px-4 border border-gray-300 rounded-md tracking-wide hover:bg-gray-100 transition-colors"
-                on:click={closeDialog}
+                onclick={closeDialog}
         >
           I've disabled smart transactions
         </button>

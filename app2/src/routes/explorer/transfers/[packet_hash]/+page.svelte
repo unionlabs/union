@@ -187,7 +187,7 @@ const inProgress = $derived(
   <div>
     <button
             class="flex items-center justify-center w-full gap-2 py-2 px-4 text-left hover:text-zinc-300 text-zinc-400 cursor-pointer transition-colors"
-            on:click={() => showPacketDetails = !showPacketDetails}
+            onclick={() => showPacketDetails = !showPacketDetails}
     >
       <span>Packet Details</span>
       <span class="transition-transform duration-300"
