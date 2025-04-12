@@ -5,8 +5,8 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw20::{
-    BalanceResponse, Cw20Coin, Cw20ReceiveMsg, DownloadLogoResponse, EmbeddedLogo, Logo, LogoInfo,
-    MarketingInfoResponse, MinterResponse, TokenInfoResponse,
+    BalanceResponse, Cw20Coin, Cw20ExecuteMsg, Cw20ReceiveMsg, DownloadLogoResponse, EmbeddedLogo,
+    Logo, LogoInfo, MarketingInfoResponse, MinterResponse, TokenInfoResponse,
 };
 
 use crate::{
@@ -16,8 +16,10 @@ use crate::{
     },
     enumerable::{query_all_accounts, query_owner_allowances, query_spender_allowances},
     error::ContractError,
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    state::{MinterData, TokenInfo, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO},
+    msg::{
+        validate_decimals, validate_name, validate_symbol, ExecuteMsg, InstantiateMsg, QueryMsg,
+    },
+    state::{MinterData, TokenInfo, ADMIN, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO},
 };
 
 // version info for migration info
@@ -149,6 +151,10 @@ pub fn instantiate(
         MARKETING_INFO.save(deps.storage, &data)?;
     }
 
+    if let Some(admin) = msg.admin {
+        ADMIN.save(deps.storage, &admin)?;
+    }
+
     Ok(Response::default())
 }
 
@@ -188,48 +194,90 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Transfer { recipient, amount } => {
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::Transfer { recipient, amount }) => {
             execute_transfer(deps, env, info, recipient, amount)
         }
-        ExecuteMsg::Burn { amount } => execute_burn(deps, env, info, amount),
-        ExecuteMsg::Send {
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::Burn { amount }) => {
+            execute_burn(deps, env, info, amount)
+        }
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::Send {
             contract,
             amount,
             msg,
-        } => execute_send(deps, env, info, contract, amount, msg),
-        ExecuteMsg::Mint { recipient, amount } => execute_mint(deps, env, info, recipient, amount),
-        ExecuteMsg::IncreaseAllowance {
+        }) => execute_send(deps, env, info, contract, amount, msg),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::Mint { recipient, amount }) => {
+            execute_mint(deps, env, info, recipient, amount)
+        }
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::IncreaseAllowance {
             spender,
             amount,
             expires,
-        } => execute_increase_allowance(deps, env, info, spender, amount, expires),
-        ExecuteMsg::DecreaseAllowance {
+        }) => execute_increase_allowance(deps, env, info, spender, amount, expires),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::DecreaseAllowance {
             spender,
             amount,
             expires,
-        } => execute_decrease_allowance(deps, env, info, spender, amount, expires),
-        ExecuteMsg::TransferFrom {
+        }) => execute_decrease_allowance(deps, env, info, spender, amount, expires),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::TransferFrom {
             owner,
             recipient,
             amount,
-        } => execute_transfer_from(deps, env, info, owner, recipient, amount),
-        ExecuteMsg::BurnFrom { owner, amount } => execute_burn_from(deps, env, info, owner, amount),
-        ExecuteMsg::SendFrom {
+        }) => execute_transfer_from(deps, env, info, owner, recipient, amount),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::BurnFrom { owner, amount }) => {
+            execute_burn_from(deps, env, info, owner, amount)
+        }
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::SendFrom {
             owner,
             contract,
             amount,
             msg,
-        } => execute_send_from(deps, env, info, owner, contract, amount, msg),
-        ExecuteMsg::UpdateMarketing {
+        }) => execute_send_from(deps, env, info, owner, contract, amount, msg),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::UpdateMarketing {
             project,
             description,
             marketing,
-        } => execute_update_marketing(deps, env, info, project, description, marketing),
-        ExecuteMsg::UploadLogo(logo) => execute_upload_logo(deps, env, info, logo),
-        ExecuteMsg::UpdateMinter { new_minter } => {
+        }) => execute_update_marketing(deps, env, info, project, description, marketing),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::UploadLogo(logo)) => {
+            execute_upload_logo(deps, env, info, logo)
+        }
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::UpdateMinter { new_minter }) => {
             execute_update_minter(deps, env, info, new_minter)
         }
+        ExecuteMsg::UpdateMetadata {
+            name,
+            symbol,
+            decimals,
+        } => {
+            let admin = ADMIN.load(deps.storage)?;
+            if info.sender != admin {
+                return Err(ContractError::Unauthorized {});
+            }
+            update_metadata(deps, name, symbol, decimals)
+        }
     }
+}
+
+fn update_metadata(
+    deps: DepsMut,
+    name: String,
+    symbol: String,
+    decimals: u8,
+) -> Result<Response, ContractError> {
+    validate_name(&name)?;
+    validate_symbol(&symbol)?;
+    validate_decimals(decimals)?;
+
+    TOKEN_INFO.update::<_, StdError>(deps.storage, |info| {
+        Ok(TokenInfo {
+            name,
+            symbol,
+            decimals,
+            total_supply: info.total_supply,
+            mint: info.mint,
+        })
+    })?;
+
+    Ok(Response::new())
 }
 
 pub fn execute_transfer(
