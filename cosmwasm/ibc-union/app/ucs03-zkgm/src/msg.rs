@@ -1,13 +1,14 @@
 use cosmwasm_std::{Addr, CosmosMsg, Uint256, Uint64};
 use ibc_union_spec::{ChannelId, Packet, Timestamp};
 use serde::{Deserialize, Serialize};
+use ucs03_zkgm_token_minter_api::TokenMinterInitMsg;
 use unionlabs::primitives::{Bytes, H256};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InitMsg {
     pub config: Config,
-    pub minter_init_msg: TokenMinterInitMsg,
+    pub minter_init_params: TokenMinterInitParams,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -30,7 +31,7 @@ pub struct Config {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub enum TokenMinterInitMsg {
+pub enum TokenMinterInitParams {
     /// Instantiate `ucs03-zkgm` with a cw20 minter implementation.
     Cw20 {
         /// The code id of [`cw20-base`] to use for cw20 tokens. This will be threaded to the `cw20-token-minter` by `ucs03-zkgm`.
@@ -42,8 +43,21 @@ pub enum TokenMinterInitMsg {
         // TODO: Should be NonZeroU64
         dummy_code_id: u64,
     },
-    /// Instantiate `ucs03-zkgm` with a native tokenfactory minter implementation.
-    Native,
+}
+
+impl TokenMinterInitParams {
+    /// Completes the init msg by using the runtime parameters
+    pub fn into_msg(self, zkgm_admin: Addr) -> TokenMinterInitMsg {
+        let TokenMinterInitParams::Cw20 {
+            cw20_base_code_id,
+            dummy_code_id,
+        } = self;
+        TokenMinterInitMsg::Cw20 {
+            cw20_base_code_id,
+            dummy_code_id,
+            zkgm_admin,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

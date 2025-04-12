@@ -67,7 +67,7 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
     let msg = WasmMsg::Instantiate2 {
         admin: Some(env.contract.address.to_string()),
         code_id: msg.config.token_minter_code_id,
-        msg: to_json_binary(&msg.minter_init_msg)?,
+        msg: to_json_binary(&msg.minter_init_params.into_msg(msg.config.admin))?,
         funds: vec![],
         label: ZKGM_TOKEN_MINTER_LABEL.to_string(),
         salt: salt.into_bytes().into(),

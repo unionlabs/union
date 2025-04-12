@@ -1,7 +1,7 @@
 use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, instantiate2_address, to_json_binary, wasm_execute, Addr, BankMsg, Binary,
+    entry_point, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary,
     CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Env, MessageInfo, QueryRequest,
     Response, StdResult, Storage, WasmMsg,
 };
@@ -9,7 +9,7 @@ use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use ibc_union_spec::ChannelId;
 use ucs03_zkgm_token_minter_api::{
     ExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse, QueryMsg,
-    WrappedTokenMsg,
+    TokenMinterInitMsg, WrappedTokenMsg,
 };
 use unionlabs::{ethereum::keccak256, primitives::H256};
 
@@ -19,15 +19,6 @@ use crate::{
 };
 
 pub const DEFAULT_DECIMALS: u8 = 6;
-
-#[cw_serde]
-pub enum TokenMinterInitMsg {
-    Cw20 {
-        cw20_base_code_id: u64,
-        dummy_code_id: u64,
-        zkgm_admin: Addr,
-    },
-}
 
 #[entry_point]
 pub fn instantiate(
