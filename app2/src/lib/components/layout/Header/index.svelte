@@ -15,7 +15,12 @@ const { showNavigation = false }: Props = $props()
 
 <header class="flex items-center h-16 gap-4 px-8 border-b-1 border-zinc-900">
   {#if showNavigation}
-    <Button variant="icon" onclick={() => goto("/")}>
+    <Button
+      tabindex={0}
+      aria-label="Go back"
+      variant="icon"
+      onclick={() => history.back()}
+    >
       <SharpBaselineArrowBackIcon width="1.5rem" height="1.5rem" />
     </Button>
   {/if}
