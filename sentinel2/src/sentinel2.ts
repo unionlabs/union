@@ -533,38 +533,40 @@ export const checkPackets = (
         continue
       }
 
-      // 2) WRITE_ACK check.
-      if (p.write_ack_timestamp) {
-        // const writeAckTimeMs = new Date(p.write_ack_timestamp).getTime()
-        // if (writeAckTimeMs - sendTimeMs > timeframeMs) {
-        //   yield* Effect.log(
-        //     `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, write_ack_time=${p.write_ack_timestamp}, sendTxHash=${sendTxHash}`
-        //   )
-        //   reportedSendTxHashes.add(sendTxHash)
-        // }
-      } else {
-        yield* Effect.log(
-          `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
-        )
-        reportedSendTxHashes.add(sendTxHash)
-        continue
-      }
+      // No need to check write_ack & ack for now. Uncomment them later.
 
-      // 3) ACK check.
-      if (p.packet_ack_timestamp) {
-        // const ackTimeMs = new Date(p.packet_ack_timestamp).getTime()
-        // if (ackTimeMs - sendTimeMs > timeframeMs) {
-        //   yield* Effect.log(
-        //     `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, ack_time=${p.packet_ack_timestamp}, sendTxHash=${sendTxHash}`
-        //   )
-        //   reportedSendTxHashes.add(sendTxHash)
-        // }
-      } else {
-        yield* Effect.log(
-          `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
-        )
-        reportedSendTxHashes.add(sendTxHash)
-      }
+      // // 2) WRITE_ACK check.
+      // if (p.write_ack_timestamp) {
+      //   // const writeAckTimeMs = new Date(p.write_ack_timestamp).getTime()
+      //   // if (writeAckTimeMs - sendTimeMs > timeframeMs) {
+      //   //   yield* Effect.log(
+      //   //     `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, write_ack_time=${p.write_ack_timestamp}, sendTxHash=${sendTxHash}`
+      //   //   )
+      //   //   reportedSendTxHashes.add(sendTxHash)
+      //   // }
+      // } else {
+      //   yield* Effect.log(
+      //     `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
+      //   )
+      //   reportedSendTxHashes.add(sendTxHash)
+      //   continue
+      // }
+
+      // // 3) ACK check.
+      // if (p.packet_ack_timestamp) {
+      //   // const ackTimeMs = new Date(p.packet_ack_timestamp).getTime()
+      //   // if (ackTimeMs - sendTimeMs > timeframeMs) {
+      //   //   yield* Effect.log(
+      //   //     `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, ack_time=${p.packet_ack_timestamp}, sendTxHash=${sendTxHash}`
+      //   //   )
+      //   //   reportedSendTxHashes.add(sendTxHash)
+      //   // }
+      // } else {
+      //   yield* Effect.log(
+      //     `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
+      //   )
+      //   reportedSendTxHashes.add(sendTxHash)
+      // }
     }
   }).pipe(Effect.withLogSpan("checkPackets"))
 
