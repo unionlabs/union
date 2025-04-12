@@ -14,9 +14,11 @@ type Props = HTMLAttributes<HTMLDivElement> & {
   class?: string
   showCloseButton?: boolean
   divided?: boolean
+  persistent?: boolean | undefined
 }
 
 const {
+  persistent = false,
   children,
   isOpen,
   onClose,
@@ -27,14 +29,14 @@ const {
 }: Props = $props()
 
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key === "Escape" && isOpen) {
-    onClose()
+  if (event.key === "Escape") {
+    internalOnClose()
   }
 }
 
 function handleBackdropClick(event: MouseEvent) {
   if (event.target === event.currentTarget) {
-    onClose()
+    internalOnClose()
   }
 }
 
@@ -44,6 +46,16 @@ onMount(() => {
     document.removeEventListener("keydown", handleKeydown)
   }
 })
+
+const internalOnClose = () => {
+  onClose()
+  if (!persistent) {
+    const container = document?.querySelector("#modal-container")
+    if (container) {
+      container.innerHTML = ""
+    }
+  }
+}
 </script>
 
 {#if isOpen}
@@ -51,7 +63,7 @@ onMount(() => {
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <!-- svelte-ignore a11y_interactive_supports_focus -->
   <div
-    use:portal
+    use:portal={persistent}
     class="fixed inset-0 flex items-center justify-center z-50 w-screen h-screen bg-black/90"
     onclick={handleBackdropClick}
     role="dialog"
@@ -59,7 +71,9 @@ onMount(() => {
     transition:fade={{ duration: 100 }}
   >
     <div
-      class="relative flex w-full justify-center p-[10%]"
+      class="relative flex w-full justify-center"
+      role="dialog"
+      onclick={handleBackdropClick}
       transition:scale={{ duration: 100, start: 0.55 }}
     >
       <Card
@@ -74,7 +88,7 @@ onMount(() => {
         {#if showCloseButton}
           <button
             class="cursor-pointer border-0 absolute top-2 right-4 text-white text-lg"
-            onclick={onClose}
+            onclick={internalOnClose}
           >
             ✕
           </button>

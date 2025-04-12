@@ -10,8 +10,7 @@ type Props = {
 const { isOpen, onClose }: Props = $props()
 </script>
 
-<Modal {isOpen} {onClose} class="w-full max-w-4xl">
+<Modal persistent={true} {isOpen} {onClose} class="w-full max-w-4xl">
   <h2 class="text-xl font-bold mb-4">Errors</h2>
-  <AppErrors/>
-
+  <AppErrors />
 </Modal>
