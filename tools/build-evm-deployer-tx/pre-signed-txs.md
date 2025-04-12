@@ -14,6 +14,8 @@ Which will return the amount in `wei`. This can then be converted to `gwei` with
 cast to-unit $GAS gwei
 ```
 
+Known deployments can be found at [deployments/evm-deployer.json](../../deployments/evm-deployer.json).
+
 - 100gwei
 
   ```
