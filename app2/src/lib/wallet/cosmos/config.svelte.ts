@@ -145,7 +145,7 @@ class CosmosStore {
     }
 
     try {
-      // await walletApi.experimentalSuggestChain(chainInfo)
+      await walletApi.experimentalSuggestChain(chainInfo)
       await walletApi.enable(["bbn-1"])
     } catch (e) {
       console.log(e)
