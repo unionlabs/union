@@ -10,6 +10,12 @@
   //     "tags": ["experimental"]
   //   }
   // },
+  "babylon.bbn-1": {
+    "3": {
+      "comments": "ethereum.1 channel 1",
+      "tags": ["canonical"]
+    }
+  },
   "ethereum.11155111": {
     "1": {
       "comments": "union.union-testnet-10 channel 1",
