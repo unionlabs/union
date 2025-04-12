@@ -16,3 +16,5 @@ export const URLS = () => {
     GRAPHQL_REST: `https://${GRAPHQL_BASE}/api/rest`
   }
 }
+
+export const MAX_MOBILE_SIZE = 768 // in pixels (TODO: use rem)

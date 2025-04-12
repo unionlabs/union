@@ -4,7 +4,7 @@ import type { HTMLButtonAttributes } from "svelte/elements"
 import type { Snippet } from "svelte"
 
 type Props = HTMLButtonAttributes & {
-  variant?: "primary" | "secondary" | "danger" | "outline"
+  variant?: "primary" | "secondary" | "danger" | "outline" | "icon"
   class?: string
   children: Snippet
 }
@@ -41,18 +41,13 @@ const classes = cn(
   ],
 
   // Height and padding
-  "h-9 px-4 py-2",
+  variant !== "icon" ? "h-9 px-4 py-2" : null,
 
   // Additional classes passed as props
   className
 )
 </script>
 
-<button
-  {type}
-  class={classes}
-  {disabled}
-  {...rest}
->
+<button {type} class={classes} {disabled} {...rest}>
   {@render children()}
 </button>
