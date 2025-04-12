@@ -1,9 +1,27 @@
 {
   "babylon.bbn-1": {
-    "0x7562626e": { "comments": "BABY" }
+    "0x7562626e": {
+      "comments": "BABY"
+    }
   },
   "ethereum.1": {
-    "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": { "comments": "WETH" },
-    "0x004e9c3ef86bc1ca1f0bb5c7662861ee93350568": { "comments": "uniBTC" }
+    "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+      "comments": "WETH"
+    },
+    "0x004e9c3ef86bc1ca1f0bb5c7662861ee93350568": {
+      "comments": "uniBTC"
+    },
+    "0x8236a87084f8b84306f72007f36f2618a5634494": {
+      "comments": "LBTC"
+    },
+    "0x7A56E1C57C7475CCf742a1832B028F0456652F97": {
+      "comments": "SolvBTC"
+    },
+    "0xF469fBD2abcd6B9de8E169d128226C0Fc90a012e": {
+      "comments": "PumpBTC"
+    },
+    "0xf6718b2701D4a6498eF77D7c152b2137Ab28b8A3": {
+      "comments": "stBTC"
+    }
   }
 }
