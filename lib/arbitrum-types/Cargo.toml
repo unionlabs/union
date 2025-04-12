@@ -8,7 +8,9 @@ repository.workspace   = true
 version                = "0.0.0"
 
 [dependencies]
-alloy = { workspace = true, features = ["sol-types"] }
+alloy                          = { workspace = true, features = ["sol-types"] }
+solidity-slot.workspace        = true
+unionlabs-primitives.workspace = true
 
 [lints]
 workspace = true

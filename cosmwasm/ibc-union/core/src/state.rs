@@ -5,8 +5,7 @@ use depolama::{KeyCodec, Prefix, Store, ValueCodec};
 use ibc_union_spec::{Channel, ChannelId, ClientId, Connection, ConnectionId};
 use unionlabs::{
     encoding::{Bincode, DecodeAs, EncodeAs},
-    primitives::{Bytes, H256},
-    ByteArrayExt,
+    primitives::{ByteArrayExt, Bytes, H256},
 };
 
 macro_rules! id_key {

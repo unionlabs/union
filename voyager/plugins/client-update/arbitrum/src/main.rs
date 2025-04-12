@@ -9,7 +9,7 @@ use alloy::{
 };
 use arbitrum_client::finalized_l2_block_of_l1_height;
 use arbitrum_light_client_types::{ClientState, Header, L2Header};
-use arbitrum_types::L1_NEXT_NODE_NUM_SLOT;
+use arbitrum_types::slots::{rollup_core_nodes_confirm_data_slot, ROLLUP_CORE_LATEST_NODE_CREATED};
 use ethereum_light_client_types::{AccountProof, StorageProof};
 use ibc_union_spec::{path::ClientStatePath, ClientId, IbcUnion};
 use jsonrpsee::{
@@ -293,8 +293,8 @@ impl Module {
             .get_proof(
                 self.l1_contract_address.into(),
                 vec![
-                    L1_NEXT_NODE_NUM_SLOT.to_be_bytes().into(),
-                    arbitrum_verifier::nodes_confirm_data_mapping_key(latest_confirmed)
+                    ROLLUP_CORE_LATEST_NODE_CREATED.slot().to_be_bytes().into(),
+                    rollup_core_nodes_confirm_data_slot(latest_confirmed)
                         .to_be_bytes()
                         .into(),
                 ],
@@ -564,17 +564,17 @@ impl Module {
         .await
         .unwrap();
 
-        if l2_settlement_block.header.number < update_from.height() {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "attempted to update to a height ({to_height}) \
-                    < the intended update_from height {update_from}",
-                    to_height = l2_settlement_block.header.number
-                ),
-                None::<()>,
-            ));
-        }
+        // if l2_settlement_block.header.number < update_from.height() {
+        //     return Err(ErrorObject::owned(
+        //         FATAL_JSONRPC_ERROR_CODE,
+        //         format!(
+        //             "attempted to update to a height ({to_height}) \
+        //             < the intended update_from height {update_from}",
+        //             to_height = l2_settlement_block.header.number
+        //         ),
+        //         None::<()>,
+        //     ));
+        // }
 
         if l2_settlement_block.header.number == arbitrum_client_state.latest_height {
             info!("update is a noop");

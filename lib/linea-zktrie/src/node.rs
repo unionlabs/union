@@ -2,8 +2,7 @@ use gnark_mimc::{mimc_sum_bl12377, MiMCBls12377Constants};
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     errors::{ExpectedLength, InvalidLength},
-    primitives::H256,
-    ByteArrayExt,
+    primitives::{ByteArrayExt, H256},
 };
 
 // https://github.com/Consensys/shomei/blob/955b4d8100f1a12702cdefc3fa79b16dd1c038e6/trie/src/main/java/net/consensys/shomei/trie/path/PathResolver.java#L27

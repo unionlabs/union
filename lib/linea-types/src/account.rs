@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     errors::{ExpectedLength, InvalidLength},
-    primitives::{H256, U256},
-    ByteArrayExt,
+    primitives::{ByteArrayExt, H256, U256},
 };
 
 pub const ZKACCOUNT_BYTES_LEN: usize = 32 * 6;
