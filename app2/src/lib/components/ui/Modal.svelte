@@ -5,6 +5,7 @@ import Card from "./Card.svelte"
 import type { HTMLAttributes } from "svelte/elements"
 import { cn } from "$lib/utils"
 import { fade, scale } from "svelte/transition"
+import { portal } from "$lib/utils/portal"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   children: Snippet
@@ -50,6 +51,7 @@ onMount(() => {
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <!-- svelte-ignore a11y_interactive_supports_focus -->
   <div
+    use:portal
     class="fixed inset-0 flex items-center justify-center z-50 w-screen h-screen bg-black/90"
     onclick={handleBackdropClick}
     role="dialog"
@@ -57,7 +59,7 @@ onMount(() => {
     transition:fade={{ duration: 100 }}
   >
     <div
-      class="relative flex"
+      class="relative flex w-full justify-center p-[10%]"
       transition:scale={{ duration: 100, start: 0.55 }}
     >
       <Card
