@@ -51,6 +51,9 @@ pub struct MigrateMsg {
 
     /// BE VERY CATIOUS WITH WHO TO BE THE ADMIN
     pub new_admin: cosmwasm_std::Addr,
+
+    /// New cw20 code id that we are gonna migrate all `cw2_contracts`
+    pub new_cw20_code_id: u64,
 }
 
 #[entry_point]
@@ -58,13 +61,22 @@ pub fn migrate(deps: DepsMut, _: Env, msg: MigrateMsg) -> StdResult<Response> {
     // Save the admin for the future instantiates
     CW20_ADMIN.save(deps.storage, &msg.new_admin)?;
 
-    // Update the admin of all the owned cw20's
+    let migrate_msg = to_json_binary(&UpgradeMsg::<Empty, _>::Migrate(Empty {}))?;
+
+    // Update all the owned cw20s
     Ok(
-        Response::new().add_messages(msg.cw20_contracts.into_iter().map(|contract| {
-            WasmMsg::UpdateAdmin {
-                contract_addr: contract.to_string(),
-                admin: msg.new_admin.to_string(),
-            }
+        Response::new().add_messages(msg.cw20_contracts.into_iter().flat_map(|contract| {
+            [
+                WasmMsg::Migrate {
+                    contract_addr: contract.to_string(),
+                    new_code_id: msg.new_cw20_code_id,
+                    msg: migrate_msg.clone(),
+                },
+                WasmMsg::UpdateAdmin {
+                    contract_addr: contract.to_string(),
+                    admin: msg.new_admin.to_string(),
+                },
+            ]
         })),
     )
 }
