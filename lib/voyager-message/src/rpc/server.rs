@@ -1186,9 +1186,6 @@ impl VoyagerRpcServer for Server {
         )
         .await
         .map_err(json_rpc_error_to_error_object)
-        // .request::<Value, Vec<Value>>(&method, params)
-        // .await
-        // .map_err(json_rpc_error_to_error_object)
     }
 }
 
