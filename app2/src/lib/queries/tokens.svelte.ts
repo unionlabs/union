@@ -13,7 +13,7 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
       schema: Schema.Struct({ v2_tokens: Tokens }),
       document: graphql(`
         query TokensForChain($universal_chain_id: String!) @cached(ttl: 60) {
-          v2_tokens(args: { p_universal_chain_id: $universal_chain_id }, order_by: {rank: asc_nulls_last}) {
+          v2_tokens(args: { p_whitelist: true, p_universal_chain_id: $universal_chain_id }, order_by: {rank: asc_nulls_last}) {
             rank
             denom
             representations {
