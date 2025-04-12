@@ -27,14 +27,14 @@ const {
 }: Props = $props()
 
 function handleKeydown(event: KeyboardEvent) {
-  if (event.key === "Escape" && isOpen) {
-    onClose()
+  if (event.key === "Escape") {
+    internalOnClose()
   }
 }
 
 function handleBackdropClick(event: MouseEvent) {
   if (event.target === event.currentTarget) {
-    onClose()
+    internalOnClose()
   }
 }
 
@@ -44,6 +44,14 @@ onMount(() => {
     document.removeEventListener("keydown", handleKeydown)
   }
 })
+
+const internalOnClose = () => {
+  onClose()
+  const container = document?.querySelector("#modal-container")
+  if (container) {
+    container.innerHTML = ""
+  }
+}
 </script>
 
 {#if isOpen}
@@ -76,7 +84,7 @@ onMount(() => {
         {#if showCloseButton}
           <button
             class="cursor-pointer border-0 absolute top-2 right-4 text-white text-lg"
-            onclick={onClose}
+            onclick={internalOnClose}
           >
             ✕
           </button>
