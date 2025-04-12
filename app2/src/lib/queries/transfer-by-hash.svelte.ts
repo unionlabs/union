@@ -29,6 +29,7 @@ export const transferByPacketHashQuery = (packetHash: string) =>
           base_amount
           quote_amount
           quote_token
+          success
           traces {
             type
             height
