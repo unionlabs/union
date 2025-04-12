@@ -28,7 +28,7 @@ import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
 import { settlementDelays } from "$lib/constants/settlement-times.ts"
 
 // State for packet details visibility
-let showPacketDetails = false
+let showPacketDetails = $state(false)
 
 let fiber: Fiber.Fiber<any, any>
 const packetHash = page.params.packet_hash
