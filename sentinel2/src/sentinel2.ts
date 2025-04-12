@@ -491,20 +491,20 @@ export const checkPackets = (
     const now_as_date = new Date(now).toISOString()
     yield* Effect.log(`now: ${now_as_date}`)
 
-    const first_packets: Packet[] = yield* fetchPacketsUntilCutoff(
+    const packets: Packet[] = yield* fetchPacketsUntilCutoff(
       sourceChain,
       destinationChain,
       sinceDate,
       hasuraEndpoint
     )
-    const second_packets: Packet[] = yield* fetchPacketsUntilCutoff(
-      destinationChain,
-      sourceChain,
-      sinceDate,
-      hasuraEndpoint
-    )
-    const packets = [...first_packets, ...second_packets]
-    yield* Effect.log(`Fetched ${packets.length} packets from Hasura`)
+    // const second_packets: Packet[] = yield* fetchPacketsUntilCutoff(
+    //   destinationChain,
+    //   sourceChain,
+    //   sinceDate,
+    //   hasuraEndpoint
+    // )
+    // const packets = [...first_packets, ...second_packets]
+    yield* Effect.log(`Fetched ${packets.length} packets from Hasura from ${sourceChain} to ${destinationChain}`)
     // Process each packet.
     for (const p of packets) {
       if (!p.packet_send_timestamp) continue
@@ -527,7 +527,7 @@ export const checkPackets = (
         }
       } else {
         yield* Effect.log(
-          `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
+          `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
         )
         reportedSendTxHashes.add(sendTxHash)
         continue
@@ -544,7 +544,7 @@ export const checkPackets = (
         // }
       } else {
         yield* Effect.log(
-          `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
+          `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
         )
         reportedSendTxHashes.add(sendTxHash)
         continue
@@ -561,7 +561,7 @@ export const checkPackets = (
         // }
       } else {
         yield* Effect.log(
-          `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://staging.app2.union.build/explorer/transfers/${sort_order_tx}`
+          `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
         )
         reportedSendTxHashes.add(sendTxHash)
       }
