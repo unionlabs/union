@@ -3,6 +3,7 @@ import { cn } from "$lib/utils"
 import type { HTMLAttributes } from "svelte/elements"
 import SharpContentCopyIcon from "$lib/components/icons/SharpContentCopyIcon.svelte"
 import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
+import { page } from "$app/state"
 
 interface Props extends HTMLAttributes<HTMLDivElement> {
   value: string
@@ -32,19 +33,25 @@ async function copyToClipboard() {
     showCopied = false
   }, 1000)
 }
+
+// XXX: hack
+const truncateEarly = $derived(page.url.pathname.split("/").length > 2)
+const _displayValue = $derived(
+  shouldTruncate && truncateEarly ? `${displayValue.slice(0, 8)}…` : displayValue
+)
 </script>
 
 <div class={cn("group flex items-center gap-1", className)} {...rest}>
   <span title={shouldTruncate ? value : undefined}>
-    {displayValue}
+    {_displayValue}
   </span>
   {#if showCopy}
     <button
       type="button"
       class="p-1 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
       onclick={(e) => {
-        e.stopPropagation()
-        copyToClipboard()
+        e.stopPropagation();
+        copyToClipboard();
       }}
     >
       {#if showCopied}
