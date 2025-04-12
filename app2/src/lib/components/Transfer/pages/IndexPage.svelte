@@ -7,7 +7,7 @@ import { fly } from "svelte/transition"
 import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
 import { lockedTransferStore } from "../locked-transfer.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte";
+import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 
 type Props = {
   newTransfer: () => void
