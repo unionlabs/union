@@ -3,7 +3,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary,
     CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Env, MessageInfo, QueryRequest,
-    Response, StdResult, WasmMsg,
+    Response, StdResult, Storage, WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 use ibc_union_spec::ChannelId;
@@ -167,7 +167,7 @@ pub fn execute(
                 if contains_base_token {
                     // this means we are actually sending a native token, no need to
                     // take the funds as they are already given.
-                    save_native_token(deps, &denom);
+                    save_native_token(deps.storage, &denom);
                     Response::new()
                 } else {
                     Response::new().add_message(wasm_execute(
@@ -218,8 +218,8 @@ fn is_native_token(deps: Deps, token: &str) -> bool {
     }
 }
 
-fn save_native_token(deps: DepsMut, token: &str) {
-    deps.storage.set(
+pub fn save_native_token(storage: &mut dyn Storage, token: &str) {
+    storage.set(
         &0x3_u8
             .to_le_bytes()
             .into_iter()
