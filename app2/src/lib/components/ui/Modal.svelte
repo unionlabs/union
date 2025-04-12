@@ -14,9 +14,11 @@ type Props = HTMLAttributes<HTMLDivElement> & {
   class?: string
   showCloseButton?: boolean
   divided?: boolean
+  persistent?: boolean | undefined
 }
 
 const {
+  persistent = false,
   children,
   isOpen,
   onClose,
@@ -47,9 +49,11 @@ onMount(() => {
 
 const internalOnClose = () => {
   onClose()
-  const container = document?.querySelector("#modal-container")
-  if (container) {
-    container.innerHTML = ""
+  if (!persistent) {
+    const container = document?.querySelector("#modal-container")
+    if (container) {
+      container.innerHTML = ""
+    }
   }
 }
 </script>
@@ -59,7 +63,7 @@ const internalOnClose = () => {
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <!-- svelte-ignore a11y_interactive_supports_focus -->
   <div
-    use:portal
+    use:portal={persistent}
     class="fixed inset-0 flex items-center justify-center z-50 w-screen h-screen bg-black/90"
     onclick={handleBackdropClick}
     role="dialog"
