@@ -22,8 +22,10 @@ use pg_queue::{
     default_max_connections, default_min_connections, default_retryable_error_expo_backoff_max,
     default_retryable_error_expo_backoff_multiplier, PgQueueConfig,
 };
+use reqwest::Url;
 use schemars::gen::{SchemaGenerator, SchemaSettings};
 use serde::Serialize;
+use serde_json::Value;
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -148,7 +150,9 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
     let get_rpc_url = |rpc_url: Option<String>| match (get_voyager_config(), rpc_url) {
         (Ok(config), None) => format!("http://{}", config.voyager.rpc_laddr),
-        (_, Some(rpc_url)) => rpc_url,
+        (_, Some(rpc_url)) => {
+            Url::parse(&rpc_url).map_or_else(|_| format!("https://{rpc_url}"), |e| e.to_string())
+        }
         (Err(_), None) => format!("http://{}", default_rpc_laddr()),
     };
 
@@ -547,6 +551,29 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 RpcCmd::LatestTimestamp { on, finalized } => {
                     let timestamp = voyager_client.query_latest_timestamp(on, finalized).await?;
                     print_json(&timestamp);
+                }
+                RpcCmd::IbcState {
+                    on,
+                    ibc_spec_id,
+                    height,
+                    path,
+                } => {
+                    let response = voyager_client
+                        .query_ibc_state(on, ibc_spec_id, height, path)
+                        .await?;
+                    print_json(&response);
+                }
+                RpcCmd::Plugin { name, method, args } => {
+                    let response = voyager_client
+                        .plugin_custom(
+                            name,
+                            method,
+                            args.into_iter()
+                                .map(|arg| arg.parse::<Value>().unwrap_or(Value::String(arg)))
+                                .collect(),
+                        )
+                        .await?;
+                    print_json(&response);
                 }
             }
         }
