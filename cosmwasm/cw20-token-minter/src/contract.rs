@@ -44,11 +44,28 @@ pub fn instantiate(
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    /// Update admins of these contracts to the `new_admin`
+    pub cw20_contracts: Vec<cosmwasm_std::Addr>,
+
+    /// BE VERY CATIOUS WITH WHO TO BE THE ADMIN
+    pub new_admin: cosmwasm_std::Addr,
+}
 
 #[entry_point]
-pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> StdResult<Response> {
-    Ok(Response::new())
+pub fn migrate(deps: DepsMut, _: Env, msg: MigrateMsg) -> StdResult<Response> {
+    // Save the admin for the future instantiates
+    CW20_ADMIN.save(deps.storage, &msg.new_admin)?;
+
+    // Update the admin of all the owned cw20's
+    Ok(
+        Response::new().add_messages(msg.cw20_contracts.into_iter().map(|contract| {
+            WasmMsg::UpdateAdmin {
+                contract_addr: contract.to_string(),
+                admin: msg.new_admin.to_string(),
+            }
+        })),
+    )
 }
 
 #[entry_point]
