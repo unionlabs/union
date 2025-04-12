@@ -16,5 +16,6 @@ export class TransferDetails extends S.Class<TransferDetails>("TransferDetails")
   base_amount: TokenRawAmount,
   quote_amount: TokenRawAmount,
   quote_token: TokenRawDenom,
+  success: S.OptionFromNullOr(S.Boolean),
   traces: S.Array(PacketTrace)
 }) {}

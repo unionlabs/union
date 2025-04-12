@@ -27,6 +27,7 @@ import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
 import { settlementDelays } from "$lib/constants/settlement-times.ts"
 import A from "$lib/components/ui/A.svelte"
+import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
 
 // State for packet details visibility
 let showPacketDetails = $state(false)
@@ -51,9 +52,10 @@ onMount(() => {
 const inProgress = $derived(
   transferDetails.data.pipe(
     Option.map(Struct.get("traces")),
-    Option.map(traces =>
-      traces.some(t => t.type === "PACKET_RECV" && Option.isSome(t.transaction_hash))
-    )
+    Option.map(
+      traces => !traces.some(t => t.type === "WRITE_ACK" && Option.isSome(t.transaction_hash))
+    ),
+    Option.getOrElse(() => true)
   )
 )
 </script>
@@ -89,10 +91,26 @@ const inProgress = $derived(
                   />
                 {/if}
               </div>
-              {#if Option.isSome(inProgress)}
+              {#if !inProgress}
                 <div class="flex items-center gap-2">
-                  <SharpCheckIcon class="size-6 text-babylon-orange"/>
-                  <p class="text-babylon">Received</p>
+                  {#if Option.isSome(transfer.success)}
+                    {#if transfer.success.value}
+                      <SharpCheckIcon class="size-6 text-babylon-orange"/>
+                      <p class="text-babylon">Received</p>
+                    {:else}
+                      <SharpWarningIcon
+                        class="size-6 text-yellow-500 self-center"
+                      />
+                      <p class="text-babylon">Failed transfer. Will be refunded.</p>
+                    {/if}
+                  {:else}
+                    <SharpWarningIcon
+                      class="text-yellow-500 self-center"
+                      height="3rem"
+                      width="3rem"
+                    />
+                    <p class="text-babylon">Received with unknown status</p>
+                  {/if}
                 </div>
               {:else}
                 <div class="flex items-center gap-4">
