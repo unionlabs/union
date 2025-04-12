@@ -85,13 +85,13 @@ const fullPageSidebar = $derived(isRootPage)
 </div>
 
 <div
-  class={cn("flex flex-row min-h-[100svh] w-screen relative z-10")}
+  class={cn("relative min-h-[100svh] w-screen z-10")}
   bind:clientWidth={viewportWidth}
 >
   <aside
     class={cn(
-      "dark:bg-zinc-950 shadow overflow-auto border-r border-zinc-900",
-      fullPageSidebar ? "w-full" : null,
+      "fixed left-0 bottom-0 top-0 dark:bg-zinc-950 shadow overflow-auto border-r border-zinc-900 max-h-dvh",
+      fullPageSidebar ? "right-0" : "w-64",
     )}
     hidden={hideSidebar}
   >
@@ -101,14 +101,19 @@ const fullPageSidebar = $derived(isRootPage)
   <!-- Main content area: Has margin to clear fixed sidebar -->
   <main
     class={cn(
-      "col-start-2 flex flex-col min-h-svh grow",
+      "fixed min-h-svh grow right-0 top-0 bottom-0",
       fullPageSidebar ? "w-0" : null,
+      hideSidebar ? "left-0" : "left-64",
     )}
     hidden={fullPageSidebar}
   >
-    <Header showNavigation={isMobile} />
+    <div class="sticky top-0">
+      <Header showNavigation={isMobile} />
+    </div>
 
-    <div class="flex-1 z-10">
+    <div
+      class="absolute top-16 left-0 right-0 bottom-0 flex-1 z-10 overflow-scroll"
+    >
       {@render children()}
     </div>
   </main>

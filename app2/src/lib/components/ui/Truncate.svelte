@@ -33,17 +33,11 @@ async function copyToClipboard() {
     showCopied = false
   }, 1000)
 }
-
-// XXX: hack
-const truncateEarly = $derived(page.url.pathname.split("/").length > 2)
-const _displayValue = $derived(
-  shouldTruncate && truncateEarly ? `${displayValue.slice(0, 8)}…` : displayValue
-)
 </script>
 
 <div class={cn("group flex items-center gap-1", className)} {...rest}>
   <span title={shouldTruncate ? value : undefined}>
-    {_displayValue}
+    {displayValue}
   </span>
   {#if showCopy}
     <button
