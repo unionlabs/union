@@ -12,6 +12,6 @@ export const settlementDelays = {
   },
   "corn.21000000": {
     url: "https://etherscan.io/address/0x828C71bc1D7A34F32FfA624240633b6B7272C3D6",
-    interval: "7 days"
+    interval: "12 hours"
   }
 } as Record<UniversalChainId, SettlementInfo>
