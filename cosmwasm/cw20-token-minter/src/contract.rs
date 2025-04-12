@@ -100,6 +100,7 @@ pub fn execute(
                 } else {
                     restrict_symbol(metadata.symbol)
                 };
+                let cw20_admin = CW20_ADMIN.load(deps.storage)?;
                 Response::new()
                     .add_message(
                         // Instantiating the dummy contract first to be able to get the deterministic address
@@ -136,6 +137,8 @@ pub fn execute(
                                     cap: None,
                                 }),
                                 marketing: None,
+                                // This admin is not the contract admin but the one who can update token info
+                                admin: Some(cw20_admin.clone()),
                             })?,
                         },
                     )
@@ -143,7 +146,7 @@ pub fn execute(
                         // We temporarily set ourselves as admin previously to be able to migrate the contract.
                         // Updating the admin to the correct admin finally.
                         contract_addr: denom,
-                        admin: CW20_ADMIN.load(deps.storage)?.to_string(),
+                        admin: cw20_admin.to_string(),
                     })
             }
             WrappedTokenMsg::MintTokens {

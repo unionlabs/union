@@ -1,7 +1,19 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{StdError, StdResult, Uint128};
-pub use cw20::Cw20ExecuteMsg as ExecuteMsg;
-use cw20::{Cw20Coin, Logo, MinterResponse};
+use cosmwasm_std::{Addr, StdError, Uint128};
+use cw20::{Cw20Coin, Cw20ExecuteMsg, Logo, MinterResponse};
+
+use crate::ContractError;
+
+#[cw_serde]
+pub enum ExecuteMsg {
+    UpdateMetadata {
+        name: String,
+        symbol: String,
+        decimals: u8,
+    },
+    #[serde(untagged)]
+    Cw20ExecuteMsg(Cw20ExecuteMsg),
+}
 
 #[cw_serde]
 pub struct InstantiateMarketingInfo {
@@ -20,6 +32,42 @@ pub struct InstantiateMsg {
     pub initial_balances: Vec<Cw20Coin>,
     pub mint: Option<MinterResponse>,
     pub marketing: Option<InstantiateMarketingInfo>,
+    pub admin: Option<Addr>,
+}
+
+pub fn validate_name(name: &str) -> Result<(), ContractError> {
+    let bytes = name.as_bytes();
+    if bytes.len() < 3 || bytes.len() > 50 {
+        return Err(
+            StdError::generic_err("Name is not in the expected format (3-50 UTF-8 bytes)").into(),
+        );
+    }
+    Ok(())
+}
+
+pub fn validate_symbol(symbol: &str) -> Result<(), ContractError> {
+    let bytes = symbol.as_bytes();
+    if bytes.len() < 3 || bytes.len() > 12 {
+        return Err(
+            StdError::generic_err("Ticker symbol is in expected format [a-zA-Z\\-]{3,12}").into(),
+        );
+    }
+    for byte in bytes.iter() {
+        if (*byte != 45) && (*byte < 65 || *byte > 90) && (*byte < 97 || *byte > 122) {
+            return Err(StdError::generic_err(
+                "Ticker symbol is not in expected format [a-zA-Z\\-]{3,12}",
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
+pub fn validate_decimals(decimals: u8) -> Result<(), ContractError> {
+    if decimals > 18 {
+        return Err(StdError::generic_err("Decimals must not exceed 18").into());
+    }
+    Ok(())
 }
 
 impl InstantiateMsg {
@@ -27,43 +75,15 @@ impl InstantiateMsg {
         self.mint.as_ref().and_then(|v| v.cap)
     }
 
-    pub fn validate(&self) -> StdResult<()> {
+    pub fn validate(&self) -> Result<(), ContractError> {
         // Check name, symbol, decimals
-        if !self.has_valid_name() {
-            return Err(StdError::generic_err(
-                "Name is not in the expected format (3-50 UTF-8 bytes)",
-            ));
-        }
-        if !self.has_valid_symbol() {
-            return Err(StdError::generic_err(
-                "Ticker symbol is not in expected format [a-zA-Z\\-]{3,12}",
-            ));
-        }
-        if self.decimals > 18 {
-            return Err(StdError::generic_err("Decimals must not exceed 18"));
-        }
+        validate_name(&self.name)?;
+
+        validate_symbol(&self.symbol)?;
+
+        validate_decimals(self.decimals)?;
+
         Ok(())
-    }
-
-    fn has_valid_name(&self) -> bool {
-        let bytes = self.name.as_bytes();
-        if bytes.len() < 3 || bytes.len() > 50 {
-            return false;
-        }
-        true
-    }
-
-    fn has_valid_symbol(&self) -> bool {
-        let bytes = self.symbol.as_bytes();
-        if bytes.len() < 3 || bytes.len() > 12 {
-            return false;
-        }
-        for byte in bytes.iter() {
-            if (*byte != 45) && (*byte < 65 || *byte > 90) && (*byte < 97 || *byte > 122) {
-                return false;
-            }
-        }
-        true
     }
 }
 
@@ -126,44 +146,31 @@ mod tests {
     #[test]
     fn validate_instantiatemsg_name() {
         // Too short
-        let mut msg = InstantiateMsg {
-            name: str::repeat("a", 2),
-            ..InstantiateMsg::default()
-        };
-        assert!(!msg.has_valid_name());
+        assert!(validate_name(&str::repeat("a", 2)).is_err());
 
         // In the correct length range
-        msg.name = str::repeat("a", 3);
-        assert!(msg.has_valid_name());
+        assert!(validate_name(&str::repeat("a", 3)).is_ok());
 
         // Too long
-        msg.name = str::repeat("a", 51);
-        assert!(!msg.has_valid_name());
+        assert!(validate_name(&str::repeat("a", 51)).is_err());
     }
 
     #[test]
     fn validate_instantiatemsg_symbol() {
         // Too short
-        let mut msg = InstantiateMsg {
-            symbol: str::repeat("a", 2),
-            ..InstantiateMsg::default()
-        };
-        assert!(!msg.has_valid_symbol());
+        assert!(validate_symbol(&str::repeat("a", 2)).is_err());
 
         // In the correct length range
-        msg.symbol = str::repeat("a", 3);
-        assert!(msg.has_valid_symbol());
+        assert!(validate_symbol(&str::repeat("a", 3)).is_ok());
 
         // Too long
-        msg.symbol = str::repeat("a", 13);
-        assert!(!msg.has_valid_symbol());
+        assert!(validate_symbol(&str::repeat("a", 13)).is_err());
 
         // Has illegal char
         let illegal_chars = [[64u8], [91u8], [123u8]];
         illegal_chars.iter().for_each(|c| {
             let c = std::str::from_utf8(c).unwrap();
-            msg.symbol = str::repeat(c, 3);
-            assert!(!msg.has_valid_symbol());
+            assert!(validate_symbol(&str::repeat(c, 3)).is_err());
         });
     }
 }
