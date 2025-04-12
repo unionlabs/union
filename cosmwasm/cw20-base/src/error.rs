@@ -1,4 +1,5 @@
 use cosmwasm_std::StdError;
+use frissitheto::UpgradeError;
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]
@@ -40,4 +41,7 @@ pub enum ContractError {
 
     #[error("Duplicate initial balance addresses")]
     DuplicateInitialBalanceAddresses {},
+
+    #[error("migration error")]
+    Migrate(#[from] UpgradeError),
 }

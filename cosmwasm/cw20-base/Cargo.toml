@@ -23,6 +23,7 @@ cw-storage-plus = { workspace = true }
 cw2             = "2.0.0"
 cw20            = "2.0.0"
 embed-commit    = { workspace = true }
+frissitheto     = { workspace = true }
 schemars        = { workspace = true }
 semver          = "1"
 serde           = { workspace = true }

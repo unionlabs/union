@@ -1,3 +1,4 @@
+use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -8,6 +9,7 @@ use cw20::{
     BalanceResponse, Cw20Coin, Cw20ExecuteMsg, Cw20ReceiveMsg, DownloadLogoResponse, EmbeddedLogo,
     Logo, LogoInfo, MarketingInfoResponse, MinterResponse, TokenInfoResponse,
 };
+use frissitheto::UpgradeMsg;
 
 use crate::{
     allowances::{
@@ -630,15 +632,30 @@ pub fn query_download_logo(deps: Deps) -> StdResult<DownloadLogoResponse> {
     }
 }
 
+#[cw_serde]
+pub enum MigrateMsg {}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, msg: InstantiateMsg) -> Result<Response, ContractError> {
-    instantiate(
+pub fn migrate(
+    deps: DepsMut,
+    env: Env,
+    msg: UpgradeMsg<InstantiateMsg, MigrateMsg>,
+) -> Result<Response, ContractError> {
+    msg.run(
         deps,
-        env,
-        MessageInfo {
-            sender: cosmwasm_std::Addr::unchecked("sender"),
-            funds: vec![],
+        |deps, init_msg| {
+            let res = instantiate(
+                deps,
+                env,
+                MessageInfo {
+                    sender: cosmwasm_std::Addr::unchecked("sender"),
+                    funds: vec![],
+                },
+                init_msg,
+            )?;
+
+            Ok((res, None))
         },
-        msg,
+        |_, _, _| Ok((Response::default(), None)),
     )
 }

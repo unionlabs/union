@@ -2,10 +2,11 @@ use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary,
-    CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Env, MessageInfo, QueryRequest,
-    Response, StdResult, Storage, WasmMsg,
+    CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Empty, Env, MessageInfo,
+    QueryRequest, Response, StdResult, Storage, WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
+use frissitheto::UpgradeMsg;
 use ibc_union_spec::ChannelId;
 use ucs03_zkgm_token_minter_api::{
     ExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse, QueryMsg,
@@ -126,20 +127,22 @@ pub fn execute(
                         WasmMsg::Migrate {
                             contract_addr: denom.clone(),
                             new_code_id: config.cw20_base_code_id,
-                            msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
-                                // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set
-                                name: token_name,
-                                symbol: token_symbol,
-                                decimals: metadata.decimals,
-                                initial_balances: vec![],
-                                mint: Some(cw20::MinterResponse {
-                                    minter: env.contract.address.to_string(),
-                                    cap: None,
-                                }),
-                                marketing: None,
-                                // This admin is not the contract admin but the one who can update token info
-                                admin: Some(cw20_admin.clone()),
-                            })?,
+                            msg: to_json_binary(&UpgradeMsg::<_, Empty>::Init(
+                                cw20_base::msg::InstantiateMsg {
+                                    // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set
+                                    name: token_name,
+                                    symbol: token_symbol,
+                                    decimals: metadata.decimals,
+                                    initial_balances: vec![],
+                                    mint: Some(cw20::MinterResponse {
+                                        minter: env.contract.address.to_string(),
+                                        cap: None,
+                                    }),
+                                    marketing: None,
+                                    // This admin is not the contract admin but the one who can update token info
+                                    admin: Some(cw20_admin.clone()),
+                                },
+                            ))?,
                         },
                     )
                     .add_message(WasmMsg::UpdateAdmin {
