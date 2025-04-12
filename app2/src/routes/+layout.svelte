@@ -56,8 +56,36 @@ const hideSidebar = $derived(isMobile && !isRootPage)
 const fullPageSidebar = $derived(isRootPage)
 </script>
 
+<!-- Background video -->
+<div class="fixed inset-0 w-screen h-screen z-0">
+  <video
+    id="glitch-video"
+    class="w-full h-full object-cover"
+    loop
+    muted
+    autoplay
+    playsinline
+    data-video="glitch"
+    disablePictureInPicture={true}
+    oncanplay={function () {
+      this.autoplay = true;
+    }}
+    onloadeddata={function () {
+      this.autoplay = true;
+    }}
+    onloadedmetadata={function () {
+      this.muted = true;
+    }}
+  >
+    <source
+      src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/btc-union-background-2.webm"
+      type="video/webm"
+    />
+  </video>
+</div>
+
 <div
-  class={cn("flex flex-row min-h-[100svh] w-screen")}
+  class={cn("flex flex-row min-h-[100svh] w-screen relative z-10")}
   bind:clientWidth={viewportWidth}
 >
   <aside
@@ -80,40 +108,8 @@ const fullPageSidebar = $derived(isRootPage)
   >
     <Header showNavigation={isMobile} />
 
-    <!-- Children content with video background -->
-    <div class="relative flex-1">
-      <!-- Background video -->
-      <div class="absolute inset-0 z-0 overflow-hidden">
-        <video
-          id="glitch-video"
-          class="absolute w-full h-full object-cover"
-          loop
-          muted
-          autoplay
-          playsinline
-          data-video="glitch"
-          disablePictureInPicture={true}
-          oncanplay={function () {
-            this.autoplay = true;
-          }}
-          onloadeddata={function () {
-            this.autoplay = true;
-          }}
-          onloadedmetadata={function () {
-            this.muted = true;
-          }}
-        >
-          <source
-            src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/btc-union-background-2.webm"
-            type="video/webm"
-          />
-        </video>
-      </div>
-
-      <!-- Children content that appears above the video -->
-      <div class="relative z-10">
-        {@render children()}
-      </div>
+    <div class="flex-1 z-10">
+      {@render children()}
     </div>
   </main>
 </div>

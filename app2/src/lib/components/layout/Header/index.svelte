@@ -13,7 +13,7 @@ type Props = {
 const { showNavigation = false }: Props = $props()
 </script>
 
-<header class="flex items-center h-16 gap-4 px-8 border-b-1 border-zinc-900">
+<header class="flex items-center h-16 gap-4 px-8 border-b-1 border-zinc-900 bg-zinc-950">
   {#if showNavigation}
     <Button
       tabindex={0}
