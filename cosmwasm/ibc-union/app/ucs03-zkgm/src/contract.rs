@@ -1283,7 +1283,6 @@ fn execute_fungible_asset_order(
 
         // Transfer the quote amount to the receiver
         if quote_amount > 0 {
-            println!("brother telling u: {quote_amount}");
             messages.push(SubMsg::reply_never(make_wasm_msg(
                 LocalTokenMsg::Unescrow {
                     denom: quote_token_str.clone(),
