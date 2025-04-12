@@ -1,7 +1,7 @@
 use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    entry_point, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary,
+    entry_point, instantiate2_address, to_json_binary, wasm_execute, Addr, BankMsg, Binary,
     CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Env, MessageInfo, QueryRequest,
     Response, StdResult, Storage, WasmMsg,
 };
@@ -15,7 +15,7 @@ use unionlabs::{ethereum::keccak256, primitives::H256};
 
 use crate::{
     error::Error,
-    state::{Config, CONFIG},
+    state::{Config, CONFIG, CW20_ADMIN},
 };
 
 pub const DEFAULT_DECIMALS: u8 = 6;
@@ -25,6 +25,7 @@ pub enum TokenMinterInitMsg {
     Cw20 {
         cw20_base_code_id: u64,
         dummy_code_id: u64,
+        zkgm_admin: Addr,
     },
 }
 
@@ -36,6 +37,7 @@ pub fn instantiate(
     TokenMinterInitMsg::Cw20 {
         cw20_base_code_id,
         dummy_code_id,
+        zkgm_admin,
     }: TokenMinterInitMsg,
 ) -> StdResult<Response> {
     CONFIG.save(
@@ -46,6 +48,7 @@ pub fn instantiate(
             dummy_code_id,
         },
     )?;
+    CW20_ADMIN.save(deps.storage, &zkgm_admin)?;
     Ok(Response::default())
 }
 
@@ -128,6 +131,12 @@ pub fn execute(
                             })?,
                         },
                     )
+                    .add_message(WasmMsg::UpdateAdmin {
+                        // We temporarily set ourselves as admin previously to be able to migrate the contract.
+                        // Updating the admin to the correct admin finally.
+                        contract_addr: denom,
+                        admin: CW20_ADMIN.load(deps.storage)?.to_string(),
+                    })
             }
             WrappedTokenMsg::MintTokens {
                 denom,

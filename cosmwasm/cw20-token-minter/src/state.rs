@@ -10,3 +10,5 @@ pub struct Config {
 }
 
 pub const CONFIG: Item<Config> = Item::new("conf");
+
+pub const CW20_ADMIN: Item<Addr> = Item::new("admin");
