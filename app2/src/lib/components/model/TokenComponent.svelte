@@ -90,7 +90,7 @@ const displayDenom = $derived(
   {#snippet trigger()}
     <div class="flex items-center gap-2 font-semibold">
       {#if Option.isSome(icon)}
-        <img class="size-4" src={icon.value} alt="" />
+        <img class="size-4" src={icon.value} alt="" loading="lazy"/>
       {/if}
       {#if amount !== undefined}
         <span>
