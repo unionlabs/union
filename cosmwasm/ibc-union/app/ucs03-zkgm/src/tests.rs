@@ -1595,6 +1595,20 @@ fn test_recv_packet_native_unwrap_wrapped_token_ok() {
     )
     .unwrap();
 
+    let msg = ExecuteMsg::SetBucketConfig {
+        denom: wrapped_token.to_string(),
+        capacity: 0xCAFEBABEu128.into(),
+        refill_rate: 1u128.into(),
+        reset: false,
+    };
+
+    st.app
+        .execute(
+            Addr::unchecked("union1ml67yhc5kp8qrxssfnqz8pxqvjyln5fus654vk"),
+            wasm_execute(st.zkgm.clone(), &msg, vec![]).unwrap().into(),
+        )
+        .unwrap();
+
     let (order, msg, packet) = IncomingOrderBuilder::new(wrapped_token.as_bytes().into())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
@@ -1689,6 +1703,20 @@ fn test_recv_packet_native_unwrap_native_token_ok() {
         st.app.contract_storage_mut(&st.minter).as_mut(),
         wrapped_token,
     );
+
+    let msg = ExecuteMsg::SetBucketConfig {
+        denom: wrapped_token.to_string(),
+        capacity: 0xCAFEBABEu128.into(),
+        refill_rate: 1u128.into(),
+        reset: false,
+    };
+
+    st.app
+        .execute(
+            Addr::unchecked("union1ml67yhc5kp8qrxssfnqz8pxqvjyln5fus654vk"),
+            wasm_execute(st.zkgm.clone(), &msg, vec![]).unwrap().into(),
+        )
+        .unwrap();
 
     let (order, msg, packet) = IncomingOrderBuilder::new(wrapped_token.as_bytes().into())
         .with_base_token(base_token)
