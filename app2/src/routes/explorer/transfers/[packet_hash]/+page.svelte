@@ -25,6 +25,7 @@ import { is } from "$lib/components/Transfer/transfer-step.ts"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
+import { settlementDelays } from "$lib/constants/settlement-times.ts"
 
 // State for packet details visibility
 let showPacketDetails = false
@@ -161,6 +162,19 @@ const inProgress = $derived(
                 />
               {/if}
             </section>
+            {#if Option.isSome(sourceChain)}
+              {@const settlement = settlementDelays[sourceChain.value.universal_chain_id]}
+              {#if settlement}
+                <section class="flex flex-col px-4">
+                  <p class="text-sm">
+                    {sourceChain.value.display_name} is an L2. Outbound transfers are processed as soon as
+                    {sourceChain.value.display_name} settles
+                    (<a class="underline" href="{settlement.url}">happens every {settlement.interval}</a>).
+                  </p>
+
+                </section>
+              {/if}
+            {/if}
           </div>
 
           <PacketTracesComponent packetTraces={transfer.traces} showAcks={false} mode="transfer"/>
