@@ -59,7 +59,9 @@ onMount(() => {
     transition:fade={{ duration: 100 }}
   >
     <div
-      class="relative flex w-full justify-center p-[10%]"
+      class="relative flex w-full justify-center"
+      role="dialog"
+      onclick={handleBackdropClick}
       transition:scale={{ duration: 100, start: 0.55 }}
     >
       <Card
