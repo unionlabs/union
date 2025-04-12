@@ -69,6 +69,7 @@ $effect(() => {
           autoplay
           playsinline
           data-video="glitch"
+          disablePictureInPicture={true}
           oncanplay={function() {
             this.autoplay = true
           }}
