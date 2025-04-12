@@ -15,7 +15,7 @@ const { children, class: className = "", href, external = true, ...rest }: Props
 
 const classes = cn(
   // Base styles
-  "underline text-sky-400 hover:text-sky-300 transition-colors inline-flex items-center gap-1",
+  "underline text-babylon-orange hover:text-orange-300 transition-colors inline-flex items-center gap-1",
   // Additional classes passed as props
   className
 )
