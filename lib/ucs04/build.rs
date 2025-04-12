@@ -85,6 +85,7 @@ fn main() {
         ///
         /// [`universal-chain-ids.json`]: https://github.com/unionlabs/union/blob/main/deployments/universal-chain-ids.json
         pub mod well_known {{
+            #![allow(clippy::enum_glob_use)]
             use super::{{UniversalChainId, Family::*, Id}};
             {}
         }}"#,

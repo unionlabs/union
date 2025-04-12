@@ -459,7 +459,9 @@ impl CallT<VoyagerMessage> for Call {
 
             Call::Plugin(PluginMessage { plugin, message }) => {
                 Ok(PluginClient::<Value, Value>::call(
-                    &ctx.plugin(plugin)?.with_id(Some(ctx.id())),
+                    &ctx.plugin(plugin)
+                        .map_err(error_object_to_queue_error)?
+                        .with_id(Some(ctx.id())),
                     message,
                 )
                 .await

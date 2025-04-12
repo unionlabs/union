@@ -14,6 +14,7 @@ workspace = true
 [dependencies]
 alloy              = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 bip32              = { workspace = true }
+clap               = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 concurrent-keyring = { workspace = true }
 embed-commit       = { workspace = true }
 enumorph           = { workspace = true }
