@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Option } from "effect"
+import { Option, pipe } from "effect"
 import { packetDetails } from "$lib/stores/packets.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import { chains } from "$lib/stores/chains.svelte"
@@ -14,6 +14,7 @@ import TransactionHashComponent from "$lib/components/model/TransactionHashCompo
 import HeightComponent from "$lib/components/model/HeightComponent.svelte"
 import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
+import AddressComponent from "./AddressComponent.svelte"
 
 const sourceChain = $derived(
   Option.flatMap(packetDetails.data, data =>
@@ -44,10 +45,10 @@ const destinationChain = $derived(
         <div class="">{packetDetails.data.value.channel_version}</div>
       </div>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 gap-y-8 p-4">
       <div>
-        <div class="grid grid-cols-5 gap-y-4">
-          <div class="col-span-2">
+        <div class="flex gap-4">
+          <div class="flex-1 ">
             <Label>Source Chain</Label>
             {#if Option.isSome(sourceChain)}
               <ChainComponent chain={sourceChain.value} />
@@ -60,22 +61,24 @@ const destinationChain = $derived(
             <div class="">{packetDetails.data.value.source_client_id}</div>
           </div>
           <div>
-            <Label>Connection</Label>
+            <Label>Conn</Label>
             <div class="">{packetDetails.data.value.source_connection_id}</div>
           </div>
           <div>
-            <Label>Channel</Label>
+            <Label>Chan</Label>
             <div class="">{packetDetails.data.value.source_channel_id}</div>
           </div>
-          <div class="col-span-5">
-            <Label>Port</Label>
-            <LongMonoWord>{ Option.isSome(sourceChain) && sourceChain.value.rpc_type === "cosmos" ? fromHex(packetDetails.data.value.source_port_id, "string") : packetDetails.data.value.source_port_id}</LongMonoWord>
-          </div>
+          
         </div>
+
+        <div class="mt-2">
+          <Label>Port</Label>
+          <LongMonoWord>{ Option.isSome(sourceChain) && sourceChain.value.rpc_type === "cosmos" ? fromHex(packetDetails.data.value.source_port_id, "string") : packetDetails.data.value.source_port_id}</LongMonoWord>
+        </div>        
       </div>
       <div>
-        <div class="grid grid-cols-5 gap-y-4">
-          <div class="col-span-2">
+        <div class="flex gap-4">
+          <div class="flex-1">
             <Label>Destination Chain</Label>
             {#if Option.isSome(destinationChain)}
               <ChainComponent chain={destinationChain.value} />
@@ -88,199 +91,29 @@ const destinationChain = $derived(
             <div class="">{packetDetails.data.value.destination_client_id}</div>
           </div>
           <div>
-            <Label>Connection</Label>
+            <Label>Conn</Label>
             <div class="">{packetDetails.data.value.destination_connection_id}</div>
           </div>
           <div>
-            <Label>Channel</Label>
+            <Label>Chan</Label>
             <div class="">{packetDetails.data.value.destination_channel_id}</div>
           </div>
-          <div class="col-span-5">
-            <Label>Port</Label>
-            <LongMonoWord>{ Option.isSome(destinationChain) && destinationChain.value.rpc_type === "cosmos" ? fromHex(packetDetails.data.value.source_port_id, "string") : packetDetails.data.value.destination_port_id}</LongMonoWord>
-          </div>
         </div>
+
+        <div  class="mt-2">
+          <Label>Port</Label>
+          <LongMonoWord>{ Option.isSome(destinationChain) && destinationChain.value.rpc_type === "cosmos" ? fromHex(packetDetails.data.value.destination_port_id, "string") : packetDetails.data.value.destination_port_id}</LongMonoWord>
+        </div>        
       </div>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-      <div>
-        <Label>Send Timestamp</Label>
-        <DateTimeComponent value={packetDetails.data.value.packet_send_timestamp} />
+
+    <div class="flex md:grid md:grid-cols-2 gap-4 p-4">
+      <div class="flex-1">
+        <Label>Timeout Timestamp</Label>
+        <div class="">{packetDetails.data.value.timeout_timestamp}</div>
       </div>
-      
-      {#if Option.isSome(packetDetails.data.value.packet_recv_timestamp)}
-        <div>
-          <Label>Receive Timestamp</Label>
-          <DateTimeComponent value={packetDetails.data.value.packet_recv_timestamp.value} />
-        </div>
-      {/if}
-      
-      {#if Option.isSome(packetDetails.data.value.packet_recv_maker)}
-        <div>
-          <Label>Receive Maker</Label>
-          <div class=" break-all">
-            <div>{packetDetails.data.value.packet_recv_maker.value}</div>
-            <div class="text-xs text-zinc-500 mt-1">
-              {fromHex(packetDetails.data.value.packet_recv_maker.value, "string")}
-            </div>
-          </div>
-        </div>
-      {/if}
-      
-      {#if Option.isSome(packetDetails.data.value.packet_ack_timestamp)}
-        <div>
-          <Label>Ack Timestamp</Label>
-          <DateTimeComponent value={packetDetails.data.value.packet_ack_timestamp.value} />
-        </div>
-      {/if}
-      
-      {#if Option.isSome(packetDetails.data.value.packet_ack_maker)}
-        <div>
-          <Label>Ack Maker</Label>
-          <div class=" break-all">
-            <div>{packetDetails.data.value.packet_ack_maker.value}</div>
-            <div class="text-xs text-zinc-500 mt-1">
-              {fromHex(packetDetails.data.value.packet_ack_maker.value, "string")}
-            </div>
-          </div>
-        </div>
-      {/if}
-      
       <div>
-        <Label>Status</Label>
-        <div class="">{packetDetails.data.value.status}</div>
-      </div>
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-      <!-- Send information -->
-      {#if Option.isSome(packetDetails.data.value.packet_send_transaction_hash) && Option.isSome(sourceChain)}
-        <div>
-          <Label>Send Transaction Hash</Label>
-          <TransactionHashComponent 
-            hash={packetDetails.data.value.packet_send_transaction_hash.value} 
-            chain={sourceChain.value} 
-          />
-        </div>
-      {/if}
-      
-      {#if Option.isSome(packetDetails.data.value.packet_send_height) && Option.isSome(sourceChain)}
-        <div>
-          <Label>Send Height</Label>
-          <HeightComponent 
-            height={packetDetails.data.value.packet_send_height.value} 
-            chain={sourceChain.value} 
-          />
-        </div>
-      {/if}
-      
-      {#if Option.isSome(packetDetails.data.value.packet_send_block_hash) && Option.isSome(sourceChain)}
-        <div>
-          <Label>Send Block Hash</Label>
-          <BlockHashComponent 
-            hash={packetDetails.data.value.packet_send_block_hash.value} 
-            chain={sourceChain.value} 
-          />
-        </div>
-      {/if}
-      
-      <!-- Receive information -->
-      {#if Option.isSome(packetDetails.data.value.packet_recv_transaction_hash) && Option.isSome(destinationChain)}
-        <div>
-          <Label>Receive Transaction Hash</Label>
-          <TransactionHashComponent 
-            hash={packetDetails.data.value.packet_recv_transaction_hash.value} 
-            chain={destinationChain.value} 
-          />
-        </div>
-      {/if}
-      
-      {#if Option.isSome(packetDetails.data.value.packet_recv_height) && Option.isSome(destinationChain)}
-        <div>
-          <Label>Receive Height</Label>
-          <HeightComponent 
-            height={packetDetails.data.value.packet_recv_height.value} 
-            chain={destinationChain.value} 
-          />
-        </div>
-      {/if}
-      
-      {#if Option.isSome(packetDetails.data.value.packet_recv_block_hash) && Option.isSome(destinationChain)}
-        <div>
-          <Label>Receive Block Hash</Label>
-          <BlockHashComponent 
-            hash={packetDetails.data.value.packet_recv_block_hash.value} 
-            chain={destinationChain.value} 
-          />
-        </div>
-      {/if}
-      
-      <!-- Ack information -->
-      {#if Option.isSome(packetDetails.data.value.packet_ack_transaction_hash) && Option.isSome(destinationChain)}
-        <div>
-          <Label>Ack Transaction Hash</Label>
-          <TransactionHashComponent 
-            hash={packetDetails.data.value.packet_ack_transaction_hash.value} 
-            chain={destinationChain.value} 
-          />
-        </div>
-      {/if}
-      
-      {#if Option.isSome(packetDetails.data.value.packet_ack_height) && Option.isSome(destinationChain)}
-        <div>
-          <Label>Ack Height</Label>
-          <HeightComponent 
-            height={packetDetails.data.value.packet_ack_height.value} 
-            chain={destinationChain.value} 
-          />
-        </div>
-      {/if}
-      
-      {#if Option.isSome(packetDetails.data.value.packet_ack_block_hash) && Option.isSome(destinationChain)}
-        <div>
-          <Label>Ack Block Hash</Label>
-          <BlockHashComponent 
-            hash={packetDetails.data.value.packet_ack_block_hash.value} 
-            chain={destinationChain.value} 
-          />
-        </div>
-      {/if}
-      
-      <!-- Write Ack information -->
-      {#if Option.isSome(packetDetails.data.value.write_ack_transaction_hash) && Option.isSome(sourceChain)}
-        <div>
-          <Label>Write Ack Transaction Hash</Label>
-          <TransactionHashComponent 
-            hash={packetDetails.data.value.write_ack_transaction_hash.value} 
-            chain={sourceChain.value} 
-          />
-        </div>
-      {/if}
-      
-      {#if Option.isSome(packetDetails.data.value.write_ack_height) && Option.isSome(sourceChain)}
-        <div>
-          <Label>Write Ack Height</Label>
-          <HeightComponent 
-            height={packetDetails.data.value.write_ack_height.value} 
-            chain={sourceChain.value} 
-          />
-        </div>
-      {/if}
-      
-      {#if Option.isSome(packetDetails.data.value.write_ack_block_hash) && Option.isSome(sourceChain)}
-        <div>
-          <Label>Write Ack Block Hash</Label>
-          <BlockHashComponent 
-            hash={packetDetails.data.value.write_ack_block_hash.value} 
-            chain={sourceChain.value} 
-          />
-        </div>
-      {/if}
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-      <div>
-        <Label>Timeout Height</Label>
+        <Label>Height</Label>
         {#if Option.isSome(sourceChain)}
           <HeightComponent 
             height={packetDetails.data.value.timeout_height} 
@@ -290,13 +123,32 @@ const destinationChain = $derived(
           <div class="">{packetDetails.data.value.timeout_height}</div>
         {/if}
       </div>
-      <div>
-        <Label>Timeout Timestamp</Label>
-        <div class="">{packetDetails.data.value.timeout_timestamp}</div>
-      </div>
     </div>
     
-    <div class="p-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+      {#if Option.isSome(packetDetails.data.value.packet_ack_maker)}
+        <section>
+          <Label>Ack Maker</Label>
+          {#if pipe(sourceChain, Option.map(c => c.rpc_type === "cosmos"), Option.getOrElse(() => false))}
+            <LongMonoWord>{fromHex(packetDetails.data.value.packet_ack_maker.value, "string")}</LongMonoWord>
+          {:else}
+            <LongMonoWord>{packetDetails.data.value.packet_ack_maker.value}</LongMonoWord>
+          {/if}
+        </section>
+      {/if}
+      {#if Option.isSome(packetDetails.data.value.packet_recv_maker)}
+        <section>
+          <Label>Receive Maker</Label>
+          {#if pipe(destinationChain, Option.map(c => c.rpc_type === "cosmos"), Option.getOrElse(() => false))}
+            <LongMonoWord>{fromHex(packetDetails.data.value.packet_recv_maker.value, "string")}</LongMonoWord>
+          {:else}
+            <LongMonoWord>{packetDetails.data.value.packet_recv_maker.value}</LongMonoWord>
+          {/if}
+        </section>
+      {/if}
+    </div>
+    
+     <div class="p-4">
       <Label>Packet Data</Label>
       {#if Option.isSome(packetDetails.data.value.decoded)}
         <pre class="overflow-auto text-sm mt-2">{JSON.stringify(packetDetails.data.value.decoded.value, null, 2)}</pre>
