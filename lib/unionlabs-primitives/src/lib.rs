@@ -41,7 +41,7 @@ pub trait ByteArrayExt<const N: usize> {
     /// Slice into an array at `FROM..(FROM + LEN)`, returning an array of length `LEN`. This will fail to compile if the equivalent slicing would panic at runtime.
     ///
     /// ```compile_fail
-    /// # use unionlabs::ByteArrayExt;
+    /// # use unionlabs_primitives::ByteArrayExt;
     /// let arr = [1, 2, 3, 4, 5];
     ///
     /// // attempt to read `arr[4..(4 + 2)]`
@@ -49,7 +49,7 @@ pub trait ByteArrayExt<const N: usize> {
     /// ```
     ///
     /// ```rust
-    /// # use unionlabs::ByteArrayExt;
+    /// # use unionlabs_primitives::ByteArrayExt;
     /// # let arr = [1, 2, 3, 4, 5];
     /// // checked at compile time!
     /// assert_eq!(arr.array_slice::<0, 2>(), [1, 2]);
