@@ -54,7 +54,7 @@ const isRootPage = $derived(page.url.pathname === "/")
 const isMobile = $derived(viewportWidth < MAX_MOBILE_SIZE)
 const hideSidebar = $derived(isMobile && !isRootPage)
 const fullPageSidebar = $derived(isRootPage)
-let videoLoaded = $state(false);
+let videoLoaded = $state(false)
 </script>
 
 <!-- Background video -->
