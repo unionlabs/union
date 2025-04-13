@@ -57,7 +57,7 @@ const handleClick = () => {
       </div>
     </div>
     <DateTimeComponent
-      class="text-sm"
+      class="text-sm hidden sm:block"
       value={transfer.transfer_send_timestamp}
       {showSeconds}
     />

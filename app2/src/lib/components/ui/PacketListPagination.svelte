@@ -14,7 +14,7 @@ type Props = {
 const { data, onLive, onPrevPage, onNextPage }: Props = $props()
 </script>
 
-<div class="flex gap-6">
+<div class="flex gap-4 md:gap-6">
   <Button onclick={onLive}>LIVE</Button>
   <div class="rounded shadow flex">
     <button
@@ -24,7 +24,7 @@ const { data, onLive, onPrevPage, onNextPage }: Props = $props()
       ←
     </button>
     <div
-      class="bg-zinc-900 border-t border-b border-zinc-800 flex items-center justify-center px-4 min-w-[250px]"
+      class="bg-zinc-900 border-t border-b border-zinc-800 flex items-center text-sm justify-center px-4 w-[180px]"
     >
       {#if Option.isSome(data) && data.value.length > 0}
         <DateTimeComponent value={data.value[0].packet_send_timestamp} />
