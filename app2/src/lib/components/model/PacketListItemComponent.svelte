@@ -52,5 +52,7 @@ const handleClick = () => {
         {/if}
       </div>
     </div>
-  <DateTimeComponent value={packet.packet_send_timestamp} />
+  <DateTimeComponent
+    class="text-sm hidden sm:block"
+    value={packet.packet_send_timestamp} />
 </div>
