@@ -5,7 +5,6 @@ use arbitrum_types::slots::{
     read_latest_node_created, rollup_core_nodes_confirm_data_slot, ROLLUP_CORE_LATEST_NODE_CREATED,
 };
 use evm_storage_verifier::{verify_account_storage_root, verify_storage_proof};
-use sha3::{Digest, Keccak256};
 use unionlabs::primitives::{H256, U256};
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
@@ -20,14 +19,18 @@ pub enum Error {
     InvalidL2Proof(#[source] evm_storage_verifier::error::Error),
 }
 
-/// Verify the provider header against the provided client state and L1 state root.
+/// Verify the provided header against the provided client state and L1 state root.
 ///
 /// Header verification for arbitrum consists of 4 steps:
 ///
 /// 1. Verify that the L1 `RollupCore` account root is part of the L1 state root.
-/// 2. Verify that the value stored at [`L1_LATEST_NODE_CREATED_SLOT`] is part of the L1 `RollupCore` account root
-/// 3. Verify that the confirm data stored in the `Node` struct at the `_nodes` mapping indexed by the node number verified in 2. matches the [`L2Header::confirm_data_hash`](arbitrum_light_client_types::L2Header::confirm_data_hash).
-/// 4. Verify that the `IBCHandler` account root is part of the L2 state root (which is contained in the header verified in 3.).
+/// 2. Verify that the value stored at [`L1_LATEST_NODE_CREATED_SLOT`] is part of the L1
+///    `RollupCore` account root
+/// 3. Verify that the confirm data stored in the `Node` struct at the `_nodes` mapping indexed by
+///    the node number verified in 2. matches the
+///    [`L2Header::confirm_data_hash`](arbitrum_light_client_types::L2Header::confirm_data_hash).
+/// 4. Verify that the `IBCHandler` account root is part of the L2 state root (which is contained in
+///    the header verified in 3.).
 pub fn verify_header_v1(
     client_state: &ClientStateV1,
     header: &Header,
@@ -54,19 +57,13 @@ pub fn verify_header_v1(
     // the .value is verified by the proof above
     let node_num = read_latest_node_created(header.l1_next_node_num_slot_proof.value);
 
-    dbg!(node_num);
-
     // 3.
     verify_storage_proof(
         header.l1_account_proof.storage_root,
         rollup_core_nodes_confirm_data_slot(node_num),
         &rlp::encode(&U256::from_be_bytes(
             // TODO: Find where this value is calculated as the confirmData and link it
-            Keccak256::new()
-                .chain_update(header.l2_header.hash())
-                .chain_update(header.l2_header.extra_data)
-                .finalize()
-                .into(),
+            *header.l2_header.confirm_data_hash().get(),
         )),
         &header.l1_nodes_slot_proof.proof,
     )

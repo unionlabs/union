@@ -1,4 +1,4 @@
-//! This crate provides an implementation of the [Solidity storage layourt][layout].
+//! This crate provides an implementation of the [Solidity storage layout][layout].
 //!
 //! [layout]: https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html
 

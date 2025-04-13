@@ -24,6 +24,7 @@ thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
-arbitrum-light-client-types = { workspace = true, features = ["serde"] }
+arbitrum-light-client-types = { workspace = true, features = ["serde", "bincode"] }
 hex-literal                 = { workspace = true }
 serde_json                  = { workspace = true }
+unionlabs                   = { workspace = true, features = ["bincode"] }

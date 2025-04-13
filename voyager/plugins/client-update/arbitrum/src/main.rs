@@ -564,17 +564,17 @@ impl Module {
         .await
         .unwrap();
 
-        // if l2_settlement_block.header.number < update_from.height() {
-        //     return Err(ErrorObject::owned(
-        //         FATAL_JSONRPC_ERROR_CODE,
-        //         format!(
-        //             "attempted to update to a height ({to_height}) \
-        //             < the intended update_from height {update_from}",
-        //             to_height = l2_settlement_block.header.number
-        //         ),
-        //         None::<()>,
-        //     ));
-        // }
+        if l2_settlement_block.header.number < update_from.height() {
+            return Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                format!(
+                    "attempted to update to a height ({to_height}) \
+                    < the intended update_from height {update_from}",
+                    to_height = l2_settlement_block.header.number
+                ),
+                None::<()>,
+            ));
+        }
 
         if l2_settlement_block.header.number == arbitrum_client_state.latest_height {
             info!("update is a noop");

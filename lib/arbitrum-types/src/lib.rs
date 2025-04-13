@@ -50,13 +50,15 @@ pub mod slots {
     /// [`Node`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L21-L46
     pub const NODE_CONFIRM_DATA_OFFSET: U256 = U256::from_limbs([2, 0, 0, 0]);
 
-    /// Calculate the slot of the [`confirmData`] field of the `Node` struct stored in the `_nodes` mapping.
+    /// Calculate the slot of the [`confirmData`] field of the `Node` struct stored in the `_nodes`
+    /// mapping.
     ///
     /// ```solidity
     /// _nodes mapping(uint64 => struct Node);
     /// ```
     ///
-    /// The base slot for this mapping is [`ROLLUP_CORE_NODES_MAPPING_BASE_SLOT`], and the `confirmData` offset is [`NODE_CONFIRM_DATA_OFFSET`].
+    /// The base slot for this mapping is [`ROLLUP_CORE_NODES_MAPPING_BASE_SLOT`], and the
+    /// `confirmData` offset is [`NODE_CONFIRM_DATA_OFFSET`].
     ///
     /// [`confirmData`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L27
     pub fn rollup_core_nodes_confirm_data_slot(node_num: u64) -> U256 {
