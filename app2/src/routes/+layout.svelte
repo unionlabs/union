@@ -58,35 +58,47 @@ let videoLoaded = $state(false)
 </script>
 
 <!-- Background video -->
-<div class="fixed inset-0 w-screen h-screen z-0 transition-opacity duration-2000"
-     class:opacity-0={!videoLoaded}
-     class:opacity-100={videoLoaded}>
-  <video
-    id="glitch-video"
-    class="w-full h-full object-cover"
-    loop
-    muted
-    autoplay
-    playsinline
-    data-video="glitch"
-    disablePictureInPicture={true}
-    oncanplay={function () {
-      this.autoplay = true;
-    }}
-    onloadeddata={function () {
-           videoLoaded = true;
-      this.autoplay = true;
-    }}
-    onloadedmetadata={function () {
-      this.muted = true;
-    }}
+{#if !isMobile}
+  <div
+    class="fixed inset-0 w-screen h-screen z-0 transition-opacity duration-1000"
+    class:opacity-0={!videoLoaded}
+    class:opacity-100={videoLoaded}
   >
-    <source
-      src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/btc-union-background-3.webm"
-      type="video/webm"
+    <video
+      id="glitch-video"
+      class="w-full h-full object-cover"
+      loop
+      muted
+      autoplay
+      playsinline
+      data-video="glitch"
+      disablePictureInPicture={true}
+      oncanplay={function () {
+        this.autoplay = true;
+      }}
+      onloadeddata={function () {
+        this.autoplay = true;
+        videoLoaded = true;
+      }}
+      onloadedmetadata={function () {
+        this.muted = true;
+      }}
+    >
+      <source
+        src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/btc-union-background-3.webm"
+        type="video/webm"
+      />
+    </video>
+  </div>
+{:else}
+  <div class="fixed inset-0 w-screen h-screen z-0">
+    <img
+      src='/static-video.png'
+      alt="Union background"
+      class="w-full h-full object-cover"
     />
-  </video>
-</div>
+  </div>
+{/if}
 
 <div
   class={cn("relative min-h-[100svh] w-screen z-10")}
