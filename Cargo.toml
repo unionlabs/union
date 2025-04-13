@@ -189,6 +189,7 @@ members = [
   "voyager/plugins/packet-filter",
   "voyager/plugins/transaction-batch",
   "voyager/plugins/packet-timeout",
+  "voyager/plugins/drop-zkgm-protocol-fill-ack",
 
   "drip",
 
