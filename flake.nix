@@ -142,12 +142,12 @@
         site = {
           x86_64-linux = {
             inherit (self.packages.x86_64-linux) site;
-            inherit (self.packages.x86_64-linux) app;
+            inherit (self.packages.x86_64-linux) app2;
             inherit (self.packages.x86_64-linux) ceremony;
           };
           aarch64-linux = {
             inherit (self.packages.aarch64-linux) site;
-            inherit (self.packages.aarch64-linux) app;
+            inherit (self.packages.aarch64-linux) app2;
             inherit (self.packages.aarch64-linux) ceremony;
           };
         };
@@ -168,7 +168,6 @@
         ./hubble/hubble.nix
         ./lib/aptos.nix
         ./uniond/proto.nix
-        ./app/app.nix
         ./docs/docs.nix
         ./docs/openapi.nix
         ./ceremony/ceremony.nix
