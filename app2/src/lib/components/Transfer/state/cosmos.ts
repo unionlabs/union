@@ -1,4 +1,4 @@
-import { Data, Effect, type Exit } from "effect"
+import { Data, Duration, Effect, type Exit, Schedule } from "effect"
 import { switchChain } from "$lib/services/transfer-ucs03-cosmos"
 import { executeContract } from "@unionlabs/sdk/cosmos"
 import type { Chain } from "@unionlabs/sdk/schema"
@@ -53,14 +53,23 @@ export const nextStateCosmos = async (
       return WriteContractInProgress()
     },
     WriteContractInProgress: async () => {
-      const executeResult = await Effect.runPromiseExit(
-        executeContract(signingClient, senderAddress, contractAddress, msg, funds)
+      const retryableExecute = executeContract(
+        signingClient,
+        senderAddress,
+        contractAddress,
+        msg,
+        funds
+      ).pipe(
+        Effect.retry(
+          Schedule.exponential(Duration.millis(100)).pipe(Schedule.intersect(Schedule.recurs(5)))
+        )
       )
-      console.log(executeResult)
+
       return WriteContractComplete({
-        exit: executeResult
+        exit: await Effect.runPromiseExit(retryableExecute)
       })
     },
+
     WriteContractComplete: ({ exit }) => {
       if (exit._tag === "Failure") {
         console.error("[ExecuteContractComplete] Contract execution failed with error:", exit.cause)
