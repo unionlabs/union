@@ -61,7 +61,14 @@ export const nextStateCosmos = async (
         funds
       ).pipe(
         Effect.retry(
-          Schedule.exponential(Duration.millis(100)).pipe(Schedule.intersect(Schedule.recurs(5)))
+          Schedule.exponential(Duration.millis(100)).pipe(
+            Schedule.whileInput(
+              (err) =>
+                err instanceof Error &&
+                err.message.includes("429")
+            ),
+            Schedule.intersect(Schedule.recurs(5))
+          )
         )
       )
 
@@ -69,6 +76,7 @@ export const nextStateCosmos = async (
         exit: await Effect.runPromiseExit(retryableExecute)
       })
     },
+
 
     WriteContractComplete: ({ exit }) => {
       if (exit._tag === "Failure") {

@@ -62,16 +62,25 @@ export const nextStateEvm = async <
       }),
     SwitchChainComplete: ({ exit }) =>
       exit._tag === "Failure" ? SwitchChainInProgress() : WriteContractInProgress(),
+
     WriteContractInProgress: async () => {
       const retryableWrite = writeContract(walletClient, params).pipe(
         Effect.retry(
-          Schedule.exponential(Duration.millis(100)).pipe(Schedule.intersect(Schedule.recurs(5)))
+          Schedule.exponential(Duration.millis(100)).pipe(
+            Schedule.whileInput(
+              (err) =>
+                err instanceof Error &&
+                err.message.includes("429")
+            ),
+            Schedule.intersect(Schedule.recurs(5))
+          )
         )
       )
       return WriteContractComplete({
         exit: await Effect.runPromiseExit(retryableWrite)
       })
     },
+
     WriteContractComplete: ({ exit }) =>
       exit._tag === "Failure"
         ? WriteContractInProgress()
