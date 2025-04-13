@@ -1,4 +1,4 @@
-import { Data, Duration, Effect, type Exit, Schedule } from "effect"
+import { Data, Effect, type Exit, Schedule } from "effect"
 import { switchChain } from "$lib/services/transfer-ucs03-cosmos"
 import { executeContract } from "@unionlabs/sdk/cosmos"
 import type { Chain } from "@unionlabs/sdk/schema"
@@ -60,23 +60,16 @@ export const nextStateCosmos = async (
         msg,
         funds
       ).pipe(
-        Effect.retry(
-          Schedule.exponential(Duration.millis(100)).pipe(
-            Schedule.whileInput(
-              (err) =>
-                err instanceof Error &&
-                err.message.includes("429")
-            ),
-            Schedule.intersect(Schedule.recurs(5))
-          )
-        )
+        Effect.retry({
+          while: error => error.message.includes("429"),
+          schedule: Schedule.fibonacci("1 second")
+        })
       )
 
       return WriteContractComplete({
         exit: await Effect.runPromiseExit(retryableExecute)
       })
     },
-
 
     WriteContractComplete: ({ exit }) => {
       if (exit._tag === "Failure") {
