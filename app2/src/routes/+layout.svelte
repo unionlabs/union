@@ -54,10 +54,13 @@ const isRootPage = $derived(page.url.pathname === "/")
 const isMobile = $derived(viewportWidth < MAX_MOBILE_SIZE)
 const hideSidebar = $derived(isMobile && !isRootPage)
 const fullPageSidebar = $derived(isRootPage)
+let videoLoaded = $state(false);
 </script>
 
 <!-- Background video -->
-<div class="fixed inset-0 w-screen h-screen z-0">
+<div class="fixed inset-0 w-screen h-screen z-0 transition-opacity duration-2000"
+     class:opacity-0={!videoLoaded}
+     class:opacity-100={videoLoaded}>
   <video
     id="glitch-video"
     class="w-full h-full object-cover"
@@ -71,6 +74,7 @@ const fullPageSidebar = $derived(isRootPage)
       this.autoplay = true;
     }}
     onloadeddata={function () {
+           videoLoaded = true;
       this.autoplay = true;
     }}
     onloadedmetadata={function () {
