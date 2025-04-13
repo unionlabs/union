@@ -327,6 +327,23 @@
                       pkgs = super;
                     };
 
+                    foundry-bin = super.foundry-bin.overrideAttrs (old: {
+                      installPhase =
+                        old.installPhase
+                        + ''
+                          # LD_LIBRARY_PATH must be set in the outer environment that cast is called in since it shells out to an auto-downloaded solc that it then attempts to patch for nixos, which, to everyone's surprise, does not work
+                          mv $out/bin/cast $out/bin/cast-cursed
+
+                          cat <<EOF >> $out/bin/cast
+                          export LD_LIBRARY_PATH=${lib.makeLibraryPath [ super.stdenv.cc.cc.lib ]}
+                          $out/bin/cast-cursed "\$@"
+                          unset LD_LIBRARY_PATH
+                          EOF
+
+                          chmod +x $out/bin/cast
+                        '';
+                    });
+
                     solc =
                       if system == "aarch64-linux" then
                         super.gccStdenv.mkDerivation rec {
