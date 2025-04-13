@@ -20,14 +20,16 @@ type Props = HTMLAttributes<HTMLDivElement> & {
 
 const { packetTraces, showAcks = true, mode = "packet" }: Props = $props()
 
-const packetTracesWithOrWithoutAck = showAcks
-  ? packetTraces
-  : packetTraces.filter((trace, index) => {
-      // Find the index of the first PACKET_RECV
-      const recvIndex = packetTraces.findIndex(t => t.type === "PACKET_RECV")
-      // Keep all traces before and including PACKET_RECV
-      return recvIndex === -1 || index <= recvIndex
-    })
+const packetTracesWithOrWithoutAck = $derived(
+  showAcks
+    ? packetTraces
+    : packetTraces.filter((trace, index) => {
+        // Find the index of the first PACKET_RECV
+        const recvIndex = packetTraces.findIndex(t => t.type === "PACKET_RECV")
+        // Keep all traces before and including PACKET_RECV
+        return recvIndex === -1 || index <= recvIndex
+      })
+)
 
 const toTraceName = (type: string) =>
   type in PACKET_TRACE_DISPLAY_NAMES[mode] ? PACKET_TRACE_DISPLAY_NAMES[mode][type] : type
