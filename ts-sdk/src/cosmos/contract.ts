@@ -14,6 +14,7 @@ export class QueryContractError extends Data.TaggedError("QueryContractError")<{
  */
 export class ExecuteContractError extends Data.TaggedError("ExecuteContractError")<{
   cause: unknown
+  message: string
 }> {}
 
 /**
@@ -58,5 +59,9 @@ export const executeContract = (
 ) =>
   Effect.tryPromise({
     try: () => client.execute(senderAddress, contractAddress, msg, "auto", undefined, funds),
-    catch: error => new ExecuteContractError({ cause: extractErrorDetails(error as Error) })
+    catch: error =>
+      new ExecuteContractError({
+        cause: extractErrorDetails(error as Error),
+        message: (error as Error).message
+      })
   })
