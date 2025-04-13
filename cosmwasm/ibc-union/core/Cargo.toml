@@ -18,7 +18,7 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-alloy           = { workspace = true, features = ["sol-types"] }
+alloy-sol-types = { workspace = true }
 bincode         = { workspace = true, features = ["alloc", "derive"] }
 cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true, features = ["abort", "iterator"] }
@@ -34,3 +34,6 @@ serde-json-wasm = "1.0"
 strum           = { version = "0.26.3", features = ["derive"] }
 thiserror       = { workspace = true }
 unionlabs       = { workspace = true, features = ["ethabi", "bincode"] }
+
+[dev-dependencies]
+hex-literal.workspace = true

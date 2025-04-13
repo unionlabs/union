@@ -42,44 +42,44 @@ pub mod ethabi {
 
     use super::*;
 
-    #[cfg(feature = "ibc-solidity-compat")]
-    impl From<Packet> for ibc_solidity::Packet {
-        fn from(value: Packet) -> Self {
-            Self {
-                source_channel_id: value.source_channel_id.raw(),
-                destination_channel_id: value.destination_channel_id.raw(),
-                data: value.data.into(),
-                timeout_height: value.timeout_height,
-                timeout_timestamp: value.timeout_timestamp.as_nanos(),
-            }
-        }
-    }
+    // #[cfg(feature = "ibc-solidity-compat")]
+    // impl From<Packet> for ibc_solidity::Packet {
+    //     fn from(value: Packet) -> Self {
+    //         Self {
+    //             source_channel_id: value.source_channel_id.raw(),
+    //             destination_channel_id: value.destination_channel_id.raw(),
+    //             data: value.data.into(),
+    //             timeout_height: value.timeout_height,
+    //             timeout_timestamp: value.timeout_timestamp.as_nanos(),
+    //         }
+    //     }
+    // }
 
-    #[cfg(feature = "ibc-solidity-compat")]
-    impl TryFrom<ibc_solidity::Packet> for Packet {
-        type Error = Error;
+    // #[cfg(feature = "ibc-solidity-compat")]
+    // impl TryFrom<ibc_solidity::Packet> for Packet {
+    //     type Error = Error;
 
-        fn try_from(value: ibc_solidity::Packet) -> Result<Self, Self::Error> {
-            Ok(Self {
-                source_channel_id: ChannelId::from_raw(value.source_channel_id)
-                    .ok_or(Error::InvalidSourceChannelId)?,
-                destination_channel_id: ChannelId::from_raw(value.destination_channel_id)
-                    .ok_or(Error::InvalidDestinationChannelId)?,
-                data: value.data.into(),
-                timeout_height: value.timeout_height,
-                timeout_timestamp: Timestamp::from_nanos(value.timeout_timestamp),
-            })
-        }
-    }
+    //     fn try_from(value: ibc_solidity::Packet) -> Result<Self, Self::Error> {
+    //         Ok(Self {
+    //             source_channel_id: ChannelId::from_raw(value.source_channel_id)
+    //                 .ok_or(Error::InvalidSourceChannelId)?,
+    //             destination_channel_id: ChannelId::from_raw(value.destination_channel_id)
+    //                 .ok_or(Error::InvalidDestinationChannelId)?,
+    //             data: value.data.into(),
+    //             timeout_height: value.timeout_height,
+    //             timeout_timestamp: Timestamp::from_nanos(value.timeout_timestamp),
+    //         })
+    //     }
+    // }
 
-    #[cfg(feature = "ibc-solidity-compat")]
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum Error {
-        #[error("invalid source channel id")]
-        InvalidSourceChannelId,
-        #[error("invalid destination channel id")]
-        InvalidDestinationChannelId,
-    }
+    // #[cfg(feature = "ibc-solidity-compat")]
+    // #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    // pub enum Error {
+    //     #[error("invalid source channel id")]
+    //     InvalidSourceChannelId,
+    //     #[error("invalid destination channel id")]
+    //     InvalidDestinationChannelId,
+    // }
 
     type SolTuple = (Uint<32>, Uint<32>, SolBytes, Uint<64>, Uint<64>);
 

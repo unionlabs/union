@@ -21,7 +21,7 @@ use bip32::secp256k1::ecdsa::{self, SigningKey};
 use clap::Subcommand;
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use ibc_solidity::Ibc::{self, IbcErrors};
-use ibc_union_spec::{datagram::Datagram, IbcUnion};
+use ibc_union_spec::{datagram::Datagram, ChannelId, ChannelState, IbcUnion, Packet};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     proc_macros::rpc,
@@ -702,7 +702,21 @@ fn process_msgs<'a>(
                     ibc_handler
                         .channelOpenTry(ibc_solidity::MsgChannelOpenTry {
                             port_id: data.port_id.try_into().unwrap(),
-                            channel: data.channel.into(),
+                            channel: ibc_solidity::Channel {
+                                state: match data.channel.state {
+                                    ChannelState::Init => ibc_solidity::ChannelState::Init,
+                                    ChannelState::TryOpen => ibc_solidity::ChannelState::TryOpen,
+                                    ChannelState::Open => ibc_solidity::ChannelState::Open,
+                                    ChannelState::Closed => ibc_solidity::ChannelState::Closed,
+                                },
+                                connection_id: data.channel.connection_id.raw(),
+                                counterparty_channel_id: data
+                                    .channel
+                                    .counterparty_channel_id
+                                    .map_or(0, |id| id.raw()),
+                                counterparty_port_id: data.channel.counterparty_port_id.into(),
+                                version: data.channel.version,
+                            },
                             counterparty_version: data.counterparty_version,
                             proof_init: data.proof_init.into(),
                             proof_height: data.proof_height,
@@ -738,7 +752,7 @@ fn process_msgs<'a>(
                     msg,
                     ibc_handler
                         .recvPacket(ibc_solidity::MsgPacketRecv {
-                            packets: data.packets.into_iter().map(Into::into).collect(),
+                            packets: data.packets.into_iter().map(convert_packet).collect(),
                             proof: data.proof.into(),
                             proof_height: data.proof_height,
                             relayer: relayer.into(),
@@ -750,7 +764,7 @@ fn process_msgs<'a>(
                     msg,
                     ibc_handler
                         .acknowledgePacket(ibc_solidity::MsgPacketAcknowledgement {
-                            packets: data.packets.into_iter().map(Into::into).collect(),
+                            packets: data.packets.into_iter().map(convert_packet).collect(),
                             acknowledgements: data
                                 .acknowledgements
                                 .into_iter()
@@ -766,7 +780,7 @@ fn process_msgs<'a>(
                     msg,
                     ibc_handler
                         .timeoutPacket(ibc_solidity::MsgPacketTimeout {
-                            packet: data.packet.into(),
+                            packet: convert_packet(data.packet),
                             proof: data.proof.into(),
                             proof_height: data.proof_height,
                             relayer: relayer.into(),
@@ -777,6 +791,16 @@ fn process_msgs<'a>(
             })
         })
         .collect()
+}
+
+fn convert_packet(packet: Packet) -> ibc_solidity::Packet {
+    ibc_solidity::Packet {
+        source_channel_id: packet.source_channel_id.raw(),
+        destination_channel_id: packet.destination_channel_id.raw(),
+        data: packet.data.into(),
+        timeout_height: packet.timeout_height,
+        timeout_timestamp: packet.timeout_timestamp.as_nanos(),
+    }
 }
 
 pub mod multicall {

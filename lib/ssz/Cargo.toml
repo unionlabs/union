@@ -29,7 +29,6 @@ unionlabs-primitives = { workspace = true, features = ["generic-array-compat"] }
 [dev-dependencies]
 hex-literal = { workspace = true }
 serde_json  = { workspace = true }
-serde_yaml  = "0.9.34"
 snap        = "1.1.1"
 unionlabs   = { workspace = true }
 

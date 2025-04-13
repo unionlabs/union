@@ -148,7 +148,7 @@
           buildPhase = ''
             tree .
 
-            cp ${cargoLock} ./Cargo.lock
+            cp ${dbg cargoLock} ./Cargo.lock
             cp ${cargoToml} ./Cargo.toml
 
             ${builtins.concatStringsSep "\n\n" (
@@ -728,14 +728,14 @@
         };
 
       # these are incredibly useful for debugging
-      # packages = {
-      #   cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "cosmwasm-deployer" ]);
-      #   getAllDeps = dbg (getAllDeps [ "cosmwasm/ibc-union/core" ]);
-      #   getDependency = dbg (
-      #     getCargoLockPackageEntry "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)"
-      #   );
-      #   normalizedCargoLock = writeJSON "normalized-Cargo.lock.json" normalizedCargoLock;
-      # };
+      packages = {
+        cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "ibc-union" ]);
+        #   getAllDeps = dbg (getAllDeps [ "cosmwasm/ibc-union/core" ]);
+        #   getDependency = dbg (
+        #     getCargoLockPackageEntry "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)"
+        #   );
+        #   normalizedCargoLock = writeJSON "normalized-Cargo.lock.json" normalizedCargoLock;
+      };
 
       # FIXME: currently ICE, https://github.com/unionlabs/union/actions/runs/8882618404/job/24387814904
       # packages.rust-coverage =

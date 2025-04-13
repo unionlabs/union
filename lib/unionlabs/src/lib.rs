@@ -117,7 +117,7 @@ pub enum TryFromEthAbiBytesErrorAlloy<E> {
     #[error(transparent)]
     Convert(E),
     #[error("unable to decode from raw ethabi bytes")]
-    Decode(#[from] alloy::core::sol_types::Error),
+    Decode(#[from] alloy_sol_types::Error),
 }
 
 /// An empty string. Will only parse/serialize to/from `""`.

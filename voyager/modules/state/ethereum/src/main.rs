@@ -13,7 +13,7 @@ use ibc_solidity::{
 use ibc_union_spec::{
     path::{BatchPacketsPath, BatchReceiptsPath, StorePath},
     query::Query,
-    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, Packet,
+    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, Packet, Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -389,21 +389,47 @@ impl Module {
                     // there's really no nicer way to do this without having multiple checks (we want to ensure there's only 1 item in the list)
                     let (packet_log, _) = packet_logs.pop().expect("len is 1; qed;");
 
-                    packet_log.packet.try_into().map_err(|e| {
-                        ErrorObject::owned(
-                            -1,
-                            format!(
-                                "error decoding packet send event for packet {packet_hash}: {}",
-                                ErrorReporter(e)
-                            ),
-                            None::<()>,
-                        )
+                    Ok(Packet {
+                        source_channel_id: ChannelId::new(
+                            packet_log
+                                .packet
+                                .source_channel_id
+                                .try_into()
+                                .map_err(|_| {
+                                    ErrorObject::owned(
+                                        -1,
+                                        "error querying for packet {packet_hash}, \
+                                        source channel id is 0",
+                                        None::<()>,
+                                    )
+                                })?,
+                        ),
+                        destination_channel_id: ChannelId::new(
+                            packet_log
+                                .packet
+                                .destination_channel_id
+                                .try_into()
+                                .map_err(|_| {
+                                    ErrorObject::owned(
+                                        -1,
+                                        "error querying for packet {packet_hash}, \
+                                        destination channel id is 0",
+                                        None::<()>,
+                                    )
+                                })?,
+                        ),
+                        data: packet_log.packet.data.into(),
+                        timeout_height: packet_log.packet.timeout_height,
+                        timeout_timestamp: Timestamp::from_nanos(
+                            packet_log.packet.timeout_timestamp,
+                        ),
                     })
                 } else {
                     Err(ErrorObject::owned(
                         -1,
                         format!(
-                            "error querying for packet {packet_hash}, expected 1 event but found {}",
+                            "error querying for packet {packet_hash}, \
+                            expected 1 event but found {}",
                             packet_logs.len()
                         ),
                         None::<()>,

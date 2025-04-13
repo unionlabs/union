@@ -75,60 +75,60 @@ pub mod ethabi {
 
     use super::*;
 
-    #[cfg(feature = "ibc-solidity-compat")]
-    impl From<Channel> for ibc_solidity::Channel {
-        fn from(value: Channel) -> Self {
-            Self {
-                state: match value.state {
-                    ChannelState::Init => ibc_solidity::ChannelState::Init,
-                    ChannelState::TryOpen => ibc_solidity::ChannelState::TryOpen,
-                    ChannelState::Open => ibc_solidity::ChannelState::Open,
-                    ChannelState::Closed => ibc_solidity::ChannelState::Closed,
-                },
-                connection_id: value.connection_id.raw(),
-                counterparty_channel_id: value
-                    .counterparty_channel_id
-                    .map(|counterparty_channel_id| counterparty_channel_id.raw())
-                    .unwrap_or_default(),
-                counterparty_port_id: value.counterparty_port_id.into(),
-                version: value.version,
-            }
-        }
-    }
+    // #[cfg(feature = "ibc-solidity-compat")]
+    // impl From<Channel> for ibc_solidity::Channel {
+    //     fn from(value: Channel) -> Self {
+    //         Self {
+    //             state: match value.state {
+    //                 ChannelState::Init => ibc_solidity::ChannelState::Init,
+    //                 ChannelState::TryOpen => ibc_solidity::ChannelState::TryOpen,
+    //                 ChannelState::Open => ibc_solidity::ChannelState::Open,
+    //                 ChannelState::Closed => ibc_solidity::ChannelState::Closed,
+    //             },
+    //             connection_id: value.connection_id.raw(),
+    //             counterparty_channel_id: value
+    //                 .counterparty_channel_id
+    //                 .map(|counterparty_channel_id| counterparty_channel_id.raw())
+    //                 .unwrap_or_default(),
+    //             counterparty_port_id: value.counterparty_port_id.into(),
+    //             version: value.version,
+    //         }
+    //     }
+    // }
 
-    #[cfg(feature = "ibc-solidity-compat")]
-    impl TryFrom<ibc_solidity::Channel> for Channel {
-        type Error = Error;
+    // #[cfg(feature = "ibc-solidity-compat")]
+    // impl TryFrom<ibc_solidity::Channel> for Channel {
+    //     type Error = Error;
 
-        fn try_from(value: ibc_solidity::Channel) -> Result<Self, Self::Error> {
-            Ok(Self {
-                state: match value.state {
-                    ibc_solidity::ChannelState::Init => ChannelState::Init,
-                    ibc_solidity::ChannelState::TryOpen => ChannelState::TryOpen,
-                    ibc_solidity::ChannelState::Open => ChannelState::Open,
-                    ibc_solidity::ChannelState::Closed => ChannelState::Closed,
-                    ibc_solidity::ChannelState::Unspecified
-                    | ibc_solidity::ChannelState::__Invalid => {
-                        return Err(Error::InvalidChannelState)
-                    }
-                },
-                connection_id: ConnectionId::from_raw(value.connection_id)
-                    .ok_or(Error::InvalidConnectionId)?,
-                counterparty_channel_id: ChannelId::from_raw(value.counterparty_channel_id),
-                counterparty_port_id: value.counterparty_port_id.into(),
-                version: value.version,
-            })
-        }
-    }
+    //     fn try_from(value: ibc_solidity::Channel) -> Result<Self, Self::Error> {
+    //         Ok(Self {
+    //             state: match value.state {
+    //                 ibc_solidity::ChannelState::Init => ChannelState::Init,
+    //                 ibc_solidity::ChannelState::TryOpen => ChannelState::TryOpen,
+    //                 ibc_solidity::ChannelState::Open => ChannelState::Open,
+    //                 ibc_solidity::ChannelState::Closed => ChannelState::Closed,
+    //                 ibc_solidity::ChannelState::Unspecified
+    //                 | ibc_solidity::ChannelState::__Invalid => {
+    //                     return Err(Error::InvalidChannelState)
+    //                 }
+    //             },
+    //             connection_id: ConnectionId::from_raw(value.connection_id)
+    //                 .ok_or(Error::InvalidConnectionId)?,
+    //             counterparty_channel_id: ChannelId::from_raw(value.counterparty_channel_id),
+    //             counterparty_port_id: value.counterparty_port_id.into(),
+    //             version: value.version,
+    //         })
+    //     }
+    // }
 
-    #[cfg(feature = "ibc-solidity-compat")]
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum Error {
-        #[error("invalid channel state")]
-        InvalidChannelState,
-        #[error("invalid connection id")]
-        InvalidConnectionId,
-    }
+    // #[cfg(feature = "ibc-solidity-compat")]
+    // #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    // pub enum Error {
+    //     #[error("invalid channel state")]
+    //     InvalidChannelState,
+    //     #[error("invalid connection id")]
+    //     InvalidConnectionId,
+    // }
 
     type SolTuple = (Uint<8>, Uint<32>, Uint<32>, SolBytes, SolString);
 

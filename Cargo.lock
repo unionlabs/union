@@ -153,7 +153,6 @@ dependencies = [
  "alloy-contract",
  "alloy-core",
  "alloy-eips",
- "alloy-genesis",
  "alloy-network",
  "alloy-provider",
  "alloy-pubsub",
@@ -246,7 +245,6 @@ dependencies = [
  "alloy-dyn-abi",
  "alloy-json-abi",
  "alloy-primitives",
- "alloy-rlp",
  "alloy-sol-types",
 ]
 
@@ -322,19 +320,6 @@ dependencies = [
  "once_cell",
  "serde",
  "sha2 0.10.8",
-]
-
-[[package]]
-name = "alloy-genesis"
-version = "0.12.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a40de6f5b53ecf5fd7756072942f41335426d9a3704cd961f77d854739933bcf"
-dependencies = [
- "alloy-eips",
- "alloy-primitives",
- "alloy-serde",
- "alloy-trie",
- "serde",
 ]
 
 [[package]]
@@ -3643,7 +3628,6 @@ dependencies = [
  "num-rational 0.4.2",
  "num_enum",
  "prost 0.12.6",
- "protos",
  "rand 0.8.5",
  "scroll-api",
  "scroll-rpc",
@@ -6829,7 +6813,6 @@ dependencies = [
  "lazy_static",
  "prometheus",
  "prost 0.12.6",
- "protos",
  "regex",
  "reqwest 0.11.27",
  "serde",
@@ -7038,7 +7021,7 @@ dependencies = [
 name = "ibc-union"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-sol-types",
  "bincode 2.0.1",
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
@@ -7047,6 +7030,7 @@ dependencies = [
  "ethabi",
  "frissitheto",
  "hex",
+ "hex-literal",
  "ibc-union-msg",
  "ibc-union-spec",
  "serde",
@@ -7091,7 +7075,6 @@ dependencies = [
  "alloy-sol-types",
  "bincode 2.0.1",
  "enumorph",
- "ibc-solidity",
  "ibc-union-spec",
  "num-traits",
  "schemars",
@@ -10587,7 +10570,6 @@ dependencies = [
  "schemars",
  "serde",
  "serde-utils",
- "tonic 0.10.2",
 ]
 
 [[package]]
@@ -12649,7 +12631,6 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
- "serde_yaml 0.9.34+deprecated",
  "sha2 0.10.8",
  "smallvec",
  "snap",
@@ -13728,11 +13709,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d560933a0de61cf715926b9cac824d4c883c2c43142f787595e48280c40a1d0e"
 dependencies = [
  "async-stream",
- "async-trait",
  "axum 0.6.20",
  "base64 0.21.7",
  "bytes",
- "flate2",
  "h2 0.3.26",
  "http 0.2.12",
  "http-body 0.4.6",
@@ -13740,7 +13719,6 @@ dependencies = [
  "hyper-timeout",
  "percent-encoding",
  "pin-project",
- "prost 0.12.6",
  "rustls 0.21.12",
  "rustls-native-certs 0.6.3",
  "rustls-pemfile 1.0.4",
@@ -14347,7 +14325,7 @@ checksum = "39ec24b3121d976906ece63c9daad25b85969647682eee313cb5779fdd69e14e"
 name = "unionlabs"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-sol-types",
  "base64 0.21.7",
  "bcs 0.1.6",
  "bincode 2.0.1",

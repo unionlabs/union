@@ -1,6 +1,6 @@
 use std::{collections::BTreeSet, num::NonZeroU32};
 
-use alloy::sol_types::SolValue;
+use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -471,9 +471,9 @@ pub fn execute(
                 env,
                 info,
                 packets,
-                relayer_msgs.into_iter().map(Into::into).collect(),
+                relayer_msgs.into_iter().collect(),
                 relayer,
-                proof.into(),
+                proof,
                 proof_height,
                 false,
             )
@@ -526,9 +526,9 @@ pub fn execute(
                 env,
                 info,
                 packets,
-                market_maker_msgs.into_iter().map(Into::into).collect(),
+                market_maker_msgs.into_iter().collect(),
                 market_maker,
-                empty_proof.into(),
+                empty_proof,
                 0,
                 true,
             )
@@ -1733,9 +1733,9 @@ fn process_receive(
     env: Env,
     info: MessageInfo,
     packets: Vec<Packet>,
-    relayer_msgs: Vec<alloy::primitives::Bytes>,
+    relayer_msgs: Vec<Bytes>,
     relayer: String,
-    proof: alloy::primitives::Bytes,
+    proof: Bytes,
     proof_height: u64,
     intent: bool,
 ) -> Result<Response, ContractError> {
@@ -2225,8 +2225,6 @@ fn make_verify_creation_event(client_id: ClientId, event: VerifyCreationResponse
 
 #[cfg(test)]
 mod tests {
-    use alloy::hex;
-
     use super::*;
 
     #[test]
@@ -2235,7 +2233,7 @@ mod tests {
             state: ChannelState::Init,
             connection_id: ConnectionId!(1),
             counterparty_channel_id: None,
-            counterparty_port_id: hex!("30783735366536393666366533313337373033393732376137373665366536363738363336613730333333323735366533393735363733373739363836383761363737343662363837363663333936613636366237333761373436373737333537353638333633393737363136333332373036373733333936383337373736613637").into(),
+            counterparty_port_id: hex_literal::hex!("30783735366536393666366533313337373033393732376137373665366536363738363336613730333333323735366533393735363733373739363836383761363737343662363837363663333936613636366237333761373436373737333537353638333633393737363136333332373036373733333936383337373736613637").into(),
             version: "ucs01-relay-1".to_owned()
         };
 

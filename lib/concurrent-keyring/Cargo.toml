@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 beacon-api  = { workspace = true }
-protos      = { workspace = true, features = ["default", "client"] }
+# protos      = { workspace = true, features = ["default", "client"] }
 serde-utils = { workspace = true }
 unionlabs   = { workspace = true, features = ["default"] }
 

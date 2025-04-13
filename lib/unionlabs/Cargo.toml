@@ -42,7 +42,7 @@ thiserror                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 wasmparser               = { version = "0.113" }
 
-alloy                = { workspace = true, optional = true, features = ["std", "sol-types"] }
+alloy-sol-types      = { workspace = true, optional = true }
 base64               = { workspace = true }
 bcs                  = { workspace = true }
 bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
@@ -63,11 +63,11 @@ default = ["ethabi", "std", "stargate", "proto"]
 
 cosmwasm = ["dep:cosmwasm-std"]
 ethabi = [
-  "alloy",
+  "alloy-sol-types",
   "unionlabs-primitives/alloy-primitives-compat",
   "unionlabs-primitives/alloy-sol-types-compat",
 ]
-grpc = ["protos/client"]
+# grpc = ["protos/client"]
 near = ["borsh", "near-sdk", "near-primitives-core"]
 std = ["subtle-encoding/std", "sha2/std"]
 

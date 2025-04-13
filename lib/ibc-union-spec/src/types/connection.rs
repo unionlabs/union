@@ -86,60 +86,60 @@ pub mod ethabi {
 
     use super::*;
 
-    #[cfg(feature = "ibc-solidity-compat")]
-    impl From<Connection> for ibc_solidity::Connection {
-        fn from(value: Connection) -> Self {
-            Self {
-                state: match value.state {
-                    ConnectionState::Init => ibc_solidity::ConnectionState::Init,
-                    ConnectionState::TryOpen => ibc_solidity::ConnectionState::TryOpen,
-                    ConnectionState::Open => ibc_solidity::ConnectionState::Open,
-                },
-                client_id: value.client_id.raw(),
-                counterparty_client_id: value.counterparty_client_id.raw(),
-                counterparty_connection_id: value
-                    .counterparty_connection_id
-                    .map(|counterparty_connection_id| counterparty_connection_id.raw())
-                    .unwrap_or_default(),
-            }
-        }
-    }
+    // #[cfg(feature = "ibc-solidity-compat")]
+    // impl From<Connection> for ibc_solidity::Connection {
+    //     fn from(value: Connection) -> Self {
+    //         Self {
+    //             state: match value.state {
+    //                 ConnectionState::Init => ibc_solidity::ConnectionState::Init,
+    //                 ConnectionState::TryOpen => ibc_solidity::ConnectionState::TryOpen,
+    //                 ConnectionState::Open => ibc_solidity::ConnectionState::Open,
+    //             },
+    //             client_id: value.client_id.raw(),
+    //             counterparty_client_id: value.counterparty_client_id.raw(),
+    //             counterparty_connection_id: value
+    //                 .counterparty_connection_id
+    //                 .map(|counterparty_connection_id| counterparty_connection_id.raw())
+    //                 .unwrap_or_default(),
+    //         }
+    //     }
+    // }
 
-    #[cfg(feature = "ibc-solidity-compat")]
-    impl TryFrom<ibc_solidity::Connection> for Connection {
-        type Error = Error;
+    // #[cfg(feature = "ibc-solidity-compat")]
+    // impl TryFrom<ibc_solidity::Connection> for Connection {
+    //     type Error = Error;
 
-        fn try_from(value: ibc_solidity::Connection) -> Result<Self, Self::Error> {
-            Ok(Self {
-                state: match value.state {
-                    ibc_solidity::ConnectionState::Init => ConnectionState::Init,
-                    ibc_solidity::ConnectionState::TryOpen => ConnectionState::TryOpen,
-                    ibc_solidity::ConnectionState::Open => ConnectionState::Open,
-                    ibc_solidity::ConnectionState::Unspecified
-                    | ibc_solidity::ConnectionState::__Invalid => {
-                        return Err(Error::ConnectionState)
-                    }
-                },
-                client_id: ClientId::from_raw(value.client_id).ok_or(Error::ClientId)?,
-                counterparty_client_id: ClientId::from_raw(value.counterparty_client_id)
-                    .ok_or(Error::CounterpartyClientId)?,
-                counterparty_connection_id: ConnectionId::from_raw(
-                    value.counterparty_connection_id,
-                ),
-            })
-        }
-    }
+    //     fn try_from(value: ibc_solidity::Connection) -> Result<Self, Self::Error> {
+    //         Ok(Self {
+    //             state: match value.state {
+    //                 ibc_solidity::ConnectionState::Init => ConnectionState::Init,
+    //                 ibc_solidity::ConnectionState::TryOpen => ConnectionState::TryOpen,
+    //                 ibc_solidity::ConnectionState::Open => ConnectionState::Open,
+    //                 ibc_solidity::ConnectionState::Unspecified
+    //                 | ibc_solidity::ConnectionState::__Invalid => {
+    //                     return Err(Error::ConnectionState)
+    //                 }
+    //             },
+    //             client_id: ClientId::from_raw(value.client_id).ok_or(Error::ClientId)?,
+    //             counterparty_client_id: ClientId::from_raw(value.counterparty_client_id)
+    //                 .ok_or(Error::CounterpartyClientId)?,
+    //             counterparty_connection_id: ConnectionId::from_raw(
+    //                 value.counterparty_connection_id,
+    //             ),
+    //         })
+    //     }
+    // }
 
-    #[cfg(feature = "ibc-solidity-compat")]
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum Error {
-        #[error("invalid connection state")]
-        ConnectionState,
-        #[error("invalid client id")]
-        ClientId,
-        #[error("invalid counterparty client id")]
-        CounterpartyClientId,
-    }
+    // #[cfg(feature = "ibc-solidity-compat")]
+    // #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    // pub enum Error {
+    //     #[error("invalid connection state")]
+    //     ConnectionState,
+    //     #[error("invalid client id")]
+    //     ClientId,
+    //     #[error("invalid counterparty client id")]
+    //     CounterpartyClientId,
+    // }
 
     type SolTuple = (Uint<8>, Uint<32>, Uint<32>, Uint<32>);
 

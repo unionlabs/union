@@ -17,10 +17,10 @@ optional  = true
 workspace = true
 [dependencies.serde-utils]
 workspace = true
-[dependencies.tonic]
-features  = ["codegen", "prost", "gzip", "transport", "tls", "tls-roots", "tls-webpki-roots"]
-optional  = true
-workspace = true
+# [dependencies.tonic]
+# features  = ["codegen", "prost", "gzip", "transport", "tls", "tls-roots", "tls-webpki-roots"]
+# optional  = true
+# workspace = true
 
 [features]
 # @@protoc_deletion_point(features)
@@ -476,7 +476,7 @@ proto_full = [
 "union+ics23+v1" = []
 "union+staking+v1" = ["cosmos+staking+v1beta1"]
 ## @@protoc_insertion_point(features)
-client      = ["tonic"]
+# client      = []
 default     = ["proto_full", "std"]
 json-schema = ["schemars"]
 std         = ["prost/std", "serde/std"]
