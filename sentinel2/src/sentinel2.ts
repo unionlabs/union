@@ -1,4 +1,4 @@
-import { Effect, Schedule, Data, Context, Schema, Arbitrary, FastCheck } from "effect"
+import { Effect, Schedule, Data, Context, Schema, Arbitrary, FastCheck, LogLevel } from "effect"
 import { http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { sepolia } from "viem/chains"
@@ -526,9 +526,21 @@ export const checkPackets = (
           // reportedSendTxHashes.add(sendTxHash)
         }
       } else {
-        yield* Effect.log(
-          `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
-        )
+        yield* Effect.log({
+          level: LogLevel.Error,
+          span: "checkPackets",
+          message: `[TRANSFER_ERROR] > ${timeframeMs}ms since send`,
+          annotations: {
+            sendTxHash: `${sendTxHash}`,
+            chain_pair: `${sourceChain}->${destinationChain}`,
+            explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
+            issueType: "RECV_MISSNG"
+          }
+
+        })
+        // yield* Effect.log(
+        //   `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
+        // )
         reportedSendTxHashes.add(sendTxHash)
         continue
       }
