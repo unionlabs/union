@@ -1,4 +1,4 @@
-import { Data, Effect, type Exit } from "effect"
+import { Data, Duration, Effect, type Exit, Schedule } from "effect"
 import { switchChain } from "$lib/services/transfer-ucs03-evm"
 import { ViemPublicClient, waitForTransactionReceipt, writeContract } from "@unionlabs/sdk/evm"
 import type {
@@ -62,10 +62,16 @@ export const nextStateEvm = async <
       }),
     SwitchChainComplete: ({ exit }) =>
       exit._tag === "Failure" ? SwitchChainInProgress() : WriteContractInProgress(),
-    WriteContractInProgress: async () =>
-      WriteContractComplete({
-        exit: await Effect.runPromiseExit(writeContract(walletClient, params))
-      }),
+    WriteContractInProgress: async () => {
+      const retryableWrite = writeContract(walletClient, params).pipe(
+        Effect.retry(
+          Schedule.exponential(Duration.millis(100)).pipe(Schedule.intersect(Schedule.recurs(5)))
+        )
+      )
+      return WriteContractComplete({
+        exit: await Effect.runPromiseExit(retryableWrite)
+      })
+    },
     WriteContractComplete: ({ exit }) =>
       exit._tag === "Failure"
         ? WriteContractInProgress()
