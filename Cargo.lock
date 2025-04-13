@@ -15485,6 +15485,7 @@ dependencies = [
  "ucs03-zkgm",
  "unionlabs",
  "voyager-message",
+ "voyager-plugin-transaction-batch",
  "voyager-vm",
 ]
 

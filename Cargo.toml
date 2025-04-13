@@ -255,6 +255,8 @@ cometbft-types     = { path = "lib/cometbft-types", default-features = false }
 concurrent-keyring = { path = "lib/concurrent-keyring", default-features = false }
 cosmos-client      = { path = "lib/cosmos-client", default-features = false }
 
+voyager-plugin-transaction-batch = { path = "voyager/plugins/transaction-batch", default-features = false }
+
 beacon-api       = { path = "lib/beacon-api", default-features = false }
 beacon-api-types = { path = "lib/beacon-api-types", default-features = false }
 fork-schedules   = { path = "lib/fork-schedules", default-features = false }

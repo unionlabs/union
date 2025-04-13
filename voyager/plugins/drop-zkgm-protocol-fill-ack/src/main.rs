@@ -1,10 +1,10 @@
-use std::collections::VecDeque;
+use std::{
+    collections::VecDeque,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use alloy::sol_types::SolValue;
-use ibc_union_spec::{
-    event::{FullEvent, PacketSend, WriteAck},
-    IbcUnion,
-};
+use ibc_union_spec::{event::FullEvent, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -13,44 +13,26 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::instrument;
-use ucs03_zkgm::com::{
-    Ack, FungibleAssetOrder, FungibleAssetOrderAck, ZkgmPacket, FILL_TYPE_PROTOCOL, OP_BATCH,
-    OP_FUNGIBLE_ASSET_ORDER, TAG_ACK_SUCCESS,
-};
-use unionlabs::{
-    self,
-    never::Never,
-    primitives::{Bytes, U256},
-    traits::Member,
-    ErrorReporter,
-};
+use ucs03_zkgm::com::{Ack, FungibleAssetOrderAck, FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS};
+use unionlabs::{self, never::Never, traits::Member, ErrorReporter};
 use voyager_message::{
     data::Data,
     module::{PluginInfo, PluginServer},
     primitives::IbcSpec,
-    DefaultCmd, Plugin, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{noop, pass::PassResult, BoxDynError, Op};
+use voyager_plugin_transaction_batch::data::{BatchableEvent, EventBatch};
+use voyager_vm::{data, noop, pass::PassResult, BoxDynError, Op};
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     Module::run().await
 }
 
-pub struct Module {
-    assets: Vec<AssetFilter<alloy::primitives::U256>>,
-}
+pub struct Module {}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AssetFilter<A> {
-    token: Bytes,
-    min_amount: A,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Config {
-    assets: Vec<AssetFilter<U256>>,
-}
+pub struct Config {}
 
 impl Plugin for Module {
     type Call = Never;
@@ -74,9 +56,8 @@ if ."@type" == "data"
     and ."@value"."@type" == "ibc_event"
     and ."@value"."@value".ibc_spec_id == "{ibc_union_id}"
     and ."@value"."@value".event."@type" == "write_ack"
-    and ."@value"."@value".event."@type" == "packet_send"
 then
-    false # interest, but only copy
+    true
 else
     null
 end
@@ -98,16 +79,8 @@ impl Module {
         PLUGIN_NAME.to_string()
     }
 
-    pub fn new(Config { assets }: Config) -> Self {
-        Self {
-            assets: assets
-                .into_iter()
-                .map(|a| AssetFilter {
-                    token: a.token,
-                    min_amount: a.min_amount.into(),
-                })
-                .collect(),
-        }
+    pub fn new(Config {}: Config) -> Self {
+        Self {}
     }
 }
 
@@ -123,37 +96,88 @@ impl PluginServer<Never, Never> for Module {
             .into_iter()
             .enumerate()
             .map(|(idx, msg)| match msg {
-                Op::Data(Data::IbcEvent(ref chain_event)) => match chain_event
-                    .decode_event::<IbcUnion>()
-                    .ok_or_else(|| {
-                        ErrorObject::owned(
+                Op::Data(Data::IbcEvent(ref chain_event)) => {
+                    let full_event = chain_event
+                        .decode_event::<IbcUnion>()
+                        .ok_or_else(|| {
+                            ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                "unexpected data message in queue",
+                                Some(json!({
+                                    "msg": msg.clone(),
+                                })),
+                            )
+                        })?
+                        .map_err(|err| {
+                            ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                "unable to parse ibc datagram",
+                                Some(json!({
+                                    "err": ErrorReporter(err).to_string(),
+                                    "msg": msg,
+                                })),
+                            )
+                        })?;
+                    match &full_event {
+                        FullEvent::WriteAck(event) => {
+                            let first_seen_at: u64 = SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .unwrap()
+                                .as_millis()
+                                .try_into()
+                                .expect("how many milliseconds can there be man");
+                            let batchable_event = BatchableEvent {
+                                first_seen_at,
+                                provable_height: chain_event.provable_height,
+                                event: full_event.clone().try_into().unwrap(),
+                            };
+                            let noop_ = Ok((
+                                vec![idx],
+                                data(
+                                    PluginMessage::new(
+                                        voyager_plugin_transaction_batch::PLUGIN_NAME,
+                                    voyager_plugin_transaction_batch::data::ModuleData::BatchEventsUnion(
+                                        EventBatch {
+                                            client_id: event
+                                                .packet
+                                                .destination_channel
+                                                .connection
+                                                .client_id,
+                                            events: vec![batchable_event],
+                                        },
+                                    )),
+                                ),
+                            ));
+                            let Ok(ack) = Ack::abi_decode_params(&event.acknowledgement, true)
+                            else {
+                                return noop_;
+                            };
+
+                            if ack.tag != TAG_ACK_SUCCESS {
+                                return noop_;
+                            }
+
+                            let Ok(ack) =
+                                FungibleAssetOrderAck::abi_decode_params(&ack.inner_ack, true)
+                            else {
+                                return noop_;
+                            };
+
+                            if ack.fill_type == FILL_TYPE_PROTOCOL {
+                                Ok((vec![], noop()))
+                            } else {
+                                noop_
+                            }
+                        }
+                        datagram => Err(ErrorObject::owned(
                             FATAL_JSONRPC_ERROR_CODE,
-                            "unexpected data message in queue",
+                            format!("unexpected ibc datagram {}", datagram.name()),
                             Some(json!({
-                                "msg": msg.clone(),
-                            })),
-                        )
-                    })?
-                    .map_err(|err| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            "unable to parse ibc datagram",
-                            Some(json!({
-                                "err": ErrorReporter(err).to_string(),
                                 "msg": msg,
                             })),
-                        )
-                    })? {
-                    FullEvent::WriteAck(event) => Ok(filter_ack(idx, event)),
-                    FullEvent::PacketSend(event) => Ok(filter_assets(&self.assets, idx, event)),
-                    datagram => Err(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unexpected ibc datagram {}", datagram.name()),
-                        Some(json!({
-                            "msg": msg,
-                        })),
-                    )),
-                },
+                        )),
+                    }
+                }
                 _ => Err(ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,
                     "unexpected message in queue",
@@ -183,64 +207,5 @@ impl PluginServer<Never, Never> for Module {
         _datas: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}
-    }
-}
-
-fn filter_ack(idx: usize, event: WriteAck) -> (Vec<usize>, Op<VoyagerMessage>) {
-    let noop_ = (vec![idx], noop());
-    let Ok(ack) = Ack::abi_decode_params(&event.acknowledgement, true) else {
-        return noop_;
-    };
-
-    if ack.tag != TAG_ACK_SUCCESS {
-        return noop_;
-    }
-
-    let Ok(ack) = FungibleAssetOrderAck::abi_decode_params(&ack.inner_ack, true) else {
-        return noop_;
-    };
-
-    if ack.fill_type == FILL_TYPE_PROTOCOL {
-        (vec![], noop())
-    } else {
-        noop_
-    }
-}
-
-fn filter_assets(
-    assets: &[AssetFilter<alloy::primitives::U256>],
-    idx: usize,
-    event: PacketSend,
-) -> (Vec<usize>, Op<VoyagerMessage>) {
-    let noop_ = (vec![idx], noop());
-    let drop = (vec![], noop());
-
-    // we only relay zkgm packets
-    let Ok(zkgm_packet) = ZkgmPacket::abi_decode_params(&event.packet_data, true) else {
-        return drop;
-    };
-
-    match zkgm_packet.instruction.opcode {
-        OP_BATCH => {}
-        OP_FUNGIBLE_ASSET_ORDER => {}
-        _ => return drop,
-    }
-
-    if zkgm_packet.instruction.opcode != OP_FUNGIBLE_ASSET_ORDER {
-        return noop_;
-    }
-
-    // We relay if the instruction is not fungible asset order
-    let Ok(order) = FungibleAssetOrder::abi_decode_params(&zkgm_packet.instruction.operand, true)
-    else {
-        return noop_;
-    };
-
-    match assets
-        .iter()
-        .find(|a| a.token.as_ref() == order.base_token.as_ref())
-    {
-        Some(asset) if order.base_amount > asset.min_amount => noop_,
-        _ => (vec![], noop()),
     }
 }

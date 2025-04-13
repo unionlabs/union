@@ -26,3 +26,4 @@ ucs03-zkgm      = { workspace = true, features = ["library"] }
 unionlabs       = { workspace = true }
 voyager-message = { workspace = true }
 voyager-vm      = { workspace = true }
+voyager-plugin-transaction-batch = { workspace = true }
