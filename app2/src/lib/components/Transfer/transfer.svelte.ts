@@ -6,7 +6,8 @@ import type {
   Token,
   TokenRawDenom,
   UniversalChainId,
-  ChannelId
+  ChannelId,
+  TokenRawAmount
 } from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
@@ -309,7 +310,13 @@ export class Transfer {
               ? fromHex(transferValue.baseToken, "string")
               : transferValue.baseToken,
             baseAmount: transferValue.baseAmount,
-            quoteAmount: transferValue.baseAmount,
+            quoteAmount:
+              transferValue.sourceChain.universal_chain_id === "babylon.bbn-1" &&
+              (isHex(transferValue.baseToken)
+                ? fromHex(transferValue.baseToken, "string")
+                : transferValue.baseToken) === "ubbn"
+                ? subtractTokenAmount(transferValue.baseAmount, BABY_SUB_AMOUNT)
+                : transferValue.baseAmount,
             sourceChainId: transferValue.sourceChain.universal_chain_id,
             sourceChannelId: transferValue.sourceChannelId
           }
@@ -322,5 +329,11 @@ export class Transfer {
 
   validation = $derived.by<ValidationResult>(() => validateTransfer(this.args))
 }
+
+const BABY_DECIMALS = 6n
+const BABY_SUB_AMOUNT = 20n * 10n ** BABY_DECIMALS
+
+const subtractTokenAmount = (amount: TokenRawAmount, sub: bigint): TokenRawAmount =>
+  (amount - sub) as TokenRawAmount
 
 export const transfer = new Transfer()

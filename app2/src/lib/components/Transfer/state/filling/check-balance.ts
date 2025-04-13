@@ -5,20 +5,28 @@ import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.t
 import { isHex, toHex } from "viem"
 import { BalanceLookupError } from "$lib/components/Transfer/state/errors.ts"
 
+const BABY_SUB_AMOUNT = 20n * 10n ** 6n
+const BABYLON_CHAIN_ID = "babylon.bbn-1"
+const UBBN_DENOM = "ubbn"
+
 export const checkBalanceForIntents = (
   source: Chain,
   intents: TransferIntents
 ): Effect.Effect<boolean, BalanceLookupError> => {
   const grouped = intents.reduce(
     (acc, intent) => {
-      const key = `${intent.sender}_${intent.baseToken}`
+      const token = intent.baseToken
+      const key = `${intent.sender}_${token}`
+
+      const needsFee = source.universal_chain_id === BABYLON_CHAIN_ID && token === UBBN_DENOM
+
       if (acc[key]) {
         acc[key].required += intent.baseAmount
       } else {
         acc[key] = {
           sender: intent.sender,
-          baseToken: intent.baseToken,
-          required: intent.baseAmount
+          baseToken: token,
+          required: intent.baseAmount + (needsFee ? BABY_SUB_AMOUNT : 0n)
         }
       }
       return acc
