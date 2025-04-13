@@ -15469,27 +15469,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-drop-zkgm-protocol-fill-ack"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "embed-commit",
- "enumorph",
- "ibc-union-spec",
- "jsonrpsee",
- "macros",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "ucs03-zkgm",
- "unionlabs",
- "voyager-message",
- "voyager-plugin-transaction-batch",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-event-source-plugin-cosmos-sdk"
 version = "0.0.0"
 dependencies = [
@@ -15680,6 +15659,27 @@ dependencies = [
  "tracing",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-plugin-zkgm-filters"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "embed-commit",
+ "enumorph",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "ucs03-zkgm",
+ "unionlabs",
+ "voyager-message",
+ "voyager-plugin-transaction-batch",
  "voyager-vm",
 ]
 
