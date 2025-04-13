@@ -4,6 +4,15 @@ use enumorph::Enumorph;
 use ibc_union_spec::ChannelId;
 
 #[cw_serde]
+pub enum TokenMinterInitMsg {
+    Cw20 {
+        cw20_base_code_id: u64,
+        dummy_code_id: u64,
+        zkgm_admin: Addr,
+    },
+}
+
+#[cw_serde]
 pub enum LocalTokenMsg {
     Escrow {
         from: String,
