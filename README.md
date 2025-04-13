@@ -36,7 +36,7 @@ The upgradability of contracts on other chains, connections, token configuration
 | [`unionvisor`](./unionvisor/README.md)                | Node supervisor intended for production usage        | [Rust]                |
 | [`drip`](./drip)                                      | Faucet for [Cosmos] chains: [app.union.build/faucet] | [Rust]                |
 | [`evm`](./evm)                                        | [EVM] smart contract stack                           | [Solidity]            |
-| [`app`](./app)                                        | [app.union.build]                                    | [TypeScript] [Svelte] |
+| [`app`](./app2)                                       | [app.union.build]                                    | [TypeScript] [Svelte] |
 | [`site`](./site)                                      | [union.build]                                        | [TypeScript] [Astro]  |
 | [`TypeScript SDK`](./typescript-sdk)                  | TypeScript SDK for interacting with Union            | [TypeScript]          |
 
