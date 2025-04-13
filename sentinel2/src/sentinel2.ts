@@ -528,10 +528,12 @@ export const checkPackets = (
       } else {
         const logEffect = Effect.annotateLogs({
           issueType: "RECV_MISSING",
-          sendTxHash, // assuming sendTxHash is defined in your scope
-          chain_pair: `${sourceChain}->${destinationChain}`, // likewise, sourceChain & destinationChain
-          explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}` // and sort_order_tx
-        })(Effect.log(`[TRANSFER_ERROR] >${timeframeMs}ms since send`))
+          sendTxHash,
+          sourceChain: `${sourceChain}`,
+          destinationChain: `${destinationChain}`,
+          explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
+          minutesPassed: `${timeframeMs/60/1000}`
+        })(Effect.logError(`TRANSFER_ERROR`))
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
