@@ -43,8 +43,8 @@ async function copyToClipboard() {
       type="button"
       class="p-1 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
       onclick={(e) => {
-        e.stopPropagation()
-        copyToClipboard()
+        e.stopPropagation();
+        copyToClipboard();
       }}
     >
       {#if showCopied}
