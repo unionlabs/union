@@ -15,3 +15,10 @@ export const settlementDelays = {
     interval: "12 hours"
   }
 } as Record<UniversalChainId, SettlementInfo>
+
+export const finalityDelays = {
+  "ethereum.1": {
+    url: "https://beaconcha.in/epochs",
+    interval: "20 minutes"
+  }
+} as Record<UniversalChainId, SettlementInfo>
