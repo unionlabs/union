@@ -18,6 +18,8 @@ use crate::{
     state::{Config, CONFIG},
 };
 
+pub const DEFAULT_DECIMALS: u8 = 6;
+
 #[cw_serde]
 pub enum TokenMinterInitMsg {
     Cw20 {
@@ -274,12 +276,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
                 let (name, symbol, decimals) = match denom_metadata {
                     Ok(DenomMetadataResponse { metadata, .. }) => {
                         let decimals = match metadata.denom_units.first() {
-                            Some(unit) => unit.exponent.try_into().unwrap_or(0),
-                            None => 0,
+                            Some(unit) => unit.exponent.try_into().unwrap_or(DEFAULT_DECIMALS),
+                            None => DEFAULT_DECIMALS,
                         };
                         (metadata.name, metadata.symbol, decimals)
                     }
-                    _ => (denom.clone(), denom.clone(), 0),
+                    _ => (denom.clone(), denom.clone(), DEFAULT_DECIMALS),
                 };
 
                 Ok(to_json_binary(&MetadataResponse {
