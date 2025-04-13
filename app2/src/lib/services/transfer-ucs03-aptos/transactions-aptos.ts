@@ -3,8 +3,8 @@ import type { Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType }
 import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
 import { getPublicClient } from "../aptos/clients.ts"
 import { getAccount } from "$lib/services/transfer-ucs03-aptos/account.ts"
-import { generateSaltAptos } from "$lib/services/shared"
 import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
+import { generateSalt } from "@unionlabs/sdk/utils"
 
 export const submitTransfer = (_chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
@@ -14,7 +14,7 @@ export const submitTransfer = (_chain: Chain, transfer: ValidTransfer["args"]) =
     const account = yield* Effect.flatMap(getAccount, account =>
       account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
     )
-    const salt = yield* generateSaltAptos
+    const salt = yield* generateSalt("aptos")
 
     const walletPayload = {
       function: `${transfer.ucs03address}::ibc_app::transfer`,

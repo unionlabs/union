@@ -3,9 +3,9 @@ import { CosmWasmError } from "$lib/services/transfer-ucs03-cosmos/errors.ts"
 import { executeCosmWasmInstructions } from "$lib/services/transfer-ucs03-cosmos/execute.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import type { ValidTransfer } from "@unionlabs/sdk/schema"
-import { generateSalt } from "$lib/services/shared"
 import { fromHex, isHex } from "viem"
 import { isValidBech32ContractAddress } from "$lib/utils"
+import { generateSalt } from "@unionlabs/sdk/utils"
 
 export const submitTransfer = (transfer: ValidTransfer["args"]) => {
   const { connectedWallet } = cosmosStore
@@ -33,7 +33,7 @@ export const submitTransfer = (transfer: ValidTransfer["args"]) => {
   const formattedBaseToken = decodedDenom
   const funds = isNative ? [{ amount: baseAmount.toString(), denom: decodedDenom }] : []
 
-  return Effect.flatMap(generateSalt, salt => {
+  return Effect.flatMap(generateSalt("cosmos"), salt => {
     const instructions = [
       {
         contractAddress: ucs03address,

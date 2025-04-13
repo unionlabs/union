@@ -4,9 +4,9 @@ import { WaitForTransactionReceiptError } from "./errors.ts"
 import { getPublicClient, getWalletClient } from "../evm/clients.ts"
 import { getAccount } from "$lib/services/transfer-ucs03-evm/account.ts"
 import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
-import { generateSalt } from "$lib/services/shared"
 import { readErc20Meta } from "@unionlabs/sdk/evm/erc20"
 import { ViemPublicClient } from "@unionlabs/sdk/evm"
+import { generateSalt } from "@unionlabs/sdk/utils"
 
 export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
   Effect.gen(function* () {
@@ -16,7 +16,7 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
     const account = yield* Effect.flatMap(getAccount, account =>
       account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
     )
-    const salt = yield* generateSalt
+    const salt = yield* generateSalt("evm")
 
     const client = yield* getPublicClient(chain)
     const onchainBaseTokenMeta = yield* readErc20Meta(transfer.baseToken).pipe(

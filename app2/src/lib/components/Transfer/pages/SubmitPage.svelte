@@ -144,6 +144,7 @@ export const submit = Effect.gen(function* () {
 
           do {
             const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
+            const salt = yield* generateSalt("evm")
             ets = yield* Effect.promise(() =>
               nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
                 chain: viemChain.value,
@@ -155,7 +156,7 @@ export const submit = Effect.gen(function* () {
                   lts.value.channel.source_channel_id,
                   0n,
                   timeoutTimestamp,
-                  generateSalt("evm"),
+                  salt,
                   {
                     opcode: step.value.instruction.opcode,
                     version: step.value.instruction.version,
@@ -204,6 +205,7 @@ export const submit = Effect.gen(function* () {
 
           do {
             const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
+            const salt = yield* generateSalt("cosmos")
 
             cts = yield* Effect.promise(() =>
               nextStateCosmos(
@@ -217,7 +219,7 @@ export const submit = Effect.gen(function* () {
                     channel_id: lts.value.channel.source_channel_id,
                     timeout_height: "0",
                     timeout_timestamp,
-                    salt: generateSalt("cosmos"),
+                    salt,
                     instruction: encodeAbiParameters(instructionAbi, [
                       step.value.instruction.version,
                       step.value.instruction.opcode,
