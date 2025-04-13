@@ -25,7 +25,7 @@ import { is } from "$lib/components/Transfer/transfer-step.ts"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
-import { settlementDelays } from "$lib/constants/settlement-times.ts"
+import { finalityDelays, settlementDelays } from "$lib/constants/settlement-times.ts"
 import A from "$lib/components/ui/A.svelte"
 import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
 
@@ -190,6 +190,18 @@ const inProgress = $derived(
                     {sourceChain.value.display_name} is an L2. Outbound transfers are processed as soon as
                     {sourceChain.value.display_name} settles
                     (<A class="underline" href={settlement.url}>happens every {settlement.interval}</A>).
+                  </p>
+
+                </section>
+              {/if}
+              {@const finality = finalityDelays[sourceChain.value.universal_chain_id]}
+              {#if finality}
+                <section class="flex flex-col px-4">
+                  <Label>ETA</Label>
+                  <p class="text-sm">
+                    Transfers out of {sourceChain.value.display_name} are processed as soon as
+                    {sourceChain.value.display_name} reaches finality.
+                    (<A class="underline" href={finality.url}>approximately {finality.interval}</A>).
                   </p>
 
                 </section>
