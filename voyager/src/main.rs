@@ -36,7 +36,7 @@ use voyager_message::{
         equivalent_chain_ids::EquivalentChainIds, get_plugin_info,
         ibc_spec_handler::IbcSpecHandler, Context, ModulesConfig,
     },
-    filter::{make_filter, run_filter, JaqFilterResult, JaqInterestFilter},
+    filter::{make_filter, run_filter, JaqFilterResult},
     primitives::{IbcSpec, QueryHeight},
     rpc::{server::cache, IbcState, VoyagerRpcClient},
     VoyagerMessage,
@@ -339,21 +339,21 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                     print_json(&record);
                 }
-                QueueCmd::QueryFailedById { id, requeue } => {
+                QueueCmd::QueryFailedById {
+                    id,
+                    requeue,
+                    rest_url,
+                } => {
+                    let rest_url = get_rest_url(rest_url);
+
                     let q = db()?.await?;
 
                     let record = q.query_failed_by_id(id.inner()).await?;
 
                     if requeue {
-                        if let Some(record) = record.as_ref().map(|r| r.item.0.clone()) {
-                            let res = q
-                                .enqueue(
-                                    record,
-                                    &JaqInterestFilter::new(vec![])
-                                        .expect("empty filter can be built"),
-                                )
-                                .await?;
-                            print_json(&res);
+                        if let Some(op) = record.as_ref().map(|r| r.item.0.clone()) {
+                            send_enqueue(&rest_url, op).await?;
+                            println!("requeued");
                         }
                     } else {
                         print_json(&record);

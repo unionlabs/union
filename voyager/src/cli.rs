@@ -152,6 +152,8 @@ pub enum QueueCmd {
         id: Pg64,
         #[arg(long, short = 'e')]
         requeue: bool,
+        #[arg(long)]
+        rest_url: Option<String>,
     },
 }
 
