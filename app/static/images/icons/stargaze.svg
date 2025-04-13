@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 432 432" data-chain-icon="stargate">
-  <linearGradient id="a" x1="47.5" x2="432.1" y1="174.4" y2="269.4" gradientUnits="userSpaceOnUse">
-    <stop offset="0" stop-color="#fef5a0" />
-    <stop offset=".6" stop-color="#93d4cb" />
-    <stop offset="1" stop-color="#719ad1" />
-  </linearGradient>
-  <path fill="url(#a)"
-    d="M216 414A197 197 0 0 1 18 216 197 197 0 0 1 216 18a197 197 0 0 1 198 198 197 197 0 0 1-198 198zm0-380a182 182 0 1 0 0 364 182 182 0 0 0 0-364zm-24 124L77 129l77 92-63 101 110-45 77 91-9-119 111-45-116-28-9-119-63 101z" />
-</svg>
