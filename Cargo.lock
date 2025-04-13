@@ -1492,6 +1492,8 @@ name = "arbitrum-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "solidity-slot",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -12379,6 +12381,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "solidity-slot"
+version = "0.0.0"
+dependencies = [
+ "hex-literal",
+ "sha3 0.10.8",
+ "unionlabs-primitives",
+]
+
+[[package]]
 name = "sp-crypto-hashing"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14380,6 +14391,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "sha3 0.10.8",
+ "solidity-slot",
  "ssz",
  "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
  "subtle-encoding",

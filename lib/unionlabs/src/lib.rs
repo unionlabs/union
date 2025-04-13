@@ -17,7 +17,6 @@ extern crate alloc;
 use core::{
     fmt::{self, Debug, Display},
     iter,
-    ptr::addr_of,
     str::FromStr,
 };
 
@@ -301,45 +300,6 @@ impl core::iter::DoubleEndedIterator for BytesBitIterator<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.pos.next_back().map(|x| self.get_bit(x))
     }
-}
-
-pub trait ByteArrayExt<const N: usize> {
-    /// Slice into an array at `FROM..(FROM + LEN)`, returning an array of length `LEN`. This will fail to compile if the equivalent slicing would panic at runtime.
-    ///
-    /// ```compile_fail
-    /// # use unionlabs::ByteArrayExt;
-    /// let arr = [1, 2, 3, 4, 5];
-    ///
-    /// // attempt to read `arr[4..(4 + 2)]`
-    /// arr.array_slice::<4, 2>();
-    /// ```
-    ///
-    /// ```rust
-    /// # use unionlabs::ByteArrayExt;
-    /// # let arr = [1, 2, 3, 4, 5];
-    /// // checked at compile time!
-    /// assert_eq!(arr.array_slice::<0, 2>(), [1, 2]);
-    /// ```
-    fn array_slice<const OFFSET: usize, const LEN: usize>(&self) -> [u8; LEN];
-}
-
-impl<const N: usize> ByteArrayExt<N> for [u8; N] {
-    fn array_slice<const OFFSET: usize, const LEN: usize>(&self) -> [u8; LEN] {
-        const { assert!(OFFSET + LEN <= N) };
-
-        unsafe { *addr_of!(self[OFFSET..(OFFSET + LEN)]).cast::<[u8; LEN]>() }
-    }
-}
-
-#[test]
-fn array_slice() {
-    let arr = [1, 2, 3, 4, 5];
-
-    assert_eq!(arr.array_slice::<0, 2>(), [1, 2]);
-    assert_eq!(arr.array_slice::<1, 1>(), [2]);
-    assert_eq!(arr.array_slice::<4, 1>(), [5]);
-    assert_eq!(arr.array_slice::<0, 0>(), [0; 0]);
-    assert_eq!(arr.array_slice::<5, 0>(), [0; 0]);
 }
 
 #[cfg(test)]

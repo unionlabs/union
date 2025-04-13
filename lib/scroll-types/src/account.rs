@@ -1,7 +1,6 @@
 use unionlabs::{
     errors::{ExpectedLength, InvalidLength},
-    primitives::{H256, U256},
-    ByteArrayExt,
+    primitives::{ByteArrayExt, H256, U256},
 };
 
 // (The following scheme assumes the big-endian encoding)

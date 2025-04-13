@@ -14,7 +14,7 @@
         "arbitrum": {
           "address": "union1xwfgw7n6vwgkyv8syjskzak7lh8kmrcthmv2jsmywhyunekmg3zqul8vsh",
           "height": 461749,
-          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+          "commit": "a0184eba9783c05ef86275386d2ea95d7630d22f"
         },
         "berachain": {
           "address": "union12dx3w0pxkpyguf4xrx79zkhk0lvzewyqtjjngqmhuajjgu5qm6uq2rvlr7",
@@ -80,13 +80,13 @@
       "core": {
         "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
         "height": 354875,
-        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
+        "commit": "unknown"
       },
       "lightclient": {
         "arbitrum": {
           "address": "union1xwfgw7n6vwgkyv8syjskzak7lh8kmrcthmv2jsmywhyunekmg3zqul8vsh",
           "height": 354878,
-          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
+          "commit": "a0184eba9783c05ef86275386d2ea95d7630d22f"
         },
         "berachain": {
           "address": "union12dx3w0pxkpyguf4xrx79zkhk0lvzewyqtjjngqmhuajjgu5qm6uq2rvlr7",

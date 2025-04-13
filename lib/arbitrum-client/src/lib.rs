@@ -7,12 +7,12 @@ use alloy::{
     rpc::types::{Filter, Log},
     sol_types::SolEvent,
 };
-use arbitrum_types::{NodeCreated, L1_NEXT_NODE_NUM_SLOT, L1_NEXT_NODE_NUM_SLOT_OFFSET_BYTES};
-use tracing::{debug, instrument, trace};
-use unionlabs::{
-    primitives::{H160, H256},
-    ByteArrayExt,
+use arbitrum_types::{
+    slots::{read_latest_node_created, ROLLUP_CORE_LATEST_NODE_CREATED},
+    NodeCreated,
 };
+use tracing::{debug, instrument, trace};
+use unionlabs::primitives::{H160, H256};
 
 #[instrument(skip_all, fields(%l1_height, %l1_contract_address))]
 pub async fn next_node_num_at_l1_height(
@@ -21,18 +21,17 @@ pub async fn next_node_num_at_l1_height(
     l1_height: u64,
 ) -> Result<u64, Box<dyn Error>> {
     let raw_slot = l1_provider
-        .get_storage_at(l1_contract_address.into(), L1_NEXT_NODE_NUM_SLOT)
+        .get_storage_at(
+            l1_contract_address.into(),
+            ROLLUP_CORE_LATEST_NODE_CREATED.slot().into(),
+        )
         .block_id(l1_height.into())
         .await
         .unwrap();
 
     debug!(raw_slot = %<H256>::new(raw_slot.to_be_bytes()));
 
-    let latest_confirmed = u64::from_be_bytes(
-        raw_slot
-            .to_be_bytes::<32>()
-            .array_slice::<{ L1_NEXT_NODE_NUM_SLOT_OFFSET_BYTES as usize }, 8>(),
-    );
+    let latest_confirmed = read_latest_node_created(raw_slot.into());
 
     debug!("l1_height {l1_height} is next node num {latest_confirmed}");
 

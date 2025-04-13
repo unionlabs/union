@@ -541,7 +541,7 @@ impl ValueCodec<Bytes> for RawStore {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::testing::MockStorage;
-    use unionlabs::ByteArrayExt;
+    use unionlabs::primitives::ByteArrayExt;
 
     use super::*;
 

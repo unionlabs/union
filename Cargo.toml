@@ -224,6 +224,7 @@ members = [
   "lib/ucs04",
 
   "lib/consensus-primitives",
+  "lib/solidity-slot",
 ]
 
 [workspace.package]
@@ -357,6 +358,8 @@ embed-commit = { path = "lib/embed-commit", default-features = false }
 consensus-primitives = { path = "lib/consensus-primitives", default-features = false }
 
 state-lens-ics23-mpt-light-client = { path = "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt", default-features = false }
+
+solidity-slot = { path = "lib/solidity-slot", default-features = false }
 
 # external dependencies
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }

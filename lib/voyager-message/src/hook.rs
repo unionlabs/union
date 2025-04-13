@@ -40,20 +40,24 @@ impl<F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> Visit<VoyagerMessage> for Up
             Call::FetchUpdateHeaders(fetch)
                 if fetch.chain_id == self.chain_id && fetch.client_type == self.client_type =>
             {
+                let FetchUpdateHeaders {
+                    client_type,
+                    chain_id,
+                    counterparty_chain_id,
+                    client_id,
+                    update_from,
+                    update_to,
+                } = &fetch;
+
                 info!(
-                    %fetch.client_type,
-                    %fetch.chain_id,
-                    %fetch.counterparty_chain_id,
-                    %fetch.client_id,
-                    %fetch.update_from,
-                    %fetch.update_to,
-                    "hooking for update (`{}` on `{}` tracking `{}`, id {}, {} to {})",
-                    fetch.client_type,
-                    fetch.chain_id,
-                    fetch.counterparty_chain_id,
-                    fetch.client_id,
-                    fetch.update_from,
-                    fetch.update_to
+                    %client_type,
+                    %chain_id,
+                    %counterparty_chain_id,
+                    %client_id,
+                    %update_from,
+                    %update_to,
+                    "hooking for update (`{client_type}` on `{counterparty_chain_id}` \
+                    tracking `{chain_id}`, id {client_id}, {update_from} to {update_to})",
                 );
 
                 *c = (self.mk_msg)(fetch)
