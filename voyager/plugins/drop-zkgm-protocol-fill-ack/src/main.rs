@@ -52,7 +52,7 @@ impl Plugin for Module {
 if ."@type" == "data"
     and ."@value"."@type" == "ibc_event"
     and ."@value"."@value".ibc_spec_id == "{ibc_union_id}"
-    and ."@value"."@value".event."@type" == "packet_recv"
+    and ."@value"."@value".event."@type" == "write_ack"
 then
     false # interest, but only copy
 else
