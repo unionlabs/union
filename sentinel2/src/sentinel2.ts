@@ -1,4 +1,4 @@
-import { Effect, Schedule, Data, Context, Schema, Arbitrary, FastCheck, LogLevel } from "effect"
+import { Effect, Schedule, Data, Context, Schema, Arbitrary, FastCheck, Logger } from "effect"
 import { http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { sepolia } from "viem/chains"
@@ -14,8 +14,8 @@ import { hideBin } from "yargs/helpers"
 import fs from "node:fs"
 import type { Address } from "viem"
 import { request, gql } from "graphql-request"
-
 type Hex = `0x${string}`
+
 
 // Chain pair configuration
 interface ChainPair {
@@ -526,21 +526,15 @@ export const checkPackets = (
           // reportedSendTxHashes.add(sendTxHash)
         }
       } else {
-        yield* Effect.log({
-          level: LogLevel.Error,
-          span: "checkPackets",
-          message: `[TRANSFER_ERROR] > ${timeframeMs}ms since send`,
-          annotations: {
-            sendTxHash: `${sendTxHash}`,
-            chain_pair: `${sourceChain}->${destinationChain}`,
-            explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-            issueType: "RECV_MISSNG"
-          }
+        const logEffect = Effect.annotateLogs({
+          issueType: "RECV_MISSING",
+          sendTxHash, // assuming sendTxHash is defined in your scope
+          chain_pair: `${sourceChain}->${destinationChain}`, // likewise, sourceChain & destinationChain
+          explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}` // and sort_order_tx
+        })(Effect.log(`[TRANSFER_ERROR] >${timeframeMs}ms since send`))
 
-        })
-        // yield* Effect.log(
-        //   `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
-        // )
+        Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+
         reportedSendTxHashes.add(sendTxHash)
         continue
       }
