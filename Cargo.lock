@@ -15663,7 +15663,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-plugin-zkgm-filters"
+name = "voyager-plugin-zkgm-filter"
 version = "0.0.0"
 dependencies = [
  "alloy",
