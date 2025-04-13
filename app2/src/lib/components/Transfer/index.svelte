@@ -22,6 +22,7 @@ import { constVoid, flow, identity, pipe } from "effect/Function"
 import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { beforeNavigate } from "$app/navigation"
+import { onMount } from "svelte"
 
 let currentPage = $state(0)
 let isLoading = $state(false)
@@ -244,6 +245,20 @@ const fillingError = $derived(
 )
 
 beforeNavigate(newTransfer)
+
+onMount(() => {
+  const handler = (e: KeyboardEvent) => {
+    const metaOrCtrl = e.metaKey || e.ctrlKey
+
+    if (metaOrCtrl && e.altKey && e.shiftKey && e.code === "KeyD") {
+      e.preventDefault()
+      showDetails = !showDetails
+    }
+  }
+
+  window.addEventListener("keydown", handler)
+  return () => window.removeEventListener("keydown", handler)
+})
 </script>
 
 <Card
@@ -341,12 +356,4 @@ beforeNavigate(newTransfer)
     </div>
   {/if}
 {/if}
-
-<button
-        class="flex items-center justify-center w-full gap-2 py-2 px-4 text-left hover:text-zinc-300 text-zinc-400 cursor-pointer transition-colors"
-        onclick={() => showDetails = !showDetails}
->
-  <span>Packet Details</span>
-  <span class="transition-transform duration-300" style={showDetails ? "transform: rotate(180deg)" : ""}>↓</span>
-</button>
 
