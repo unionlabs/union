@@ -1,15 +1,6 @@
 [dependencies]
-[dependencies.chrono]
-features  = ["alloc"]
-workspace = true
-[dependencies.pbjson-types]
-git = "https://github.com/recoord/pbjson"
-rev = "2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe"
 [dependencies.prost]
 features  = ["prost-derive"]
-workspace = true
-[dependencies.schemars]
-optional  = true
 workspace = true
 [dependencies.serde]
 features  = ["derive"]
@@ -17,10 +8,6 @@ optional  = true
 workspace = true
 [dependencies.serde-utils]
 workspace = true
-# [dependencies.tonic]
-# features  = ["codegen", "prost", "gzip", "transport", "tls", "tls-roots", "tls-webpki-roots"]
-# optional  = true
-# workspace = true
 
 [features]
 # @@protoc_deletion_point(features)
@@ -476,10 +463,8 @@ proto_full = [
 "union+ics23+v1" = []
 "union+staking+v1" = ["cosmos+staking+v1beta1"]
 ## @@protoc_insertion_point(features)
-# client      = []
-default     = ["proto_full", "std"]
-json-schema = ["schemars"]
-std         = ["prost/std", "serde/std"]
+default = ["proto_full", "std"]
+std     = ["prost/std", "serde/std"]
 
 [lib]
 doctest = false

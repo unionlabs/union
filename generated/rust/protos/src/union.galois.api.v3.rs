@@ -308,5 +308,4 @@ impl ::prost::Name for PollResponse {
         ::prost::alloc::format!("union.galois.api.v3.{}", Self::NAME)
     }
 }
-include!("union.galois.api.v3.tonic.rs");
 // @@protoc_insertion_point(module)

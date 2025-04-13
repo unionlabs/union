@@ -17,5 +17,4 @@ impl ::prost::Name for MsgCreateUnionValidator {
         ::prost::alloc::format!("union.staking.v1.{}", Self::NAME)
     }
 }
-include!("union.staking.v1.tonic.rs");
 // @@protoc_insertion_point(module)

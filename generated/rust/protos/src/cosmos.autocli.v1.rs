@@ -200,5 +200,4 @@ impl ::prost::Name for AppOptionsResponse {
         ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
     }
 }
-include!("cosmos.autocli.v1.tonic.rs");
 // @@protoc_insertion_point(module)

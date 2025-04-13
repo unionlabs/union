@@ -107,7 +107,7 @@ impl ::prost::Name for InfoRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InitChainRequest {
     #[prost(message, optional, tag = "1")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
@@ -257,7 +257,7 @@ pub struct PrepareProposalRequest {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// address of the public key of the validator proposing the block.
@@ -288,7 +288,7 @@ pub struct ProcessProposalRequest {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// address of the public key of the original proposer of the block.
@@ -314,7 +314,7 @@ pub struct ExtendVoteRequest {
     pub height: i64,
     /// info of the block that this vote may be referring to
     #[prost(message, optional, tag = "3")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", repeated, tag = "4")]
     pub txs: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
     #[prost(message, optional, tag = "5")]
@@ -373,7 +373,7 @@ pub struct FinalizeBlockRequest {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// address of the public key of the original proposer of the block.
@@ -1000,7 +1000,7 @@ pub struct Misbehavior {
     pub height: i64,
     /// The corresponding time where the offense occurred
     #[prost(message, optional, tag = "4")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// Total voting power of the validator set in case the ABCI application does
     /// not store historical validators.
     /// <https://github.com/tendermint/tendermint/issues/4581>
@@ -1272,5 +1272,4 @@ impl MisbehaviorType {
         }
     }
 }
-include!("cometbft.abci.v1.tonic.rs");
 // @@protoc_insertion_point(module)

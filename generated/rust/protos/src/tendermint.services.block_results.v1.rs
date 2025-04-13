@@ -36,5 +36,4 @@ impl ::prost::Name for GetBlockResultsResponse {
         ::prost::alloc::format!("tendermint.services.block_results.v1.{}", Self::NAME)
     }
 }
-include!("tendermint.services.block_results.v1.tonic.rs");
 // @@protoc_insertion_point(module)

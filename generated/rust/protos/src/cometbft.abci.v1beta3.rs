@@ -62,7 +62,7 @@ impl ::prost::Name for Request {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestInitChain {
     #[prost(message, optional, tag = "1")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
@@ -100,7 +100,7 @@ pub struct RequestPrepareProposal {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// address of the public key of the validator proposing the block.
@@ -130,7 +130,7 @@ pub struct RequestProcessProposal {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// address of the public key of the original proposer of the block.
@@ -156,7 +156,7 @@ pub struct RequestExtendVote {
     pub height: i64,
     /// info of the block that this vote may be referring to
     #[prost(message, optional, tag = "3")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", repeated, tag = "4")]
     pub txs: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
     #[prost(message, optional, tag = "5")]
@@ -214,7 +214,7 @@ pub struct RequestFinalizeBlock {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// proposer_address is the address of the public key of the original proposer of the block.
@@ -585,5 +585,4 @@ impl ::prost::Name for TxResult {
         ::prost::alloc::format!("cometbft.abci.v1beta3.{}", Self::NAME)
     }
 }
-include!("cometbft.abci.v1beta3.tonic.rs");
 // @@protoc_insertion_point(module)

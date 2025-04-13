@@ -51,5 +51,4 @@ impl ::prost::Name for ResponseBroadcastTx {
         ::prost::alloc::format!("cometbft.rpc.grpc.v1beta1.{}", Self::NAME)
     }
 }
-include!("cometbft.rpc.grpc.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

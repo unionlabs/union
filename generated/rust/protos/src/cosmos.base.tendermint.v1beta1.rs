@@ -35,7 +35,7 @@ pub struct Header {
     #[prost(int64, tag = "3")]
     pub height: i64,
     #[prost(message, optional, tag = "4")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
     /// prev block info
     #[prost(message, optional, tag = "5")]
     pub last_block_id:
@@ -162,7 +162,7 @@ pub struct Validator {
     #[prost(string, tag = "1")]
     pub address: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub pub_key: ::core::option::Option<::pbjson_types::Any>,
+    pub pub_key: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     #[prost(int64, tag = "3")]
     pub voting_power: i64,
     #[prost(int64, tag = "4")]
@@ -436,5 +436,4 @@ impl ::prost::Name for ProofOps {
         ::prost::alloc::format!("cosmos.base.tendermint.v1beta1.{}", Self::NAME)
     }
 }
-include!("cosmos.base.tendermint.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -34,5 +34,4 @@ impl ::prost::Name for GetVersionResponse {
         ::prost::alloc::format!("cometbft.services.version.v1.{}", Self::NAME)
     }
 }
-include!("cometbft.services.version.v1.tonic.rs");
 // @@protoc_insertion_point(module)

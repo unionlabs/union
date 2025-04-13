@@ -291,5 +291,4 @@ impl ::prost::Name for MsgResetCircuitBreakerResponse {
         ::prost::alloc::format!("cosmos.circuit.v1.{}", Self::NAME)
     }
 }
-include!("cosmos.circuit.v1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -139,7 +139,7 @@ pub struct CommissionInfo {
     pub max_change_rate: ::prost::alloc::string::String,
     /// update_time is the last time the commission rate was changed.
     #[prost(message, optional, tag = "3")]
-    pub update_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub update_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for CommissionInfo {
     const NAME: &'static str = "CommissionInfo";
@@ -2127,5 +2127,4 @@ impl ::prost::Name for MsgUpdateParamsResponse {
         ::prost::alloc::format!("babylon.btcstaking.v1.{}", Self::NAME)
     }
 }
-include!("babylon.btcstaking.v1.tonic.rs");
 // @@protoc_insertion_point(module)

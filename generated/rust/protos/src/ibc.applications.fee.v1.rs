@@ -20,25 +20,6 @@ impl ::prost::Name for IncentivizedAcknowledgement {
         ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
     }
 }
-/// Metadata defines the ICS29 channel specific metadata encoded into the channel version bytestring
-/// See ICS004: <https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#Versioning>
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Metadata {
-    /// fee_version defines the ICS29 fee version
-    #[prost(string, tag = "1")]
-    pub fee_version: ::prost::alloc::string::String,
-    /// app_version defines the underlying application version, which may or may not be a JSON encoded bytestring
-    #[prost(string, tag = "2")]
-    pub app_version: ::prost::alloc::string::String,
-}
-impl ::prost::Name for Metadata {
-    const NAME: &'static str = "Metadata";
-    const PACKAGE: &'static str = "ibc.applications.fee.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
-    }
-}
 /// Fee defines the ICS29 receive, acknowledgement and timeout fees
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -216,6 +197,25 @@ pub struct ForwardRelayerAddress {
 }
 impl ::prost::Name for ForwardRelayerAddress {
     const NAME: &'static str = "ForwardRelayerAddress";
+    const PACKAGE: &'static str = "ibc.applications.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
+    }
+}
+/// Metadata defines the ICS29 channel specific metadata encoded into the channel version bytestring
+/// See ICS004: <https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#Versioning>
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Metadata {
+    /// fee_version defines the ICS29 fee version
+    #[prost(string, tag = "1")]
+    pub fee_version: ::prost::alloc::string::String,
+    /// app_version defines the underlying application version, which may or may not be a JSON encoded bytestring
+    #[prost(string, tag = "2")]
+    pub app_version: ::prost::alloc::string::String,
+}
+impl ::prost::Name for Metadata {
+    const NAME: &'static str = "Metadata";
     const PACKAGE: &'static str = "ibc.applications.fee.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
@@ -710,5 +710,4 @@ impl ::prost::Name for MsgPayPacketFeeAsyncResponse {
         ::prost::alloc::format!("ibc.applications.fee.v1.{}", Self::NAME)
     }
 }
-include!("ibc.applications.fee.v1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -55,5 +55,4 @@ impl ::prost::Name for GetLatestHeightResponse {
         ::prost::alloc::format!("tendermint.services.block.v1.{}", Self::NAME)
     }
 }
-include!("tendermint.services.block.v1.tonic.rs");
 // @@protoc_insertion_point(module)

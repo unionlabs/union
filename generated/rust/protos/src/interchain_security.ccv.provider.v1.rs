@@ -39,17 +39,20 @@ pub struct ConsumerAdditionProposal {
     /// genesis is finalized and all validators will be responsible for starting
     /// their consumer chain validator node.
     #[prost(message, optional, tag = "7")]
-    pub spawn_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub spawn_time: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
     /// Unbonding period for the consumer,
     /// which should be smaller than that of the provider in general.
     #[prost(message, optional, tag = "8")]
-    pub unbonding_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub unbonding_period:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// Sent CCV related IBC packets will timeout after this duration
     #[prost(message, optional, tag = "9")]
-    pub ccv_timeout_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub ccv_timeout_period:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// Sent transfer related IBC packets will timeout after this duration
     #[prost(message, optional, tag = "10")]
-    pub transfer_timeout_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub transfer_timeout_period:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// The fraction of tokens allocated to the consumer redistribution address
     /// during distribution events. The fraction is a string representing a
     /// decimal number. For example "0.75" would represent 75%.
@@ -133,7 +136,7 @@ pub struct ConsumerRemovalProposal {
     /// the time on the provider chain at which all validators are responsible to
     /// stop their consumer chain validator node
     #[prost(message, optional, tag = "4")]
-    pub stop_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub stop_time: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for ConsumerRemovalProposal {
     const NAME: &'static str = "ConsumerRemovalProposal";
@@ -258,7 +261,7 @@ pub struct GlobalSlashEntry {
     /// Block time that slash packet was received by provider chain.
     /// This field is used for store key iteration ordering.
     #[prost(message, optional, tag = "1")]
-    pub recv_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub recv_time: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
     /// The consumer that sent a slash packet.
     #[prost(string, tag = "2")]
     pub consumer_chain_id: ::prost::alloc::string::String,
@@ -295,10 +298,12 @@ pub struct Params {
     pub trusting_period_fraction: ::prost::alloc::string::String,
     /// Sent IBC packets will timeout after this duration
     #[prost(message, optional, tag = "3")]
-    pub ccv_timeout_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub ccv_timeout_period:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// The period for which the slash meter is replenished
     #[prost(message, optional, tag = "6")]
-    pub slash_meter_replenish_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub slash_meter_replenish_period:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// The fraction of total voting power that is replenished to the slash meter
     /// every replenish period. This param also serves as a maximum fraction of
     /// total voting power that the slash meter can hold.
@@ -485,7 +490,7 @@ pub struct ConsumerAddrsToPruneV2 {
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub prune_ts: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub prune_ts: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
     #[prost(message, optional, tag = "3")]
     pub consumer_addrs: ::core::option::Option<AddressList>,
 }
@@ -594,17 +599,20 @@ pub struct ConsumerInitializationParameters {
     /// genesis is finalized and all validators will be responsible for starting
     /// their consumer chain validator node.
     #[prost(message, optional, tag = "4")]
-    pub spawn_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub spawn_time: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
     /// Unbonding period for the consumer,
     /// which should be smaller than that of the provider in general.
     #[prost(message, optional, tag = "5")]
-    pub unbonding_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub unbonding_period:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// Sent CCV related IBC packets will timeout after this duration
     #[prost(message, optional, tag = "6")]
-    pub ccv_timeout_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub ccv_timeout_period:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// Sent transfer related IBC packets will timeout after this duration
     #[prost(message, optional, tag = "7")]
-    pub transfer_timeout_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub transfer_timeout_period:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// The fraction of tokens allocated to the consumer redistribution address
     /// during distribution events. The fraction is a string representing a
     /// decimal number. For example "0.75" would represent 75%.
@@ -767,7 +775,8 @@ pub struct SlashJailParameters {
     pub slash_fraction: ::prost::alloc::vec::Vec<u8>,
     /// for permanent jailing use 9223372036854775807 which is the largest value a time.Duration can hold (approximately 292 years)
     #[prost(message, optional, tag = "2")]
-    pub jail_duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub jail_duration:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// Indicates whether the validator should be tombstoned when slashed
     #[prost(bool, tag = "3")]
     pub tombstone: bool,
@@ -1123,7 +1132,8 @@ pub struct QueryThrottleStateResponse {
     /// next time the slash meter could potentially be replenished, iff it's not
     /// full
     #[prost(message, optional, tag = "3")]
-    pub next_replenish_candidate: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub next_replenish_candidate:
+        ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for QueryThrottleStateResponse {
     const NAME: &'static str = "QueryThrottleStateResponse";
@@ -1508,7 +1518,8 @@ impl ::prost::Name for QueryConsumerGenesisTimeRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConsumerGenesisTimeResponse {
     #[prost(message, optional, tag = "1")]
-    pub genesis_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub genesis_time:
+        ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for QueryConsumerGenesisTimeResponse {
     const NAME: &'static str = "QueryConsumerGenesisTimeResponse";
@@ -1684,17 +1695,20 @@ pub struct MsgConsumerAddition {
     /// genesis is finalized and all validators will be responsible for starting
     /// their consumer chain validator node.
     #[prost(message, optional, tag = "5")]
-    pub spawn_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub spawn_time: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
     /// Unbonding period for the consumer,
     /// which should be smaller than that of the provider in general.
     #[prost(message, optional, tag = "6")]
-    pub unbonding_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub unbonding_period:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// Sent CCV related IBC packets will timeout after this duration
     #[prost(message, optional, tag = "7")]
-    pub ccv_timeout_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub ccv_timeout_period:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// Sent transfer related IBC packets will timeout after this duration
     #[prost(message, optional, tag = "8")]
-    pub transfer_timeout_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub transfer_timeout_period:
+        ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
     /// The fraction of tokens allocated to the consumer redistribution address
     /// during distribution events. The fraction is a string representing a
     /// decimal number. For example "0.75" would represent 75%.
@@ -1770,7 +1784,7 @@ pub struct MsgConsumerRemoval {
     /// the time on the provider chain at which all validators are responsible to
     /// stop their consumer chain validator node
     #[prost(message, optional, tag = "2")]
-    pub stop_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub stop_time: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
     /// signer address
     #[prost(string, tag = "3")]
     pub authority: ::prost::alloc::string::String,
@@ -2122,5 +2136,4 @@ impl ::prost::Name for MsgUpdateConsumerResponse {
         ::prost::alloc::format!("interchain_security.ccv.provider.v1.{}", Self::NAME)
     }
 }
-include!("interchain_security.ccv.provider.v1.tonic.rs");
 // @@protoc_insertion_point(module)

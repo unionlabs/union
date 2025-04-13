@@ -586,5 +586,4 @@ impl ::prost::Name for MsgUpdateParamsResponse {
         ::prost::alloc::format!("babylon.btccheckpoint.v1.{}", Self::NAME)
     }
 }
-include!("babylon.btccheckpoint.v1.tonic.rs");
 // @@protoc_insertion_point(module)

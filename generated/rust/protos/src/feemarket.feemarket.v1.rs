@@ -251,5 +251,4 @@ impl ::prost::Name for MsgParamsResponse {
         ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
     }
 }
-include!("feemarket.feemarket.v1.tonic.rs");
 // @@protoc_insertion_point(module)

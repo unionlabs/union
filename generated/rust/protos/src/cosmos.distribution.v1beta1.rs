@@ -982,5 +982,4 @@ impl ::prost::Name for MsgDepositValidatorRewardsPoolResponse {
         ::prost::alloc::format!("cosmos.distribution.v1beta1.{}", Self::NAME)
     }
 }
-include!("cosmos.distribution.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

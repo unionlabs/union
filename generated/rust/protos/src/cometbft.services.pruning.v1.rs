@@ -206,5 +206,4 @@ impl ::prost::Name for GetBlockIndexerRetainHeightResponse {
         ::prost::alloc::format!("cometbft.services.pruning.v1.{}", Self::NAME)
     }
 }
-include!("cometbft.services.pruning.v1.tonic.rs");
 // @@protoc_insertion_point(module)

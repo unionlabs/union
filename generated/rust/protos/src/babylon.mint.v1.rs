@@ -29,7 +29,8 @@ pub struct Minter {
     pub annual_provisions: ::prost::alloc::string::String,
     /// PreviousBlockTime is the timestamp of the previous block.
     #[prost(message, optional, tag = "4")]
-    pub previous_block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub previous_block_time:
+        ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// BondDenom is the denomination of the token that should be minted.
     #[prost(string, tag = "5")]
     pub bond_denom: ::prost::alloc::string::String,
@@ -47,7 +48,7 @@ impl ::prost::Name for Minter {
 pub struct GenesisTime {
     /// GenesisTime is the timestamp of the genesis block.
     #[prost(message, optional, tag = "1")]
-    pub genesis_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub genesis_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for GenesisTime {
     const NAME: &'static str = "GenesisTime";
@@ -131,7 +132,7 @@ impl ::prost::Name for QueryGenesisTimeRequest {
 pub struct QueryGenesisTimeResponse {
     /// GenesisTime is the timestamp associated with the first block.
     #[prost(message, optional, tag = "1")]
-    pub genesis_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub genesis_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for QueryGenesisTimeResponse {
     const NAME: &'static str = "QueryGenesisTimeResponse";
@@ -140,5 +141,4 @@ impl ::prost::Name for QueryGenesisTimeResponse {
         ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
     }
 }
-include!("babylon.mint.v1.tonic.rs");
 // @@protoc_insertion_point(module)

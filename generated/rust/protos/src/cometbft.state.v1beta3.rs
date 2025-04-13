@@ -109,7 +109,7 @@ pub struct State {
     #[prost(message, optional, tag = "4")]
     pub last_block_id: ::core::option::Option<super::super::types::v1beta1::BlockId>,
     #[prost(message, optional, tag = "5")]
-    pub last_block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub last_block_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// LastValidators is used to validate block.LastCommit.
     /// Validators are persisted to the database separately every time they change,
     /// so we can query for historical validator sets.

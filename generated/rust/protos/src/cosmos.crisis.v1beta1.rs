@@ -81,5 +81,4 @@ impl ::prost::Name for MsgUpdateParamsResponse {
         ::prost::alloc::format!("cosmos.crisis.v1beta1.{}", Self::NAME)
     }
 }
-include!("cosmos.crisis.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

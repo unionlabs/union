@@ -165,7 +165,7 @@ pub struct FinalityProviderSigningInfo {
     pub missed_blocks_counter: i64,
     /// Timestamp until which the validator is jailed due to liveness downtime.
     #[prost(message, optional, tag = "4")]
-    pub jailed_until: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub jailed_until: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for FinalityProviderSigningInfo {
     const NAME: &'static str = "FinalityProviderSigningInfo";
@@ -230,7 +230,7 @@ pub struct Params {
     pub min_pub_rand: u64,
     /// jail_duration is the minimum period of time that a finality provider remains jailed
     #[prost(message, optional, tag = "6")]
-    pub jail_duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub jail_duration: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     /// finality_activation_height is the babylon block height which the finality module will
     /// start to accept finality voting and the minimum allowed value for the public randomness
     /// commit start height.
@@ -1002,7 +1002,7 @@ pub struct SigningInfoResponse {
     pub missed_blocks_counter: i64,
     /// Timestamp until which the validator is jailed due to liveness downtime.
     #[prost(message, optional, tag = "4")]
-    pub jailed_until: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub jailed_until: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for SigningInfoResponse {
     const NAME: &'static str = "SigningInfoResponse";
@@ -1283,5 +1283,4 @@ impl ::prost::Name for MsgResumeFinalityProposalResponse {
         ::prost::alloc::format!("babylon.finality.v1.{}", Self::NAME)
     }
 }
-include!("babylon.finality.v1.tonic.rs");
 // @@protoc_insertion_point(module)

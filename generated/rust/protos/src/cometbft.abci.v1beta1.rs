@@ -119,7 +119,7 @@ impl ::prost::Name for RequestSetOption {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RequestInitChain {
     #[prost(message, optional, tag = "1")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
@@ -948,7 +948,7 @@ pub struct Evidence {
     pub height: i64,
     /// The corresponding time where the offense occurred
     #[prost(message, optional, tag = "4")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// Total voting power of the validator set in case the ABCI application does
     /// not store historical validators.
     /// <https://github.com/tendermint/tendermint/issues/4581>
@@ -1051,5 +1051,4 @@ impl EvidenceType {
         }
     }
 }
-include!("cometbft.abci.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

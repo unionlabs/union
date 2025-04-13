@@ -8,7 +8,7 @@ pub struct LegacyAminoPubKey {
     #[prost(uint32, tag = "1")]
     pub threshold: u32,
     #[prost(message, repeated, tag = "2")]
-    pub public_keys: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
+    pub public_keys: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
 impl ::prost::Name for LegacyAminoPubKey {
     const NAME: &'static str = "LegacyAminoPubKey";

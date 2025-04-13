@@ -52,34 +52,8 @@
                 features = [ "derive" ];
                 optional = true;
               };
-              tonic = {
-                workspace = true;
-                features = [
-                  "codegen"
-                  "prost"
-                  "gzip"
-                  "transport"
-                  "tls"
-                  "tls-roots"
-                  "tls-webpki-roots"
-                ];
-                optional = true;
-              };
-              schemars = {
-                workspace = true;
-                optional = true;
-              };
               serde-utils = {
                 workspace = true;
-              };
-              chrono = {
-                workspace = true;
-                features = [ "alloc" ];
-              };
-              # https://github.com/influxdata/pbjson/pull/118
-              pbjson-types = {
-                git = "https://github.com/recoord/pbjson";
-                rev = "2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe";
               };
             };
             features = {
@@ -91,8 +65,6 @@
                 "prost/std"
                 "serde/std"
               ];
-              client = [ "tonic" ];
-              json-schema = [ "schemars" ];
               # nix attrsets don't preserve order, use this to replace with the insertion point (see command below)
               PROTOC_INSERTION_POINT = 1;
             };
@@ -186,7 +158,7 @@
           ];
           additional-filter = "-path '*google/protobuf/*.proto'";
           fixup-script = ''
-            echo "pub use pbjson_types::*;" >> "./src/google.protobuf.rs"
+            # echo "pub use pbjson_types::*;" >> "./src/google.protobuf.rs"
           '';
         };
         ibc-proto = rec {
@@ -541,7 +513,7 @@
 
       tonic-opts = {
         client_mod_attribute = {
-          "." = [ ''#[cfg(feature = "client")]'' ];
+          # "." = [ ''#[cfg(feature = "client")]'' ];
         };
         # server_mod_attribute = { "." = [ ''#[cfg(feature = "server")]'' ]; };
       };
@@ -617,11 +589,8 @@
 
           protoc "''${protos[@]}" \
             --prost_opt=compile_well_known_types \
-            --prost_opt=extern_path=.google.protobuf=::pbjson_types \
             --prost_out=./src \
             --prost_opt=enable_type_names=true,compile_well_known_types=true,${fold-opts prost-opts} \
-            --tonic_out=./src \
-            --tonic_opt=compile_well_known_types=true,no_server=true,${fold-opts tonic-opts} \
             --prost-crate_out=. \
             --prost-crate_opt=package_separator="+",gen_crate=${cargo_toml { name = "protos"; }} \
             ${includes}

@@ -58,7 +58,7 @@ pub struct EvidenceParams {
     /// mechanism for handling [Nothing-At-Stake
     /// attacks](<https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed>).
     #[prost(message, optional, tag = "2")]
-    pub max_age_duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub max_age_duration: ::core::option::Option<super::super::google::protobuf::Duration>,
     /// This sets the maximum size of total evidence in bytes that can be committed in a single block.
     /// and should fall comfortably under the max block bytes.
     /// Default is 1048576 or 1MB
@@ -291,7 +291,7 @@ pub struct Header {
     #[prost(int64, tag = "3")]
     pub height: i64,
     #[prost(message, optional, tag = "4")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     /// prev block info
     #[prost(message, optional, tag = "5")]
     pub last_block_id: ::core::option::Option<BlockId>,
@@ -368,7 +368,7 @@ pub struct Vote {
     #[prost(message, optional, tag = "4")]
     pub block_id: ::core::option::Option<BlockId>,
     #[prost(message, optional, tag = "5")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "6")]
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(int32, tag = "7")]
@@ -423,7 +423,7 @@ pub struct CommitSig {
     #[prost(bytes = "vec", tag = "2")]
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "4")]
     pub signature: ::prost::alloc::vec::Vec<u8>,
 }
@@ -464,7 +464,7 @@ pub struct ExtendedCommitSig {
     #[prost(bytes = "vec", tag = "2")]
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "4")]
     pub signature: ::prost::alloc::vec::Vec<u8>,
     /// Vote extension data
@@ -495,7 +495,7 @@ pub struct Proposal {
     #[prost(message, optional, tag = "5")]
     pub block_id: ::core::option::Option<BlockId>,
     #[prost(message, optional, tag = "6")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub signature: ::prost::alloc::vec::Vec<u8>,
 }
@@ -647,7 +647,7 @@ pub struct DuplicateVoteEvidence {
     #[prost(int64, tag = "4")]
     pub validator_power: i64,
     #[prost(message, optional, tag = "5")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for DuplicateVoteEvidence {
     const NAME: &'static str = "DuplicateVoteEvidence";
@@ -669,7 +669,7 @@ pub struct LightClientAttackEvidence {
     #[prost(int64, tag = "4")]
     pub total_voting_power: i64,
     #[prost(message, optional, tag = "5")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for LightClientAttackEvidence {
     const NAME: &'static str = "LightClientAttackEvidence";
@@ -774,7 +774,7 @@ pub struct CanonicalProposal {
     #[prost(message, optional, tag = "5")]
     pub block_id: ::core::option::Option<CanonicalBlockId>,
     #[prost(message, optional, tag = "6")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(string, tag = "7")]
     pub chain_id: ::prost::alloc::string::String,
 }
@@ -799,8 +799,6 @@ pub struct CanonicalVote {
     pub round: i64,
     #[prost(message, optional, tag = "4")]
     pub block_id: ::core::option::Option<CanonicalBlockId>,
-    #[prost(message, optional, tag = "5")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
     #[prost(string, tag = "6")]
     pub chain_id: ::prost::alloc::string::String,
 }

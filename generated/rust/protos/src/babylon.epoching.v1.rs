@@ -18,7 +18,7 @@ pub struct Epoch {
     /// finalised. The last_block_time field is nil in the epoch's beginning, and
     /// is set upon the end of this epoch.
     #[prost(message, optional, tag = "4")]
-    pub last_block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub last_block_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// sealer is the last block of the sealed epoch
     /// sealer_app_hash points to the sealer but stored in the 1st header
     /// of the next epoch
@@ -53,7 +53,7 @@ pub struct QueuedMessage {
     pub block_height: u64,
     /// block_time is the timestamp when this msg is submitted to Babylon
     #[prost(message, optional, tag = "4")]
-    pub block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub block_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// msg is the actual message that is sent by a user and is queued by the
     /// epoching module
     #[prost(oneof = "queued_message::Msg", tags = "5, 6, 7, 8, 9, 10, 11")]
@@ -104,7 +104,7 @@ pub struct ValStateUpdate {
     #[prost(uint64, tag = "2")]
     pub block_height: u64,
     #[prost(message, optional, tag = "3")]
-    pub block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub block_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for ValStateUpdate {
     const NAME: &'static str = "ValStateUpdate";
@@ -144,7 +144,7 @@ pub struct DelegationStateUpdate {
     #[prost(uint64, tag = "4")]
     pub block_height: u64,
     #[prost(message, optional, tag = "5")]
-    pub block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub block_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for DelegationStateUpdate {
     const NAME: &'static str = "DelegationStateUpdate";
@@ -796,7 +796,7 @@ pub struct EpochResponse {
     /// finalised. The last_block_time field is nil in the epoch's beginning, and
     /// is set upon the end of this epoch.
     #[prost(message, optional, tag = "4")]
-    pub last_block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub last_block_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// sealer is the last block of the sealed epoch
     /// sealer_app_hash points to the sealer but stored in the 1st header
     /// of the next epoch as hex string.
@@ -831,7 +831,7 @@ pub struct QueuedMessageResponse {
     pub block_height: u64,
     /// block_time is the timestamp when this msg is submitted to Babylon
     #[prost(message, optional, tag = "4")]
-    pub block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub block_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// msg is the actual message that is sent by a user and is queued by the
     /// epoching module as string.
     #[prost(string, tag = "5")]
@@ -871,7 +871,7 @@ pub struct ValStateUpdateResponse {
     #[prost(uint64, tag = "2")]
     pub block_height: u64,
     #[prost(message, optional, tag = "3")]
-    pub block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub block_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for ValStateUpdateResponse {
     const NAME: &'static str = "ValStateUpdateResponse";
@@ -1074,5 +1074,4 @@ impl ::prost::Name for MsgUpdateParamsResponse {
         ::prost::alloc::format!("babylon.epoching.v1.{}", Self::NAME)
     }
 }
-include!("babylon.epoching.v1.tonic.rs");
 // @@protoc_insertion_point(module)

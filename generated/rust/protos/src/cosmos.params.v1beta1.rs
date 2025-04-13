@@ -119,5 +119,4 @@ impl ::prost::Name for Subspace {
         ::prost::alloc::format!("cosmos.params.v1beta1.{}", Self::NAME)
     }
 }
-include!("cosmos.params.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)
