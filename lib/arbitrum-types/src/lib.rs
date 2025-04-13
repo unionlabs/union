@@ -94,7 +94,7 @@ pub mod slots {
                 //
                 // therefore, we read sizeof(T) bytes at (32 - (offset + sizeof(T)))
                 //
-                // TODO: Move this functionalty to solidity-slot somehow
+                // TODO: Move this functionality to solidity-slot somehow
                 .array_slice::<{
                     32 - ((ROLLUP_CORE_LATEST_NODE_CREATED_SLOT_OFFSET_BYTES as usize)
                         + size_of::<u64>())
