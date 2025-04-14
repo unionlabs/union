@@ -5,7 +5,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::debug;
+use tracing::{debug, trace};
 use unionlabs::{
     aptos::{
         account::AccountAddress, state_proof::StateProof,

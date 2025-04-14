@@ -6,7 +6,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, instrument, trace};
+use tracing::{error, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
     module::{ConsensusModuleInfo, ConsensusModuleServer},

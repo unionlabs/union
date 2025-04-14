@@ -22,7 +22,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, info, instrument, trace};
+use tracing::{debug, instrument, trace};
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{Bytes, H160, H256},

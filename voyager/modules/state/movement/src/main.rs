@@ -16,7 +16,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, trace};
 use unionlabs::{
     aptos::{
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},

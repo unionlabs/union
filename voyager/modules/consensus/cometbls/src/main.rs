@@ -5,7 +5,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, instrument, trace};
+use tracing::{error, instrument, trace};
 use unionlabs::{
     bech32::Bech32, ibc::core::client::height::Height, primitives::H256, traits::Member,
 };

@@ -568,7 +568,11 @@ impl Module {
             )
             .await?;
 
-        debug!(?l1_client_meta, "l1 client meta");
+        debug!(
+            %l1_client_meta.counterparty_height,
+            %l1_client_meta.counterparty_chain_id,
+            "l1 client meta"
+        );
 
         let l2_settlement_block = finalized_l2_block_of_l1_height(
             &self.l1_provider,
