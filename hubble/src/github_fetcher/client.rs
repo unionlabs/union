@@ -79,15 +79,13 @@ pub async fn fetch_commit_details(
 ) -> Result<CommitDetails, FileDownloadError> {
     trace!("fetch_commit_details: {subscription}");
 
-    let client = Client::new();
     let commits_url = format!(
         "https://api.github.com/repos/{}/commits?path={}&sha={}&per_page=1",
         subscription.repo, subscription.path, subscription.branch
     );
 
-    let commits_response = client
+    let commits_response = client()
         .get(&commits_url)
-        .header("User-Agent", "reqwest")
         .send()
         .await
         .map_err(|e| FileDownloadError::CommitDetailsRequest(commits_url.clone(), e))?
@@ -126,11 +124,8 @@ pub async fn fetch_file_contents(
         subscription.path
     );
 
-    let client = Client::new();
-
-    let result = client
+    let result = client()
         .get(&raw_url)
-        .header("User-Agent", "reqwest")
         .send()
         .await
         .map_err(|e| FileDownloadError::FileContentsRequest(raw_url.clone(), e))?
@@ -142,6 +137,13 @@ pub async fn fetch_file_contents(
         .map_err(|e| FileDownloadError::FileContentsDownload(raw_url.clone(), e))?;
 
     Ok(FileContents(result))
+}
+
+fn client() -> Client {
+    Client::builder()
+        .user_agent("reqwest")
+        .build()
+        .expect("client can be built")
 }
 
 // Custom deserializer for SHA hex string to Vec<u8>
