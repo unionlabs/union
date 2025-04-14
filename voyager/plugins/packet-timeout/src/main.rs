@@ -13,13 +13,14 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tracing::{debug, info, instrument};
+use tracing::{debug, info, instrument, warn};
 use unionlabs::{self, ibc::core::client::height::Height, traits::Member, ErrorReporter};
 use voyager_message::{
     call::{SubmitTx, WaitForTrustedHeight, WaitForTrustedTimestamp},
     data::{Data, IbcDatagram},
     module::{PluginInfo, PluginServer},
     primitives::{ChainId, IbcSpec, QueryHeight},
+    rpc::ProofType,
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
     FATAL_JSONRPC_ERROR_CODE,
 };
@@ -192,31 +193,43 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     )
                     .await?;
 
-                let client_info = voyager_client
-                    .client_info::<IbcUnion>(
-                        chain_id.clone(),
-                        event.packet.source_channel.connection.client_id,
-                    )
-                    .await?;
+                match proof_unreceived.proof_type {
+                    ProofType::NonMembership => {
+                        let client_info = voyager_client
+                            .client_info::<IbcUnion>(
+                                chain_id.clone(),
+                                event.packet.source_channel.connection.client_id,
+                            )
+                            .await?;
 
-                let encoded_proof_commitment = voyager_client
-                    .encode_proof::<IbcUnion>(
-                        client_info.client_type,
-                        client_info.ibc_interface,
-                        proof_unreceived.proof,
-                    )
-                    .await?;
+                        let encoded_proof_commitment = voyager_client
+                            .encode_proof::<IbcUnion>(
+                                client_info.client_type,
+                                client_info.ibc_interface,
+                                proof_unreceived.proof,
+                            )
+                            .await?;
 
-                Ok(call(SubmitTx {
-                    chain_id,
-                    datagrams: vec![IbcDatagram::new::<IbcUnion>(Datagram::from(
-                        MsgPacketTimeout {
-                            packet: event.packet(),
-                            proof: encoded_proof_commitment,
-                            proof_height: client_meta.counterparty_height.height(),
-                        },
-                    ))],
-                }))
+                        Ok(call(SubmitTx {
+                            chain_id,
+                            datagrams: vec![IbcDatagram::new::<IbcUnion>(Datagram::from(
+                                MsgPacketTimeout {
+                                    packet: event.packet(),
+                                    proof: encoded_proof_commitment,
+                                    proof_height: client_meta.counterparty_height.height(),
+                                },
+                            ))],
+                        }))
+                    }
+                    ProofType::Membership => {
+                        warn!(
+                            packet_hash = %event.packet().hash(),
+                            "packet timed out, but it was already received on the counterparty"
+                        );
+
+                        Ok(noop())
+                    }
+                }
             }
         }
     }
