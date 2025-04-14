@@ -1,7 +1,7 @@
 <script lang="ts">
 import Input from "$lib/components/ui/Input.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { Option } from "effect"
+import { Option, pipe } from "effect"
 import { formatUnits, toHex } from "viem"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
@@ -91,8 +91,8 @@ function setMaxAmount() {
           {/if}
         </div>
         <button
-                class="cursor-pointer  text-xs text-babylon-orange hover:opacity-80"
-                onclick={setMaxAmount}
+          class="cursor-pointer text-xs text-babylon-orange hover:opacity-80"
+          onclick={setMaxAmount}
         >
           MAX
         </button>
@@ -149,12 +149,9 @@ function setMaxAmount() {
   />
 </div>
 {#if Option.isSome(transfer.sourceChain) && Option.isSome(transfer.baseToken)}
-  {#if transfer.sourceChain.value.universal_chain_id === "babylon.bbn-1" && (
-    transfer.baseToken.value.denom === "ubbn" ||
-    transfer.baseToken.value.denom === "0x" + Array.from(new TextEncoder().encode("ubbn")).map(b => b.toString(16).padStart(2, "0")).join("")
-  )}
-    <div class="text-xs text-zinc-400 text-end">
-      Relayer Fee: 20 BABY
-    </div>
+  {#if transfer.sourceChain.value.universal_chain_id === "babylon.bbn-1" && (transfer.baseToken.value.denom === "ubbn" || transfer.baseToken.value.denom === "0x" + Array.from(new TextEncoder().encode("ubbn"))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join(""))}
+    <div class="text-xs text-zinc-400 text-end">Relayer Fee: 20 BABY</div>
   {/if}
 {/if}

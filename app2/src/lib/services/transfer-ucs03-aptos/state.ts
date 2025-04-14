@@ -1,11 +1,13 @@
 import { Data, type Effect, type Exit } from "effect"
 import type { Hash } from "viem"
 import type { submitTransfer, waitForTransferReceipt } from "./transactions-aptos.ts"
+import type { switchChain } from "../transfer/chain.ts"
 
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 
 export type SwitchChainState = Data.TaggedEnum<{
   InProgress: {}
+  // TODO: fix my switchchain import
   Complete: { exit: EffectToExit<ReturnType<typeof switchChain>> }
 }>
 export const SwitchChainState = Data.taggedEnum<SwitchChainState>()

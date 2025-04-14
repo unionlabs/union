@@ -11,6 +11,7 @@ import StatisticComponent from "$lib/components/model/StatisticComponent.svelte"
 import BarChart from "$lib/components/model/BarChart.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import type { DailyTransfer } from "@unionlabs/sdk/schema"
+import A from "$lib/components/ui/A.svelte"
 
 // State for tracking the currently hovered day
 let hoveredDay = $state<Option.Option<DailyTransfer>>(Option.none())
@@ -68,10 +69,14 @@ onMount(() => {
   </div>
 
   <Card divided>
-    <A class="block p-4" href="/explorer/transfers" external={false}>View all transfers</A>
-    <A class="block p-4" href="/explorer/packets" external={false}>View all packets</A>
+    <A class="block p-4" href="/explorer/transfers" external={false}
+      >View all transfers</A
+    >
+    <A class="block p-4" href="/explorer/packets" external={false}
+      >View all packets</A
+    >
   </Card>
-  
+
   <!-- Daily Transfers Chart -->
   <!--
   <Card class="h-80 relative" divided>
@@ -94,7 +99,4 @@ onMount(() => {
     />
   </Card>
   !-->
- 
 </Sections>
-
-
