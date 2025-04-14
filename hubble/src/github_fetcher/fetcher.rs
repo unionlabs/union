@@ -14,16 +14,16 @@ use crate::github_fetcher::{
 #[derive(Debug, thiserror::Error)]
 pub enum UpdateSubscriptionError {
     #[error("database error creation transaction for subscription {0}: {1}")]
-    CreateTransaction(Subscription, sqlx::Error),
+    CreateTransaction(Subscription, #[source] sqlx::Error),
 
     #[error("database error committing transaction for subscription {0}: {1}")]
-    CommitTransaction(Subscription, sqlx::Error),
+    CommitTransaction(Subscription, #[source] sqlx::Error),
 
     #[error("database error inserting download {0}: {1}")]
-    InsertDownloadError(Subscription, sqlx::Error),
+    InsertDownloadError(Subscription, #[source] sqlx::Error),
 
     #[error("database error inserting attempt {0}: {1}")]
-    InsertAttemptError(Subscription, sqlx::Error),
+    InsertAttemptError(Subscription, #[source] sqlx::Error),
 
     #[error("file download error {0}")]
     CannotDownloadFileError(#[from] FileDownloadError),

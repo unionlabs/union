@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::LazyLock};
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -7,31 +7,38 @@ use tracing::{error, trace};
 
 use crate::github_fetcher::Subscription;
 
+static CLIENT: LazyLock<Client> = LazyLock::new(|| {
+    Client::builder()
+        .user_agent("reqwest")
+        .build()
+        .expect("client can be built")
+});
+
 #[derive(Debug, thiserror::Error)]
 pub enum FileDownloadError {
     #[error("error requesting commit details from {0}: {1}")]
-    CommitDetailsRequest(String, reqwest::Error),
+    CommitDetailsRequest(String, #[source] reqwest::Error),
 
     #[error("error response fetching commit details from {0}: {1}")]
-    CommitDetailsErrorResponse(String, reqwest::Error),
+    CommitDetailsErrorResponse(String, #[source] reqwest::Error),
 
     #[error("error downloading commit details from {0}: {1}")]
-    CommitDetailsDownload(String, reqwest::Error),
+    CommitDetailsDownload(String, #[source] reqwest::Error),
 
     #[error("error parsing json commit details from {0}: {1}")]
-    CommitDetailsDecode(String, serde_json::Error),
+    CommitDetailsDecode(String, #[source] serde_json::Error),
 
     #[error("no commit for {0}")]
     CommitDetailsNoCommit(String),
 
     #[error("error requesting file contents from {0}: {1}")]
-    FileContentsRequest(String, reqwest::Error),
+    FileContentsRequest(String, #[source] reqwest::Error),
 
     #[error("error response fetching file contents from {0}: {1}")]
-    FileContentsErrorResponse(String, reqwest::Error),
+    FileContentsErrorResponse(String, #[source] reqwest::Error),
 
     #[error("error downloading file content from {0}: {1}")]
-    FileContentsDownload(String, reqwest::Error),
+    FileContentsDownload(String, #[source] reqwest::Error),
 }
 
 #[derive(Debug, Serialize)]
@@ -84,7 +91,7 @@ pub async fn fetch_commit_details(
         subscription.repo, subscription.path, subscription.branch
     );
 
-    let commits_response = client()
+    let commits_response = CLIENT
         .get(&commits_url)
         .send()
         .await
@@ -124,7 +131,7 @@ pub async fn fetch_file_contents(
         subscription.path
     );
 
-    let result = client()
+    let result = CLIENT
         .get(&raw_url)
         .send()
         .await
@@ -137,13 +144,6 @@ pub async fn fetch_file_contents(
         .map_err(|e| FileDownloadError::FileContentsDownload(raw_url.clone(), e))?;
 
     Ok(FileContents(result))
-}
-
-fn client() -> Client {
-    Client::builder()
-        .user_agent("reqwest")
-        .build()
-        .expect("client can be built")
 }
 
 // Custom deserializer for SHA hex string to Vec<u8>
