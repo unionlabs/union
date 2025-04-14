@@ -1,7 +1,7 @@
-import type {Transfer} from "$lib/components/Transfer/transfer.svelte.ts"
-import {wallets} from "$lib/stores/wallets.svelte.ts"
-import {Data, Option} from "effect"
-import type {AddressCanonicalBytes, Chain, Channel, ChannelId} from "@unionlabs/sdk/schema"
+import type { Transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { Data, Option } from "effect"
+import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
 
 export interface TransferArgs {
   sourceChain: Chain
@@ -31,7 +31,6 @@ export type FillingState = Data.TaggedEnum<{
   NoContract: {}
   Ready: TransferArgs
 }>
-
 
 export const FillingState = Data.taggedEnum<FillingState>()
 
@@ -73,7 +72,7 @@ export const getFillingState = (transfer: Transfer): FillingState => {
         receiver: transfer.derivedReceiver,
         parsedAmount: transfer.parsedAmount,
         baseToken: transfer.baseToken,
-        ucs03address: transfer.ucs03address,
+        ucs03address: transfer.ucs03address
       })
 
       return Option.match(unwrapped, {
@@ -82,14 +81,7 @@ export const getFillingState = (transfer: Transfer): FillingState => {
           return FillingState.Empty()
         },
 
-        onSome: ({
-                   destinationChain,
-                   channel,
-                   receiver,
-                   parsedAmount,
-                   baseToken,
-                   ucs03address
-                 }) =>
+        onSome: ({ destinationChain, channel, receiver, parsedAmount, baseToken, ucs03address }) =>
           FillingState.Ready({
             sourceChain,
             destinationChain,
@@ -108,4 +100,3 @@ export const getFillingState = (transfer: Transfer): FillingState => {
     }
   })
 }
-

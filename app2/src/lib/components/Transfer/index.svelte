@@ -228,7 +228,7 @@ onMount(() => {
 })
 
 $effect(() => {
-  console.log('lukas', transferErrors)
+  console.log("lukas", transferErrors)
 })
 </script>
 

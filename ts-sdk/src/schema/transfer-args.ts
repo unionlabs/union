@@ -22,7 +22,7 @@ const BaseTransferFields = {
   destinationRpcType: RpcType.annotations({
     message: () => "destinationType must be a valid RPC type ('evm', 'cosmos', or 'aptos')"
   }),
-  ucs03address: S.String,
+  ucs03address: S.String
 }
 
 const EvmTransferSchema = S.Struct({

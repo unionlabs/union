@@ -1,6 +1,6 @@
 import { Option, Match } from "effect"
 import { fromHex, isHex } from "viem"
-import type { TransferArgs } from "./check-filling"
+import type { TransferArgs } from "./check-filling.ts"
 import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
 import type { TokenRawAmount } from "@unionlabs/sdk/schema"
 
@@ -10,9 +10,7 @@ const BABY_SUB_AMOUNT = 20n * 10n ** BABY_DECIMALS
 const subtractTokenAmount = (amount: TokenRawAmount, sub: bigint): TokenRawAmount =>
   (amount - sub) as TokenRawAmount
 
-export const createIntents = (
-  args: TransferArgs
-): Option.Option<TransferIntents> => {
+export const createIntents = (args: TransferArgs): Option.Option<TransferIntents> => {
   console.debug("[createIntents] args:", args)
 
   if (!args.receiver) {
@@ -65,15 +63,13 @@ export const createIntents = (
           baseAmount,
           quoteAmount: baseAmount,
           sourceChainId: args.sourceChain.universal_chain_id,
-          sourceChannelId: args.sourceChannelId!
+          sourceChannelId: args.sourceChannelId
         }
       ])
     }),
 
     Match.when("cosmos", () => {
-      const tokenName = isHex(args.baseToken)
-        ? fromHex(args.baseToken, "string")
-        : args.baseToken
+      const tokenName = isHex(args.baseToken) ? fromHex(args.baseToken, "string") : args.baseToken
 
       const quoteAmount =
         args.sourceChain.universal_chain_id === "babylon.bbn-1" && tokenName === "ubbn"
@@ -88,7 +84,7 @@ export const createIntents = (
           baseAmount,
           quoteAmount,
           sourceChainId: args.sourceChain.universal_chain_id,
-          sourceChannelId: args.sourceChannelId!
+          sourceChannelId: args.sourceChannelId
         }
       ])
     }),

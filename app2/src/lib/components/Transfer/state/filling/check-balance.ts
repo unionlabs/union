@@ -44,15 +44,18 @@ export const checkBalanceForIntents = (
   return Effect.forEach(groupedValues, group =>
     Effect.flatMap(
       Effect.sync(() => {
-
-        return balancesStore.getBalance(source.universal_chain_id, group.sender, isHex(group.baseToken) ? group.baseToken : toHex(group.baseToken))
+        return balancesStore.getBalance(
+          source.universal_chain_id,
+          group.sender,
+          isHex(group.baseToken) ? group.baseToken : toHex(group.baseToken)
+        )
       }),
       balance => {
         if (!Option.isSome(balance)) {
           console.warn("[checkBalanceForIntents] ❌ No balance found", group)
           return Effect.fail(
             new BalanceLookupError({
-              reason: "No balance found",
+              cause: "No balance found",
               token: group.baseToken,
               sender: group.sender,
               chainId: source.universal_chain_id
@@ -73,7 +76,7 @@ export const checkBalanceForIntents = (
           try: () => hasEnough,
           catch: () =>
             new BalanceLookupError({
-              reason: "BigInt conversion failed",
+              cause: "BigInt conversion failed",
               token: group.baseToken,
               sender: group.sender,
               chainId: source.universal_chain_id

@@ -35,4 +35,3 @@ export type TransferFlowError =
   | BalanceLookupError
   | CosmosQueryError
   | AllowanceCheckError
-

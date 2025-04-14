@@ -1,7 +1,7 @@
-import {Data, Effect, Option} from "effect"
-import {type Transfer, type TransferIntents} from "$lib/components/Transfer/transfer.svelte.ts"
-import {checkBalanceForIntents} from "$lib/components/Transfer/state/filling/check-balance.ts"
-import {createOrdersBatch} from "$lib/components/Transfer/state/filling/create-orders.ts"
+import { Data, Effect, Option } from "effect"
+import type { Transfer, TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
+import { checkBalanceForIntents } from "$lib/components/Transfer/state/filling/check-balance.ts"
+import { createOrdersBatch } from "$lib/components/Transfer/state/filling/create-orders.ts"
 import {
   checkAllowances,
   type ApprovalStep
@@ -11,15 +11,15 @@ import {
   OrderCreationError,
   type TransferFlowError
 } from "$lib/components/Transfer/state/errors.ts"
-import type {Instruction} from "@unionlabs/sdk/ucs03/instruction"
+import type { Instruction } from "@unionlabs/sdk/ucs03/instruction"
 import {
   FillingState,
   getFillingState,
   type TransferArgs
 } from "$lib/components/Transfer/state/filling/check-filling.ts"
-import {validateTransfer} from "$lib/components/Transfer/validation.ts"
-import {createIntents} from "$lib/components/Transfer/state/filling/create-intents.ts";
-import {constVoid} from "effect/Function";
+import { validateTransfer } from "$lib/components/Transfer/validation.ts"
+import { createIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
+import { constVoid } from "effect/Function"
 
 export type StateResult = {
   nextState: Option.Option<CreateTransferState>
@@ -40,7 +40,8 @@ export type CreateTransferState = Data.TaggedEnum<{
   }
   CheckAllowance: {
     args: TransferArgs
-    intents: TransferIntents }
+    intents: TransferIntents
+  }
   CreateOrders: {
     args: TransferArgs
     intents: TransferIntents
@@ -142,8 +143,11 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
           hasEnough
             ? Effect.succeed(ok(CheckAllowance({ args, intents }), "Checking allowance..."))
             : Effect.succeed(
-              fail("Insufficient funds", new InsufficientFundsError({ cause: "Insufficient funds" }))
-            )
+                fail(
+                  "Insufficient funds",
+                  new InsufficientFundsError({ cause: "Insufficient funds" })
+                )
+              )
         ),
         Effect.catchAll(error => Effect.succeed(fail("Balance check failed", error)))
       ),
@@ -168,22 +172,27 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
         Effect.flatMap(batchOpt => {
           if (Option.isNone(batchOpt)) {
             return Effect.succeed(
-              fail("Could not create orders", new OrderCreationError({ details: "No batch returned" }))
+              fail(
+                "Could not create orders",
+                new OrderCreationError({ details: "No batch returned" })
+              )
             )
           }
 
           const batch = batchOpt.value
           return Effect.succeed(
-            ok(CreateSteps({ args, allowances, orders: [...batch.operand] }), "Building final steps...")
+            ok(
+              CreateSteps({ args, allowances, orders: [...batch.operand] }),
+              "Building final steps..."
+            )
           )
         }),
         Effect.catchAll(error => Effect.succeed(fail("Order creation failed", error)))
       ),
 
     CreateSteps: ({ allowances, orders }) => {
-
       console.log({ allowances, orders })
-     return Effect.succeed(complete("Transfer ready", orders, allowances))
+      return Effect.succeed(complete("Transfer ready", orders, allowances))
     }
   })
 }
