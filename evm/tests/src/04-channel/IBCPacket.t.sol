@@ -85,29 +85,27 @@ contract IBCPacketTests is UnionTests {
 
     function test_sendPacket_ok(
         uint64 timeoutTimestamp,
-        uint64 timeoutHeight,
         bytes calldata packet
     ) public {
         vm.pauseGasMetering();
-        vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
+        vm.assume(timeoutTimestamp > 0);
         vm.prank(address(module));
         vm.resumeGasMetering();
-        handler.sendPacket(channelId, timeoutTimestamp, timeoutHeight, packet);
+        handler.sendPacket(channelId, 0, timeoutTimestamp, packet);
     }
 
     function test_sendPacket_commitmentSaved(
-        uint64 timeoutHeight,
         uint64 timeoutTimestamp,
         bytes calldata message
     ) public {
-        vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
+        vm.assume(timeoutTimestamp > 0);
         vm.prank(address(module));
-        handler.sendPacket(channelId, timeoutHeight, timeoutTimestamp, message);
+        handler.sendPacket(channelId, 0, timeoutTimestamp, message);
         IBCPacket memory packet = IBCPacket({
             sourceChannelId: channelId,
             destinationChannelId: COUNTERPARTY_CHANNEL_ID,
             data: message,
-            timeoutHeight: timeoutHeight,
+            timeoutHeight: 0,
             timeoutTimestamp: timeoutTimestamp
         });
         assertEq(
@@ -131,27 +129,25 @@ contract IBCPacketTests is UnionTests {
     function test_sendPacket_channelDoesntExist(
         uint32 channelId_,
         uint64 timeoutTimestamp,
-        uint64 timeoutHeight,
         bytes calldata packet
     ) public {
         vm.assume(channelId_ != channelId);
-        vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
+        vm.assume(timeoutTimestamp > 0);
         vm.expectRevert(IBCErrors.ErrUnauthorized.selector);
         vm.prank(address(module));
-        handler.sendPacket(channelId_, timeoutTimestamp, timeoutHeight, packet);
+        handler.sendPacket(channelId_, 0, timeoutTimestamp, packet);
     }
 
     function test_sendPacket_moduleIsntChannelOwner(
         uint64 timeoutTimestamp,
-        uint64 timeoutHeight,
         bytes calldata packet,
         address malicious
     ) public {
         vm.assume(malicious != address(module));
-        vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
+        vm.assume(timeoutTimestamp > 0);
         vm.expectRevert(IBCErrors.ErrUnauthorized.selector);
         vm.prank(malicious);
-        handler.sendPacket(channelId, timeoutTimestamp, timeoutHeight, packet);
+        handler.sendPacket(channelId, 0, timeoutTimestamp, packet);
     }
 
     function createReceivePacket(
@@ -166,7 +162,7 @@ contract IBCPacketTests is UnionTests {
                 sourceChannelId: sourceChannelId,
                 destinationChannelId: channelId,
                 data: abi.encodePacked(message, i),
-                timeoutHeight: type(uint64).max,
+                timeoutHeight: 0,
                 timeoutTimestamp: type(uint64).max
             });
             relayerMsgs[i] = abi.encodePacked(i);
@@ -219,22 +215,6 @@ contract IBCPacketTests is UnionTests {
     ) public {
         vm.pauseGasMetering();
         test_recvPacket_ok(sourceChannelId, message, 20);
-    }
-
-    function test_recvPacket_ok_25(
-        uint32 sourceChannelId,
-        bytes calldata message
-    ) public {
-        vm.pauseGasMetering();
-        test_recvPacket_ok(sourceChannelId, message, 25);
-    }
-
-    function test_recvPacket_ok_30(
-        uint32 sourceChannelId,
-        bytes calldata message
-    ) public {
-        vm.pauseGasMetering();
-        test_recvPacket_ok(sourceChannelId, message, 30);
     }
 
     function test_recvPacket_ok(
@@ -332,24 +312,6 @@ contract IBCPacketTests is UnionTests {
         handler.recvPacket(msg_);
     }
 
-    function test_recvPacket_timeoutHeight(
-        uint64 timeout,
-        uint32 sourceChannelId,
-        bytes calldata message,
-        uint8 nbPackets
-    ) public {
-        vm.assume(timeout > 0);
-        vm.assume(nbPackets > 0);
-        IBCMsgs.MsgPacketRecv memory msg_ =
-            createReceivePacket(sourceChannelId, message, nbPackets);
-        // fake non existant channel
-        msg_.packets[0].timeoutHeight = timeout;
-        vm.roll(timeout);
-        lightClient.pushValidMembership();
-        vm.expectRevert(IBCErrors.ErrHeightTimeout.selector);
-        handler.recvPacket(msg_);
-    }
-
     function test_recvPacket_ackCommitmentSaved(
         uint32 sourceChannelId,
         bytes calldata message,
@@ -407,7 +369,7 @@ contract IBCPacketTests is UnionTests {
                 sourceChannelId: sourceChannelId,
                 destinationChannelId: channelId,
                 data: abi.encodePacked(message, i),
-                timeoutHeight: type(uint64).max,
+                timeoutHeight: 0,
                 timeoutTimestamp: type(uint64).max
             });
             marketMakerMsgs[i] = abi.encodePacked(i);
@@ -459,22 +421,6 @@ contract IBCPacketTests is UnionTests {
     ) public {
         vm.pauseGasMetering();
         test_recvIntentPacket_ok(sourceChannelId, message, 20);
-    }
-
-    function test_recvIntentPacket_ok_25(
-        uint32 sourceChannelId,
-        bytes calldata message
-    ) public {
-        vm.pauseGasMetering();
-        test_recvIntentPacket_ok(sourceChannelId, message, 25);
-    }
-
-    function test_recvIntentPacket_ok_30(
-        uint32 sourceChannelId,
-        bytes calldata message
-    ) public {
-        vm.pauseGasMetering();
-        test_recvIntentPacket_ok(sourceChannelId, message, 30);
     }
 
     function test_recvIntentPacket_ok(
@@ -543,23 +489,6 @@ contract IBCPacketTests is UnionTests {
         handler.recvIntentPacket(msg_);
     }
 
-    function test_recvIntentPacket_timeoutHeight(
-        uint64 timeout,
-        uint32 sourceChannelId,
-        bytes calldata message,
-        uint8 nbPackets
-    ) public {
-        vm.assume(timeout > 0);
-        vm.assume(nbPackets > 0);
-        IBCMsgs.MsgIntentPacketRecv memory msg_ =
-            createReceiveIntentPacket(sourceChannelId, message, nbPackets);
-        // Timeout is expressed as nano because of ibc-go...
-        msg_.packets[0].timeoutHeight = timeout;
-        vm.roll(timeout);
-        vm.expectRevert(IBCErrors.ErrHeightTimeout.selector);
-        handler.recvIntentPacket(msg_);
-    }
-
     function createPacketAcknowledgement(
         uint32 destinationChannel,
         bytes calldata message,
@@ -572,7 +501,7 @@ contract IBCPacketTests is UnionTests {
                 sourceChannelId: channelId,
                 destinationChannelId: destinationChannel,
                 data: abi.encodePacked(message, i),
-                timeoutHeight: type(uint64).max,
+                timeoutHeight: 0,
                 timeoutTimestamp: type(uint64).max
             });
             acknowledgements[i] = abi.encodePacked(i);
@@ -652,22 +581,6 @@ contract IBCPacketTests is UnionTests {
     ) public {
         vm.pauseGasMetering();
         test_acknowledgePacket_ok(destinationChannel, message, 20);
-    }
-
-    function test_acknowledgePacket_ok_25(
-        uint32 destinationChannel,
-        bytes calldata message
-    ) public {
-        vm.pauseGasMetering();
-        test_acknowledgePacket_ok(destinationChannel, message, 25);
-    }
-
-    function test_acknowledgePacket_ok_30(
-        uint32 destinationChannel,
-        bytes calldata message
-    ) public {
-        vm.pauseGasMetering();
-        test_acknowledgePacket_ok(destinationChannel, message, 30);
     }
 
     function test_acknowledgePacket_tampered(
@@ -767,7 +680,7 @@ contract IBCPacketTests is UnionTests {
             sourceChannelId: channelId,
             destinationChannelId: destinationChannel,
             data: message,
-            timeoutHeight: type(uint64).max,
+            timeoutHeight: 0,
             timeoutTimestamp: type(uint64).max
         });
         IBCMsgs.MsgPacketTimeout memory msg_ = IBCMsgs.MsgPacketTimeout({
@@ -792,7 +705,6 @@ contract IBCPacketTests is UnionTests {
             createPacketTimeout(destinationChannel, message);
         // fake timeout
         msg_.packet.timeoutTimestamp = timestamp;
-        msg_.packet.timeoutHeight = 0;
         handler.assumePacketSent(msg_.packet);
         lightClient.pushValidNonMembership();
         lightClient.setLatestTimestamp(uint64(timestamp) + k);
@@ -825,25 +737,6 @@ contract IBCPacketTests is UnionTests {
         );
     }
 
-    function test_timeoutPacket_timestamp_invalidProof(
-        uint32 destinationChannel,
-        bytes calldata message,
-        uint32 timestamp,
-        uint32 k
-    ) public {
-        vm.assume(timestamp > 0);
-        vm.assume(k <= timestamp);
-        IBCMsgs.MsgPacketTimeout memory msg_ =
-            createPacketTimeout(destinationChannel, message);
-        // fake timeout
-        msg_.packet.timeoutTimestamp = timestamp;
-        msg_.packet.timeoutHeight = 0;
-        handler.assumePacketSent(msg_.packet);
-        lightClient.setLatestTimestamp(uint64(timestamp) + k);
-        vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
-        handler.timeoutPacket(msg_);
-    }
-
     function test_timeoutPacket_timestamp_notReached(
         uint32 destinationChannel,
         bytes calldata message,
@@ -856,7 +749,6 @@ contract IBCPacketTests is UnionTests {
             createPacketTimeout(destinationChannel, message);
         // fake timeout
         msg_.packet.timeoutTimestamp = uint64(timestamp) + k + 1;
-        msg_.packet.timeoutHeight = 0;
         handler.assumePacketSent(msg_.packet);
         lightClient.pushValidNonMembership();
         lightClient.setLatestTimestamp(timestamp);
@@ -864,90 +756,21 @@ contract IBCPacketTests is UnionTests {
         handler.timeoutPacket(msg_);
     }
 
-    function test_timeoutPacket_height_ok(
+    function test_timeoutPacket_timestamp_invalidProof(
         uint32 destinationChannel,
         bytes calldata message,
-        uint32 height,
+        uint32 timestamp,
         uint32 k
-    ) public returns (IBCMsgs.MsgPacketTimeout memory) {
-        vm.pauseGasMetering();
-        vm.assume(height > 0);
-        vm.assume(k <= height);
+    ) public {
+        vm.assume(timestamp > 0);
+        vm.assume(k <= timestamp);
         IBCMsgs.MsgPacketTimeout memory msg_ =
             createPacketTimeout(destinationChannel, message);
         // fake timeout
-        msg_.packet.timeoutTimestamp = 0;
-        msg_.packet.timeoutHeight = height;
+        msg_.packet.timeoutTimestamp = timestamp;
         handler.assumePacketSent(msg_.packet);
-        lightClient.pushValidNonMembership();
-        lightClient.setLatestHeight(uint64(height) + k);
-        msg_.proofHeight = uint64(height) + k;
-        vm.expectEmit();
-        emit IBCPacketLib.PacketTimeout(
-            channelId, IBCPacketLib.commitPacket(msg_.packet), msg_.relayer
-        );
-        vm.resumeGasMetering();
-        handler.timeoutPacket(msg_);
-        vm.pauseGasMetering();
-        return msg_;
-    }
-
-    function test_timeoutPacket_height_commitmentRemoved(
-        uint32 destinationChannel,
-        bytes calldata message,
-        uint32 height,
-        uint32 k
-    ) public {
-        IBCMsgs.MsgPacketTimeout memory msg_ =
-            test_timeoutPacket_height_ok(destinationChannel, message, height, k);
-        assertEq(
-            handler.commitments(
-                IBCCommitment.batchPacketsCommitmentKey(
-                    IBCPacketLib.commitPacket(msg_.packet)
-                )
-            ),
-            IBCPacketLib.COMMITMENT_MAGIC_ACK
-        );
-    }
-
-    function test_timeoutPacket_height_invalidProof(
-        uint32 destinationChannel,
-        bytes calldata message,
-        uint32 height,
-        uint32 k
-    ) public {
-        vm.assume(height > 0);
-        vm.assume(k <= height);
-        IBCMsgs.MsgPacketTimeout memory msg_ =
-            createPacketTimeout(destinationChannel, message);
-        // fake timeout
-        msg_.packet.timeoutTimestamp = 0;
-        msg_.packet.timeoutHeight = height;
-        handler.assumePacketSent(msg_.packet);
-        lightClient.setLatestHeight(uint64(height) + k);
-        msg_.proofHeight = uint64(height) + k;
+        lightClient.setLatestTimestamp(uint64(timestamp) + k);
         vm.expectRevert(IBCErrors.ErrInvalidProof.selector);
-        handler.timeoutPacket(msg_);
-    }
-
-    function test_timeoutPacket_height_notReached(
-        uint32 destinationChannel,
-        bytes calldata message,
-        uint32 height,
-        uint32 k
-    ) public {
-        vm.assume(height > 0);
-        vm.assume(k <= height);
-        IBCMsgs.MsgPacketTimeout memory msg_ =
-            createPacketTimeout(destinationChannel, message);
-        // fake timeout
-        msg_.packet.timeoutTimestamp = 0;
-        msg_.packet.timeoutHeight = uint64(height) + k + 1;
-        handler.assumePacketSent(msg_.packet);
-        lightClient.pushValidNonMembership();
-        lightClient.setLatestHeight(height);
-        msg_.proofHeight = height;
-        vm.expectRevert(IBCErrors.ErrTimeoutHeightNotReached.selector);
         handler.timeoutPacket(msg_);
     }
 
@@ -1075,24 +898,21 @@ contract IBCPacketTests is UnionTests {
 
     function test_batchSend_ok(
         uint64 timeoutTimestamp,
-        uint64 timeoutHeight,
         uint8 nbPackets
     ) public returns (IBCPacket[] memory) {
         vm.pauseGasMetering();
         vm.assume(nbPackets > 1);
-        vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
+        vm.assume(timeoutTimestamp > 0);
         IBCPacket[] memory packets = new IBCPacket[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.prank(address(module));
             bytes memory message = abi.encodePacked(i);
-            handler.sendPacket(
-                channelId, timeoutHeight, timeoutTimestamp, message
-            );
+            handler.sendPacket(channelId, 0, timeoutTimestamp, message);
             IBCPacket memory packet = IBCPacket({
                 sourceChannelId: channelId,
                 destinationChannelId: COUNTERPARTY_CHANNEL_ID,
                 data: message,
-                timeoutHeight: timeoutHeight,
+                timeoutHeight: 0,
                 timeoutTimestamp: timeoutTimestamp
             });
             packets[i] = packet;
@@ -1104,68 +924,46 @@ contract IBCPacketTests is UnionTests {
     }
 
     function test_batchSend_ok_2(
-        uint64 timeoutTimestamp,
-        uint64 timeoutHeight
+        uint64 timeoutTimestamp
     ) public {
         vm.pauseGasMetering();
-        test_batchSend_ok(timeoutTimestamp, timeoutHeight, 2);
+        test_batchSend_ok(timeoutTimestamp, 2);
     }
 
     function test_batchSend_ok_5(
-        uint64 timeoutTimestamp,
-        uint64 timeoutHeight
+        uint64 timeoutTimestamp
     ) public {
         vm.pauseGasMetering();
-        test_batchSend_ok(timeoutTimestamp, timeoutHeight, 5);
+        test_batchSend_ok(timeoutTimestamp, 5);
     }
 
     function test_batchSend_ok_10(
-        uint64 timeoutTimestamp,
-        uint64 timeoutHeight
+        uint64 timeoutTimestamp
     ) public {
         vm.pauseGasMetering();
-        test_batchSend_ok(timeoutTimestamp, timeoutHeight, 10);
+        test_batchSend_ok(timeoutTimestamp, 10);
     }
 
     function test_batchSend_ok_15(
-        uint64 timeoutTimestamp,
-        uint64 timeoutHeight
+        uint64 timeoutTimestamp
     ) public {
         vm.pauseGasMetering();
-        test_batchSend_ok(timeoutTimestamp, timeoutHeight, 15);
+        test_batchSend_ok(timeoutTimestamp, 15);
     }
 
     function test_batchSend_ok_20(
-        uint64 timeoutTimestamp,
-        uint64 timeoutHeight
+        uint64 timeoutTimestamp
     ) public {
         vm.pauseGasMetering();
-        test_batchSend_ok(timeoutTimestamp, timeoutHeight, 20);
-    }
-
-    function test_batchSend_ok_25(
-        uint64 timeoutTimestamp,
-        uint64 timeoutHeight
-    ) public {
-        vm.pauseGasMetering();
-        test_batchSend_ok(timeoutTimestamp, timeoutHeight, 25);
-    }
-
-    function test_batchSend_ok_30(
-        uint64 timeoutTimestamp,
-        uint64 timeoutHeight
-    ) public {
-        vm.pauseGasMetering();
-        test_batchSend_ok(timeoutTimestamp, timeoutHeight, 30);
+        test_batchSend_ok(timeoutTimestamp, 20);
     }
 
     function test_batchSend_commitmentSaved(
         uint64 timeoutTimestamp,
-        uint64 timeoutHeight,
         uint8 nbPackets
     ) public {
         IBCPacket[] memory packets =
-            test_batchSend_ok(timeoutTimestamp, timeoutHeight, nbPackets);
+            test_batchSend_ok(timeoutTimestamp, nbPackets);
         assertEq(
             handler.commitments(
                 IBCCommitment.batchPacketsCommitmentKey(
@@ -1178,24 +976,21 @@ contract IBCPacketTests is UnionTests {
 
     function test_batchSend_packetNotSent(
         uint64 timeoutTimestamp,
-        uint64 timeoutHeight,
         uint8 nbPackets
     ) public {
         vm.pauseGasMetering();
         vm.assume(nbPackets > 1);
-        vm.assume(timeoutTimestamp != 0 || timeoutHeight != 0);
+        vm.assume(timeoutTimestamp > 0);
         IBCPacket[] memory packets = new IBCPacket[](nbPackets);
         for (uint8 i = 0; i < nbPackets; i++) {
             vm.prank(address(module));
             bytes memory message = abi.encodePacked(i);
-            handler.sendPacket(
-                channelId, timeoutHeight, timeoutTimestamp, message
-            );
+            handler.sendPacket(channelId, 0, timeoutTimestamp, message);
             IBCPacket memory packet = IBCPacket({
                 sourceChannelId: channelId,
                 destinationChannelId: COUNTERPARTY_CHANNEL_ID,
                 data: message,
-                timeoutHeight: timeoutHeight,
+                timeoutHeight: 0,
                 timeoutTimestamp: timeoutTimestamp
             });
             packets[i] = packet;
@@ -1276,24 +1071,6 @@ contract IBCPacketTests is UnionTests {
     ) public {
         vm.pauseGasMetering();
         test_batchAcks_afterRecvPacket_ok(sourceChannelId, message, 20, ack);
-    }
-
-    function test_batchAcks_afterRecvPacket_ok_25(
-        uint32 sourceChannelId,
-        bytes calldata message,
-        bytes calldata ack
-    ) public {
-        vm.pauseGasMetering();
-        test_batchAcks_afterRecvPacket_ok(sourceChannelId, message, 25, ack);
-    }
-
-    function test_batchAcks_afterRecvPacket_ok_30(
-        uint32 sourceChannelId,
-        bytes calldata message,
-        bytes calldata ack
-    ) public {
-        vm.pauseGasMetering();
-        test_batchAcks_afterRecvPacket_ok(sourceChannelId, message, 30, ack);
     }
 
     function test_batchAcks_afterRecvPacket_commitmentSaved(

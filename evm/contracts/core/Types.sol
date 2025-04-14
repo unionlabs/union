@@ -47,6 +47,7 @@ library IBCErrors {
     error ErrUnauthorized();
     error ErrLatestTimestampNotFound();
     error ErrTimeoutMustBeSet();
+    error ErrTimeoutHeightUnsupported();
     error ErrHeightTimeout();
     error ErrTimestampTimeout();
     error ErrAcknowledgementIsEmpty();

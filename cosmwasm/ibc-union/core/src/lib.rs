@@ -88,6 +88,11 @@ pub enum ContractError {
     PacketNotReceived,
     #[error("{} packet is already acknowledged", ContractErrorKind::from(self))]
     AlreadyAcknowledged,
+    #[error(
+        "{} height timeout is not supported anymore",
+        ContractErrorKind::from(self)
+    )]
+    TimeoutHeightUnsupported,
     #[error("{} timeout must be set", ContractErrorKind::from(self))]
     TimeoutMustBeSet,
     #[error("{} timestamp timeout not yet reached", ContractErrorKind::from(self))]

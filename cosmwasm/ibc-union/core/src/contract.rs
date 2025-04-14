@@ -1769,15 +1769,12 @@ fn process_receive(
             return Err(ContractError::BatchSameChannelOnly);
         }
 
-        if packet.timeout_height > 0 && (env.block.height >= packet.timeout_height) {
-            return Err(ContractError::ReceivedTimedOutPacketHeight {
-                timeout_height: packet.timeout_height,
-                current_height: env.block.height,
-            });
+        if packet.timeout_height != 0 {
+            return Err(ContractError::TimeoutHeightUnsupported);
         }
 
         let current_timestamp = Timestamp::from_nanos(env.block.time.nanos());
-        if !packet.timeout_timestamp.is_zero() && (current_timestamp >= packet.timeout_timestamp) {
+        if current_timestamp >= packet.timeout_timestamp {
             return Err(ContractError::ReceivedTimedOutPacketTimestamp {
                 timeout_timestamp: packet.timeout_timestamp,
                 current_timestamp,
@@ -1897,7 +1894,11 @@ fn send_packet(
     timeout_timestamp: Timestamp,
     data: Vec<u8>,
 ) -> ContractResult {
-    if timeout_timestamp.is_zero() && timeout_height == 0 {
+    if timeout_height != 0 {
+        return Err(ContractError::TimeoutHeightUnsupported);
+    }
+
+    if timeout_timestamp.is_zero() {
         return Err(ContractError::TimeoutMustBeSet);
     }
 
