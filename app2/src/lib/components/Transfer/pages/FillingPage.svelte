@@ -91,7 +91,7 @@ const transferState = $derived.by<FillingEnum>(() => {
           return AmountNeeded()
         }
 
-        const parsedAmount = Number.parseFloat(transfer.raw.amount)
+        const parsedAmount = Number.parseFloat(transfer.raw.amount.replace(",", "."))
         if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
           return AmountNeeded()
         }
@@ -118,7 +118,7 @@ const buttonText = $derived.by(() => {
   }
 
   if (transfer.raw.amount) {
-    const parsedAmount = Number.parseFloat(transfer.raw.amount)
+    const parsedAmount = Number.parseFloat(transfer.raw.amount.replace(",", "."))
     if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
       return "Enter amount"
     }

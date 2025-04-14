@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { HTMLAttributes } from "svelte/elements"
+import type { HTMLAttributes, HTMLInputAttributes } from "svelte/elements"
 import { cn } from "$lib/utils"
 import Label from "./Label.svelte"
 
-type Props = HTMLAttributes<HTMLInputElement> & {
+type Props = HTMLInputAttributes & {
   id: string
   value: string
   label: string
