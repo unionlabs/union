@@ -28,31 +28,11 @@ export class CosmosQueryError extends Data.TaggedError("CosmosQueryError")<{
   cause: unknown
 }> {}
 
-export class EvmAllowanceCheckError extends Data.TaggedError("EvmAllowanceCheckError")<{
-  cause: unknown
-}> {}
-
-export class FillingError extends Data.TaggedError("FillingError")<{
-  cause:
-    | "WalletMissing"
-    | "SourceChainMissing"
-    | "ChainWalletMissing"
-    | "BaseTokenMissing"
-    | "DestinationMissing"
-    | "InvalidAmount"
-    | "ReceiverMissing"
-    | "ValidationFailed"
-  details?: unknown
-}> {}
-
-
 export type TransferFlowError =
   | MissingTransferFieldsError
   | InsufficientFundsError
-  | AllowanceCheckError
   | OrderCreationError
   | BalanceLookupError
   | CosmosQueryError
-  | EvmAllowanceCheckError
-  | FillingError
+  | AllowanceCheckError
 

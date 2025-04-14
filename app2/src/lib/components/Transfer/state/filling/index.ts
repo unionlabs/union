@@ -7,14 +7,18 @@ import {
   type ApprovalStep
 } from "$lib/components/Transfer/state/filling/check-allowance.ts"
 import {
-  FillingError,
   InsufficientFundsError,
-  MissingTransferFieldsError,
   OrderCreationError,
   type TransferFlowError
 } from "$lib/components/Transfer/state/errors.ts"
 import type {Instruction} from "@unionlabs/sdk/ucs03/instruction"
-import {wallets} from "$lib/stores/wallets.svelte.ts"
+import {
+  FillingState,
+  getFillingState,
+  type TransferArgs
+} from "$lib/components/Transfer/state/filling/check-filling.ts"
+import {validateTransfer} from "$lib/components/Transfer/validation.ts"
+import {createIntents} from "$lib/components/Transfer/state/filling/create-intents.ts";
 
 export type StateResult = {
   nextState: Option.Option<CreateTransferState>
@@ -25,88 +29,54 @@ export type StateResult = {
 }
 
 export type CreateTransferState = Data.TaggedEnum<{
+  Empty: {}
   Filling: {}
-  Validation: {}
-  CreateIntents: {}
-  CheckBalance: { intents: TransferIntents }
-  CheckAllowance: {}
-  CreateOrders: { allowances: Array<ApprovalStep> }
-  CreateSteps: { allowances: Array<ApprovalStep>; orders: Array<Instruction> }
+  Validation: { args: TransferArgs }
+  CreateIntents: { args: TransferArgs }
+  CheckBalance: {
+    args: TransferArgs
+    intents: TransferIntents
+  }
+  CheckAllowance: {
+    args: TransferArgs
+    intents: TransferIntents }
+  CreateOrders: {
+    args: TransferArgs
+    intents: TransferIntents
+    allowances: Array<ApprovalStep>
+  }
+  CreateSteps: {
+    args: TransferArgs
+    allowances: Array<ApprovalStep>
+    orders: Array<Instruction>
+  }
 }>
 
 export const CreateTransferState = Data.taggedEnum<CreateTransferState>()
-const {Validation, CreateIntents, CheckBalance, CheckAllowance, CreateOrders, CreateSteps} =
-  CreateTransferState
-
-export type FillingState = Data.TaggedEnum<{
-  WalletMissing: {}
-  SourceChainMissing: {}
-  ChainWalletMissing: {}
-  BaseTokenMissing: {}
-  DestinationMissing: {}
-  InvalidAmount: {}
-  ReceiverMissing: {}
-  Ready: {}
-}>
-
-export const FillingState = Data.taggedEnum<FillingState>()
-
-export const getFillingState = (transfer: Transfer): FillingState => {
-  if (!wallets.hasAnyWallet()) {
-    return FillingState.WalletMissing()
-  }
-
-  return Option.match(transfer.sourceChain, {
-    onNone: () => {
-      return FillingState.SourceChainMissing()
-    },
-    onSome: sourceChain => {
-      const sourceWallet = wallets.getAddressForChain(sourceChain)
-      if (Option.isNone(sourceWallet)) {
-        return FillingState.ChainWalletMissing()
-      }
-
-      if (Option.isNone(transfer.baseToken)) {
-        return FillingState.BaseTokenMissing()
-      }
-
-      if (Option.isNone(transfer.destinationChain)) {
-        return FillingState.DestinationMissing()
-      }
-
-      if (!transfer.raw.amount) {
-        return FillingState.InvalidAmount()
-      }
-
-      const parsedAmount = Number.parseFloat(transfer.raw.amount)
-      if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-        return FillingState.InvalidAmount()
-      }
-
-      if (Option.isSome(transfer.destinationChain) && Option.isNone(transfer.derivedReceiver)) {
-        return FillingState.ReceiverMissing()
-      }
-
-      return FillingState.Ready()
-    }
-  })
-}
-
+const {
+  Empty,
+  Validation,
+  CreateIntents,
+  CheckBalance,
+  CheckAllowance,
+  CreateOrders,
+  CreateSteps
+} = CreateTransferState
 
 const fail = (msg: string, err?: TransferFlowError): StateResult => ({
-  nextState: Option.none<CreateTransferState>(),
+  nextState: Option.none(),
   message: msg,
-  orders: Option.none<Array<Instruction>>(),
-  allowances: Option.none<Array<ApprovalStep>>(),
-  error: err ? Option.some<TransferFlowError>(err) : Option.none<TransferFlowError>()
+  orders: Option.none(),
+  allowances: Option.none(),
+  error: err ? Option.some(err) : Option.none()
 })
 
 const ok = (state: CreateTransferState, msg: string): StateResult => ({
-  nextState: Option.some<CreateTransferState>(state),
+  nextState: Option.some(state),
   message: msg,
-  orders: Option.none<Array<Instruction>>(),
-  allowances: Option.none<Array<ApprovalStep>>(),
-  error: Option.none<TransferFlowError>()
+  orders: Option.none(),
+  allowances: Option.none(),
+  error: Option.none()
 })
 
 const complete = (
@@ -114,189 +84,106 @@ const complete = (
   orders: Array<Instruction>,
   allowances: Array<ApprovalStep>
 ): StateResult => ({
-  nextState: Option.none<CreateTransferState>(),
+  nextState: Option.none(),
   message: msg,
-  orders: Option.some<Array<Instruction>>(orders),
-  allowances: Option.some<Array<ApprovalStep>>(allowances),
-  error: Option.none<TransferFlowError>()
+  orders: Option.some(orders),
+  allowances: Option.some(allowances),
+  error: Option.none()
 })
 
 export const createTransferState = (cts: CreateTransferState, transfer: Transfer) => {
-  if (
-    Option.isNone(transfer.sourceChain) ||
-    Option.isNone(transfer.destinationChain) ||
-    Option.isNone(transfer.baseToken) ||
-    Option.isNone(transfer.derivedSender) ||
-    Option.isNone(transfer.parsedAmount) ||
-    Option.isNone(transfer.ucs03address) ||
-    Option.isNone(transfer.channel) ||
-    Option.isNone(transfer.intents)
-  ) {
-    const missingFields: Array<string> = []
-
-    if (Option.isNone(transfer.sourceChain)) missingFields.push("sourceChain")
-    if (Option.isNone(transfer.destinationChain)) missingFields.push("destinationChain")
-    if (Option.isNone(transfer.baseToken)) missingFields.push("baseToken")
-    if (Option.isNone(transfer.derivedSender)) missingFields.push("derivedSender")
-    if (Option.isNone(transfer.parsedAmount)) missingFields.push("parsedAmount")
-    if (Option.isNone(transfer.ucs03address)) missingFields.push("ucs03address")
-    if (Option.isNone(transfer.channel)) missingFields.push("channel")
-    if (Option.isNone(transfer.intents)) missingFields.push("intents")
-
-    console.log("filling: Missing required fields", missingFields)
-
-    return Effect.succeed(
-      fail(
-        "Missing arguments",
-        new MissingTransferFieldsError({ fields: missingFields })
-      )
-    )
-  }
-
-
-  const source = transfer.sourceChain.value
-  const destination = transfer.destinationChain.value
-  const channel = transfer.channel.value
-  const ucs03address = transfer.ucs03address.value
-  const sender = transfer.derivedSender.value
-  const intents = transfer.intents.value
-
   return CreateTransferState.$match(cts, {
+    Empty: () => Effect.succeed(ok(Filling(), "Waiting for input")),
     Filling: () => {
       const state = getFillingState(transfer)
 
       return FillingState.$match(state, {
-        WalletMissing: () =>
-          Effect.succeed(
-            fail(
-              "Connect wallet",
-              new FillingError({ cause: "WalletMissing" })
-            )
-          ),
-
-        SourceChainMissing: () =>
-          Effect.succeed(
-            fail(
-              "Select from chain",
-              new FillingError({ cause: "SourceChainMissing" })
-            )
-          ),
-
-        ChainWalletMissing: ({ chain }) =>
-          Effect.succeed(
-            fail(
-              `Connect wallet for ${chain.name}`,
-              new FillingError({ cause: "ChainWalletMissing", details: { chain } })
-            )
-          ),
-
-        BaseTokenMissing: () =>
-          Effect.succeed(
-            fail(
-              "Select asset",
-              new FillingError({ cause: "BaseTokenMissing" })
-            )
-          ),
-
-        DestinationMissing: () =>
-          Effect.succeed(
-            fail(
-              "Select destination chain",
-              new FillingError({ cause: "DestinationMissing" })
-            )
-          ),
-
-        InvalidAmount: () =>
-          Effect.succeed(
-            fail(
-              "Invalid amount",
-              new FillingError({ cause: "InvalidAmount", details: { amount: transfer.raw.amount } })
-            )
-          ),
-
-        ReceiverMissing: () =>
-          Effect.succeed(
-            fail(
-              "Enter receiver address",
-              new FillingError({ cause: "ReceiverMissing" })
-            )
-          ),
-
-        ValidationFailed: () =>
-          Effect.succeed(
-            fail(
-              "Validation failed",
-              new FillingError({ cause: "ValidationFailed", details: transfer.validation })
-            )
-          ),
-
-        Ready: () =>
-          Effect.succeed(ok(CreateIntents(), "All fields ready, continuing..."))
+        Empty: () => Effect.succeed(ok(Filling(), "Waiting...")),
+        WalletMissing: () => Effect.succeed(ok(Empty(), "Connect wallet")),
+        SourceChainMissing: () => Effect.succeed(ok(Empty(), "Select from chain")),
+        ChainWalletMissing: () => Effect.succeed(ok(Empty(), "Connect wallet")),
+        BaseTokenMissing: () => Effect.succeed(ok(Empty(), "Select asset")),
+        DestinationMissing: () => Effect.succeed(ok(Empty(), "Select to chain")),
+        InvalidAmount: () => Effect.succeed(ok(Empty(), "Invalid amount")),
+        ReceiverMissing: () => Effect.succeed(ok(Empty(), "Select receiver")),
+        Ready: args => Effect.succeed(ok(Validation({ args }), "Validating..."))
       })
+
     },
 
-    Validation: () => {
-      if (transfer.validation._tag !== "Success") {
+    Validation: ({ args }) => {
+      const validation = validateTransfer(args)
+
+      if (validation._tag !== "Success") {
+        console.log(validation)
         return Effect.succeed(fail("Validation failed"))
       }
-      return Effect.succeed(ok(CreateIntents(), "Validation passed"))
+
+      return Effect.succeed(ok(CreateIntents({ args }), "Validation passed"))
     },
 
-    CreateIntents: () => Effect.succeed(ok(CheckBalance({intents}), "Checking balance")),
+    CreateIntents: ({ args }) => {
+      console.log('here')
+      const intentsOpt = createIntents(args)
+      console.log('here2', intentsOpt)
 
-    CheckBalance: ({intents}) =>
-      checkBalanceForIntents(source, intents).pipe(
+      if (Option.isNone(intentsOpt)) {
+        return Effect.succeed(fail("Failed to create intents"))
+      }
+
+      const intents = intentsOpt.value
+
+      return Effect.succeed(ok(CheckBalance({ args, intents }), "Checking balance..."))
+    },
+
+    CheckBalance: ({ args, intents }) =>
+      checkBalanceForIntents(args.sourceChain, intents).pipe(
         Effect.flatMap(hasEnough =>
           hasEnough
-            ? Effect.succeed(ok(CheckAllowance(), "Checking allowance..."))
+            ? Effect.succeed(ok(CheckAllowance({ args, intents }), "Checking allowance..."))
             : Effect.succeed(
-              fail(
-                "Insufficient funds",
-                new InsufficientFundsError({cause: "Insufficient funds"})
-              )
+              fail("Insufficient funds", new InsufficientFundsError({ cause: "Insufficient funds" }))
             )
         ),
         Effect.catchAll(error => Effect.succeed(fail("Balance check failed", error)))
       ),
 
-    CheckAllowance: () =>
-      checkAllowances(
-        source,
-        intents,
-        sender,
-        ucs03address
-      ).pipe(
+    CheckAllowance: ({ args, intents }) =>
+      checkAllowances(args.sourceChain, intents, args.receiver, args.ucs03address).pipe(
         Effect.map(allowancesOpt => {
           const allowances = Option.getOrElse(allowancesOpt, () => [])
-          return ok(CreateOrders({allowances}), "Creating orders...")
+          return ok(CreateOrders({ args, intents, allowances }), "Creating orders...")
         }),
         Effect.catchAll(error => Effect.succeed(fail("Allowance check failed", error)))
       ),
 
-    CreateOrders: ({allowances}) =>
+    CreateOrders: ({ args, intents, allowances }) =>
       createOrdersBatch(
-        source,
-        destination,
-        channel,
-        ucs03address,
+        args.sourceChain,
+        args.destinationChain,
+        args.channel,
+        args.ucs03address,
         intents
       ).pipe(
         Effect.flatMap(batchOpt => {
           if (Option.isNone(batchOpt)) {
             return Effect.succeed(
-              fail("Could not create orders", new OrderCreationError({details: "No batch returned"}))
+              fail("Could not create orders", new OrderCreationError({ details: "No batch returned" }))
             )
           }
 
           const batch = batchOpt.value
           return Effect.succeed(
-            ok(CreateSteps({allowances, orders: [...batch.operand]}), "Building final steps...")
+            ok(CreateSteps({ args, allowances, orders: [...batch.operand] }), "Building final steps...")
           )
         }),
         Effect.catchAll(error => Effect.succeed(fail("Order creation failed", error)))
       ),
 
-    CreateSteps: ({allowances, orders}) =>
-      Effect.succeed(complete("Transfer ready", orders, allowances))
+    CreateSteps: ({ allowances, orders }) => {
+
+      console.log({ allowances, orders })
+     return Effect.succeed(complete("Transfer ready", orders, allowances))
+    }
   })
 }

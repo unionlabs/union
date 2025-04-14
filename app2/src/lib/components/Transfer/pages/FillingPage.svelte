@@ -16,8 +16,6 @@
 
   type Props = {
     onContinue: () => void
-    actionButtonText: string
-    gotSteps: boolean
     loading: boolean
     onErrorClose?: () => void
     statusMessage?: string | undefined
@@ -26,7 +24,6 @@
 
   const {
     onContinue,
-    gotSteps,
     loading,
     statusMessage,
     transferErrors = Option.none<TransferFlowError>(),
@@ -39,7 +36,6 @@
       onSome: error =>
         Match.value(error).pipe(
           Match.when(e => e._tag === "InsufficientFundsError", () => "Insufficient funds"),
-          Match.when(e => e._tag === "MissingTransferFieldsError", () => "Missing arguments"),
           Match.when(e => e._tag === "OrderCreationError", () => "Could not create orders"),
           Match.orElse(() => statusMessage)
         ),
@@ -67,12 +63,12 @@
 
   <div class="flex flex-col items-end">
     <div class="flex items-center mr-5 text-zinc-400">
-      {#if transfer.args.receiver && transfer.args.destinationChain}
+      {#if Option.isSome(transfer.derivedReceiver) && Option.isSome(transfer.destinationChain)}
         <p class="text-xs mb-2">
           <AddressComponent
             truncate
-            address={transfer.raw.receiver}
-            chain={transfer.args.destinationChain}
+            address={transfer.derivedReceiver.value}
+            chain={transfer.destinationChain.value}
           />
         </p>
       {:else}

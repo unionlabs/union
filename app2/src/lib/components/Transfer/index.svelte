@@ -120,21 +120,6 @@ $effect(() => {
   isLoading = true
   transferSteps = Option.none()
   transferErrors = Option.none()
-  statusMessage = "Starting transfer process..."
-
-  const frozenTransfer = {
-    ...transfer,
-    sourceChain: transfer.sourceChain,
-    destinationChain: transfer.destinationChain,
-    baseToken: transfer.baseToken,
-    channel: transfer.channel,
-    parsedAmount: transfer.parsedAmount,
-    intents: transfer.intents,
-    derivedSender: transfer.derivedSender,
-    derivedReceiver: transfer.derivedReceiver,
-    ucs03address: transfer.ucs03address,
-    validation: transfer.validation,
-  }
 
   const machineEffect = Effect.gen(function* () {
     let currentState: CreateTransferState = CreateTransferState.Filling()
@@ -146,7 +131,7 @@ $effect(() => {
     }> = []
 
     while (true) {
-      const result: StateResult = yield* createTransferState(currentState, frozenTransfer)
+      const result: StateResult = yield* createTransferState(currentState, transfer)
       statusMessage = result.message
 
       if (Option.isSome(result.error)) {
@@ -177,8 +162,8 @@ $effect(() => {
 
     const isReceiverInWallet = pipe(
       Option.all({
-        destinationChain: frozenTransfer.destinationChain,
-        receiver: frozenTransfer.derivedReceiver
+        destinationChain: transfer.destinationChain,
+        receiver: transfer.derivedReceiver
       }),
       Option.flatMap(({ destinationChain, receiver }) => {
         const walletaddr = wallets.getAddressForChain(destinationChain)
@@ -189,11 +174,10 @@ $effect(() => {
     )
 
     if (!isReceiverInWallet) {
-      console.log({ frozenTransfer })
       steps.push(
         TransferStep.CheckReceiver({
-          receiver: frozenTransfer.derivedReceiver,
-          destinationChain: frozenTransfer.destinationChain
+          receiver: transfer.derivedReceiver,
+          destinationChain: transfer.destinationChain
         })
       )
     }
