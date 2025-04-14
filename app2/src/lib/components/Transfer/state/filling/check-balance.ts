@@ -24,14 +24,6 @@ export const checkBalanceForIntents = (
       const needsFee = source.universal_chain_id === BABYLON_CHAIN_ID && token === UBBN_DENOM
       const required = intent.baseAmount + (needsFee ? BABY_SUB_AMOUNT : 0n)
 
-      console.debug("[checkBalanceForIntents] evaluating intent:", {
-        sender: intent.sender,
-        token,
-        baseAmount: intent.baseAmount.toString(),
-        needsFee,
-        required: required.toString()
-      })
-
       if (acc[key]) {
         acc[key].required += intent.baseAmount
       } else {
@@ -59,14 +51,7 @@ export const checkBalanceForIntents = (
               ? group.baseToken
               : toHex(group.baseToken)
 
-        console.debug("[checkBalanceForIntents] checking balance for group:", {
-          sender: group.sender,
-          token: group.baseToken,
-          denom,
-          required: group.required.toString()
-        })
-
-        return balancesStore.getBalance(source.universal_chain_id, group.sender, denom)
+        return balancesStore.getBalance(source.universal_chain_id, group.sender, group.baseToken)
       }),
       balance => {
         if (!Option.isSome(balance)) {

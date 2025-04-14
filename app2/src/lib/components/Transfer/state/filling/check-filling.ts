@@ -1,7 +1,7 @@
 import type {Transfer} from "$lib/components/Transfer/transfer.svelte.ts"
 import {wallets} from "$lib/stores/wallets.svelte.ts"
 import {Data, Option} from "effect"
-import type {Chain, Channel, ChannelId} from "@unionlabs/sdk/schema"
+import type {AddressCanonicalBytes, Chain, Channel, ChannelId} from "@unionlabs/sdk/schema"
 
 export interface TransferArgs {
   sourceChain: Chain
@@ -10,8 +10,8 @@ export interface TransferArgs {
   baseToken: string
   baseAmount: string
   quoteAmount: string
-  receiver: string
-  sender: string
+  receiver: AddressCanonicalBytes
+  sender: AddressCanonicalBytes
   ucs03address: string
   sourceRpcType?: string
   destinationRpcType?: string
@@ -27,8 +27,11 @@ export type FillingState = Data.TaggedEnum<{
   DestinationMissing: {}
   InvalidAmount: {}
   ReceiverMissing: {}
+  NoRoute: {}
+  NoContract: {}
   Ready: TransferArgs
 }>
+
 
 export const FillingState = Data.taggedEnum<FillingState>()
 
@@ -37,6 +40,8 @@ export const getFillingState = (transfer: Transfer): FillingState => {
     return FillingState.WalletMissing()
   }
 
+  console.log(transfer)
+
   return Option.match(transfer.sourceChain, {
     onNone: () => FillingState.SourceChainMissing(),
     onSome: sourceChain => {
@@ -44,6 +49,14 @@ export const getFillingState = (transfer: Transfer): FillingState => {
       if (Option.isNone(sourceWallet)) return FillingState.ChainWalletMissing()
       if (Option.isNone(transfer.baseToken)) return FillingState.BaseTokenMissing()
       if (Option.isNone(transfer.destinationChain)) return FillingState.DestinationMissing()
+
+      if (Option.isNone(transfer.channel)) {
+        return FillingState.NoRoute()
+      }
+
+      if (Option.isNone(transfer.ucs03address)) {
+        return FillingState.NoContract()
+      }
 
       const parsedAmount = Number.parseFloat(transfer.raw.amount)
       if (!transfer.raw.amount || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
@@ -65,7 +78,7 @@ export const getFillingState = (transfer: Transfer): FillingState => {
 
       return Option.match(unwrapped, {
         onNone: () => {
-          console.warn("Unexpected: transfer considered Ready but Option.all failed")
+          console.warn("❌ [getFillingState] Option.all failed — shouldn't happen now")
           return FillingState.Empty()
         },
 
@@ -75,7 +88,7 @@ export const getFillingState = (transfer: Transfer): FillingState => {
                    receiver,
                    parsedAmount,
                    baseToken,
-                   ucs03address,
+                   ucs03address
                  }) =>
           FillingState.Ready({
             sourceChain,
@@ -89,9 +102,10 @@ export const getFillingState = (transfer: Transfer): FillingState => {
             sender: sourceWallet.value,
             sourceRpcType: sourceChain.rpc_type,
             destinationRpcType: destinationChain.rpc_type,
-            sourceChannelId: channel.source_channel_id,
+            sourceChannelId: channel.source_channel_id
           })
       })
     }
   })
 }
+

@@ -104,11 +104,12 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
         ChainWalletMissing: () => Effect.succeed(ok(Empty(), "Connect wallet")),
         BaseTokenMissing: () => Effect.succeed(ok(Empty(), "Select asset")),
         DestinationMissing: () => Effect.succeed(ok(Empty(), "Select to chain")),
+        NoRoute: () => Effect.succeed(ok(Empty(), "No route")),
+        NoContract: () => Effect.succeed(ok(Empty(), "No contract")),
         InvalidAmount: () => Effect.succeed(ok(Empty(), "Invalid amount")),
         ReceiverMissing: () => Effect.succeed(ok(Empty(), "Select receiver")),
         Ready: args => Effect.succeed(ok(Validation({ args }), "Validating..."))
       })
-
     },
 
     Validation: ({ args }) => {
@@ -123,9 +124,7 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
     },
 
     CreateIntents: ({ args }) => {
-      console.log('here')
       const intentsOpt = createIntents(args)
-      console.log('here2', intentsOpt)
 
       if (Option.isNone(intentsOpt)) {
         return Effect.succeed(fail("Failed to create intents"))

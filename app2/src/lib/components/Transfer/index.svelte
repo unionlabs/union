@@ -7,7 +7,7 @@ import FillingPage from "./pages/FillingPage.svelte"
 import ApprovalPage from "./pages/ApprovalPage.svelte"
 import SubmitPage from "./pages/SubmitPage.svelte"
 import { lockedTransferStore } from "./locked-transfer.svelte.ts"
-import { Effect, Option, Fiber, Match } from "effect"
+import { Effect, Option, Fiber } from "effect"
 import * as TransferStep from "./transfer-step.ts"
 import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
 import {
@@ -18,7 +18,7 @@ import {
 import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
 import type { Batch } from "@unionlabs/sdk/ucs03/instruction.ts"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-import { constVoid, flow, identity, pipe } from "effect/Function"
+import { constVoid, pipe } from "effect/Function"
 import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { beforeNavigate } from "$app/navigation"
@@ -268,14 +268,11 @@ $effect(() => {
     >
       <FillingPage
               onContinue={handleActionButtonClick}
-              {actionButtonText}
               {statusMessage}
               {transferErrors}
-              onErrorClose={() => {
-          transferErrors = Option.none();
-        }}
-              gotSteps={Option.isSome(transferSteps) &&
-          transferSteps.value.length > 1}
+                onErrorClose={() => {
+                transferErrors = Option.none();
+              }}
               loading={isLoading}
       />
 

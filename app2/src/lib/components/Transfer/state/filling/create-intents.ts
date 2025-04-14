@@ -2,7 +2,7 @@ import { Option, Match } from "effect"
 import { fromHex, isHex } from "viem"
 import type { TransferArgs } from "./check-filling"
 import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
-import type { TokenRawAmount, AddressCanonicalBytes } from "@unionlabs/sdk/schema"
+import type { TokenRawAmount } from "@unionlabs/sdk/schema"
 
 const BABY_DECIMALS = 6n
 const BABY_SUB_AMOUNT = 20n * 10n ** BABY_DECIMALS
@@ -11,7 +11,7 @@ const subtractTokenAmount = (amount: TokenRawAmount, sub: bigint): TokenRawAmoun
   (amount - sub) as TokenRawAmount
 
 export const createIntents = (
-  args: TransferArgs & { sender?: AddressCanonicalBytes }
+  args: TransferArgs
 ): Option.Option<TransferIntents> => {
   console.debug("[createIntents] args:", args)
 
@@ -35,8 +35,7 @@ export const createIntents = (
     return Option.none()
   }
 
-  const sender = args.sender as AddressCanonicalBytes
-  if (!sender) {
+  if (!args.sender) {
     console.warn("[createIntents] Missing sender")
     return Option.none()
   }
@@ -60,7 +59,7 @@ export const createIntents = (
 
       return Option.some([
         {
-          sender,
+          sender: args.sender,
           receiver: args.receiver,
           baseToken: args.baseToken,
           baseAmount,
@@ -81,15 +80,9 @@ export const createIntents = (
           ? subtractTokenAmount(baseAmount, BABY_SUB_AMOUNT)
           : baseAmount
 
-      console.debug("[createIntents] Creating Cosmos intent", {
-        tokenName,
-        baseAmount: baseAmount.toString(),
-        quoteAmount: quoteAmount.toString()
-      })
-
       return Option.some([
         {
-          sender,
+          sender: args.sender,
           receiver: args.receiver.toLowerCase(),
           baseToken: tokenName,
           baseAmount,
