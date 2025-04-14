@@ -73,6 +73,7 @@ pub struct ModuleInner {
     pub bech32_prefix: String,
     pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
     pub gas_station_config: Vec<Coin>,
+    pub fee_recipient: Option<Bech32<Bytes>>,
 }
 
 impl Deref for Module {
@@ -96,6 +97,8 @@ pub struct Config {
     pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
     #[serde(default)]
     pub gas_station_config: Vec<Coin>,
+    #[serde(default)]
+    pub fee_recipient: Option<Bech32<Bytes>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -216,6 +219,7 @@ impl Plugin for Module {
                 )
                 .collect(),
             gas_station_config: config.gas_station_config,
+            fee_recipient: config.fee_recipient,
         })))
     }
 
@@ -325,6 +329,7 @@ impl Module {
                     signer,
                     ibc_host_contract_address,
                     self.gas_station_config.clone(),
+                    self.fee_recipient.as_ref(),
                 );
 
                 let msgs = msgs
@@ -678,6 +683,7 @@ fn process_msgs(
     signer: &LocalSigner,
     ibc_host_contract_address: Bech32<H256>,
     gas_station_config: Vec<Coin>,
+    fee_recipient: Option<&Bech32<Bytes>>,
 ) -> Vec<RpcResult<(IbcMessage, protos::google::protobuf::Any)>> {
     msgs.into_iter()
         .map(|msg| {
@@ -839,7 +845,8 @@ fn process_msgs(
                                     client_type: msg_create_client.client_type.to_string(),
                                     client_state_bytes: msg_create_client.client_state_bytes,
                                     consensus_state_bytes: msg_create_client.consensus_state_bytes,
-                                    relayer: signer.to_string(),
+                                    relayer: fee_recipient
+                                        .map_or(signer.to_string(), |s| s.to_string()),
                                 },
                             ))
                             .unwrap(),
@@ -854,7 +861,8 @@ fn process_msgs(
                                 ibc_union_msg::msg::MsgUpdateClient {
                                     client_id: msg_update_client.client_id,
                                     client_message: msg_update_client.client_message,
-                                    relayer: signer.to_string(),
+                                    relayer: fee_recipient
+                                        .map_or(signer.to_string(), |s| s.to_string()),
                                 },
                             ))
                             .unwrap(),
@@ -939,7 +947,8 @@ fn process_msgs(
                         let channel_open_init = ibc_union_msg::msg::ExecuteMsg::ChannelOpenInit(
                             ibc_union_msg::msg::MsgChannelOpenInit {
                                 port_id: parse_port_id(msg_channel_open_init.port_id.to_vec())?,
-                                relayer: signer.to_string(),
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
                                 counterparty_port_id: msg_channel_open_init.counterparty_port_id,
                                 connection_id: msg_channel_open_init.connection_id,
                                 version: msg_channel_open_init.version,
@@ -961,7 +970,8 @@ fn process_msgs(
                                 counterparty_version: msg_channel_open_try.counterparty_version,
                                 proof_init: msg_channel_open_try.proof_init,
                                 proof_height: msg_channel_open_try.proof_height,
-                                relayer: signer.to_string(),
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
                             },
                         );
 
@@ -981,7 +991,8 @@ fn process_msgs(
                                     .counterparty_channel_id,
                                 proof_try: msg_channel_open_ack.proof_try,
                                 proof_height: msg_channel_open_ack.proof_height,
-                                relayer: signer.to_string(),
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
                             },
                         );
 
@@ -1001,7 +1012,8 @@ fn process_msgs(
                                     channel_id: msg_channel_open_confirm.channel_id,
                                     proof_ack: msg_channel_open_confirm.proof_ack,
                                     proof_height: msg_channel_open_confirm.proof_height,
-                                    relayer: signer.to_string(),
+                                    relayer: fee_recipient
+                                        .map_or(signer.to_string(), |s| s.to_string()),
                                 },
                             );
 
@@ -1027,7 +1039,8 @@ fn process_msgs(
                                 relayer_msgs: msg_packet_recv.relayer_msgs,
                                 proof: msg_packet_recv.proof,
                                 proof_height: msg_packet_recv.proof_height,
-                                relayer: signer.to_string(),
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
                             },
                         );
 
@@ -1054,7 +1067,8 @@ fn process_msgs(
                                 acknowledgements: msg_packet_acknowledgement.acknowledgements,
                                 proof: msg_packet_acknowledgement.proof,
                                 proof_height: msg_packet_acknowledgement.proof_height,
-                                relayer: signer.to_string(),
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
                             },
                         );
 
@@ -1071,7 +1085,8 @@ fn process_msgs(
                                 packet: msg_packet_timeout.packet,
                                 proof: msg_packet_timeout.proof,
                                 proof_height: msg_packet_timeout.proof_height,
-                                relayer: signer.to_string(),
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
                             },
                         );
 
