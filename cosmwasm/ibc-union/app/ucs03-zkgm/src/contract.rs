@@ -1982,6 +1982,10 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
             let minter = TOKEN_MINTER.load(deps.storage)?;
             Ok(to_json_binary(&minter)?)
         }
+        QueryMsg::GetTokenBucket { denom } => {
+            let bucket = TOKEN_BUCKET.load(deps.storage, denom)?;
+            Ok(to_json_binary(&bucket)?)
+        }
     }
 }
 
