@@ -46,11 +46,9 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
     Match.when("cosmos", () => {
       const tokenName = isHex(args.baseToken) ? fromHex(args.baseToken, "string") : args.baseToken
 
-      const baseAmount: TokenRawAmount = BigInt(args.baseAmount)
-
-      const quoteAmount =
+      const baseAmountWithFee =
         args.sourceChain.universal_chain_id === "babylon.bbn-1" && tokenName === "ubbn"
-          ? subtractTokenAmount(baseAmount, BABY_SUB_AMOUNT)
+          ? ((baseAmount + BABY_SUB_AMOUNT) as TokenRawAmount)
           : baseAmount
 
       return Option.some([
@@ -58,8 +56,8 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
           sender: args.sender,
           receiver: args.receiver.toLowerCase(),
           baseToken: tokenName,
-          baseAmount,
-          quoteAmount,
+          baseAmount: baseAmountWithFee,
+          quoteAmount: baseAmount,
           sourceChainId: args.sourceChain.universal_chain_id,
           sourceChannelId: args.sourceChannelId
         }

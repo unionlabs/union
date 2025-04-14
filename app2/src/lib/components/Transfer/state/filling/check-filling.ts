@@ -2,7 +2,6 @@ import type { Transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { Data, Option } from "effect"
 import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
-import { toHex } from "viem"
 
 export interface TransferArgs {
   sourceChain: Chain
@@ -28,7 +27,6 @@ export type FillingState = Data.TaggedEnum<{
   DestinationMissing: {}
   EmptyAmount: {}
   InvalidAmount: {}
-  MinimumSpend: {}
   ReceiverMissing: {}
   NoRoute: {}
   NoContract: {}
@@ -65,16 +63,6 @@ export const getFillingState = (transfer: Transfer): FillingState => {
       const parsedAmount = Number.parseFloat(transfer.raw.amount)
       if (!transfer.raw.amount || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
         return FillingState.InvalidAmount()
-      }
-
-      const isBabylonUbbn =
-        sourceChain.universal_chain_id === "babylon.bbn-1" &&
-        Option.isSome(transfer.baseToken) &&
-        transfer.baseToken.value.denom === toHex("ubbn")
-
-      console.log("isbbn", isBabylonUbbn, transfer.baseToken.value.denom)
-      if (isBabylonUbbn && parsedAmount < 20) {
-        return FillingState.MinimumSpend()
       }
 
       if (Option.isSome(transfer.destinationChain) && Option.isNone(transfer.derivedReceiver)) {
