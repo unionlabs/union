@@ -13,6 +13,8 @@ use futures::{
     stream::{self, FuturesUnordered},
     Future, FutureExt, StreamExt, TryStreamExt,
 };
+use indexmap::IndexMap;
+use itertools::Itertools;
 use jsonrpsee::{
     core::{client::ClientT, RpcResult},
     server::middleware::rpc::RpcServiceT,
@@ -54,7 +56,7 @@ pub mod ibc_spec_handler;
 pub struct Context {
     pub rpc_server: Server,
 
-    interest_filters: HashMap<String, String>,
+    interest_filters: IndexMap<String, String>,
 
     pub cancellation_token: CancellationToken,
 }
@@ -295,18 +297,18 @@ impl Context {
             ibc_spec_handlers,
         };
 
-        let mut interest_filters = HashMap::default();
+        let mut interest_filters = HashMap::new();
 
         let main_rpc_server = Server::new(cache_config);
 
         info!("spawning {} plugins", plugin_configs.len());
 
-        stream::iter(plugin_configs)
-            .filter(|plugin_config| {
+        stream::iter(plugin_configs.into_iter().enumerate())
+            .filter(|(_, plugin_config)| {
                 future::ready(if !plugin_config.enabled {
                     info!(
-                        module_path = %plugin_config.path.to_string_lossy(),
-                        "module is not enabled, skipping"
+                        plugin_path = %plugin_config.path.to_string_lossy(),
+                        "plugin is not enabled, skipping"
                     );
                     false
                 } else {
@@ -314,26 +316,18 @@ impl Context {
                 })
             })
             .zip(stream::repeat(main_rpc_server.clone()))
-            .map(Ok)
-            .try_filter_map(|(plugin_config, server)| async move {
-                if !plugin_config.enabled {
-                    info!(
-                        module_path = %plugin_config.path.to_string_lossy(),
-                        "module is not enabled, skipping"
-                    );
-                    Ok(None)
-                } else {
-                    let plugin_info = get_plugin_info(&plugin_config)?;
+            .then(async |((idx, plugin_config), server)| {
+                let plugin_info = get_plugin_info(&plugin_config)?;
 
-                    debug!("starting rpc server for plugin {}", plugin_info.name);
-                    tokio::spawn(module_rpc_server(&plugin_info.name, server).await?);
+                debug!("starting rpc server for plugin {}", plugin_info.name);
+                tokio::spawn(module_rpc_server(&plugin_info.name, server).await?);
 
-                    Ok(Some((plugin_config, plugin_info)))
-                }
+                Ok((idx, plugin_config, plugin_info))
             })
             .try_for_each_concurrent(
                 None,
                 |(
+                    idx,
                     plugin_config,
                     PluginInfo {
                         name,
@@ -360,7 +354,7 @@ impl Context {
 
                     info!("registered plugin {name}");
 
-                    interest_filters.insert(name, interest_filter);
+                    interest_filters.insert((idx, name), interest_filter);
 
                     future::ready(Ok(()))
                 },
@@ -616,7 +610,11 @@ impl Context {
 
         Ok(Self {
             rpc_server: main_rpc_server,
-            interest_filters,
+            interest_filters: interest_filters
+                .into_iter()
+                .sorted_unstable_by(|((a, _), _), ((b, _), _)| a.cmp(b))
+                .map(|((_, k), v)| (k, v))
+                .collect(),
             cancellation_token,
         })
     }
@@ -651,7 +649,7 @@ impl Context {
             .map_err(Into::into)
     }
 
-    pub fn interest_filters(&self) -> &HashMap<String, String> {
+    pub fn interest_filters(&self) -> &IndexMap<String, String> {
         &self.interest_filters
     }
 }

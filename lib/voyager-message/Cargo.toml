@@ -16,6 +16,7 @@ anyhow                         = "1.0.93"
 clap                           = { workspace = true, features = ["derive"] }
 enumorph                       = { workspace = true }
 futures                        = { workspace = true }
+indexmap = "2.9.0"
 itertools                      = "0.13.0"
 jaq-core                       = "1.5.1"
 jaq-interpret                  = "1.5.0"

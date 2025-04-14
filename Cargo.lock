@@ -15552,6 +15552,7 @@ dependencies = [
  "enumorph",
  "futures",
  "hex-literal",
+ "indexmap 2.9.0",
  "itertools 0.13.0",
  "jaq-core",
  "jaq-interpret",

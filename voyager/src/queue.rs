@@ -238,20 +238,18 @@ impl Voyager {
                     AssertUnwindSafe(
                         Engine::new(&self.context, &self.queue, &interest_filter)
                             .run()
-                            .for_each(|res| async move {
-                                match res {
-                                    Ok(data) => {
-                                        debug!(
-                                            data = %into_value(&data),
-                                            "received data outside of an aggregation",
-                                        );
-                                    }
-                                    Err(error) => {
-                                        error!(
-                                            error = %ErrorReporter(&*error),
-                                            "error processing message"
-                                        );
-                                    }
+                            .for_each(async |res| match res {
+                                Ok(data) => {
+                                    debug!(
+                                        data = %into_value(&data),
+                                        "received data outside of an aggregation",
+                                    );
+                                }
+                                Err(error) => {
+                                    error!(
+                                        error = %ErrorReporter(&*error),
+                                        "error processing message"
+                                    );
                                 }
                             })
                             .map(Ok)

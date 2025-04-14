@@ -1,5 +1,9 @@
 #![feature(trait_alias, try_find)]
-#![warn(clippy::pedantic, clippy::unwrap_used)]
+#![warn(
+    clippy::pedantic,
+    clippy::unwrap_used,
+    closure_returning_async_block // TODO: Make this workspace-wide
+)]
 #![allow(
     // required due to return_position_impl_trait_in_trait false positives
     clippy::manual_async_fn,
