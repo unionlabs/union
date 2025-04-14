@@ -22,7 +22,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, info, instrument};
+use tracing::{debug, info, instrument, trace};
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{Bytes, H160, H256},
@@ -95,6 +95,7 @@ impl Module {
         Ibc::new(self.ibc_handler_address.get().into(), self.provider.clone())
     }
 
+    // TODO: This can definitely be cached
     #[instrument(skip(self))]
     pub async fn client_address(
         &self,
@@ -116,7 +117,7 @@ impl Module {
             })?
             ._0;
 
-        info!(%client_address, "fetched client address");
+        trace!(%client_address, "fetched client address");
 
         Ok(client_address)
     }

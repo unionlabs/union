@@ -130,7 +130,7 @@ impl ConsensusModuleServer for Module {
             Ok(ledger_info) => {
                 let height = ledger_info.inner().block_height.0;
 
-                debug!(height, "latest height");
+                trace!(height, "latest height");
 
                 Ok(Height::new(height))
             }

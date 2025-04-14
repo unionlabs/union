@@ -526,6 +526,11 @@ impl Module {
             .query_latest_height(counterparty_chain_id.clone(), false)
             .await?;
 
+        debug!(
+            %counterparty_latest_height,
+            "counterparty latest height"
+        );
+
         let arbitrum_client_state_raw = voyager_client
             .query_ibc_state(
                 counterparty_chain_id.clone(),
@@ -538,6 +543,12 @@ impl Module {
             .client_info::<IbcUnion>(counterparty_chain_id.clone(), client_id)
             .await?;
 
+        debug!(
+            %arbitrum_client_info.client_type,
+            %arbitrum_client_info.ibc_interface,
+            "arbitrum client info"
+        );
+
         let ClientState::V1(arbitrum_client_state) = voyager_client
             .decode_client_state::<IbcUnion, ClientState>(
                 arbitrum_client_info.client_type,
@@ -545,6 +556,8 @@ impl Module {
                 arbitrum_client_state_raw,
             )
             .await?;
+
+        debug!(?arbitrum_client_state, "arbitrum client state");
 
         // the client on the counterparty chain tracking the L1 that the L2 being tracked by the client we're updating settles on
         let l1_client_meta = voyager_client
@@ -555,6 +568,8 @@ impl Module {
             )
             .await?;
 
+        debug!(?l1_client_meta, "l1 client meta");
+
         let l2_settlement_block = finalized_l2_block_of_l1_height(
             &self.l1_provider,
             &self.l2_provider,
@@ -563,6 +578,8 @@ impl Module {
         )
         .await
         .unwrap();
+
+        debug!(?l2_settlement_block, "l2 settlement block");
 
         if l2_settlement_block.header.number < update_from.height() {
             return Err(ErrorObject::owned(
