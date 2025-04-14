@@ -60,7 +60,6 @@ library ZkgmLib {
     error ErrInvalidForwardInstruction();
     error ErrInvalidMultiplexSender();
     error ErrInvalidForwardDestinationChannelId();
-    error ErrMinimumExecutionGasNotRespected();
 
     function encodeFungibleAssetOrderAck(
         FungibleAssetOrderAck memory ack

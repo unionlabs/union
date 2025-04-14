@@ -285,13 +285,16 @@ contract UCS03Zkgm is
         address relayer,
         bytes calldata relayerMsg
     ) external virtual override onlyIBC whenNotPaused returns (bytes memory) {
-        // Avoid gas-starvation trick. Enforce a minimum for griefing relayers.
-        if (gasleft() < EXEC_MIN_GAS) {
-            revert ZkgmLib.ErrMinimumExecutionGasNotRespected();
-        }
         (bool success, bytes memory returnData) = address(this).call(
             abi.encodeCall(this.execute, (caller, packet, relayer, relayerMsg))
         );
+        // Avoid gas-starvation trick. Enforce a minimum for griefing relayers.
+        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/bd325d56b4c62c9c5c1aff048c37c6bb18ac0290/contracts/metatx/MinimalForwarder.sol#L58-L68
+        if (gasleft() <= EXEC_MIN_GAS / 63) {
+            assembly {
+                invalid()
+            }
+        }
         if (success) {
             bytes memory acknowledgement = abi.decode(returnData, (bytes));
             // The acknowledgement may be asynchronous (forward/multiplex).
