@@ -193,7 +193,11 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         uint64 timeoutTimestamp,
         bytes calldata data
     ) external override returns (IBCPacket memory) {
-        if (timeoutTimestamp == 0 && timeoutHeight == 0) {
+        // Deprecated timeout height
+        if (timeoutHeight != 0) {
+            revert IBCErrors.ErrTimeoutHeightUnsupported();
+        }
+        if (timeoutTimestamp == 0) {
             revert IBCErrors.ErrTimeoutMustBeSet();
         }
         if (!authenticateChannelOwner(sourceChannelId)) {
@@ -214,13 +218,11 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             revert IBCErrors.ErrPacketAlreadyExist();
         }
         commitments[commitmentKey] = IBCPacketLib.COMMITMENT_MAGIC;
-
         emit IBCPacketLib.PacketSend(sourceChannelId, packetHash, packet);
-
         return packet;
     }
 
-    function setPacketReceive(
+    function _markPacketAsReceived(
         bytes32 commitmentKey
     ) internal returns (bool) {
         bool alreadyReceived =
@@ -231,7 +233,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         return alreadyReceived;
     }
 
-    function processReceive(
+    function _processReceive(
         IBCPacket[] calldata packets,
         address maker,
         bytes[] calldata makerMsgs,
@@ -251,7 +253,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                 IBCPacketLib.commitPackets(packets)
             );
             if (
-                !verifyCommitment(
+                !_verifyCommitment(
                     clientId,
                     proofHeight,
                     proof,
@@ -268,20 +270,15 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             if (packet.destinationChannelId != destinationChannelId) {
                 revert IBCErrors.ErrBatchSameChannelOnly();
             }
-            // Check packet height timeout
-            if (
-                packet.timeoutHeight > 0
-                    && (block.number >= packet.timeoutHeight)
-            ) {
-                revert IBCErrors.ErrHeightTimeout();
+            // Deprecated timeout height
+            if (packet.timeoutHeight != 0) {
+                revert IBCErrors.ErrTimeoutHeightUnsupported();
             }
+
             // Check packet timestamp timeout
             // For some reason cosmos is using nanos, we try to follow their convention to avoid friction
             uint64 currentTimestamp = uint64(block.timestamp * 1e9);
-            if (
-                packet.timeoutTimestamp != 0
-                    && (currentTimestamp >= packet.timeoutTimestamp)
-            ) {
+            if (currentTimestamp >= packet.timeoutTimestamp) {
                 revert IBCErrors.ErrTimestampTimeout();
             }
 
@@ -289,7 +286,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             bytes32 commitmentKey =
                 IBCCommitment.batchReceiptsCommitmentKey(packetHash);
 
-            if (!setPacketReceive(commitmentKey)) {
+            if (!_markPacketAsReceived(commitmentKey)) {
                 bytes memory acknowledgement;
                 bytes calldata makerMsg = makerMsgs[i];
                 if (intent) {
@@ -319,7 +316,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
     function recvPacket(
         IBCMsgs.MsgPacketRecv calldata msg_
     ) external restricted {
-        processReceive(
+        _processReceive(
             msg_.packets,
             msg_.relayer,
             msg_.relayerMsgs,
@@ -332,7 +329,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
     function recvIntentPacket(
         IBCMsgs.MsgIntentPacketRecv calldata msg_
     ) external override restricted {
-        processReceive(
+        _processReceive(
             msg_.packets,
             msg_.marketMaker,
             msg_.marketMakerMsgs,
@@ -391,7 +388,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         );
         bytes32 commitmentValue = IBCPacketLib.commitAcks(msg_.acknowledgements);
         if (
-            !verifyCommitment(
+            !_verifyCommitment(
                 clientId,
                 msg_.proofHeight,
                 msg_.proof,
@@ -407,7 +404,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
             if (packet.sourceChannelId != sourceChannelId) {
                 revert IBCErrors.ErrBatchSameChannelOnly();
             }
-            markPacketAsAcknowledged(packet);
+            _markPacketAsAcknowledged(packet);
             bytes calldata acknowledgement = msg_.acknowledgements[i];
             module.onAcknowledgementPacket(
                 msg.sender, packet, acknowledgement, msg_.relayer
@@ -438,26 +435,19 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         bytes32 commitmentKey =
             IBCCommitment.batchReceiptsCommitmentKey(packetHash);
         if (
-            !verifyAbsentCommitment(
+            !_verifyAbsentCommitment(
                 clientId, msg_.proofHeight, msg_.proof, commitmentKey
             )
         ) {
             revert IBCErrors.ErrInvalidProof();
         }
         IIBCModule module = lookupModuleByChannel(sourceChannelId);
-        markPacketAsAcknowledged(packet);
-        if (packet.timeoutTimestamp == 0 && packet.timeoutHeight == 0) {
+        _markPacketAsAcknowledged(packet);
+        if (packet.timeoutTimestamp == 0) {
             revert IBCErrors.ErrTimeoutMustBeSet();
         }
-        if (
-            packet.timeoutTimestamp > 0
-                && packet.timeoutTimestamp > proofTimestamp
-        ) {
+        if (packet.timeoutTimestamp > proofTimestamp) {
             revert IBCErrors.ErrTimeoutTimestampNotReached();
-        }
-        if (packet.timeoutHeight > 0 && packet.timeoutHeight > msg_.proofHeight)
-        {
-            revert IBCErrors.ErrTimeoutHeightNotReached();
         }
         module.onTimeoutPacket(msg.sender, packet, msg_.relayer);
         emit IBCPacketLib.PacketTimeout(
@@ -465,7 +455,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         );
     }
 
-    function verifyCommitment(
+    function _verifyCommitment(
         uint32 clientId,
         uint64 height,
         bytes calldata proof,
@@ -481,7 +471,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         );
     }
 
-    function verifyAbsentCommitment(
+    function _verifyAbsentCommitment(
         uint32 clientId,
         uint64 height,
         bytes calldata proof,
@@ -492,7 +482,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
         );
     }
 
-    function markPacketAsAcknowledged(
+    function _markPacketAsAcknowledged(
         IBCPacket calldata packet
     ) internal {
         bytes32 commitmentKey = IBCCommitment.batchPacketsCommitmentKey(
