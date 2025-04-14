@@ -19,6 +19,7 @@ import {
 } from "$lib/components/Transfer/state/filling/check-filling.ts"
 import {validateTransfer} from "$lib/components/Transfer/validation.ts"
 import {createIntents} from "$lib/components/Transfer/state/filling/create-intents.ts";
+import {constVoid} from "effect/Function";
 
 export type StateResult = {
   nextState: Option.Option<CreateTransferState>
@@ -93,12 +94,12 @@ const complete = (
 
 export const createTransferState = (cts: CreateTransferState, transfer: Transfer) => {
   return CreateTransferState.$match(cts, {
-    Empty: () => Effect.succeed(ok(Filling(), "Waiting for input")),
+    Empty: constVoid,
     Filling: () => {
       const state = getFillingState(transfer)
 
       return FillingState.$match(state, {
-        Empty: () => Effect.succeed(ok(Filling(), "Waiting...")),
+        Empty: constVoid,
         WalletMissing: () => Effect.succeed(ok(Empty(), "Connect wallet")),
         SourceChainMissing: () => Effect.succeed(ok(Empty(), "Select from chain")),
         ChainWalletMissing: () => Effect.succeed(ok(Empty(), "Connect wallet")),

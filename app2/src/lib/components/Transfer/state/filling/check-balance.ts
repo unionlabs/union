@@ -44,14 +44,8 @@ export const checkBalanceForIntents = (
   return Effect.forEach(groupedValues, group =>
     Effect.flatMap(
       Effect.sync(() => {
-        const denom =
-          source.rpc_type === "cosmos"
-            ? group.baseToken
-            : isHex(group.baseToken)
-              ? group.baseToken
-              : toHex(group.baseToken)
 
-        return balancesStore.getBalance(source.universal_chain_id, group.sender, group.baseToken)
+        return balancesStore.getBalance(source.universal_chain_id, group.sender, isHex(group.baseToken) ? group.baseToken : toHex(group.baseToken))
       }),
       balance => {
         if (!Option.isSome(balance)) {
