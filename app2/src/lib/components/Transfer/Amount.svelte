@@ -144,8 +144,8 @@ function setMaxAmount() {
     transfer.baseToken.value.denom === "ubbn" ||
     transfer.baseToken.value.denom === "0x" + Array.from(new TextEncoder().encode("ubbn")).map(b => b.toString(16).padStart(2, "0")).join("")
   )}
-    <div class="text-xs text-zinc-500 dark:text-zinc-400 pt-1 text-center">
-      Transferring BABY out of Babylon costs 20 UBBN
+    <div class="text-xs text-babylon-orange text-end">
+      Relayer Fee: 20 BABY
     </div>
   {/if}
 {/if}
