@@ -1,14 +1,14 @@
 <script lang="ts">
-import type { HTMLAttributes } from "svelte/elements"
-import type { AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema"
-import { truncate } from "$lib/utils/format"
-import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
-import { Effect } from "effect"
-import Label from "../ui/Label.svelte"
-import A from "../ui/A.svelte"
+  import type {HTMLAttributes} from "svelte/elements"
+  import type {AddressCanonicalBytes, Chain} from "@unionlabs/sdk/schema"
+  import {truncate} from "$lib/utils/format"
+  import Tooltip from "$lib/components/ui/Tooltip.svelte"
+  import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+  import {Effect} from "effect"
+  import Label from "../ui/Label.svelte"
+  import A from "../ui/A.svelte"
 
-type Props = HTMLAttributes<HTMLDivElement> & {
+  type Props = HTMLAttributes<HTMLDivElement> & {
   address: AddressCanonicalBytes
   chain: Chain
   class?: string

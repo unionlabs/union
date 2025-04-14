@@ -1,22 +1,21 @@
 <script lang="ts">
-import { Option, pipe } from "effect"
-import { packetDetails } from "$lib/stores/packets.svelte"
-import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import { chains } from "$lib/stores/chains.svelte"
-import { getChain } from "@unionlabs/sdk/schema"
-import ChainComponent from "$lib/components/model/ChainComponent.svelte"
-import Label from "$lib/components/ui/Label.svelte"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
-import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
-import { fromHex } from "viem"
-import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
-import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
-import HeightComponent from "$lib/components/model/HeightComponent.svelte"
-import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
-import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
-import AddressComponent from "./AddressComponent.svelte"
+  import {Option} from "effect"
+  import {packetDetails} from "$lib/stores/packets.svelte"
+  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+  import {chains} from "$lib/stores/chains.svelte"
+  import {getChain} from "@unionlabs/sdk/schema"
+  import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+  import Label from "$lib/components/ui/Label.svelte"
+  import Skeleton from "$lib/components/ui/Skeleton.svelte"
+  import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
+  import {fromHex} from "viem"
+  import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+  import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
+  import HeightComponent from "$lib/components/model/HeightComponent.svelte"
+  import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
+  import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
 
-const sourceChain = $derived(
+  const sourceChain = $derived(
   Option.flatMap(packetDetails.data, data =>
     Option.flatMap(chains.data, chainsData => getChain(chainsData, data.source_universal_chain_id))
   )

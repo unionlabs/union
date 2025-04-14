@@ -1,13 +1,13 @@
 <script lang="ts">
-import { cn } from "$lib/utils/index.js"
-import { Option } from "effect"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.js"
-import Label from "$lib/components/ui/Label.svelte"
-import { chainLogoMap } from "$lib/constants/chain-logos.ts"
-import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
-import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
+  import {cn} from "$lib/utils/index.js"
+  import {Option} from "effect"
+  import {transfer} from "$lib/components/Transfer/transfer.svelte.js"
+  import Label from "$lib/components/ui/Label.svelte"
+  import {chainLogoMap} from "$lib/constants/chain-logos.ts"
+  import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
+  import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
 
-type Props = {
+  type Props = {
   type: "source" | "destination"
   onClick: () => void
 }
@@ -36,7 +36,7 @@ const isChainLoading = $derived.by(() => {
           class={cn(
       "w-full h-14 rounded-md bg-zinc-800/70 text-zinc-200",
       "hover:bg-zinc-800 hover:border-zinc-500",
-      "focus:outline-none focus:ring-1 focus:ring-white",
+      "focus:outline-none focus:ring-1 focus:ring-babylon-orange",
       "disabled:opacity-50 disabled:cursor-not-allowed",
       "transition-all duration-200 cursor-pointer",
     )}

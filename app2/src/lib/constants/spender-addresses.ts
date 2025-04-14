@@ -1,4 +1,4 @@
-import { UniversalChainId, AddressCosmosDisplay } from "@unionlabs/sdk/schema"
+import { AddressCosmosDisplay, UniversalChainId } from "@unionlabs/sdk/schema"
 import { Schema } from "effect"
 
 const raw = {

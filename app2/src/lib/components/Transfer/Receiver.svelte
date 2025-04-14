@@ -1,23 +1,23 @@
 <script lang="ts">
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { Option } from "effect"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { uiStore } from "$lib/stores/ui.svelte.ts"
-import { cn } from "$lib/utils"
-import { onMount, onDestroy } from "svelte"
-import { fade, fly, crossfade } from "svelte/transition"
-import Button from "$lib/components/ui/Button.svelte"
-import SharpChevronLeftIcon from "$lib/components/icons/SharpChevronLeftIcon.svelte"
-import FilledBookmarkIcon from "$lib/components/icons/FilledBookmarkIcon.svelte"
-import OutlinedBookmarkIcon from "$lib/components/icons/OutlinedBookmarkIcon.svelte"
-import SharpCancelIcon from "$lib/components/icons/SharpCancelIcon.svelte"
-import SharpListRemoveIcon from "$lib/components/icons/SharpListRemoveIcon.svelte"
-import RestoreIcon from "$lib/components/icons/RestoreIcon.svelte"
-import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
-import { getDerivedReceiverSafe } from "$lib/services/shared"
-import AddressComponent from "$lib/components/model/AddressComponent.svelte"
+  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
+  import {Option} from "effect"
+  import {wallets} from "$lib/stores/wallets.svelte.ts"
+  import {uiStore} from "$lib/stores/ui.svelte.ts"
+  import {cn} from "$lib/utils"
+  import {onDestroy, onMount} from "svelte"
+  import {crossfade, fade, fly} from "svelte/transition"
+  import Button from "$lib/components/ui/Button.svelte"
+  import SharpChevronLeftIcon from "$lib/components/icons/SharpChevronLeftIcon.svelte"
+  import FilledBookmarkIcon from "$lib/components/icons/FilledBookmarkIcon.svelte"
+  import OutlinedBookmarkIcon from "$lib/components/icons/OutlinedBookmarkIcon.svelte"
+  import SharpCancelIcon from "$lib/components/icons/SharpCancelIcon.svelte"
+  import SharpListRemoveIcon from "$lib/components/icons/SharpListRemoveIcon.svelte"
+  import RestoreIcon from "$lib/components/icons/RestoreIcon.svelte"
+  import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
+  import {getDerivedReceiverSafe} from "$lib/services/shared"
+  import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 
-let destinationChain = $derived(
+  let destinationChain = $derived(
   Option.isSome(transfer.destinationChain) ? Option.getOrNull(transfer.destinationChain) : null
 )
 let destinationChainId = $derived(destinationChain ? destinationChain.universal_chain_id : null)
@@ -386,7 +386,7 @@ function hasBookmarks() {
                           placeholder="Enter receiver address"
                           class={cn(
                       "w-full p-2 py-5 rounded-md bg-zinc-800 text-zinc-200 h-full text-center",
-                      "focus:outline-none focus:ring-1 focus:ring-sky-500",
+                      "focus:outline-none focus:ring-1 focus:ring-babylon-orange",
                     )}
                   />
                   <div class="flex flex-1 gap-2 w-full">

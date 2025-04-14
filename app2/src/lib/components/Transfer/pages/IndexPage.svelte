@@ -1,15 +1,15 @@
 <script lang="ts">
-import { Cause, Option, Struct } from "effect"
-import Button from "$lib/components/ui/Button.svelte"
-import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-import { goto } from "$app/navigation"
-import { fly } from "svelte/transition"
-import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
-import { lockedTransferStore } from "../locked-transfer.svelte"
-import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
+  import {Option, Struct} from "effect"
+  import Button from "$lib/components/ui/Button.svelte"
+  import {transferHashStore} from "$lib/stores/transfer-hash.svelte.ts"
+  import {goto} from "$app/navigation"
+  import {fly} from "svelte/transition"
+  import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
+  import {lockedTransferStore} from "../locked-transfer.svelte"
+  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+  import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 
-type Props = {
+  type Props = {
   newTransfer: () => void
 }
 

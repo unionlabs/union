@@ -1,20 +1,19 @@
 <script lang="ts">
-import { getChain, TokenRawAmount, type Chain, type TokenRawDenom } from "@unionlabs/sdk/schema"
-import { Option } from "effect"
-import Truncate from "$lib/components/ui/Truncate.svelte"
-import { tokensStore } from "$lib/stores/tokens.svelte"
-import { chains } from "$lib/stores/chains.svelte"
-import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import ChainComponent from "$lib/components/model/ChainComponent.svelte"
-import ArrowDownLeft from "$lib/components/icons/ArrowDownLeft.svelte"
-import SharpArrowLeft from "$lib/components/icons/SharpArrowLeft.svelte"
-import A from "../ui/A.svelte"
-import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
-import Label from "../ui/Label.svelte"
-import LongMonoWord from "../ui/LongMonoWord.svelte"
-import { fromHex } from "viem"
+  import {type Chain, getChain, TokenRawAmount, type TokenRawDenom} from "@unionlabs/sdk/schema"
+  import {Option} from "effect"
+  import Truncate from "$lib/components/ui/Truncate.svelte"
+  import {tokensStore} from "$lib/stores/tokens.svelte"
+  import {chains} from "$lib/stores/chains.svelte"
+  import Tooltip from "$lib/components/ui/Tooltip.svelte"
+  import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+  import ArrowDownLeft from "$lib/components/icons/ArrowDownLeft.svelte"
+  import A from "../ui/A.svelte"
+  import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
+  import Label from "../ui/Label.svelte"
+  import LongMonoWord from "../ui/LongMonoWord.svelte"
+  import {fromHex} from "viem"
 
-interface Props {
+  interface Props {
   chain: Chain
   denom: TokenRawDenom
   amount?: TokenRawAmount

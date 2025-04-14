@@ -1,9 +1,9 @@
-import { Effect, identity, Option } from "effect"
-import type { Chain } from "@unionlabs/sdk/schema"
-import { balancesStore } from "$lib/stores/balances.svelte.ts"
-import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
-import { isHex, toHex } from "viem"
-import { BalanceLookupError } from "$lib/components/Transfer/state/errors.ts"
+import {Effect, identity, Option} from "effect"
+import type {Chain} from "@unionlabs/sdk/schema"
+import {balancesStore} from "$lib/stores/balances.svelte.ts"
+import type {TransferIntents} from "$lib/components/Transfer/transfer.svelte.ts"
+import {isHex, toHex} from "viem"
+import {BalanceLookupError} from "$lib/components/Transfer/state/errors.ts"
 
 const BABY_SUB_AMOUNT = 20n * 10n ** 6n
 const BABYLON_CHAIN_ID = "babylon.bbn-1"

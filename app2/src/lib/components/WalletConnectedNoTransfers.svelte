@@ -1,12 +1,11 @@
 <script lang="ts">
-import { cn } from "$lib/utils"
-import type { HTMLAttributes } from "svelte/elements"
-import Button from "./ui/Button.svelte"
-import { goto } from "$app/navigation"
-import SharpTransferIcon from "./icons/SharpTransferIcon.svelte"
-import OutlineControlPointDuplicate from "./icons/OutlineControlPointDuplicate.svelte"
+  import {cn} from "$lib/utils"
+  import type {HTMLAttributes} from "svelte/elements"
+  import Button from "./ui/Button.svelte"
+  import {goto} from "$app/navigation"
+  import OutlineControlPointDuplicate from "./icons/OutlineControlPointDuplicate.svelte"
 
-type Props = HTMLAttributes<HTMLDivElement> & {
+  type Props = HTMLAttributes<HTMLDivElement> & {
   class?: string
   title?: string
   description?: string

@@ -1,13 +1,13 @@
 <script lang="ts">
-import { chains } from "$lib/stores/chains.svelte"
-import { tokensStore } from "$lib/stores/tokens.svelte"
-import { Option } from "effect"
-import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-import Card from "$lib/components/ui/Card.svelte"
-import Sections from "$lib/components/ui/Sections.svelte"
-import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+  import {chains} from "$lib/stores/chains.svelte"
+  import {tokensStore} from "$lib/stores/tokens.svelte"
+  import {Option} from "effect"
+  import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+  import Card from "$lib/components/ui/Card.svelte"
+  import Sections from "$lib/components/ui/Sections.svelte"
+  import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 
-$effect(() => {
+  $effect(() => {
   if (Option.isSome(chains.data)) {
     chains.data.value.forEach(c => tokensStore.fetchTokens(c.universal_chain_id))
   }

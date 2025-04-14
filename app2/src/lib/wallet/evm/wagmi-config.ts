@@ -9,14 +9,14 @@ import {
 } from "@wagmi/core"
 import { coinbaseWallet, injected, metaMask, walletConnect } from "@wagmi/connectors"
 import {
-  mainnet,
-  corn,
   arbitrumSepolia,
   berachainTestnetbArtio,
   bob,
   bobSepolia,
+  corn,
   cornTestnet,
   holesky,
+  mainnet,
   scrollSepolia,
   sepolia
 } from "@wagmi/core/chains"

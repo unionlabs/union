@@ -1,7 +1,7 @@
-import type { Transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { Data, Option } from "effect"
-import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
+import type {Transfer} from "$lib/components/Transfer/transfer.svelte.ts"
+import {wallets} from "$lib/stores/wallets.svelte.ts"
+import {Data, Option} from "effect"
+import type {AddressCanonicalBytes, Chain, Channel, ChannelId} from "@unionlabs/sdk/schema"
 
 export interface TransferArgs {
   sourceChain: Chain

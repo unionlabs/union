@@ -1,8 +1,8 @@
 <script lang="ts">
-import { encodeAbiParameters } from "viem"
-import { batchAbi, fungibleAssetOrderAbi } from "@unionlabs/sdk/evm/abi"
+  import {encodeAbiParameters} from "viem"
+  import {batchAbi, fungibleAssetOrderAbi} from "@unionlabs/sdk/evm/abi"
 
-const FungibleAssetOrder = (
+  const FungibleAssetOrder = (
   operand: Parameters<typeof encodeAbiParameters<typeof fungibleAssetOrderAbi>>[1]
 ) => ({
   opcode: 3,

@@ -1,7 +1,6 @@
 import { createQueryGraphql } from "$lib/utils/queries.ts"
-import { Schema } from "effect"
+import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
-import { Option } from "effect"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { PacketHash } from "@unionlabs/sdk/schema"
 

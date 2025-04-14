@@ -1,40 +1,40 @@
 <script lang="ts">
-import Button from "$lib/components/ui/Button.svelte"
-import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { Effect, Match, Option, Struct, Array as Arr, Exit, Cause, Unify } from "effect"
-import {
-  hasFailedExit as evmHasFailedExit,
-  isComplete as evmIsComplete,
-  nextStateEvm,
-  TransactionSubmissionEvm
-} from "$lib/components/Transfer/state/evm.ts"
-import { generateSalt } from "@unionlabs/sdk/utils"
-import { getConnectorClient, type GetConnectorClientErrorType, http } from "@wagmi/core"
-import { createViemPublicClient, createViemWalletClient } from "@unionlabs/sdk/evm"
-import { ConnectorClientError } from "$lib/services/transfer"
-import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.ts"
-import { custom, encodeAbiParameters, fromHex } from "viem"
-import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
-import {
-  nextStateCosmos,
-  isComplete as cosmosIsComplete,
-  hasFailedExit as cosmosHasFailedExit,
-  TransactionSubmissionCosmos
-} from "$lib/components/Transfer/state/cosmos.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
-import { cosmosStore } from "$lib/wallet/cosmos"
-import { instructionAbi } from "@unionlabs/sdk/evm/abi"
-import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction.ts"
-import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-import { isValidBech32ContractAddress } from "$lib/utils"
-import { is } from "../transfer-step.ts"
-import Label from "$lib/components/ui/Label.svelte"
-import ChainComponent from "$lib/components/model/ChainComponent.svelte"
-import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
-import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+  import Button from "$lib/components/ui/Button.svelte"
+  import {lockedTransferStore} from "../locked-transfer.svelte.ts"
+  import {Array as Arr, Cause, Effect, Exit, Match, Option, Struct} from "effect"
+  import {
+    hasFailedExit as evmHasFailedExit,
+    isComplete as evmIsComplete,
+    nextStateEvm,
+    TransactionSubmissionEvm
+  } from "$lib/components/Transfer/state/evm.ts"
+  import {generateSalt} from "@unionlabs/sdk/utils"
+  import {getConnectorClient, type GetConnectorClientErrorType, http} from "@wagmi/core"
+  import {createViemPublicClient, createViemWalletClient} from "@unionlabs/sdk/evm"
+  import {ConnectorClientError} from "$lib/services/transfer"
+  import {wagmiConfig} from "$lib/wallet/evm/wagmi-config.ts"
+  import {custom, encodeAbiParameters, fromHex} from "viem"
+  import {ucs03ZkgmAbi} from "$lib/abi/ucs03.ts"
+  import {
+    hasFailedExit as cosmosHasFailedExit,
+    isComplete as cosmosIsComplete,
+    nextStateCosmos,
+    TransactionSubmissionCosmos
+  } from "$lib/components/Transfer/state/cosmos.ts"
+  import {wallets} from "$lib/stores/wallets.svelte.ts"
+  import {getCosmWasmClient} from "$lib/services/cosmos/clients.ts"
+  import {cosmosStore} from "$lib/wallet/cosmos"
+  import {instructionAbi} from "@unionlabs/sdk/evm/abi"
+  import {encodeAbi} from "@unionlabs/sdk/ucs03/instruction.ts"
+  import {transferHashStore} from "$lib/stores/transfer-hash.svelte.ts"
+  import {isValidBech32ContractAddress} from "$lib/utils"
+  import {is} from "../transfer-step.ts"
+  import Label from "$lib/components/ui/Label.svelte"
+  import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+  import {getTimeoutInNanoseconds24HoursFromNow} from "@unionlabs/sdk/utils/timeout.ts"
+  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 
-type Props = {
+  type Props = {
   stepIndex: number
   onSubmit: () => void
   onCancel?: () => void

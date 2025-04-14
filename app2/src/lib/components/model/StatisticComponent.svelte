@@ -1,11 +1,11 @@
 <script lang="ts">
-import Card from "$lib/components/ui/Card.svelte"
-import Label from "$lib/components/ui/Label.svelte"
-import type { StatisticItem } from "@unionlabs/sdk/schema"
-import NumberFlow from "@number-flow/svelte"
-import { onMount } from "svelte"
+  import Card from "$lib/components/ui/Card.svelte"
+  import Label from "$lib/components/ui/Label.svelte"
+  import type {StatisticItem} from "@unionlabs/sdk/schema"
+  import NumberFlow from "@number-flow/svelte"
+  import {onMount} from "svelte"
 
-type Props = {
+  type Props = {
   statistic: StatisticItem
   class?: string
 }

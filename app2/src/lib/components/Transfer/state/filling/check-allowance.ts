@@ -1,16 +1,12 @@
-import { Effect, Option, Match, Data } from "effect"
-import type { AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema"
-import { isHex, fromHex, http } from "viem"
-import { createViemPublicClient, readErc20Allowance, ViemPublicClient } from "@unionlabs/sdk/evm"
-import { createCosmWasmClient, CosmWasmClientSource } from "@unionlabs/sdk/cosmos"
-import { isValidBech32ContractAddress } from "@unionlabs/client"
-import type { TransferIntent } from "$lib/components/Transfer/transfer.svelte.ts"
-import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
-import {
-  AllowanceCheckError,
-  CosmosQueryError,
-  type TransferFlowError
-} from "$lib/components/Transfer/state/errors.ts"
+import {Data, Effect, Match, Option} from "effect"
+import type {AddressCanonicalBytes, Chain} from "@unionlabs/sdk/schema"
+import {fromHex, http, isHex} from "viem"
+import {createViemPublicClient, readErc20Allowance, ViemPublicClient} from "@unionlabs/sdk/evm"
+import {CosmWasmClientSource, createCosmWasmClient} from "@unionlabs/sdk/cosmos"
+import {isValidBech32ContractAddress} from "@unionlabs/client"
+import type {TransferIntent} from "$lib/components/Transfer/transfer.svelte.ts"
+import {cosmosSpenderAddresses} from "$lib/constants/spender-addresses.ts"
+import {AllowanceCheckError, CosmosQueryError, type TransferFlowError} from "$lib/components/Transfer/state/errors.ts"
 
 export class ApprovalStep extends Data.TaggedClass("ApprovalStep")<{
   token: string

@@ -1,25 +1,25 @@
 <script lang="ts">
-import {
-  transferListLatestQuery,
-  transferListPageGtQuery,
-  transferListPageLtQuery
-} from "$lib/queries/transfer-list.svelte"
-import { Effect, Option } from "effect"
-import { onMount } from "svelte"
-import { transferList } from "$lib/stores/transfers.svelte"
-import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import Card from "$lib/components/ui/Card.svelte"
-import Sections from "$lib/components/ui/Sections.svelte"
-import { chains } from "$lib/stores/chains.svelte"
-import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
-import { page } from "$app/state"
-import { goto } from "$app/navigation"
+  import {
+    transferListLatestQuery,
+    transferListPageGtQuery,
+    transferListPageLtQuery
+  } from "$lib/queries/transfer-list.svelte"
+  import {Effect, Option} from "effect"
+  import {onMount} from "svelte"
+  import {transferList} from "$lib/stores/transfers.svelte"
+  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+  import Card from "$lib/components/ui/Card.svelte"
+  import Sections from "$lib/components/ui/Sections.svelte"
+  import {chains} from "$lib/stores/chains.svelte"
+  import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
+  import {page} from "$app/state"
+  import {goto} from "$app/navigation"
 
-import { settingsStore } from "$lib/stores/settings.svelte"
-import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
-import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
+  import {settingsStore} from "$lib/stores/settings.svelte"
+  import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
+  import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 
-onMount(() => {
+  onMount(() => {
   const pageParam = page.url.searchParams.get("page")
 
   const initializeQuery = async () => {

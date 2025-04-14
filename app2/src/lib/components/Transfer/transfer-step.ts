@@ -1,12 +1,7 @@
-import { Data } from "effect"
-import type { Instruction } from "@unionlabs/sdk/ucs03"
-import type {
-  AddressCanonicalBytes,
-  Chain,
-  TokenRawAmount,
-  TokenRawDenom
-} from "@unionlabs/sdk/schema"
-import type { ExtractTag } from "effect/Types"
+import {Data} from "effect"
+import type {Instruction} from "@unionlabs/sdk/ucs03"
+import type {AddressCanonicalBytes, Chain, TokenRawAmount, TokenRawDenom} from "@unionlabs/sdk/schema"
+import type {ExtractTag} from "effect/Types"
 
 /**
  * Defines the different steps in a transfer process

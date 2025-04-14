@@ -1,8 +1,8 @@
 <script lang="ts">
-import { chains } from "$lib/stores/chains.svelte"
-import { Option } from "effect"
-import ChainComponent from "$lib/components/model/ChainComponent.svelte"
-import Card from "./ui/Card.svelte"
+  import {chains} from "$lib/stores/chains.svelte"
+  import {Option} from "effect"
+  import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+  import Card from "./ui/Card.svelte"
 </script>
 
 <Card divided>

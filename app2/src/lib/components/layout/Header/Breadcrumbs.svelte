@@ -1,13 +1,13 @@
 
 <script lang="ts">
-import { page } from "$app/state"
-import { navigation } from "../Sidebar/navigation.ts"
-import { fade, fly } from "svelte/transition"
-import { quintOut } from "svelte/easing"
-import { flip } from "svelte/animate"
-import Truncate from "$lib/components/ui/Truncate.svelte"
+  import {page} from "$app/state"
+  import {navigation} from "../Sidebar/navigation.ts"
+  import {fade, fly} from "svelte/transition"
+  import {quintOut} from "svelte/easing"
+  import {flip} from "svelte/animate"
+  import Truncate from "$lib/components/ui/Truncate.svelte"
 
-const toTitleCase = (str: string): string => {
+  const toTitleCase = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 

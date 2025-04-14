@@ -1,20 +1,16 @@
 <script lang="ts">
-import ChainAsset from "$lib/components/Transfer/ChainAsset/index.svelte"
-import Amount from "$lib/components/Transfer/Amount.svelte"
-import Receiver from "$lib/components/Transfer/Receiver.svelte"
-import Button from "$lib/components/ui/Button.svelte"
-import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
-import AddressComponent from "$lib/components/model/AddressComponent.svelte"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { Option, pipe, Data, Match } from "effect"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { Chain } from "@unionlabs/sdk/schema"
-import { uiStore } from "$lib/stores/ui.svelte.ts"
-import { constVoid, flow, identity } from "effect/Function"
-import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
+  import ChainAsset from "$lib/components/Transfer/ChainAsset/index.svelte"
+  import Amount from "$lib/components/Transfer/Amount.svelte"
+  import Receiver from "$lib/components/Transfer/Receiver.svelte"
+  import Button from "$lib/components/ui/Button.svelte"
+  import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
+  import AddressComponent from "$lib/components/model/AddressComponent.svelte"
+  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
+  import {Match, Option} from "effect"
+  import {constVoid} from "effect/Function"
+  import type {TransferFlowError} from "$lib/components/Transfer/state/errors.ts"
 
-type Props = {
+  type Props = {
   onContinue: () => void
   loading: boolean
   onErrorClose?: () => void

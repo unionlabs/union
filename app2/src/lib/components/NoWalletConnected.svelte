@@ -1,9 +1,9 @@
 <script lang="ts">
-import { cn } from "$lib/utils"
-import type { HTMLAttributes } from "svelte/elements"
-import ConnectWalletButton from "./ui/ConnectWalletButton.svelte"
+  import {cn} from "$lib/utils"
+  import type {HTMLAttributes} from "svelte/elements"
+  import ConnectWalletButton from "./ui/ConnectWalletButton.svelte"
 
-type Props = HTMLAttributes<HTMLDivElement> & {
+  type Props = HTMLAttributes<HTMLDivElement> & {
   class?: string
   title?: string
   description?: string

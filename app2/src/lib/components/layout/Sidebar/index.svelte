@@ -1,14 +1,12 @@
 <script lang="ts">
-import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
-import { uiStore } from "$lib/stores/ui.svelte"
-import Button from "$lib/components/ui/Button.svelte"
-import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
-import { page } from "$app/state"
-import { cn } from "$lib/utils"
-import { onMount } from "svelte"
-import { navigation } from "./navigation.js"
+  import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
+  import {uiStore} from "$lib/stores/ui.svelte"
+  import {page} from "$app/state"
+  import {cn} from "$lib/utils"
+  import {onMount} from "svelte"
+  import {navigation} from "./navigation.js"
 
-const isCurrentPath = (path: string) => {
+  const isCurrentPath = (path: string) => {
   // Exact match
   if (page.url.pathname === path) return true
 

@@ -1,32 +1,32 @@
 <script lang="ts">
-import Button from "$lib/components/ui/Button.svelte"
-import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-import { Effect, Match, Option, Array as Arr, Struct, Exit, Cause, Unify } from "effect"
-import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { createViemPublicClient } from "@unionlabs/sdk/evm"
-import { erc20Abi, http, isHex, toHex } from "viem"
-import {
-  hasFailedExit as evmHasFailedExit,
-  isComplete as evmIsComplete,
-  nextStateEvm,
-  TransactionSubmissionEvm
-} from "$lib/components/Transfer/state/evm.ts"
-import {
-  nextStateCosmos,
-  isComplete as cosmosIsComplete,
-  hasFailedExit as cosmosHasFailedExit,
-  TransactionSubmissionCosmos
-} from "$lib/components/Transfer/state/cosmos.ts"
-import { getWalletClient } from "$lib/services/evm/clients.ts"
-import Label from "$lib/components/ui/Label.svelte"
-import { is } from "../transfer-step.ts"
-import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
-import { cosmosStore } from "$lib/wallet/cosmos"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
+  import Button from "$lib/components/ui/Button.svelte"
+  import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+  import {Array as Arr, Cause, Effect, Exit, Match, Option, Struct} from "effect"
+  import {lockedTransferStore} from "../locked-transfer.svelte.ts"
+  import {createViemPublicClient} from "@unionlabs/sdk/evm"
+  import {erc20Abi, http, isHex, toHex} from "viem"
+  import {
+    hasFailedExit as evmHasFailedExit,
+    isComplete as evmIsComplete,
+    nextStateEvm,
+    TransactionSubmissionEvm
+  } from "$lib/components/Transfer/state/evm.ts"
+  import {
+    hasFailedExit as cosmosHasFailedExit,
+    isComplete as cosmosIsComplete,
+    nextStateCosmos,
+    TransactionSubmissionCosmos
+  } from "$lib/components/Transfer/state/cosmos.ts"
+  import {getWalletClient} from "$lib/services/evm/clients.ts"
+  import Label from "$lib/components/ui/Label.svelte"
+  import {is} from "../transfer-step.ts"
+  import {getCosmWasmClient} from "$lib/services/cosmos/clients.ts"
+  import {cosmosStore} from "$lib/wallet/cosmos"
+  import {wallets} from "$lib/stores/wallets.svelte.ts"
+  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+  import {cosmosSpenderAddresses} from "$lib/constants/spender-addresses.ts"
 
-type Props = {
+  type Props = {
   stepIndex: number
   onBack: () => void
   onApprove: () => void

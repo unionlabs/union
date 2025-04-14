@@ -28,7 +28,7 @@ const classes = cn(
   variant === "primary" && [
     "bg-sky-600 border-sky-600 border text-white hover:bg-sky-700",
     "dark:bg-white dark:border-zinc-100 dark:hover:bg-zinc-100 dark:text-black font-bold",
-    "focus-visible:ring-sky-500"
+    "focus-visible:ring-babylon-orange"
   ],
   variant === "secondary" && [
     "border border-zinc-200 bg-white hover:bg-zinc-100 hover:text-zinc-900",

@@ -1,13 +1,12 @@
 <script lang="ts">
-import Button from "../../ui/Button.svelte"
-import { uiStore } from "$lib/stores/ui.svelte"
-import { totalErrorCount } from "$lib/stores/app-errors.svelte"
-import Breadcrumbs from "./Breadcrumbs.svelte"
-import CopyLink from "./CopyLink.svelte"
-import SharpBaselineArrowBackIcon from "$lib/components/icons/SharpBaselineArrowBackIcon.svelte"
-import { goto } from "$app/navigation"
+  import Button from "../../ui/Button.svelte"
+  import {uiStore} from "$lib/stores/ui.svelte"
+  import {totalErrorCount} from "$lib/stores/app-errors.svelte"
+  import Breadcrumbs from "./Breadcrumbs.svelte"
+  import CopyLink from "./CopyLink.svelte"
+  import SharpBaselineArrowBackIcon from "$lib/components/icons/SharpBaselineArrowBackIcon.svelte"
 
-type Props = {
+  type Props = {
   showNavigation?: boolean | undefined
 }
 const { showNavigation = false }: Props = $props()

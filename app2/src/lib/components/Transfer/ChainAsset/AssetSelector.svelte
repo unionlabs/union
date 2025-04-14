@@ -1,14 +1,14 @@
 <script lang="ts">
-import { Option } from "effect"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
-import TransferAsset from "$lib/components/Transfer/ChainAsset/TransferAsset.svelte"
-import { Token } from "@unionlabs/sdk/schema"
-import { fade } from "svelte/transition"
-import { tick } from "svelte"
+  import {Option} from "effect"
+  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
+  import {wallets} from "$lib/stores/wallets.svelte.ts"
+  import Skeleton from "$lib/components/ui/Skeleton.svelte"
+  import TransferAsset from "$lib/components/Transfer/ChainAsset/TransferAsset.svelte"
+  import {Token} from "@unionlabs/sdk/schema"
+  import {fade} from "svelte/transition"
+  import {tick} from "svelte"
 
-type Props = {
+  type Props = {
   onSelect: () => void
 }
 

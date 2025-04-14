@@ -1,13 +1,13 @@
 <script lang="ts">
-import Button from "$lib/components/ui/Button.svelte"
-import Card from "$lib/components/ui/Card.svelte"
-import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
-import AddressComponent from "$lib/components/model/AddressComponent.svelte"
-import { Option } from "effect"
+  import Button from "$lib/components/ui/Button.svelte"
+  import Card from "$lib/components/ui/Card.svelte"
+  import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
+  import AddressComponent from "$lib/components/model/AddressComponent.svelte"
+  import {Option} from "effect"
 
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { chains } from "$lib/stores/chains.svelte.ts"
-import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
+  import {wallets} from "$lib/stores/wallets.svelte.ts"
+  import {chains} from "$lib/stores/chains.svelte.ts"
+  import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
 </script>
 
 <Card divided class="self-center">

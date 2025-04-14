@@ -1,8 +1,8 @@
 <script lang="ts">
-import Modal from "./ui/Modal.svelte"
-import AppErrors from "$lib/components/layout/AppErrors/index.svelte"
+  import Modal from "./ui/Modal.svelte"
+  import AppErrors from "$lib/components/layout/AppErrors/index.svelte"
 
-type Props = {
+  type Props = {
   isOpen: boolean
   onClose: () => void
 }
