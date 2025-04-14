@@ -172,7 +172,7 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
         Either.getOrElse(() => ({
           symbol: intent.baseToken,
           name: intent.baseToken,
-          decimals: 0
+          decimals: 6
         }))
       )
     )
@@ -239,7 +239,7 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
         Either.getOrElse(() => ({
           symbol: intent.baseToken,
           name: intent.baseToken,
-          decimals: 0
+          decimals: 6
         }))
       )
     )
