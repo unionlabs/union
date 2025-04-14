@@ -18,11 +18,14 @@ pub enum ModuleData {
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct EventBatch<V: IbcSpecExt> {
     /// The client that will need an update to send these messages through.
+    ///
+    /// This is the counterparty client of the source event.
     pub client_id: V::ClientId,
     /// The on-chain events that will need to be turned into messages to send to this chain.
     pub events: Vec<BatchableEvent<V>>,
 }
 
+// TODO: Add a "now" constructor
 #[model]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct BatchableEvent<V: IbcSpecExt> {

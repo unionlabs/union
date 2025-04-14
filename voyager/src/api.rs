@@ -20,7 +20,7 @@ pub fn run(laddr: &SocketAddr) -> UnboundedReceiver<Op<VoyagerMessage>> {
 
     let app = axum::Router::new()
         .route("/enqueue", post(enqueue))
-        .route("/health", get(|| async move { StatusCode::OK }))
+        .route("/health", get(async || StatusCode::OK))
         .route("/metrics", get(metrics))
         // .route(
         //     "/signer/balances",

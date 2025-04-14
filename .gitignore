@@ -88,3 +88,5 @@ profiles/
 contracts.json
 dist/
 *.tsbuildinfo
+
+.gas-snapshot

@@ -16,7 +16,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, trace};
 use unionlabs::{
     aptos::{
         sparse_merkle_proof::{SparseMerkleLeafNode, SparseMerkleProof},
@@ -121,7 +121,7 @@ impl Module {
             Ok(ledger_info) => {
                 let height = ledger_info.inner().block_height.0;
 
-                debug!(height, "latest height");
+                trace!(height, "latest height");
 
                 Ok(self.make_height(height))
             }

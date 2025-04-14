@@ -15552,6 +15552,7 @@ dependencies = [
  "enumorph",
  "futures",
  "hex-literal",
+ "indexmap 2.9.0",
  "itertools 0.13.0",
  "jaq-core",
  "jaq-interpret",
@@ -15659,6 +15660,30 @@ dependencies = [
  "tracing",
  "unionlabs",
  "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-plugin-zkgm-filter"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "cometbft-rpc",
+ "crc",
+ "embed-commit",
+ "enumorph",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "macros",
+ "ripemd",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "ucs03-zkgm",
+ "unionlabs",
+ "voyager-message",
+ "voyager-plugin-transaction-batch",
  "voyager-vm",
 ]
 
