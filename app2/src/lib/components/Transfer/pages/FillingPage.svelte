@@ -108,11 +108,11 @@ function handleButtonClick() {
   </div>
 </div>
 
-{#if uiStatus.error}
-  <div class="absolute bottom-0 left-0 right-0">
-    <ErrorComponent
-      onClose={onErrorClose}
-      error={uiStatus.error}
-    />
-  </div>
-{/if}
+<!--{#if uiStatus.error}-->
+<!--  <div class="absolute bottom-0 left-0 right-0">-->
+<!--    <ErrorComponent-->
+<!--      onClose={onErrorClose}-->
+<!--      error={uiStatus.error}-->
+<!--    />-->
+<!--  </div>-->
+<!--{/if}-->
