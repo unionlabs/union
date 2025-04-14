@@ -1,4 +1,4 @@
-import { Data, Effect } from "effect"
+import { Data, Effect, String as Str } from "effect"
 import { fromBytes, fromHex, isHex, toHex } from "viem"
 import crc32 from "crc/crc32"
 export { extractErrorDetails } from "./extract-error-details.js"
@@ -25,7 +25,8 @@ export const generateSalt = (rpcType: RpcType) =>
       return yield* new CryptoError({ cause: new Error("Crypto API not supported.") })
     }
     const crc = crc32(saltBytes).toString(16)
-    const crcBytes = fromHex(`0x${crc}`, "bytes")
+    const paddedCrc = Str.padStart(7, "0")(crc)
+    const crcBytes = fromHex(`0x${paddedCrc}`, "bytes")
     const concatenated = new Uint8Array([...saltBytes, ...crcBytes])
     const result = toHex(concatenated)
     return yield* Effect.succeed(result)
