@@ -29,7 +29,7 @@ export const parseAmountEffect = (amount: string, token: Token) =>
 
 // Updated to return Option.Option<string> (the string representation)
 export const getParsedAmountSafe = (amount: string, token: Token): Option.Option<string> => {
-  const result = Effect.runSync(Effect.either(parseAmountEffect(amount, token)))
+  const result = Effect.runSync(Effect.either(parseAmountEffect(amount.replace(",", "."), token)))
 
   return result._tag === "Right"
     ? Option.some(result.right) // Already a string

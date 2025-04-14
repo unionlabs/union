@@ -1,7 +1,7 @@
 <script lang="ts">
 import Input from "$lib/components/ui/Input.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { Option } from "effect"
+import { Option, pipe } from "effect"
 import { formatUnits } from "viem"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
@@ -67,9 +67,8 @@ function setMaxAmount() {
 }
 </script>
 
-
-  <div class="w-full">
-    {#if Option.isSome(chainWallet)}
+<div class="w-full">
+  {#if Option.isSome(chainWallet)}
     {#if type === "source"}
       <div class="flex w-full justify-between items-center text-xs gap-1 pb-1">
         <div class="flex gap-1">
@@ -77,54 +76,66 @@ function setMaxAmount() {
           {#if !transfer.raw.source || !transfer.raw.asset}
             0
           {:else if !allDataReadyForBalance()}
-            <Skeleton class="h-3 w-16 inline-block"/>
+            <Skeleton class="h-3 w-16 inline-block" />
           {:else}
             {displayBalance}
           {/if}
         </div>
         <button
-                class="cursor-pointer  text-xs text-sky-400 hover:text-sky-200"
-                onclick={setMaxAmount}
+          class="cursor-pointer text-xs text-sky-400 hover:text-sky-200"
+          onclick={setMaxAmount}
         >
           MAX
         </button>
       </div>
     {/if}
-{/if}
-    <Input
-            id="amount"
-            type="text"
-            required
-            disabled={!transfer.raw.asset || disabled}
-            autocorrect="off"
-            placeholder="0.00"
-            spellcheck="false"
-            autocomplete="off"
-            inputmode="decimal"
-            data-field="amount"
-            autocapitalize="none"
-            pattern="^[0-9]*[.]?[0-9]*$"
-            value={transfer.raw.amount}
-            class="h-14 text-center text-lg"
-            oninput={(event) => {
-    const input = event.currentTarget
-    const value = input.value
+  {/if}
+  <Input
+    id="amount"
+    type="text"
+    required
+    disabled={!transfer.raw.asset || disabled}
+    autocorrect="off"
+    placeholder="0.00"
+    spellcheck="false"
+    autocomplete="off"
+    inputmode="decimal"
+    data-field="amount"
+    onbeforeinput={(event) => {
+      const { inputType, data, currentTarget } = event;
+      const { value } = currentTarget;
+      const proposed = value + (data ?? "");
 
-    const maxDecimals = Option.isSome(transfer.baseToken)
-      ? transfer.baseToken.value.representations[0]?.decimals ?? 0
-      : 0
+      const maxDecimals = pipe(
+        transfer.baseToken,
+        Option.flatMap((x) =>
+          Option.fromNullable(x.representations[0]?.decimals),
+        ),
+        Option.getOrElse(() => 0),
+      );
 
-    if (
-      value === '' ||
-      (
-        /^\d*\.?\d*$/.test(value) &&
-        (!value.includes('.') || value.split('.')[1].length <= maxDecimals)
-      )
-    ) {
-      transfer.raw.updateField('amount', event)
-    } else {
-      input.value = transfer.raw.amount
-    }
-  }}
-    />
-  </div>
+      const validShape = /^\d*[.,]?\d*$/.test(proposed);
+      const validDecimalsDot =
+        !proposed.includes(".") || proposed.split(".")[1].length <= maxDecimals;
+      const validDecimalsComma =
+        !proposed.includes(",") || proposed.split(",")[1].length <= maxDecimals;
+      const isDelete = inputType.startsWith("delete");
+      const validDecimals = validDecimalsComma && validDecimalsDot;
+      const noDuplicateLeadingZeroes = !proposed.startsWith("00");
+
+      const allow =
+        isDelete || (validDecimals && validShape && noDuplicateLeadingZeroes);
+
+      if (!allow) {
+        event.preventDefault();
+      }
+    }}
+    autocapitalize="none"
+    pattern="^[0-9]*[.,]?[0-9]*$"
+    value={transfer.raw.amount}
+    class="h-14 text-center text-lg"
+    oninput={(event) => {
+      transfer.raw.updateField("amount", event);
+    }}
+  />
+</div>
