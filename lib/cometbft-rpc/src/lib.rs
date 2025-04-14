@@ -408,13 +408,21 @@ impl ClientT for ClientInner {
 //     async fn abci_query() {
 //         // let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+//         let client = Client::new("https://rpc.pacific-1.sei.io").await.unwrap();
 
 //         let result = client
 //             .abci_query(
-//                 "store/beacon/key",
-//                 &[0x11],
-//                 Some(3358.try_into().unwrap()),
+//                 "store/evm/key",
+//                 &[
+//                     [0x03].as_slice(),
+//                     &hex!("4a4d9abD36F923cBA0Af62A39C01dEC2944fb638"),
+//                     &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+//                 ]
+//                 .into_iter()
+//                 .flatten()
+//                 .copied()
+//                 .collect::<Vec<_>>(),
+//                 Some(142070066.try_into().unwrap()),
 //                 true,
 //             )
 //             .await;
