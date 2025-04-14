@@ -2,7 +2,7 @@
 import Input from "$lib/components/ui/Input.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { Option } from "effect"
-import { formatUnits } from "viem"
+import { formatUnits, toHex } from "viem"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Label from "$lib/components/ui/Label.svelte"
@@ -50,12 +50,21 @@ function setMaxAmount() {
   if (Option.isNone(transfer.baseToken)) return
   if (Option.isNone(transfer.baseTokenBalance)) return
   if (Option.isNone(transfer.baseTokenBalance.value.balance)) return
+  if (Option.isNone(transfer.sourceChain)) return
 
   const baseToken = transfer.baseToken.value
+  const rawBalance = BigInt(transfer.baseTokenBalance.value.balance.value)
   const decimals = baseToken.representations[0]?.decimals ?? 0
+  const isUbbn =
+    transfer.sourceChain.value.universal_chain_id === "babylon.bbn-1" &&
+    baseToken.denom === toHex("ubbn")
 
-  const rawBalance = transfer.baseTokenBalance.value.balance.value
-  const formattedAmount = formatUnits(BigInt(rawBalance), decimals)
+  const BABY_SUB_AMOUNT = 20n * 10n ** BigInt(decimals)
+
+  const maxUsable =
+    isUbbn && rawBalance > BABY_SUB_AMOUNT ? rawBalance - BABY_SUB_AMOUNT : rawBalance
+
+  const formattedAmount = formatUnits(maxUsable, decimals)
 
   transfer.raw.amount = formattedAmount
 

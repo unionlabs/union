@@ -5,7 +5,7 @@ import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.t
 import type { TokenRawAmount } from "@unionlabs/sdk/schema"
 
 const BABY_DECIMALS = 6n
-const BABY_SUB_AMOUNT = 20n * 10n ** BABY_DECIMALS
+const BABY_SUB_AMOUNT = 19n * 10n ** BABY_DECIMALS
 
 const subtractTokenAmount = (amount: TokenRawAmount, sub: bigint): TokenRawAmount =>
   (amount - sub) as TokenRawAmount

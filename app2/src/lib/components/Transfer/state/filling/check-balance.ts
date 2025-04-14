@@ -5,34 +5,34 @@ import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.t
 import { isHex, toHex } from "viem"
 import { BalanceLookupError } from "$lib/components/Transfer/state/errors.ts"
 
+const BABY_SUB_AMOUNT = 1n * 10n ** 6n
+const BABYLON_CHAIN_ID = "babylon.bbn-1"
+const UBBN_DENOM = "ubbn"
+
 export type BalanceCheckResult = { _tag: "HasEnough" } | { _tag: "InsufficientFunds" }
 
 export const checkBalanceForIntents = (
   source: Chain,
   intents: TransferIntents
 ): Effect.Effect<BalanceCheckResult, BalanceLookupError> => {
-  console.debug("[checkBalanceForIntents] 🧾 Raw intents", intents)
+  console.debug("[checkBalanceForIntents] source:", source.universal_chain_id)
+  console.debug("[checkBalanceForIntents] raw intents:", intents)
 
   const grouped = intents.reduce(
     (acc, intent) => {
-      const normalizedToken = isHex(intent.baseToken) ? intent.baseToken : toHex(intent.baseToken)
-      const key = `${intent.sender}_${normalizedToken}`
+      const token = intent.baseToken
+      const key = `${intent.sender}_${token}`
 
-      console.debug("[checkBalanceForIntents] ➕ Grouping intent", {
-        key,
-        sender: intent.sender,
-        token: intent.baseToken,
-        normalizedToken,
-        amount: intent.baseAmount.toString()
-      })
+      const needsFee = source.universal_chain_id === BABYLON_CHAIN_ID && token === UBBN_DENOM
+      const required = intent.baseAmount + (needsFee ? BABY_SUB_AMOUNT : 0n)
 
       if (acc[key]) {
         acc[key].required += intent.baseAmount
       } else {
         acc[key] = {
           sender: intent.sender,
-          baseToken: normalizedToken,
-          required: intent.baseAmount
+          baseToken: token,
+          required
         }
       }
 
@@ -42,26 +42,22 @@ export const checkBalanceForIntents = (
   )
 
   const groupedValues = Object.values(grouped)
-  console.debug("[checkBalanceForIntents] ✅ Grouped Intents", groupedValues)
 
   return Effect.forEach(groupedValues, group =>
     Effect.flatMap(
       Effect.sync(() => {
-        console.debug("[checkBalanceForIntents] 🔍 Fetching balance for", {
-          sender: group.sender,
-          token: group.baseToken,
-          chain: source.universal_chain_id
-        })
-
-        return balancesStore.getBalance(source.universal_chain_id, group.sender, group.baseToken)
+        return balancesStore.getBalance(
+          source.universal_chain_id,
+          group.sender,
+          isHex(group.baseToken) ? group.baseToken : toHex(group.baseToken)
+        )
       }),
       balance => {
         if (!Option.isSome(balance)) {
           console.warn("[checkBalanceForIntents] ❌ No balance found", group)
-
           return Effect.fail(
             new BalanceLookupError({
-              reason: "No balance found",
+              cause: "No balance found",
               token: group.baseToken,
               sender: group.sender,
               chainId: source.universal_chain_id
@@ -69,53 +65,21 @@ export const checkBalanceForIntents = (
           )
         }
 
-        console.debug("[checkBalanceForIntents] ✅ Got balance", {
-          sender: group.sender,
-          token: group.baseToken,
-          actual: balance.value,
-          required: group.required.toString()
+        const actualBalance = balance.value
+        const hasEnough = group.required <= BigInt(actualBalance)
+
+        console.debug("[checkBalanceForIntents] ✅ Found balance", {
+          actual: actualBalance.toString(),
+          required: group.required.toString(),
+          hasEnough
         })
 
-        return Effect.try({
-          try: () => {
-            const actual = BigInt(balance.value)
-            const hasEnough = group.required <= actual
-
-            console.debug("[checkBalanceForIntents] 💰 Comparing balances", {
-              actual: actual.toString(),
-              required: group.required.toString(),
-              result: hasEnough
-            })
-
-            return hasEnough
-          },
-          catch: err => {
-            console.error("[checkBalanceForIntents] ❌ BigInt conversion failed", {
-              value: balance.value,
-              error: err
-            })
-
-            return new BalanceLookupError({
-              reason: "BigInt conversion failed",
-              token: group.baseToken,
-              sender: group.sender,
-              chainId: source.universal_chain_id
-            })
-          }
-        })
+        return Effect.succeed(hasEnough)
       }
     )
   ).pipe(
-    Effect.map(results => {
-      console.debug("[checkBalanceForIntents] ✅ All check results", results)
-
-      const result: BalanceCheckResult = results.every(identity)
-        ? { _tag: "HasEnough" }
-        : { _tag: "InsufficientFunds" }
-
-      console.debug("[checkBalanceForIntents] ✅ Final result", result)
-
-      return result
-    })
+    Effect.map(results =>
+      results.every(identity) ? { _tag: "HasEnough" } : { _tag: "InsufficientFunds" }
+    )
   )
 }
