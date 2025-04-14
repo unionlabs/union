@@ -13,31 +13,6 @@ const subtractTokenAmount = (amount: TokenRawAmount, sub: bigint): TokenRawAmoun
 export const createIntents = (args: TransferArgs): Option.Option<TransferIntents> => {
   console.debug("[createIntents] args:", args)
 
-  if (!args.receiver) {
-    console.warn("[createIntents] Missing receiver")
-    return Option.none()
-  }
-
-  if (!args.baseToken) {
-    console.warn("[createIntents] Missing baseToken")
-    return Option.none()
-  }
-
-  if (!args.baseAmount) {
-    console.warn("[createIntents] Missing baseAmount")
-    return Option.none()
-  }
-
-  if (!args.sourceChain) {
-    console.warn("[createIntents] Missing sourceChain")
-    return Option.none()
-  }
-
-  if (!args.sender) {
-    console.warn("[createIntents] Missing sender")
-    return Option.none()
-  }
-
   let baseAmount: TokenRawAmount
   try {
     baseAmount = BigInt(args.baseAmount) as TokenRawAmount
@@ -70,6 +45,8 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
 
     Match.when("cosmos", () => {
       const tokenName = isHex(args.baseToken) ? fromHex(args.baseToken, "string") : args.baseToken
+
+      const baseAmount: TokenRawAmount = BigInt(args.baseAmount)
 
       const quoteAmount =
         args.sourceChain.universal_chain_id === "babylon.bbn-1" && tokenName === "ubbn"

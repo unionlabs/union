@@ -7,7 +7,7 @@ import FillingPage from "./pages/FillingPage.svelte"
 import ApprovalPage from "./pages/ApprovalPage.svelte"
 import SubmitPage from "./pages/SubmitPage.svelte"
 import { lockedTransferStore } from "./locked-transfer.svelte.ts"
-import { Effect, Fiber, Option } from "effect"
+import { Effect, Fiber, FiberId, Option } from "effect"
 import * as TransferStep from "./transfer-step.ts"
 import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
 import {
@@ -209,6 +209,8 @@ $effect(() => {
 
   const fiber = Effect.runFork(machineEffect as Effect.Effect<void, never, never>)
   currentFiber = Option.some(fiber)
+
+  return () => fiber?.unsafeInterruptAsFork(FiberId.none)
 })
 
 beforeNavigate(newTransfer)

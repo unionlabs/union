@@ -112,6 +112,7 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
         NoContract: () => Effect.succeed(ok(Empty(), "No ucs03 contract")),
         EmptyAmount: () => Effect.succeed(ok(Empty(), "Enter amount")),
         InvalidAmount: () => Effect.succeed(ok(Empty(), "Invalid amount")),
+        MinimumSpend: () => Effect.succeed(ok(Empty(), "Minimum spend not reached")),
         ReceiverMissing: () => Effect.succeed(ok(Empty(), "Select receiver")),
         Ready: args => Effect.succeed(ok(Validation({ args }), "Validating..."))
       })
