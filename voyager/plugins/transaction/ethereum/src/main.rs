@@ -89,6 +89,8 @@ pub struct ModuleInner {
     pub fixed_gas_price: Option<u128>,
 
     pub legacy: bool,
+
+    pub fee_recipient: Option<alloy::primitives::Address>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -119,6 +121,9 @@ pub struct Config {
 
     #[serde(default)]
     pub max_cache_size: u32,
+
+    #[serde(default)]
+    pub fee_recipient: Option<alloy::primitives::Address>,
 }
 
 #[derive(Subcommand)]
@@ -179,6 +184,7 @@ impl Plugin for Module {
             max_gas_price: config.max_gas_price,
             fixed_gas_price: config.fixed_gas_price,
             legacy: config.legacy,
+            fee_recipient: config.fee_recipient,
         })))
     }
 
@@ -447,7 +453,11 @@ impl Module {
 
         let ibc = Ibc::new(self.ibc_handler_address.into(), &self.provider);
 
-        let msgs = process_msgs(&ibc, ibc_messages, wallet.address().0.into())?;
+        let msgs = process_msgs(
+            &ibc,
+            ibc_messages,
+            self.fee_recipient.unwrap_or(wallet.address()).into(),
+        )?;
 
         trace!(?msgs);
 
