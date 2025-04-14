@@ -28,6 +28,7 @@ pub use crate::{
     uint::U256,
 };
 
+pub type H32<E = HexPrefixed> = FixedBytes<4, E>;
 pub type H64<E = HexPrefixed> = FixedBytes<8, E>;
 pub type H72<E = HexPrefixed> = FixedBytes<9, E>;
 pub type H160<E = HexPrefixed> = FixedBytes<20, E>;

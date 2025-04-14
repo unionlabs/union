@@ -215,6 +215,13 @@ if ."@type" == "data" then
     # pull all ibc events that cause an action on this chain (i.e. where we are the destination)
     # the counterparty of the event origin is the destination
 
+    ($data."@type" == "plugin"
+        and $data."@value".plugin == "{plugin_name}"
+        and (
+            $data."@value".message."@type" == "batch_events_union"
+            or $data."@value".message."@type" == "batch_events_v1"
+    )) or
+
     # ibc v1
     if $data."@type" == "ibc_event" and $data."@value".counterparty_chain_id == "{chain_id}" and $data."@value".ibc_spec_id == "{ibc_v1_id}" then
         $data."@value".event."@type" as $event_type |
@@ -244,9 +251,7 @@ if ."@type" == "data" then
         ) or (
             $event_type == "write_ack"
             and ($event_data.packet.source_channel.connection.client_id as $client_id | {clients_filter})
-        ) or ($data."@type" == "plugin"
-            and $data."@value".plugin == "{plugin_name}"
-            and $data."@value".message."@type" == "event_batch")
+        )
     # ibc union
     elif $data."@type" == "ibc_event" and $data."@value".counterparty_chain_id == "{chain_id}" and $data."@value".ibc_spec_id == "{ibc_union_id}" then
         $data."@value".event."@type" as $event_type |
@@ -276,9 +281,7 @@ if ."@type" == "data" then
         ) or (
             $event_type == "write_ack"
             and ($event_data.packet.source_channel.connection.client_id as $client_id | {clients_filter})
-        ) or ($data."@type" == "plugin"
-            and $data."@value".plugin == "{plugin_name}"
-            and $data."@value".message."@type" == "event_batch")
+        )
     else
         false
     end
@@ -300,11 +303,15 @@ end
     }
 }
 
-pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
+pub fn plugin_name(chain_id: &ChainId) -> String {
+    pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
+
+    format!("{PLUGIN_NAME}/{}", chain_id)
+}
 
 impl Module {
     fn plugin_name(&self) -> String {
-        format!("{PLUGIN_NAME}/{}", self.chain_id)
+        plugin_name(&self.chain_id)
     }
 
     pub fn new(config: Config) -> Self {

@@ -12,12 +12,15 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                            = { workspace = true, features = ["sol-types"] }
+alloy                            = { workspace = true, features = ["contract", "network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+cometbft-rpc                     = { workspace = true }
+crc                              = "3.2.1"
 embed-commit                     = { workspace = true }
 enumorph                         = { workspace = true }
 ibc-union-spec                   = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }
 jsonrpsee                        = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                           = { workspace = true }
+ripemd.workspace                 = true
 serde                            = { workspace = true, features = ["derive"] }
 serde_json                       = { workspace = true }
 tokio                            = { workspace = true }

@@ -15667,11 +15667,14 @@ name = "voyager-plugin-zkgm-filter"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "cometbft-rpc",
+ "crc",
  "embed-commit",
  "enumorph",
  "ibc-union-spec",
  "jsonrpsee",
  "macros",
+ "ripemd",
  "serde",
  "serde_json",
  "tokio",
