@@ -1,11 +1,10 @@
 <script lang="ts">
-import { fade, fly } from "svelte/transition"
+import { crossfade, fade, fly } from "svelte/transition"
 import { onDestroy, onMount } from "svelte"
 import ChainAssetButton from "$lib/components/Transfer/ChainAsset/ChainAssetButton.svelte"
 import ChainSelector from "$lib/components/Transfer/ChainAsset/ChainSelector.svelte"
 import AssetSelector from "$lib/components/Transfer/ChainAsset/AssetSelector.svelte"
 import SharpChevronLeftIcon from "$lib/components/icons/SharpChevronLeftIcon.svelte"
-import { crossfade } from "svelte/transition"
 
 type Props = {
   type: "source" | "destination"

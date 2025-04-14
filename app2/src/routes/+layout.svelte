@@ -13,7 +13,7 @@ import ErrorsModal from "$lib/components/ErrorsModal.svelte"
 import Header from "$lib/components/layout/Header/index.svelte"
 import { channelsQuery } from "$lib/queries/channels.svelte.ts"
 import { runExample } from "$lib/utils/convert-display.ts"
-import { cn, vw } from "$lib/utils"
+import { cn } from "$lib/utils"
 import { page } from "$app/state"
 
 let { children } = $props()

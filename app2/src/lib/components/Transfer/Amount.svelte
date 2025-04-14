@@ -1,8 +1,8 @@
 <script lang="ts">
 import Input from "$lib/components/ui/Input.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { Option, pipe } from "effect"
-import { formatUnits } from "viem"
+import { Option } from "effect"
+import { formatUnits, toHex } from "viem"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Label from "$lib/components/ui/Label.svelte"
@@ -50,12 +50,21 @@ function setMaxAmount() {
   if (Option.isNone(transfer.baseToken)) return
   if (Option.isNone(transfer.baseTokenBalance)) return
   if (Option.isNone(transfer.baseTokenBalance.value.balance)) return
+  if (Option.isNone(transfer.sourceChain)) return
 
   const baseToken = transfer.baseToken.value
+  const rawBalance = BigInt(transfer.baseTokenBalance.value.balance.value)
   const decimals = baseToken.representations[0]?.decimals ?? 0
+  const isUbbn =
+    transfer.sourceChain.value.universal_chain_id === "babylon.bbn-1" &&
+    baseToken.denom === toHex("ubbn")
 
-  const rawBalance = transfer.baseTokenBalance.value.balance.value
-  const formattedAmount = formatUnits(BigInt(rawBalance), decimals)
+  const BABY_SUB_AMOUNT = 20n * 10n ** BigInt(decimals)
+
+  const maxUsable =
+    isUbbn && rawBalance > BABY_SUB_AMOUNT ? rawBalance - BABY_SUB_AMOUNT : rawBalance
+
+  const formattedAmount = formatUnits(maxUsable, decimals)
 
   transfer.raw.amount = formattedAmount
 
@@ -82,8 +91,8 @@ function setMaxAmount() {
           {/if}
         </div>
         <button
-          class="cursor-pointer text-xs text-sky-400 hover:text-sky-200"
-          onclick={setMaxAmount}
+                class="cursor-pointer  text-xs text-babylon-orange hover:opacity-80"
+                onclick={setMaxAmount}
         >
           MAX
         </button>
@@ -139,3 +148,13 @@ function setMaxAmount() {
     }}
   />
 </div>
+{#if Option.isSome(transfer.sourceChain) && Option.isSome(transfer.baseToken)}
+  {#if transfer.sourceChain.value.universal_chain_id === "babylon.bbn-1" && (
+    transfer.baseToken.value.denom === "ubbn" ||
+    transfer.baseToken.value.denom === "0x" + Array.from(new TextEncoder().encode("ubbn")).map(b => b.toString(16).padStart(2, "0")).join("")
+  )}
+    <div class="text-xs text-zinc-400 text-end">
+      Relayer Fee: 20 BABY
+    </div>
+  {/if}
+{/if}

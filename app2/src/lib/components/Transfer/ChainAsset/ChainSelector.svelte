@@ -1,12 +1,11 @@
 <script lang="ts">
-import { flow, Option } from "effect"
+import { Array as Arr, flow, Option } from "effect"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { cn } from "$lib/utils"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
-import { Array as Arr } from "effect"
 import { MODE } from "$lib/constants/config"
 
 type Props = {
@@ -67,7 +66,7 @@ const filteredChains = $derived(
           class={cn(
             "flex flex-col items-center gap-2 justify-start px-2 py-4 rounded-md transition-colors",
             isSelected
-              ? "bg-zinc-900 hover:bg-zinc-800 ring-1 ring-sky-500"
+              ? "bg-zinc-900 hover:bg-zinc-800 ring-1 ring-babylon-orange"
               : isDisabled
                 ? "bg-zinc-900 opacity-50 cursor-not-allowed"
                 : "bg-zinc-900 hover:bg-zinc-800 cursor-pointer",

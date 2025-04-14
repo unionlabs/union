@@ -36,7 +36,7 @@ const isChainLoading = $derived.by(() => {
           class={cn(
       "w-full h-14 rounded-md bg-zinc-800/70 text-zinc-200",
       "hover:bg-zinc-800 hover:border-zinc-500",
-      "focus:outline-none focus:ring-1 focus:ring-white",
+      "focus:outline-none focus:ring-1 focus:ring-babylon-orange",
       "disabled:opacity-50 disabled:cursor-not-allowed",
       "transition-all duration-200 cursor-pointer",
     )}

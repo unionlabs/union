@@ -4,8 +4,8 @@ import { Option } from "effect"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
 import { cn } from "$lib/utils"
-import { onMount, onDestroy } from "svelte"
-import { fade, fly, crossfade } from "svelte/transition"
+import { onDestroy, onMount } from "svelte"
+import { crossfade, fade, fly } from "svelte/transition"
 import Button from "$lib/components/ui/Button.svelte"
 import SharpChevronLeftIcon from "$lib/components/icons/SharpChevronLeftIcon.svelte"
 import FilledBookmarkIcon from "$lib/components/icons/FilledBookmarkIcon.svelte"
@@ -386,7 +386,7 @@ function hasBookmarks() {
                           placeholder="Enter receiver address"
                           class={cn(
                       "w-full p-2 py-5 rounded-md bg-zinc-800 text-zinc-200 h-full text-center",
-                      "focus:outline-none focus:ring-1 focus:ring-sky-500",
+                      "focus:outline-none focus:ring-1 focus:ring-babylon-orange",
                     )}
                   />
                   <div class="flex flex-1 gap-2 w-full">

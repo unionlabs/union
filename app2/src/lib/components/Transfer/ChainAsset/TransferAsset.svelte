@@ -1,7 +1,7 @@
 <script lang="ts">
 import { cn } from "$lib/utils/index.js"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.js"
-import { TokenRawAmount, type Chain, type Token } from "@unionlabs/sdk/schema"
+import { type Chain, type Token, TokenRawAmount } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"

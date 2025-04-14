@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Cause, Option, Struct } from "effect"
+import { Option, Struct } from "effect"
 import Button from "$lib/components/ui/Button.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { goto } from "$app/navigation"

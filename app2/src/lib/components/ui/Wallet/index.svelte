@@ -1,7 +1,6 @@
 <script lang="ts">
 import { evmWalletsInformation, sepoliaStore } from "$lib/wallet/evm/index.js"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.js"
-import { aptosStore, aptosWalletsInformation } from "$lib/wallet/aptos/index.js"
 import Connection from "$lib/components/ui/Wallet/connect/connection.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Modal from "../Modal.svelte"

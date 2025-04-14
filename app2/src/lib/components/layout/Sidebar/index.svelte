@@ -1,8 +1,6 @@
 <script lang="ts">
 import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
-import Button from "$lib/components/ui/Button.svelte"
-import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
 import { page } from "$app/state"
 import { cn } from "$lib/utils"
 import { onMount } from "svelte"

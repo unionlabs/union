@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Option, pipe } from "effect"
+import { Option } from "effect"
 import { packetDetails } from "$lib/stores/packets.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import { chains } from "$lib/stores/chains.svelte"
@@ -14,7 +14,7 @@ import TransactionHashComponent from "$lib/components/model/TransactionHashCompo
 import HeightComponent from "$lib/components/model/HeightComponent.svelte"
 import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
-import AddressComponent from "./AddressComponent.svelte"
+import { pipe } from "effect/Function"
 
 const sourceChain = $derived(
   Option.flatMap(packetDetails.data, data =>

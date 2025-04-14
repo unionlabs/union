@@ -28,15 +28,10 @@ export class CosmosQueryError extends Data.TaggedError("CosmosQueryError")<{
   cause: unknown
 }> {}
 
-export class EvmAllowanceCheckError extends Data.TaggedError("EvmAllowanceCheckError")<{
-  cause: unknown
-}> {}
-
 export type TransferFlowError =
   | MissingTransferFieldsError
   | InsufficientFundsError
-  | AllowanceCheckError
   | OrderCreationError
   | BalanceLookupError
   | CosmosQueryError
-  | EvmAllowanceCheckError
+  | AllowanceCheckError

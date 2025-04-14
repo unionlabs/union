@@ -41,9 +41,9 @@ const handleClick = () => {
       {#if Option.isSome(sourceChain)}
         <TokenComponent
           showWrapping={false}
-          chain={sourceChain.value}
-          denom={transfer.base_token}
-          amount={transfer.base_amount}
+          chain={destinationChain.value}
+          denom={transfer.quote_token}
+          amount={transfer.quote_amount}
         />
       {/if}
       <div class="flex items-center gap-1 text-zinc-400 text-sm">

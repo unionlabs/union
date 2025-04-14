@@ -5,7 +5,6 @@ import { totalErrorCount } from "$lib/stores/app-errors.svelte"
 import Breadcrumbs from "./Breadcrumbs.svelte"
 import CopyLink from "./CopyLink.svelte"
 import SharpBaselineArrowBackIcon from "$lib/components/icons/SharpBaselineArrowBackIcon.svelte"
-import { goto } from "$app/navigation"
 
 type Props = {
   showNavigation?: boolean | undefined

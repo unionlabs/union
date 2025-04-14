@@ -1,8 +1,8 @@
 import {
+  babylonMainnetKeplrChaininfo,
+  babylonMainnetLeapChainInfo,
   babylonTestnetKeplrChaininfo,
   babylonTestnetLeapChaininfo,
-  babylonMainnetLeapChainInfo,
-  babylonMainnetKeplrChaininfo,
   elgafarKeplrChainInfo,
   elgafarLeapChainInfo,
   strideKeplrChainInfo,

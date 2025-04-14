@@ -4,8 +4,6 @@ import { Option } from "effect"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
-import Button from "$lib/components/ui/Button.svelte"
-import { afterNavigate, beforeNavigate } from "$app/navigation"
 
 let { children } = $props()
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 import { page } from "$app/state"
 import { onMount } from "svelte"
-import { Array as Arr, Effect, Fiber, Option, Struct } from "effect"
+import { Effect, Fiber, Option, Struct } from "effect"
 import { transferByPacketHashQuery } from "$lib/queries/transfer-by-hash.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
@@ -21,8 +21,6 @@ import { packetDetails } from "$lib/stores/packets.svelte"
 // Store for the transfer details
 import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
-import { is } from "$lib/components/Transfer/transfer-step.ts"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
 import { finalityDelays, settlementDelays } from "$lib/constants/settlement-times.ts"
@@ -85,9 +83,9 @@ const inProgress = $derived(
               <div class="text-2xl">
                 {#if !settingsStore.showQuoteTokens}
                   <TokenComponent
-                          chain={sourceChain.value}
-                          denom={transfer.base_token}
-                          amount={transfer.base_amount}
+                          chain={destChain.value}
+                          denom={transfer.quote_token}
+                          amount={transfer.quote_amount}
                   />
                 {/if}
               </div>

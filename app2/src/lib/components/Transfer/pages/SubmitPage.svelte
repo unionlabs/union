@@ -1,7 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { Effect, Match, Option, Struct, Array as Arr, Exit, Cause, Unify } from "effect"
+import { Array as Arr, Cause, Effect, Exit, Match, Option, Struct } from "effect"
 import {
   hasFailedExit as evmHasFailedExit,
   isComplete as evmIsComplete,
@@ -16,9 +16,9 @@ import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.ts"
 import { custom, encodeAbiParameters, fromHex } from "viem"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import {
-  nextStateCosmos,
-  isComplete as cosmosIsComplete,
   hasFailedExit as cosmosHasFailedExit,
+  isComplete as cosmosIsComplete,
+  nextStateCosmos,
   TransactionSubmissionCosmos
 } from "$lib/components/Transfer/state/cosmos.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
@@ -230,7 +230,7 @@ export const submit = Effect.gen(function* () {
                   ? [
                       {
                         denom: fromHex(lts.value.baseToken.denom, "string"),
-                        amount: lts.value.parsedAmount
+                        amount: step.value.intents[0].baseAmount.toString()
                       }
                     ]
                   : undefined
