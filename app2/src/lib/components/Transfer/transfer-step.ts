@@ -7,7 +7,7 @@ import type {
   TokenRawDenom
 } from "@unionlabs/sdk/schema"
 import type { ExtractTag } from "effect/Types"
-import type {TransferIntents} from "$lib/components/Transfer/transfer.svelte.ts";
+import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
 
 /**
  * Defines the different steps in a transfer process

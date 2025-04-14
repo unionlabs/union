@@ -28,6 +28,7 @@ export type StateResult = {
   message: string
   orders: Option.Option<Array<Instruction>>
   allowances: Option.Option<Array<ApprovalStep>>
+  intents: Option.Option<TransferIntents>
   error: Option.Option<TransferFlowError>
 }
 

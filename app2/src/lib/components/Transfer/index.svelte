@@ -2,7 +2,7 @@
 import Card from "$lib/components/ui/Card.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import { LockedTransfer } from "./locked-transfer.ts"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import { transfer, type TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
 import FillingPage from "./pages/FillingPage.svelte"
 import ApprovalPage from "./pages/ApprovalPage.svelte"
 import SubmitPage from "./pages/SubmitPage.svelte"
@@ -124,7 +124,7 @@ $effect(() => {
   const machineEffect = Effect.gen(function* () {
     let currentState: CreateTransferState = CreateTransferState.Filling()
     let finalOrders: Array<Batch> = []
-    let intents
+    let intents: TransferIntents
     let finalAllowances: Array<{
       token: string
       requiredAmount: string
