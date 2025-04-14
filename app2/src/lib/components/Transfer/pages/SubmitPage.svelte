@@ -33,6 +33,7 @@ import Label from "$lib/components/ui/Label.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import InsetError from "$lib/components/model/InsetError.svelte"
 
 type Props = {
   stepIndex: number
@@ -44,7 +45,7 @@ type Props = {
 const { stepIndex, onSubmit, onCancel, actionButtonText }: Props = $props()
 
 const lts = lockedTransferStore.get()
-
+let showError = $state(false)
 const step = $derived(
   lts.pipe(
     Option.map(Struct.get("steps")),
@@ -89,16 +90,6 @@ const resetState = () => {
   cts = TransactionSubmissionCosmos.Filling()
   error = Option.none()
   isSubmitting = false
-}
-
-function normalizeError(cause: unknown): { _tag: string; cause: string } {
-  const raw = Cause.squash(cause)
-  if (typeof raw === "string") return { _tag: "UnknownError", cause: raw }
-  if (raw instanceof Error) return { _tag: raw.name, cause: raw.message }
-  if (typeof raw === "object" && raw !== null && "cause" in raw && typeof raw.cause === "string") {
-    return raw as { _tag: string; cause: string }
-  }
-  return { _tag: "UnknownError", cause: "An unknown error occurred" }
 }
 
 export const submit = Effect.gen(function* () {
@@ -279,13 +270,13 @@ export const submit = Effect.gen(function* () {
 })
 
 const handleSubmit = () => {
-  // If we need to retry, just reset the state
+  error = Option.none()
+  showError = false
   if (needsRetry) {
     resetState()
     return
   }
 
-  // Otherwise proceed with the normal submission
   Effect.runPromise(submit).catch(err => {
     console.error("Uncaught error in transfer process:", err)
     error = Option.some({
@@ -298,18 +289,6 @@ const handleSubmit = () => {
 </script>
 
 <div class="relative min-w-full p-4 flex flex-col justify-between h-full">
-  {#if Option.isSome(error)}
-    {@const _error = error.value}
-    <div class="absolute bottom-0 left-0 right-0">
-      <ErrorComponent
-        class="absolute bottom-0 left-0 right-0"
-        error={_error}
-        onClose={() => {
-          error = Option.none();
-        }}
-      />
-    </div>
-  {/if}
   {#if Option.isSome(step) && Option.isSome(sourceChain) && Option.isSome(destinationChain)}
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">Submit Transfer</h3>
@@ -337,17 +316,44 @@ const handleSubmit = () => {
       >
         Cancel
       </Button>
-      <Button
-        variant="primary"
-        onclick={handleSubmit}
-        disabled={!isButtonEnabled}
-      >
-        {getSubmitButtonText}
-      </Button>
+      {#if Option.isSome(error)}
+        <div class="flex gap-2">
+          <Button
+            variant="danger"
+            onclick={() => showError = true}
+          >
+            Error
+          </Button>
+          <Button
+            variant="primary"
+            onclick={handleSubmit}
+            disabled={!isButtonEnabled}
+          >
+            {getSubmitButtonText}
+          </Button>
+        </div>
+      {:else}
+        <Button
+          variant="primary"
+          onclick={handleSubmit}
+          disabled={!isButtonEnabled}
+        >
+          {getSubmitButtonText}
+        </Button>
+      {/if}
+
     </div>
   {:else}
     <div class="flex items-center justify-center h-full">
       <p class="text-zinc-400">Loading submission details...</p>
     </div>
   {/if}
+  <InsetError
+    open={showError}
+    error={Option.isSome(error) ? error.value : null}
+    onClose={() => {
+    showError = false
+  }}
+  />
 </div>
+
