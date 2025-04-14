@@ -83,9 +83,9 @@ const inProgress = $derived(
               <div class="text-2xl">
                 {#if !settingsStore.showQuoteTokens}
                   <TokenComponent
-                          chain={sourceChain.value}
-                          denom={transfer.base_token}
-                          amount={transfer.base_amount}
+                          chain={destChain.value}
+                          denom={transfer.quote_token}
+                          amount={transfer.quote_amount}
                   />
                 {/if}
               </div>

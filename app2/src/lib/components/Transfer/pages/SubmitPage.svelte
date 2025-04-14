@@ -230,7 +230,7 @@ export const submit = Effect.gen(function* () {
                   ? [
                       {
                         denom: fromHex(lts.value.baseToken.denom, "string"),
-                        amount: lts.value.parsedAmount
+                        amount: step.value.intents[0].baseAmount.toString()
                       }
                     ]
                   : undefined

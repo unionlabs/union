@@ -124,6 +124,7 @@ $effect(() => {
   const machineEffect = Effect.gen(function* () {
     let currentState: CreateTransferState = CreateTransferState.Filling()
     let finalOrders: Array<Batch> = []
+    let intents
     let finalAllowances: Array<{
       token: string
       requiredAmount: string
@@ -153,6 +154,10 @@ $effect(() => {
 
       if (Option.isSome(result.allowances)) {
         finalAllowances = result.allowances.value
+      }
+
+      if (Option.isSome(result.intents)) {
+        intents = result.intents.value
       }
 
       break
@@ -198,7 +203,7 @@ $effect(() => {
     )
 
     if (finalOrders.length > 0) {
-      steps.push(TransferStep.SubmitInstruction({ instruction: finalOrders[0] }))
+      steps.push(TransferStep.SubmitInstruction({ instruction: finalOrders[0], intents }))
       steps.push(TransferStep.WaitForIndex())
     }
 

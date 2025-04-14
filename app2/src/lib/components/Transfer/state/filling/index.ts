@@ -51,6 +51,7 @@ export type CreateTransferState = Data.TaggedEnum<{
   }
   CreateSteps: {
     args: TransferArgs
+    intents: TransferIntents
     allowances: Array<ApprovalStep>
     orders: Array<Instruction>
   }
@@ -86,12 +87,14 @@ const ok = (state: CreateTransferState, msg: string): StateResult => ({
 const complete = (
   msg: string,
   orders: Array<Instruction>,
-  allowances: Array<ApprovalStep>
+  allowances: Array<ApprovalStep>,
+  intents: TransferIntents
 ): StateResult => ({
   nextState: Option.none(),
   message: msg,
   orders: Option.some(orders),
   allowances: Option.some(allowances),
+  intents: Option.some(intents),
   error: Option.none()
 })
 
@@ -186,7 +189,7 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
           const batch = batchOpt.value
           return Effect.succeed(
             ok(
-              CreateSteps({ args, allowances, orders: [...batch.operand] }),
+              CreateSteps({ args, allowances, orders: [...batch.operand], intents }),
               "Building final steps..."
             )
           )
@@ -194,9 +197,8 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
         Effect.catchAll(error => Effect.succeed(fail("Order creation failed", error)))
       ),
 
-    CreateSteps: ({ allowances, orders }) => {
-      console.log({ allowances, orders })
-      return Effect.succeed(complete("Transfer ready", orders, allowances))
+    CreateSteps: ({ allowances, orders, intents }) => {
+      return Effect.succeed(complete("Transfer ready", orders, allowances, intents))
     }
   })
 }
