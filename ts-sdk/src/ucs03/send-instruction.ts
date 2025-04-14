@@ -21,6 +21,7 @@ export const sendInstructionEvm = (instruction: Instruction) =>
     const sourceConfig = yield* EvmChannelSource
 
     const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
+    const salt = yield* generateSalt("evm")
 
     return yield* writeContractEvm(walletClient.client, {
       account: walletClient.account,
@@ -32,7 +33,7 @@ export const sendInstructionEvm = (instruction: Instruction) =>
         sourceConfig.channelId,
         0n,
         timeoutTimestamp,
-        generateSalt("evm"),
+        salt,
         {
           opcode: instruction.opcode,
           version: instruction.version,
@@ -48,6 +49,7 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
     const sourceConfig = yield* CosmosChannelSource
 
     const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
+    const salt = yield* generateSalt("cosmos")
 
     return yield* executeContract(
       signingClient.client,
@@ -58,7 +60,7 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
           channel_id: sourceConfig.channelId,
           timeout_height: "0",
           timeout_timestamp,
-          salt: generateSalt("cosmos"),
+          salt,
           instruction: encodeAbiParameters(instructionAbi, [
             instruction.version,
             instruction.opcode,
@@ -74,6 +76,7 @@ export const sendInstructionAptos = (instruction: Instruction) =>
     const walletClient = yield* AptosWalletClient
     const sourceConfig = yield* AptosChannelSource
     const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
+    const salt = yield* generateSalt("aptos")
 
     const module_name = "ibc_app"
     const function_name = "send"
@@ -81,7 +84,7 @@ export const sendInstructionAptos = (instruction: Instruction) =>
       sourceConfig.channelId,
       0,
       timeoutTimestamp,
-      generateSalt("aptos"),
+      salt,
       instruction.version,
       instruction.opcode,
       encodeAbi(instruction)
