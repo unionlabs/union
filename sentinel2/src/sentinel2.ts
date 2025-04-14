@@ -51,6 +51,9 @@ interface Packet {
   write_ack_transaction_hash?: string | null
   packet_ack_transaction_hash?: string | null
   sort_order: string
+  packet_send_block_hash: string
+  packet_hash: string
+  timeout_timestamp: string
 }
 
 interface HasuraResponse {
@@ -395,6 +398,9 @@ const fetchPacketsUntilCutoff = (
               write_ack_transaction_hash
               packet_ack_transaction_hash
               sort_order
+              packet_send_block_hash
+              packet_hash
+              timeout_timestamp
             }
           }
         `
@@ -422,6 +428,9 @@ const fetchPacketsUntilCutoff = (
               write_ack_transaction_hash
               packet_ack_transaction_hash
               sort_order
+              packet_send_block_hash
+              packet_hash
+              timeout_timestamp
             }
           }
         `
@@ -433,7 +442,7 @@ const fetchPacketsUntilCutoff = (
           }
         })
       }
-
+    
       const currentPage: Packet[] = response?.v2_packets || []
       if (currentPage.length === 0) break
 
@@ -481,7 +490,7 @@ export const checkPackets = (
 ) =>
   Effect.gen(function* () {
     const now = Date.now()
-    const searchRangeMs = timeframeMs * 2
+    const searchRangeMs = timeframeMs * 5
     const sinceDate = new Date(now - searchRangeMs).toISOString()
 
     yield* Effect.log(
@@ -532,7 +541,10 @@ export const checkPackets = (
           sourceChain: `${sourceChain}`,
           destinationChain: `${destinationChain}`,
           explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-          minutesPassed: `${timeframeMs/60/1000}`
+          minutesPassed: `${timeframeMs/60/1000}`,
+          packetSendBlockHash: p.packet_send_block_hash,
+          packetHash: p.packet_hash,
+          timeoutTimestamp: p.timeout_timestamp
         })(Effect.logError(`TRANSFER_ERROR`))
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
@@ -543,38 +555,62 @@ export const checkPackets = (
 
       // No need to check write_ack & ack for now. Uncomment them later.
 
-      // // 2) WRITE_ACK check.
-      // if (p.write_ack_timestamp) {
-      //   // const writeAckTimeMs = new Date(p.write_ack_timestamp).getTime()
-      //   // if (writeAckTimeMs - sendTimeMs > timeframeMs) {
-      //   //   yield* Effect.log(
-      //   //     `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, write_ack_time=${p.write_ack_timestamp}, sendTxHash=${sendTxHash}`
-      //   //   )
-      //   //   reportedSendTxHashes.add(sendTxHash)
-      //   // }
-      // } else {
-      //   yield* Effect.log(
-      //     `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
-      //   )
-      //   reportedSendTxHashes.add(sendTxHash)
-      //   continue
-      // }
+      // 2) WRITE_ACK check.
+      if (p.write_ack_timestamp) {
+        // const writeAckTimeMs = new Date(p.write_ack_timestamp).getTime()
+        // if (writeAckTimeMs - sendTimeMs > timeframeMs) {
+        //   yield* Effect.log(
+        //     `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, write_ack_time=${p.write_ack_timestamp}, sendTxHash=${sendTxHash}`
+        //   )
+        //   reportedSendTxHashes.add(sendTxHash)
+        // }
+      } else {
+        const logEffect = Effect.annotateLogs({
+          issueType: "WRITE_ACK MISSING",
+          sendTxHash,
+          sourceChain: `${sourceChain}`,
+          destinationChain: `${destinationChain}`,
+          explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
+          minutesPassed: `${timeframeMs/60/1000}`,
+          packetSendBlockHash: p.packet_send_block_hash,
+          packetHash: p.packet_hash,
+          timeoutTimestamp: p.timeout_timestamp
+        })(Effect.logError(`TRANSFER_ERROR`))
 
-      // // 3) ACK check.
-      // if (p.packet_ack_timestamp) {
-      //   // const ackTimeMs = new Date(p.packet_ack_timestamp).getTime()
-      //   // if (ackTimeMs - sendTimeMs > timeframeMs) {
-      //   //   yield* Effect.log(
-      //   //     `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, ack_time=${p.packet_ack_timestamp}, sendTxHash=${sendTxHash}`
-      //   //   )
-      //   //   reportedSendTxHashes.add(sendTxHash)
-      //   // }
-      // } else {
-      //   yield* Effect.log(
-      //     `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, chain_pair${sourceChain}<->${destinationChain}, url: https://btc.union.build/explorer/transfers/${sort_order_tx}`
-      //   )
-      //   reportedSendTxHashes.add(sendTxHash)
-      // }
+        Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+
+
+        reportedSendTxHashes.add(sendTxHash)
+        continue
+      }
+
+      // 3) ACK check.
+      if (p.packet_ack_timestamp) {
+        // const ackTimeMs = new Date(p.packet_ack_timestamp).getTime()
+        // if (ackTimeMs - sendTimeMs > timeframeMs) {
+        //   yield* Effect.log(
+        //     `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, ack_time=${p.packet_ack_timestamp}, sendTxHash=${sendTxHash}`
+        //   )
+        //   reportedSendTxHashes.add(sendTxHash)
+        // }
+      } else {
+        const logEffect = Effect.annotateLogs({
+          issueType: "ACK MISSING",
+          sendTxHash,
+          sourceChain: `${sourceChain}`,
+          destinationChain: `${destinationChain}`,
+          explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
+          minutesPassed: `${timeframeMs/60/1000}`,
+          packetSendBlockHash: p.packet_send_block_hash,
+          packetHash: p.packet_hash,
+          timeoutTimestamp: p.timeout_timestamp
+        })(Effect.logError(`TRANSFER_ERROR`))
+
+        Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+        
+        reportedSendTxHashes.add(sendTxHash)
+        continue
+      }
     }
   }).pipe(Effect.withLogSpan("checkPackets"))
 
