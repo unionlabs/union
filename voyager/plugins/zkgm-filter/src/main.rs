@@ -20,7 +20,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tracing::{info, instrument, warn};
+use tracing::{debug, info, instrument, warn};
 use ucs03_zkgm::com::{Ack, FungibleAssetOrderAck, FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS};
 use unionlabs::{
     self,
@@ -282,7 +282,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                             }
                         }
                         FullEvent::WriteAck(write_ack) => {
-                            if !self.filter_ack(write_ack) {
+                            if !self.is_successful_protocol_fill(write_ack) {
                                 return Ok((vec![], noop()));
                             }
 
@@ -332,19 +332,31 @@ impl PluginServer<ModuleCall, Never> for Module {
 }
 
 impl Module {
-    /// Drop the message if it is `WriteAck`, ACK is success and the fill type is PROTOCOL
-    pub fn filter_ack(&self, event: &WriteAck) -> bool {
+    /// The `ucs03-zkgm` protocol-filled packets do nothing on acknowledgement, so there's no need to relay those messages.
+    #[instrument(
+        skip_all,
+        fields(
+            packet_hash = %event.packet().hash()
+        )
+    )]
+    pub fn is_successful_protocol_fill(&self, event: &WriteAck) -> bool {
         let Ok(ack) = Ack::abi_decode_params(&event.acknowledgement, true) else {
+            // not a zkgm ack
             return false;
         };
 
+        info!(%ack.tag, %ack.inner_ack, "zkgm ack");
+
         if ack.tag != TAG_ACK_SUCCESS {
+            debug!("ack is not {TAG_ACK_SUCCESS}");
             return false;
         }
 
         let Ok(ack) = FungibleAssetOrderAck::abi_decode_params(&ack.inner_ack, true) else {
             return false;
         };
+
+        info!(%ack.fill_type, %ack.market_maker, "fungible asset order ack");
 
         ack.fill_type == FILL_TYPE_PROTOCOL
     }
