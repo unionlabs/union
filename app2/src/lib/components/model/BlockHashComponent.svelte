@@ -1,14 +1,14 @@
 <script lang="ts">
-  import type {HTMLAttributes} from "svelte/elements"
-  import type {Chain} from "@unionlabs/sdk/schema"
-  import {Array as Arr, Option, pipe, String as Str, Struct} from "effect"
-  import Tooltip from "$lib/components/ui/Tooltip.svelte"
-  import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
-  import ChainComponent from "$lib/components/model/ChainComponent.svelte"
-  import Label from "../ui/Label.svelte"
-  import A from "../ui/A.svelte"
+import type { HTMLAttributes } from "svelte/elements"
+import type { Chain } from "@unionlabs/sdk/schema"
+import { Array as Arr, Option, pipe, String as Str, Struct } from "effect"
+import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import Label from "../ui/Label.svelte"
+import A from "../ui/A.svelte"
 
-  type Props = HTMLAttributes<HTMLDivElement> & {
+type Props = HTMLAttributes<HTMLDivElement> & {
   hash: string
   chain: Chain
   class?: string

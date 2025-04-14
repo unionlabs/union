@@ -1,5 +1,5 @@
-import {Option} from "effect"
-import type {LockedTransfer} from "./locked-transfer.ts"
+import { Option } from "effect"
+import type { LockedTransfer } from "./locked-transfer.ts"
 
 // Create a store for the locked transfer
 class LockedTransferStore {

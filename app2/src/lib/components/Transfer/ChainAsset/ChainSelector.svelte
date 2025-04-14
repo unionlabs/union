@@ -1,14 +1,14 @@
 <script lang="ts">
-  import {Array as Arr, flow, Option} from "effect"
-  import {chains} from "$lib/stores/chains.svelte.ts"
-  import {cn} from "$lib/utils"
-  import {tokensStore} from "$lib/stores/tokens.svelte.ts"
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
-  import type {Chain} from "@unionlabs/sdk/schema"
-  import {chainLogoMap} from "$lib/constants/chain-logos.ts"
-  import {MODE} from "$lib/constants/config"
+import { Array as Arr, flow, Option } from "effect"
+import { chains } from "$lib/stores/chains.svelte.ts"
+import { cn } from "$lib/utils"
+import { tokensStore } from "$lib/stores/tokens.svelte.ts"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
+import { chainLogoMap } from "$lib/constants/chain-logos.ts"
+import { MODE } from "$lib/constants/config"
 
-  type Props = {
+type Props = {
   type: "source" | "destination"
   onSelect: () => void
 }

@@ -1,13 +1,13 @@
 <script lang="ts">
-  import Input from "$lib/components/ui/Input.svelte"
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
-  import {Option} from "effect"
-  import {formatUnits} from "viem"
-  import {wallets} from "$lib/stores/wallets.svelte.ts"
-  import Skeleton from "$lib/components/ui/Skeleton.svelte"
-  import Label from "$lib/components/ui/Label.svelte"
+import Input from "$lib/components/ui/Input.svelte"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import { Option } from "effect"
+import { formatUnits } from "viem"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import Label from "$lib/components/ui/Label.svelte"
 
-  type Props = {
+type Props = {
   type: "source" | "destination"
   disabled?: boolean
 }

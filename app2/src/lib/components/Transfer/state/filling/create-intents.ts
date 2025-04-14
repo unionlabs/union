@@ -1,8 +1,8 @@
-import {Match, Option} from "effect"
-import {fromHex, isHex} from "viem"
-import type {TransferArgs} from "./check-filling.ts"
-import type {TransferIntents} from "$lib/components/Transfer/transfer.svelte.ts"
-import type {TokenRawAmount} from "@unionlabs/sdk/schema"
+import { Match, Option } from "effect"
+import { fromHex, isHex } from "viem"
+import type { TransferArgs } from "./check-filling.ts"
+import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
+import type { TokenRawAmount } from "@unionlabs/sdk/schema"
 
 const BABY_DECIMALS = 6n
 const BABY_SUB_AMOUNT = 20n * 10n ** BABY_DECIMALS

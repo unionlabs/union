@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type {TransferListItem} from "@unionlabs/sdk/schema"
-  import {getChain} from "@unionlabs/sdk/schema"
-  import {Option} from "effect"
-  import ChainComponent from "./ChainComponent.svelte"
-  import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-  import {chains} from "$lib/stores/chains.svelte"
-  import {goto} from "$app/navigation"
-  import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
-  import DateTimeComponent from "../ui/DateTimeComponent.svelte"
+import type { TransferListItem } from "@unionlabs/sdk/schema"
+import { getChain } from "@unionlabs/sdk/schema"
+import { Option } from "effect"
+import ChainComponent from "./ChainComponent.svelte"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import { chains } from "$lib/stores/chains.svelte"
+import { goto } from "$app/navigation"
+import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
+import DateTimeComponent from "../ui/DateTimeComponent.svelte"
 
-  interface Props {
+interface Props {
   transfer: TransferListItem
   showSeconds?: boolean
 }

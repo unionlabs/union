@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type {PacketListItem} from "@unionlabs/sdk/schema"
-  import {getChain} from "@unionlabs/sdk/schema"
-  import {chains} from "$lib/stores/chains.svelte"
-  import {Option} from "effect"
-  import ChainComponent from "./ChainComponent.svelte"
-  import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
-  import {goto} from "$app/navigation"
-  import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
-  import PacketHashComponent from "./PacketHashComponent.svelte"
+import type { PacketListItem } from "@unionlabs/sdk/schema"
+import { getChain } from "@unionlabs/sdk/schema"
+import { chains } from "$lib/stores/chains.svelte"
+import { Option } from "effect"
+import ChainComponent from "./ChainComponent.svelte"
+import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
+import { goto } from "$app/navigation"
+import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
+import PacketHashComponent from "./PacketHashComponent.svelte"
 
-  type Props = {
+type Props = {
   packet: PacketListItem
 }
 

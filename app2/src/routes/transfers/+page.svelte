@@ -1,25 +1,25 @@
 <script lang="ts">
-  import {
-    transferListLatestAddressQuery,
-    transferListPageGtAddressQuery,
-    transferListPageLtAddressQuery
-  } from "$lib/queries/transfer-list-address.svelte"
-  import {Effect, Fiber, Option} from "effect"
-  import {onMount} from "svelte"
-  import {transferCount, transferListAddress} from "$lib/stores/transfers.svelte"
-  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-  import Card from "$lib/components/ui/Card.svelte"
-  import Sections from "$lib/components/ui/Sections.svelte"
-  import {chains} from "$lib/stores/chains.svelte"
-  import {wallets} from "$lib/stores/wallets.svelte"
-  import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
-  import {settingsStore} from "$lib/stores/settings.svelte"
-  import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
-  import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
-  import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
-  import WalletConnectedNoTransfers from "$lib/components/WalletConnectedNoTransfers.svelte"
+import {
+  transferListLatestAddressQuery,
+  transferListPageGtAddressQuery,
+  transferListPageLtAddressQuery
+} from "$lib/queries/transfer-list-address.svelte"
+import { Effect, Fiber, Option } from "effect"
+import { onMount } from "svelte"
+import { transferCount, transferListAddress } from "$lib/stores/transfers.svelte"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import Card from "$lib/components/ui/Card.svelte"
+import Sections from "$lib/components/ui/Sections.svelte"
+import { chains } from "$lib/stores/chains.svelte"
+import { wallets } from "$lib/stores/wallets.svelte"
+import NoWalletConnected from "$lib/components/NoWalletConnected.svelte"
+import { settingsStore } from "$lib/stores/settings.svelte"
+import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
+import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
+import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
+import WalletConnectedNoTransfers from "$lib/components/WalletConnectedNoTransfers.svelte"
 
-  let transferFiber: Fiber.Fiber<any, any>
+let transferFiber: Fiber.Fiber<any, any>
 let countFiber: Fiber.Fiber<any, any>
 let fiberLock = false
 

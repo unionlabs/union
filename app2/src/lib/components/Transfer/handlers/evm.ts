@@ -9,8 +9,8 @@ import {
   TransferSubmission as EvmTransferSubmission,
   TransferSubmitState as EvmTransferSubmitState
 } from "$lib/services/transfer-ucs03-evm"
-import {TransferState, type TransferStateUnion} from "$lib/components/Transfer/validation.ts"
-import type {EVMTransfer} from "@unionlabs/sdk/schema"
+import { TransferState, type TransferStateUnion } from "$lib/components/Transfer/validation.ts"
+import type { EVMTransfer } from "@unionlabs/sdk/schema"
 
 export async function handleEvmSubmit(
   currentState: TransferStateUnion,

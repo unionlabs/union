@@ -1,22 +1,22 @@
 <script lang="ts">
-  import "../app.css"
-  import {onMount} from "svelte"
-  import {Effect, Fiber, Option} from "effect"
-  import {chainsQuery} from "$lib/queries/chains.svelte"
-  import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
-  import {ENV, MAX_MOBILE_SIZE} from "$lib/constants"
-  import {wallets} from "$lib/stores/wallets.svelte"
-  import Wallet from "$lib/components/ui/Wallet/index.svelte"
-  import SettingsModal from "$lib/components/SettingsModal.svelte"
-  import {uiStore} from "$lib/stores/ui.svelte"
-  import ErrorsModal from "$lib/components/ErrorsModal.svelte"
-  import Header from "$lib/components/layout/Header/index.svelte"
-  import {channelsQuery} from "$lib/queries/channels.svelte.ts"
-  import {runExample} from "$lib/utils/convert-display.ts"
-  import {cn} from "$lib/utils"
-  import {page} from "$app/state"
+import "../app.css"
+import { onMount } from "svelte"
+import { Effect, Fiber, Option } from "effect"
+import { chainsQuery } from "$lib/queries/chains.svelte"
+import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
+import { ENV, MAX_MOBILE_SIZE } from "$lib/constants"
+import { wallets } from "$lib/stores/wallets.svelte"
+import Wallet from "$lib/components/ui/Wallet/index.svelte"
+import SettingsModal from "$lib/components/SettingsModal.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import ErrorsModal from "$lib/components/ErrorsModal.svelte"
+import Header from "$lib/components/layout/Header/index.svelte"
+import { channelsQuery } from "$lib/queries/channels.svelte.ts"
+import { runExample } from "$lib/utils/convert-display.ts"
+import { cn } from "$lib/utils"
+import { page } from "$app/state"
 
-  let { children } = $props()
+let { children } = $props()
 
 /* Hack to be able to JSON.stringify BigInt */
 interface BigInt {

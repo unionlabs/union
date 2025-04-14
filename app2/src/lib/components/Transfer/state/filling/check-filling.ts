@@ -1,7 +1,7 @@
-import type {Transfer} from "$lib/components/Transfer/transfer.svelte.ts"
-import {wallets} from "$lib/stores/wallets.svelte.ts"
-import {Data, Option} from "effect"
-import type {AddressCanonicalBytes, Chain, Channel, ChannelId} from "@unionlabs/sdk/schema"
+import type { Transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { Data, Option } from "effect"
+import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
 
 export interface TransferArgs {
   sourceChain: Chain
@@ -20,11 +20,12 @@ export interface TransferArgs {
 
 export type FillingState = Data.TaggedEnum<{
   Empty: {}
-  WalletMissing: {}
+  NoWallet: {}
   SourceChainMissing: {}
-  ChainWalletMissing: {}
+  SourceWalletMissing: {}
   BaseTokenMissing: {}
   DestinationMissing: {}
+  EmptyAmount: {}
   InvalidAmount: {}
   ReceiverMissing: {}
   NoRoute: {}
@@ -38,8 +39,6 @@ export const getFillingState = (transfer: Transfer): FillingState => {
   if (!wallets.hasAnyWallet()) {
     return FillingState.WalletMissing()
   }
-
-  console.log(transfer)
 
   return Option.match(transfer.sourceChain, {
     onNone: () => FillingState.SourceChainMissing(),
@@ -55,6 +54,10 @@ export const getFillingState = (transfer: Transfer): FillingState => {
 
       if (Option.isNone(transfer.ucs03address)) {
         return FillingState.NoContract()
+      }
+
+      if (!transfer.raw.amount) {
+        return FillingState.EmptyAmount()
       }
 
       const parsedAmount = Number.parseFloat(transfer.raw.amount)

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
-  import {Option} from "effect"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import { Option } from "effect"
 </script>
 
 <ul class="text-xs text-sky-300 w-full truncate">

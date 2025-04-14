@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type {HTMLAttributes} from "svelte/elements"
-  import {chainLogoMap} from "$lib/constants/chain-logos.ts"
-  import {Chain} from "@unionlabs/sdk/schema"
-  import {cn} from "$lib/utils"
-  import Tooltip from "$lib/components/ui/Tooltip.svelte"
-  import A from "../ui/A.svelte"
-  import Label from "../ui/Label.svelte"
-  import LongMonoWord from "../ui/LongMonoWord.svelte"
-  import {settingsStore} from "$lib/stores/settings.svelte"
+import type { HTMLAttributes } from "svelte/elements"
+import { chainLogoMap } from "$lib/constants/chain-logos.ts"
+import { Chain } from "@unionlabs/sdk/schema"
+import { cn } from "$lib/utils"
+import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import A from "../ui/A.svelte"
+import Label from "../ui/Label.svelte"
+import LongMonoWord from "../ui/LongMonoWord.svelte"
+import { settingsStore } from "$lib/stores/settings.svelte"
 
-  type Props = HTMLAttributes<HTMLDivElement> & {
+type Props = HTMLAttributes<HTMLDivElement> & {
   chain: Chain
   class?: string
   disableTooltip?: boolean

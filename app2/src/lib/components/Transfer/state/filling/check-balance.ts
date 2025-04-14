@@ -1,18 +1,20 @@
-import {Effect, identity, Option} from "effect"
-import type {Chain} from "@unionlabs/sdk/schema"
-import {balancesStore} from "$lib/stores/balances.svelte.ts"
-import type {TransferIntents} from "$lib/components/Transfer/transfer.svelte.ts"
-import {isHex, toHex} from "viem"
-import {BalanceLookupError} from "$lib/components/Transfer/state/errors.ts"
+import { Effect, identity, Option } from "effect"
+import type { Chain } from "@unionlabs/sdk/schema"
+import { balancesStore } from "$lib/stores/balances.svelte.ts"
+import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
+import { isHex, toHex } from "viem"
+import { BalanceLookupError } from "$lib/components/Transfer/state/errors.ts"
 
 const BABY_SUB_AMOUNT = 20n * 10n ** 6n
 const BABYLON_CHAIN_ID = "babylon.bbn-1"
 const UBBN_DENOM = "ubbn"
 
+export type BalanceCheckResult = { _tag: "HasEnough" } | { _tag: "InsufficientFunds" }
+
 export const checkBalanceForIntents = (
   source: Chain,
   intents: TransferIntents
-): Effect.Effect<boolean, BalanceLookupError> => {
+): Effect.Effect<BalanceCheckResult, BalanceLookupError> => {
   console.debug("[checkBalanceForIntents] source:", source.universal_chain_id)
   console.debug("[checkBalanceForIntents] raw intents:", intents)
 
@@ -72,17 +74,12 @@ export const checkBalanceForIntents = (
           hasEnough
         })
 
-        return Effect.try({
-          try: () => hasEnough,
-          catch: () =>
-            new BalanceLookupError({
-              cause: "BigInt conversion failed",
-              token: group.baseToken,
-              sender: group.sender,
-              chainId: source.universal_chain_id
-            })
-        })
+        return Effect.succeed(hasEnough)
       }
     )
-  ).pipe(Effect.map(results => results.every(identity)))
+  ).pipe(
+    Effect.map(results =>
+      results.every(identity) ? { _tag: "HasEnough" } : { _tag: "InsufficientFunds" }
+    )
+  )
 }

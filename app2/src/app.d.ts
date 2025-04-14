@@ -1,6 +1,6 @@
-import type {LeapWindow} from "@leapwallet/types"
-import type {AptosBrowserWallet} from "@unionlabs/client"
-import type {Window as KeplrWindow} from "@keplr-wallet/types"
+import type { LeapWindow } from "@leapwallet/types"
+import type { AptosBrowserWallet } from "@unionlabs/client"
+import type { Window as KeplrWindow } from "@keplr-wallet/types"
 
 type FeaturesQuery = ReturnType<typeof enabledFeatures>
 type Features = NonNullable<FeaturesQuery["data"]>["v1_ibc_union_chains"]

@@ -1,21 +1,22 @@
 <script lang="ts">
-  import ChainAsset from "$lib/components/Transfer/ChainAsset/index.svelte"
-  import Amount from "$lib/components/Transfer/Amount.svelte"
-  import Receiver from "$lib/components/Transfer/Receiver.svelte"
-  import Button from "$lib/components/ui/Button.svelte"
-  import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
-  import AddressComponent from "$lib/components/model/AddressComponent.svelte"
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
-  import {Match, Option} from "effect"
-  import {constVoid} from "effect/Function"
-  import type {TransferFlowError} from "$lib/components/Transfer/state/errors.ts"
+import ChainAsset from "$lib/components/Transfer/ChainAsset/index.svelte"
+import Amount from "$lib/components/Transfer/Amount.svelte"
+import Receiver from "$lib/components/Transfer/Receiver.svelte"
+import Button from "$lib/components/ui/Button.svelte"
+import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
+import AddressComponent from "$lib/components/model/AddressComponent.svelte"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import { Match, Option } from "effect"
+import { constVoid } from "effect/Function"
+import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 
-  type Props = {
+type Props = {
   onContinue: () => void
   loading: boolean
   onErrorClose?: () => void
-  statusMessage?: string | undefined
-  transferErrors?: Option.Option<TransferFlowError> | undefined
+  statusMessage?: string
+  transferErrors?: Option.Option<TransferFlowError>
 }
 
 const {
@@ -26,21 +27,38 @@ const {
   onErrorClose = constVoid
 }: Props = $props()
 
-const buttonText = $derived.by(() => {
+const uiStatus = $derived.by(() => {
   return Option.match(transferErrors, {
-    onSome: error =>
-      Match.value(error).pipe(
-        Match.when(
-          e => e._tag === "InsufficientFundsError",
-          () => "Insufficient funds"
-        ),
-        Match.when(
-          e => e._tag === "OrderCreationError",
-          () => "Could not create orders"
-        ),
-        Match.orElse(() => statusMessage)
-      ),
-    onNone: () => statusMessage ?? "Continue"
+    onSome: error => {
+      const match = Match.type<TransferFlowError>().pipe(
+        Match.tag("BalanceLookupError", () => ({
+          text: "Failed checking balance",
+          btnColor: "red",
+          error
+        })),
+        Match.tag("AllowanceCheckError", () => ({
+          text: "Failed checking allowance",
+          btnColor: "red",
+          error
+        })),
+        Match.tag("OrderCreationError", () => ({
+          text: "Could not create orders",
+          btnColor: "red",
+          error
+        })),
+        Match.orElse(() => ({
+          text: statusMessage ?? "Continue",
+          btnColor: "gray",
+          error
+        }))
+      )
+      return match(error)
+    },
+
+    onNone: () => ({
+      text: statusMessage ?? "Continue",
+      btnColor: "primary"
+    })
   })
 })
 
@@ -79,22 +97,22 @@ function handleButtonClick() {
     <div class="w-full items-end flex gap-2">
       <Button
         class="flex-1"
-        variant="primary"
+        variant={uiStatus.btnColor}
         onclick={handleButtonClick}
         disabled={!isButtonEnabled}
       >
-        {buttonText}
+        {uiStatus.text}
       </Button>
       <Receiver />
     </div>
   </div>
 </div>
 
-<!--{#if topError && Option.isSome(topError)}-->
-<!--  <div class="absolute bottom-0 left-0 right-0">-->
-<!--    <ErrorComponent-->
-<!--      onClose={onErrorClose}-->
-<!--      error={topError.value as unknown as any}-->
-<!--    />-->
-<!--  </div>-->
-<!--{/if}-->
+{#if uiStatus.error}
+  <div class="absolute bottom-0 left-0 right-0">
+    <ErrorComponent
+      onClose={onErrorClose}
+      error={uiStatus.error}
+    />
+  </div>
+{/if}

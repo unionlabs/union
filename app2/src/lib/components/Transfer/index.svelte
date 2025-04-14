@@ -1,30 +1,30 @@
 <script lang="ts">
-  import Card from "$lib/components/ui/Card.svelte"
-  import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
-  import {LockedTransfer} from "./locked-transfer.ts"
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
-  import FillingPage from "./pages/FillingPage.svelte"
-  import ApprovalPage from "./pages/ApprovalPage.svelte"
-  import SubmitPage from "./pages/SubmitPage.svelte"
-  import {lockedTransferStore} from "./locked-transfer.svelte.ts"
-  import {Effect, Fiber, Option} from "effect"
-  import * as TransferStep from "./transfer-step.ts"
-  import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
-  import {
-    CreateTransferState,
-    createTransferState,
-    type StateResult
-  } from "$lib/components/Transfer/state/filling/index.ts"
-  import type {TransferFlowError} from "$lib/components/Transfer/state/errors.ts"
-  import type {Batch} from "@unionlabs/sdk/ucs03/instruction.ts"
-  import {transferHashStore} from "$lib/stores/transfer-hash.svelte.ts"
-  import {constVoid, pipe} from "effect/Function"
-  import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
-  import {wallets} from "$lib/stores/wallets.svelte.ts"
-  import {beforeNavigate} from "$app/navigation"
-  import {onMount} from "svelte"
+import Card from "$lib/components/ui/Card.svelte"
+import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
+import { LockedTransfer } from "./locked-transfer.ts"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import FillingPage from "./pages/FillingPage.svelte"
+import ApprovalPage from "./pages/ApprovalPage.svelte"
+import SubmitPage from "./pages/SubmitPage.svelte"
+import { lockedTransferStore } from "./locked-transfer.svelte.ts"
+import { Effect, Fiber, Option } from "effect"
+import * as TransferStep from "./transfer-step.ts"
+import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
+import {
+  CreateTransferState,
+  createTransferState,
+  type StateResult
+} from "$lib/components/Transfer/state/filling/index.ts"
+import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
+import type { Batch } from "@unionlabs/sdk/ucs03/instruction.ts"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { constVoid, pipe } from "effect/Function"
+import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { beforeNavigate } from "$app/navigation"
+import { onMount } from "svelte"
 
-  let currentPage = $state(0)
+let currentPage = $state(0)
 let isLoading = $state(false)
 let transferSteps = $state<Option.Option<Array<TransferStep.TransferStep>>>(Option.none())
 let transferErrors = $state<Option.Option<TransferFlowError>>(Option.none())

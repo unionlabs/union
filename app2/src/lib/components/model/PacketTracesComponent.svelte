@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type {HTMLAttributes} from "svelte/elements"
-  import {getChain, PacketTrace} from "@unionlabs/sdk/schema"
-  import {chains} from "$lib/stores/chains.svelte"
-  import {Option} from "effect"
-  import DateTimeComponent from "../ui/DateTimeComponent.svelte"
-  import TransactionHashComponent from "./TransactionHashComponent.svelte"
-  import ChainComponent from "./ChainComponent.svelte"
-  import {type DisplayMode, PACKET_TRACE_DISPLAY_NAMES} from "$lib/constants/packet-trace-names"
-  import SharpCheckIcon from "../icons/SharpCheckIcon.svelte"
+import type { HTMLAttributes } from "svelte/elements"
+import { getChain, PacketTrace } from "@unionlabs/sdk/schema"
+import { chains } from "$lib/stores/chains.svelte"
+import { Option } from "effect"
+import DateTimeComponent from "../ui/DateTimeComponent.svelte"
+import TransactionHashComponent from "./TransactionHashComponent.svelte"
+import ChainComponent from "./ChainComponent.svelte"
+import { type DisplayMode, PACKET_TRACE_DISPLAY_NAMES } from "$lib/constants/packet-trace-names"
+import SharpCheckIcon from "../icons/SharpCheckIcon.svelte"
 
-  type Props = HTMLAttributes<HTMLDivElement> & {
+type Props = HTMLAttributes<HTMLDivElement> & {
   packetTraces: ReadonlyArray<PacketTrace>
   showAcks: boolean
   mode?: DisplayMode

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import {cn} from "$lib/utils"
+import { cn } from "$lib/utils"
 
-  type Props = { class: string }
+type Props = { class: string }
 const { class: className }: Props = $props()
 </script>
 

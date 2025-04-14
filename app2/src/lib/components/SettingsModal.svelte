@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Modal from "./ui/Modal.svelte"
-  import {settingsStore} from "$lib/stores/settings.svelte"
-  import {uiStore} from "$lib/stores/ui.svelte"
-  import Button from "./ui/Button.svelte"
+import Modal from "./ui/Modal.svelte"
+import { settingsStore } from "$lib/stores/settings.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import Button from "./ui/Button.svelte"
 
-  type Props = {
+type Props = {
   isOpen: boolean
   onClose: () => void
 }

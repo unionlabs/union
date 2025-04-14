@@ -1,12 +1,12 @@
 <script lang="ts">
-  import Button from "$lib/components/ui/Button.svelte"
-  import Sections from "$lib/components/ui/Sections.svelte"
-  import {hasFailedExit, isComplete, nextState, TransferSubmission} from "$lib/services/transfer"
-  import {chains} from "$lib/stores/chains.svelte"
-  import {Option} from "effect"
-  import {sepolia} from "viem/chains"
-  import type {TransactionParams} from "$lib/services/transfer/machine"
-  // import Card from "$lib/components/ui/Card.svelte"
+import Button from "$lib/components/ui/Button.svelte"
+import Sections from "$lib/components/ui/Sections.svelte"
+import { hasFailedExit, isComplete, nextState, TransferSubmission } from "$lib/services/transfer"
+import { chains } from "$lib/stores/chains.svelte"
+import { Option } from "effect"
+import { sepolia } from "viem/chains"
+import type { TransactionParams } from "$lib/services/transfer/machine"
+// import Card from "$lib/components/ui/Card.svelte"
 // import Input from "$lib/components/ui/Input.svelte"
 
 let transferState = $state<TransferSubmission>(TransferSubmission.Pending())

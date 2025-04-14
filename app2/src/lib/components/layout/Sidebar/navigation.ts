@@ -3,7 +3,7 @@ import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
 import SharpStakeIcon from "$lib/components/icons/SharpStakeIcon.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
-import type {Component} from "svelte"
+import type { Component } from "svelte"
 
 export interface NavSubItem {
   path: string

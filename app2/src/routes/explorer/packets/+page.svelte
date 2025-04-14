@@ -1,23 +1,27 @@
 
 <script lang="ts">
-  import {packetListLatestQuery, packetListPageGtQuery, packetListPageLtQuery} from "$lib/queries/packet-list.svelte"
-  import {Effect, Option, Schema} from "effect"
-  import {onMount} from "svelte"
-  import {packetList} from "$lib/stores/packets.svelte"
-  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-  import Card from "$lib/components/ui/Card.svelte"
-  import Sections from "$lib/components/ui/Sections.svelte"
-  import {chains} from "$lib/stores/chains.svelte"
-  import PacketListPagination from "$lib/components/ui/PacketListPagination.svelte"
-  import {page} from "$app/state"
-  import {goto} from "$app/navigation"
-  import {SortOrder} from "@unionlabs/sdk/schema"
+import {
+  packetListLatestQuery,
+  packetListPageGtQuery,
+  packetListPageLtQuery
+} from "$lib/queries/packet-list.svelte"
+import { Effect, Option, Schema } from "effect"
+import { onMount } from "svelte"
+import { packetList } from "$lib/stores/packets.svelte"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import Card from "$lib/components/ui/Card.svelte"
+import Sections from "$lib/components/ui/Sections.svelte"
+import { chains } from "$lib/stores/chains.svelte"
+import PacketListPagination from "$lib/components/ui/PacketListPagination.svelte"
+import { page } from "$app/state"
+import { goto } from "$app/navigation"
+import { SortOrder } from "@unionlabs/sdk/schema"
 
-  import {settingsStore} from "$lib/stores/settings.svelte"
-  import PacketListItemComponent from "$lib/components/model/PacketListItemComponent.svelte"
-  import PacketListItemComponentSkeleton from "$lib/components/model/PacketListItemComponentSkeleton.svelte"
+import { settingsStore } from "$lib/stores/settings.svelte"
+import PacketListItemComponent from "$lib/components/model/PacketListItemComponent.svelte"
+import PacketListItemComponentSkeleton from "$lib/components/model/PacketListItemComponentSkeleton.svelte"
 
-  onMount(() => {
+onMount(() => {
   const pageParam = page.url.searchParams.get("page")
 
   const initializeQuery = async () => {

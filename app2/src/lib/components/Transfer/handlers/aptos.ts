@@ -6,9 +6,9 @@ import {
   TransferSubmission as AptosTransferSubmission,
   TransferSubmitState as AptosTransferSubmitState
 } from "$lib/services/transfer-ucs03-aptos"
-import {SwitchChainState as EvmSwitchChainState} from "$lib/services/transfer-ucs03-evm"
-import {TransferState, type TransferStateUnion} from "$lib/components/Transfer/validation.ts"
-import type {AptosTransfer, Chain} from "@unionlabs/sdk/schema"
+import { SwitchChainState as EvmSwitchChainState } from "$lib/services/transfer-ucs03-evm"
+import { TransferState, type TransferStateUnion } from "$lib/components/Transfer/validation.ts"
+import type { AptosTransfer, Chain } from "@unionlabs/sdk/schema"
 
 export async function handleAptosSubmit(
   currentState: TransferStateUnion,

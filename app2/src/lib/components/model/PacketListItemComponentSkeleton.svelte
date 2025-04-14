@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
 </script>
 
 <div class="flex justify-between gap-8 px-4 py-3 h-16 items-center border-b border-zinc-800">

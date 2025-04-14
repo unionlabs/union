@@ -1,6 +1,6 @@
-import {Option} from "effect"
-import type {Chain, Channel, Token} from "@unionlabs/sdk/schema"
-import type {TransferStep} from "./transfer-step.ts"
+import { Option } from "effect"
+import type { Chain, Channel, Token } from "@unionlabs/sdk/schema"
+import type { TransferStep } from "./transfer-step.ts"
 
 /**
  * LockedTransfer stores a snapshot of critical transfer values

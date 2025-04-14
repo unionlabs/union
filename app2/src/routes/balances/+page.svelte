@@ -1,19 +1,19 @@
 <script lang="ts">
-  import {balancesStore} from "$lib/stores/balances.svelte"
-  import {chains} from "$lib/stores/chains.svelte"
-  import {tokensStore} from "$lib/stores/tokens.svelte"
-  import Card from "$lib/components/ui/Card.svelte"
-  import {Option} from "effect"
-  import Button from "$lib/components/ui/Button.svelte"
-  import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-  import Sections from "$lib/components/ui/Sections.svelte"
-  import {sortedBalancesStore} from "$lib/stores/sorted-balances.svelte"
-  import {wallets} from "$lib/stores/wallets.svelte"
-  import {uiStore} from "$lib/stores/ui.svelte"
-  import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import { balancesStore } from "$lib/stores/balances.svelte"
+import { chains } from "$lib/stores/chains.svelte"
+import { tokensStore } from "$lib/stores/tokens.svelte"
+import Card from "$lib/components/ui/Card.svelte"
+import { Option } from "effect"
+import Button from "$lib/components/ui/Button.svelte"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import Sections from "$lib/components/ui/Sections.svelte"
+import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte"
+import { wallets } from "$lib/stores/wallets.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 
-  function fetchAllBalances() {
+function fetchAllBalances() {
   const chainsData = Option.getOrNull(chains.data)
   if (!chainsData) return
 

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type {HTMLAttributes} from "svelte/elements"
-  import type {Chain, Height} from "@unionlabs/sdk/schema"
-  import Tooltip from "$lib/components/ui/Tooltip.svelte"
-  import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import type { HTMLAttributes } from "svelte/elements"
+import type { Chain, Height } from "@unionlabs/sdk/schema"
+import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 
-  type Props = HTMLAttributes<HTMLDivElement> & {
+type Props = HTMLAttributes<HTMLDivElement> & {
   height: Height
   chain: Chain
   class?: string

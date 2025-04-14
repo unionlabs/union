@@ -1,13 +1,13 @@
 <script lang="ts">
-  import {cn} from "$lib/utils/index.js"
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.js"
-  import {type Chain, type Token, TokenRawAmount} from "@unionlabs/sdk/schema"
-  import {Option} from "effect"
-  import Skeleton from "$lib/components/ui/Skeleton.svelte"
-  import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-  import SharpLinkOffIcon from "$lib/components/icons/SharpLinkOffIcon.svelte"
+import { cn } from "$lib/utils/index.js"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.js"
+import { type Chain, type Token, TokenRawAmount } from "@unionlabs/sdk/schema"
+import { Option } from "effect"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import SharpLinkOffIcon from "$lib/components/icons/SharpLinkOffIcon.svelte"
 
-  type Props = {
+type Props = {
   token: Token
   chain: Chain
   selectAsset: (token: Token) => void

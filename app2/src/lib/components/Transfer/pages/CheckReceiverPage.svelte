@@ -1,13 +1,13 @@
 <script lang="ts">
-  import Button from "$lib/components/ui/Button.svelte"
-  import {Array as Arr, Option, Struct} from "effect"
-  import {lockedTransferStore} from "../locked-transfer.svelte.ts"
-  import {is} from "../transfer-step.ts"
-  import {onDestroy, onMount} from "svelte"
-  import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
-  import AddressComponent from "$lib/components/model/AddressComponent.svelte"
+import Button from "$lib/components/ui/Button.svelte"
+import { Array as Arr, Option, Struct } from "effect"
+import { lockedTransferStore } from "../locked-transfer.svelte.ts"
+import { is } from "../transfer-step.ts"
+import { onDestroy, onMount } from "svelte"
+import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
+import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 
-  type Props = {
+type Props = {
   stepIndex: number
   onBack: () => void
   onSubmit: () => void

@@ -1,18 +1,27 @@
-import {Data, Effect, Option} from "effect"
-import type {Transfer, TransferIntents} from "$lib/components/Transfer/transfer.svelte.ts"
-import {checkBalanceForIntents} from "$lib/components/Transfer/state/filling/check-balance.ts"
-import {createOrdersBatch} from "$lib/components/Transfer/state/filling/create-orders.ts"
-import {type ApprovalStep, checkAllowances} from "$lib/components/Transfer/state/filling/check-allowance.ts"
+import { Data, Effect, Match, Option } from "effect"
+import type { Transfer, TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
 import {
-  InsufficientFundsError,
+  type BalanceCheckResult,
+  checkBalanceForIntents
+} from "$lib/components/Transfer/state/filling/check-balance.ts"
+import { createOrdersBatch } from "$lib/components/Transfer/state/filling/create-orders.ts"
+import {
+  type ApprovalStep,
+  checkAllowances
+} from "$lib/components/Transfer/state/filling/check-allowance.ts"
+import {
   OrderCreationError,
   type TransferFlowError
 } from "$lib/components/Transfer/state/errors.ts"
-import type {Instruction} from "@unionlabs/sdk/ucs03/instruction"
-import {FillingState, getFillingState, type TransferArgs} from "$lib/components/Transfer/state/filling/check-filling.ts"
-import {validateTransfer} from "$lib/components/Transfer/validation.ts"
-import {createIntents} from "$lib/components/Transfer/state/filling/create-intents.ts"
-import {constVoid} from "effect/Function"
+import type { Instruction } from "@unionlabs/sdk/ucs03/instruction"
+import {
+  FillingState,
+  getFillingState,
+  type TransferArgs
+} from "$lib/components/Transfer/state/filling/check-filling.ts"
+import { validateTransfer } from "$lib/components/Transfer/validation.ts"
+import { createIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
+import { constVoid } from "effect/Function"
 
 export type StateResult = {
   nextState: Option.Option<CreateTransferState>
@@ -94,13 +103,14 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
 
       return FillingState.$match(state, {
         Empty: constVoid,
-        WalletMissing: () => Effect.succeed(ok(Empty(), "Connect wallet")),
+        NoWallet: () => Effect.succeed(ok(Empty(), "Connect wallet")),
         SourceChainMissing: () => Effect.succeed(ok(Empty(), "Select from chain")),
-        ChainWalletMissing: () => Effect.succeed(ok(Empty(), "Connect wallet")),
+        SourceWalletMissing: () => Effect.succeed(ok(Empty(), "Connect wallet")),
         BaseTokenMissing: () => Effect.succeed(ok(Empty(), "Select asset")),
         DestinationMissing: () => Effect.succeed(ok(Empty(), "Select to chain")),
         NoRoute: () => Effect.succeed(ok(Empty(), "No route")),
-        NoContract: () => Effect.succeed(ok(Empty(), "No ucs3 contract")),
+        NoContract: () => Effect.succeed(ok(Empty(), "No ucs03 contract")),
+        EmptyAmount: () => Effect.succeed(ok(Empty(), "Enter amount")),
         InvalidAmount: () => Effect.succeed(ok(Empty(), "Invalid amount")),
         ReceiverMissing: () => Effect.succeed(ok(Empty(), "Select receiver")),
         Ready: args => Effect.succeed(ok(Validation({ args }), "Validating..."))
@@ -112,6 +122,7 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
 
       if (validation._tag !== "Success") {
         console.log(validation)
+        //return success with details
         return Effect.succeed(fail("Validation failed"))
       }
 
@@ -132,17 +143,17 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
 
     CheckBalance: ({ args, intents }) =>
       checkBalanceForIntents(args.sourceChain, intents).pipe(
-        Effect.flatMap(hasEnough =>
-          hasEnough
-            ? Effect.succeed(ok(CheckAllowance({ args, intents }), "Checking allowance..."))
-            : Effect.succeed(
-                fail(
-                  "Insufficient funds",
-                  new InsufficientFundsError({ cause: "Insufficient funds" })
-                )
-              )
-        ),
-        Effect.catchAll(error => Effect.succeed(fail("Balance check failed", error)))
+        Effect.flatMap((result: BalanceCheckResult) =>
+          Match.type<BalanceCheckResult>().pipe(
+            Match.tag("HasEnough", () =>
+              Effect.succeed(ok(CheckAllowance({ args, intents }), "Checking allowance..."))
+            ),
+            Match.tag("InsufficientFunds", () =>
+              Effect.succeed(ok(Empty(), "Insufficient balance"))
+            ),
+            Match.exhaustive
+          )(result)
+        )
       ),
 
     CheckAllowance: ({ args, intents }) =>

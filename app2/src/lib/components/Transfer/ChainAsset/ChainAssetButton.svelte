@@ -1,13 +1,13 @@
 <script lang="ts">
-  import {cn} from "$lib/utils/index.js"
-  import {Option} from "effect"
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.js"
-  import Label from "$lib/components/ui/Label.svelte"
-  import {chainLogoMap} from "$lib/constants/chain-logos.ts"
-  import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
-  import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
+import { cn } from "$lib/utils/index.js"
+import { Option } from "effect"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.js"
+import Label from "$lib/components/ui/Label.svelte"
+import { chainLogoMap } from "$lib/constants/chain-logos.ts"
+import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
+import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
 
-  type Props = {
+type Props = {
   type: "source" | "destination"
   onClick: () => void
 }

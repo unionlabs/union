@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type {HTMLAttributes} from "svelte/elements"
-  import Tooltip from "$lib/components/ui/Tooltip.svelte"
-  import Truncate from "$lib/components/ui/Truncate.svelte"
-  import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
-  import {cn} from "$lib/utils"
+import type { HTMLAttributes } from "svelte/elements"
+import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import Truncate from "$lib/components/ui/Truncate.svelte"
+import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import { cn } from "$lib/utils"
 
-  type Props = HTMLAttributes<HTMLDivElement> & {
+type Props = HTMLAttributes<HTMLDivElement> & {
   hash: string
   class?: string
 }

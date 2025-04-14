@@ -1,4 +1,4 @@
-import {Data} from "effect"
+import { Data } from "effect"
 
 export class MissingTransferFieldsError extends Data.TaggedError("MissingTransferFieldsError")<{
   fields: Array<string>

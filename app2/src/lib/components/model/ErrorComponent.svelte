@@ -1,24 +1,24 @@
 <script lang="ts">
-  import type {HttpClientError} from "@effect/platform/HttpClientError"
-  import type {TimeoutException, UnknownException} from "effect/Cause"
-  import type {ParseError} from "effect/ParseResult"
-  import type {NoViemChainError} from "$lib/services/evm/clients"
-  import type {FetchNativeBalanceError, ReadContractError} from "$lib/services/evm/balances"
-  import type {CreatePublicClientError} from "$lib/services/transfer/errors"
-  import type {NoRpcError} from "@unionlabs/sdk/schema"
-  import {slide} from "svelte/transition"
-  import Button from "$lib/components/ui/Button.svelte"
-  import type {Base64EncodeError} from "$lib/utils/base64"
-  import type {QueryBankBalanceError} from "$lib/services/cosmos/balances"
-  import {extractErrorDetails} from "@unionlabs/sdk/utils"
-  import SharpOpenInBrowserIcon from "../icons/SharpOpenInBrowserIcon.svelte"
-  import Modal from "../ui/Modal.svelte"
-  import Tooltip from "../ui/Tooltip.svelte"
-  import SharpErrorOutlineIcon from "../icons/SharpErrorOutlineIcon.svelte"
-  import SharpDownloadIcon from "../icons/SharpDownloadIcon.svelte"
-  import BaselineCloseIcon from "../icons/BaselineCloseIcon.svelte"
+import type { HttpClientError } from "@effect/platform/HttpClientError"
+import type { TimeoutException, UnknownException } from "effect/Cause"
+import type { ParseError } from "effect/ParseResult"
+import type { NoViemChainError } from "$lib/services/evm/clients"
+import type { FetchNativeBalanceError, ReadContractError } from "$lib/services/evm/balances"
+import type { CreatePublicClientError } from "$lib/services/transfer/errors"
+import type { NoRpcError } from "@unionlabs/sdk/schema"
+import { slide } from "svelte/transition"
+import Button from "$lib/components/ui/Button.svelte"
+import type { Base64EncodeError } from "$lib/utils/base64"
+import type { QueryBankBalanceError } from "$lib/services/cosmos/balances"
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import SharpOpenInBrowserIcon from "../icons/SharpOpenInBrowserIcon.svelte"
+import Modal from "../ui/Modal.svelte"
+import Tooltip from "../ui/Tooltip.svelte"
+import SharpErrorOutlineIcon from "../icons/SharpErrorOutlineIcon.svelte"
+import SharpDownloadIcon from "../icons/SharpDownloadIcon.svelte"
+import BaselineCloseIcon from "../icons/BaselineCloseIcon.svelte"
 
-  interface Props {
+interface Props {
   error:
     | UnknownException
     | HttpClientError

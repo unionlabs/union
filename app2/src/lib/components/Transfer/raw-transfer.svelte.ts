@@ -1,4 +1,4 @@
-import {debounce} from "$lib/utils"
+import { debounce } from "$lib/utils"
 
 /**
  * Type definition for form fields managed by this store

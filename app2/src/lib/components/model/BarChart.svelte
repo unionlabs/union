@@ -1,11 +1,11 @@
 <script lang="ts">
-  import {Option} from "effect"
-  import type {DailyTransfer} from "@unionlabs/sdk/schema"
-  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-  import type {FetchDecodeGraphqlError} from "$lib/utils/queries"
-  import {constVoid} from "effect/Function"
+import { Option } from "effect"
+import type { DailyTransfer } from "@unionlabs/sdk/schema"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
+import { constVoid } from "effect/Function"
 
-  type Props = {
+type Props = {
   data: Option.Option<ReadonlyArray<DailyTransfer>>
   error: Option.Option<FetchDecodeGraphqlError>
   class?: string

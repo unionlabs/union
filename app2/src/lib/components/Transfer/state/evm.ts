@@ -1,6 +1,6 @@
-import {Data, Effect, type Exit} from "effect"
-import {switchChain} from "$lib/services/transfer-ucs03-evm"
-import {ViemPublicClient, waitForTransactionReceipt, writeContract} from "@unionlabs/sdk/evm"
+import { Data, Effect, type Exit } from "effect"
+import { switchChain } from "$lib/services/transfer-ucs03-evm"
+import { ViemPublicClient, waitForTransactionReceipt, writeContract } from "@unionlabs/sdk/evm"
 import type {
   Abi,
   Chain,

@@ -1,8 +1,8 @@
-import {Data, Effect, type Exit, Schedule} from "effect"
-import {switchChain} from "$lib/services/transfer-ucs03-cosmos"
-import {executeContract} from "@unionlabs/sdk/cosmos"
-import type {Chain} from "@unionlabs/sdk/schema"
-import type {SigningCosmWasmClient} from "@cosmjs/cosmwasm-stargate"
+import { Data, Effect, type Exit, Schedule } from "effect"
+import { switchChain } from "$lib/services/transfer-ucs03-cosmos"
+import { executeContract } from "@unionlabs/sdk/cosmos"
+import type { Chain } from "@unionlabs/sdk/schema"
+import type { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 
 export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>
   ? Exit.Exit<A, E>
