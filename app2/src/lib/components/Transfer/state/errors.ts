@@ -32,6 +32,20 @@ export class EvmAllowanceCheckError extends Data.TaggedError("EvmAllowanceCheckE
   cause: unknown
 }> {}
 
+export class FillingError extends Data.TaggedError("FillingError")<{
+  cause:
+    | "WalletMissing"
+    | "SourceChainMissing"
+    | "ChainWalletMissing"
+    | "BaseTokenMissing"
+    | "DestinationMissing"
+    | "InvalidAmount"
+    | "ReceiverMissing"
+    | "ValidationFailed"
+  details?: unknown
+}> {}
+
+
 export type TransferFlowError =
   | MissingTransferFieldsError
   | InsufficientFundsError
@@ -40,3 +54,5 @@ export type TransferFlowError =
   | BalanceLookupError
   | CosmosQueryError
   | EvmAllowanceCheckError
+  | FillingError
+

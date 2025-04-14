@@ -27,7 +27,7 @@ import { onMount } from "svelte"
 let currentPage = $state(0)
 let isLoading = $state(false)
 let transferSteps = $state<Option.Option<Array<TransferStep.TransferStep>>>(Option.none())
-let transferError = $state<Option.Option<TransferFlowError>>(Option.none())
+let transferErrors = $state<Option.Option<TransferFlowError>>(Option.none())
 let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
 let statusMessage = $state("")
 let showDetails = $state(false)
@@ -104,7 +104,7 @@ function interruptFiber() {
 function newTransfer() {
   interruptFiber()
   transferSteps = Option.none()
-  transferError = Option.none()
+  transferErrors = Option.none()
   isLoading = false
   statusMessage = ""
   currentPage = 0
@@ -119,7 +119,7 @@ $effect(() => {
 
   isLoading = true
   transferSteps = Option.none()
-  transferError = Option.none()
+  transferErrors = Option.none()
   statusMessage = "Starting transfer process..."
 
   const frozenTransfer = {
@@ -132,7 +132,8 @@ $effect(() => {
     intents: transfer.intents,
     derivedSender: transfer.derivedSender,
     derivedReceiver: transfer.derivedReceiver,
-    ucs03address: transfer.ucs03address
+    ucs03address: transfer.ucs03address,
+    validation: transfer.validation,
   }
 
   const machineEffect = Effect.gen(function* () {
@@ -149,7 +150,7 @@ $effect(() => {
       statusMessage = result.message
 
       if (Option.isSome(result.error)) {
-        transferError = result.error
+        transferErrors = result.error
         transferSteps = Option.none()
         isLoading = false
         currentFiber = Option.none()
@@ -181,8 +182,6 @@ $effect(() => {
       }),
       Option.flatMap(({ destinationChain, receiver }) => {
         const walletaddr = wallets.getAddressForChain(destinationChain)
-
-        console.log({ walletaddr, receiver })
 
         return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
       }),
@@ -228,22 +227,6 @@ $effect(() => {
   currentFiber = Option.some(fiber)
 })
 
-const fillingError = $derived(
-  pipe(
-    transferError,
-    Option.flatMap(
-      flow(
-        Match.value,
-        Match.tags({
-          OrderCreationError: identity
-        }),
-        Match.orElse(() => null),
-        Option.fromNullable
-      )
-    )
-  )
-)
-
 beforeNavigate(newTransfer)
 
 onMount(() => {
@@ -258,6 +241,10 @@ onMount(() => {
 
   window.addEventListener("keydown", handler)
   return () => window.removeEventListener("keydown", handler)
+})
+
+$effect(() => {
+  console.log('lukas', transferErrors)
 })
 </script>
 
@@ -298,9 +285,10 @@ onMount(() => {
       <FillingPage
               onContinue={handleActionButtonClick}
               {actionButtonText}
-              topError={fillingError}
+              {statusMessage}
+              {transferErrors}
               onErrorClose={() => {
-          transferError = Option.none();
+          transferErrors = Option.none();
         }}
               gotSteps={Option.isSome(transferSteps) &&
           transferSteps.value.length > 1}
@@ -339,9 +327,9 @@ onMount(() => {
 </Card>
 
 {#if showDetails}
-  {#if Option.isSome(transferError)}
+  {#if Option.isSome(transferErrors)}
     <strong>Error</strong>
-    <pre class="text-wrap">{JSON.stringify(transferError.value, null, 2)}</pre>
+    <pre class="text-wrap">{JSON.stringify(transferErrors.value, null, 2)}</pre>
   {/if}
 
   {#key statusMessage}
