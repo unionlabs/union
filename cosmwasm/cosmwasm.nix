@@ -110,7 +110,7 @@ _: {
           chain-id = "union-testnet-10";
           name = "union-testnet-10";
           rpc_url = "https://rpc.rpc-node.union-testnet-10.union.build";
-          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "feemarket";
           };
@@ -135,7 +135,7 @@ _: {
           chain-id = "union-1";
           name = "union";
           rpc_url = "https://rpc.rpc-node.union-1.union.build";
-          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "feemarket";
             max_gas = 10000000;
@@ -206,7 +206,7 @@ _: {
           chain-id = "bbn-test-5";
           name = "babylon-testnet";
           rpc_url = "https://babylon-testnet-rpc.polkachu.com";
-          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "static";
             gas_price = "0.003";
@@ -229,7 +229,7 @@ _: {
           chain-id = "bbn-1";
           name = "babylon";
           rpc_url = "https://babylon-rpc.polkachu.com";
-          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key)"'';
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "static";
             gas_price = "0.003";
