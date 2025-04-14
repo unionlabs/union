@@ -275,8 +275,8 @@
         },
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
-          "height": 22236430,
-          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+          "height": 22266999,
+          "commit": "72149a439c571470833577bf795da5ed81c7c05c"
         }
       }
     }
@@ -437,8 +437,8 @@
         },
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
-          "height": 15699440,
-          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+          "height": 15884736,
+          "commit": "72149a439c571470833577bf795da5ed81c7c05c"
         }
       }
     }
@@ -545,8 +545,8 @@
         },
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
-          "height": 392727,
-          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+          "height": 409251,
+          "commit": "72149a439c571470833577bf795da5ed81c7c05c"
         }
       }
     }
