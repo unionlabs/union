@@ -118,6 +118,9 @@ pub enum QueryMsg {
         token: Bytes,
     },
     GetMinter {},
+    GetTokenBucket {
+        denom: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
