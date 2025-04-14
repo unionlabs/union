@@ -28,6 +28,10 @@ abstract contract TokenBucket {
         uint256 lastRefill;
     }
 
+    event TokenBucketUpdate(
+        address indexed token, uint256 capacity, uint256 refillRate
+    );
+
     struct TokenBucketStorage {
         mapping(address => Bucket) buckets;
     }
@@ -92,6 +96,7 @@ abstract contract TokenBucket {
             $.available = capacity;
             $.lastRefill = block.timestamp;
         }
+        emit TokenBucketUpdate(token, capacity, refillRate);
     }
 
     function getBucket(

@@ -73,6 +73,18 @@ contract TokenBucketTests is Test {
         assertEq(tokenBucket.getBucket(token).available, capacity);
     }
 
+    function test_setConfig_emitEvent(
+        address token,
+        uint256 capacity,
+        uint256 refillRate
+    ) public {
+        vm.assume(capacity > 0);
+        vm.assume(refillRate > 0);
+        vm.expectEmit();
+        emit TokenBucket.TokenBucketUpdate(token, capacity, refillRate);
+        tokenBucket.setConfig(token, capacity, refillRate, false);
+    }
+
     function test_rateLimit_consumesAvailable(
         address token,
         uint256 capacity,
