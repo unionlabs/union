@@ -144,6 +144,25 @@ mod tests {
     use super::*;
 
     #[test]
+    fn cw20_untagged_message_correctly_serialized() {
+        let execute = Cw20ExecuteMsg::Transfer {
+            recipient: "hello".into(),
+            amount: 10u128.into(),
+        };
+
+        let serialized = cosmwasm_std::to_json_string(&execute).unwrap();
+
+        assert_eq!(
+            cosmwasm_std::to_json_string(&ExecuteMsg::Cw20ExecuteMsg(execute.clone())).unwrap(),
+            serialized
+        );
+
+        let transfer: ExecuteMsg = cosmwasm_std::from_json(&serialized).unwrap();
+
+        assert_eq!(transfer, ExecuteMsg::Cw20ExecuteMsg(execute));
+    }
+
+    #[test]
     fn validate_instantiatemsg_name() {
         // Too short
         assert!(validate_name(&str::repeat("a", 2)).is_err());
