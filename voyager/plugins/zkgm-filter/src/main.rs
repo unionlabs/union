@@ -76,6 +76,7 @@ pub mod call {
 }
 
 pub struct Module {
+    drop_protocol_fill_acks: bool,
     /// chain id -> provider
     providers: BTreeMap<ChainId, ChainProvider>,
 }
@@ -88,7 +89,10 @@ pub enum ChainProvider {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct Config {
+    drop_protocol_fill_acks: bool,
     /// chain id -> rpc url
+    ///
+    /// salt checks will only be done on configured chains, any unconfigured chain will send all send_packets through
     providers: BTreeMap<ChainId, ChainProviderConfig>,
 }
 
@@ -152,7 +156,10 @@ impl Plugin for Module {
             }
         }
 
-        Ok(Self { providers })
+        Ok(Self {
+            providers,
+            drop_protocol_fill_acks: config.drop_protocol_fill_acks,
+        })
     }
 
     fn info(Config { .. }: Self::Config) -> PluginInfo {
@@ -282,7 +289,11 @@ impl PluginServer<ModuleCall, Never> for Module {
                             }
                         }
                         FullEvent::WriteAck(write_ack) => {
-                            if !self.is_successful_protocol_fill(write_ack) {
+                            if self.drop_protocol_fill_acks && self.is_successful_protocol_fill(write_ack) {
+                                info!(
+                                    packet_hash = %write_ack.packet().hash(),
+                                    "not acknowledging protocol filled packet"
+                                );
                                 return Ok((vec![], noop()));
                             }
 

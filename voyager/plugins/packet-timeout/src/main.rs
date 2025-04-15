@@ -299,11 +299,10 @@ impl Module {
                         .query_latest_timestamp(counterparty_chain_id.clone(), false)
                         .await?;
 
-                    if event.packet.timeout_timestamp > counterparty_timestamp {
+                    if event.packet.timeout_timestamp <= counterparty_timestamp {
                         info!(
                             "packet timed out (timestamp): {} <= {}",
-                            event.packet.timeout_timestamp,
-                            counterparty_timestamp.as_nanos()
+                            event.packet.timeout_timestamp, counterparty_timestamp
                         );
                     }
 
