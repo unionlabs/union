@@ -743,6 +743,8 @@ async fn do_main() -> Result<()> {
         } => {
             let new_bytecode = std::fs::read(new_bytecode).context("reading new bytecode")?;
 
+            info!("migrating address {address}");
+
             let ctx = Deployer::new(rpc_url, private_key, gas_config).await?;
 
             let contract_info = ctx
