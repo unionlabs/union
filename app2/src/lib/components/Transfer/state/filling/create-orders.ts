@@ -18,7 +18,7 @@ import {
   createEvmToCosmosFungibleAssetOrder,
   createEvmToEvmFungibleAssetOrder
 } from "@unionlabs/sdk/ucs03"
-import {Batch, type Instruction} from "@unionlabs/sdk/ucs03/instruction"
+import { Batch, type Instruction } from "@unionlabs/sdk/ucs03/instruction"
 import { FungibleIntent } from "@unionlabs/sdk/schema"
 import { OrderCreationError } from "$lib/components/Transfer/state/errors.ts"
 import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
@@ -29,8 +29,10 @@ export function createOrdersBatch(intents: TransferIntents) {
       return Option.none<Instruction>()
     }
 
-    const grouped = Arr.groupBy(intents, intent =>
-      `${intent.context.sourceChainId}-${intent.context.destinationChain.universal_chain_id}-${intent.context.channel.destination_channel_id}-${intent.context.ucs03address}`
+    const grouped = Arr.groupBy(
+      intents,
+      intent =>
+        `${intent.context.sourceChainId}-${intent.context.destinationChain.universal_chain_id}-${intent.context.channel.destination_channel_id}-${intent.context.ucs03address}`
     )
 
     // You only support 1 batch group at a time
@@ -58,12 +60,14 @@ export function createOrdersBatch(intents: TransferIntents) {
 
     const resolvedIntents = yield* Effect.all(newIntents, { concurrency: "unbounded" })
 
-    const provideClients = yield* Match.value([context.sourceChain.rpc_type, context.destinationChain.rpc_type]).pipe(
+    const provideClients = yield* Match.value([
+      context.sourceChain.rpc_type,
+      context.destinationChain.rpc_type
+    ]).pipe(
       Match.when(["evm", "cosmos"], () =>
-        Effect.all(
-          resolvedIntents.map(createEvmToCosmosFungibleAssetOrder)
-        ).pipe(
-          Effect.provideServiceEffect(ViemPublicClientSource,
+        Effect.all(resolvedIntents.map(createEvmToCosmosFungibleAssetOrder)).pipe(
+          Effect.provideServiceEffect(
+            ViemPublicClientSource,
             pipe(
               context.sourceChain.toViemChain(),
               Option.map(chain => createViemPublicClient({ chain, transport: http() })),
@@ -71,7 +75,8 @@ export function createOrdersBatch(intents: TransferIntents) {
               Effect.map(client => ({ client }))
             )
           ),
-          Effect.provideServiceEffect(CosmWasmClientDestination,
+          Effect.provideServiceEffect(
+            CosmWasmClientDestination,
             pipe(
               context.destinationChain.getRpcUrl("rpc"),
               Option.map(createCosmWasmClient),
@@ -79,7 +84,8 @@ export function createOrdersBatch(intents: TransferIntents) {
               Effect.map(client => ({ client }))
             )
           ),
-          Effect.provideServiceEffect(CosmosChannelDestination,
+          Effect.provideServiceEffect(
+            CosmosChannelDestination,
             Effect.succeed({
               ucs03address: fromHex(context.channel.destination_port_id, "string"),
               channelId: context.channel.destination_channel_id
@@ -88,10 +94,9 @@ export function createOrdersBatch(intents: TransferIntents) {
         )
       ),
       Match.when(["evm", "evm"], () =>
-        Effect.all(
-          resolvedIntents.map(createEvmToEvmFungibleAssetOrder)
-        ).pipe(
-          Effect.provideServiceEffect(ViemPublicClientSource,
+        Effect.all(resolvedIntents.map(createEvmToEvmFungibleAssetOrder)).pipe(
+          Effect.provideServiceEffect(
+            ViemPublicClientSource,
             pipe(
               context.sourceChain.toViemChain(),
               Option.map(chain => createViemPublicClient({ chain, transport: http() })),
@@ -99,7 +104,8 @@ export function createOrdersBatch(intents: TransferIntents) {
               Effect.map(client => ({ client }))
             )
           ),
-          Effect.provideServiceEffect(ViemPublicClientDestination,
+          Effect.provideServiceEffect(
+            ViemPublicClientDestination,
             pipe(
               context.destinationChain.toViemChain(),
               Option.map(chain => createViemPublicClient({ chain, transport: http() })),
@@ -107,7 +113,8 @@ export function createOrdersBatch(intents: TransferIntents) {
               Effect.map(client => ({ client }))
             )
           ),
-          Effect.provideServiceEffect(EvmChannelDestination,
+          Effect.provideServiceEffect(
+            EvmChannelDestination,
             Effect.succeed({
               ucs03address: context.channel.destination_port_id,
               channelId: context.channel.destination_channel_id
@@ -116,10 +123,9 @@ export function createOrdersBatch(intents: TransferIntents) {
         )
       ),
       Match.when(["cosmos", "evm"], () =>
-        Effect.all(
-          resolvedIntents.map(createCosmosToEvmFungibleAssetOrder)
-        ).pipe(
-          Effect.provideServiceEffect(CosmWasmClientSource,
+        Effect.all(resolvedIntents.map(createCosmosToEvmFungibleAssetOrder)).pipe(
+          Effect.provideServiceEffect(
+            CosmWasmClientSource,
             pipe(
               context.sourceChain.getRpcUrl("rpc"),
               Option.map(createCosmWasmClient),
@@ -127,7 +133,8 @@ export function createOrdersBatch(intents: TransferIntents) {
               Effect.map(client => ({ client }))
             )
           ),
-          Effect.provideServiceEffect(ViemPublicClientDestination,
+          Effect.provideServiceEffect(
+            ViemPublicClientDestination,
             pipe(
               context.destinationChain.toViemChain(),
               Option.map(chain => createViemPublicClient({ chain, transport: http() })),
@@ -135,7 +142,8 @@ export function createOrdersBatch(intents: TransferIntents) {
               Effect.map(client => ({ client }))
             )
           ),
-          Effect.provideServiceEffect(EvmChannelDestination,
+          Effect.provideServiceEffect(
+            EvmChannelDestination,
             Effect.succeed({
               ucs03address: context.channel.destination_port_id,
               channelId: context.channel.destination_channel_id
@@ -144,10 +152,9 @@ export function createOrdersBatch(intents: TransferIntents) {
         )
       ),
       Match.when(["cosmos", "cosmos"], () =>
-        Effect.all(
-          resolvedIntents.map(createCosmosToCosmosFungibleAssetOrder)
-        ).pipe(
-          Effect.provideServiceEffect(CosmWasmClientSource,
+        Effect.all(resolvedIntents.map(createCosmosToCosmosFungibleAssetOrder)).pipe(
+          Effect.provideServiceEffect(
+            CosmWasmClientSource,
             pipe(
               context.sourceChain.getRpcUrl("rpc"),
               Option.map(createCosmWasmClient),
@@ -155,7 +162,8 @@ export function createOrdersBatch(intents: TransferIntents) {
               Effect.map(client => ({ client }))
             )
           ),
-          Effect.provideServiceEffect(CosmWasmClientDestination,
+          Effect.provideServiceEffect(
+            CosmWasmClientDestination,
             pipe(
               context.destinationChain.getRpcUrl("rpc"),
               Option.map(createCosmWasmClient),
@@ -163,7 +171,8 @@ export function createOrdersBatch(intents: TransferIntents) {
               Effect.map(client => ({ client }))
             )
           ),
-          Effect.provideServiceEffect(CosmosChannelDestination,
+          Effect.provideServiceEffect(
+            CosmosChannelDestination,
             Effect.succeed({
               ucs03address: fromHex(context.channel.destination_port_id, "string"),
               channelId: context.channel.destination_channel_id

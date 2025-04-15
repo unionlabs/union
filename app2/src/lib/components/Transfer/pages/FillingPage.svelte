@@ -11,6 +11,7 @@ import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Input from "$lib/components/ui/Input.svelte"
+import Label from "$lib/components/ui/Label.svelte"
 
 type Props = {
   onContinue: () => void
@@ -63,6 +64,7 @@ const uiStatus = $derived.by(() => {
 const isButtonEnabled = $derived.by(() => !loading)
 
 let signingMode = $state<"multi" | "single">("single")
+let sender = $state("")
 </script>
 
 <div class="min-w-full p-4 flex flex-col grow">
@@ -92,16 +94,17 @@ let signingMode = $state<"multi" | "single">("single")
     </div>
   </div>
 
-  {#if signingMode === "multi"}
-    <Input
-      id="manualSender"
-      label="Sender"
-      value={"0x123"}
-      oninput={() => {}}
-    />
-  {/if}
-
   <div class="flex flex-col gap-4">
+    {#if signingMode === "multi"}
+      <Input
+        id="manualSender"
+        class="h-14 text-center text-lg"
+        label="SENDER"
+        value={sender}
+        placeholder="0x123"
+        oninput={() => {}}
+      />
+    {/if}
     <ChainAsset type="source" />
     <ChainAsset type="destination" />
     <Amount type="source" />
@@ -109,7 +112,7 @@ let signingMode = $state<"multi" | "single">("single")
 
   <div class="grow"></div>
 
-  <div class="flex flex-col items-end">
+  <div class="flex flex-col items-end mt-2">
     <div class="flex items-center mr-5 text-zinc-400">
       {#if Option.isSome(transfer.derivedReceiver) && Option.isSome(transfer.destinationChain)}
         <p class="text-xs mb-2">

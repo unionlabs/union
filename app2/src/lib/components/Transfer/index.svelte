@@ -23,7 +23,7 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { beforeNavigate } from "$app/navigation"
 import { onMount } from "svelte"
 import { fly, slide } from "svelte/transition"
-import type {TransferIntents} from "$lib/components/Transfer/state/filling/create-intents.ts";
+import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
 
 let currentPage = $state(0)
 let isLoading = $state(false)
@@ -197,7 +197,6 @@ $effect(() => {
       }
     }
 
-
     transferSteps = Option.some(steps)
     isLoading = false
     currentFiber = Option.none()
@@ -208,8 +207,6 @@ $effect(() => {
 
   return () => fiber?.unsafeInterruptAsFork(FiberId.none)
 })
-
-
 
 beforeNavigate(newTransfer)
 
@@ -259,21 +256,21 @@ $effect(() => {
 const flyLeft = (node: Element) =>
   fly(node, {
     x: -300,
-    duration: 200,
+    duration: 1000,
     delay: 100
   })
 
 const flyRight = (node: Element) =>
   fly(node, {
     x: 300,
-    duration: 200,
+    duration: 1000,
     delay: 100
   })
 </script>
 
 <Card
   divided
-  class="w-sm mt-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden transition-transform duration-500"
+  class="max-w-sm w-full mt-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden transition-transform duration-500"
 >
   <div class="w-full">
     <StepProgressBar
@@ -300,52 +297,53 @@ const flyRight = (node: Element) =>
     />
   </div>
 
-  {#if currentStepTag === "Filling"}
-    <div class="flex w-full grow" in:flyRight out:flyLeft>
-      <FillingPage
-        onContinue={handleActionButtonClick}
-        {statusMessage}
-        {transferErrors}
-        onErrorClose={() => {
-          transferErrors = Option.none();
-        }}
-        loading={isLoading}
-      />
-    </div>
-  {/if}
-
-  {#if currentStepTag === "CheckReceiver"}
-    <div class="flex w-full grow" in:flyLeft out:flyLeft>
-      <CheckReceiverPage
-        stepIndex={currentPage + 1}
-        onBack={goToPreviousPage}
-        onSubmit={goToNextPage}
-      />
-    </div>
-  {/if}
-  {#if currentStepTag === "ApprovalRequired"}
-    <div class="flex w-full grow" in:flyRight out:flyLeft>
-      <ApprovalPage
-        stepIndex={currentPage + 1}
-        onBack={goToPreviousPage}
-        onApprove={handleActionButtonClick}
-        {actionButtonText}
-      />
-    </div>
-  {/if}
-  {#if currentStepTag === "SubmitInstruction"}
-    <div class="flex w-full grow" in:flyLeft out:flyLeft>
-      <SubmitPage
-        stepIndex={currentPage + 1}
-        onCancel={newTransfer}
-        onSubmit={handleActionButtonClick}
-        {actionButtonText}
-      />
-    </div>
-  {/if}
-  {#if currentStepTag === "WaitForIndex"}
-    <IndexPage {newTransfer} />
-  {/if}
+  <div class="relative flex w-full grow">
+    {#if currentStepTag === "Filling"}
+      <div class="flex w-full grow" in:flyRight out:flyLeft>
+        <FillingPage
+          onContinue={handleActionButtonClick}
+          {statusMessage}
+          {transferErrors}
+          onErrorClose={() => {
+            transferErrors = Option.none();
+          }}
+          loading={isLoading}
+        />
+      </div>
+    {/if}
+    {#if currentStepTag === "CheckReceiver"}
+      <div class="flex w-full grow" in:flyLeft out:flyLeft>
+        <CheckReceiverPage
+          stepIndex={currentPage + 1}
+          onBack={goToPreviousPage}
+          onSubmit={goToNextPage}
+        />
+      </div>
+    {/if}
+    {#if currentStepTag === "ApprovalRequired"}
+      <div class="flex w-full grow" in:flyRight out:flyLeft>
+        <ApprovalPage
+          stepIndex={currentPage + 1}
+          onBack={goToPreviousPage}
+          onApprove={handleActionButtonClick}
+          {actionButtonText}
+        />
+      </div>
+    {/if}
+    {#if currentStepTag === "SubmitInstruction"}
+      <div class="flex w-full grow" in:flyLeft out:flyLeft>
+        <SubmitPage
+          stepIndex={currentPage + 1}
+          onCancel={newTransfer}
+          onSubmit={handleActionButtonClick}
+          {actionButtonText}
+        />
+      </div>
+    {/if}
+    {#if currentStepTag === "WaitForIndex"}
+      <IndexPage {newTransfer} />
+    {/if}
+  </div>
 </Card>
 
 {#if showDetails}

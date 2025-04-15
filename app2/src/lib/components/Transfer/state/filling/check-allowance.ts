@@ -10,8 +10,8 @@ import {
   CosmosQueryError,
   type TransferFlowError
 } from "$lib/components/Transfer/state/errors.ts"
-import type {TransferIntents} from "$lib/components/Transfer/state/filling/create-intents.ts";
-import {groupBy} from "effect/Array";
+import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
+import { groupBy } from "effect/Array"
 
 export class ApprovalStep extends Data.TaggedClass("ApprovalStep")<{
   token: string
@@ -21,7 +21,7 @@ export class ApprovalStep extends Data.TaggedClass("ApprovalStep")<{
 
 function gatherNeededAmounts(intents: TransferIntents): Map<string, bigint> {
   const neededMap = new Map<string, bigint>()
-  for (const { context} of intents) {
+  for (const { context } of intents) {
     const current = neededMap.get(context.baseToken) ?? 0n
     neededMap.set(context.baseToken, current + context.baseAmount)
   }
@@ -71,7 +71,6 @@ export function checkAllowances(
     return allSteps.length > 0 ? Option.some(allSteps) : Option.none()
   })
 }
-
 
 function handleEvmAllowances(
   tokenAddresses: Array<string>,

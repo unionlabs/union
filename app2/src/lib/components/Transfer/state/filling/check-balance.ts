@@ -2,7 +2,7 @@ import { Effect, identity, Option } from "effect"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import { isHex, toHex } from "viem"
 import { BalanceLookupError } from "$lib/components/Transfer/state/errors.ts"
-import type {TransferIntents} from "$lib/components/Transfer/state/filling/create-intents.ts";
+import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
 
 const BABY_SUB_AMOUNT = 1n * 10n ** 6n
 const BABYLON_CHAIN_ID = "babylon.bbn-1"
@@ -20,7 +20,8 @@ export const checkBalanceForIntents = (
       const token = intent.context.baseToken
       const key = `${intent.context.sender}_${token}`
 
-      const needsFee = intent.context.sourceChain.universal_chain_id === BABYLON_CHAIN_ID && token === UBBN_DENOM
+      const needsFee =
+        intent.context.sourceChain.universal_chain_id === BABYLON_CHAIN_ID && token === UBBN_DENOM
       const required = intent.context.baseAmount + (needsFee ? BABY_SUB_AMOUNT : 0n)
 
       if (acc[key]) {
@@ -36,7 +37,10 @@ export const checkBalanceForIntents = (
 
       return acc
     },
-    {} as Record<string, { sender: string; baseToken: string; required: bigint, source_universal_chain_id: string }>
+    {} as Record<
+      string,
+      { sender: string; baseToken: string; required: bigint; source_universal_chain_id: string }
+    >
   )
 
   const groupedValues = Object.values(grouped)

@@ -1,13 +1,6 @@
 import { Match, Option } from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
-import type {
-  Channel,
-  AddressCanonicalBytes,
-  Token,
-  TokenRawDenom,
-  UniversalChainId,
-  ChannelId, PortId
-} from "@unionlabs/sdk/schema"
+import type { Channel, Token } from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { type Address, fromHex, type Hex } from "viem"

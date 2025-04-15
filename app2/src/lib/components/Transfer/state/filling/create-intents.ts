@@ -1,12 +1,15 @@
-import {Match, Option} from "effect"
-import { fromHex, isHex} from "viem"
-import type {TransferArgs} from "./check-filling.ts"
-import {
-  type AddressCanonicalBytes, Chain, Channel, type ChannelId,
-  type TokenRawAmount,
-  type UniversalChainId,
+import { Match, Option } from "effect"
+import { fromHex, isHex } from "viem"
+import type { TransferArgs } from "./check-filling.ts"
+import type {
+  AddressCanonicalBytes,
+  Chain,
+  Channel,
+  ChannelId,
+  TokenRawAmount,
+  UniversalChainId
 } from "@unionlabs/sdk/schema"
-import type {Instruction} from "@unionlabs/sdk/ucs03/instruction.ts";
+import type { Instruction } from "@unionlabs/sdk/ucs03/instruction.ts"
 
 export type TransferIntent = {
   context: {
@@ -53,7 +56,7 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
 
   return Match.value(args.sourceChain.rpc_type).pipe(
     Match.when("evm", () => {
-      console.debug("[createIntents] Creating EVM intent", {baseAmount: baseAmount.toString()})
+      console.debug("[createIntents] Creating EVM intent", { baseAmount: baseAmount.toString() })
 
       return Option.some([
         {
@@ -71,8 +74,8 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
             ucs03address: args.ucs03address
           },
           allowances: Option.none(),
-          instructions: Option.none(),
-        },
+          instructions: Option.none()
+        }
       ])
     }),
 
@@ -100,8 +103,8 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
             ucs03address: args.ucs03address
           },
           allowances: Option.none(),
-          instructions: Option.none(),
-        },
+          instructions: Option.none()
+        }
       ])
     }),
 
