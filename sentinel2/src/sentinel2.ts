@@ -521,6 +521,9 @@ export const checkPackets = (
       // Only process packets that are older than the allowed timeframe.
       if (now - sendTimeMs < timeframeMs) continue
 
+      if (now*1000000 > BigInt(p.timeout_timestamp)) {
+        continue;
+      }
       const sendTxHash = p.packet_send_transaction_hash ?? "?"
       if (reportedSendTxHashes.has(sendTxHash)) continue
       const sort_order_tx = p.sort_order.split("-")[1]
