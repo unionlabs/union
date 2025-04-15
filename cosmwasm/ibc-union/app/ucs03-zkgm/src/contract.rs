@@ -1986,6 +1986,17 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
             let bucket = TOKEN_BUCKET.load(deps.storage, denom)?;
             Ok(to_json_binary(&bucket)?)
         }
+        QueryMsg::GetChannelBalance {
+            channel_id,
+            path,
+            denom,
+        } => {
+            let balance = CHANNEL_BALANCE.load(
+                deps.storage,
+                (channel_id.get().into(), path.to_be_bytes().into(), denom),
+            )?;
+            Ok(to_json_binary(&balance)?)
+        }
     }
 }
 
