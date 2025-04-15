@@ -4,7 +4,7 @@ use cosmwasm_std::{
     wasm_execute, Addr, Binary, Coin, Coins, Deps, DepsMut, Empty, Env, MessageInfo, OwnedDeps,
     Response, StdError, StdResult, Uint256,
 };
-use cw20::{Cw20Coin, Cw20QueryMsg};
+use cw20::{Cw20Coin, Cw20QueryMsg, TokenInfoResponse};
 use cw20_token_minter::contract::save_native_token;
 use cw_multi_test::{App, AppBuilder, Contract, ContractWrapper, Executor, SudoMsg};
 use cw_storage_plus::Map;
@@ -25,7 +25,9 @@ use crate::{
         tint_forward_salt, update_channel_path, verify_batch, verify_forward, verify_internal,
         verify_multiplex, PROTOCOL_VERSION,
     },
-    msg::{Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, TokenMinterInitMsg},
+    msg::{
+        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, TokenMinterInitParams,
+    },
     state::{CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, TOKEN_ORIGIN},
     ContractError,
 };
@@ -957,7 +959,7 @@ fn init_test_state(admin: Addr) -> TestState {
                 rate_limit_operators: vec![rate_limiter.clone()],
                 rate_limit_disabled: false,
             },
-            minter_init_msg: TokenMinterInitMsg::Cw20 {
+            minter_init_params: TokenMinterInitParams::Cw20 {
                 cw20_base_code_id,
                 dummy_code_id: proxy_code_id,
             },
@@ -1185,7 +1187,7 @@ impl IncomingOrderBuilder {
 #[test]
 fn test_recv_packet_native_new_wrapped() {
     let admin = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
-    let mut st = init_test_state(admin);
+    let mut st = init_test_state(admin.clone());
     let path = U256::ZERO;
     let destination_channel_id = ChannelId!(10);
     let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
@@ -1252,7 +1254,18 @@ fn test_recv_packet_native_new_wrapped() {
     );
     let deployed_contract = st.app.contract_data(&quote_token_addr).unwrap();
     assert_eq!(deployed_contract.code_id, st.cw20_base_code_id);
-    assert_eq!(deployed_contract.admin, Some(st.minter));
+    assert_eq!(deployed_contract.admin, Some(admin));
+
+    let token_info_response: TokenInfoResponse = st
+        .app
+        .wrap()
+        .query_wasm_smart(quote_token_addr, &Cw20QueryMsg::TokenInfo {})
+        .unwrap();
+
+    assert_eq!(token_info_response.name, order.base_token_name);
+    assert_eq!(token_info_response.symbol, order.base_token_symbol);
+    assert_eq!(token_info_response.decimals, order.base_token_decimals);
+    assert_eq!(token_info_response.total_supply.u128(), order.base_amount);
 }
 
 #[test]
@@ -1582,6 +1595,7 @@ fn test_recv_packet_native_unwrap_wrapped_token_ok() {
                 }],
                 mint: None,
                 marketing: None,
+                admin: None,
             },
             &[],
             "muno-token",
@@ -1803,6 +1817,7 @@ fn test_recv_packet_native_unwrap_channel_no_outstanding() {
                 }],
                 mint: None,
                 marketing: None,
+                admin: None,
             },
             &[],
             "muno-token",
@@ -1884,6 +1899,7 @@ fn test_recv_packet_native_unwrap_path_no_outstanding() {
                 }],
                 mint: None,
                 marketing: None,
+                admin: None,
             },
             &[],
             "muno-token",
