@@ -3,7 +3,7 @@ import { Bech32 } from "./bech32.js"
 import { Uint128 } from "./uint128.js"
 import { Uint64FromString } from "./uint64.js"
 
-export const Coin = S.Struct({ denom: S.String, value: Uint128 })
+export const Coin = S.Struct({ denom: S.String, amount: Uint128 })
 
 export const Msg = S.Struct({
   "@type": S.String
@@ -26,12 +26,6 @@ export const Tx = S.Struct({
   body: S.Struct({
     messages: S.NonEmptyArray(MsgExecuteContract)
   }),
-  auth_info: S.Struct({
-    fee: S.Struct({
-      gas_limit: Uint64FromString,
-      amount: S.NonEmptyArray(Coin)
-    })
-  })
 })
 
 export type Coin = typeof Coin.Type
