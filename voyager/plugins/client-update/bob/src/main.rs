@@ -29,7 +29,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
+    call::{Call, FetchUpdateHeaders, WaitForHeightRelative, WaitForTrustedHeight},
     callback::AggregateSubmitTxFromOrderedHeaders,
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
@@ -457,6 +457,12 @@ impl Module {
                         ibc_spec_id: IbcUnion::ID,
                         client_id: RawClientId::new(bob_client_state.l1_client_id),
                         height: l1_latest_height,
+                        finalized: false,
+                    }),
+                    // wait for 1 extra block to ensure that the L1 update is in state, and this update will not end up in the same block (and potentially get reordered)
+                    call(WaitForHeightRelative {
+                        chain_id: counterparty_chain_id.clone(),
+                        height_diff: 1,
                         finalized: false,
                     }),
                     call(PluginMessage::new(
