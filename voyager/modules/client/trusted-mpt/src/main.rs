@@ -43,7 +43,7 @@ impl ClientModule for Module {
 
     async fn new(_config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::TRUSTED_MPT)?;
-        info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
+        info.ensure_consensus_type(ConsensusType::TRUSTED_MPT)?;
         info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM)?;
 
         Ok(Self)

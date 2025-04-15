@@ -14,7 +14,7 @@ use tracing::instrument;
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
     module::{ConsensusModuleInfo, ConsensusModuleServer},
-    primitives::{ChainId, Timestamp},
+    primitives::{ChainId, ConsensusType, Timestamp},
     ConsensusModule,
 };
 use voyager_vm::BoxDynError;
@@ -60,6 +60,7 @@ impl ConsensusModule for Module {
         let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
         info.ensure_chain_id(chain_id.to_string())?;
+        info.ensure_consensus_type(ConsensusType::TRUSTED_MPT)?;
 
         Ok(Self {
             chain_id,

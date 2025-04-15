@@ -200,6 +200,9 @@ impl ConsensusType {
     /// [Bob]: https://github.com/ethereum-optimism/optimism/blob/v1.7.2/packages/contracts-bedrock/src/L1/L2OutputOracle.sol
     pub const BOB: &'static str = "bob";
 
+    /// EVM chain consensus that will be tracked in a trusted way. Development purposes only.
+    pub const TRUSTED_MPT: &'static str = "trusted/evm/mpt";
+
     // lots more to come - near, linea, polygon - stay tuned
 }
 
