@@ -5,6 +5,7 @@ import ChainAssetButton from "$lib/components/Transfer/ChainAsset/ChainAssetButt
 import ChainSelector from "$lib/components/Transfer/ChainAsset/ChainSelector.svelte"
 import AssetSelector from "$lib/components/Transfer/ChainAsset/AssetSelector.svelte"
 import SharpChevronLeftIcon from "$lib/components/icons/SharpChevronLeftIcon.svelte"
+import { clickOutside } from "$lib/utils/actions.ts"
 
 type Props = {
   type: "source" | "destination"
@@ -60,7 +61,8 @@ const [send, receive] = crossfade({
 })
 </script>
 {#if open}
-  <div class="absolute inset-0 bg-zinc-925 z-40 flex" transition:fade={{ duration: 300 }}>
+  <div class="absolute inset-0 bg-zinc-925 z-40 flex"
+       transition:fade={{ duration: 300 }}>
     <div class="w-full h-full flex flex-col"
          transition:fly={{ y: 30, duration: 300, opacity: 0 }}>
       <!-- Header with close button -->
@@ -104,6 +106,8 @@ const [send, receive] = crossfade({
                   class="absolute inset-0"
                   in:fly={{ x: previousPage > page ? -20 : 20, duration: 300, opacity: 0 }}
                   out:fly={{ x: previousPage > page ? 20 : -20, duration: 300, opacity: 0 }}
+                  use:clickOutside
+                  onClickOutside={() => back()}
           >
             <ChainSelector {type} onSelect={onChainSelected}/>
           </div>
@@ -112,6 +116,8 @@ const [send, receive] = crossfade({
                   class="absolute inset-0 h-full"
                   in:fly={{ x: previousPage > page ? -20 : 20, duration: 300, opacity: 0 }}
                   out:fly={{ x: previousPage > page ? 20 : -20, duration: 300, opacity: 0 }}
+                  use:clickOutside
+                  onClickOutside={() => back()}
           >
             {#if type === "source"}
               <AssetSelector onSelect={onAssetSelected}/>

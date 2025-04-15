@@ -16,6 +16,7 @@ import RestoreIcon from "$lib/components/icons/RestoreIcon.svelte"
 import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import { getDerivedReceiverSafe } from "$lib/services/shared"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
+import { clickOutside } from "$lib/utils/actions.ts"
 
 let destinationChain = $derived(
   Option.isSome(transfer.destinationChain) ? Option.getOrNull(transfer.destinationChain) : null
@@ -287,7 +288,11 @@ function hasBookmarks() {
 
 <!-- Modal -->
 {#if isModalOpen}
-  <div class="absolute bg-zinc-925 inset-0 z-40" transition:fade={{ duration: 300 }}>
+  <div class="absolute bg-zinc-925 inset-0 z-40"
+       transition:fade={{ duration: 300 }}
+       use:clickOutside
+       onClickOutside={goBack}
+  >
     <div class="w-full h-full max-h-full flex flex-col" transition:fly={{ y: 30, duration: 300, opacity: 0 }}>
 
       <div class="border-b border-zinc-800 flex justify-between items-center h-12 flex-shrink-0 p-4">
