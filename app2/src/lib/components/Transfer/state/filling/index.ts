@@ -161,7 +161,7 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
       ),
 
     CheckAllowance: ({ args, intents }) =>
-      checkAllowances(args.sourceChain, intents, args.receiver, args.ucs03address).pipe(
+      checkAllowances(args.sourceChain, intents, args.sender, args.ucs03address).pipe(
         Effect.map(allowancesOpt => {
           const allowances = Option.getOrElse(allowancesOpt, () => [])
           return ok(CreateOrders({ args, intents, allowances }), "Creating orders...")
