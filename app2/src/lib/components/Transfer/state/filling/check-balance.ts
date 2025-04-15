@@ -1,9 +1,8 @@
 import { Effect, identity, Option } from "effect"
-import type { Chain } from "@unionlabs/sdk/schema"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
-import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
 import { isHex, toHex } from "viem"
 import { BalanceLookupError } from "$lib/components/Transfer/state/errors.ts"
+import type {TransferIntents} from "$lib/components/Transfer/state/filling/create-intents.ts";
 
 const BABY_SUB_AMOUNT = 1n * 10n ** 6n
 const BABYLON_CHAIN_ID = "babylon.bbn-1"
@@ -12,33 +11,32 @@ const UBBN_DENOM = "ubbn"
 export type BalanceCheckResult = { _tag: "HasEnough" } | { _tag: "InsufficientFunds" }
 
 export const checkBalanceForIntents = (
-  source: Chain,
   intents: TransferIntents
 ): Effect.Effect<BalanceCheckResult, BalanceLookupError> => {
-  console.debug("[checkBalanceForIntents] source:", source.universal_chain_id)
   console.debug("[checkBalanceForIntents] raw intents:", intents)
 
   const grouped = intents.reduce(
     (acc, intent) => {
-      const token = intent.baseToken
-      const key = `${intent.sender}_${token}`
+      const token = intent.context.baseToken
+      const key = `${intent.context.sender}_${token}`
 
-      const needsFee = source.universal_chain_id === BABYLON_CHAIN_ID && token === UBBN_DENOM
-      const required = intent.baseAmount + (needsFee ? BABY_SUB_AMOUNT : 0n)
+      const needsFee = intent.context.sourceChain.universal_chain_id === BABYLON_CHAIN_ID && token === UBBN_DENOM
+      const required = intent.context.baseAmount + (needsFee ? BABY_SUB_AMOUNT : 0n)
 
       if (acc[key]) {
-        acc[key].required += intent.baseAmount
+        acc[key].required += intent.context.baseAmount
       } else {
         acc[key] = {
-          sender: intent.sender,
+          sender: intent.context.sender,
           baseToken: token,
-          required
+          required,
+          source_universal_chain_id: intent.context.sourceChain.universal_chain_id
         }
       }
 
       return acc
     },
-    {} as Record<string, { sender: string; baseToken: string; required: bigint }>
+    {} as Record<string, { sender: string; baseToken: string; required: bigint, source_universal_chain_id: string }>
   )
 
   const groupedValues = Object.values(grouped)
@@ -47,7 +45,7 @@ export const checkBalanceForIntents = (
     Effect.flatMap(
       Effect.sync(() => {
         return balancesStore.getBalance(
-          source.universal_chain_id,
+          group.source_universal_chain_id,
           group.sender,
           isHex(group.baseToken) ? group.baseToken : toHex(group.baseToken)
         )
@@ -60,7 +58,7 @@ export const checkBalanceForIntents = (
               cause: "No balance found",
               token: group.baseToken,
               sender: group.sender,
-              chainId: source.universal_chain_id
+              chainId: group.source_universal_chain_id
             })
           )
         }

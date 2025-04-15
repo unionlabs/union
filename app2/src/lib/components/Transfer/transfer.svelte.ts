@@ -6,7 +6,7 @@ import type {
   Token,
   TokenRawDenom,
   UniversalChainId,
-  ChannelId
+  ChannelId, PortId
 } from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
@@ -16,17 +16,6 @@ import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
-
-export type TransferIntent = {
-  sender: AddressCanonicalBytes
-  receiver: string
-  baseToken: TokenRawDenom
-  baseAmount: bigint
-  quoteAmount: bigint
-  sourceChainId: UniversalChainId
-  sourceChannelId: ChannelId
-}
-export type TransferIntents = Array<TransferIntent>
 
 export class Transfer {
   raw = new RawTransferSvelte()

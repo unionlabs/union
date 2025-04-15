@@ -1,14 +1,39 @@
-import { Match, Option } from "effect"
-import { fromHex, isHex } from "viem"
-import type { TransferArgs } from "./check-filling.ts"
-import type { TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
-import type { TokenRawAmount } from "@unionlabs/sdk/schema"
+import {Match, Option} from "effect"
+import { fromHex, isHex} from "viem"
+import type {TransferArgs} from "./check-filling.ts"
+import {
+  type AddressCanonicalBytes, Chain, Channel, type ChannelId,
+  type TokenRawAmount,
+  type UniversalChainId,
+} from "@unionlabs/sdk/schema"
+import type {Instruction} from "@unionlabs/sdk/ucs03/instruction.ts";
+
+export type TransferIntent = {
+  context: {
+    sender: AddressCanonicalBytes
+    receiver: AddressCanonicalBytes
+    baseToken: string
+    baseAmount: TokenRawAmount
+    quoteAmount: TokenRawAmount
+    sourceChain: Chain
+    sourceChainId: UniversalChainId
+    sourceChannelId: ChannelId
+    destinationChain: Chain
+    channel: Channel
+    ucs03address: string
+  }
+  allowances: Option.Option<{
+    token: string
+    requiredAmount: bigint
+    currentAllowance: bigint
+  }>
+  instructions: Option.Option<Instruction>
+}
+
+export type TransferIntents = Array<TransferIntent>
 
 const BABY_DECIMALS = 6n
 const BABY_SUB_AMOUNT = 19n * 10n ** BABY_DECIMALS
-
-const subtractTokenAmount = (amount: TokenRawAmount, sub: bigint): TokenRawAmount =>
-  (amount - sub) as TokenRawAmount
 
 export const createIntents = (args: TransferArgs): Option.Option<TransferIntents> => {
   console.debug("[createIntents] args:", args)
@@ -28,18 +53,26 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
 
   return Match.value(args.sourceChain.rpc_type).pipe(
     Match.when("evm", () => {
-      console.debug("[createIntents] Creating EVM intent", { baseAmount: baseAmount.toString() })
+      console.debug("[createIntents] Creating EVM intent", {baseAmount: baseAmount.toString()})
 
       return Option.some([
         {
-          sender: args.sender,
-          receiver: args.receiver,
-          baseToken: args.baseToken,
-          baseAmount,
-          quoteAmount: baseAmount,
-          sourceChainId: args.sourceChain.universal_chain_id,
-          sourceChannelId: args.sourceChannelId
-        }
+          context: {
+            sender: args.sender,
+            receiver: args.receiver,
+            baseToken: args.baseToken,
+            baseAmount: baseAmount,
+            quoteAmount: baseAmount,
+            sourceChain: args.sourceChain,
+            sourceChainId: args.sourceChain.universal_chain_id,
+            sourceChannelId: args.channel.source_channel_id,
+            destinationChain: args.destinationChain,
+            channel: args.channel,
+            ucs03address: args.ucs03address
+          },
+          allowances: Option.none(),
+          instructions: Option.none(),
+        },
       ])
     }),
 
@@ -53,14 +86,22 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
 
       return Option.some([
         {
-          sender: args.sender,
-          receiver: args.receiver.toLowerCase(),
-          baseToken: tokenName,
-          baseAmount: baseAmountWithFee,
-          quoteAmount: baseAmount,
-          sourceChainId: args.sourceChain.universal_chain_id,
-          sourceChannelId: args.sourceChannelId
-        }
+          context: {
+            sender: args.sender,
+            receiver: args.receiver.toLowerCase(),
+            baseToken: tokenName,
+            baseAmount: baseAmountWithFee,
+            quoteAmount: baseAmount,
+            sourceChain: args.sourceChain,
+            sourceChainId: args.sourceChain.universal_chain_id,
+            sourceChannelId: args.channel.source_channel_id,
+            destinationChain: args.destinationChain,
+            channel: args.channel,
+            ucs03address: args.ucs03address
+          },
+          allowances: Option.none(),
+          instructions: Option.none(),
+        },
       ])
     }),
 

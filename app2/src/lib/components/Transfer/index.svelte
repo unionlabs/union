@@ -2,7 +2,7 @@
 import Card from "$lib/components/ui/Card.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import { LockedTransfer } from "./locked-transfer.ts"
-import { transfer, type TransferIntents } from "$lib/components/Transfer/transfer.svelte.ts"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import FillingPage from "./pages/FillingPage.svelte"
 import ApprovalPage from "./pages/ApprovalPage.svelte"
 import SubmitPage from "./pages/SubmitPage.svelte"
@@ -16,15 +16,14 @@ import {
   type StateResult
 } from "$lib/components/Transfer/state/filling/index.ts"
 import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
-import type { Batch } from "@unionlabs/sdk/ucs03/instruction.ts"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { constVoid, pipe } from "effect/Function"
 import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { beforeNavigate } from "$app/navigation"
 import { onMount } from "svelte"
-import Button from "../ui/Button.svelte"
 import { fly, slide } from "svelte/transition"
+import type {TransferIntents} from "$lib/components/Transfer/state/filling/create-intents.ts";
 
 let currentPage = $state(0)
 let isLoading = $state(false)
@@ -125,13 +124,7 @@ $effect(() => {
 
   const machineEffect = Effect.gen(function* () {
     let currentState: CreateTransferState = CreateTransferState.Filling()
-    let finalOrders: Array<Batch> = []
-    let intents: TransferIntents
-    let finalAllowances: Array<{
-      token: string
-      requiredAmount: string
-      currentAllowance: string
-    }> = []
+    let intents: TransferIntents = []
 
     while (true) {
       const result: StateResult = yield* createTransferState(currentState, transfer)
@@ -150,14 +143,6 @@ $effect(() => {
         continue
       }
 
-      if (Option.isSome(result.orders)) {
-        finalOrders = result.orders.value
-      }
-
-      if (Option.isSome(result.allowances)) {
-        finalAllowances = result.allowances.value
-      }
-
       if (Option.isSome(result.intents)) {
         intents = result.intents.value
       }
@@ -174,7 +159,6 @@ $effect(() => {
       }),
       Option.flatMap(({ destinationChain, receiver }) => {
         const walletaddr = wallets.getAddressForChain(destinationChain)
-
         return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
       }),
       Option.getOrElse(() => false)
@@ -189,30 +173,30 @@ $effect(() => {
       )
     }
 
-    steps.push(
-      ...finalAllowances
-        .filter(
-          ({ requiredAmount, currentAllowance }) =>
-            BigInt(currentAllowance) < BigInt(requiredAmount)
-        )
-        .map(({ token, requiredAmount, currentAllowance }) =>
+    for (const intent of intents) {
+      const allowance = Option.getOrUndefined(intent.allowances)
+      if (allowance) {
+        steps.push(
           TransferStep.ApprovalRequired({
-            token,
-            requiredAmount: BigInt(requiredAmount),
-            currentAllowance: BigInt(currentAllowance)
+            token: allowance.token,
+            requiredAmount: allowance.requiredAmount,
+            currentAllowance: allowance.currentAllowance
           })
         )
-    )
+      }
 
-    if (finalOrders.length > 0) {
-      steps.push(
-        TransferStep.SubmitInstruction({
-          instruction: finalOrders[0],
-          intents
-        })
-      )
-      steps.push(TransferStep.WaitForIndex())
+      const instruction = Option.getOrUndefined(intent.instructions)
+      if (instruction) {
+        steps.push(
+          TransferStep.SubmitInstruction({
+            instruction,
+            intents
+          }),
+          TransferStep.WaitForIndex()
+        )
+      }
     }
+
 
     transferSteps = Option.some(steps)
     isLoading = false
@@ -224,6 +208,8 @@ $effect(() => {
 
   return () => fiber?.unsafeInterruptAsFork(FiberId.none)
 })
+
+
 
 beforeNavigate(newTransfer)
 

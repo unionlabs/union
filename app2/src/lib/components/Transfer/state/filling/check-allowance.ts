@@ -4,13 +4,14 @@ import { fromHex, http, isHex } from "viem"
 import { createViemPublicClient, readErc20Allowance, ViemPublicClient } from "@unionlabs/sdk/evm"
 import { CosmWasmClientSource, createCosmWasmClient } from "@unionlabs/sdk/cosmos"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
-import type { TransferIntent } from "$lib/components/Transfer/transfer.svelte.ts"
 import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
 import {
   AllowanceCheckError,
   CosmosQueryError,
   type TransferFlowError
 } from "$lib/components/Transfer/state/errors.ts"
+import type {TransferIntents} from "$lib/components/Transfer/state/filling/create-intents.ts";
+import {groupBy} from "effect/Array";
 
 export class ApprovalStep extends Data.TaggedClass("ApprovalStep")<{
   token: string
@@ -18,57 +19,59 @@ export class ApprovalStep extends Data.TaggedClass("ApprovalStep")<{
   currentAllowance: bigint
 }> {}
 
-function gatherNeededAmounts(intents: Array<TransferIntent>): Map<string, bigint> {
+function gatherNeededAmounts(intents: TransferIntents): Map<string, bigint> {
   const neededMap = new Map<string, bigint>()
-  for (const { baseToken, baseAmount } of intents) {
-    const current = neededMap.get(baseToken) ?? 0n
-    neededMap.set(baseToken, current + baseAmount)
+  for (const { context} of intents) {
+    const current = neededMap.get(context.baseToken) ?? 0n
+    neededMap.set(context.baseToken, current + context.baseAmount)
   }
   return neededMap
 }
 
 export function checkAllowances(
-  chain: Chain,
-  intents: Array<TransferIntent>,
-  sender: AddressCanonicalBytes,
-  spenderAddress: string
+  intents: TransferIntents
 ): Effect.Effect<Option.Option<Array<ApprovalStep>>, TransferFlowError> {
   return Effect.gen(function* () {
-    if (intents.length === 0) {
-      return Option.none()
-    }
+    if (intents.length === 0) return Option.none()
 
-    const neededMap = gatherNeededAmounts(intents)
-    const tokenAddresses = [...neededMap.keys()]
+    const grouped = groupBy(intents, intent => intent.context.sourceChain.universal_chain_id)
 
-    const allowancesOpt = yield* Match.value(chain.rpc_type).pipe(
-      Match.when("evm", () =>
-        handleEvmAllowances(tokenAddresses, sender, spenderAddress, chain).pipe(
-          Effect.mapError(err => new AllowanceCheckError({ cause: err }))
-        )
-      ),
-      Match.when("cosmos", () =>
-        handleCosmosAllowances(tokenAddresses, sender, chain).pipe(
-          Effect.mapError(err => new AllowanceCheckError({ cause: err }))
-        )
-      ),
-      Match.orElse(() => Effect.succeed(Option.none()))
-    )
+    const allSteps: Array<ApprovalStep> = []
 
-    const allowances = Option.getOrElse(allowancesOpt, () => [])
+    for (const [, group] of Object.entries(grouped)) {
+      const chain = group[0].context.sourceChain
+      const sender = group[0].context.sender
+      const neededMap = gatherNeededAmounts(group)
+      const tokenAddresses = [...neededMap.keys()]
 
-    const steps: Array<ApprovalStep> = []
+      const allowancesOpt = yield* Match.value(chain.rpc_type).pipe(
+        Match.when("evm", () =>
+          handleEvmAllowances(tokenAddresses, sender, group[0].context.ucs03address, chain).pipe(
+            Effect.mapError(err => new AllowanceCheckError({ cause: err }))
+          )
+        ),
+        Match.when("cosmos", () =>
+          handleCosmosAllowances(tokenAddresses, sender, chain).pipe(
+            Effect.mapError(err => new AllowanceCheckError({ cause: err }))
+          )
+        ),
+        Match.orElse(() => Effect.succeed(Option.none()))
+      )
 
-    for (const { token, allowance } of allowances) {
-      const requiredAmount = neededMap.get(token) ?? 0n
-      if (allowance < requiredAmount) {
-        steps.push(new ApprovalStep({ token, requiredAmount, currentAllowance: allowance }))
+      const allowances = Option.getOrElse(allowancesOpt, () => [])
+
+      for (const { token, allowance } of allowances) {
+        const requiredAmount = neededMap.get(token) ?? 0n
+        if (allowance < requiredAmount) {
+          allSteps.push(new ApprovalStep({ token, requiredAmount, currentAllowance: allowance }))
+        }
       }
     }
 
-    return steps.length > 0 ? Option.some(steps) : Option.none()
+    return allSteps.length > 0 ? Option.some(allSteps) : Option.none()
   })
 }
+
 
 function handleEvmAllowances(
   tokenAddresses: Array<string>,
