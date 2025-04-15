@@ -659,3 +659,73 @@ pub fn migrate(
         |_, _, _| Ok((Response::default(), None)),
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        testing::{message_info, mock_dependencies, mock_env},
+        Addr,
+    };
+
+    use super::*;
+
+    #[test]
+    fn upgrade_token_info() {
+        let token_name = "Union";
+        let token_symbol = "UNO";
+        let decimals = 6;
+
+        let mut deps = mock_dependencies();
+        instantiate(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked("sender"), &[]),
+            InstantiateMsg {
+                name: token_name.into(),
+                symbol: token_symbol.into(),
+                decimals,
+                initial_balances: vec![],
+                mint: None,
+                marketing: None,
+                admin: Some(Addr::unchecked("some_admin")),
+            },
+        )
+        .unwrap();
+
+        let token_name = "Union New";
+        let token_symbol = "UNONew";
+        let decimals = 10;
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked("some_admin"), &[]),
+            ExecuteMsg::UpdateMetadata {
+                name: token_name.into(),
+                symbol: token_symbol.into(),
+                decimals,
+            },
+        )
+        .unwrap();
+
+        let token_info = TOKEN_INFO.load(deps.as_ref().storage).unwrap();
+
+        assert_eq!(token_info.name, token_name);
+        assert_eq!(token_info.symbol, token_symbol);
+        assert_eq!(token_info.decimals, decimals);
+
+        assert_eq!(
+            execute(
+                deps.as_mut(),
+                mock_env(),
+                message_info(&Addr::unchecked("invalid_admin"), &[]),
+                ExecuteMsg::UpdateMetadata {
+                    name: token_name.into(),
+                    symbol: token_symbol.into(),
+                    decimals,
+                },
+            ),
+            Err(ContractError::Unauthorized {})
+        );
+    }
+}
