@@ -121,6 +121,11 @@ pub enum QueryMsg {
     GetTokenBucket {
         denom: String,
     },
+    GetChannelBalance {
+        channel_id: ChannelId,
+        path: Uint256,
+        denom: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
