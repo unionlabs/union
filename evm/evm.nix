@@ -446,14 +446,12 @@ _: {
                 --arg height "$(( "$(
                   cast logs 'Initialized(uint64)' \
                     --address "$(
-                      cast impl "$(
                           jq -r \
                             '.[] | select(.chain_id == $chain_id) | .deployments[$key].address' \
                             "$DEPLOYMENTS_FILE" \
                             --arg chain_id "$CHAIN_ID" \
                             --arg key "$key"
-                        )"
-                    )" \
+                        )" \
                     --json \
                   | jq -r '.[0].blockNumber'
                 )" ))" \
@@ -488,15 +486,13 @@ _: {
                     --arg height "$(( "$(
                       cast logs 'Initialized(uint64)' \
                         --address "$(
-                          cast impl "$(
                               jq -r \
                                 '.[] | select(.chain_id == $chain_id) | .deployments[$key][$subkey].address' \
                                 "$DEPLOYMENTS_FILE" \
                                 --arg chain_id "$CHAIN_ID" \
                                 --arg subkey "$subkey" \
                                 --arg key "$key"
-                            )"
-                        )" \
+                            )" \
                         --json \
                       | jq -r '.[0].blockNumber'
                     )" ))" \

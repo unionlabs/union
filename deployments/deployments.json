@@ -242,7 +242,7 @@
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 22273483,
+        "height": 22236429,
         "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
       },
       "lightclient": {
@@ -275,7 +275,7 @@
         },
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
-          "height": 22266999,
+          "height": 22236430,
           "commit": "72149a439c571470833577bf795da5ed81c7c05c"
         }
       }
@@ -296,7 +296,7 @@
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 3652380,
+        "height": 3646604,
         "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
@@ -329,7 +329,7 @@
         },
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
-          "height": 3646605,
+          "height": 3646606,
           "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
         }
       }
@@ -350,7 +350,7 @@
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 8094466,
+        "height": 8088108,
         "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
@@ -404,7 +404,7 @@
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 15924541,
+        "height": 15699438,
         "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
       },
       "lightclient": {
@@ -437,7 +437,7 @@
         },
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
-          "height": 15884736,
+          "height": 15699440,
           "commit": "72149a439c571470833577bf795da5ed81c7c05c"
         }
       }
@@ -458,7 +458,7 @@
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 10991622,
+        "height": 10951499,
         "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
@@ -504,7 +504,7 @@
     "deployments": {
       "multicall": {
         "address": "0x70276995f225df69936eaec02ddece998a9e3662",
-        "height": 396507,
+        "height": 396508,
         "commit": "unknown"
       },
       "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
@@ -512,7 +512,7 @@
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 413623,
+        "height": 392723,
         "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
       },
       "lightclient": {
@@ -533,7 +533,7 @@
         },
         "state-lens/ics23/smt": {
           "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
-          "height": 392724,
+          "height": 392725,
           "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
         }
       },
@@ -545,7 +545,7 @@
         },
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
-          "height": 409251,
+          "height": 392727,
           "commit": "72149a439c571470833577bf795da5ed81c7c05c"
         }
       }
@@ -558,7 +558,7 @@
     "deployments": {
       "multicall": {
         "address": "0x70276995f225df69936eaec02ddece998a9e3662",
-        "height": 182363,
+        "height": 182364,
         "commit": "unknown"
       },
       "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
@@ -566,7 +566,7 @@
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 182375,
+        "height": 181413,
         "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
       },
       "lightclient": {
@@ -582,7 +582,7 @@
         },
         "state-lens/ics23/ics23": {
           "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
-          "height": 181414,
+          "height": 181415,
           "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
         },
         "state-lens/ics23/smt": {
@@ -599,7 +599,7 @@
         },
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
-          "height": 181416,
+          "height": 181417,
           "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
         }
       }
