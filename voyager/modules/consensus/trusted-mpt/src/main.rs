@@ -60,7 +60,7 @@ impl ConsensusModule for Module {
         let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
         info.ensure_chain_id(chain_id.to_string())?;
-        info.ensure_consensus_type(ConsensusType::TRUSTED_MPT)?;
+        info.ensure_consensus_type(ConsensusType::TRUSTED_EVM)?;
 
         Ok(Self {
             chain_id,
