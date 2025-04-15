@@ -24,6 +24,12 @@ pub enum Call {
     WaitForHeight(WaitForHeight),
     WaitForTimestamp(WaitForTimestamp),
 
+    // wait for a window relative to when this message is first handled
+    WaitForHeightRelative(WaitForHeightRelative),
+    // NOTE: impl if needed
+    // WaitForTimestampRelative(WaitForTimestampRelative),
+
+    // wait for counterparty trusted state
     WaitForTrustedHeight(WaitForTrustedHeight),
     WaitForTrustedTimestamp(WaitForTrustedTimestamp),
 
@@ -133,6 +139,13 @@ pub struct WaitForTimestamp {
     pub finalized: bool,
 }
 
+#[model]
+pub struct WaitForHeightRelative {
+    pub chain_id: ChainId,
+    pub height_diff: u64,
+    pub finalized: bool,
+}
+
 /// Wait for the client `.client_id` on `.chain_id` to trust a height >=
 /// `.height`.
 #[model]
@@ -211,7 +224,6 @@ impl CallT<VoyagerMessage> for Call {
                 Err(QueueError::Unprocessable(message.into()))
             }
 
-            // TODO: Replace this with an aggregation
             Call::WaitForHeight(WaitForHeight {
                 chain_id,
                 height,
@@ -278,6 +290,28 @@ impl CallT<VoyagerMessage> for Call {
                         }),
                     ]))
                 }
+            }
+
+            Call::WaitForHeightRelative(WaitForHeightRelative {
+                chain_id,
+                height_diff,
+                finalized,
+            }) => {
+                let chain_height = ctx
+                    .rpc_server
+                    .with_id(Some(ctx.id()))
+                    .query_latest_height(&chain_id, finalized)
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                Ok(seq([
+                    defer(now() + 1),
+                    call(WaitForHeight {
+                        chain_id,
+                        height: chain_height.increment_by(height_diff),
+                        finalized,
+                    }),
+                ]))
             }
 
             Call::WaitForTrustedHeight(WaitForTrustedHeight {
