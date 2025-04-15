@@ -1,7 +1,6 @@
 import * as S from "effect/Schema"
 import { Bech32 } from "./bech32.js"
 import { Uint128 } from "./uint128.js"
-import { Uint64FromString } from "./uint64.js"
 
 export const Coin = S.Struct({ denom: S.String, amount: Uint128 })
 
@@ -25,7 +24,7 @@ export const MsgExecuteContract = S.extend(
 export const Tx = S.Struct({
   body: S.Struct({
     messages: S.NonEmptyArray(MsgExecuteContract)
-  }),
+  })
 })
 
 export type Coin = typeof Coin.Type

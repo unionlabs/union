@@ -7,7 +7,7 @@ import FillingPage from "./pages/FillingPage.svelte"
 import ApprovalPage from "./pages/ApprovalPage.svelte"
 import SubmitPage from "./pages/SubmitPage.svelte"
 import { lockedTransferStore } from "./locked-transfer.svelte.ts"
-import { Effect, Fiber, FiberId, Option } from "effect"
+import { Array as Arr, Effect, Fiber, FiberId, Option } from "effect"
 import * as TransferStep from "./transfer-step.ts"
 import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
 import {
@@ -23,6 +23,8 @@ import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { beforeNavigate } from "$app/navigation"
 import { onMount } from "svelte"
+import Button from "../ui/Button.svelte"
+import { fly, slide } from "svelte/transition"
 
 let currentPage = $state(0)
 let isLoading = $state(false)
@@ -203,7 +205,12 @@ $effect(() => {
     )
 
     if (finalOrders.length > 0) {
-      steps.push(TransferStep.SubmitInstruction({ instruction: finalOrders[0], intents }))
+      steps.push(
+        TransferStep.SubmitInstruction({
+          instruction: finalOrders[0],
+          intents
+        })
+      )
       steps.push(TransferStep.WaitForIndex())
     }
 
@@ -237,17 +244,56 @@ onMount(() => {
 $effect(() => {
   console.log("lukas", transferErrors)
 })
+
+const currentStepTag = $derived(
+  pipe(
+    transferSteps,
+    Option.flatMap(Arr.get(currentPage)),
+    Option.map(x => x._tag),
+    Option.getOrElse(() => "Filling" as const)
+  )
+)
+
+const currentLockedStepTag = $derived(
+  pipe(
+    lockedTransferStore.get(),
+    Option.flatMap(x => x.getStep(currentPage)),
+    Option.map(x => x._tag),
+    Option.getOrNull
+  )
+)
+
+$effect(() => {
+  console.log({
+    currentStepTag,
+    currentLockedStepTag
+  })
+})
+
+const flyLeft = (node: Element) =>
+  fly(node, {
+    x: -300,
+    duration: 200,
+    delay: 100
+  })
+
+const flyRight = (node: Element) =>
+  fly(node, {
+    x: 300,
+    duration: 200,
+    delay: 100
+  })
 </script>
 
 <Card
-        divided
-        class="w-sm mt-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden"
+  divided
+  class="w-sm mt-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden transition-transform duration-500"
 >
   <div class="w-full">
     <StepProgressBar
-            class="w-full"
-            currentStep={currentPage + 1}
-            totalSteps={lockedTransferStore.get().pipe(
+      class="w-full"
+      currentStep={currentPage + 1}
+      totalSteps={lockedTransferStore.get().pipe(
         Option.map((lts) => lts.steps.length),
         Option.getOrElse(() =>
           transferSteps.pipe(
@@ -256,7 +302,7 @@ $effect(() => {
           ),
         ),
       )}
-            stepDescriptions={lockedTransferStore.get().pipe(
+      stepDescriptions={lockedTransferStore.get().pipe(
         Option.map((lts) => lts.steps.map(TransferStep.description)),
         Option.orElse(() =>
           transferSteps.pipe(
@@ -268,50 +314,52 @@ $effect(() => {
     />
   </div>
 
-  <div class="relative flex-1 overflow-hidden">
-    <div
-            class="absolute inset-0 flex transition-transform duration-300 ease-in-out"
-            style="transform: translateX(-{currentPage * 100}%);"
-    >
+  {#if currentStepTag === "Filling"}
+    <div class="flex w-full grow" in:flyRight out:flyLeft>
       <FillingPage
-              onContinue={handleActionButtonClick}
-              {statusMessage}
-              {transferErrors}
-                onErrorClose={() => {
-                transferErrors = Option.none();
-              }}
-              loading={isLoading}
+        onContinue={handleActionButtonClick}
+        {statusMessage}
+        {transferErrors}
+        onErrorClose={() => {
+          transferErrors = Option.none();
+        }}
+        loading={isLoading}
       />
-
-      {#if Option.isSome(lockedTransferStore.get())}
-        {#each lockedTransferStore.get().value.steps.slice(1) as step, i}
-          {#if TransferStep.is("CheckReceiver")(step)}
-            <CheckReceiverPage
-                    stepIndex={i + 1}
-                    onBack={goToPreviousPage}
-                    onSubmit={goToNextPage}
-            />
-          {:else if TransferStep.is("ApprovalRequired")(step)}
-            <ApprovalPage
-                    stepIndex={i + 1}
-                    onBack={goToPreviousPage}
-                    onApprove={handleActionButtonClick}
-                    {actionButtonText}
-            />
-          {:else if TransferStep.is("SubmitInstruction")(step)}
-            <SubmitPage
-                    stepIndex={i + 1}
-                    onCancel={newTransfer}
-                    onSubmit={handleActionButtonClick}
-                    {actionButtonText}
-            />
-          {:else if TransferStep.is("WaitForIndex")(step)}
-            <IndexPage {newTransfer}/>
-          {/if}
-        {/each}
-      {/if}
     </div>
-  </div>
+  {/if}
+
+  {#if currentStepTag === "CheckReceiver"}
+    <div class="flex w-full grow" in:flyLeft out:flyLeft>
+      <CheckReceiverPage
+        stepIndex={currentPage + 1}
+        onBack={goToPreviousPage}
+        onSubmit={goToNextPage}
+      />
+    </div>
+  {/if}
+  {#if currentStepTag === "ApprovalRequired"}
+    <div class="flex w-full grow" in:flyRight out:flyLeft>
+      <ApprovalPage
+        stepIndex={currentPage + 1}
+        onBack={goToPreviousPage}
+        onApprove={handleActionButtonClick}
+        {actionButtonText}
+      />
+    </div>
+  {/if}
+  {#if currentStepTag === "SubmitInstruction"}
+    <div class="flex w-full grow" in:flyLeft out:flyLeft>
+      <SubmitPage
+        stepIndex={currentPage + 1}
+        onCancel={newTransfer}
+        onSubmit={handleActionButtonClick}
+        {actionButtonText}
+      />
+    </div>
+  {/if}
+  {#if currentStepTag === "WaitForIndex"}
+    <IndexPage {newTransfer} />
+  {/if}
 </Card>
 
 {#if showDetails}
@@ -332,4 +380,3 @@ $effect(() => {
     </div>
   {/if}
 {/if}
-

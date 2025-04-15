@@ -4,7 +4,8 @@ import type { HTMLButtonAttributes } from "svelte/elements"
 import type { Snippet } from "svelte"
 
 type Props = HTMLButtonAttributes & {
-  variant?: "primary" | "secondary" | "danger" | "outline" | "icon"
+  variant?: "primary" | "secondary" | "danger" | "outline" | "icon" | "inline"
+  selected?: boolean | undefined
   class?: string
   children: Snippet
 }
@@ -12,6 +13,7 @@ type Props = HTMLButtonAttributes & {
 const {
   variant = "primary",
   disabled = false,
+  selected = false,
   type = "button",
   class: className = "",
   children,
@@ -39,9 +41,14 @@ const classes = cn(
     "bg-red-500 border-red-400 border text-white hover:bg-red-700",
     "focus-visible:ring-red-500"
   ],
+  variant === "inline" && [
+    "text-zinc-500 hover:text-babylon-orange underline decoration-dotted",
+    "focus-visible:text-babylon-orange",
+    selected && "text-babylon-orange"
+  ],
 
   // Height and padding
-  variant !== "icon" ? "h-9 px-4 py-2" : null,
+  ["icon", "inline"].includes(variant) ? null : "h-9 px-4 py-2",
 
   // Additional classes passed as props
   className

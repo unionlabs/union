@@ -1,367 +1,330 @@
 <script lang="ts">
-  import Button from "$lib/components/ui/Button.svelte";
-  import { lockedTransferStore } from "../locked-transfer.svelte.ts";
-  import {
-    Array as Arr,
-    Cause,
-    Effect,
-    Exit,
-    Match,
-    Option,
-    Schema as S,
-    Struct,
-  } from "effect";
-  import {
-    hasFailedExit as evmHasFailedExit,
-    isComplete as evmIsComplete,
-    nextStateEvm,
-    TransactionSubmissionEvm,
-  } from "$lib/components/Transfer/state/evm.ts";
-  import { generateSalt } from "@unionlabs/sdk/utils";
-  import {
-    getConnectorClient,
-    type GetConnectorClientErrorType,
-    http,
-  } from "@wagmi/core";
-  import {
-    createViemPublicClient,
-    createViemWalletClient,
-  } from "@unionlabs/sdk/evm";
-  import { ConnectorClientError } from "$lib/services/transfer";
-  import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.ts";
-  import { custom, encodeAbiParameters, fromHex } from "viem";
-  import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts";
-  import {
-    hasFailedExit as cosmosHasFailedExit,
-    isComplete as cosmosIsComplete,
-    nextStateCosmos,
-    TransactionSubmissionCosmos,
-  } from "$lib/components/Transfer/state/cosmos.ts";
-  import { wallets } from "$lib/stores/wallets.svelte.ts";
-  import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts";
-  import { cosmosStore } from "$lib/wallet/cosmos";
-  import { instructionAbi } from "@unionlabs/sdk/evm/abi";
-  import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction.ts";
-  import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts";
-  import { isValidBech32ContractAddress } from "$lib/utils";
-  import { is } from "../transfer-step.ts";
-  import Label from "$lib/components/ui/Label.svelte";
-  import ChainComponent from "$lib/components/model/ChainComponent.svelte";
-  import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts";
-  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte";
-  import InsetError from "$lib/components/model/InsetError.svelte";
-  import { Tx } from "@unionlabs/sdk/schema/index.ts";
+import Button from "$lib/components/ui/Button.svelte"
+import { lockedTransferStore } from "../locked-transfer.svelte.ts"
+import { Array as Arr, Cause, Effect, Exit, Match, Option, Schema as S, Struct } from "effect"
+import {
+  hasFailedExit as evmHasFailedExit,
+  isComplete as evmIsComplete,
+  nextStateEvm,
+  TransactionSubmissionEvm
+} from "$lib/components/Transfer/state/evm.ts"
+import { generateSalt } from "@unionlabs/sdk/utils"
+import { getConnectorClient, type GetConnectorClientErrorType, http } from "@wagmi/core"
+import { createViemPublicClient, createViemWalletClient } from "@unionlabs/sdk/evm"
+import { ConnectorClientError } from "$lib/services/transfer"
+import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.ts"
+import { custom, encodeAbiParameters, fromHex } from "viem"
+import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
+import {
+  hasFailedExit as cosmosHasFailedExit,
+  isComplete as cosmosIsComplete,
+  nextStateCosmos,
+  TransactionSubmissionCosmos
+} from "$lib/components/Transfer/state/cosmos.ts"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
+import { cosmosStore } from "$lib/wallet/cosmos"
+import { instructionAbi } from "@unionlabs/sdk/evm/abi"
+import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction.ts"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { isValidBech32ContractAddress } from "$lib/utils"
+import { is } from "../transfer-step.ts"
+import Label from "$lib/components/ui/Label.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import InsetError from "$lib/components/model/InsetError.svelte"
+import { Tx } from "@unionlabs/sdk/schema/index.ts"
 
-  type Props = {
-    stepIndex: number;
-    onSubmit: () => void;
-    onCancel?: () => void;
-    actionButtonText: string;
-  };
+type Props = {
+  stepIndex: number
+  onSubmit: () => void
+  onCancel?: () => void
+  actionButtonText: string
+}
 
-  const { stepIndex, onSubmit, onCancel, actionButtonText }: Props = $props();
+const { stepIndex, onSubmit, onCancel, actionButtonText }: Props = $props()
 
-  const lts = lockedTransferStore.get();
-  let showError = $state(false);
-  const step = $derived(
-    lts.pipe(
-      Option.map(Struct.get("steps")),
-      Option.flatMap(Arr.get(stepIndex)),
-      Option.filter(is("SubmitInstruction")),
-    ),
-  );
+const lts = lockedTransferStore.get()
+let showError = $state(false)
+const step = $derived(
+  lts.pipe(
+    Option.map(Struct.get("steps")),
+    Option.flatMap(Arr.get(stepIndex)),
+    Option.filter(is("SubmitInstruction"))
+  )
+)
 
-  const sourceChain = $derived(lts.pipe(Option.map(Struct.get("sourceChain"))));
-  const destinationChain = $derived(
-    lts.pipe(Option.map(Struct.get("destinationChain"))),
-  );
+const sourceChain = $derived(lts.pipe(Option.map(Struct.get("sourceChain"))))
+const destinationChain = $derived(lts.pipe(Option.map(Struct.get("destinationChain"))))
 
-  let ets = $state<TransactionSubmissionEvm>(
-    TransactionSubmissionEvm.Filling(),
-  );
-  let cts = $state<TransactionSubmissionCosmos>(
-    TransactionSubmissionCosmos.Filling(),
-  );
-  let error = $state<Option.Option<unknown>>(Option.none());
-  let isSubmitting = $state(false);
+let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
+let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
+let error = $state<Option.Option<unknown>>(Option.none())
+let isSubmitting = $state(false)
 
-  const needsRetry = $derived(
-    evmHasFailedExit(ets) || cosmosHasFailedExit(cts),
-  );
+const needsRetry = $derived(evmHasFailedExit(ets) || cosmosHasFailedExit(cts))
 
-  const isButtonEnabled = $derived(
-    !isSubmitting &&
-      ((ets._tag === "Filling" && cts._tag === "Filling") || needsRetry),
-  );
+const isButtonEnabled = $derived(
+  !isSubmitting && ((ets._tag === "Filling" && cts._tag === "Filling") || needsRetry)
+)
 
-  const getSubmitButtonText = $derived(
-    ets._tag === "SwitchChainInProgress"
-      ? "Switching Chain..."
-      : ets._tag === "WriteContractInProgress"
-        ? "Confirming Transaction..."
-        : ets._tag === "TransactionReceiptInProgress"
-          ? "Waiting for Receipt..."
-          : cts._tag === "SwitchChainInProgress"
-            ? "Switching Chain..."
-            : cts._tag === "WriteContractInProgress"
-              ? "Confirming Transaction..."
-              : needsRetry
-                ? "Try Again"
-                : actionButtonText,
-  );
+const getSubmitButtonText = $derived(
+  ets._tag === "SwitchChainInProgress"
+    ? "Switching Chain..."
+    : ets._tag === "WriteContractInProgress"
+      ? "Confirming Transaction..."
+      : ets._tag === "TransactionReceiptInProgress"
+        ? "Waiting for Receipt..."
+        : cts._tag === "SwitchChainInProgress"
+          ? "Switching Chain..."
+          : cts._tag === "WriteContractInProgress"
+            ? "Confirming Transaction..."
+            : needsRetry
+              ? "Try Again"
+              : actionButtonText
+)
 
-  // Function to reset state for retry
-  const resetState = () => {
-    ets = TransactionSubmissionEvm.Filling();
-    cts = TransactionSubmissionCosmos.Filling();
-    error = Option.none();
-    isSubmitting = false;
-  };
+// Function to reset state for retry
+const resetState = () => {
+  ets = TransactionSubmissionEvm.Filling()
+  cts = TransactionSubmissionCosmos.Filling()
+  error = Option.none()
+  isSubmitting = false
+}
 
-  export const submit = Effect.gen(function* () {
-    if (Option.isNone(step) || Option.isNone(lts)) return;
+export const submit = Effect.gen(function* () {
+  if (Option.isNone(step) || Option.isNone(lts)) return
 
-    // If we're retrying, reset everything first
-    if (needsRetry) {
-      resetState();
-      return; // Exit and let the button click call this function again
-    }
+  // If we're retrying, reset everything first
+  if (needsRetry) {
+    resetState()
+    return // Exit and let the button click call this function again
+  }
 
-    // Set submitting state
-    isSubmitting = true;
-    error = Option.none();
+  // Set submitting state
+  isSubmitting = true
+  error = Option.none()
 
-    try {
-      const sourceChainRpcType = lts.value.sourceChain.rpc_type;
+  try {
+    const sourceChainRpcType = lts.value.sourceChain.rpc_type
 
-      yield* Match.value(sourceChainRpcType).pipe(
-        Match.when("evm", () =>
-          Effect.gen(function* () {
-            const viemChain = lts.value.sourceChain.toViemChain();
-            if (Option.isNone(viemChain)) return Effect.succeed(null);
+    yield* Match.value(sourceChainRpcType).pipe(
+      Match.when("evm", () =>
+        Effect.gen(function* () {
+          const viemChain = lts.value.sourceChain.toViemChain()
+          if (Option.isNone(viemChain)) return Effect.succeed(null)
 
-            const publicClient = yield* createViemPublicClient({
-              chain: viemChain.value,
-              transport: http(),
-            });
+          const publicClient = yield* createViemPublicClient({
+            chain: viemChain.value,
+            transport: http()
+          })
 
-            const connectorClient = yield* Effect.tryPromise({
-              try: () => getConnectorClient(wagmiConfig),
-              catch: (err) =>
-                new ConnectorClientError({
-                  cause: err as GetConnectorClientErrorType,
-                }),
-            });
+          const connectorClient = yield* Effect.tryPromise({
+            try: () => getConnectorClient(wagmiConfig),
+            catch: err =>
+              new ConnectorClientError({
+                cause: err as GetConnectorClientErrorType
+              })
+          })
 
-            const walletClient = yield* createViemWalletClient({
-              account: connectorClient.account,
-              chain: viemChain.value,
-              transport: custom(connectorClient),
-            });
+          const walletClient = yield* createViemWalletClient({
+            account: connectorClient.account,
+            chain: viemChain.value,
+            transport: custom(connectorClient)
+          })
 
-            do {
-              const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow();
-              const salt = yield* generateSalt("evm");
-              ets = yield* Effect.promise(() =>
-                nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
-                  chain: viemChain.value,
-                  account: connectorClient.account,
-                  address: lts.value.channel.source_port_id,
-                  abi: ucs03ZkgmAbi,
-                  functionName: "send",
-                  args: [
-                    lts.value.channel.source_channel_id,
-                    0n,
-                    timeoutTimestamp,
-                    salt,
-                    {
-                      opcode: step.value.instruction.opcode,
-                      version: step.value.instruction.version,
-                      operand: encodeAbi(step.value.instruction),
-                    },
-                  ],
-                }),
-              );
-
-              if (
-                ets._tag === "SwitchChainComplete" ||
-                ets._tag === "WriteContractComplete"
-              ) {
-                yield* Exit.matchEffect(ets.exit, {
-                  onFailure: (cause) =>
-                    Effect.sync(() => {
-                      error = Option.some(Cause.squash(cause));
-                      console.log(error);
-                    }),
-                  onSuccess: () =>
-                    Effect.sync(() => {
-                      error = Option.none();
-                    }),
-                });
-              }
-
-              const result = evmIsComplete(ets);
-              if (result) {
-                transferHashStore.startPolling(result);
-                onSubmit();
-                break;
-              }
-            } while (!evmHasFailedExit(ets));
-
-            return Effect.succeed(ets);
-          }),
-        ),
-        Match.when("cosmos", () =>
-          Effect.gen(function* () {
-            const signingClient = yield* getCosmWasmClient(
-              lts.value.sourceChain,
-              cosmosStore.connectedWallet,
-            );
-
-            const sender = yield* lts.value.sourceChain.getDisplayAddress(
-              wallets.cosmosAddress.value,
-            );
-            const isNative = !isValidBech32ContractAddress(
-              fromHex(lts.value.baseToken.denom, "string"),
-            );
-
-            do {
-              const timeout_timestamp =
-                getTimeoutInNanoseconds24HoursFromNow().toString();
-              const salt = yield* generateSalt("cosmos");
-              const txToJson = S.encodeUnknown(S.parseJson(Tx));
-              const msg = {
-                send: {
-                  channel_id: lts.value.channel.source_channel_id,
-                  timeout_height: "0",
-                  timeout_timestamp,
+          do {
+            const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
+            const salt = yield* generateSalt("evm")
+            ets = yield* Effect.promise(() =>
+              nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
+                chain: viemChain.value,
+                account: connectorClient.account,
+                address: lts.value.channel.source_port_id,
+                abi: ucs03ZkgmAbi,
+                functionName: "send",
+                args: [
+                  lts.value.channel.source_channel_id,
+                  0n,
+                  timeoutTimestamp,
                   salt,
-                  instruction: encodeAbiParameters(instructionAbi, [
-                    step.value.instruction.version,
-                    step.value.instruction.opcode,
-                    encodeAbi(step.value.instruction),
-                  ]),
-                },
-              };
-
-              const funds = isNative
-                ? [
-                    {
-                      denom: fromHex(lts.value.baseToken.denom, "string"),
-                      amount: step.value.intents[0].baseAmount,
-                    },
-                  ]
-                : undefined;
-
-              const json = yield* txToJson({
-                body: {
-                  messages: [
-                    {
-                      "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
-                      msg,
-                      sender,
-                      contract: fromHex(
-                        lts.value.channel.source_port_id,
-                        "string",
-                      ),
-                      funds,
-                    },
-                  ],
-                },
-              });
-
-              console.log({ json });
-
-              return yield* Effect.fail("do not proceed");
-
-              cts = yield* Effect.promise(() =>
-                nextStateCosmos(
-                  cts,
-                  lts.value.sourceChain,
-                  signingClient,
-                  sender,
-                  fromHex(lts.value.channel.source_port_id, "string"),
-                  // msg in schema (S.Any); full obj
                   {
-                    send: {
-                      channel_id: lts.value.channel.source_channel_id,
-                      timeout_height: "0",
-                      timeout_timestamp,
-                      salt,
-                      instruction: encodeAbiParameters(instructionAbi, [
-                        step.value.instruction.version,
-                        step.value.instruction.opcode,
-                        encodeAbi(step.value.instruction),
-                      ]),
-                    },
-                  },
-                  // funds value; list of `Coin`
-                  // TODO: map evolve
-                  funds,
-                ),
-              );
+                    opcode: step.value.instruction.opcode,
+                    version: step.value.instruction.version,
+                    operand: encodeAbi(step.value.instruction)
+                  }
+                ]
+              })
+            )
 
-              if (
-                cts._tag === "SwitchChainComplete" ||
-                cts._tag === "WriteContractComplete"
-              ) {
-                yield* Exit.matchEffect(cts.exit, {
-                  onFailure: (cause) =>
-                    Effect.sync(() => {
-                      error = Option.some(Cause.squash(cause));
-                    }),
-                  onSuccess: () =>
-                    Effect.sync(() => {
-                      error = Option.none();
-                    }),
-                });
+            if (ets._tag === "SwitchChainComplete" || ets._tag === "WriteContractComplete") {
+              yield* Exit.matchEffect(ets.exit, {
+                onFailure: cause =>
+                  Effect.sync(() => {
+                    error = Option.some(Cause.squash(cause))
+                    console.log(error)
+                  }),
+                onSuccess: () =>
+                  Effect.sync(() => {
+                    error = Option.none()
+                  })
+              })
+            }
+
+            const result = evmIsComplete(ets)
+            if (result) {
+              transferHashStore.startPolling(result)
+              onSubmit()
+              break
+            }
+          } while (!evmHasFailedExit(ets))
+
+          return Effect.succeed(ets)
+        })
+      ),
+      Match.when("cosmos", () =>
+        Effect.gen(function* () {
+          const signingClient = yield* getCosmWasmClient(
+            lts.value.sourceChain,
+            cosmosStore.connectedWallet
+          )
+
+          const sender = yield* lts.value.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
+          const isNative = !isValidBech32ContractAddress(
+            fromHex(lts.value.baseToken.denom, "string")
+          )
+
+          do {
+            const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
+            const salt = yield* generateSalt("cosmos")
+            const txToJson = S.encodeUnknown(S.parseJson(Tx))
+            const msg = {
+              send: {
+                channel_id: lts.value.channel.source_channel_id,
+                timeout_height: "0",
+                timeout_timestamp,
+                salt,
+                instruction: encodeAbiParameters(instructionAbi, [
+                  step.value.instruction.version,
+                  step.value.instruction.opcode,
+                  encodeAbi(step.value.instruction)
+                ])
               }
+            }
 
-              const result = cosmosIsComplete(cts);
-              if (result) {
-                transferHashStore.startPolling(`0x${result}`);
-                onSubmit();
-                break;
+            const funds = isNative
+              ? [
+                  {
+                    denom: fromHex(lts.value.baseToken.denom, "string"),
+                    amount: step.value.intents[0].baseAmount
+                  }
+                ]
+              : undefined
+
+            const json = yield* txToJson({
+              body: {
+                messages: [
+                  {
+                    "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+                    msg,
+                    sender,
+                    contract: fromHex(lts.value.channel.source_port_id, "string"),
+                    funds
+                  }
+                ]
               }
-            } while (!cosmosHasFailedExit(cts));
+            })
 
-            return Effect.succeed(cts);
-          }),
-        ),
-        Match.orElse(() =>
-          Effect.gen(function* () {
-            yield* Effect.log("Unknown chain type");
-            error = Option.some({
-              _tag: "UnknownError",
-              cause: "Unsupported chain type",
-            });
-            return Effect.succeed("unknown chain type");
-          }),
-        ),
-      );
-    } finally {
-      // Reset submitting state when done, regardless of success/failure
-      isSubmitting = false;
-    }
-  });
+            console.log({ json })
 
-  const handleSubmit = () => {
-    error = Option.none();
-    showError = false;
-    if (needsRetry) {
-      resetState();
-      return;
-    }
+            return yield* Effect.fail("do not proceed")
 
-    Effect.runPromise(submit).catch((err) => {
-      console.error("Uncaught error in transfer process:", err);
-      error = Option.some({
-        _tag: err.name || "UnhandledError",
-        cause: err.message || "An unexpected error occurred",
-      });
-      isSubmitting = false;
-    });
-  };
+            cts = yield* Effect.promise(() =>
+              nextStateCosmos(
+                cts,
+                lts.value.sourceChain,
+                signingClient,
+                sender,
+                fromHex(lts.value.channel.source_port_id, "string"),
+                // msg in schema (S.Any); full obj
+                {
+                  send: {
+                    channel_id: lts.value.channel.source_channel_id,
+                    timeout_height: "0",
+                    timeout_timestamp,
+                    salt,
+                    instruction: encodeAbiParameters(instructionAbi, [
+                      step.value.instruction.version,
+                      step.value.instruction.opcode,
+                      encodeAbi(step.value.instruction)
+                    ])
+                  }
+                },
+                // funds value; list of `Coin`
+                // TODO: map evolve
+                funds
+              )
+            )
+
+            if (cts._tag === "SwitchChainComplete" || cts._tag === "WriteContractComplete") {
+              yield* Exit.matchEffect(cts.exit, {
+                onFailure: cause =>
+                  Effect.sync(() => {
+                    error = Option.some(Cause.squash(cause))
+                  }),
+                onSuccess: () =>
+                  Effect.sync(() => {
+                    error = Option.none()
+                  })
+              })
+            }
+
+            const result = cosmosIsComplete(cts)
+            if (result) {
+              transferHashStore.startPolling(`0x${result}`)
+              onSubmit()
+              break
+            }
+          } while (!cosmosHasFailedExit(cts))
+
+          return Effect.succeed(cts)
+        })
+      ),
+      Match.orElse(() =>
+        Effect.gen(function* () {
+          yield* Effect.log("Unknown chain type")
+          error = Option.some({
+            _tag: "UnknownError",
+            cause: "Unsupported chain type"
+          })
+          return Effect.succeed("unknown chain type")
+        })
+      )
+    )
+  } finally {
+    // Reset submitting state when done, regardless of success/failure
+    isSubmitting = false
+  }
+})
+
+const handleSubmit = () => {
+  error = Option.none()
+  showError = false
+  if (needsRetry) {
+    resetState()
+    return
+  }
+
+  Effect.runPromise(submit).catch(err => {
+    console.error("Uncaught error in transfer process:", err)
+    error = Option.some({
+      _tag: err.name || "UnhandledError",
+      cause: err.message || "An unexpected error occurred"
+    })
+    isSubmitting = false
+  })
+}
 </script>
 
 <div class="relative min-w-full p-4 flex flex-col justify-between h-full">
