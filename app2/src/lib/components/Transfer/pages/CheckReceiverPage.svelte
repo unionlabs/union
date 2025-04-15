@@ -17,15 +17,8 @@ const { stepIndex, onBack, onSubmit }: Props = $props()
 
 const lts = lockedTransferStore.get()
 
-let element: HTMLElement
-let observer: IntersectionObserver | null
-
 const step = $derived(
-  lts.pipe(
-    Option.map(Struct.get("steps")),
-    Option.flatMap(Arr.get(stepIndex)),
-    Option.filter(is("CheckReceiver"))
-  )
+  lts.pipe(Option.map(Struct.get("steps")), Option.flatMap(Arr.findFirst(is("CheckReceiver"))))
 )
 
 const receiver = $derived(Option.map(step, x => x.receiver))
@@ -53,18 +46,10 @@ const handleIntersect = () => {
 }
 
 onMount(() => {
-  observer = new IntersectionObserver(handleIntersect, {
-    root: null,
-    rootMargin: "0px",
-    threshold: 0.1 // adjust threshold as needed
-  })
-  observer.observe(element)
+  handleIntersect()
 })
 
 onDestroy(() => {
-  if (observer && element) {
-    observer.unobserve(element)
-  }
   window.clearInterval(intervalId)
 })
 
@@ -108,7 +93,7 @@ $effect(() => {
       </section>
     </div>
 
-    <div class="flex justify-between mt-4" bind:this={element}>
+    <div class="flex justify-between mt-4">
       <Button variant="secondary" onclick={onBack}>Back</Button>
       <Button variant="primary" onclick={onSubmit} disabled={!isButtonEnabled}>
         {buttonText}

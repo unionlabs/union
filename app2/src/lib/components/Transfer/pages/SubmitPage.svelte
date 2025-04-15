@@ -1,7 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { Array as Arr, Cause, Effect, Exit, Match, Option, Schema as S, Struct } from "effect"
+import { Array as Arr, Cause, Effect, Exit, Match, Option, Struct } from "effect"
 import {
   hasFailedExit as evmHasFailedExit,
   isComplete as evmIsComplete,
@@ -34,7 +34,6 @@ import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
-import { Tx } from "@unionlabs/sdk/schema/index.ts"
 
 type Props = {
   stepIndex: number
@@ -48,7 +47,11 @@ const { stepIndex, onSubmit, onCancel, actionButtonText }: Props = $props()
 const lts = lockedTransferStore.get()
 let showError = $state(false)
 const step = $derived(
-  lts.pipe(Option.map(Struct.get("steps")), Option.flatMap(Arr.findFirst(is("SubmitInstruction"))))
+  lts.pipe(
+    Option.map(Struct.get("steps")),
+    Option.flatMap(Arr.get(stepIndex)),
+    Option.filter(is("SubmitInstruction"))
+  )
 )
 
 const sourceChain = $derived(lts.pipe(Option.map(Struct.get("sourceChain"))))
@@ -194,48 +197,6 @@ export const submit = Effect.gen(function* () {
           do {
             const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
             const salt = yield* generateSalt("cosmos")
-            const txToJson = S.encodeUnknown(S.parseJson(Tx))
-            const msg = {
-              send: {
-                channel_id: lts.value.channel.source_channel_id,
-                timeout_height: "0",
-                timeout_timestamp,
-                salt,
-                instruction: encodeAbiParameters(instructionAbi, [
-                  step.value.instruction.version,
-                  step.value.instruction.opcode,
-                  encodeAbi(step.value.instruction)
-                ])
-              }
-            }
-
-            const funds = isNative
-              ? [
-                  {
-                    denom: fromHex(lts.value.baseToken.denom, "string"),
-                    amount: step.value.intents[0].baseAmount
-                  }
-                ]
-              : undefined
-
-            const json = yield* txToJson({
-              body: {
-                messages: [
-                  {
-                    "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
-                    msg,
-                    sender,
-                    contract: fromHex(lts.value.channel.source_port_id, "string"),
-                    funds
-                  }
-                ]
-              }
-            })
-
-            console.log({ json })
-
-            return yield* Effect.fail("do not proceed")
-
             cts = yield* Effect.promise(() =>
               nextStateCosmos(
                 cts,
@@ -243,7 +204,6 @@ export const submit = Effect.gen(function* () {
                 signingClient,
                 sender,
                 fromHex(lts.value.channel.source_port_id, "string"),
-                // msg in schema (S.Any); full obj
                 {
                   send: {
                     channel_id: lts.value.channel.source_channel_id,
@@ -257,9 +217,14 @@ export const submit = Effect.gen(function* () {
                     ])
                   }
                 },
-                // funds value; list of `Coin`
-                // TODO: map evolve
-                funds
+                isNative
+                  ? [
+                      {
+                        denom: fromHex(lts.value.baseToken.denom, "string"),
+                        amount: step.value.intents[0].baseAmount.toString()
+                      }
+                    ]
+                  : undefined
               )
             )
 
