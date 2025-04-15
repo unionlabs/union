@@ -4,7 +4,6 @@ use std::collections::VecDeque;
 
 use alloy::{
     network::AnyNetwork,
-    primitives::U64,
     providers::{DynProvider, Provider, ProviderBuilder},
 };
 use arbitrum_client::finalized_l2_block_of_l1_height;
@@ -438,70 +437,41 @@ impl Module {
             return Ok(data(OrderedHeaders { headers: vec![] }));
         }
 
-        let l1_height_of_l2_settlement_block = l2_settlement_block
-            .other
-            // TODO: Arbitrum network type so we can avoid this
-            .get_deserialized::<U64>("l1BlockNumber")
-            .unwrap()
-            .unwrap()
-            .into_limbs()[0];
-
-        info!("l2 settlement block l1 height {l1_height_of_l2_settlement_block}");
-
-        if l1_client_meta.counterparty_height.height() >= l1_height_of_l2_settlement_block {
-            info!(
-                "l1 client {l1_client} (trusted height {l1_trusted_height}) \
-                is already updated to a height >= the l1 height of closest \
-                settlement l2 block {l1_height_of_l2_settlement_block}",
-                l1_client = arbitrum_client_state.l1_client_id,
-                l1_trusted_height = l1_client_meta.counterparty_height,
-            );
-
-            Ok(call(PluginMessage::new(
-                self.plugin_name(),
-                ModuleCall::from(FetchL2Update {
-                    update_from,
-                    counterparty_chain_id,
-                    client_id,
+        Ok(conc([
+            promise(
+                [call(FetchUpdateHeaders {
+                    client_type: l1_client_info.client_type,
+                    chain_id: l1_client_meta.counterparty_chain_id.clone(),
+                    counterparty_chain_id: counterparty_chain_id.clone(),
+                    client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
+                    update_from: l1_client_meta.counterparty_height,
+                    update_to: l1_latest_height,
+                })],
+                [],
+                AggregateSubmitTxFromOrderedHeaders {
+                    ibc_spec_id: IbcUnion::ID,
+                    chain_id: counterparty_chain_id.clone(),
+                    client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
+                },
+            ),
+            seq([
+                call(WaitForTrustedHeight {
+                    chain_id: counterparty_chain_id.clone(),
+                    ibc_spec_id: IbcUnion::ID,
+                    client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
+                    height: l1_latest_height,
+                    finalized: false,
                 }),
-            )))
-        } else {
-            Ok(conc([
-                promise(
-                    [call(FetchUpdateHeaders {
-                        client_type: l1_client_info.client_type,
-                        chain_id: l1_client_meta.counterparty_chain_id.clone(),
-                        counterparty_chain_id: counterparty_chain_id.clone(),
-                        client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
-                        update_from: l1_client_meta.counterparty_height,
-                        update_to: l1_latest_height,
-                    })],
-                    [],
-                    AggregateSubmitTxFromOrderedHeaders {
-                        ibc_spec_id: IbcUnion::ID,
-                        chain_id: counterparty_chain_id.clone(),
-                        client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
-                    },
-                ),
-                seq([
-                    call(WaitForTrustedHeight {
-                        chain_id: counterparty_chain_id.clone(),
-                        ibc_spec_id: IbcUnion::ID,
-                        client_id: RawClientId::new(arbitrum_client_state.l1_client_id),
-                        height: l1_latest_height,
-                        finalized: false,
+                call(PluginMessage::new(
+                    self.plugin_name(),
+                    ModuleCall::from(FetchL2Update {
+                        update_from,
+                        counterparty_chain_id,
+                        client_id,
                     }),
-                    call(PluginMessage::new(
-                        self.plugin_name(),
-                        ModuleCall::from(FetchL2Update {
-                            update_from,
-                            counterparty_chain_id,
-                            client_id,
-                        }),
-                    )),
-                ]),
-            ]))
-        }
+                )),
+            ]),
+        ]))
     }
 
     #[instrument(
