@@ -8,7 +8,7 @@
       "core": {
         "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
         "height": 461578,
-        "commit": "572203c24f508e14bae4ab7f0b46e9377cea8efb"
+        "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
       },
       "lightclient": {
         "arbitrum": {
@@ -194,7 +194,7 @@
       "core": {
         "address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
         "height": 28972,
-        "commit": "572203c24f508e14bae4ab7f0b46e9377cea8efb"
+        "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
       },
       "lightclient": {
         "cometbls": {
@@ -242,8 +242,8 @@
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 22242649,
-        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
+        "height": 22273483,
+        "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
       },
       "lightclient": {
         "cometbls": {
@@ -404,8 +404,8 @@
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 15737525,
-        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
+        "height": 15924541,
+        "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
       },
       "lightclient": {
         "cometbls": {
@@ -512,8 +512,8 @@
       "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
       "core": {
         "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
-        "height": 396573,
-        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
+        "height": 413623,
+        "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
       },
       "lightclient": {
         "cometbls": {
