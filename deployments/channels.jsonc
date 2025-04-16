@@ -13,25 +13,39 @@
   "babylon.bbn-1": {
     "3": {
       "comments": "ethereum.1 channel 1",
-      "tags": ["canonical"]
+      "tags": [
+        "canonical"
+      ]
     }
   },
   "ethereum.11155111": {
     "1": {
       "comments": "union.union-testnet-10 channel 1",
-      "tags": ["canonical"]
+      "tags": [
+        "canonical"
+      ]
+    },
+    "3": {
+      "comments": "trusted connection to union.union-testnet-10 channel 3 intended for development and testing only",
+      "tags": [
+        "development"
+      ]
     }
   },
   "bob.60808": {
     "1": {
       "comments": "babylon.bbn-1 channel 1",
-      "tags": ["canonical"]
+      "tags": [
+        "canonical"
+      ]
     }
   },
   "corn.21000000": {
     "1": {
       "comments": "babylon.bbn-1 channel 2",
-      "tags": ["canonical"]
+      "tags": [
+        "canonical"
+      ]
     }
   }
 }
