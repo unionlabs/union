@@ -2,7 +2,7 @@ import { Effect, identity, Option } from "effect"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import { isHex, toHex } from "viem"
 import { BalanceLookupError } from "$lib/components/Transfer/state/errors.ts"
-import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
+import type { TransferIntent } from "$lib/components/Transfer/state/filling/create-intents.ts"
 
 const BABY_SUB_AMOUNT = 1n * 10n ** 6n
 const BABYLON_CHAIN_ID = "babylon.bbn-1"
@@ -10,38 +10,43 @@ const UBBN_DENOM = "ubbn"
 
 export type BalanceCheckResult = { _tag: "HasEnough" } | { _tag: "InsufficientFunds" }
 
-export const checkBalanceForIntents = (
-  intents: TransferIntents
+export const checkBalanceForIntent = (
+  intent: TransferIntent
 ): Effect.Effect<BalanceCheckResult, BalanceLookupError> => {
-  console.debug("[checkBalanceForIntents] raw intents:", intents)
+  console.debug("[checkBalanceForIntent] raw contexts:", intent.contexts)
 
-  const grouped = intents.reduce(
-    (acc, intent) => {
-      const token = intent.context.baseToken
-      const key = `${intent.context.sender}_${token}`
-
+  const grouped = intent.contexts
+    .map(context => {
       const needsFee =
-        intent.context.sourceChain.universal_chain_id === BABYLON_CHAIN_ID && token === UBBN_DENOM
-      const required = intent.context.baseAmount + (needsFee ? BABY_SUB_AMOUNT : 0n)
+        context.sourceChain.universal_chain_id === BABYLON_CHAIN_ID &&
+        context.baseToken === UBBN_DENOM
+
+      return {
+        sender: context.sender,
+        baseToken: context.baseToken,
+        required: context.baseAmount + (needsFee ? BABY_SUB_AMOUNT : 0n),
+        source_universal_chain_id: context.sourceChain.universal_chain_id
+      }
+    })
+    .reduce((acc, ctx) => {
+      const key = `${ctx.sender}_${ctx.baseToken}`
 
       if (acc[key]) {
-        acc[key].required += intent.context.baseAmount
+        acc[key].required += ctx.required
       } else {
-        acc[key] = {
-          sender: intent.context.sender,
-          baseToken: token,
-          required,
-          source_universal_chain_id: intent.context.sourceChain.universal_chain_id
-        }
+        acc[key] = ctx
       }
 
       return acc
-    },
-    {} as Record<
+    }, {} as Record<
       string,
-      { sender: string; baseToken: string; required: bigint; source_universal_chain_id: string }
-    >
-  )
+      {
+        sender: string
+        baseToken: string
+        required: bigint
+        source_universal_chain_id: string
+      }
+    >)
 
   const groupedValues = Object.values(grouped)
 
@@ -56,7 +61,7 @@ export const checkBalanceForIntents = (
       }),
       balance => {
         if (!Option.isSome(balance)) {
-          console.warn("[checkBalanceForIntents] ❌ No balance found", group)
+          console.warn("[checkBalanceForIntent] ❌ No balance found", group)
           return Effect.fail(
             new BalanceLookupError({
               cause: "No balance found",
@@ -70,7 +75,7 @@ export const checkBalanceForIntents = (
         const actualBalance = balance.value
         const hasEnough = group.required <= BigInt(actualBalance)
 
-        console.debug("[checkBalanceForIntents] ✅ Found balance", {
+        console.debug("[checkBalanceForIntent] ✅ Found balance", {
           actual: actualBalance.toString(),
           required: group.required.toString(),
           hasEnough
@@ -81,7 +86,9 @@ export const checkBalanceForIntents = (
     )
   ).pipe(
     Effect.map(results =>
-      results.every(identity) ? { _tag: "HasEnough" } : { _tag: "InsufficientFunds" }
+      results.every(identity)
+        ? { _tag: "HasEnough" }
+        : { _tag: "InsufficientFunds" }
     )
   )
 }

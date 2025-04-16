@@ -1,11 +1,11 @@
-import { Array as A, Record as R, Data, Effect, Option, pipe, Struct } from "effect"
+import { Array as A, Record as R, Data, Effect, Option, pipe, Struct, Cause } from "effect"
 import * as S from "effect/Schema"
 import { Tx } from "@unionlabs/sdk/schema"
-import { encodeAbiParameters, fromHex } from "viem"
+import { encodeAbiParameters, fromHex, toHex } from "viem"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction"
 import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
-import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
+import type { TransferIntent } from "$lib/components/Transfer/state/filling/create-intents.ts"
 import { generateSalt } from "@unionlabs/sdk/utils"
 
 export class GenerateMultisigError extends Data.TaggedError("GenerateMultisigError")<{
@@ -13,92 +13,119 @@ export class GenerateMultisigError extends Data.TaggedError("GenerateMultisigErr
   cause?: unknown
 }> {}
 
-export const generateMultisigTx = (intents: TransferIntents) =>
+export const generateMultisigTx = (intent: TransferIntent) =>
   Effect.gen(function* () {
+    console.log("[generateMultisigTx] intent:", JSON.parse(JSON.stringify(intent)))
+
     const txToJson = S.encodeUnknown(S.parseJson(Tx))
-    const timeoutTimestamp = "0" // TODO
-    const isNative = true //TODO
-
+    const sender = yield* intent.contexts[0].sourceChain.getDisplayAddress(intent.contexts[0].sender)
+    const timeoutTimestamp = "0"
+    const isNative = true
     const salt = yield* generateSalt("cosmos")
+    console.log("[generateMultisigTx] generated salt:", salt)
 
-    const intentMessages = pipe(
-      intents,
-      A.map(intent =>
-        pipe(
-          intent,
-          Struct.evolve({
-            allowance: maybeAllowance =>
-              pipe(
-                Option.Do.pipe(
-                  Option.bind("allowance", () => maybeAllowance),
-                  Option.bind("spender", () =>
-                    R.get(cosmosSpenderAddresses, intent.context.sourceChainId)
-                  ),
-                  Option.map(({ allowance, spender }) => ({
-                    "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
-                    sender: intent.context.sender,
-                    // @ts-expect-error
-                    contract: fromHex(allowance.token, "string"),
-                    msg: {
-                      increase_allowance: {
-                        spender,
-                        amount: allowance.requiredAmount.toString()
-                      }
-                    },
-                    funds: []
-                  }))
-                )
-              ),
-            instruction: instruction =>
-              pipe(
-                instruction,
-                Option.map(i =>
-                  encodeAbiParameters(instructionAbi, [i.version, i.opcode, encodeAbi(i)])
-                ),
-                encoded => ({
-                  "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
-                  sender: intent.context.sender,
-                  contract: fromHex(intent.context.ucs03address, "string"),
-                  msg: {
-                    send: {
-                      channel_id: intent.context.sourceChannelId,
-                      timeout_height: "0",
-                      timeout_timestamp: timeoutTimestamp,
-                      salt,
-                      instruction: encoded
-                    }
-                  },
-                  funds: isNative
-                    ? [
-                        {
-                          denom: fromHex(intent.context.baseToken, "string"),
-                          amount: intent.context.baseAmount.toString()
-                        }
-                      ]
-                    : []
-                })
-              )
+    const allowanceMsgs = pipe(
+      intent.allowances,
+      Option.map(allowances =>
+        allowances.flatMap(allowance => {
+          console.log("[allowance] token:", allowance.token)
+          return intent.contexts.flatMap(context => {
+            console.log("[context] sourceChainId:", context.sourceChainId)
+            console.log("[context] sender:", context.sender)
+
+            const maybeSpender = R.get(cosmosSpenderAddresses, context.sourceChainId)
+            if (Option.isNone(maybeSpender)) {
+              console.warn("[warning] no spender for chain:", context.sourceChainId)
+              return []
+            }
+
+            const spender = maybeSpender.value
+            console.log("[spender] resolved:", spender)
+
+            return [
+              {
+                "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+                sender,
+                contract: allowance.token,
+                msg: {
+                  increase_allowance: {
+                    spender,
+                    amount: allowance.requiredAmount
+                  }
+                },
+                funds: []
+              }
+            ]
           })
-        )
-      )
+        })
+      ),
+      Option.getOrElse(() => [])
     )
 
-    const allowanceMessages = pipe(
-      intentMessages,
-      A.map(x => x.allowance),
-      A.getSomes
+    const instructionMsgs = pipe(
+      intent.instruction,
+      Option.map(instruction => {
+        console.log("[instruction] opcode:", instruction.opcode)
+        return intent.contexts.map(context => {
+          console.log("[context] ucs03address:", context.ucs03address)
+          console.log("[context] baseToken:", context.baseToken)
+          console.log("[context] baseAmount:", context.baseAmount)
+
+          const encodedInstruction = encodeAbiParameters(instructionAbi, [
+            instruction.version,
+            instruction.opcode,
+            encodeAbi(instruction)
+          ])
+
+          console.log("[instruction] encodedAbi:", encodedInstruction)
+
+          return {
+            "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
+            sender,
+            contract: context.ucs03address,
+            msg: {
+              send: {
+                channel_id: context.sourceChannelId,
+                timeout_height: "0",
+                timeout_timestamp: timeoutTimestamp,
+                salt,
+                instruction: encodedInstruction
+              }
+            },
+            funds: isNative
+              ? [
+                {
+                  denom: context.baseToken,
+                  amount: context.baseAmount
+                }
+              ]
+              : []
+          }
+        })
+      }),
+      Option.getOrElse(() => [])
     )
 
-    const orderMessages = pipe(
-      intentMessages,
-      A.map(x => x.instruction)
-    )
+    const allMsgs = [...allowanceMsgs, ...instructionMsgs]
+    console.log("[generateMultisigTx] allMsgs count:", allMsgs.length)
+    console.dir(allMsgs)
 
-    const encodedMessages = txToJson({
+    const encoded = txToJson({
       body: {
-        messages: [...allowanceMessages, ...orderMessages]
+        messages: allMsgs
       }
     })
 
-    return yield* encodedMessages
-  })
+    return yield* encoded
+  }).pipe(
+    Effect.catchAll(cause => {
+      console.error("[generateMultisigTx] Fiber failure:", cause)
+
+      return Effect.fail(
+        new GenerateMultisigError({
+          reason: "Failed to generate multisig tx",
+          cause
+        })
+      )
+    })
+  )

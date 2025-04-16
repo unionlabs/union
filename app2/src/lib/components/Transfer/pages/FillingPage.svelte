@@ -6,12 +6,14 @@ import Button from "$lib/components/ui/Button.svelte"
 import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { Match, Option } from "effect"
+import { Match, Option, Schema } from "effect"
 import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Input from "$lib/components/ui/Input.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { getDerivedReceiverSafe } from "$lib/services/shared"
+import {AddressCosmosCanonical, Bech32, Bech32FromAddressCanonicalBytesWithPrefix} from "@unionlabs/sdk/schema";
+import { bech32AddressToHex } from "@unionlabs/client"
 
 type Props = {
   onContinue: () => void
@@ -64,6 +66,11 @@ const uiStatus = $derived.by(() => {
 const isButtonEnabled = $derived.by(() => !loading)
 
 let sender = $state("")
+
+const cosmosAddressFromBech32 = (address: string) => {
+  const hexAddress = bech32AddressToHex({ address })
+  return AddressCosmosCanonical.make(hexAddress)
+}
 </script>
 
 <div class="min-w-full p-4 flex flex-col grow">
@@ -104,14 +111,9 @@ let sender = $state("")
         placeholder="0x123"
         spellcheck="false"
         oninput={(event) => {
-          getDerivedReceiverSafe(event.target.value).pipe(
-            Option.match({
-              onNone: () => {},
-              onSome: (address) => {
-                wallets.addInputAddress(address)
-              }
-            })
-          )
+          console.log(Schema.encodeUnknownSync(Bech32FromAddressCanonicalBytesWithPrefix(''))(event.target.value))
+          wallets.addInputAddress(bech32AddressToHex({address: event.target.value}))
+          console.log(wallets.inputAddress)
         }}
       />
     {/if}

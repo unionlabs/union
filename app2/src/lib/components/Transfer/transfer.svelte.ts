@@ -76,9 +76,9 @@ export class Transfer {
     const sourceChain = this.sourceChain.value
 
     if (Option.isSome(wallets.inputAddress)) {
-      return getDerivedReceiverSafe(wallets.inputAddress.value)
+      console.log('here', wallets.inputAddress.value)
+      return wallets.inputAddress
     }
-
     return wallets.getAddressForChain(sourceChain)
   })
 

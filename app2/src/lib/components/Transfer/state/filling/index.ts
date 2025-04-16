@@ -2,7 +2,7 @@ import { Data, Effect, Match, Option } from "effect"
 import type { Transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import {
   type BalanceCheckResult,
-  checkBalanceForIntents
+  checkBalanceForIntent
 } from "$lib/components/Transfer/state/filling/check-balance.ts"
 import { createOrdersBatch } from "$lib/components/Transfer/state/filling/create-orders.ts"
 import { checkAllowances } from "$lib/components/Transfer/state/filling/check-allowance.ts"
@@ -16,14 +16,13 @@ import {
   type TransferArgs
 } from "$lib/components/Transfer/state/filling/check-filling.ts"
 import { validateTransfer } from "$lib/components/Transfer/validation.ts"
-import { createIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
+import {createIntents, type TransferIntent} from "$lib/components/Transfer/state/filling/create-intents.ts"
 import { constVoid } from "effect/Function"
-import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
 
 export type StateResult = {
   nextState: Option.Option<CreateTransferState>
   message: string
-  intents: Option.Option<TransferIntents>
+  intent: Option.Option<TransferIntent>
   error: Option.Option<TransferFlowError>
 }
 
@@ -31,21 +30,21 @@ export type CreateTransferState = Data.TaggedEnum<{
   Empty: {}
   Filling: {}
   Validation: { args: TransferArgs }
-  CreateIntents: { args: TransferArgs }
+  CreateIntent: { args: TransferArgs }
   CheckBalance: {
-    intents: TransferIntents
+    intent: TransferIntent
   }
   CheckAllowance: {
-    intents: TransferIntents
+    intent: TransferIntent
   }
   CreateOrders: {
-    intents: TransferIntents
+    intent: TransferIntent
   }
   CheckReciever: {
-    intents: TransferIntents
+    intent: TransferIntent
   }
   CreateSteps: {
-    intents: TransferIntents
+    intent: TransferIntent
   }
 }>
 
@@ -53,7 +52,7 @@ export const CreateTransferState = Data.taggedEnum<CreateTransferState>()
 const {
   Empty,
   Validation,
-  CreateIntents,
+  CreateIntent,
   CheckBalance,
   CheckAllowance,
   CreateOrders,
@@ -64,21 +63,21 @@ const {
 const fail = (msg: string, err?: TransferFlowError): StateResult => ({
   nextState: Option.none(),
   message: msg,
-  intents: Option.none(),
+  intent: Option.none(),
   error: err ? Option.some(err) : Option.none()
 })
 
 const ok = (state: CreateTransferState, msg: string): StateResult => ({
   nextState: Option.some(state),
   message: msg,
-  intents: Option.none(),
+  intent: Option.none(),
   error: Option.none()
 })
 
-const complete = (msg: string, intents: TransferIntents): StateResult => ({
+const complete = (msg: string, intents: TransferIntent): StateResult => ({
   nextState: Option.none(),
   message: msg,
-  intents: Option.some(intents),
+  intent: Option.some(intents),
   error: Option.none()
 })
 
@@ -109,27 +108,30 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
       if (validation._tag !== "Success") {
         return Effect.succeed(fail("Validation failed"))
       }
-      return Effect.succeed(ok(CreateIntents({ args }), "Validation passed"))
+      return Effect.succeed(ok(CreateIntent({ args }), "Validation passed"))
     },
 
-    CreateIntents: ({ args }) => {
+    CreateIntent: ({ args }) => {
       const intentsOpt = createIntents(args)
 
       if (Option.isNone(intentsOpt)) {
         return Effect.succeed(fail("Failed to create intents"))
       }
 
-      const intents = intentsOpt.value
+      const intent = intentsOpt.value
 
-      return Effect.succeed(ok(CheckBalance({ intents }), "Checking receiver..."))
+      console.log({intent})
+
+      return Effect.succeed(ok(CheckBalance({ intent }), "Checking receiver1..."))
     },
 
-    CheckBalance: ({ intents }) =>
-      checkBalanceForIntents(intents).pipe(
+    CheckBalance: ({ intent }) => {
+      console.log("[STATE] Entered CheckBalance", intent)
+      return checkBalanceForIntent(intent).pipe(
         Effect.flatMap((result: BalanceCheckResult) =>
           Match.type<BalanceCheckResult>().pipe(
             Match.tag("HasEnough", () =>
-              Effect.succeed(ok(CheckAllowance({ intents }), "Checking allowance..."))
+              Effect.succeed(ok(CheckAllowance({ intent }), "Checking allowance..."))
             ),
             Match.tag("InsufficientFunds", () =>
               Effect.succeed(ok(Empty(), "Insufficient balance"))
@@ -137,28 +139,37 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
             Match.exhaustive
           )(result)
         )
-      ),
+      )
+    },
 
-    CheckAllowance: ({ intents }) =>
-      checkAllowances(intents).pipe(
+    CheckAllowance: ({ intent }) => {
+      console.log("[STATE] Entered CheckAllowance", intent)
+      return checkAllowances(intent).pipe(
         Effect.map(allowancesOpt => {
           const allowances = Option.getOrElse(allowancesOpt, () => [])
 
-          const updatedIntents = intents.map(intent => {
-            const matched = allowances.find(a => a.token === intent.context.baseToken)
-            return {
-              ...intent,
-              allowances: Option.fromNullable(matched)
-            }
-          })
+          const baseTokens = intent.contexts.map(c => c.baseToken)
+          const relevantAllowances = allowances.filter(a =>
+            baseTokens.includes(a.token)
+          )
 
-          return ok(CreateOrders({ intents: updatedIntents }), "Creating orders...")
+          const updatedIntent = {
+            ...intent,
+            allowances: relevantAllowances.length > 0
+              ? Option.some(relevantAllowances)
+              : Option.none()
+          }
+
+          return ok(CreateOrders({ intent: updatedIntent }), "Creating orders...")
         }),
-        Effect.catchAll(error => Effect.succeed(fail("Allowance check failed", error)))
-      ),
+        Effect.catchAll(error =>
+          Effect.succeed(fail("Allowance check failed", error))
+        )
+      )
+    },
 
-    CreateOrders: ({ intents }) =>
-      createOrdersBatch(intents).pipe(
+    CreateOrders: ({ intent }) =>
+      createOrdersBatch(intent).pipe(
         Effect.flatMap(batchOpt => {
           if (Option.isNone(batchOpt)) {
             return Effect.succeed(
@@ -171,26 +182,29 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
 
           const batch = batchOpt.value
 
-          const updatedIntents = intents.map(intent => ({
+          const updatedIntent = {
             ...intent,
-            instructions: Option.some(batch)
-          }))
+            instruction: Option.some(batch)
+          }
 
           return Effect.succeed(
-            ok(CheckReciever({ intents: updatedIntents }), "Checking receiver...")
+            ok(CheckReciever({ intent: updatedIntent }), "Checking receiver...")
           )
         }),
-        Effect.catchAll(error => Effect.succeed(fail("Order creation failed", error)))
+
+        Effect.catchAll(error =>
+          Effect.succeed(fail("Order creation failed", error))
+        )
       ),
 
     //Move check reciever in here
-    CheckReciever: ({ intents }) =>
+    CheckReciever: ({ intent }) =>
       Effect.sleep(1000).pipe(
-        Effect.flatMap(() => Effect.succeed(ok(CreateSteps({ intents }), "Final steps...")))
+        Effect.flatMap(() => Effect.succeed(ok(CreateSteps({ intent }), "Final steps...")))
       ),
 
-    CreateSteps: ({ intents }) => {
-      return Effect.succeed(complete("Transfer ready", intents))
+    CreateSteps: ({ intent }) => {
+      return Effect.succeed(complete("Transfer ready", intent))
     }
   })
 }

@@ -21,7 +21,7 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { beforeNavigate } from "$app/navigation"
 import { onMount } from "svelte"
 import { fly } from "svelte/transition"
-import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
+import type {TransferIntent} from "$lib/components/Transfer/state/filling/create-intents.ts"
 import { generateMultisigTx } from "$lib/utils/multisig.ts"
 
 let currentPage = $state(0)
@@ -62,7 +62,7 @@ let actionButtonText = $derived.by(() => {
 function handleActionButtonClick() {
   if (transfer.signingMode === "multi") {
     console.log("SIGNING MODE IS MULTISIG")
-    const b = Effect.runSync(generateMultisigTx(localIntents))
+    const b = Effect.runSync(generateMultisigTx(localIntent))
     console.log({ b })
     return
   }
@@ -99,7 +99,7 @@ function newTransfer() {
   wallets.clearInputAddress()
 }
 
-let localIntents = $state<TransferIntents>([])
+let localIntent = $state<TransferIntent>()
 
 $effect(() => {
   if (currentPage !== 0) return
@@ -111,7 +111,7 @@ $effect(() => {
 
   const machineEffect = Effect.gen(function* () {
     let currentState: CreateTransferState = CreateTransferState.Filling()
-    let intents: TransferIntents = []
+    let intent: TransferIntent
 
     while (true) {
       const result: StateResult = yield* createTransferState(currentState, transfer)
@@ -130,8 +130,8 @@ $effect(() => {
         continue
       }
 
-      if (Option.isSome(result.intents)) {
-        intents = result.intents.value
+      if (Option.isSome(result.intent)) {
+        intent = result.intent.value
       }
 
       break
@@ -160,32 +160,36 @@ $effect(() => {
       )
     }
 
-    for (const intent of intents) {
-      if (Option.isSome(intent.allowances)) {
-        const allowance = intent.allowances.value
+    if (intent) {
+      localIntent = intent
 
-        steps.push(
-          TransferStep.ApprovalRequired({
-            token: allowance.token,
-            requiredAmount: allowance.requiredAmount,
-            currentAllowance: allowance.currentAllowance,
-            context: intent.context
-          })
-        )
+      if (Option.isSome(intent.allowances)) {
+        const allowances = intent.allowances.value
+
+        for (let i = 0; i < allowances.length; i++) {
+          const allowance = allowances[i]
+          const context = intent.contexts[i]
+
+          steps.push(
+            TransferStep.ApprovalRequired({
+              token: allowance.token,
+              requiredAmount: allowance.requiredAmount,
+              currentAllowance: allowance.currentAllowance,
+              context
+            })
+          )
+        }
       }
 
-      localIntents = intents
+      if (Option.isSome(intent.instruction)) {
+        const instruction = intent.instruction.value
 
-      if (Option.isSome(intent.instructions)) {
-        steps.push(
-          TransferStep.SubmitInstruction({
-            instruction: intent.instructions.value,
-            context: intent.context
-          }),
-          TransferStep.WaitForIndex({
-            context: intent.context
-          })
-        )
+        for (const context of intent.contexts) {
+          steps.push(
+            TransferStep.SubmitInstruction({ instruction, context }),
+            TransferStep.WaitForIndex({ context })
+          )
+        }
       }
     }
 
@@ -307,7 +311,6 @@ const flyRight = (node: Element) =>
 
 </Card>
 
-
 {#if showDetails}
   {#if Option.isSome(transferErrors)}
     <strong>Error</strong>
@@ -326,3 +329,4 @@ const flyRight = (node: Element) =>
     </div>
   {/if}
 {/if}
+

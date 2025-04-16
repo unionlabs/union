@@ -26,21 +26,20 @@ export type TransferContext = {
 }
 
 export type TransferIntent = {
-  context: TransferContext
-  allowance: Option.Option<{
+  contexts: Array<TransferContext>
+  allowances: Option.Option<Array<{
     token: string
     requiredAmount: bigint
     currentAllowance: bigint
-  }>
+  }>>
   instruction: Option.Option<Instruction>
 }
 
-export type TransferIntents = Array<TransferIntent>
 
 const BABY_DECIMALS = 6n
 const BABY_SUB_AMOUNT = 19n * 10n ** BABY_DECIMALS
 
-export const createIntents = (args: TransferArgs): Option.Option<TransferIntents> => {
+export const createIntents = (args: TransferArgs): Option.Option<TransferIntent> => {
   console.debug("[createIntents] args:", args)
 
   let baseAmount: TokenRawAmount
@@ -60,25 +59,27 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
     Match.when("evm", () => {
       console.debug("[createIntents] Creating EVM intent", { baseAmount: baseAmount.toString() })
 
-      return Option.some([
-        {
-          context: {
-            sender: args.sender,
-            receiver: args.receiver,
-            baseToken: args.baseToken,
-            baseAmount: baseAmount,
-            quoteAmount: baseAmount,
-            sourceChain: args.sourceChain,
-            sourceChainId: args.sourceChain.universal_chain_id,
-            sourceChannelId: args.channel.source_channel_id,
-            destinationChain: args.destinationChain,
-            channel: args.channel,
-            ucs03address: args.ucs03address
-          },
-          allowance: Option.none(),
-          instruction: Option.none()
-        }
-      ])
+      const context: TransferContext = {
+        sender: args.sender,
+        receiver: args.receiver,
+        baseToken: args.baseToken,
+        baseAmount,
+        quoteAmount: baseAmount,
+        sourceChain: args.sourceChain,
+        sourceChainId: args.sourceChain.universal_chain_id,
+        sourceChannelId: args.channel.source_channel_id,
+        destinationChain: args.destinationChain,
+        channel: args.channel,
+        ucs03address: args.ucs03address
+      }
+
+      const intent: TransferIntent = {
+        contexts: [context],
+        allowances: Option.none(),
+        instruction: Option.none()
+      }
+
+      return Option.some(intent)
     }),
 
     Match.when("cosmos", () => {
@@ -89,25 +90,27 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
           ? ((baseAmount + BABY_SUB_AMOUNT) as TokenRawAmount)
           : baseAmount
 
-      return Option.some([
-        {
-          context: {
-            sender: args.sender,
-            receiver: args.receiver.toLowerCase(),
-            baseToken: tokenName,
-            baseAmount: baseAmountWithFee,
-            quoteAmount: baseAmount,
-            sourceChain: args.sourceChain,
-            sourceChainId: args.sourceChain.universal_chain_id,
-            sourceChannelId: args.channel.source_channel_id,
-            destinationChain: args.destinationChain,
-            channel: args.channel,
-            ucs03address: args.ucs03address
-          },
-          allowance: Option.none(),
-          instruction: Option.none()
-        }
-      ])
+      const context: TransferContext = {
+        sender: args.sender,
+        receiver: args.receiver.toLowerCase(),
+        baseToken: tokenName,
+        baseAmount: baseAmountWithFee,
+        quoteAmount: baseAmount,
+        sourceChain: args.sourceChain,
+        sourceChainId: args.sourceChain.universal_chain_id,
+        sourceChannelId: args.channel.source_channel_id,
+        destinationChain: args.destinationChain,
+        channel: args.channel,
+        ucs03address: args.ucs03address
+      }
+
+      const intent: TransferIntent = {
+        contexts: [context],
+        allowances: Option.none(),
+        instruction: Option.none()
+      }
+
+      return Option.some(intent)
     }),
 
     Match.orElse(() => {
@@ -116,3 +119,4 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
     })
   )
 }
+
