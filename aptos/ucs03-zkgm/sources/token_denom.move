@@ -5,11 +5,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -73,8 +73,9 @@ module zkgm::fa_coin {
     use aptos_framework::primary_fungible_store;
     use std::error;
     use std::signer;
-    use std::string::{Self};
+    use std::string::{Self, String};
     use std::option;
+    use std::vector;
 
     /// Only fungible asset metadata owner can make changes.
     const E_NOT_OWNER: u64 = 1;
@@ -112,8 +113,8 @@ module zkgm::fa_coin {
         primary_fungible_store::create_primary_store_enabled_fungible_asset(
             constructor_ref,
             option::none(),
-            name,
-            symbol,
+            sanitize_token_name(name),
+            sanitize_token_symbol(symbol),
             decimals,
             icon,
             project
@@ -179,6 +180,11 @@ module zkgm::fa_coin {
     #[view]
     public fun symbol_with_metadata(asset: Object<Metadata>): string::String {
         fungible_asset::symbol<Metadata>(asset)
+    }
+
+    #[view]
+    public fun decimals_with_metadata(asset: Object<Metadata>): u8 {
+        fungible_asset::decimals<Metadata>(asset)
     }
 
     /// Deposit function override to ensure that the account is not denylisted and the FA coin is not paused.
@@ -317,11 +323,75 @@ module zkgm::fa_coin {
         borrow_global<ManagedFungibleAsset>(object::object_address(&asset))
     }
 
+    public fun sanitize_token_str(name: String, max_len: u64): String {
+        let len = string::length(&name);
+        if (len > max_len) {
+            let token_name = string::sub_string(&name, len - max_len, len);
+            let i = max_len - 1;
+            let bytes = string::bytes(&token_name);
+            while (i > 0) {
+                if (*vector::borrow(bytes, i) == 47 /* '/' */ && i != max_len - 1) {
+                    return string::sub_string(&token_name, i + 1, max_len)
+                };
+                i = i - 1;
+            };
+            token_name
+        } else { name }
+    }
+
+    public fun sanitize_token_name(name: String): String {
+        sanitize_token_str(name, 32)
+    }
+
+    public fun sanitize_token_symbol(symbol: String): String {
+        sanitize_token_str(symbol, 10)
+    }
+
     const TEST_NAME: vector<u8> = b"Test Coin";
     const TEST_SYMBOL: vector<u8> = b"TST";
     const TEST_DECIMALS: u8 = 8;
     const TEST_ICON: vector<u8> = b"https://example.com/icon.png";
     const TEST_PROJECT: vector<u8> = b"Test Project";
+
+    #[test]
+    fun test_sanitize_token_works() {
+        use std::string::utf8;
+        assert!(
+            sanitize_token_name(utf8(b"alesdnleansdf")) == utf8(b"alesdnleansdf"),
+            1
+        );
+        assert!(
+            sanitize_token_name(
+                utf8(b"verylongverylongverylongverylongverylongverylongverylongverylong")
+            ) == utf8(b"verylongverylongverylongverylong"),
+            2
+        );
+        assert!(
+            sanitize_token_name(
+                utf8(b"factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown")
+            ) == utf8(b"clown"),
+            3
+        );
+        assert!(
+            sanitize_token_name(
+                utf8(b"factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown/")
+            ) == utf8(b"clown/"),
+            4
+        );
+
+        assert!(
+            sanitize_token_symbol(
+                utf8(b"verylongverylongverylongverylongverylongverylongverylongverylong")
+            ) == utf8(b"ngverylong"),
+            5
+        );
+        assert!(
+            sanitize_token_symbol(
+                utf8(b"factory/union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua/clown")
+            ) == utf8(b"clown"),
+            6
+        );
+    }
 
     #[test(creator = @0x28873b2d4265e6e14bc0739ef876dce858f06380905279ed090b82d0c75f6e57)]
     public fun test_burn_with_metadata(creator: &signer) acquires ManagedFungibleAsset {

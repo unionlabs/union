@@ -1,12 +1,12 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult};
+use frissitheto::UpgradeMsg;
 use ibc_union_light_client::{
     msg::{InitMsg, QueryMsg},
     IbcClientError,
 };
 use serde::{Deserialize, Serialize};
-use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::client::EthereumLightClient;
 

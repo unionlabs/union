@@ -9,8 +9,9 @@ _: {
       ...
     }:
     let
+      # https://releases.rs/
       # https://rust-lang.github.io/rustup-components-history/
-      nightlyVersion = "2024-10-11";
+      nightlyVersion = "2025-03-28";
       defaultChannel = "nightly-${nightlyVersion}";
 
       # # hopefully if we ever use wasi this issue will be resolved: https://github.com/NixOS/nixpkgs/pull/146274
@@ -51,9 +52,9 @@ _: {
       #   });
 
       rustSrc =
-        (dbg (mkToolchain {
+        (mkToolchain {
           components = [ availableComponents.rust-src ];
-        })).passthru.availableComponents.rust-src;
+        }).passthru.availableComponents.rust-src;
 
       mkToolchain =
         {
@@ -79,7 +80,7 @@ _: {
           channel ? defaultChannel,
         }:
         mkToolchain {
-          inherit targets;
+          inherit targets channel;
           components = with availableComponents; [
             rustc
             cargo

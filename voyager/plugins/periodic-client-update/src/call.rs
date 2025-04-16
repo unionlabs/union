@@ -1,6 +1,6 @@
 use macros::model;
 use voyager_message::{
-    core::{ChainId, IbcSpecId},
+    primitives::{ChainId, IbcSpecId},
     RawClientId,
 };
 use voyager_vm::BoxDynError;

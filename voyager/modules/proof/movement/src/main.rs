@@ -22,9 +22,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::ChainId,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
+    primitives::ChainId,
     rpc::ProofType,
     ProofModule,
 };

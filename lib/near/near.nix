@@ -3,7 +3,6 @@ _: {
     {
       self',
       lib,
-      unstablePkgs,
       pkgs,
       system,
       config,
@@ -112,8 +111,7 @@ _: {
         };
       };
 
-      near-light-client = crane.buildWasmContract {
-        crateDirFromRoot = "lib/near/near-light-client";
+      near-light-client = crane.buildWasmContract "lib/near/near-light-client" {
         extraBuildInputs = [
           pkgs.pkg-config
           pkgs.openssl
@@ -123,8 +121,7 @@ _: {
         extraNativeBuildInputs = [ pkgs.clang ];
       };
 
-      dummy-ibc-app = crane.buildWasmContract {
-        crateDirFromRoot = "lib/near/dummy-ibc-app";
+      dummy-ibc-app = crane.buildWasmContract "lib/near/dummy-ibc-app" {
         extraBuildInputs = [
           pkgs.pkg-config
           pkgs.openssl
@@ -134,8 +131,7 @@ _: {
         extraNativeBuildInputs = [ pkgs.clang ];
       };
 
-      near-ibc = crane.buildWasmContract {
-        crateDirFromRoot = "lib/near/near-ibc";
+      near-ibc = crane.buildWasmContract "lib/near/near-ibc" {
         extraBuildInputs = [
           pkgs.pkg-config
           pkgs.openssl

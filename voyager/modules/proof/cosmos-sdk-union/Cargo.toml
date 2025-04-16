@@ -12,17 +12,18 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-clap                     = { workspace = true, features = ["derive"] }
-cometbft-rpc             = { workspace = true }
-ibc-union-spec.workspace = true
-jsonrpsee                = { workspace = true, features = ["macros", "server", "tracing"] }
-prost                    = { workspace = true }
-protos                   = { workspace = true }
-serde                    = { workspace = true, features = ["derive"] }
-serde_json               = { workspace = true }
-thiserror                = { workspace = true }
-tokio                    = { workspace = true }
-tracing                  = { workspace = true }
-unionlabs                = { workspace = true }
-voyager-message          = { workspace = true }
-voyager-vm               = { workspace = true }
+clap            = { workspace = true, features = ["derive"] }
+cometbft-rpc    = { workspace = true }
+embed-commit    = { workspace = true }
+ibc-union-spec  = { workspace = true, features = ["serde"] }
+jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
+prost           = { workspace = true }
+protos          = { workspace = true }
+serde           = { workspace = true, features = ["derive"] }
+serde_json      = { workspace = true }
+thiserror       = { workspace = true }
+tokio           = { workspace = true }
+tracing         = { workspace = true }
+unionlabs       = { workspace = true }
+voyager-message = { workspace = true }
+voyager-vm      = { workspace = true }

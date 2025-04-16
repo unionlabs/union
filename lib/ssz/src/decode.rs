@@ -100,15 +100,15 @@ pub(crate) fn sanitize_offset(
     num_bytes: usize,
     num_fixed_bytes: Option<usize>,
 ) -> Result<usize, DecodeError> {
-    if num_fixed_bytes.map_or(false, |fixed_bytes| offset < fixed_bytes) {
+    if num_fixed_bytes.is_some_and(|fixed_bytes| offset < fixed_bytes) {
         Err(DecodeError::OffsetIntoFixedPortion(offset))
     } else if previous_offset.is_none()
-        && num_fixed_bytes.map_or(false, |fixed_bytes| offset != fixed_bytes)
+        && num_fixed_bytes.is_some_and(|fixed_bytes| offset != fixed_bytes)
     {
         Err(DecodeError::OffsetSkipsVariableBytes(offset))
     } else if offset > num_bytes {
         Err(DecodeError::OffsetOutOfBounds(offset))
-    } else if previous_offset.map_or(false, |prev| prev > offset) {
+    } else if previous_offset.is_some_and(|prev| prev > offset) {
         Err(DecodeError::OffsetsAreDecreasing(offset))
     } else {
         Ok(offset)

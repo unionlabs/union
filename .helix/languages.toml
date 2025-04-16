@@ -1,3 +1,9 @@
+[language-server.nixd]
+command = "nixd"
+
+[language-server.nixd.config.nixpkgs]
+expr = "import (builtins.getFlake (builtins.toString ./.)).inputs.nixpkgs { }"
+
 [language-server.astro-ls]
 args    = ["--stdio"]
 command = "astro-ls"
@@ -106,6 +112,15 @@ name = "svelte"
 roots = ["svelte.config.js"]
 scope = "source.svelte"
 
+[[language]]
+comment-token    = "#"
+file-types       = ["nix"]
+indent           = { tab-width = 2, unit = "  " }
+injection-regex  = "nix"
+language-servers = ["nixd"]
+name             = "nix"
+scope            = "source.nix"
+shebangs         = []
 
 [[grammar]]
 name   = "astro"

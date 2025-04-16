@@ -17,9 +17,10 @@ aptos-rest-client = { workspace = true }
 aptos-types       = { workspace = true }
 bcs               = { workspace = true }
 clap              = { workspace = true, features = ["derive"] }
+embed-commit      = { workspace = true }
 enumorph          = { workspace = true }
 ibc-solidity      = { workspace = true }
-ibc-union-spec    = { workspace = true }
+ibc-union-spec    = { workspace = true, features = ["serde"] }
 jsonrpsee         = { workspace = true, features = ["macros", "server", "tracing"] }
 macros            = { workspace = true }
 move-bindgen      = { workspace = true }

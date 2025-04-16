@@ -14,7 +14,7 @@ workspace = true
 [dependencies]
 alloy                                   = { workspace = true, features = ["sol-types"] }
 beacon-api-types                        = { workspace = true, features = ["serde"] }
-chain-utils                             = { workspace = true }
+embed-commit                            = { workspace = true }
 enumorph                                = { workspace = true }
 ethereum-light-client-types             = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 futures                                 = { workspace = true }

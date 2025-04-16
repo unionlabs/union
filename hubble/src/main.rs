@@ -10,6 +10,7 @@ use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
 mod cli;
+mod github_fetcher;
 mod healthz;
 mod indexer;
 mod logging;
@@ -74,6 +75,19 @@ async fn main() -> color_eyre::eyre::Result<()> {
     };
 
     set.spawn(token_fetcher);
+
+    let github_fetcher_db = db.clone();
+    let github_fetcher = async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(60));
+        interval.tick().await;
+        loop {
+            info!("updating subscriptions");
+            github_fetcher::update_subscriptions(&github_fetcher_db).await?;
+            interval.tick().await;
+        }
+    };
+
+    set.spawn(github_fetcher);
 
     while let Some(res) = set.join_next().await {
         match res {

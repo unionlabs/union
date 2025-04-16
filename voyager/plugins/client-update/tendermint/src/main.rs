@@ -1,23 +1,34 @@
-use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
+#![warn(clippy::unwrap_used)]
+
+use std::{
+    collections::VecDeque,
+    error::Error,
+    fmt::{Debug, Display},
+    num::ParseIntError,
+};
 
 use cometbft_types::types::{validator::Validator, validator_set::ValidatorSet};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tendermint_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{encoding::HexUnprefixed, H160},
+    ErrorReporter,
 };
 use voyager_message::{
     call::Call,
-    core::{ChainId, ClientType},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
+    into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientType},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
 use voyager_vm::{data, pass::PassResult, BoxDynError, Op, Visit};
@@ -73,7 +84,7 @@ impl Plugin for Module {
 
         let chain_revision = chain_id
             .split('-')
-            .last()
+            .next_back()
             .ok_or_else(|| ChainIdParseError {
                 found: chain_id.clone(),
                 source: None,
@@ -169,29 +180,36 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 update_from,
                 update_to,
             }) => {
+                let trusted_height = update_from
+                    .increment()
+                    .height()
+                    .try_into()
+                    .expect("valid height");
+                let untrusted_height = update_to.height().try_into().expect("valid height");
+
                 let trusted_commit = self
                     .cometbft_client
-                    .commit(Some(update_from.increment().height().try_into().unwrap()))
+                    .commit(Some(trusted_height))
                     .await
-                    .unwrap();
+                    .map_err(rpc_error("trusted commit", None))?;
 
                 let untrusted_commit = self
                     .cometbft_client
-                    .commit(Some(update_to.height().try_into().unwrap()))
+                    .commit(Some(untrusted_height))
                     .await
-                    .unwrap();
+                    .map_err(rpc_error("untrusted commit", None))?;
 
                 let trusted_validators = self
                     .cometbft_client
-                    .all_validators(Some(update_from.increment().height().try_into().unwrap()))
+                    .all_validators(Some(trusted_height))
                     .await
-                    .unwrap();
+                    .map_err(rpc_error("trusted validators", None))?;
 
                 let untrusted_validators = self
                     .cometbft_client
-                    .all_validators(Some(update_to.height().try_into().unwrap()))
+                    .all_validators(Some(untrusted_height))
                     .await
-                    .unwrap();
+                    .map_err(rpc_error("untrusted validators", None))?;
 
                 let header = Header {
                     validator_set: mk_validator_set(
@@ -210,10 +228,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 };
 
                 Ok(data(OrderedHeaders {
-                    headers: vec![(
-                        DecodedHeaderMeta { height: update_to },
-                        serde_json::to_value(header).unwrap(),
-                    )],
+                    headers: vec![(DecodedHeaderMeta { height: update_to }, into_value(header))],
                 }))
             }
         }
@@ -237,7 +252,7 @@ fn mk_validator_set(
     let proposer = validators
         .iter()
         .find(|val| val.address == proposer_address)
-        .unwrap()
+        .expect("proposer must exist in set")
         .clone();
 
     let total_voting_power = validators
@@ -249,5 +264,16 @@ fn mk_validator_set(
         validators,
         proposer,
         total_voting_power,
+    }
+}
+
+fn rpc_error<E: Error>(
+    message: impl Display,
+    data: Option<Value>,
+) -> impl FnOnce(E) -> ErrorObjectOwned {
+    move |e| {
+        let message = format!("{message}: {}", ErrorReporter(e));
+        // error!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
+        ErrorObject::owned(-1, message, data)
     }
 }

@@ -16,6 +16,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cosmwasm-std             = { workspace = true, features = ["abort"] }
+embed-commit             = { workspace = true }
 ethereum-light-client    = { workspace = true, features = ["mainnet", "library"] }
 gnark-mimc               = { workspace = true }
 ics008-wasm-client       = { workspace = true }

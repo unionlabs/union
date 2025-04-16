@@ -10,9 +10,9 @@ use macros::model;
 use tracing::{debug, instrument, warn};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
-    call::{SubmitTx, WaitForTrustedHeight},
-    core::{ChainId, ClientStateMeta, QueryHeight},
+    call::{SubmitTx, WaitForClientUpdate},
     data::{Data, IbcDatagram, OrderedHeaders},
+    primitives::{ChainId, ClientStateMeta, QueryHeight},
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, noop, promise, seq, Op};
@@ -61,8 +61,8 @@ where
             })
             .ok();
 
-        let client_meta = voyager_client
-            .client_meta::<V>(
+        let client_state_meta = voyager_client
+            .client_state_meta::<V>(
                 module_server.chain_id.clone(),
                 QueryHeight::Latest,
                 self.client_id.clone(),
@@ -79,14 +79,14 @@ where
                     .0
                     .height
             })
-            .unwrap_or(client_meta.counterparty_height);
+            .unwrap_or(client_state_meta.counterparty_height);
 
         make_msgs(
             module_server,
             self.client_id,
             self.batches,
             updates,
-            client_meta,
+            client_state_meta,
             new_trusted_height,
         )
     }
@@ -98,8 +98,8 @@ where
         chain_id = %module_server.chain_id,
         %client_id,
         has_updates = updates.is_some(),
-        client_meta.height = %client_meta.counterparty_height,
-        client_meta.chain_id = %client_meta.counterparty_chain_id,
+        client_state_meta.counterparty_height = %client_state_meta.counterparty_height,
+        client_state_meta.counterparty_chain_id = %client_state_meta.counterparty_chain_id,
         %new_trusted_height
     )
 )]
@@ -111,7 +111,7 @@ pub fn make_msgs<V: IbcSpecExt>(
 
     updates: Option<OrderedHeaders>,
 
-    client_meta: ClientStateMeta,
+    client_state_meta: ClientStateMeta,
     new_trusted_height: Height,
 ) -> RpcResult<Op<VoyagerMessage>>
 where
@@ -128,7 +128,7 @@ where
                     new_trusted_height
                 );
 
-                let origin_chain_id = client_meta.counterparty_chain_id.clone();
+                let origin_chain_id = client_state_meta.counterparty_chain_id.clone();
                 let target_chain_id = module_server.chain_id.clone();
 
                 debug!(
@@ -246,12 +246,11 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
                         V::proof_height(msgs.peek().expect("msgs is non-empty; qed;"));
 
                     Ok(seq([
-                        call(WaitForTrustedHeight {
+                        call(WaitForClientUpdate {
                             chain_id: chain_id.clone(),
                             client_id: RawClientId::new(self.client_id.clone()),
                             ibc_spec_id: V::ID,
                             height: required_consensus_height,
-                            finalized: false,
                         }),
                         call(SubmitTx {
                             chain_id,

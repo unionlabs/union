@@ -437,7 +437,7 @@ impl<'a, T: BitfieldBehaviour> IntoIterator for &'a Bitfield<T> {
 ///
 /// `bit_len == 0` requires a single byte.
 const fn bytes_for_bit_len(bit_len: usize) -> usize {
-    let v2 = (bit_len + 7) / 8;
+    let v2 = bit_len.div_ceil(8);
 
     if v2 >= 1 {
         v2

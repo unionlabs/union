@@ -4,12 +4,12 @@ _: {
       pkgs,
       lib,
       mkCi,
-      jsPkgs,
+      pkgsUnstable,
       ensureAtRepositoryRoot,
       ...
     }:
     let
-      deps = with jsPkgs; [
+      deps = with pkgsUnstable; [
         pkg-config
         nodePackages_latest.nodejs
       ];
@@ -18,7 +18,7 @@ _: {
     {
       packages = {
         site = mkCi false (
-          jsPkgs.buildNpmPackage {
+          pkgsUnstable.buildNpmPackage {
             npmDepsHash = "sha256-7d6a0+QgKn2xUvVU2jtWX2nGYynAb0nIrgnO/mOCAVs=";
             src = ./.;
             sourceRoot = "site";

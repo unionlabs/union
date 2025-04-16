@@ -3,10 +3,9 @@
 use alloy::{
     eips::BlockNumberOrTag,
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
-    rpc::types::BlockTransactionsKind,
 };
 use beacon_api::client::BeaconApiClient;
-use beacon_api_types::{PresetBaseKind, Slot};
+use beacon_api_types::{chain_spec::PresetBaseKind, custom_types::Slot};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -16,8 +15,8 @@ use serde::{Deserialize, Serialize};
 use tracing::{instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
 use voyager_message::{
-    core::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
+    primitives::{ChainId, ConsensusType, Timestamp},
     ConsensusModule,
 };
 use voyager_vm::BoxDynError;
@@ -52,6 +51,38 @@ pub struct Config {
 }
 
 impl Module {
+    /// Returns (block_number, timestamp)
+    async fn query_latest_execution_meta(&self) -> RpcResult<(u64, u64)> {
+        Ok(self
+            .beacon_api_client
+            .finality_update()
+            .await
+            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
+            .fold(
+                |f| match f {},
+                |_| todo!(),
+                |_| todo!(),
+                |f| {
+                    (
+                        f.finalized_header.execution.block_number,
+                        f.finalized_header.execution.timestamp,
+                    )
+                },
+                |f| {
+                    (
+                        f.finalized_header.execution.block_number,
+                        f.finalized_header.execution.timestamp,
+                    )
+                },
+                |f| {
+                    (
+                        f.finalized_header.execution.block_number,
+                        f.finalized_header.execution.timestamp,
+                    )
+                },
+            ))
+    }
+
     // TODO: Deduplicate this from ethereum client-update plugin
     #[instrument(skip_all, fields(block_number))]
     async fn beacon_slot_of_execution_block_number(&self, block_number: u64) -> RpcResult<Slot> {
@@ -59,7 +90,8 @@ impl Module {
 
         let block = self
             .provider
-            .get_block((block_number + 1).into(), BlockTransactionsKind::Hashes)
+            .get_block((block_number + 1).into())
+            .hashes()
             .await
             .map_err(|e| {
                 ErrorObject::owned(
@@ -85,13 +117,19 @@ impl Module {
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching block: {}", ErrorReporter(e)),
+                    format!("error fetching beacon block: {}", ErrorReporter(e)),
                     None::<()>,
                 )
             })?
-            .data
-            .message
-            .slot;
+            .response
+            .fold(
+                |b| b.message.slot,
+                |b| b.message.slot,
+                |b| b.message.slot,
+                |b| b.message.slot,
+                |b| b.message.slot,
+                |b| b.message.slot,
+            );
 
         trace!("beacon slot of exution block {block_number} is {beacon_slot}");
 
@@ -106,7 +144,7 @@ impl ConsensusModule for Module {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
-                .on_builtin(&config.rpc_url)
+                .connect(&config.rpc_url)
                 .await?,
         );
 
@@ -146,10 +184,9 @@ impl ConsensusModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
     async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
         if finalized {
-            self.beacon_api_client
-                .finality_update()
+            self.query_latest_execution_meta()
                 .await
-                .map(|response| Height::new(response.data.finalized_header.execution.block_number))
+                .map(|meta| Height::new(meta.0))
                 .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
         } else {
             self.provider
@@ -168,20 +205,11 @@ impl ConsensusModuleServer for Module {
         finalized: bool,
     ) -> RpcResult<Timestamp> {
         let latest_timestamp = if finalized {
-            self.beacon_api_client
-                .finality_update()
-                .await
-                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
-                .data
-                .finalized_header
-                .execution
-                .timestamp
+            self.query_latest_execution_meta().await?.1
         } else {
             self.provider
-                .get_block(
-                    BlockNumberOrTag::Latest.into(),
-                    BlockTransactionsKind::Hashes,
-                )
+                .get_block(BlockNumberOrTag::Latest.into())
+                .hashes()
                 .await
                 .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
                 .ok_or_else(|| ErrorObject::owned(-1, "latest block not found", None::<()>))?

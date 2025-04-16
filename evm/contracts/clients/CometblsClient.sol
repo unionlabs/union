@@ -1,9 +1,10 @@
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
 import "../core/02-client/ILightClient.sol";
 import "../core/24-host/IBCStore.sol";
@@ -12,6 +13,7 @@ import "../lib/Common.sol";
 import "../lib/ICS23.sol";
 import "../lib/CometblsZKVerifier.sol";
 import "../lib/ICS23Verifier.sol";
+import "../internal/Versioned.sol";
 
 struct SignedHeader {
     uint64 height;
@@ -176,7 +178,7 @@ library CometblsClientLib {
 
     function chainIdToString(
         bytes31 source
-    ) external pure returns (string memory result) {
+    ) internal pure returns (string memory result) {
         uint8 offset = 0;
         while (source[offset] == 0 && offset < 31) {
             offset++;
@@ -197,38 +199,43 @@ contract CometblsClient is
     ILightClient,
     Initializable,
     UUPSUpgradeable,
-    OwnableUpgradeable,
-    PausableUpgradeable
+    AccessManagedUpgradeable,
+    PausableUpgradeable,
+    Versioned
 {
     using CometblsClientLib for *;
 
-    address private ibcHandler;
+    address public immutable IBC_HANDLER;
 
     mapping(uint32 => ClientState) private clientStates;
     mapping(uint32 => mapping(uint64 => ConsensusState)) private consensusStates;
-    mapping(uint32 => mapping(uint64 => ProcessedMoment)) private
-        processedMoments;
 
-    constructor() {
+    constructor(
+        address _ibcHandler
+    ) {
         _disableInitializers();
+        IBC_HANDLER = _ibcHandler;
     }
 
     function initialize(
-        address _ibcHandler,
-        address admin
+        address authority
     ) public initializer {
-        __Ownable_init(admin);
-        ibcHandler = _ibcHandler;
+        __AccessManaged_init(authority);
+        __UUPSUpgradeable_init();
+        __Pausable_init();
     }
 
     function createClient(
+        address,
         uint32 clientId,
         bytes calldata clientStateBytes,
-        bytes calldata consensusStateBytes
+        bytes calldata consensusStateBytes,
+        address
     )
         external
         override
         onlyIBC
+        whenNotPaused
         returns (
             ConsensusStateUpdate memory update,
             string memory counterpartyChainId
@@ -253,9 +260,11 @@ contract CometblsClient is
     }
 
     function misbehaviour(
+        address,
         uint32 clientId,
-        bytes calldata clientMessageBytes
-    ) external override onlyIBC {
+        bytes calldata clientMessageBytes,
+        address
+    ) external override onlyIBC whenNotPaused {
         Misbehaviour calldata m = clientMessageBytes.decodeMisbehaviour();
         ClientState storage clientState = clientStates[clientId];
         bool fraud =
@@ -302,6 +311,23 @@ contract CometblsClient is
                 // Misbehaviour of time violation
                 return true;
             }
+        }
+        return false;
+    }
+
+    function checkOverwriteMisbehavior(
+        uint64 untrustedTimestamp,
+        bytes32 untrustedAppHash,
+        bytes32 untrustedNextValidatorsHash,
+        ConsensusState storage overwrittenConsensusState
+    ) internal returns (bool) {
+        if (
+            untrustedTimestamp != overwrittenConsensusState.timestamp
+                || untrustedAppHash != overwrittenConsensusState.appHash
+                || untrustedNextValidatorsHash
+                    != overwrittenConsensusState.nextValidatorsHash
+        ) {
+            return true;
         }
         return false;
     }
@@ -371,11 +397,18 @@ contract CometblsClient is
     }
 
     function updateClient(
+        address,
         uint32 clientId,
-        bytes calldata clientMessageBytes
-    ) external override onlyIBC returns (ConsensusStateUpdate memory) {
+        bytes calldata clientMessageBytes,
+        address
+    )
+        external
+        override
+        onlyIBC
+        whenNotPaused
+        returns (ConsensusStateUpdate memory)
+    {
         ClientState storage clientState = clientStates[clientId];
-
         if (clientState.frozenHeight > 0) {
             revert CometblsClientLib.ErrClientFrozen();
         }
@@ -394,11 +427,25 @@ contract CometblsClient is
         }
 
         consensusState = consensusStates[clientId][untrustedHeightNumber];
-        consensusState.timestamp = untrustedTimestamp;
-        consensusState.appHash = header.signedHeader.appHash;
-        consensusState.nextValidatorsHash =
-            header.signedHeader.nextValidatorsHash;
-
+        // Verify misbehavior on overwrite
+        if (consensusState.timestamp != 0) {
+            if (
+                checkOverwriteMisbehavior(
+                    untrustedTimestamp,
+                    header.signedHeader.appHash,
+                    header.signedHeader.nextValidatorsHash,
+                    consensusState
+                )
+            ) {
+                clientState.frozenHeight = 1;
+            }
+            // Noop
+        } else {
+            consensusState.timestamp = untrustedTimestamp;
+            consensusState.appHash = header.signedHeader.appHash;
+            consensusState.nextValidatorsHash =
+                header.signedHeader.nextValidatorsHash;
+        }
         return ConsensusStateUpdate({
             clientStateCommitment: clientState.commit(),
             consensusStateCommitment: consensusState.commit(),
@@ -412,7 +459,7 @@ contract CometblsClient is
         bytes calldata proof,
         bytes calldata path,
         bytes calldata value
-    ) external virtual returns (bool) {
+    ) external virtual whenNotPaused returns (bool) {
         if (isFrozenImpl(clientId)) {
             revert CometblsClientLib.ErrClientFrozen();
         }
@@ -421,9 +468,12 @@ contract CometblsClient is
         return ICS23Verifier.verifyMembership(
             appHash,
             proof,
-            abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
+            IBCStoreLib.WASMD_MODULE_STORE_KEY,
             abi.encodePacked(
-                IBCStoreLib.COMMITMENT_PREFIX_PATH, contractAddress, path
+                IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
+                contractAddress,
+                IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
+                path
             ),
             value
         );
@@ -434,7 +484,7 @@ contract CometblsClient is
         uint64 height,
         bytes calldata proof,
         bytes calldata path
-    ) external virtual returns (bool) {
+    ) external virtual whenNotPaused returns (bool) {
         if (isFrozenImpl(clientId)) {
             revert CometblsClientLib.ErrClientFrozen();
         }
@@ -443,9 +493,12 @@ contract CometblsClient is
         return ICS23Verifier.verifyNonMembership(
             appHash,
             proof,
-            abi.encodePacked(IBCStoreLib.COMMITMENT_PREFIX),
+            IBCStoreLib.WASMD_MODULE_STORE_KEY,
             abi.encodePacked(
-                IBCStoreLib.COMMITMENT_PREFIX_PATH, contractAddress, path
+                IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
+                contractAddress,
+                IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
+                path
             )
         );
     }
@@ -478,7 +531,7 @@ contract CometblsClient is
 
     function isFrozen(
         uint32 clientId
-    ) external view virtual returns (bool) {
+    ) external view virtual whenNotPaused returns (bool) {
         return isFrozenImpl(clientId);
     }
 
@@ -573,10 +626,18 @@ contract CometblsClient is
 
     function _authorizeUpgrade(
         address newImplementation
-    ) internal override onlyOwner {}
+    ) internal override restricted {}
+
+    function pause() public restricted {
+        _pause();
+    }
+
+    function unpause() public restricted {
+        _unpause();
+    }
 
     function _onlyIBC() internal view {
-        if (msg.sender != ibcHandler) {
+        if (msg.sender != IBC_HANDLER) {
             revert CometblsClientLib.ErrNotIBC();
         }
     }

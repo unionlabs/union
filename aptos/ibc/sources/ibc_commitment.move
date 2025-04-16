@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -80,8 +80,15 @@ module ibc::commitment {
     const NEXT_SEQ_RECV: u256 = 0x07;
     const NEXT_SEQ_ACK: u256 = 0x08;
 
+    friend ibc::acknowledge_packet;
+    friend ibc::channel_handshake;
+    friend ibc::ibc;
+    friend ibc::recv_packet;
+    friend ibc::state_lens_ics23_ics23_lc;
+    friend ibc::state_lens_ics23_mpt_lc;
+
     // Generate the path for client state
-    public fun client_state_path(client_id: u32): vector<u8> {
+    public(friend) fun client_state_path(client_id: u32): vector<u8> {
         let state_path = vector::empty();
         let client_State = bcs::to_bytes<u256>(&CLIENT_STATE);
         vector::reverse(&mut client_State);
@@ -93,7 +100,9 @@ module ibc::commitment {
     }
 
     // Updated function: consensus_state_path
-    public fun consensus_state_path(client_id: u32, revision_height: u64): vector<u8> {
+    public(friend) fun consensus_state_path(
+        client_id: u32, revision_height: u64
+    ): vector<u8> {
         let state_path = vector::empty<u8>();
 
         let consensus_state_bytes = bcs::to_bytes<u256>(&CONSENSUS_STATE);
@@ -112,7 +121,7 @@ module ibc::commitment {
     }
 
     // Generate the path for connection
-    public fun connection_path(connection_id: u32): vector<u8> {
+    public(friend) fun connection_path(connection_id: u32): vector<u8> {
         let connection_path = vector::empty<u8>();
 
         let connections_bytes = bcs::to_bytes<u256>(&CONNECTIONS);
@@ -126,7 +135,7 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun channel_path(channel_id: u32): vector<u8> {
+    public(friend) fun channel_path(channel_id: u32): vector<u8> {
         let channel_path = vector::empty<u8>();
 
         let channels_bytes = bcs::to_bytes<u256>(&CHANNELS);
@@ -140,7 +149,9 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun packet_commitment_path(channel_id: u32, sequence: u64): vector<u8> {
+    public(friend) fun packet_commitment_path(
+        channel_id: u32, sequence: u64
+    ): vector<u8> {
         let path_vec = vector::empty<u8>();
 
         let channels_bytes = bcs::to_bytes<u256>(&PACKETS);
@@ -158,7 +169,7 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun batch_packets_commitment_path(
+    public(friend) fun batch_packets_commitment_path(
         channel_id: u32, batchHash: vector<u8>
     ): vector<u8> {
         let path_vec = vector::empty<u8>();
@@ -176,7 +187,7 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun batch_receipts_commitment_path(
+    public(friend) fun batch_receipts_commitment_path(
         channel_id: u32, batchHash: vector<u8>
     ): vector<u8> {
         let path_vec = vector::empty<u8>();
@@ -194,7 +205,7 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun next_sequence_send_commitment_path(channel_id: u32): vector<u8> {
+    public(friend) fun next_sequence_send_commitment_path(channel_id: u32): vector<u8> {
         let path_vec = vector::empty<u8>();
 
         let channels_bytes = bcs::to_bytes<u256>(&NEXT_SEQ_SEND);
@@ -209,7 +220,7 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun next_sequence_recv_commitment_path(channel_id: u32): vector<u8> {
+    public(friend) fun next_sequence_recv_commitment_path(channel_id: u32): vector<u8> {
         let path_vec = vector::empty<u8>();
 
         let channels_bytes = bcs::to_bytes<u256>(&NEXT_SEQ_RECV);
@@ -224,7 +235,7 @@ module ibc::commitment {
     }
 
     // Generate the path for channel
-    public fun next_sequence_ack_commitment_path(channel_id: u32): vector<u8> {
+    public(friend) fun next_sequence_ack_commitment_path(channel_id: u32): vector<u8> {
         let path_vec = vector::empty<u8>();
 
         let channels_bytes = bcs::to_bytes<u256>(&NEXT_SEQ_ACK);
@@ -238,49 +249,51 @@ module ibc::commitment {
         path_vec
     }
 
-    public fun client_state_commitment_key(channel_id: u32): vector<u8> {
+    public(friend) fun client_state_commitment_key(channel_id: u32): vector<u8> {
         keccak256(client_state_path(channel_id))
     }
 
-    public fun consensus_state_commitment_key(
+    public(friend) fun consensus_state_commitment_key(
         channel_id: u32, height: u64
     ): vector<u8> {
         keccak256(consensus_state_path(channel_id, height))
     }
 
-    public fun connection_commitment_key(channel_id: u32): vector<u8> {
+    public(friend) fun connection_commitment_key(channel_id: u32): vector<u8> {
         keccak256(connection_path(channel_id))
     }
 
-    public fun channel_commitment_key(channel_id: u32): vector<u8> {
+    public(friend) fun channel_commitment_key(channel_id: u32): vector<u8> {
         keccak256(channel_path(channel_id))
     }
 
-    public fun packet_commitment_key(channel_id: u32, sequence: u64): vector<u8> {
+    public(friend) fun packet_commitment_key(
+        channel_id: u32, sequence: u64
+    ): vector<u8> {
         keccak256(packet_commitment_path(channel_id, sequence))
     }
 
-    public fun batch_packets_commitment_key(
+    public(friend) fun batch_packets_commitment_key(
         channel_id: u32, batch_hash: vector<u8>
     ): vector<u8> {
         keccak256(batch_packets_commitment_path(channel_id, batch_hash))
     }
 
-    public fun batch_receipts_commitment_key(
+    public(friend) fun batch_receipts_commitment_key(
         channel_id: u32, batch_hash: vector<u8>
     ): vector<u8> {
         keccak256(batch_receipts_commitment_path(channel_id, batch_hash))
     }
 
-    public fun next_sequence_send_commitment_key(channel_id: u32): vector<u8> {
+    public(friend) fun next_sequence_send_commitment_key(channel_id: u32): vector<u8> {
         keccak256(next_sequence_send_commitment_path(channel_id))
     }
 
-    public fun next_sequence_recv_commitment_key(channel_id: u32): vector<u8> {
+    public(friend) fun next_sequence_recv_commitment_key(channel_id: u32): vector<u8> {
         keccak256(next_sequence_recv_commitment_path(channel_id))
     }
 
-    public fun next_sequence_ack_commitment_key(channel_id: u32): vector<u8> {
+    public(friend) fun next_sequence_ack_commitment_key(channel_id: u32): vector<u8> {
         keccak256(next_sequence_ack_commitment_path(channel_id))
     }
 
@@ -288,7 +301,7 @@ module ibc::commitment {
         keccak256(packet::encode(packet))
     }
 
-    public fun commit_packets(packets: &vector<Packet>): vector<u8> {
+    public(friend) fun commit_packets(packets: &vector<Packet>): vector<u8> {
         let buf = vector::empty();
 
         ethabi::encode_dyn_array(
@@ -302,7 +315,7 @@ module ibc::commitment {
         buf
     }
 
-    public fun commit_acks(acks: vector<vector<u8>>): vector<u8> {
+    public(friend) fun commit_acks(acks: vector<vector<u8>>): vector<u8> {
         let buf = vector::empty();
         ethabi::encode_dyn_array(
             &mut buf,
@@ -320,21 +333,25 @@ module ibc::commitment {
         ack
     }
 
-    public fun commit_ack(ack: vector<u8>): vector<u8> {
+    public(friend) fun commit_ack(ack: vector<u8>): vector<u8> {
         merge_ack(keccak256(ack))
     }
 
     #[test]
-    fun test_commit_ack(){
-        let buf = x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
+    fun test_commit_ack() {
+        let buf =
+            x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
         let val = commit_ack(buf);
-        assert!(val == x"01773c7d3e6e60a7ccaa29208f2ef3aa86fe273271dec70f60866a6c8c908762", 13);
+        assert!(
+            val == x"01773c7d3e6e60a7ccaa29208f2ef3aa86fe273271dec70f60866a6c8c908762",
+            13
+        );
     }
 
-
     #[test]
-    fun test_commit_acks(){
-        let buf = x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
+    fun test_commit_acks() {
+        let buf =
+            x"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000";
         let vect = vector::empty();
         vector::push_back(&mut vect, buf);
         let val = commit_acks(vect);
@@ -357,7 +374,7 @@ module ibc::commitment {
     // }
 
     // // Generate the path for packet commitment
-    // public fun packet_path(
+    // public(friend) fun packet_path(
     //     port_id: String, channel_id: String, sequence: u64
     // ): String {
     //     let path = string::utf8(b"commitments/ports/");
@@ -370,7 +387,7 @@ module ibc::commitment {
     // }
 
     // // Generate the path for packet acknowledgment commitment
-    // public fun packet_acknowledgement_path(
+    // public(friend) fun packet_acknowledgement_path(
     //     port_id: String, channel_id: String, sequence: u64
     // ): String {
     //     let path = string::utf8(b"acks/ports/");
@@ -383,7 +400,7 @@ module ibc::commitment {
     // }
 
     // // Generate the path for packet receipt commitment
-    // public fun packet_receipt_path(
+    // public(friend) fun packet_receipt_path(
     //     port_id: String, channel_id: String, sequence: u64
     // ): String {
     //     let path = string::utf8(b"receipts/ports/");
@@ -396,7 +413,7 @@ module ibc::commitment {
     // }
 
     // // Generate the path for next sequence send commitment
-    // public fun next_sequence_send_path(
+    // public(friend) fun next_sequence_send_path(
     //     port_id: String, channel_id: String
     // ): String {
     //     let path = string::utf8(b"nextSequenceSend/ports/");
@@ -407,7 +424,7 @@ module ibc::commitment {
     // }
 
     // // Generate the path for next sequence receive commitment
-    // public fun next_sequence_recv_path(
+    // public(friend) fun next_sequence_recv_path(
     //     port_id: String, channel_id: String
     // ): String {
     //     let path = string::utf8(b"nextSequenceRecv/ports/");
@@ -418,7 +435,7 @@ module ibc::commitment {
     // }
 
     // // Generate the path for next sequence acknowledge commitment
-    // public fun next_sequence_ack_path(port_id: String, channel_id: String): String {
+    // public(friend) fun next_sequence_ack_path(port_id: String, channel_id: String): String {
     //     let path = string::utf8(b"nextSequenceAck/ports/");
     //     string::append(&mut path, port_id);
     //     string::append_utf8(&mut path, b"/channels/");
@@ -427,57 +444,57 @@ module ibc::commitment {
     // }
 
     // // Key generation functions
-    // public fun client_state_key(client_id: u32): vector<u8> {
+    // public(friend) fun client_state_key(client_id: u32): vector<u8> {
     //     client_state_path(client_id)
     // }
 
-    // public fun consensus_state_key(client_id: u32, height: Height): vector<u8> {
+    // public(friend) fun consensus_state_key(client_id: u32, height: Height): vector<u8> {
     //     consensus_state_path(
     //         client_id,
     //         height::get_revision_height(&height)
     //     )
     // }
 
-    // public fun connection_key(connection_id: u32): vector<u8> {
+    // public(friend) fun connection_key(connection_id: u32): vector<u8> {
     //     connection_path(connection_id)
     // }
 
-    // public fun channel_key(port_id: String, channel_id: String): vector<u8> {
+    // public(friend) fun channel_key(port_id: String, channel_id: String): vector<u8> {
     //     *string::bytes(&channel_path(port_id, channel_id))
     // }
 
-    // public fun packet_key(
+    // public(friend) fun packet_key(
     //     port_id: String, channel_id: String, sequence: u64
     // ): vector<u8> {
     //     *string::bytes(&packet_path(port_id, channel_id, sequence))
     // }
 
-    // public fun packet_acknowledgement_key(
+    // public(friend) fun packet_acknowledgement_key(
     //     port_id: String, channel_id: String, sequence: u64
     // ): vector<u8> {
     //     *string::bytes(&packet_acknowledgement_path(port_id, channel_id, sequence))
     // }
 
-    // public fun packet_receipt_key(
+    // public(friend) fun packet_receipt_key(
     //     port_id: String, channel_id: String, sequence: u64
     // ): vector<u8> {
     //     *string::bytes(&packet_receipt_path(port_id, channel_id, sequence))
     // }
 
-    // public fun next_sequence_send_key(port_id: String, channel_id: String): vector<u8> {
+    // public(friend) fun next_sequence_send_key(port_id: String, channel_id: String): vector<u8> {
     //     *string::bytes(&next_sequence_send_path(port_id, channel_id))
     // }
 
-    // public fun next_sequence_recv_key(port_id: String, channel_id: String): vector<u8> {
+    // public(friend) fun next_sequence_recv_key(port_id: String, channel_id: String): vector<u8> {
     //     *string::bytes(&next_sequence_recv_path(port_id, channel_id))
     // }
 
-    // public fun next_sequence_ack_key(port_id: String, channel_id: String): vector<u8> {
+    // public(friend) fun next_sequence_ack_key(port_id: String, channel_id: String): vector<u8> {
     //     *string::bytes(&next_sequence_ack_path(port_id, channel_id))
     // }
 
     // #[test]
-    // public fun test_client_state_path(){
+    // public(friend) fun test_client_state_path(){
     //     let test = client_state_path(54);
     //     std::debug::print(&test);
     //     assert!(test == x"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000036", 1000);

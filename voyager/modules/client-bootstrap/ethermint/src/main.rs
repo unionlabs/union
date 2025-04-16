@@ -21,9 +21,9 @@ use unionlabs::{
     result_unwrap, ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientType},
     ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    primitives::{ChainId, ClientType},
     rpc::json_rpc_error_to_error_object,
     ClientBootstrapModule,
 };
@@ -72,7 +72,7 @@ impl ClientBootstrapModule for Module {
 
         let chain_revision = chain_id
             .split('-')
-            .last()
+            .next_back()
             .ok_or_else(|| ChainIdParseError {
                 found: chain_id.clone(),
                 source: None,

@@ -26,7 +26,7 @@ use crate::{
             provider::{Provider, RpcProviderId},
         },
     },
-    postgres::{fetch_or_insert_chain_id_tx, ChainId},
+    postgres::{fetch_chain_id_tx, ChainId},
 };
 
 pub trait ToLowerHex {
@@ -272,9 +272,7 @@ impl FetcherClient for EthFetcherClient {
         async move {
             let mut tx = pg_pool.begin().await?;
 
-            let chain_id = fetch_or_insert_chain_id_tx(&mut tx, chain_id.to_string())
-                .await?
-                .get_inner_logged();
+            let chain_id = fetch_chain_id_tx(&mut tx, chain_id.to_string()).await?;
 
             tx.commit().await?;
 

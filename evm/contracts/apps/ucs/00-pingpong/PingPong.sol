@@ -1,13 +1,14 @@
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 
 import "../../Base.sol";
 import "../../../core/25-handler/IBCHandler.sol";
-import "../03-zkgm/IEurekaModule.sol";
+import "../03-zkgm/IZkgmable.sol";
 
 // Protocol specific packet
 struct PingPongPacket {
@@ -26,7 +27,13 @@ library PingPongLib {
     event Ring(bool ping);
     event TimedOut();
     event Acknowledged();
-    event Zkgoblim(uint32 channelId, bytes sender, bytes message);
+    event Zkgoblim(
+        uint256 path,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        bytes sender,
+        bytes message
+    );
 
     function encode(
         PingPongPacket memory packet
@@ -46,14 +53,14 @@ contract PingPong is
     IBCAppBase,
     Initializable,
     UUPSUpgradeable,
-    OwnableUpgradeable,
+    AccessManagedUpgradeable,
     PausableUpgradeable,
-    IEurekaModule
+    IZkgmable,
+    Versioned
 {
     using PingPongLib for *;
 
     IIBCPacket private ibcHandler;
-    uint32 private _gap0;
     uint64 private timeout;
     address private zkgmProtocol;
 
@@ -63,10 +70,10 @@ contract PingPong is
 
     function initialize(
         IIBCPacket _ibcHandler,
-        address admin,
+        address _authority,
         uint64 _timeout
     ) public initializer {
-        __Ownable_init(admin);
+        __AccessManaged_init(_authority);
         ibcHandler = _ibcHandler;
         timeout = _timeout;
     }
@@ -92,6 +99,7 @@ contract PingPong is
     }
 
     function onRecvPacket(
+        address,
         IBCPacket calldata packet,
         address,
         bytes calldata
@@ -120,6 +128,7 @@ contract PingPong is
     }
 
     function onAcknowledgementPacket(
+        address,
         IBCPacket calldata,
         bytes calldata acknowledgement,
         address
@@ -139,17 +148,19 @@ contract PingPong is
     }
 
     function onTimeoutPacket(
+        address,
         IBCPacket calldata,
         address
     ) external virtual override onlyIBC {
         /*
-            Similarly to the onAcknowledgementPacket function, this indicates a failure to deliver the packet in expected time.
-            A sophisticated protocol would revert the action done before sending this packet.
+          Similarly to the onAcknowledgementPacket function, this indicates a failure to deliver the packet in expected time.
+          A sophisticated protocol would revert the action done before sending this packet.
         */
         emit PingPongLib.TimedOut();
     }
 
     function onChanOpenInit(
+        address,
         uint32,
         uint32,
         string calldata,
@@ -157,6 +168,7 @@ contract PingPong is
     ) external virtual override onlyIBC {}
 
     function onChanOpenTry(
+        address,
         uint32,
         uint32,
         uint32,
@@ -166,6 +178,7 @@ contract PingPong is
     ) external virtual override onlyIBC {}
 
     function onChanOpenAck(
+        address,
         uint32 channelId,
         uint32,
         string calldata,
@@ -173,11 +186,13 @@ contract PingPong is
     ) external virtual override onlyIBC {}
 
     function onChanOpenConfirm(
+        address,
         uint32 channelId,
         address
     ) external virtual override onlyIBC {}
 
     function onChanCloseInit(
+        address,
         uint32,
         address
     ) external virtual override onlyIBC {
@@ -186,6 +201,7 @@ contract PingPong is
     }
 
     function onChanCloseConfirm(
+        address,
         uint32,
         address
     ) external virtual override onlyIBC {
@@ -195,22 +211,29 @@ contract PingPong is
 
     function _authorizeUpgrade(
         address newImplementation
-    ) internal override onlyOwner {}
+    ) internal override restricted {}
 
     function setZkgm(
         address zkgm
-    ) public onlyOwner {
+    ) public restricted {
         zkgmProtocol = zkgm;
     }
 
     function onZkgm(
-        uint32 channelId,
+        address caller,
+        uint256 path,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
         bytes calldata sender,
-        bytes calldata message
+        bytes calldata message,
+        address relayer,
+        bytes calldata relayerMsg
     ) public {
         if (msg.sender != zkgmProtocol) {
             revert PingPongLib.ErrOnlyZKGM();
         }
-        emit PingPongLib.Zkgoblim(channelId, sender, message);
+        emit PingPongLib.Zkgoblim(
+            path, sourceChannelId, destinationChannelId, sender, message
+        );
     }
 }

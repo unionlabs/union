@@ -1,13 +1,13 @@
 import { fromHex, http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { createUnionClient, hexToBytes } from "#mod.ts"
+import { createUnionClient, hexToBytes } from "../src/mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
   getRecommendedChannels //,
   // Channel
-} from "#query/offchain/ucs03-channels"
+} from "../src/query/offchain/ucs03-channels.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 type Channel = {
@@ -63,11 +63,11 @@ if (channel_info === null) {
     source_chain_id: SOURCE_CHAIN_ID,
     source_port_id:
       "756e696f6e3178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c32343763717a3636396565",
-    source_channel_id: 18,
-    source_connection_id: 23,
+    source_channel_id: 27,
+    source_connection_id: 36,
     destination_chain_id: DESTINATION_CHAIN_ID,
-    destination_port_id: "0x7e385b7c720b279f6871bbd409dd2fb026d3193e2b40c705e8896d51141c1076",
-    destination_channel_id: 1,
+    destination_port_id: "0x80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
+    destination_channel_id: 2,
     destination_connection_id: 1
   }
 }
@@ -85,7 +85,7 @@ let quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, MUNO_DENOM, channel_info)
 quoteToken = {
   type: "UNWRAPPED",
   value: {
-    quote_token: `0x5b8dc541f42c8f31fceaf74f40e3e450a058406ca370779f96b25776c88f672e`
+    quote_token: `0x188b41399546602e35658962477fdf72bd52443474a899d9d48636e8bc299c2c`
   }
 }
 

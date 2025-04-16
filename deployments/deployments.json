@@ -1,342 +1,608 @@
 [
   {
-    "chain_id": "union-devnet-1",
+    "universal_chain_id": "union.union-1",
+    "chain_id": "union-1",
     "ibc_interface": "ibc-cosmwasm",
     "deployments": {
+      "deployer": "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a",
       "core": {
-        "address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73",
-        "height": 1
+        "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
+        "height": 461578,
+        "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
       },
       "lightclient": {
         "arbitrum": {
-          "address": "union17tnf6a36lneq0eh03z6x5l5flq9efsdd5ew5pycjexn6e0pzrrusc4vd5m",
-          "height": 1
+          "address": "union1xwfgw7n6vwgkyv8syjskzak7lh8kmrcthmv2jsmywhyunekmg3zqul8vsh",
+          "height": 461749,
+          "commit": "a0184eba9783c05ef86275386d2ea95d7630d22f"
         },
         "berachain": {
-          "address": "union16h8dcc0930707wgh8fdw25swx6fa94eecsqr78kazq05ayqfg0ns7pc04d",
-          "height": 1
+          "address": "union12dx3w0pxkpyguf4xrx79zkhk0lvzewyqtjjngqmhuajjgu5qm6uq2rvlr7",
+          "height": 461753,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "bob": {
+          "address": "union1lsn5mm3hf9cxqetp2dx47x7tq4kvxpk66e7v8c4d2j4cajrg7hsq0v877s",
+          "height": 461757,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
         },
         "ethereum": {
-          "address": "union16r7cfhgdhnhp5dgmkx7h79q463ax2jut2smwdv7j7lclua6mer8sfq95rd",
-          "height": 1
+          "address": "union1a3gz55rhudakew7p3hccjarn8rk70guxnuqrw58tl00f5x4kyl9qj8t3xw",
+          "height": 461762,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
         },
         "ethermint": {
-          "address": "union1dzcemksyl5sffsxn2vm7ac84t64dxg3rfw0l6qte8ck73dvtq5eqaw0wqd",
-          "height": 1
+          "address": "union1gla5cgcsk64cwsu3ca55yxjprtn5x6672mm4wm96vm9wyh6s2qcqc7amkh",
+          "height": 461766,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
         },
         "movement": {
-          "address": "union16ruv4elqfe5gek06lneppc82g5086uyswxc06vawfjhkkflxlq5s6ef8y0",
-          "height": 1
+          "address": "union1m2hhspxpqml6lujg0s38tdp3yfjasmfxnxvh9fnxpcjajucj0sgq54rs2g",
+          "height": 461794,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
         },
         "state-lens/ics23/mpt": {
-          "address": "union1aaqx8pny8rp2ygjfc90zrr4ldf09xmkpjlpzyr942p8xujkanltqr7agmq",
-          "height": 1
+          "address": "union1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs4hj904",
+          "height": 461799,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "state-lens/ics23/smt": {
+          "address": "union1z7xnvelm23fx2qqj8jhx9kgaa6qr94dxt5ljnapeljszluun0e8sw67mtt",
+          "height": 461803,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
         },
         "tendermint": {
-          "address": "union10wdac638dafm9ssew6gu2mv8tfnhxqpj6ntgm9xa3lssa9cm24es7pu2g7",
-          "height": 1
+          "address": "union1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqpcywju",
+          "height": 461807,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+        },
+        "trusted/evm/mpt": {
+          "address": "union16sq2k0k8pf9z6y4q8jrsuqraqdlnsl6da2aj9kl5e4u73ta9f75sdml7vq",
+          "height": 461812,
+          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
         }
       },
       "app": {
         "ucs03": {
-          "address": "union162nwv92cfwthfcnlqmh30gmnem2u3uv56ap9y7e0vuqtdnz2qjeq2ckrsf",
-          "height": 1
+          "address": "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
+          "height": 461829,
+          "commit": "ac793862b5f5486fb6522501b3c7f51b3490f8ed"
         }
       }
     }
   },
   {
-    "chain_id": "union-testnet-9",
+    "universal_chain_id": "union.union-testnet-10",
+    "chain_id": "union-testnet-10",
     "ibc_interface": "ibc-cosmwasm",
     "deployments": {
+      "deployer": "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a",
       "core": {
-        "address": "union1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tesyypmkw",
-        "height": 4081128
+        "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
+        "height": 354875,
+        "commit": "unknown"
       },
       "lightclient": {
         "arbitrum": {
-          "address": "union1txkq475e6s4dmapnla8aunqey7pnmlfptl6tkfm3w3huhh2ymfrq2e3s9g",
-          "height": 4081134
+          "address": "union1xwfgw7n6vwgkyv8syjskzak7lh8kmrcthmv2jsmywhyunekmg3zqul8vsh",
+          "height": 354878,
+          "commit": "a0184eba9783c05ef86275386d2ea95d7630d22f"
         },
         "berachain": {
-          "address": "union1y4rln3sk8ehqxdcca3juey7ee0hp23czcfmc457lxsp4kt39wzqqpfa08f",
-          "height": 4081139
+          "address": "union12dx3w0pxkpyguf4xrx79zkhk0lvzewyqtjjngqmhuajjgu5qm6uq2rvlr7",
+          "height": 354882,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
+        },
+        "bob": {
+          "address": "union1lsn5mm3hf9cxqetp2dx47x7tq4kvxpk66e7v8c4d2j4cajrg7hsq0v877s",
+          "height": 354886,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
         },
         "ethereum": {
-          "address": "union1ahqjgzw37gp2n6tzpa3hjlenysaz5waewhlfq5rqlgl5ljeafpws4h0dfn",
-          "height": 4081145
+          "address": "union1a3gz55rhudakew7p3hccjarn8rk70guxnuqrw58tl00f5x4kyl9qj8t3xw",
+          "height": 354890,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
         },
         "ethermint": {
-          "address": "union1dxpa24en20qk9mqxa55qaaqkmeg647k25qwt5cmqc4wajr00h2hsp830h5",
-          "height": 4081152
+          "address": "union1gla5cgcsk64cwsu3ca55yxjprtn5x6672mm4wm96vm9wyh6s2qcqc7amkh",
+          "height": 354894,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
         },
         "movement": {
-          "address": "union143w7u4eq02fnetguapftwmnu5qnnf58wcygk4sg5d8sycr5m0auqacgecd",
-          "height": 4081156
+          "address": "union1m2hhspxpqml6lujg0s38tdp3yfjasmfxnxvh9fnxpcjajucj0sgq54rs2g",
+          "height": 354898,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
         },
         "state-lens/ics23/mpt": {
-          "address": "union13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqe5j4a0",
-          "height": 4081162
+          "address": "union1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs4hj904",
+          "height": 354902,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
+        },
+        "state-lens/ics23/smt": {
+          "address": "union1z7xnvelm23fx2qqj8jhx9kgaa6qr94dxt5ljnapeljszluun0e8sw67mtt",
+          "height": 354906,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
         },
         "tendermint": {
-          "address": "union1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqss29m5ru",
-          "height": 4081167
+          "address": "union1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqpcywju",
+          "height": 354910,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
+        },
+        "trusted/evm/mpt": {
+          "address": "union16sq2k0k8pf9z6y4q8jrsuqraqdlnsl6da2aj9kl5e4u73ta9f75sdml7vq",
+          "height": 354914,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
         }
       },
       "app": {
         "ucs03": {
-          "address": "union1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqz669ee",
-          "height": 4139174
-        }
-      }
-    },
-    "channels": [1, 3, 4, 5, 8, 17]
-  },
-  {
-    "chain_id": "elgafar-1",
-    "ibc_interface": "ibc-cosmwasm",
-    "deployments": {
-      "core": {
-        "address": "stars1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380teskdmgll",
-        "height": 14692209
-      },
-      "lightclient": {
-        "cometbls": {
-          "address": "stars1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ksttv76s",
-          "height": 14692215
-        },
-        "state-lens/ics23/mpt": {
-          "address": "stars13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqtagx57",
-          "height": 14692221
-        },
-        "tendermint": {
-          "address": "stars1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqsscvp82d",
-          "height": 14692367
-        }
-      },
-      "app": {
-        "ucs03": {
-          "address": "stars1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqsnqksg",
-          "height": 14775528
-        }
-      }
-    },
-    "channels": [1, 3, 4, 5, 7]
-  },
-  {
-    "chain_id": "osmo-test-5",
-    "ibc_interface": "ibc-cosmwasm",
-    "deployments": {
-      "core": {
-        "address": "osmo1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tes4h8h8p",
-        "height": 21880854
-      },
-      "lightclient": {
-        "cometbls": {
-          "address": "osmo1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ksg3spzw",
-          "height": 21880927
-        },
-        "state-lens/ics23/mpt": {
-          "address": "osmo13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqg85evq",
-          "height": 21880970
-        },
-        "tendermint": {
-          "address": "osmo1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqssmkacjn",
-          "height": 21883107
-        }
-      },
-      "app": {
-        "ucs03": {
-          "address": "osmo1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqnfufgk",
-          "height": 22422699
+          "address": "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
+          "height": 354920,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
         }
       }
     }
   },
   {
+    "universal_chain_id": "babylon.bbn-test-5",
     "chain_id": "bbn-test-5",
     "ibc_interface": "ibc-cosmwasm",
     "deployments": {
+      "deployer": "bbn10c4yqddv6w7sphruvhxs5v0es8r9fcj5xgn904",
       "core": {
-        "address": "bbn1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tesmr7mtw",
-        "height": 240561
+        "address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
+        "height": 714672,
+        "commit": "572203c24f508e14bae4ab7f0b46e9377cea8efb"
       },
       "lightclient": {
         "cometbls": {
-          "address": "bbn1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ksx9fdwp",
-          "height": 240564
+          "address": "bbn1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqhe2fyg",
+          "height": 714707,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
         },
         "state-lens/ics23/mpt": {
-          "address": "bbn13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejqxnd4q0",
-          "height": 240568
+          "address": "bbn1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs2sd9j4",
+          "height": 714714,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
         },
         "tendermint": {
-          "address": "bbn1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqss4zy57u",
-          "height": 289957
+          "address": "bbn1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzq7lmw0u",
+          "height": 714721,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
+        },
+        "trusted/evm/mpt": {
+          "address": "bbn16sq2k0k8pf9z6y4q8jrsuqraqdlnsl6da2aj9kl5e4u73ta9f75sjuq73q",
+          "height": 714727,
+          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
         }
       },
       "app": {
         "ucs03": {
-          "address": "bbn1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cqaa99ye",
-          "height": 248732
-        }
-      }
-    },
-    "channels": [1, 2, 3, 4]
-  },
-  {
-    "chain_id": "17000",
-    "ibc_interface": "ibc-solidity",
-    "deployments": {
-      "multicall": "0x64A764A734648fA636525C7e4b3cE38Ca256b647",
-      "deployer": "0xa3cd41bfF71AD19fDDfd901A9773C975A0404D97",
-      "sender": "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177",
-      "core": {
-        "address": "0xfa4E502A3bf5f4Bc3EF0e17960b3Cd868d70E809",
-        "height": 2948771
-      },
-      "lightclient": {
-        "cometbls": {
-          "address": "0x6431abdc60313ec8780F5CCE1535dFe2DD891081",
-          "height": 2948771
-        },
-        "state-lens/ics23/mpt": {
-          "address": "0x6aff0075801a7c870f9a6f363dfb0612edd7e9f0",
-          "height": 3109216
-        },
-        "state-lens/ics23/ics23": {
-          "address": "0x2b3e80f99d88328c6ce2f9185604eef0046a1462",
-          "height": 3108937
-        }
-      },
-      "app": {
-        "ucs00": {
-          "address": "0x92735254407859361265B51cDb76583ED7E3359b",
-          "height": 2948771
-        },
-        "ucs03": {
-          "address": "0x7B7872fEc715C787A1BE3f062AdeDc82b3B06144",
-          "height": 3062125
-        }
-      }
-    },
-    "channels": [42, 43, 45, 47]
-  },
-  {
-    "chain_id": "11155111",
-    "ibc_interface": "ibc-solidity",
-    "deployments": {
-      "multicall": "0x6FD4bf9438fAC8C535218E79191594A879E47E96",
-      "deployer": "0xac6dBD360ABCfe0578e998D359d4F43a5A117219",
-      "sender": "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177",
-      "core": {
-        "address": "0xbad69711Da45A0FF61e2c50b8c9B1F3314742d2b",
-        "height": 7340066
-      },
-      "lightclient": {
-        "cometbls": {
-          "address": "0x0A343260a06576a1f938C18F70FaA7eF2a3a7d4F",
-          "height": 7340066
-        },
-        "state-lens/ics23/mpt": {
-          "address": "0x32b498538a44b7ec9cf11b18c18e793d0804db1b",
-          "height": 7453117
-        },
-        "state-lens/ics23/ics23": {
-          "address": "0x98bba3716dd60969bd43ad7464783771d554fa6a",
-          "height": 7453163
-        }
-      },
-      "app": {
-        "ucs00": {
-          "address": "0x271126f4F9B36CE16d9e2eF75691485ddCE11dB6",
-          "height": 7340066
-        },
-        "ucs03": {
-          "address": "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
-          "height": 7405729
-        }
-      }
-    },
-    "channels": [8, 9, 10, 11]
-  },
-  {
-    "chain_id": "16600",
-    "ibc_interface": "ibc-solidity",
-    "deployments": {
-      "multicall": "0x4DAB0EF2051932FEeBF4E2f6D73635dFD096099A",
-      "deployer": "0x7311D39eF22267E463Bd8Ff65df42B0896856274",
-      "sender": "0x153919669Edc8A5D0c8D1E4507c9CE60435A1177",
-      "core": {
-        "address": "0x70719A4ca2d463806863b6A86281c93b8854dDC2"
-      },
-      "lightclient": {
-        "cometbls": {
-          "address": "0xA660d4D5Cbe2139f06fB0a65a62a707EB1902B0E"
-        },
-        "state-lens/ics23/mpt": {
-          "address": "0xE9455fA4D422D590Bb7B6CDdDaC610C47764A7E4"
-        },
-        "state-lens/ics23/ics23": {
-          "address": "0x45DE9536b822CA21B2166d0AC233c8AAC5937766"
-        }
-      },
-      "app": {
-        "ucs00": {
-          "address": "0x8eB3c61FC2ea5084B014Aa8C21578875a0b72706"
-        },
-        "ucs03": {
-          "address": "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa"
-        }
-      }
-    },
-    "channels": []
-  },
-  {
-    "chain_id": "xion-testnet-2",
-    "ibc_interface": "ibc-cosmwasm",
-    "deployments": {
-      "core": {
-        "address": "xion1zm2jvrz2f0ys0ducy2me9n63c4lstuc378nexzdheslvun380tes6lvrfu",
-        "height": 298029
-      },
-      "lightclient": {
-        "cometbls": {
-          "address": "xion1erl5v3whpzt9z9przvteca32ceqxdhddue0dlnkl5vppfeasn9ks8em4vn",
-          "height": 298034
-        },
-        "state-lens/ics23/mpt": {
-          "address": "xion13htgxx7243kvx0nqv8d2lmrkfwfylcf5z22gl9z9gpysna04mejq80ldza",
-          "height": 298041
-        },
-        "tendermint": {
-          "address": "xion1z5vazvkhyulvfkjyk9dqcm2rk4k0q0009f5nyw7xgw5yzzssfqss57kvuw",
-          "height": 298045
-        }
-      },
-      "app": {
-        "ucs03": {
-          "address": "xion1x2jzeup7uwfxjxxrtfna2ktcugltntgu6kvc0eeayk0d82l247cquphaxt",
-          "height": 298051
+          "address": "bbn1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292q77945h",
+          "height": 714737,
+          "commit": "ac793862b5f5486fb6522501b3c7f51b3490f8ed"
         }
       }
     }
   },
   {
-    "chain_id": "250",
-    "ibc_interface": "ibc-move/aptos",
+    "universal_chain_id": "babylon.bbn-1",
+    "chain_id": "bbn-1",
+    "ibc_interface": "ibc-cosmwasm",
     "deployments": {
+      "deployer": "bbn10c4yqddv6w7sphruvhxs5v0es8r9fcj5xgn904",
       "core": {
-        "address": "0x8a985e2058e0584216e76cf65ab980c6e9451d22ca48390b0c60deea832b6d0e",
-        "height": 1030813
+        "address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
+        "height": 28972,
+        "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "bbn1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqhe2fyg",
+          "height": 28982,
+          "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "bbn1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs2sd9j4",
+          "height": 28986,
+          "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5"
+        },
+        "tendermint": {
+          "address": "bbn1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzq7lmw0u",
+          "height": 28990,
+          "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5"
+        },
+        "trusted/evm/mpt": {
+          "address": "bbn16sq2k0k8pf9z6y4q8jrsuqraqdlnsl6da2aj9kl5e4u73ta9f75sjuq73q",
+          "height": 28994,
+          "commit": "ec9a50ec16cd055fdd8ccfd2e5d25a91f609cad5"
+        }
       },
       "app": {
         "ucs03": {
-          "address": "0x7e385b7c720b279f6871bbd409dd2fb026d3193e2b40c705e8896d51141c1076",
-          "height": 1030822
+          "address": "bbn1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292q77945h",
+          "height": 29000,
+          "commit": "739eb5e1d754b7ab63bd8e0088e0541d7388c82a"
         }
       }
-    },
-    "channels": [1]
+    }
+  },
+  {
+    "universal_chain_id": "ethereum.1",
+    "chain_id": "1",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 22242357,
+        "commit": "unknown"
+      },
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+      "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+      "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+      "core": {
+        "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "height": 22236429,
+        "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
+          "height": 22236429,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
+          "height": 22236429,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
+          "height": 22236429,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
+          "height": 22236430,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x921e5b5091f431f84f14423ec487783a853bc4b0",
+          "height": 22236430,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "ucs03": {
+          "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+          "height": 22236430,
+          "commit": "72149a439c571470833577bf795da5ed81c7c05c"
+        }
+      }
+    }
+  },
+  {
+    "universal_chain_id": "ethereum.17000",
+    "chain_id": "17000",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 3652159,
+        "commit": "unknown"
+      },
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+      "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+      "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+      "core": {
+        "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "height": 3646604,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
+          "height": 3646605,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
+          "height": 3646605,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
+          "height": 3646605,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
+          "height": 3646605,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x921e5b5091f431f84f14423ec487783a853bc4b0",
+          "height": 3646605,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "ucs03": {
+          "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+          "height": 3646606,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        }
+      }
+    }
+  },
+  {
+    "universal_chain_id": "ethereum.11155111",
+    "chain_id": "11155111",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 8094177,
+        "commit": "unknown"
+      },
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+      "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+      "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+      "core": {
+        "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "height": 8088108,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
+          "height": 8088108,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
+          "height": 8088108,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
+          "height": 8088108,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
+          "height": 8088108,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x921e5b5091f431f84f14423ec487783a853bc4b0",
+          "height": 8088108,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "ucs03": {
+          "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+          "height": 8088109,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        }
+      }
+    }
+  },
+  {
+    "universal_chain_id": "bob.60808",
+    "chain_id": "60808",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 15736100,
+        "commit": "unknown"
+      },
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+      "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+      "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+      "core": {
+        "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "height": 15699438,
+        "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
+          "height": 15699439,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
+          "height": 15699439,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
+          "height": 15699439,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
+          "height": 15699439,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x921e5b5091f431f84f14423ec487783a853bc4b0",
+          "height": 15699439,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "ucs03": {
+          "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+          "height": 15699440,
+          "commit": "72149a439c571470833577bf795da5ed81c7c05c"
+        }
+      }
+    }
+  },
+  {
+    "universal_chain_id": "bob.808813",
+    "chain_id": "808813",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 10990865,
+        "commit": "unknown"
+      },
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+      "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+      "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+      "core": {
+        "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "height": 10951499,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
+          "height": 10951499,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
+          "height": 10951500,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
+          "height": 10951500,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
+          "height": 10951500,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x921e5b5091f431f84f14423ec487783a853bc4b0",
+          "height": 10951500,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "ucs03": {
+          "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+          "height": 10951500,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        }
+      }
+    }
+  },
+  {
+    "universal_chain_id": "corn.21000000",
+    "chain_id": "21000000",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 396508,
+        "commit": "unknown"
+      },
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+      "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+      "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+      "core": {
+        "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "height": 392723,
+        "commit": "dbe727d10a7f9bf729df4816ff85d5a50fc5d58b"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
+          "height": 392724,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
+          "height": 392724,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
+          "height": 392724,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
+          "height": 392725,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x921e5b5091f431f84f14423ec487783a853bc4b0",
+          "height": 392726,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "ucs03": {
+          "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+          "height": 392727,
+          "commit": "72149a439c571470833577bf795da5ed81c7c05c"
+        }
+      }
+    }
+  },
+  {
+    "universal_chain_id": "corn.21000001",
+    "chain_id": "21000001",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 182364,
+        "commit": "unknown"
+      },
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+      "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+      "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+      "core": {
+        "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "height": 181413,
+        "commit": "33462cd11c9fc68deab4c1d6db3dada33e1259ef"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
+          "height": 181413,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
+          "height": 181413,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
+          "height": 181415,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
+          "height": 181415,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x921e5b5091f431f84f14423ec487783a853bc4b0",
+          "height": 181415,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        },
+        "ucs03": {
+          "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+          "height": 181417,
+          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        }
+      }
+    }
   }
 ]

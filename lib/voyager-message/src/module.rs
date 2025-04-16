@@ -1,20 +1,20 @@
 use std::collections::VecDeque;
 
-use jsonrpsee::{core::RpcResult, proc_macros::rpc};
+use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject};
 use macros::model;
 use schemars::JsonSchema;
 use serde_json::Value;
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, traits::Member};
-use voyager_core::{ConsensusType, IbcSpecId, Timestamp};
+use voyager_primitives::{ConsensusType, IbcSpecId, Timestamp};
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 
 use crate::{
-    core::{
+    data::Data,
+    primitives::{
         ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcSpec,
     },
-    data::Data,
     rpc::ProofType,
-    RawClientId, VoyagerMessage,
+    RawClientId, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 fn ok<T>(t: T) -> Result<T, BoxDynError> {
@@ -41,6 +41,21 @@ impl StateModuleInfo {
             Err(UnexpectedChainIdError {
                 expected: self.chain_id.clone(),
                 found: chain_id.as_ref().to_owned(),
+            })
+        } else {
+            Ok(())
+        }
+    }
+
+    // TODO: Add this for ibc_spec_id
+    pub fn ensure_ibc_spec_id(
+        &self,
+        ibc_spec_id: impl AsRef<str>,
+    ) -> Result<(), UnexpectedIbcSpecIdError> {
+        if ibc_spec_id.as_ref() != self.ibc_spec_id.as_str() {
+            Err(UnexpectedIbcSpecIdError {
+                expected: self.ibc_spec_id.clone(),
+                found: ibc_spec_id.as_ref().to_owned(),
             })
         } else {
             Ok(())
@@ -192,9 +207,9 @@ impl ClientModuleInfo {
     pub fn ensure_ibc_spec_id(
         &self,
         ibc_spec_id: impl AsRef<str>,
-    ) -> Result<(), UnexpectedIbcVersionIdError> {
+    ) -> Result<(), UnexpectedIbcSpecIdError> {
         if ibc_spec_id.as_ref() != self.ibc_spec_id.as_str() {
-            Err(UnexpectedIbcVersionIdError {
+            Err(UnexpectedIbcSpecIdError {
                 expected: self.ibc_spec_id.clone(),
                 found: ibc_spec_id.as_ref().to_owned(),
             })
@@ -284,9 +299,9 @@ pub struct UnexpectedIbcInterfaceError {
 
 #[derive(Debug, Clone, thiserror::Error)]
 #[error(
-    "invalid IBC version: this module provides functionality for IBC version `{expected}`, but the config specifies `{found}`"
+    "invalid IBC spec: this module provides functionality for IBC spec `{expected}`, but the config specifies `{found}`"
 )]
-pub struct UnexpectedIbcVersionIdError {
+pub struct UnexpectedIbcSpecIdError {
     pub expected: IbcSpecId,
     pub found: String,
 }
@@ -319,6 +334,18 @@ pub trait Plugin<C: Member, Cb: Member> {
     /// Handle a custom `Callback` message for this module.
     #[method(name = "callback", with_extensions)]
     async fn callback(&self, aggregate: Cb, data: VecDeque<Data>) -> RpcResult<Op<VoyagerMessage>>;
+
+    /// Handle a custom request for this module.
+    ///
+    /// The default implementetion returns an error.
+    #[method(name = "custom", with_extensions)]
+    async fn custom(&self, _method: String, _params: Vec<Value>) -> RpcResult<Value> {
+        Err(ErrorObject::owned(
+            FATAL_JSONRPC_ERROR_CODE,
+            "unimplemented",
+            None::<()>,
+        ))
+    }
 }
 
 #[rpc(
@@ -329,6 +356,10 @@ pub trait Plugin<C: Member, Cb: Member> {
     namespace = "state",
 )]
 pub trait StateModule<V: IbcSpec> {
+    /// Execute a query on this chain returning the proof as a JSON [`Value`].
+    #[method(name = "query", with_extensions)]
+    async fn query(&self, query: V::Query) -> RpcResult<Value>;
+
     /// Query a proof of IBC state on this chain, at the specified [`Height`],
     /// returning the proof as a JSON [`Value`].
     #[method(name = "queryIbcState", with_extensions)]
@@ -342,10 +373,13 @@ pub trait StateModule<V: IbcSpec> {
 /// Type-erased version of [`StateModuleClient`].
 #[rpc(client, namespace = "state")]
 pub trait RawStateModule {
-    #[method(name = "queryIbcState")]
+    #[method(name = "query", with_extensions)]
+    async fn query_raw(&self, query: Value) -> RpcResult<Value>;
+
+    #[method(name = "queryIbcState", with_extensions)]
     async fn query_ibc_state_raw(&self, at: Height, path: Value) -> RpcResult<Value>;
 
-    #[method(name = "clientInfo")]
+    #[method(name = "clientInfo", with_extensions)]
     async fn client_info_raw(&self, client_id: RawClientId) -> RpcResult<Option<ClientInfo>>;
 }
 

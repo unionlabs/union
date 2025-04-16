@@ -1,5 +1,5 @@
-use beacon_api_types::Slot;
-use cosmwasm_std::StdError;
+use beacon_api_types::custom_types::Slot;
+use cosmwasm_std::{StdError, VerificationError};
 use ibc_union_light_client::IbcClientError;
 use unionlabs::primitives::{H256, U256};
 
@@ -55,6 +55,15 @@ pub enum Error {
 
     #[error("the misbehaviour headers must be different")]
     IdenticalMisbehaviourHeaders,
+
+    #[error("aggregate pubkey mismatch")]
+    AggregatePubkeyMismatch,
+
+    #[error(transparent)]
+    VerificationError(#[from] VerificationError),
+
+    #[error("the initial sync committee must be provided during client creation")]
+    NoInitialSyncCommittee,
 }
 
 impl From<Error> for StdError {

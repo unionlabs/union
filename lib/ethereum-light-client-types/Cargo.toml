@@ -12,23 +12,30 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy            = { workspace = true, features = ["sol-types"], optional = true }
-beacon-api-types = { workspace = true }
-bincode          = { workspace = true, features = ["alloc", "derive"], optional = true }
-serde            = { workspace = true, optional = true, features = ["derive"] }
-thiserror        = { workspace = true }
-unionlabs        = { workspace = true }
+alloy                        = { workspace = true, features = ["sol-types"], optional = true }
+beacon-api-types             = { workspace = true }
+bincode                      = { workspace = true, features = ["alloc", "derive"], optional = true }
+ethereum-sync-protocol-types = { workspace = true }
+serde                        = { workspace = true, optional = true, features = ["derive"] }
+thiserror                    = { workspace = true }
+unionlabs                    = { workspace = true }
 
 [features]
 default = []
 
-bincode = ["dep:bincode", "unionlabs/bincode", "beacon-api-types/bincode"]
+bincode = [
+  "dep:bincode",
+  "unionlabs/bincode",
+  "beacon-api-types/bincode",
+  "ethereum-sync-protocol-types/bincode",
+]
 ethabi = ["unionlabs/ethabi", "dep:alloy"]
 serde = [
+  "dep:serde",
   # TODO: Feature gate serde in unionlabs
   # "unionlabs/serde",
   "beacon-api-types/serde",
-  "dep:serde",
+  "ethereum-sync-protocol-types/serde",
 ]
 
 [dev-dependencies]

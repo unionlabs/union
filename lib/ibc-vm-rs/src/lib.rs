@@ -1,4 +1,3 @@
-use frame_support_procedural::PartialEqNoBound;
 use ibc_events::IbcEvent;
 use serde::{Deserialize, Serialize};
 use states::{
@@ -31,7 +30,7 @@ lazy_static::lazy_static! {
     pub static ref DEFAULT_MERKLE_PREFIX: MerklePrefix = MerklePrefix { key_prefix: b"ibc".into() };
 }
 
-#[derive(thiserror::Error, PartialEqNoBound, Debug)]
+#[derive(thiserror::Error, PartialEq, Debug)]
 pub enum IbcError {
     #[error("client {0} is not active ({1})")]
     NotActive(ClientId, Status),

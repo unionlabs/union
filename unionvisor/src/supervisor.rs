@@ -140,7 +140,7 @@ pub enum SpawnError {
 
 #[derive(Debug, Error)]
 pub enum BackupError {
-    #[error("Cannot create backup dir {0}")]
+    #[error("Cannot create backup dir {0:?}")]
     CreateDir(PathBuf, #[source] io::Error),
     #[error("Cannot copy home dir to backup dir")]
     CopyDir {

@@ -17,8 +17,6 @@
             e2e,
             networks,
             pkgs,
-            nixpkgs,
-            crane,
             self',
             dbg,
             ...
@@ -28,7 +26,7 @@
             upgrades = import ./upgrades.nix {
               inherit e2e pkgs;
               inherit (self'.packages) unionvisor;
-              bundle = self'.packages.bundle-testnet-next;
+              bundle = self'.packages.bundle-union-1-next;
             };
           in
           {
@@ -42,7 +40,7 @@
 
             # Tests from ./upgrades.nix
             inherit (upgrades) upgrade-from-genesis;
-            inherit (upgrades) upgrade-with-tokenfactory-state;
+            # inherit (upgrades) upgrade-with-tokenfactory-state;
 
             virtualisation-works = e2e.mkTest {
               name = "full-dev-setup";

@@ -2,13 +2,13 @@ import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { createUnionClient, bech32AddressToHex } from "#mod.ts"
+import { createUnionClient, bech32AddressToHex } from "../src/mod.ts"
 
 import {
   getChannelInfo,
   getQuoteToken,
   getRecommendedChannels
-} from "#query/offchain/ucs03-channels"
+} from "../src/query/offchain/ucs03-channels.ts"
 
 type Channel = {
   source_chain_id: string
@@ -51,7 +51,7 @@ const cliArgs = parseArgs({
 // npx tsx playground/movement-to-union.ts --private-key
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
-const WRAPPED_MUNO_DENOM = "0x5b8dc541f42c8f31fceaf74f40e3e450a058406ca370779f96b25776c88f672e"
+const WRAPPED_MUNO_DENOM = "0x188b41399546602e35658962477fdf72bd52443474a899d9d48636e8bc299c2c"
 const AMOUNT = 1n
 const SOURCE_CHAIN_ID = "250"
 const DESTINATION_CHAIN_ID = "union-testnet-9"
@@ -73,18 +73,18 @@ const channels = await getRecommendedChannels()
 let channel_info = getChannelInfo(SOURCE_CHAIN_ID, DESTINATION_CHAIN_ID, channels)
 if (channel_info === null) {
   // Creating movement channel since its not found in hubble.
-  consola.info("no channel found")
+  // consola.info("no channel found")
   // process.exit(1)
   channel_info = {
     source_chain_id: SOURCE_CHAIN_ID,
-    source_port_id: "7e385b7c720b279f6871bbd409dd2fb026d3193e2b40c705e8896d51141c1076",
-    source_channel_id: 1,
+    source_port_id: "80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
+    source_channel_id: 2,
     source_connection_id: 1,
     destination_chain_id: DESTINATION_CHAIN_ID,
     destination_port_id:
       "756e696f6e3178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c32343763717a3636396565",
-    destination_channel_id: 18,
-    destination_connection_id: 23
+    destination_channel_id: 27,
+    destination_connection_id: 36
   }
 }
 

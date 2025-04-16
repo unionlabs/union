@@ -4,29 +4,21 @@ _: {
       self',
       pkgs,
       crane,
+      dbg,
       ...
     }:
     let
       attrs = {
         rustflags = "-L${self'.packages.galoisd-library}/lib";
+        rootCargoTomlHook = cargoToml: builtins.removeAttrs cargoToml [ "patch" ];
       };
-      mpc-client = crane.buildWorkspaceMember (
-        attrs
-        // {
-          crateDirFromRoot = "mpc/client";
-        }
-      );
-      mpc-coordinator = crane.buildWorkspaceMember (
-        attrs
-        // {
-          crateDirFromRoot = "mpc/coordinator";
-        }
-      );
+      mpc-client = crane.buildWorkspaceMember "mpc/client" attrs;
+      mpc-coordinator = crane.buildWorkspaceMember "mpc/coordinator" attrs;
     in
     {
       packages =
-        mpc-coordinator.packages
-        // mpc-client.packages
+        mpc-coordinator
+        // mpc-client
         // {
           mpc-client-image = pkgs.dockerTools.buildImage {
             name = "${self'.packages.mpc-client.name}-image";

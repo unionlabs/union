@@ -2,17 +2,22 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
+import "../core/UnionTests.sol";
 import "../core/IBCHandler.sol";
 import "../core/LightClient.sol";
 
 import "../../../contracts/core/25-handler/IBCMsgs.sol";
+import "../../../contracts/Manager.sol";
 
-contract IBCClientTests is Test {
+contract IBCClientTests is UnionTests {
+    Manager manager;
     TestIBCHandler handler;
     TestLightClient lightClient;
 
     function setUp() public {
-        handler = new TestIBCHandler();
+        (manager, handler) = setupHandler();
         lightClient = new TestLightClient();
     }
 
@@ -20,7 +25,7 @@ contract IBCClientTests is Test {
         vm.pauseGasMetering();
         vm.assume(impl != address(0));
         vm.expectEmit();
-        emit IBCClientLib.RegisterClient(typ, impl);
+        emit IBCClientLib.RegisterClient(typ, typ, impl);
         vm.resumeGasMetering();
         handler.registerClient(typ, ILightClient(impl));
     }
@@ -31,7 +36,7 @@ contract IBCClientTests is Test {
     ) public {
         vm.assume(impl != address(0));
         vm.expectEmit();
-        emit IBCClientLib.RegisterClient(typ, impl);
+        emit IBCClientLib.RegisterClient(typ, typ, impl);
         handler.registerClient(typ, ILightClient(impl));
         vm.expectRevert(IBCErrors.ErrClientTypeAlreadyExists.selector);
         handler.registerClient(typ, ILightClient(impl));
@@ -43,7 +48,7 @@ contract IBCClientTests is Test {
         vm.pauseGasMetering();
         handler.registerClient(msg_.clientType, lightClient);
         vm.expectEmit();
-        emit IBCClientLib.CreateClient(msg_.clientType, 0, "");
+        emit IBCClientLib.CreateClient(msg_.clientType, msg_.clientType, 1, "");
         vm.resumeGasMetering();
         handler.createClient(msg_);
     }
@@ -87,7 +92,7 @@ contract IBCClientTests is Test {
         handler.registerClient(msg_.clientType, lightClient);
         uint32 clientId = handler.createClient(msg_);
         vm.expectEmit();
-        emit IBCClientLib.UpdateClient(0, 1);
+        emit IBCClientLib.UpdateClient(1, 1);
         vm.resumeGasMetering();
         handler.updateClient(
             IBCMsgs.MsgUpdateClient({

@@ -24,9 +24,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::ChainId,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
+    primitives::ChainId,
     rpc::ProofType,
     ProofModule, FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,
 };
@@ -72,7 +72,7 @@ impl ProofModule<IbcUnion> for Module {
 
         let chain_revision = chain_id
             .split('-')
-            .last()
+            .next_back()
             .ok_or_else(|| ChainIdParseError {
                 found: chain_id.clone(),
                 source: None,

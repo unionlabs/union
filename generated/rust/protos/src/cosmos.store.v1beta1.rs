@@ -1,7 +1,9 @@
 // @generated
-/// StoreKVPair is a KVStore KVPair used for listening to state changes (Sets and
-/// Deletes) It optionally includes the StoreKey for the originating KVStore and
-/// a Boolean flag to distinguish between Sets and Deletes
+/// StoreKVPair is a KVStore KVPair used for listening to state changes (Sets and Deletes)
+/// It optionally includes the StoreKey for the originating KVStore and a Boolean flag to distinguish between Sets and
+/// Deletes
+///
+/// Since: cosmos-sdk 0.43
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StoreKvPair {

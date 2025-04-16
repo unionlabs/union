@@ -3,12 +3,12 @@ _: {
     {
       lib,
       mkCi,
-      jsPkgs,
+      pkgsUnstable,
       ensureAtRepositoryRoot,
       ...
     }:
     let
-      deps = with jsPkgs; [
+      deps = with pkgsUnstable; [
         vips
         pkg-config
         nodePackages_latest.nodejs
@@ -18,7 +18,7 @@ _: {
     {
       packages = {
         docs = mkCi false (
-          jsPkgs.buildNpmPackage {
+          pkgsUnstable.buildNpmPackage {
             npmDepsHash = "sha256-pDdKyuOeurWp9LbYFb8/IFdvNPihtpCUi/SIvBN0ZmY=";
             src = ./.;
             srcs = [
@@ -46,7 +46,7 @@ _: {
       apps = {
         docs-dev-server = {
           type = "app";
-          program = jsPkgs.writeShellApplication {
+          program = pkgsUnstable.writeShellApplication {
             name = "docs-dev-server";
             runtimeInputs = deps;
             text = ''
@@ -61,7 +61,7 @@ _: {
         };
         docs-check = {
           type = "app";
-          program = jsPkgs.writeShellApplication {
+          program = pkgsUnstable.writeShellApplication {
             name = "docs-check";
             runtimeInputs = deps;
             text = ''
@@ -75,13 +75,13 @@ _: {
               npm_config_yes=true npx astro check
               npm_config_yes=true npx astro build
 
-              nix build .\#checks.${jsPkgs.system}.spellcheck --print-build-logs
+              nix build .\#checks.${pkgsUnstable.system}.spellcheck --print-build-logs
             '';
           };
         };
         deploy-docs-ipfs = {
           type = "app";
-          program = jsPkgs.writeShellApplication {
+          program = pkgsUnstable.writeShellApplication {
             name = "deploy-docs-ipfs";
             runtimeInputs = deps;
             text = ''

@@ -2,6 +2,7 @@ use std::num::{NonZeroU32, NonZeroU64};
 
 use cometbft_types::{
     abci::{event::Event, exec_tx_result::ExecTxResult, response_query::QueryResponse},
+    code::Code,
     crypto::{proof_ops::ProofOps, public_key::PublicKey},
     p2p::default_node_info::DefaultNodeInfo,
     types::{
@@ -126,7 +127,7 @@ pub struct AbciQueryResponse {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct GrpcAbciQueryResponse<T> {
-    pub code: u32,
+    pub code: Code,
     /// nondeterministic
     pub log: String,
     /// nondeterministic
@@ -141,13 +142,13 @@ pub struct GrpcAbciQueryResponse<T> {
 
 impl<R> GrpcAbciQueryResponse<R> {
     pub fn into_result(self) -> Result<Option<R>, GrpcAbciQueryError> {
-        match NonZeroU32::new(self.code) {
-            Some(error_code) => Err(GrpcAbciQueryError {
+        match self.code {
+            Code::Err(error_code) => Err(GrpcAbciQueryError {
                 error_code,
                 codespace: self.codespace,
                 log: self.log,
             }),
-            None => Ok(self.value),
+            Code::Ok => Ok(self.value),
         }
     }
 }
@@ -207,7 +208,7 @@ pub struct BlockResultsResponse {
 pub struct BroadcastTxSyncResponse {
     pub codespace: String,
 
-    pub code: u32,
+    pub code: Code,
 
     pub data: Bytes<Base64>,
 

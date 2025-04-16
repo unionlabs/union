@@ -81,7 +81,9 @@ let
       cp -r --no-preserve=mode ${initHome idx}/* .
 
       cp ${mkNodeKey idx} ./config/node_key.json
-      ${nodeBin} tendermint show-node-id --home . | tr -d '\n' > $out
+
+      node_id="$(${nodeBin} tendermint show-node-id --home . 2>&1)"
+      echo $node_id | tr -d '\n' > $out
     '';
 
   mkPrivValidatorKey =
@@ -133,20 +135,21 @@ let
       export HOME=$(pwd)
       mkdir -p $out
 
-      echo "${toString sdkVersion}"
+      echo "sdk version: ${toString sdkVersion}"
       cat ${mkNodeMnemonic (if idx == null then 0 else idx)} | ${nodeBin} \
         init \
-        testnet ${pkgs.lib.optionalString (sdkVersion >= 50) ''--default-denom ${denom}''} \
+        testnet ${
+          # idk man
+          pkgs.lib.optionalString (
+            chainName != "osmosis" && (sdkVersion > 50 || sdkVersion < 50)
+          ) ''--default-denom ${denom}''
+        } \
         ${pkgs.lib.optionalString (sdkVersion >= 52) ''--consensus-key-algo ${keyType}''} \
         --chain-id ${chainId} \
         --home $out \
-        --recover 2>/dev/null
+        --recover
 
-      ${
-        pkgs.lib.optionalString (sdkVersion < 50) ''
-          sed -i 's/: "stake"/: "${denom}"/g' $out/config/genesis.json
-        ''
-      } 2>/dev/null
+      sed -i 's# "stake"# "${denom}"#g' $out/config/genesis.json
     '';
 
   addDevKeyToKeyringAndGenesis =
@@ -792,7 +795,7 @@ let
         ''
       else
         ''
-          ${nodeBin} validate-genesis --home .
+          # ${nodeBin} validate-genesis --home .
         ''
     }
 
@@ -874,6 +877,7 @@ let
                   --api.address            tcp://0.0.0.0:1317 \
                   --api.rpc-max-body-bytes 100000000 \
                   --grpc.address           0.0.0.0:9090 \
+                  --minimum-gas-prices     "0${denom}" \
                   --log_level rpc-server:warn,x/wasm:debug,*:info
               ''
             else

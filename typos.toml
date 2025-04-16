@@ -43,6 +43,8 @@ files.extend-exclude = [
   "package-lock.json",
   "moonlight-ii.json",
   "app/src/generated",
+  "app2/src/generated",
+  "ts-sdk/src/generated",
   "typescript-sdk/src/generated",
   "app/scripts/_index.ts",
   "lib/pg-queue/migrations",
@@ -335,7 +337,6 @@ files.extend-exclude = [
 "alloc"                   = "alloc"
 "alltables"               = "alltables"
 "alltransfers"            = "alltransfers"
-"amcl"                    = "amcl"
 "amet"                    = "amet"
 "ankr"                    = "ankr"
 "antialised"              = "antialised"

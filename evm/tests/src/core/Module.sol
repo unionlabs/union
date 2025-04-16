@@ -41,6 +41,7 @@ contract TestModule is IBCAppBase, Test {
     }
 
     function onRecvPacket(
+        address,
         IBCPacket calldata,
         address,
         bytes calldata
@@ -55,6 +56,7 @@ contract TestModule is IBCAppBase, Test {
     }
 
     function onRecvIntentPacket(
+        address,
         IBCPacket calldata,
         address,
         bytes calldata

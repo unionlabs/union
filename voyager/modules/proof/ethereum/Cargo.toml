@@ -13,8 +13,9 @@ workspace = true
 
 [dependencies]
 alloy                       = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
-ethereum-light-client-types = { workspace = true }
-ibc-union-spec.workspace    = true
+embed-commit                = { workspace = true }
+ethereum-light-client-types = { workspace = true, features = ["serde"] }
+ibc-union-spec              = { workspace = true, features = ["serde"] }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }

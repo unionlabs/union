@@ -1,4 +1,3 @@
-use chain_utils::BoxDynError;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -17,11 +16,12 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{
+    module::{ClientModuleInfo, ClientModuleServer},
+    primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         Timestamp,
     },
-    module::{ClientModuleInfo, ClientModuleServer},
+    vm::BoxDynError,
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
 
@@ -106,7 +106,7 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp_nanos: Timestamp::from_nanos(cs.timestamp),
+            timestamp: Timestamp::from_nanos(cs.timestamp),
         })
     }
 

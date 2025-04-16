@@ -1,7 +1,7 @@
 use cometbls_light_client_types::{ChainId, LightHeader};
 use unionlabs::primitives::H256;
 
-pub trait ZkpVerifier {
+pub trait ZkpVerifier: 'static {
     fn verify_zkp(
         chain_id: &ChainId,
         trusted_validators_hash: H256,

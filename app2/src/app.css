@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Geist";
+  font-weight: 100 1000;
+  font-display: swap;
+  src: url("/fonts/Geist[wght].woff2") format("woff2-variations");
+  src: url("/fonts/Geist[wght].woff2") format("woff2") tech("variations");
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  font-weight: 100 1000;
+  font-display: swap;
+  src: url("/fonts/GeistMono[wght].woff2") format("woff2-variations");
+  src: url("/fonts/GeistMono[wght].woff2") format("woff2") tech("variations");
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-zinc-925: oklch(0.1755 0.0055 285.854);
+  --color-babylon-orange: #cf6533;
+  --color-union: oklch(0.84 0.1281 215.6);
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+@utility blur-fade-bottom-up {
+  backdrop-filter: blur(8px);
+  mask: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0) 100%);
+}
+
+pre {
+  font-family: var(--font-mono);
+}
+
+@layer scroll {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.8) transparent;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-button {
+      display: none;
+    }
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "union.union-testnet-10": {
+    "1": {
+      "counterparty": "ethereum.11155111",
+      "refresh_rate": "500"
+    },
+    "2": {
+      "counterparty": "ethereum.17000",
+      "refresh_rate": "500"
+    }
+  },
+  "babylon.bbn-test-5": {
+    "1": {
+      "counterparty": "union.union-testnet-10",
+      "refresh_rate": "500"
+    },
+    "2": {
+      "counterparty": "ethereum.11155111",
+      "refresh_rate": "500"
+    },
+    "3": {
+      "counterparty": "ethereum.17000",
+      "refresh_rate": "500"
+    }
+  },
+  "ethereum.11155111": {
+    "1": {
+      "counterparty": "union.union-testnet-10",
+      "refresh_rate": "500"
+    }
+  },
+  "ethereum.17000": {
+    "1": {
+      "counterparty": "union.union-testnet-10",
+      "refresh_rate": "500"
+    }
+  },
+  "union.union-1": {
+    "1": {
+      "counterparty": "ethereum.1",
+      "refresh_rate": "500"
+    },
+    "2": {
+      "counterparty": "bob.60808",
+      "refresh_rate": "500"
+    },
+    "3": {
+      "counterparty": "babylon.bbn-1",
+      "refresh_rate": "500"
+    },
+    "5": {
+      "counterparty": "corn.21000000",
+      "refresh_rate": "500"
+    }
+  },
+  "babylon.bbn-1": {
+    "1": {
+      "counterparty": "union.union-1",
+      "refresh_rate": "500"
+    },
+    "2": {
+      "counterparty": "bob.60808",
+      "refresh_rate": "500"
+    },
+    "4": {
+      "counterparty": "corn.21000000",
+      "refresh_rate": "500"
+    },
+    "5": {
+      "counterparty": "ethereum.1",
+      "refresh_rate": "500"
+    }
+  },
+  "bob.60808": {
+    "1": {
+      "counterparty": "union.union-1",
+      "refresh_rate": "500"
+    },
+    "3": {
+      "counterparty": "babylon.bbn-1",
+      "refresh_rate": "500"
+    }
+  },
+  "corn.21000000": {
+    "2": {
+      "counterparty": "union.union-1",
+      "refresh_rate": "500"
+    },
+    "3": {
+      "counterparty": "babylon.bbn-1",
+      "refresh_rate": "500"
+    }
+  },
+  "ethereum.1": {
+    "1": {
+      "counterparty": "union.union-1",
+      "refresh_rate": "500"
+    },
+    "4": {
+      "counterparty": "babylon.bbn-1",
+      "refresh_rate": "500"
+    }
+  }
+}

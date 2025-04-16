@@ -1,3 +1,4 @@
+use ibc_union_spec::ClientId;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -8,11 +9,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use state_lens_ics23_smt_light_client_types::{client_state::Extra, ClientState, ConsensusState};
 use tracing::instrument;
-use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::{aptos::account::AccountAddress, ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
-    core::{ChainId, ClientType, QueryHeight},
     into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    primitives::{ChainId, ClientType, QueryHeight},
     ClientBootstrapModule, ExtensionsExt, VoyagerClient, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
@@ -30,10 +31,9 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ClientStateConfig {
-    pub l1_client_id: u32,
-    pub l2_client_id: u32,
-    pub timestamp_offset: u16,
-    pub state_root_offset: u16,
+    pub l1_client_id: ClientId,
+    pub l2_client_id: ClientId,
+    pub table_handle: AccountAddress,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -79,8 +79,7 @@ impl ClientBootstrapModuleServer for Module {
             l2_client_id: config.l2_client_id,
             l2_latest_height: height.height(),
             extra: Extra {
-                timestamp_offset: config.timestamp_offset,
-                state_root_offset: config.state_root_offset,
+                table_handle: config.table_handle.0,
             },
         }))
     }

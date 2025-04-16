@@ -2,9 +2,9 @@
 import "scripts/patch"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { raise } from "#utilities/index.ts"
+import { raise } from "../src/utilities/index.ts"
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { http, createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
+import { http, createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
 
 /* node --import=tsx playground/aptos-to-union.ts --private-key $PRIVATE_KEY */
 

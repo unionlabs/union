@@ -11,6 +11,7 @@ use ibc_union_msg::{
         MsgConnectionOpenTry, MsgCreateClient, MsgRegisterClient,
     },
 };
+use ibc_union_spec::{ClientId, ConnectionId};
 
 use super::*;
 
@@ -71,9 +72,8 @@ fn create_client(deps: DepsMut) -> Result<Response, ContractError> {
 
 fn connection_open_init(deps: DepsMut) -> Result<Response, ContractError> {
     let msg = MsgConnectionOpenInit {
-        client_id: 1,
-        counterparty_client_id: 2,
-        relayer: mock_addr(RELAYER).into_string(),
+        client_id: ClientId!(1),
+        counterparty_client_id: ClientId!(2),
     };
     execute(
         deps,
@@ -85,12 +85,11 @@ fn connection_open_init(deps: DepsMut) -> Result<Response, ContractError> {
 
 fn connection_open_try(deps: DepsMut) -> Result<Response, ContractError> {
     let msg = MsgConnectionOpenTry {
-        counterparty_client_id: 2,
-        counterparty_connection_id: 1,
-        client_id: 1,
+        counterparty_client_id: ClientId!(2),
+        counterparty_connection_id: ConnectionId!(1),
+        client_id: ClientId!(1),
         proof_init: vec![1, 2, 3].into(),
         proof_height: 1,
-        relayer: mock_addr(RELAYER).into_string(),
     };
 
     execute(
@@ -103,10 +102,9 @@ fn connection_open_try(deps: DepsMut) -> Result<Response, ContractError> {
 
 fn connection_open_confirm(deps: DepsMut) -> Result<Response, ContractError> {
     let msg = MsgConnectionOpenConfirm {
-        connection_id: 1,
+        connection_id: ConnectionId!(1),
         proof_ack: vec![1, 2, 3].into(),
         proof_height: 1,
-        relayer: mock_addr(RELAYER).into_string(),
     };
 
     execute(
@@ -121,7 +119,7 @@ fn channel_open_init(deps: DepsMut) -> Result<Response, ContractError> {
     let msg = MsgChannelOpenInit {
         port_id: mock_addr(SENDER).to_string(),
         counterparty_port_id: vec![1].into(),
-        connection_id: 1,
+        connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
         relayer: mock_addr(RELAYER).to_string(),
     };
@@ -137,7 +135,13 @@ fn channel_open_init(deps: DepsMut) -> Result<Response, ContractError> {
 fn display() {
     assert_eq!(
         ContractErrorKind::ArithmeticOverflow,
-        ContractErrorKind::parse_from_error_message(&ContractError::ArithmeticOverflow.to_string())
-            .unwrap()
+        ContractErrorKind::parse(
+            ContractError::ArithmeticOverflow
+                .to_string()
+                .split(' ')
+                .next()
+                .unwrap()
+        )
+        .unwrap()
     )
 }

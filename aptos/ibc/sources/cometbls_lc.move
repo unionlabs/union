@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -75,6 +75,10 @@ module ibc::cometbls_lc {
     use ibc::groth16_verifier::{Self, ZKP};
     use ibc::height::{Self, Height};
 
+    friend ibc::light_client;
+    friend ibc::state_lens_ics23_ics23_lc;
+    friend ibc::state_lens_ics23_mpt_lc;
+
     const E_INVALID_CLIENT_STATE: u64 = 35100;
     const E_CONSENSUS_STATE_TIMESTAMP_ZERO: u64 = 35101;
     const E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT: u64 = 35102;
@@ -136,7 +140,7 @@ module ibc::cometbls_lc {
     }
 
     // Function to mock the creation of a client
-    public fun create_client(
+    public(friend) fun create_client(
         ibc_signer: &signer,
         client_id: u32,
         client_state_bytes: vector<u8>,
@@ -171,12 +175,12 @@ module ibc::cometbls_lc {
         (client_state_bytes, consensus_state_bytes, client_state.chain_id, option::none())
     }
 
-    public fun latest_height(client_id: u32): u64 acquires State {
+    public(friend) fun latest_height(client_id: u32): u64 acquires State {
         let state = borrow_global<State>(get_client_address(client_id));
         height::get_revision_height(&state.client_state.latest_height)
     }
 
-    public fun verify_header(
+    public(friend) fun verify_header(
         header: &Header, state: &State, consensus_state: &ConsensusState
     ) {
         assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
@@ -228,7 +232,7 @@ module ibc::cometbls_lc {
         // );
     }
 
-    public fun update_client(
+    public(friend) fun update_client(
         client_id: u32, client_msg: vector<u8>
     ): (vector<u8>, vector<vector<u8>>, vector<u64>) acquires State {
         let header = decode_header(client_msg);
@@ -273,7 +277,7 @@ module ibc::cometbls_lc {
     }
 
     // Checks whether `misbehaviour` is valid and freezes the client
-    public fun report_misbehaviour(
+    public(friend) fun report_misbehaviour(
         client_id: u32, misbehaviour: vector<u8>
     ) acquires State {
         let Misbehaviour { header_a, header_b } = decode_misbehaviour(misbehaviour);
@@ -316,7 +320,7 @@ module ibc::cometbls_lc {
         height::set_revision_height(&mut state.client_state.frozen_height, 1);
     }
 
-    public fun verify_membership(
+    public(friend) fun verify_membership(
         client_id: u32,
         height: u64,
         proof: vector<u8>,
@@ -341,7 +345,7 @@ module ibc::cometbls_lc {
         0
     }
 
-    public fun verify_non_membership(
+    public(friend) fun verify_non_membership(
         _client_id: u32,
         _height: u64,
         _proof: vector<u8>,
@@ -350,12 +354,12 @@ module ibc::cometbls_lc {
         0
     }
 
-    public fun is_frozen(_client_id: u32): bool {
+    public(friend) fun is_frozen(_client_id: u32): bool {
         // TODO: Implement this
         false
     }
 
-    public fun status(_client_id: u32): u64 {
+    public(friend) fun status(_client_id: u32): u64 {
         // TODO(aeryz): fetch these status from proper exported consts
         0
     }
@@ -366,7 +370,7 @@ module ibc::cometbls_lc {
         object::create_object_address(&vault_addr, bcs::to_bytes<u32>(&client_id))
     }
 
-    public fun new_client_state(
+    public(friend) fun new_client_state(
         chain_id: string::String,
         trusting_period: u64,
         max_clock_drift: u64,
@@ -384,7 +388,7 @@ module ibc::cometbls_lc {
         }
     }
 
-    public fun new_consensus_state(
+    public(friend) fun new_consensus_state(
         timestamp: u64, app_hash: MerkleRoot, next_validators_hash: vector<u8>
     ): ConsensusState {
         ConsensusState {
@@ -394,28 +398,30 @@ module ibc::cometbls_lc {
         }
     }
 
-    public fun new_merkle_root(hash: vector<u8>): MerkleRoot {
+    public(friend) fun new_merkle_root(hash: vector<u8>): MerkleRoot {
         MerkleRoot { hash: hash }
     }
 
-    public fun get_timestamp_at_height(client_id: u32, height: u64): u64 acquires State {
+    public(friend) fun get_timestamp_at_height(
+        client_id: u32, height: u64
+    ): u64 acquires State {
         let state = borrow_global<State>(get_client_address(client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
         consensus_state.timestamp
     }
 
-    public fun get_client_state(client_id: u32): vector<u8> acquires State {
+    public(friend) fun get_client_state(client_id: u32): vector<u8> acquires State {
         let state = borrow_global<State>(get_client_address(client_id));
         encode_client_state(&state.client_state)
     }
 
-    public fun get_consensus_state(client_id: u32, height: u64): vector<u8> acquires State {
+    public(friend) fun get_consensus_state(client_id: u32, height: u64): vector<u8> acquires State {
         let state = borrow_global<State>(get_client_address(client_id));
         let consensus_state = smart_table::borrow(&state.consensus_states, height);
         encode_consensus_state(consensus_state)
     }
 
-    public fun mock_create_client(): (vector<u8>, vector<u8>) {
+    public(friend) fun mock_create_client(): (vector<u8>, vector<u8>) {
         let client_state = ClientState {
             chain_id: string::utf8(b"this-chain"),
             trusting_period: 0,
@@ -438,30 +444,32 @@ module ibc::cometbls_lc {
         return (data1, data2)
     }
 
-    public fun check_for_misbehaviour(
-        _client_id: u32, _header: vector<u8>
-    ): bool {
-        // let state = borrow_global_mut<State>(get_client_address(client_id));
+    public(friend) fun check_for_misbehaviour(
+        client_id: u32, header: vector<u8>
+    ): bool acquires State {
+        let state = borrow_global_mut<State>(get_client_address(client_id));
 
-        // let header = decode_header(header);
+        let header = decode_header(header);
 
-        // let expected_timestamp =
-        //     header.signed_header.time.seconds * 1_000_000_000
-        //         + (header.signed_header.time.nanos as u64);
+        let expected_timestamp =
+            header.signed_header.time.seconds * 1_000_000_000
+                + (header.signed_header.time.nanos as u64);
 
-        // if (smart_table::contains(&state.consensus_states, header.signed_header.height)) {
-        //     let ConsensusState {
-        //         timestamp,
-        //         app_hash: MerkleRoot { hash },
-        //         next_validators_hash
-        //     } = smart_table::borrow(&state.consensus_states, header.signed_header.height);
+        if (smart_table::contains(&state.consensus_states, header.signed_header.height)) {
+            let ConsensusState {
+                timestamp,
+                app_hash: MerkleRoot { hash },
+                next_validators_hash
+            } = smart_table::borrow(
+                &state.consensus_states, header.signed_header.height
+            );
 
-        //     if (timestamp != &expected_timestamp
-        //         || hash != &header.signed_header.app_hash
-        //         || next_validators_hash != &header.signed_header.next_validators_hash) {
-        //         height::set_revision_height(&mut state.client_state.frozen_height, 1);
-        //     };
-        // };
+            if (timestamp != &expected_timestamp
+                || hash != &header.signed_header.app_hash
+                || next_validators_hash != &header.signed_header.next_validators_hash) {
+                height::set_revision_height(&mut state.client_state.frozen_height, 1);
+            };
+        };
 
         // // TODO(aeryz): implement consensus state metadata tracking here
         false
@@ -566,9 +574,8 @@ module ibc::cometbls_lc {
 
         let trusted_height = height::decode_bcs(buf);
 
-        // let proof_bz = bcs_utils::peel_bytes(buf);
-        // let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
-        let zero_knowledge_proof = groth16_verifier::default();
+        let proof_bz = bcs_utils::peel_bytes(buf);
+        let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
 
         Header { signed_header, trusted_height, zero_knowledge_proof }
     }
@@ -582,7 +589,7 @@ module ibc::cometbls_lc {
         }
     }
 
-    public fun light_header_as_input_hash(header: &LightHeader): vector<u8> {
+    public(friend) fun light_header_as_input_hash(header: &LightHeader): vector<u8> {
         let inputs_hash = vector::empty();
 
         let height = bcs::to_bytes<u256>(&(header.height as u256));
@@ -602,23 +609,8 @@ module ibc::cometbls_lc {
         inputs_hash
     }
 
-    // #[test]
-    // fun parse_client_state() {
-    //     let client_state = ClientState {
-    //         chain_id: string::utf8(b"this-chain"),
-    //         trusting_period: 9999999,
-    //         unbonding_period: 12367,
-    //         max_clock_drift: 0,
-    //         frozen_height: height::new(11, 1273),
-    //         latest_height: height::new(127638, 1000)
-    //     };
-
-    //     let cs = decode_client_state(bcs::to_bytes(&client_state));
-    //     std::debug::print(&cs);
-    // }
-
     #[test]
-    fun parse_consensus_state_new() {
+    fun parse_consensus_state() {
         let output =
             x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000051615000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001600000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c";
         let consensus_state = ConsensusState {
@@ -635,23 +627,6 @@ module ibc::cometbls_lc {
         assert!(cs.timestamp == consensus_state.timestamp, 0);
         assert!(cs.app_hash.hash == consensus_state.app_hash.hash, 0);
         assert!(cs.next_validators_hash == consensus_state.next_validators_hash, 0);
-    }
-
-    #[test]
-    fun parse_consensus_state() {
-        let consensus_state = ConsensusState {
-            timestamp: 42,
-            app_hash: MerkleRoot {
-                hash: x"0000000000000000000000000000000000000000000000000000000000000000"
-            },
-            next_validators_hash: x"0000000000000000000000000000000000000000000000000000000000000000"
-        };
-
-        let cs_bytes = encode_consensus_state(&consensus_state);
-        std::debug::print(&cs_bytes);
-
-        let cs = decode_consensus_state(cs_bytes);
-        std::debug::print(&cs);
     }
 
     #[test]
@@ -707,7 +682,7 @@ module ibc::cometbls_lc {
             next_validators_hash: x"0000000000000000000000000000000000000000000000000000000000000000"
         };
 
-        let (cs, cons, _counterparty_channel_id) =
+        let (cs, cons, _counterparty_channel_id, _) =
             create_client(
                 ibc_signer,
                 0,
@@ -734,7 +709,7 @@ module ibc::cometbls_lc {
         client_state.trusting_period = 2;
         consensus_state.timestamp = 20000;
 
-        let (cs, cons, _counterparty_channel_id) =
+        let (cs, cons, _counterparty_channel_id, _) =
             create_client(
                 ibc_signer,
                 2,
@@ -821,25 +796,33 @@ module ibc::cometbls_lc {
 
     #[test]
     fun see_proof() {
-        let client_state =
-            decode_client_state(
-                x"0e756e696f6e2d6465766e65742d3100c05bbba87a050000e0926517010000000000000000000000000000000000000100000000000000580f000000000000ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b"
-            );
         let proof =
             x"4103ade4a5f5803a439835c636395a8d648dee57b2fc90d98dc17fa887159b69638b91da3fd0782e51c6b3986e9e672fd566868e71f3dbc2d6c2cd6fbb3e361af2a7202a952c4d0b798ec0de2a4f9ffbd7aa3b235518b01fee732288096f9ffda2f80d040002ca3d07260204ca3d20adedf132c9cb77bb904388a64fa0fc1b54938ae672604ce9336aa3421347039e2000260406ca3d2059afec8947be61dc17607388c182dae393f33034af7326e70a6b5f0fff312641200026060eca3d20b8722feb939d1e679cf98a8502aac872fc432a2fa768176d4c148ff4f114df782000050a1eca3d202120f877e465d7a5540812ba9a0e61cd191793464aa00866684aa8f4e82b4592a57e260c4aca3d201caa81c27aa4b33f8ff2965a354af7d27ace46dce1848a0e50f93dafb619c5e22000050e64ca3d202120ea740f79511dd9416b7d9cda5f898a14d92004d6d8ca2e60b6b11b377b42b3892710a201ca3d202af9228506f9f6fd89ef79e404f830a92e0b92d5722bc532bc27d8e1b35c42412000047761736d2001b43353b2931d22228e157ed588bf40e87d0cbfcf6dc7c31a4c0618c19c83890100022101e3fff914e010fc236318926fc50bbd8b72dd31fcb8af7e74c1c2024ffbd559930021012cf0c2aa4e971f5ea8ad3b77d421d1bf7d1d466bafb3f171252fa2da1ee1a58f00";
 
         let proof = ics23::decode_membership_proof(proof);
 
         std::debug::print(&proof);
-        std::debug::print(&client_state);
+    }
 
-        let key = ibc::commitment::connection_commitment_key(4);
-        std::debug::print(&key);
+    #[test]
+    fun test_zkp_works() {
+        let consensus =
+            decode_consensus_state(
+                x"00000000000000000000000000000000000000000000000018278e59cf08a67d3b1d403acd5f51abf9fc88024262e860935f014492dad5e7e69fb7212859a40912f1896da178c747a930cbc87d8e33b87c1d1fae377ab167523fa07d579fdb22"
+            );
+        let header =
+            decode_header(
+                x"6ee4480000000000432cbe67000000002114361112f1896da178c747a930cbc87d8e33b87c1d1fae377ab167523fa07d579fdb2212f1896da178c747a930cbc87d8e33b87c1d1fae377ab167523fa07d579fdb2221befefbd32576db7295e9ea22f75ca8111f3b983746c3cbaf9454dfddc7ef8e090000000000000058e4480000000000c0011b68961bb5f6bfb3b871f2ccaee38e9730d021121a356b9fd27ae2f1ccdca2a2930f540e8e5b8d162af95961be98d262c152902185bba758d76982e5fb39db112acea2d0916ead9ebc7cc0f9b242a55265804f65fff735f100556ec2a8a9f89a3bc27be5bb57ab0577c7d0a2f13fa221886e9309bf3b3ad8c59f319888ab4f971e752f83110ef218cad61d4b89a788c101cdc300b0ef7222ab8430d49f4d7c8a664182c3b959a176a52e9fa04a1fb20a0ee7bcf06066e19e171925c05bcc2c25"
+            );
 
-        let path = vector<u8>[0x03];
-        vector::append(&mut path, client_state.contract_address);
-        vector::append(&mut path, key);
-        std::debug::print(&path);
+        let res =
+            groth16_verifier::verify_zkp(
+                &string::utf8(b"union-testnet-9"),
+                &consensus.next_validators_hash,
+                light_header_as_input_hash(&header.signed_header),
+                &header.zero_knowledge_proof
+            );
 
+        assert!(res, 1);
     }
 }

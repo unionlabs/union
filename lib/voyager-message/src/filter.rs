@@ -5,7 +5,7 @@ use jaq_interpret::{Ctx, Filter, FilterT, ParseCtx, RcIter, Val};
 use tracing::{error, instrument, trace};
 use unionlabs::ErrorReporter;
 use voyager_vm::{
-    filter::{FilterResult, InterestFilter},
+    filter::{FilterResult, Interest, InterestFilter},
     Op,
 };
 
@@ -80,15 +80,28 @@ impl InterestFilter<VoyagerMessage> for JaqInterestFilter {
     fn check_interest<'a>(&'a self, op: &Op<VoyagerMessage>) -> FilterResult<'a> {
         let msg_json = Val::from(serde_json::to_value(op.clone()).unwrap());
 
+        let mut tags = vec![];
+
         for (filter, plugin_name) in &self.filters {
             match run_filter(filter, plugin_name, msg_json.clone()) {
-                Ok(interest @ FilterResult::Interest(_)) => return interest,
-                Ok(FilterResult::NoInterest) => {}
+                Ok(JaqFilterResult::Copy(tag)) => tags.push(tag),
+                Ok(JaqFilterResult::Take(tag)) => {
+                    tags.push(tag);
+                    return FilterResult::Interest(Interest { tags, remove: true });
+                }
+                Ok(JaqFilterResult::NoInterest) => {}
                 Err(_) => {}
             }
         }
 
-        FilterResult::NoInterest
+        if tags.is_empty() {
+            FilterResult::NoInterest
+        } else {
+            FilterResult::Interest(Interest {
+                tags,
+                remove: false,
+            })
+        }
     }
 }
 
@@ -102,7 +115,7 @@ pub fn run_filter<'a>(
     filter: &Filter,
     plugin_name: &'a str,
     msg_json: Val,
-) -> Result<FilterResult<'a>, ()> {
+) -> Result<JaqFilterResult<'a>, ()> {
     let inputs = RcIter::new(core::iter::empty());
     let mut out = filter
         .run((
@@ -143,14 +156,19 @@ pub fn run_filter<'a>(
     } else {
         match result {
             Val::Bool(true) => {
-                trace!("interest");
+                trace!("take");
 
-                Ok(FilterResult::Interest(plugin_name))
+                Ok(JaqFilterResult::Take(plugin_name))
             }
             Val::Bool(false) => {
+                trace!("copy");
+
+                Ok(JaqFilterResult::Copy(plugin_name))
+            }
+            Val::Null => {
                 trace!("no interest");
 
-                Ok(FilterResult::NoInterest)
+                Ok(JaqFilterResult::NoInterest)
             }
             _ => {
                 error!("filter returned a non-boolean value: {result:?}");
@@ -159,4 +177,15 @@ pub fn run_filter<'a>(
             }
         }
     }
+}
+
+pub enum JaqFilterResult<'a> {
+    NoInterest,
+    Copy(&'a str),
+    Take(&'a str),
+}
+
+/// For simple filters that either take the item they're interested in or express no interest (i.e. they never just copy an item). This wraps the provided filter (which is expected to return a bool) in an expression maps that maps false to null.
+pub fn simple_take_filter(inner_filter: String) -> String {
+    format!(r#"if {inner_filter} then true else null end"#)
 }

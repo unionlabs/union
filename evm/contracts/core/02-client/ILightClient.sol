@@ -8,6 +8,13 @@ struct ConsensusStateUpdate {
     uint64 height;
 }
 
+event CreateLensClient(
+    uint32 indexed clientId,
+    uint32 indexed l1ClientId,
+    uint32 indexed l2ClientId,
+    string l2ChainId
+);
+
 /**
  * @dev This defines an interface for Light Client contract can be integrated with ibc-solidity.
  * You can register the Light Client contract that implements this through `registerClient` on IBCHandler.
@@ -18,9 +25,11 @@ interface ILightClient {
      * If succeeded, it returns a commitment for the initial state.
      */
     function createClient(
+        address caller,
         uint32 clientId,
         bytes calldata clientStateBytes,
-        bytes calldata consensusStateBytes
+        bytes calldata consensusStateBytes,
+        address relayer
     )
         external
         returns (
@@ -56,8 +65,10 @@ interface ILightClient {
      * 5. persist the state(s) on the host
      */
     function updateClient(
+        address caller,
         uint32 clientId,
-        bytes calldata clientMessageBytes
+        bytes calldata clientMessageBytes,
+        address relayer
     ) external returns (ConsensusStateUpdate memory update);
 
     /**
@@ -65,8 +76,10 @@ interface ILightClient {
      * If succeeded, the client should freeze itself to prevent getting further updates.
      */
     function misbehaviour(
+        address caller,
         uint32 clientId,
-        bytes calldata clientMessageBytes
+        bytes calldata clientMessageBytes,
+        address relayer
     ) external;
 
     /**

@@ -15,12 +15,13 @@ workspace = true
 cometbft-rpc                = { workspace = true }
 cometbft-types              = { workspace = true }
 cometbls-light-client-types = { workspace = true, features = ["serde"] }
+embed-commit                = { workspace = true }
 enumorph                    = { workspace = true }
 galois-rpc                  = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 num-bigint                  = { workspace = true }
-protos                      = { workspace = true }
+protos                      = { workspace = true, features = ["client"] }
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }
 subset-of                   = { workspace = true }

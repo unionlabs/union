@@ -3,12 +3,12 @@ import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
 import { privateKeyToAccount } from "viem/accounts"
 import { holesky } from "viem/chains"
-import { createUnionClient } from "#mod.ts"
+import { createUnionClient } from "../src/mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
   getRecommendedChannels
-} from "#query/offchain/ucs03-channels"
+} from "../src/query/offchain/ucs03-channels.ts"
 
 const cliArgs = parseArgs({
   args: process.argv.slice(2),

@@ -1,5 +1,9 @@
 #![feature(trait_alias, try_find)]
-#![warn(clippy::pedantic, clippy::unwrap_used)]
+#![warn(
+    clippy::pedantic,
+    clippy::unwrap_used,
+    closure_returning_async_block // TODO: Make this workspace-wide
+)]
 #![allow(
     // required due to return_position_impl_trait_in_trait false positives
     clippy::manual_async_fn,
@@ -18,9 +22,14 @@ use anyhow::{anyhow, Context as _};
 use clap::Parser;
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
-use pg_queue::PgQueueConfig;
+use pg_queue::{
+    default_max_connections, default_min_connections, default_retryable_error_expo_backoff_max,
+    default_retryable_error_expo_backoff_multiplier, PgQueueConfig,
+};
+use reqwest::Url;
 use schemars::gen::{SchemaGenerator, SchemaSettings};
 use serde::Serialize;
+use serde_json::Value;
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -31,19 +40,21 @@ use voyager_message::{
         equivalent_chain_ids::EquivalentChainIds, get_plugin_info,
         ibc_spec_handler::IbcSpecHandler, Context, ModulesConfig,
     },
-    core::{IbcSpec, QueryHeight},
-    filter::{make_filter, run_filter, JaqInterestFilter},
-    rpc::{IbcState, VoyagerRpcClient},
+    filter::{make_filter, run_filter, JaqFilterResult},
+    primitives::{IbcSpec, QueryHeight},
+    rpc::{server::cache, IbcState, VoyagerRpcClient},
     VoyagerMessage,
 };
-use voyager_vm::{call, filter::FilterResult, promise, Op, Queue};
+use voyager_vm::{call, promise, Op, Queue};
 
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
     cli::{AppArgs, Command, ConfigCmd, ModuleCmd, MsgCmd, PluginCmd, QueueCmd, RpcCmd},
-    config::{default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig},
+    config::{
+        default_metrics_endpoint, default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig,
+    },
     queue::{QueueConfig, Voyager},
     utils::make_msg_create_client,
 };
@@ -57,6 +68,7 @@ compile_error!(
 pub mod api;
 pub mod cli;
 pub mod config;
+pub mod metrics;
 pub mod queue;
 
 fn main() -> ExitCode {
@@ -134,6 +146,20 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
         None => Err(anyhow!("config file must be specified")),
     };
 
+    let get_rest_url = |rest_url: Option<String>| match (get_voyager_config(), rest_url) {
+        (Ok(config), None) => format!("http://{}", config.voyager.rest_laddr),
+        (_, Some(rest_url)) => rest_url,
+        (Err(_), None) => format!("http://{}", default_rest_laddr()),
+    };
+
+    let get_rpc_url = |rpc_url: Option<String>| match (get_voyager_config(), rpc_url) {
+        (Ok(config), None) => format!("http://{}", config.voyager.rpc_laddr),
+        (_, Some(rpc_url)) => {
+            Url::parse(&rpc_url).map_or_else(|_| format!("https://{rpc_url}"), |e| e.to_string())
+        }
+        (Err(_), None) => format!("http://{}", default_rpc_laddr()),
+    };
+
     match args.command {
         Command::Config(cmd) => match cmd {
             ConfigCmd::Print => {
@@ -154,16 +180,23 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     num_workers: 1,
                     rest_laddr: default_rest_laddr(),
                     rpc_laddr: default_rpc_laddr(),
+                    metrics_endpoint: default_metrics_endpoint(),
                     queue: QueueConfig::PgQueue(PgQueueConfig {
-                        database_url: String::new(),
-                        max_connections: None,
-                        min_connections: None,
+                        database_url: "postgres://postgres:postgrespassword@127.0.0.1:5432/default"
+                            .into(),
+                        max_connections: default_max_connections(),
+                        min_connections: default_min_connections(),
                         idle_timeout: None,
                         max_lifetime: None,
                         optimize_batch_limit: None,
+                        retryable_error_expo_backoff_max: default_retryable_error_expo_backoff_max(
+                        ),
+                        retryable_error_expo_backoff_multiplier:
+                            default_retryable_error_expo_backoff_multiplier(),
                     }),
                     optimizer_delay_milliseconds: 100,
                     ipc_client_request_timeout: Duration::new(60, 0),
+                    cache: voyager_message::rpc::server::cache::Config::default(),
                 },
             }),
             ConfigCmd::Schema => print_json(
@@ -175,7 +208,11 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             ),
         },
         Command::Start => {
-            let voyager = Voyager::new(get_voyager_config()?).await?;
+            let config = get_voyager_config()?;
+
+            metrics::init(&config.voyager.metrics_endpoint);
+
+            let voyager = Voyager::new(config).await?;
 
             info!("starting relay service");
 
@@ -203,8 +240,13 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 );
 
                 match result {
-                    Ok(FilterResult::Interest(tag)) => println!("interest ({tag})"),
-                    Ok(FilterResult::NoInterest) => println!("no interest"),
+                    Ok(JaqFilterResult::Take(tag)) => {
+                        println!("interest (take, {tag})");
+                    }
+                    Ok(JaqFilterResult::Copy(tag)) => {
+                        println!("interest (copy, {tag})");
+                    }
+                    Ok(JaqFilterResult::NoInterest) => println!("no interest"),
                     Err(()) => println!("failed"),
                 }
             }
@@ -268,6 +310,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
             match cli_msg {
                 QueueCmd::Enqueue { op, rest_url } => {
+                    let rest_url = get_rest_url(rest_url);
+
                     send_enqueue(&rest_url, op).await?;
                 }
                 // NOTE: Temporarily disabled until i figure out a better way to implement this with the new queue design
@@ -299,21 +343,21 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                     print_json(&record);
                 }
-                QueueCmd::QueryFailedById { id, requeue } => {
+                QueueCmd::QueryFailedById {
+                    id,
+                    requeue,
+                    rest_url,
+                } => {
+                    let rest_url = get_rest_url(rest_url);
+
                     let q = db()?.await?;
 
                     let record = q.query_failed_by_id(id.inner()).await?;
 
                     if requeue {
-                        if let Some(record) = record.as_ref().map(|r| r.item.0.clone()) {
-                            let res = q
-                                .enqueue(
-                                    record,
-                                    &JaqInterestFilter::new(vec![])
-                                        .expect("empty filter can be built"),
-                                )
-                                .await?;
-                            print_json(&res);
+                        if let Some(op) = record.as_ref().map(|r| r.item.0.clone()) {
+                            send_enqueue(&rest_url, op).await?;
+                            println!("requeued");
                         }
                     } else {
                         print_json(&record);
@@ -328,6 +372,9 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             rpc_url,
             rest_url,
         } => {
+            let rpc_url = get_rpc_url(rpc_url);
+            let rest_url = get_rest_url(rest_url);
+
             let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(rpc_url)?;
 
             let start_height = match height {
@@ -350,14 +397,16 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
             });
 
             if enqueue {
-                println!("enqueueing op for `{chain_id}` at `{start_height}`");
+                println!("enqueueing op for {chain_id} at {start_height}");
                 send_enqueue(&rest_url, op).await?;
             } else {
                 print_json(&op);
             }
         }
-        Command::Rpc { cmd, rpc_url: url } => {
-            let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(url)?;
+        Command::Rpc { cmd, rpc_url } => {
+            let rpc_url = get_rpc_url(rpc_url);
+
+            let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(rpc_url)?;
 
             let ibc_handlers = [
                 (IbcClassic::ID, IbcSpecHandler::new::<IbcClassic>()),
@@ -374,11 +423,16 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     ibc_spec_id,
                     height,
                 } => {
-                    let client_meta = voyager_client
-                        .client_meta(on.clone(), ibc_spec_id.clone(), height, client_id.clone())
+                    let client_state_meta = voyager_client
+                        .client_state_meta(
+                            on.clone(),
+                            ibc_spec_id.clone(),
+                            height,
+                            client_id.clone(),
+                        )
                         .await?;
 
-                    print_json(&client_meta);
+                    print_json(&client_state_meta);
                 }
                 RpcCmd::ClientInfo {
                     on,
@@ -494,9 +548,41 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         }
                     }
                 }
+                RpcCmd::LatestHeight { on, finalized } => {
+                    let height = voyager_client.query_latest_height(on, finalized).await?;
+                    print_json(&height);
+                }
+                RpcCmd::LatestTimestamp { on, finalized } => {
+                    let timestamp = voyager_client.query_latest_timestamp(on, finalized).await?;
+                    print_json(&timestamp);
+                }
+                RpcCmd::IbcState {
+                    on,
+                    ibc_spec_id,
+                    height,
+                    path,
+                } => {
+                    let response = voyager_client
+                        .query_ibc_state(on, ibc_spec_id, height, path)
+                        .await?;
+                    print_json(&response);
+                }
+                RpcCmd::Plugin { name, method, args } => {
+                    let response = voyager_client
+                        .plugin_custom(
+                            name,
+                            method,
+                            args.into_iter()
+                                .map(|arg| arg.parse::<Value>().unwrap_or(Value::String(arg)))
+                                .collect(),
+                        )
+                        .await?;
+                    print_json(&response);
+                }
             }
         }
         Command::Msg(msg) => match msg {
+            // TODO: Do this all with rpc calls instead of spinning up a full voyager instance
             MsgCmd::CreateClient {
                 on,
                 tracking,
@@ -509,7 +595,21 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 rest_url,
                 client_state_config,
                 consensus_state_config,
+                config,
             } => {
+                let client_state_config = if client_state_config.is_null() {
+                    config.clone()
+                } else {
+                    client_state_config
+                };
+                let consensus_state_config = if consensus_state_config.is_null() {
+                    config
+                } else {
+                    consensus_state_config
+                };
+
+                let rest_url = get_rest_url(rest_url);
+
                 let voyager_config = get_voyager_config()?;
 
                 let ctx = Context::new(
@@ -521,6 +621,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         h.register::<IbcUnion>();
                     },
                     Duration::new(60, 0),
+                    cache::Config::default(),
                 )
                 .await?;
 
@@ -542,12 +643,12 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 .await?;
 
                 if enqueue {
-                    println!("enqueueing msg");
                     send_enqueue(&rest_url, op).await?;
                 } else {
                     print_json(&op);
                 }
             }
+            // TODO: Do this all with rpc calls instead of spinning up a full voyager instance
             MsgCmd::UpdateClient {
                 on,
                 client_id,
@@ -556,6 +657,8 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 enqueue,
                 rest_url,
             } => {
+                let rest_url = get_rest_url(rest_url);
+
                 let voyager_config = get_voyager_config()?;
 
                 let ctx = Context::new(
@@ -567,6 +670,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                         h.register::<IbcUnion>();
                     },
                     Duration::new(60, 0),
+                    cache::Config::default(),
                 )
                 .await?;
 
@@ -579,9 +683,9 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     .await?
                     .ok_or(anyhow!("client info not found"))?;
 
-                let client_meta = ctx
+                let client_state_meta = ctx
                     .rpc_server
-                    .client_meta(&on, &ibc_spec_id, QueryHeight::Latest, client_id.clone())
+                    .client_state_meta(&on, &ibc_spec_id, QueryHeight::Latest, client_id.clone())
                     .await?
                     .ok_or(anyhow!("client info not found"))?;
 
@@ -589,7 +693,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     Some(update_to) => update_to,
                     None => {
                         ctx.rpc_server
-                            .query_latest_height(&client_meta.counterparty_chain_id, true)
+                            .query_latest_height(&client_state_meta.counterparty_chain_id, true)
                             .await?
                     }
                 };
@@ -597,10 +701,10 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 let op = promise::<VoyagerMessage>(
                     [call(FetchUpdateHeaders {
                         client_type: client_info.client_type,
-                        chain_id: client_meta.counterparty_chain_id,
+                        chain_id: client_state_meta.counterparty_chain_id,
                         counterparty_chain_id: on.clone(),
                         client_id: client_id.clone(),
-                        update_from: client_meta.counterparty_height,
+                        update_from: client_state_meta.counterparty_height,
                         update_to,
                     })],
                     [],
@@ -612,7 +716,6 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                 );
 
                 if enqueue {
-                    println!("enqueueing msg");
                     send_enqueue(&rest_url, op).await?;
                 } else {
                     print_json(&op);
@@ -652,9 +755,9 @@ pub mod utils {
     use voyager_message::{
         call::SubmitTx,
         context::Context,
-        core::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
         data::IbcDatagram,
         module::{ClientBootstrapModuleClient, ClientModuleClient},
+        primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
         VoyagerMessage,
     };
     use voyager_vm::{call, Op};

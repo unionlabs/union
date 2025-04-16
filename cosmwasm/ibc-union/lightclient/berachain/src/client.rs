@@ -1,9 +1,11 @@
-use beacon_api_types::{ExecutionPayloadHeaderSsz, Mainnet};
+use beacon_api_types::{chain_spec::Mainnet, deneb};
 use berachain_light_client_types::{ClientState, ConsensusState, Header};
-use cosmwasm_std::Empty;
+use cosmwasm_std::{Addr, Empty};
 use ethereum_light_client_types::StorageProof;
-use ibc_union_light_client::IbcClient;
-use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
+use ibc_union_light_client::{
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
+use ibc_union_msg::lightclient::Status;
 use tendermint_light_client::client::TendermintLightClient;
 use unionlabs::{
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
@@ -33,12 +35,12 @@ impl IbcClient for BerachainLightClient {
     type StorageProof = StorageProof;
 
     fn verify_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         ethereum_light_client::client::verify_membership(
             key,
@@ -51,11 +53,11 @@ impl IbcClient for BerachainLightClient {
     }
 
     fn verify_non_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         ethereum_light_client::client::verify_non_membership(
             key,
@@ -78,7 +80,9 @@ impl IbcClient for BerachainLightClient {
         client_state.chain_id.to_string()
     }
 
-    fn status(_client_state: &Self::ClientState) -> Status {
+    fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
+        let _ = client_state;
+        let _ = ctx;
         // FIXME: expose the ctx to this call to allow threading this call to L1
         // client. generally, we want to thread if a client is an L2 so always
         // provide the ctx?
@@ -86,24 +90,21 @@ impl IbcClient for BerachainLightClient {
     }
 
     fn verify_creation(
+        _caller: Addr,
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<
-        Option<Vec<VerifyCreationResponseEvent>>,
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
-        Ok(None)
+        _relayer: Addr,
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>> {
+        Ok(ClientCreationResult::new())
     }
 
     // TODO: rearrange to avoid the clones
     fn verify_header(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         header: Self::Header,
-        _caller: cosmwasm_std::Addr,
-    ) -> Result<
-        (u64, Self::ClientState, Self::ConsensusState),
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
+        _relayer: Addr,
+    ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 
         // 1. extract L1 state
@@ -126,7 +127,7 @@ impl IbcClient for BerachainLightClient {
                 b"beacon".to_vec(),
                 [LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX].to_vec(),
             ],
-            ExecutionPayloadHeaderSsz::<Mainnet>::try_from(header.execution_header.clone())
+            deneb::ExecutionPayloadHeaderSsz::<Mainnet>::try_from(header.execution_header.clone())
                 .map_err(Into::<Error>::into)?
                 .encode_as::<Ssz>(),
         )
@@ -143,22 +144,29 @@ impl IbcClient for BerachainLightClient {
 
         // 4. update
         let update_height = header.execution_header.block_number;
-        if client_state.latest_height < update_height {
-            client_state.latest_height = update_height;
-        }
-        let new_consensus_state = ConsensusState {
+
+        let consensus_state = ConsensusState {
             timestamp: header.execution_header.timestamp,
             state_root: header.execution_header.state_root,
             storage_root: header.account_proof.storage_root,
         };
 
-        Ok((update_height, client_state, new_consensus_state))
+        let state_update = StateUpdate::new(update_height, consensus_state);
+
+        if client_state.latest_height < update_height {
+            client_state.latest_height = update_height;
+            Ok(state_update.overwrite_client_state(client_state))
+        } else {
+            Ok(state_update)
+        }
     }
 
     fn misbehaviour(
-        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
+        _relayer: Addr,
+    ) -> Result<Self::ClientState, IbcClientError<Self>> {
         Err(Error::Unimplemented.into())
     }
 }

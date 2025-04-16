@@ -1,15 +1,14 @@
 use std::{ffi::OsString, str::FromStr};
 
 use clap::{self, Parser, Subcommand};
+use ibc_union_spec::IbcUnion;
 use unionlabs::{self, bounded::BoundedI64, ibc::core::client::height::Height, result_unwrap};
 use voyager_message::{
-    core::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
     module::{ClientModuleInfo, ConsensusModuleInfo, ProofModuleInfo, StateModuleInfo},
+    primitives::{ChainId, ClientType, IbcInterface, IbcSpec, IbcSpecId, QueryHeight},
     RawClientId, VoyagerMessage,
 };
 use voyager_vm::{BoxDynError, Op};
-
-use crate::config::{default_rest_laddr, default_rpc_laddr};
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -68,24 +67,10 @@ pub enum Command {
         /// Automatically enqueue the op.
         #[arg(long, short = 'e', default_value_t = false)]
         enqueue: bool,
-        #[arg(
-            long,
-            global = true,
-            default_value_t = format!(
-                "http://{}",
-                default_rpc_laddr()
-            )
-        )]
-        rpc_url: String,
-        #[arg(
-            long,
-            global = true,
-            default_value_t = format!(
-                "http://{}",
-                default_rest_laddr()
-            )
-        )]
-        rest_url: String,
+        #[arg(long, global = true)]
+        rpc_url: Option<String>,
+        #[arg(long, global = true)]
+        rest_url: Option<String>,
     },
     /// Run Voyager.
     Start,
@@ -98,15 +83,8 @@ pub enum Command {
     Module(ModuleCmd),
     /// Call into the JSON-RPC of a running voyager instance.
     Rpc {
-        #[arg(
-            long,
-            global = true,
-            default_value_t = format!(
-                "http://{}",
-                default_rpc_laddr()
-            )
-        )]
-        rpc_url: String,
+        #[arg(long, short = 'r', global = true)]
+        rpc_url: Option<String>,
         #[command(subcommand)]
         cmd: RpcCmd,
     },
@@ -127,21 +105,15 @@ pub enum ConfigCmd {
 type Pg64 = BoundedI64<1, { i64::MAX }>;
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum QueueCmd {
     /// Enqueue a new op to the queue of an already running voyager instance.
     #[command(alias = "e")]
     Enqueue {
         #[arg(value_parser(|s: &str| serde_json::from_str::<Op<VoyagerMessage>>(s)))]
         op: Op<VoyagerMessage>,
-        #[arg(
-            long,
-            global = true,
-            default_value_t = format!(
-                "http://{}",
-                default_rest_laddr()
-            )
-        )]
-        rest_url: String,
+        #[arg(long, global = true)]
+        rest_url: Option<String>,
     },
 
     // History {
@@ -180,6 +152,8 @@ pub enum QueueCmd {
         id: Pg64,
         #[arg(long, short = 'e')]
         requeue: bool,
+        #[arg(long)]
+        rest_url: Option<String>,
     },
 }
 
@@ -216,7 +190,12 @@ pub enum RpcCmd {
     ClientState {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
-        #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        #[arg(
+            long,
+            short = 's',
+            default_value_t = IbcUnion::ID,
+            value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned())))
+        )]
         ibc_spec_id: IbcSpecId,
         client_id: RawClientId,
         #[arg(long, default_value_t = QueryHeight::Latest)]
@@ -227,7 +206,12 @@ pub enum RpcCmd {
     ClientMeta {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
-        #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        #[arg(
+            long,
+            short = 's',
+            default_value_t = IbcUnion::ID,
+            value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned())))
+        )]
         ibc_spec_id: IbcSpecId,
         client_id: RawClientId,
         #[arg(long, default_value_t = QueryHeight::Latest)]
@@ -236,14 +220,24 @@ pub enum RpcCmd {
     ClientInfo {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
-        #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        #[arg(
+            long,
+            short = 's',
+            default_value_t = IbcUnion::ID,
+            value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned())))
+        )]
         ibc_spec_id: IbcSpecId,
         client_id: RawClientId,
     },
     ConsensusState {
         #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
-        #[arg(value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        #[arg(
+            long,
+            short = 's',
+            default_value_t = IbcUnion::ID,
+            value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned())))
+        )]
         ibc_spec_id: IbcSpecId,
         client_id: RawClientId,
         trusted_height: Height,
@@ -251,6 +245,42 @@ pub enum RpcCmd {
         height: QueryHeight,
         #[arg(long, short = 'd', default_value_t = false)]
         decode: bool,
+    },
+    LatestHeight {
+        #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId,
+        #[arg(long, short = 'f', default_value_t = false)]
+        finalized: bool,
+    },
+    LatestTimestamp {
+        #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId,
+        #[arg(long, short = 'f', default_value_t = false)]
+        finalized: bool,
+    },
+    IbcState {
+        #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
+        on: ChainId,
+        #[arg(
+            long,
+            short = 's',
+            default_value_t = IbcUnion::ID,
+            value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned())))
+        )]
+        ibc_spec_id: IbcSpecId,
+        #[arg(long, default_value_t = QueryHeight::Latest)]
+        height: QueryHeight,
+        #[arg(
+            // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
+            value_parser(serde_json::Value::from_str),
+        )]
+        path: serde_json::Value,
+    },
+    Plugin {
+        name: String,
+        method: String,
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
+        args: Vec<String>,
     },
 }
 
@@ -264,7 +294,12 @@ pub enum MsgCmd {
         tracking: ChainId,
         #[arg(long, value_parser(|s: &str| ok(IbcInterface::new(s.to_owned()))))]
         ibc_interface: IbcInterface,
-        #[arg(long, value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        #[arg(
+            long,
+            short = 's',
+            default_value_t = IbcUnion::ID,
+            value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned())))
+        )]
         ibc_spec_id: IbcSpecId,
         #[arg(long, value_parser(|s: &str| ok(ClientType::new(s.to_owned()))))]
         client_type: ClientType,
@@ -278,41 +313,58 @@ pub enum MsgCmd {
         )]
         metadata: serde_json::Value,
 
+        /// Additional client state config to pass to `self_client_state()`.
+        ///
+        /// This is mutually exclusive with `--config`.
         #[arg(
             long,
             // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
             value_parser(serde_json::Value::from_str),
-            default_value_t = serde_json::Value::Null
+            default_value_t = serde_json::Value::Null,
+            conflicts_with = "config"
         )]
         client_state_config: serde_json::Value,
 
+        /// Additional consensus state config to pass to `self_consensus_state()`.
+        ///
+        /// This is mutually exclusive with `--config`.
         #[arg(
             long,
             // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
             value_parser(serde_json::Value::from_str),
-            default_value_t = serde_json::Value::Null
+            default_value_t = serde_json::Value::Null,
+            conflicts_with = "config"
         )]
         consensus_state_config: serde_json::Value,
+
+        /// Additional config to pass to both `self_client_state()` `self_consensus_state()`.
+        ///
+        /// This is mutually exclusive with `--client-state-config` and `--consensus-state-config`.
+        #[arg(
+            long,
+            // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
+            value_parser(serde_json::Value::from_str),
+            default_value_t = serde_json::Value::Null,
+        )]
+        config: serde_json::Value,
 
         /// Automatically enqueue the op.
         #[arg(long, short = 'e', default_value_t = false)]
         enqueue: bool,
-        #[arg(
-            long,
-            global = true,
-            default_value_t = format!(
-                "http://{}",
-                default_rest_laddr()
-            )
-        )]
-        rest_url: String,
+        #[arg(long, global = true)]
+        rest_url: Option<String>,
     },
     UpdateClient {
         #[arg(long, value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
         on: ChainId,
         #[arg(long)]
         client_id: RawClientId,
-        #[arg(long, value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned()))))]
+        #[arg(
+            long,
+            short = 's',
+            default_value_t = IbcUnion::ID,
+            value_parser(|s: &str| ok(IbcSpecId::new(s.to_owned())))
+        )]
         ibc_spec_id: IbcSpecId,
         /// The height to update the client to. Defaults to the latest height of the chain being tracked.
         #[arg(long)]
@@ -321,15 +373,8 @@ pub enum MsgCmd {
         /// Automatically enqueue the op.
         #[arg(long, short = 'e', default_value_t = false)]
         enqueue: bool,
-        #[arg(
-            long,
-            global = true,
-            default_value_t = format!(
-                "http://{}",
-                default_rest_laddr()
-            )
-        )]
-        rest_url: String,
+        #[arg(long, global = true)]
+        rest_url: Option<String>,
     },
 }
 

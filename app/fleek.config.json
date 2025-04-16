@@ -1,9 +1,0 @@
-{
-  "sites": [
-    {
-      "slug": "union-app",
-      "distDir": "result",
-      "buildCommand": "echo 'build done by nix'"
-    }
-  ]
-}

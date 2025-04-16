@@ -59,15 +59,16 @@ This schema can be used by API clients and editors like VSCode to provide a bett
 
 The following definitions are used across the schema and documentation:
 
-- `source`: The chain or rollup where the packet is sent from, often prefixed such as `source_timestamp` or `source_transaction_hash`.
-- `destination`: The chain or roll-up that receives the packet. 
+- `source`: The chain or rollup where the packet is sent from, often prefixed such as `source_connection_id` or `source_channel_id`.
+- `destination`: The chain or roll-up that receives the packet.
 - `sender`: the contract or [EOA](https://ethereum.org/en/developers/docs/accounts/) that made the transfer.
 - `receiver`: the contract or [EOA](https://ethereum.org/en/developers/docs/accounts/) that received the transfer.
+- `universal_chain_id`: the [UCS-04](/ucs/04) chain reference.
 
 ## Queries
 
 Below we have documented some common useful queries that are also leveraged in [app.union.build](https://app.union.build). For all queries, Union
-provides caches to increase performance. Use the syntax `@cached(ttl: ${time_in_seconds})` to cache the query. The cache key, which is used 
+provides caches to increase performance. Use the syntax `@cached(ttl: ${time_in_seconds})` to cache the query. The cache key, which is used
 to map the query to the response, is computed by hashing:
 
 - the GraphQL query.
@@ -78,56 +79,61 @@ Caching can dramatically improve performance. Always add at least `@cached(ttl: 
 
 ### Transfers
 
-Transfers facilitated by Union (either `ucs01-relay-1` or `ics20-1`) are queryable using v1_transfers.
+Transfers facilitated by Union (`ucs03-zkgm-0`) are queryable using v2_transfers.
 
 ```graphql
 query GetLatest10Transfers @cached(ttl: 1) {
-  v1_transfers(
-    limit: 10,
-    order_by: { source_timestamp: desc }
-  ) {
-    tokens {
+  v2_transfers(args: {
+    p_limit: 10
+  }) {
+    sender_canonical
+    receiver_canonical
+    base_amount
+    base_token_meta {
       denom
-      amount
+      representations {
+        name
+        symbol
+        decimals
+      }
     }
-	  sender
-	  receiver
   }
 }
 ```
 
 It provides information on the sender, receiver, current stage of the transfer, and asset metadata.
 
-To query for specific addresses, add the `sender` and `receiver` to the where clause:
+To query for specific addresses (either sender or receiver), add the [canonical](/ucs/05/) address to the `p_addresses_canonical` args clause:
 
 ```graphql
-query GetAllUserTransfers @cached(ttl: 1) {
-  v1_transfers(
-    order_by: { source_timestamp: desc }, 
-    where: {
-      _or: [
-        { sender: { _eq: "union1sw44hacrewvkuvm70zfxhwa9u6vm4f8yc8spqu" }},  
-        { receiver: { _eq: "union1sw44hacrewvkuvm70zfxhwa9u6vm4f8yc8spqu" }}
-      ]
-    }
-  ) {
-    tokens {
+query GetLatest10UserTransfers @cached(ttl: 1) {
+  v2_transfers(args: {
+    p_limit: 10,
+    p_addresses_canonical: [
+      "0x3c5daaa3c96ab8fe4cfc2fb6d76193fe959a9f82"
+    ]
+  }) {
+    sender_canonical
+    receiver_canonical
+    base_amount
+    base_token_meta {
       denom
-      amount
+      representations {
+        name
+        symbol
+        decimals
+      }
     }
-    receiver
-    sender
-    source_chain { display_name }
-    destination_chain { display_name }
+    source_universal_chain_id
+    destination_universal_chain_id
   }
 }
-
 ```
 Aggregate statistics about all transfers and packets are also available, such as the total amount of transfers and packets:
 
 ```graphql
 query {
- 	v1_statistics {
+  v2_stats_count {
     name
     value
   }
@@ -140,114 +146,230 @@ Packets, used in general message passing, can be tracked using v1_packets, simil
 
 ```graphql
 query GetLatest10Packets @cached(ttl: 1) {
-  v1_packets(
-    limit: 10,
-    order_by: { source_timestamp: desc }
-  ) {
-    source_chain { display_name }
-    destination_chain { display_name }
-		source_packet_data
-		source_sequence
-    destination_sequence
+  v2_packets(args: {
+    p_limit:10
+  }) {
+    source_universal_chain_id
+    destination_universal_chain_id
+    data
+    decoded
   }
 }
 ```
 
 ### Traces
 
-Both transfers and packets come with traces to track the progress of the message. There are four different trace types:
+Both transfers and packets come with traces to track the progress of the message. There are six different trace types:
 
 - `SEND_PACKET`
-- `LIGHTCLIENT_UPDATE`
-- `RECEIVE_PACKET`
-- `ACKNOWLEDGE_PACKET`
+- `PACKET_SEND_LC_UPDATE_Ln` (multiple when state-lens clients are involved)
+- `PACKET_RECV`
+- `WRITE_ACK`
+- `WRITE_ACK_LC_UPDATE_Ln`
+- `PACKET_ACK`
 
 For a specific transaction hash, you can obtain all traces of transfers and packets caused by this transaction (the `initiating_transaction_hash`) by querying
 
 ```graphql
-query GetTracesByHash @cached(ttl: 1) {
-  v1_traces(
-    where: {
-      initiating_transaction_hash: {
-        _eq: "91C934788FD13D5325F5A1D9CF1634D1861E318D6DDD2C141E91CBE8A68A053D"
-      }
-    }
-  ) {
-    type
+query GetPacketWithTraces @cached(ttl: 1) {
+  v2_packets(args: {
+    p_transaction_hash: "0x9276722fb205ddf6bf94e5baa03ae990e4d4ef44a4342cbf17396f00a6313d57"
+  }) {
+    source_universal_chain_id
+    destination_universal_chain_id
     data
-	  transaction_hash
-    chain { display_name }
-  }
-}
-```
-
-The `v1_traces.data` field is dependent on the type and may contain chain-specific information as well. The `v1_transfers` and `v1_packets` 
-also have a relation to traces, to allow for all info of a specific transfer or packet.
-
-```graphql
-query GetLatest10TransfersWithTraces @cached(ttl: 1) {
-  v1_transfers(
-    limit: 10,
-    order_by: {
-      source_timestamp: desc
-    }
-  ) {
-    tokens {
-      denom
-      amount
-    }
-    receiver
-    sender
+    decoded
     traces {
       type
-      data
+      universal_chain_id
       transaction_hash
-      chain { display_name }
+      height
+      timestamp
     }
   }
 }
 ```
 
-### Assets
+### Tokens
 
-Unionlabs provides a curated registry of different assets across different chains, including the bridged asset info for Union's assets. 
+Unionlabs provides a curated registry of different tokens across different chains, including the bridged asset info for Union's assets.
 
 ```graphql
-query GetAllSupportedAssets @cached(ttl: 1) {
-  v1_assets {
-    chain {
-      display_name
-    }
+query GetAllSupportedTokens @cached(ttl: 1) {
+  v2_tokens {
     denom
-    decimals
-    display_name
-    display_symbol
-    logo_uri
-  }
+    representations {
+      decimals
+      name
+      symbol
+    }
+  } 
 }
 ```
 
-The assets can also be grouped and filtered by specific chains.
+The assets can also be filtered by a specific chain.
 
 ```graphql
-query GetAllSupportedAssetsByChain @cached(ttl: 1) {
-  v1_chains {
-    chain_id
-    assets {
+query GetAllSupportedTokensByChain @cached(ttl: 1) {
+  v2_tokens(args: {
+    p_universal_chain_id: "union.union-testnet-10"
+  }) {
+    denom
+    representations {
       decimals
-      denom
-      display_name
-      display_symbol
-      gas_token
-      logo_uri
+      name
+      symbol
     }
   }
 }
 ```
 
-## Pagination
+## Pagination Guide
 
-Each model has a maximum number of rows that will be returned per query. Prefer using `timestamp` or `source_timestamp` as cursors when paginating.
+This API uses cursor-based pagination with three parameters that control which data is returned:
+
+### Parameters
+
+- **`p_limit`**  
+  Maximum number of items to return.  
+  - Default: `100`  
+  - Maximum: `100`
+
+- **`p_sort_order`**  
+  Acts as a cursor for pagination.  
+  - For the **next page**, pass the `sort_order` value of the **last item** in the current result set.  
+  - For the **previous page**, pass the `sort_order` value of the **first item** in the current result set.
+
+- **`p_comparison`**  
+  Controls the pagination direction:  
+  - `"lt"`: Fetch the **next** page (items **after** the given `sort_order`), results are returned in **descending** order.  
+  - `"gt"`: Fetch the **previous** page (items **before** the given `sort_order`), results are returned in **ascending** order.
+
+### Notes
+
+- Each result includes a `sort_order` field used for pagination.  
+- **Do not parse or rely on the contents** of the `sort_order` value — its structure may change at any time. Treat it as an opaque value.  
+- **Do not use external filtering or sorting options** — pagination and ordering are controlled solely through these parameters.
+
+### Example: Fetch first page (latest transfers)
+
+No cursor needed. This returns the most recent transfers.
+
+```graphql
+query GetInitialTransfers {
+  v2_transfers(args: { p_limit: 20 }) {
+    sender_canonical
+    receiver_canonical
+    base_amount
+    sort_order
+  }
+}
+```
+
+### Example: Fetch next page
+
+Use the `sort_order` value of the **last item** from the previous result.  
+Set `p_comparison: "lt"` to fetch items after it (newer → older).
+
+```graphql
+query GetNextPage {
+  v2_transfers(args: {
+    p_limit: 20,
+    p_sort_order: "cursor-from-last-item",
+    p_comparison: "lt"
+  }) {
+    sender_canonical
+    receiver_canonical
+    base_amount
+    sort_order
+  }
+}
+```
+
+### Example: Fetch previous page
+
+Use the `sort_order` value of the **first item** from the previous result.  
+Set `p_comparison: "gt"` to fetch items before it (older → newer).
+
+```graphql
+query GetPreviousPage {
+  v2_transfers(args: {
+    p_limit: 20,
+    p_sort_order: "cursor-from-first-item",
+    p_comparison: "gt"
+  }) {
+    sender_canonical
+    receiver_canonical
+    base_amount
+    sort_order
+  }
+}
+```
+
+> ℹ️ Always treat `sort_order` as an **opaque string**. It is provided solely for pagination and may change format in the future.
+
+## Filtering Guide
+
+This API supports filtering through function parameters. You should **not** use GraphQL-level `where` clauses on the top-level query, as they will only apply **after** the data has been fetched — potentially leading to unexpected or incomplete results.
+
+These parameters must be passed via the `args` object in the GraphQL query.
+
+### Example: Filter by transaction hash
+
+```graphql
+query FilterByTransactionHash {
+  v2_transfers(args: {
+    p_limit: 20,
+    p_transaction_hash: "0x9276722fb205ddf6bf94e5baa03ae990e4d4ef44a4342cbf17396f00a6313d57"
+  }) {
+    sender_canonical
+    receiver_canonical
+    base_amount
+    sort_order
+  }
+}
+```
+
+### Example: Filter by source_universal_chain_id
+
+```graphql
+query FilterBySourceChain {
+  v2_transfers(args: {
+    p_limit: 20,
+    p_source_universal_chain_id: "union.union-testnet-10"
+  }) {
+    sender_canonical
+    receiver_canonical
+    base_amount
+    sort_order
+  }
+}
+```
+
+### Example: Combine with Pagination
+
+You can combine filters with pagination parameters (`sort_order`, `comparison`) to paginate within a filtered result set.
+
+```graphql
+query FilterAndPaginate {
+  v2_transfers(args: {
+    p_limit: 20,
+    p_source_universal_chain_id: "union.union-testnet-10",
+    p_sort_order: "cursor-from-last-item",
+    p_comparison: "lt"
+  }) {
+    sender_canonical
+    receiver_canonical
+    base_amount
+    sort_order
+  }
+}
+```
+
+### Notes
+
+- Only parameters defined in the function signature can be used for filtering.
+- GraphQL-level filters (e.g., `where: { ... }`) are ignored at the source level and **should not be used**.
 
 ## Rate Limits
 

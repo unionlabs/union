@@ -6,7 +6,11 @@ use unionlabs_primitives::{Bytes, H160};
 /// only addition is the additional configuration parameters used to verify the EVM state, which is
 /// verified with `[store_key, [...key_prefix_storage, ...ibc_contract_address]]`
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ClientState {
     /// The client state of the underlying tendermint consensus.

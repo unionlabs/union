@@ -1,11 +1,17 @@
-import { cosmosChainId, evmChainFromChainId, evmChainId, GRAQPHQL_URL } from "#mod"
+import {
+  cosmosChainId,
+  evmChainFromChainId,
+  type EvmChainId,
+  evmChainId,
+  GRAQPHQL_URL
+} from "../../mod.ts"
 import { graphql } from "gql.tada"
 import { request } from "graphql-request"
 import { createPublicClient, fromHex, http, isHex, type Hex } from "viem"
 import { err, ok, ResultAsync, type Result } from "neverthrow"
-import { ucs03ZkgmAbi } from "#abi/ucs-03"
+import { ucs03ZkgmAbi } from "../../abi/ucs-03.ts"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
-import { cosmosRpcs, type CosmosChainId } from "#cosmos/client"
+import { cosmosRpcs, type CosmosChainId } from "../../cosmos/client.ts"
 
 const channelsQuery = graphql(/*  GraphQL */ `
   query Ucs03Channels {
@@ -173,6 +179,48 @@ export const getQuoteToken = async (
   }
 
   return err(new Error("unknown chain in token prediction"))
+}
+
+export const getWethQuoteToken = async (
+  sourceChainId: EvmChainId,
+  ucs03Address: Hex,
+  channel: Channel
+): Promise<Result<{ wethQuoteToken: string } | { type: "NO_WETH_QUOTE" }, Error>> => {
+  const publicClient = createPublicClient({
+    chain: evmChainFromChainId(sourceChainId),
+    transport: http()
+  })
+
+  // Step 1: Get the local WETH address
+  const wethAddressResult = await ResultAsync.fromPromise(
+    publicClient.readContract({
+      address: ucs03Address,
+      abi: ucs03ZkgmAbi,
+      functionName: "weth",
+      args: []
+    }),
+    error => new Error("Failed to get WETH address from zkgm contract", { cause: error })
+  )
+
+  if (wethAddressResult.isErr()) {
+    return err(wethAddressResult.error)
+  }
+
+  const wethAddress = wethAddressResult.value as Hex
+  console.log(`Fetched local WETH address: ${wethAddress}`)
+
+  // Step 2: Predict the quote token for WETH, just like a regular token
+  const quoteResult = await getQuoteToken(sourceChainId, wethAddress, channel)
+
+  if (quoteResult.isErr()) {
+    return err(quoteResult.error)
+  }
+
+  if (quoteResult.value.type === "NO_QUOTE_AVAILABLE") {
+    return ok({ type: "NO_WETH_QUOTE" })
+  }
+
+  return ok({ wethQuoteToken: quoteResult.value.quote_token })
 }
 
 export const getRecommendedChannels = async () => {

@@ -18,9 +18,7 @@ use itertools::Itertools;
 use jsonrpsee::types::{error::INTERNAL_ERROR_CODE, ErrorObject};
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
-use tracing::{debug, info, info_span, trace, Instrument};
-
-const TX_RESULT_CODE_OK: u32 = 0;
+use tracing::{debug, info, info_span, trace, warn, Instrument};
 
 use crate::{
     indexer::{
@@ -35,7 +33,7 @@ use crate::{
             provider::{Provider, RpcProviderId},
         },
     },
-    postgres::{fetch_or_insert_chain_id_tx, ChainId},
+    postgres::{fetch_chain_id_tx, ChainId},
 };
 
 #[derive(Clone)]
@@ -43,6 +41,7 @@ pub struct TmFetcherClient {
     pub chain_id: ChainId,
     pub provider: Provider,
     pub tx_search_max_page_size: u8,
+    pub testnet: bool,
 }
 
 impl Display for TmFetcherClient {
@@ -181,13 +180,25 @@ impl TmFetcherClient {
 
         match txs_event_count == block_tx_event_count {
             true => Ok(()),
-            false => Err(IndexerError::ProviderError(eyre!("provider: {:?} at height {} block_results tx events: {} <> transactions events: {}",
+            false => match self.testnet {
+                true => {
+                    // testnet rpcs often have inconsistencies. accept them
+                    warn!(
+                        "provider: {:?} at height {} block_results tx events: {} <> transactions events: {}",
+                        provider_id,
+                        block_results.height,
+                        block_tx_event_count,
+                        txs_event_count
+                    );
+                    Ok(())
+                },
+                false => Err(IndexerError::ProviderError(eyre!("provider: {:?} at height {} block_results tx events: {} <> transactions events: {}",
                     provider_id,
                     block_results.height,
                     block_tx_event_count,
                     txs_event_count
                 )
-            )),
+            ))},
         }
     }
 
@@ -225,7 +236,7 @@ impl TmFetcherClient {
         let pg_transactions =
             transactions_response
                 .into_iter()
-                .filter(|tx| tx.tx_result.code == TX_RESULT_CODE_OK)
+                .filter(|tx| tx.tx_result.code.is_ok())
                 .map(|tx| {
                     let transaction_hash = tx.hash.to_string();
                     let data = serde_json::to_value(&tx).unwrap().replace_escape_chars();
@@ -545,9 +556,7 @@ impl FetcherClient for TmFetcherClient {
         async move {
             let mut tx = pg_pool.begin().await?;
 
-            let chain_id = fetch_or_insert_chain_id_tx(&mut tx, chain_id.to_string())
-                .await?
-                .get_inner_logged();
+            let chain_id = fetch_chain_id_tx(&mut tx, chain_id.to_string()).await?;
 
             tx.commit().await?;
 
@@ -555,6 +564,7 @@ impl FetcherClient for TmFetcherClient {
                 chain_id,
                 provider,
                 tx_search_max_page_size: context.tx_search_max_page_size,
+                testnet: context.testnet,
             })
         }
         .instrument(indexing_span)

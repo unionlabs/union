@@ -10,7 +10,7 @@ pub async fn get_token_sources(
     Ok(sqlx::query!(
         r#"
         SELECT id, source_uri, name, logo_uri
-        FROM hubble.token_sources
+        FROM token.token_sources
         WHERE enabled = true
         ORDER BY id
         "#,
@@ -34,7 +34,7 @@ pub async fn get_token_representations(
     Ok(sqlx::query!(
         r#"
         SELECT token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri
-        FROM hubble.token_source_representations
+        FROM token.token_source_representations
         WHERE token_source_id = $1
         "#,
         token_source.id,
@@ -61,7 +61,7 @@ pub async fn delete_token_representation(
     sqlx::query!(
         r#"
         DELETE
-        FROM hubble.token_source_representations
+        FROM token.token_source_representations
         WHERE token_source_id = $1 and address = $2
         "#,
         token_representation.token_source_id,
@@ -79,7 +79,7 @@ pub async fn upsert_token_representation(
 ) -> sqlx::Result<()> {
     sqlx::query!(
         "
-        INSERT INTO hubble.token_source_representations (token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri)
+        INSERT INTO token.token_source_representations (token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (token_source_id, internal_chain_id, address) DO 
         UPDATE SET
@@ -108,7 +108,7 @@ pub async fn update_token_source(
 ) -> sqlx::Result<()> {
     sqlx::query!(
         "
-        UPDATE hubble.token_sources
+        UPDATE token.token_sources
         SET 
             source_uri = $2, 
             name = $3, 
@@ -129,7 +129,7 @@ pub async fn update_token_source(
 pub async fn get_internal_chain_id_by_chain_id(
     tx: &mut sqlx::Transaction<'_, Postgres>,
 ) -> sqlx::Result<HashMap<String, i32>> {
-    let rows = sqlx::query!("SELECT chain_id, id FROM hubble.chains")
+    let rows = sqlx::query!("SELECT chain_id, id FROM config.chains")
         .fetch_all(tx.as_mut())
         .await?;
 

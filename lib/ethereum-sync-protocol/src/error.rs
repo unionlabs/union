@@ -1,9 +1,8 @@
-use beacon_api_types::Slot;
-use milagro_bls::AmclError;
-use unionlabs::{
-    bls::{BlsPublicKey, BlsSignature},
-    primitives::{H256, H384},
+use beacon_api_types::{
+    altair::sync_aggregate,
+    custom_types::{Period, Slot},
 };
+use unionlabs::primitives::{H256, H384, H768};
 
 #[derive(Debug, PartialEq, Clone, thiserror::Error)]
 #[error("invalid merkle branch \
@@ -22,9 +21,9 @@ pub struct InvalidMerkleBranch {
 #[derive(Debug, PartialEq, thiserror::Error, Clone)]
 #[error("signature cannot be verified (public_keys: {public_keys:?}, msg: {msg}, signature: {signature})", msg = serde_utils::to_hex(.msg))]
 pub struct InvalidSignature {
-    pub public_keys: Vec<BlsPublicKey>,
+    pub public_keys: Vec<H384>,
     pub msg: Vec<u8>,
-    pub signature: BlsSignature,
+    pub signature: H768,
 }
 
 #[derive(Debug, PartialEq, thiserror::Error, Clone)]
@@ -52,8 +51,8 @@ pub enum Error {
     IrrelevantUpdate {
         update_attested_slot: Slot,
         trusted_finalized_slot: Slot,
-        update_attested_period: u64,
-        stored_period: u64,
+        update_attested_period: Period,
+        stored_period: Period,
         update_sync_committee_is_set: bool,
         trusted_next_sync_committee_is_set: bool,
     },
@@ -79,16 +78,16 @@ pub enum Error {
         ({stored_period}) or `store_period + 1` when the next sync committee is stored"
     )]
     InvalidSignaturePeriodWhenNextSyncCommitteeExists {
-        signature_period: u64,
-        stored_period: u64,
+        signature_period: Period,
+        stored_period: Period,
     },
     #[error(
         "signature period ({signature_period}) must be equal to `store_period` \
         ({stored_period}) when the next sync committee is not stored"
     )]
     InvalidSignaturePeriodWhenNextSyncCommitteeDoesNotExist {
-        signature_period: u64,
-        stored_period: u64,
+        signature_period: Period,
+        stored_period: Period,
     },
     #[error(
         "next sync committee ({found}) does not match with the one in the current state ({expected})"
@@ -96,9 +95,7 @@ pub enum Error {
     NextSyncCommitteeMismatch { expected: H384, found: H384 },
     #[error("insufficient number of sync committee participants ({0})")]
     InsufficientSyncCommitteeParticipants(usize),
-    #[error("bls error ({0:?})")]
-    Bls(AmclError),
-    // boxed as this variant is significantly larger than the rest of the variants (due to the BlsSignature contained within)
+    // boxed as this variant is significantly larger than the rest of the variants (due to the H768 contained within)
     #[error(transparent)]
     InvalidSignature(Box<InvalidSignature>),
     #[error("update header contains deneb specific information")]
@@ -107,11 +104,8 @@ pub enum Error {
     FinalizedSlotIsGenesis,
     #[error("client errored during signature verification ({0})")]
     ClientSignatureVerification(String),
-}
-
-// NOTE: Implemented here instead of via #[from] since AmclError doesn't implement core::error::Error
-impl From<AmclError> for Error {
-    fn from(e: AmclError) -> Self {
-        Error::Bls(e)
-    }
+    #[error("invalid verification capability")]
+    InvalidVerificationCapability,
+    #[error(transparent)]
+    InvalidSyncCommitteeBits(#[from] sync_aggregate::ssz::Error),
 }

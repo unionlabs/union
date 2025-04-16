@@ -1,6 +1,6 @@
 #![warn(clippy::unwrap_used)]
 
-use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
+use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use ethereum_light_client_types::StorageProof;
 use ibc_union_spec::{path::StorePath, IbcUnion};
 use jsonrpsee::{
@@ -18,9 +18,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::ChainId,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
+    primitives::ChainId,
     rpc::ProofType,
     ProofModule,
 };
@@ -59,8 +59,8 @@ impl ProofModule<IbcUnion> for Module {
     async fn new(config: Self::Config, info: ProofModuleInfo) -> Result<Self, BoxDynError> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
-                .layer(CacheLayer::new(config.max_cache_size))
-                .on_builtin(&config.rpc_url)
+                // .layer(CacheLayer::new(config.max_cache_size))
+                .connect(&config.rpc_url)
                 .await?,
         );
 

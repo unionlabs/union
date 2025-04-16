@@ -25,10 +25,11 @@ use unionlabs::{
         },
     },
     id::{ChannelId, ClientId, ConnectionId, PortId},
+    never::Never,
     primitives::{Bytes, H256},
     ErrorReporter,
 };
-use voyager_core::{ClientType, IbcSpec, IbcSpecId, IbcStorePathKey};
+use voyager_primitives::{ClientType, IbcSpec, IbcSpecId, IbcStorePathKey};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum IbcClassic {}
@@ -39,6 +40,8 @@ impl IbcSpec for IbcClassic {
     type ClientId = ClientId;
 
     type StorePath = StorePath;
+
+    type Query = Never;
 
     type Datagram = Datagram;
 

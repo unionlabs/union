@@ -6,7 +6,10 @@ use std::{
     num::ParseIntError,
 };
 
-use ibc_union_spec::{path::StorePath, IbcUnion};
+use ibc_union_spec::{
+    path::{StorePath, IBC_UNION_COSMWASM_COMMITMENT_PREFIX},
+    IbcUnion,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
@@ -24,9 +27,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::ChainId,
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
+    primitives::ChainId,
     rpc::ProofType,
     ProofModule, FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,
 };
@@ -49,7 +52,6 @@ pub struct Module {
     pub chain_revision: u64,
 
     pub cometbft_client: cometbft_rpc::Client,
-    pub grpc_url: String,
 
     pub ibc_host_contract_address: Bech32<H256>,
 }
@@ -58,7 +60,6 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    pub grpc_url: String,
     pub ibc_host_contract_address: Bech32<H256>,
 }
 
@@ -74,7 +75,7 @@ impl ProofModule<IbcUnion> for Module {
 
         let chain_revision = chain_id
             .split('-')
-            .last()
+            .next_back()
             .ok_or_else(|| ChainIdParseError {
                 found: chain_id.clone(),
                 source: None,
@@ -89,7 +90,6 @@ impl ProofModule<IbcUnion> for Module {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            grpc_url: config.grpc_url,
             ibc_host_contract_address: config.ibc_host_contract_address,
         })
     }
@@ -119,9 +119,11 @@ impl ProofModuleServer<IbcUnion> for Module {
         at: Height,
         path: StorePath,
     ) -> RpcResult<(Value, ProofType)> {
+        // TODO: Extract this into a function somewhere, reuse in lightclients
         let data = [0x03]
             .into_iter()
             .chain(*self.ibc_host_contract_address.data())
+            .chain(IBC_UNION_COSMWASM_COMMITMENT_PREFIX)
             .chain(path.key())
             .collect::<Vec<_>>();
 

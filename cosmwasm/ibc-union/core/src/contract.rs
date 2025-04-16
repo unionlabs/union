@@ -4,13 +4,14 @@ use alloy::sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, wasm_execute, Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    StdResult,
+    to_json_binary, wasm_execute, Addr, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo,
+    OverflowError, OverflowOperation, Response, StdError, StdResult, Storage,
 };
-use cw_storage_plus::Item;
+use depolama::{RawStore, StorageExt};
+use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_msg::{
     lightclient::{
-        QueryMsg as LightClientQuery, Status, VerifyClientMessageUpdate, VerifyCreationResponse,
+        QueryMsg as LightClientQuery, Status, UpdateStateResponse, VerifyCreationResponse,
         VerifyCreationResponseEvent,
     },
     module::{ExecuteMsg as ModuleMsg, IbcUnionMsg},
@@ -26,23 +27,23 @@ use ibc_union_msg::{
 };
 use ibc_union_spec::{
     path::{
-        BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
-        ConsensusStatePath, COMMITMENT_MAGIC,
+        commit_packets, BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath,
+        ConnectionPath, ConsensusStatePath, COMMITMENT_MAGIC, COMMITMENT_MAGIC_ACK,
     },
-    types::{Channel, ChannelState, Connection, ConnectionState, Packet},
+    Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState, Packet,
+    Timestamp,
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use unionlabs::{
     ethereum::keccak256,
-    primitives::{encoding::HexPrefixed, Bytes, H256},
+    primitives::{Bytes, H256},
 };
-use unionlabs_cosmwasm_upgradable::UpgradeMsg;
 
 use crate::{
     state::{
-        CHANNELS, CHANNEL_OWNER, CLIENT_CONSENSUS_STATES, CLIENT_IMPLS, CLIENT_REGISTRY,
-        CLIENT_STATES, CLIENT_TYPES, CONNECTIONS, CONTRACT_CHANNELS, NEXT_CHANNEL_ID,
-        NEXT_CLIENT_ID, NEXT_CONNECTION_ID, QUERY_STORE,
+        ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
+        ClientStore, ClientTypes, Commitments, Connections, ContractChannels, NextChannelId,
+        NextClientId, NextConnectionId, QueryStore, WhitelistedRelayers, WhitelistedRelayersAdmin,
     },
     ContractError,
 };
@@ -77,6 +78,7 @@ pub mod events {
         pub const TIMEOUT: &str = "packet_timeout";
         pub const BATCH_SEND: &str = "batch_send";
         pub const BATCH_ACKS: &str = "batch_acks";
+        pub const WRITE_ACK: &str = "write_ack";
     }
     pub mod attribute {
         pub const CLIENT_ID: &str = "client_id";
@@ -84,12 +86,17 @@ pub mod events {
         pub const CHANNEL_ID: &str = "channel_id";
         pub const COUNTERPARTY_CHANNEL_ID: &str = "counterparty_channel_id";
         pub const COUNTERPARTY_HEIGHT: &str = "counterparty_height";
-        pub const PACKET: &str = "packet";
-        pub const PACKETS: &str = "packets";
-        pub const ACKS: &str = "acks";
+        pub const PACKET_HASH: &str = "packet_hash";
+        pub const PACKET_SOURCE_CHANNEL_ID: &str = "packet_source_channel_id";
+        pub const PACKET_DESTINATION_CHANNEL_ID: &str = "packet_destination_channel_id";
+        pub const PACKET_DATA: &str = "packet_data";
+        pub const PACKET_TIMEOUT_HEIGHT: &str = "packet_timeout_height";
+        pub const PACKET_TIMEOUT_TIMESTAMP: &str = "packet_timeout_timestamp";
+        pub const BATCH_HASH: &str = "batch_hash";
         pub const MAKER: &str = "maker";
         pub const MAKER_MSG: &str = "maker_msg";
         pub const ACKNOWLEDGEMENT: &str = "acknowledgement";
+        pub const ACKNOWLEDGEMENT_HASH: &str = "acknowledgement_hash";
         pub const CLIENT_TYPE: &str = "client_type";
         pub const CLIENT_ADDRESS: &str = "client_address";
         pub const COUNTERPARTY_CHAIN_ID: &str = "counterparty_chain_id";
@@ -98,6 +105,58 @@ pub mod events {
         pub const PORT_ID: &str = "port_id";
         pub const COUNTERPARTY_PORT_ID: &str = "counterparty_port_id";
         pub const VERSION: &str = "version";
+    }
+}
+
+#[must_use]
+fn packet_to_attrs(packet: &Packet) -> [Attribute; 5] {
+    [
+        (
+            events::attribute::PACKET_SOURCE_CHANNEL_ID,
+            packet.source_channel_id.to_string(),
+        ),
+        (
+            events::attribute::PACKET_DESTINATION_CHANNEL_ID,
+            packet.destination_channel_id.to_string(),
+        ),
+        (events::attribute::PACKET_DATA, packet.data.to_string()),
+        (
+            events::attribute::PACKET_TIMEOUT_HEIGHT,
+            packet.timeout_height.to_string(),
+        ),
+        (
+            events::attribute::PACKET_TIMEOUT_TIMESTAMP,
+            packet.timeout_timestamp.to_string(),
+        ),
+    ]
+    .map(Into::into)
+}
+
+#[must_use]
+fn packet_to_attr_hash(channel_id: ChannelId, packet: &Packet) -> [Attribute; 2] {
+    [
+        (events::attribute::CHANNEL_ID, channel_id.to_string()),
+        (
+            events::attribute::PACKET_HASH,
+            commit_packets(&[packet.clone()]).to_string(),
+        ),
+    ]
+    .map(Into::into)
+}
+
+fn ensure_relayer_admin(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+    if sender != storage.read_item::<WhitelistedRelayersAdmin>()? {
+        Err(ContractError::OnlyRelayerAdmin)
+    } else {
+        Ok(())
+    }
+}
+
+fn ensure_relayer(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+    if storage.read::<WhitelistedRelayers>(sender).is_ok() {
+        Ok(())
+    } else {
+        Err(ContractError::OnlyWhitelistedRelayer)
     }
 }
 
@@ -113,6 +172,7 @@ pub fn execute(
             client_type,
             client_address,
         }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
             let address = deps.api.addr_validate(&client_address)?;
             register_client(deps.branch(), client_type, address)
         }
@@ -122,9 +182,11 @@ pub fn execute(
             consensus_state_bytes,
             relayer,
         }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
             create_client(
                 deps.branch(),
+                info,
                 client_type,
                 client_state_bytes.to_vec(),
                 consensus_state_bytes.to_vec(),
@@ -136,68 +198,104 @@ pub fn execute(
             client_message,
             relayer,
         }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
-            update_client(deps.branch(), client_id, client_message.to_vec(), relayer)
+            update_client(
+                deps.branch(),
+                info,
+                client_id,
+                client_message.to_vec(),
+                relayer,
+            )
         }
         ExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
             client_id,
             counterparty_client_id,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            connection_open_init(deps.branch(), client_id, counterparty_client_id, relayer)
-        }
+        }) => connection_open_init(deps.branch(), client_id, counterparty_client_id),
         ExecuteMsg::ConnectionOpenTry(MsgConnectionOpenTry {
             counterparty_client_id,
             counterparty_connection_id,
             client_id,
             proof_init,
             proof_height,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            connection_open_try(
-                deps.branch(),
-                counterparty_client_id,
-                counterparty_connection_id,
-                client_id,
-                proof_init.to_vec(),
-                proof_height,
-                relayer,
-            )
-        }
+        }) => connection_open_try(
+            info,
+            deps.branch(),
+            counterparty_client_id,
+            counterparty_connection_id,
+            client_id,
+            proof_init.to_vec(),
+            proof_height,
+            true,
+        ),
+        ExecuteMsg::ForceConnectionOpenTry(MsgConnectionOpenTry {
+            counterparty_client_id,
+            counterparty_connection_id,
+            client_id,
+            proof_init,
+            proof_height,
+        }) => connection_open_try(
+            info,
+            deps.branch(),
+            counterparty_client_id,
+            counterparty_connection_id,
+            client_id,
+            proof_init.to_vec(),
+            proof_height,
+            false,
+        ),
         ExecuteMsg::ConnectionOpenAck(MsgConnectionOpenAck {
             connection_id,
             counterparty_connection_id,
             proof_try,
             proof_height,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            connection_open_ack(
-                deps.branch(),
-                connection_id,
-                counterparty_connection_id,
-                proof_try.to_vec(),
-                proof_height,
-                relayer,
-            )
-        }
+        }) => connection_open_ack(
+            info,
+            deps.branch(),
+            connection_id,
+            counterparty_connection_id,
+            proof_try.to_vec(),
+            proof_height,
+            true,
+        ),
+        ExecuteMsg::ForceConnectionOpenAck(MsgConnectionOpenAck {
+            connection_id,
+            counterparty_connection_id,
+            proof_try,
+            proof_height,
+        }) => connection_open_ack(
+            info,
+            deps.branch(),
+            connection_id,
+            counterparty_connection_id,
+            proof_try.to_vec(),
+            proof_height,
+            false,
+        ),
         ExecuteMsg::ConnectionOpenConfirm(MsgConnectionOpenConfirm {
             connection_id,
             proof_ack,
             proof_height,
-            relayer,
-        }) => {
-            let relayer = deps.api.addr_validate(&relayer)?;
-            connection_open_confirm(
-                deps.branch(),
-                connection_id,
-                proof_ack.to_vec(),
-                proof_height,
-                relayer,
-            )
-        }
+        }) => connection_open_confirm(
+            info,
+            deps.branch(),
+            connection_id,
+            proof_ack.to_vec(),
+            proof_height,
+            true,
+        ),
+        ExecuteMsg::ForceConnectionOpenConfirm(MsgConnectionOpenConfirm {
+            connection_id,
+            proof_ack,
+            proof_height,
+        }) => connection_open_confirm(
+            info,
+            deps.branch(),
+            connection_id,
+            proof_ack.to_vec(),
+            proof_height,
+            false,
+        ),
         ExecuteMsg::ChannelOpenInit(MsgChannelOpenInit {
             port_id,
             counterparty_port_id,
@@ -208,6 +306,7 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_init(
                 deps.branch(),
+                info,
                 port_id,
                 counterparty_port_id,
                 connection_id,
@@ -226,12 +325,36 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_try(
                 deps.branch(),
+                info,
                 port_id,
                 channel,
                 counterparty_version,
                 proof_init.to_vec(),
                 proof_height,
                 relayer,
+                true,
+            )
+        }
+        ExecuteMsg::ForceChannelOpenTry(MsgChannelOpenTry {
+            port_id,
+            channel,
+            counterparty_version,
+            proof_init,
+            proof_height,
+            relayer,
+        }) => {
+            ensure_relayer_admin(deps.storage, &info.sender)?;
+            let relayer = deps.api.addr_validate(&relayer)?;
+            channel_open_try(
+                deps.branch(),
+                info,
+                port_id,
+                channel,
+                counterparty_version,
+                proof_init.to_vec(),
+                proof_height,
+                relayer,
+                false,
             )
         }
         ExecuteMsg::ChannelOpenAck(MsgChannelOpenAck {
@@ -245,12 +368,36 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_ack(
                 deps.branch(),
+                info,
                 channel_id,
                 counterparty_version,
                 counterparty_channel_id,
                 proof_try.to_vec(),
                 proof_height,
                 relayer,
+                true,
+            )
+        }
+        ExecuteMsg::ForceChannelOpenAck(MsgChannelOpenAck {
+            channel_id,
+            counterparty_version,
+            counterparty_channel_id,
+            proof_try,
+            proof_height,
+            relayer,
+        }) => {
+            ensure_relayer_admin(deps.storage, &info.sender)?;
+            let relayer = deps.api.addr_validate(&relayer)?;
+            channel_open_ack(
+                deps.branch(),
+                info,
+                channel_id,
+                counterparty_version,
+                counterparty_channel_id,
+                proof_try.to_vec(),
+                proof_height,
+                relayer,
+                false,
             )
         }
         ExecuteMsg::ChannelOpenConfirm(MsgChannelOpenConfirm {
@@ -262,10 +409,30 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_open_confirm(
                 deps.branch(),
+                info,
                 channel_id,
                 proof_ack.to_vec(),
                 proof_height,
                 relayer,
+                true,
+            )
+        }
+        ExecuteMsg::ForceChannelOpenConfirm(MsgChannelOpenConfirm {
+            channel_id,
+            proof_ack,
+            proof_height,
+            relayer,
+        }) => {
+            ensure_relayer_admin(deps.storage, &info.sender)?;
+            let relayer = deps.api.addr_validate(&relayer)?;
+            channel_open_confirm(
+                deps.branch(),
+                info,
+                channel_id,
+                proof_ack.to_vec(),
+                proof_height,
+                relayer,
+                false,
             )
         }
         ExecuteMsg::ChannelCloseInit(MsgChannelCloseInit {
@@ -273,7 +440,7 @@ pub fn execute(
             relayer,
         }) => {
             let relayer = deps.api.addr_validate(&relayer)?;
-            channel_close_init(deps.branch(), channel_id, relayer)
+            channel_close_init(deps.branch(), info, channel_id, relayer)
         }
         ExecuteMsg::ChannelCloseConfirm(MsgChannelCloseConfirm {
             channel_id,
@@ -284,6 +451,7 @@ pub fn execute(
             let relayer = deps.api.addr_validate(&relayer)?;
             channel_close_confirm(
                 deps.branch(),
+                info,
                 channel_id,
                 proof_init.to_vec(),
                 proof_height,
@@ -296,16 +464,20 @@ pub fn execute(
             relayer,
             proof,
             proof_height,
-        }) => process_receive(
-            deps,
-            env,
-            packets,
-            relayer_msgs.into_iter().map(Into::into).collect(),
-            relayer,
-            proof.into(),
-            proof_height,
-            false,
-        ),
+        }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
+            process_receive(
+                deps,
+                env,
+                info,
+                packets,
+                relayer_msgs.into_iter().map(Into::into).collect(),
+                relayer,
+                proof.into(),
+                proof_height,
+                false,
+            )
+        }
         ExecuteMsg::PacketAck(MsgPacketAcknowledgement {
             packets,
             acknowledgements,
@@ -313,11 +485,13 @@ pub fn execute(
             proof_height,
             relayer,
         }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
             acknowledge_packet(
                 deps.branch(),
+                info,
                 packets,
-                acknowledgements.into_iter().map(Into::into).collect(),
+                acknowledgements.into_iter().collect(),
                 proof.to_vec(),
                 proof_height,
                 relayer,
@@ -329,62 +503,66 @@ pub fn execute(
             proof_height,
             relayer,
         }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
             let relayer = deps.api.addr_validate(&relayer)?;
-            timeout_packet(deps.branch(), packet, proof.to_vec(), proof_height, relayer)
+            timeout_packet(
+                deps.branch(),
+                info,
+                packet,
+                proof.to_vec(),
+                proof_height,
+                relayer,
+            )
         }
         ExecuteMsg::IntentPacketRecv(MsgIntentPacketRecv {
             packets,
             market_maker_msgs,
             market_maker,
             empty_proof,
-        }) => process_receive(
-            deps,
-            env,
-            packets,
-            market_maker_msgs.into_iter().map(Into::into).collect(),
-            market_maker,
-            empty_proof.into(),
-            0,
-            true,
-        ),
+        }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
+            process_receive(
+                deps,
+                env,
+                info,
+                packets,
+                market_maker_msgs.into_iter().map(Into::into).collect(),
+                market_maker,
+                empty_proof.into(),
+                0,
+                true,
+            )
+        }
         ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
-            channel_id,
             packet,
             acknowledgement,
         }) => write_acknowledgement(
             deps.branch(),
             info.sender,
-            channel_id,
             packet,
             acknowledgement.into_vec(),
         ),
         ExecuteMsg::PacketSend(MsgSendPacket {
-            source_channel,
+            source_channel_id,
             timeout_height,
             timeout_timestamp,
             data,
         }) => send_packet(
             deps.branch(),
             info.sender,
-            source_channel,
+            source_channel_id,
             timeout_height,
             timeout_timestamp,
             data.into_vec(),
         ),
-        ExecuteMsg::BatchSend(MsgBatchSend {
-            source_channel,
-            packets,
-        }) => batch_send(deps, source_channel, packets),
-        ExecuteMsg::BatchAcks(MsgBatchAcks {
-            source_channel,
-            packets,
-            acks,
-        }) => batch_acks(
-            deps,
-            source_channel,
-            packets,
-            acks.into_iter().map(Into::into).collect(),
-        ),
+        ExecuteMsg::BatchSend(MsgBatchSend { packets }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
+            batch_send(deps, packets)
+        }
+        ExecuteMsg::BatchAcks(MsgBatchAcks { packets, acks }) => {
+            ensure_relayer(deps.storage, &info.sender)?;
+            batch_acks(deps, packets, acks.into_iter().collect())
+        }
         ExecuteMsg::MigrateState(MsgMigrateState {
             client_id,
             client_state,
@@ -398,18 +576,38 @@ pub fn execute(
             consensus_state,
             height,
         ),
+        ExecuteMsg::AddRelayer(relayer) => {
+            ensure_relayer_admin(deps.storage, &info.sender)?;
+            let relayer = deps.api.addr_validate(&relayer)?;
+            deps.storage.write::<WhitelistedRelayers>(&relayer, &());
+            Ok(Response::new().add_event(
+                Event::new("whitelisted_relayers")
+                    .add_attribute("action", "grant")
+                    .add_attribute("relayer", relayer),
+            ))
+        }
+        ExecuteMsg::RemoveRelayer(relayer) => {
+            ensure_relayer_admin(deps.storage, &info.sender)?;
+            let relayer = deps.api.addr_validate(&relayer)?;
+            deps.storage.delete::<WhitelistedRelayers>(&relayer);
+            Ok(Response::new().add_event(
+                Event::new("whitelisted_relayers")
+                    .add_attribute("action", "revoke")
+                    .add_attribute("relayer", relayer),
+            ))
+        }
     }
 }
 
 fn migrate_state(
     mut deps: DepsMut,
     sender: Addr,
-    client_id: u32,
+    client_id: ClientId,
     client_state: unionlabs::primitives::Bytes,
     consensus_state: unionlabs::primitives::Bytes,
     height: u64,
 ) -> Result<Response, ContractError> {
-    let client_addr = CLIENT_IMPLS.load(deps.storage, client_id)?;
+    let client_addr = deps.storage.read::<ClientImpls>(&client_id)?;
 
     if client_addr != sender {
         return Err(ContractError::UnauthorizedMigration {
@@ -419,27 +617,29 @@ fn migrate_state(
         });
     }
 
-    CLIENT_STATES.update(deps.storage, client_id, |s| {
+    deps.storage.upsert::<ClientStates, _>(&client_id, |s| {
         let _ = s.ok_or(ContractError::CannotMigrateWithNoClientState { client_id })?;
-        Ok::<Binary, ContractError>(client_state.to_vec().into())
+        Ok::<_, ContractError>(client_state.to_vec().into())
     })?;
 
     store_commit(
         deps.branch(),
         &ClientStatePath { client_id }.key(),
         &commit(client_state),
-    )?;
+    );
 
-    CLIENT_CONSENSUS_STATES.update(deps.storage, (client_id, height), |s| {
-        let _ = s.ok_or(ContractError::CannotMigrateWithNoConsensusState { client_id, height })?;
-        Ok::<Binary, ContractError>(consensus_state.to_vec().into())
-    })?;
+    deps.storage
+        .upsert::<ClientConsensusStates, _>(&(client_id, height), |s| {
+            let _ =
+                s.ok_or(ContractError::CannotMigrateWithNoConsensusState { client_id, height })?;
+            Ok::<Bytes, ContractError>(consensus_state.to_vec().into())
+        })?;
 
     store_commit(
         deps.branch(),
         &ConsensusStatePath { client_id, height }.key(),
         &commit(consensus_state),
-    )?;
+    );
 
     Ok(Response::new())
 }
@@ -453,182 +653,175 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct IbcUnionMigrateMsg {}
 
+pub mod version {
+    use std::num::NonZeroU32;
+
+    use unionlabs::option_unwrap;
+
+    pub const INIT: NonZeroU32 = option_unwrap!(NonZeroU32::new(1));
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
     deps: DepsMut,
     _env: Env,
     msg: UpgradeMsg<InitMsg, IbcUnionMigrateMsg>,
 ) -> Result<Response, ContractError> {
-    msg.run(deps, init, |_deps, _migrate, _version| {
-        Ok((Response::default(), None))
+    msg.run(deps, init, |_deps, _migrate, version| match version {
+        version::INIT => Ok((Response::new(), None)),
+        _ => Err(UpgradeError::UnknownStateVersion(version).into()),
     })
 }
 
 pub(crate) fn init(
     deps: DepsMut<'_>,
-    InitMsg {}: InitMsg,
+    InitMsg {
+        relayers_admin,
+        relayers,
+    }: InitMsg,
 ) -> Result<(Response, Option<NonZeroU32>), ContractError> {
-    NEXT_CHANNEL_ID.save(deps.storage, &0)?;
-    NEXT_CONNECTION_ID.save(deps.storage, &0)?;
-    NEXT_CLIENT_ID.save(deps.storage, &0)?;
-
+    deps.storage.write_item::<NextChannelId>(&ChannelId!(1));
+    deps.storage
+        .write_item::<NextConnectionId>(&ConnectionId!(1));
+    deps.storage.write_item::<NextClientId>(&ClientId!(1));
+    if let Some(relayers_admin) = relayers_admin {
+        let relayers_admin = deps.api.addr_validate(&relayers_admin)?;
+        deps.storage
+            .write_item::<WhitelistedRelayersAdmin>(&relayers_admin);
+    }
+    for relayer in relayers {
+        let relayer = deps.api.addr_validate(&relayer)?;
+        deps.storage.write::<WhitelistedRelayers>(&relayer, &());
+    }
     Ok((Response::default(), None))
 }
 
-fn batch_send(deps: DepsMut, source_channel: u32, packets: Vec<Packet>) -> ContractResult {
+fn batch_send(deps: DepsMut, packets: Vec<Packet>) -> ContractResult {
     if packets.len() < 2 {
         return Err(ContractError::NotEnoughPackets);
     }
-    for packet in &packets {
-        let commitment_key = BatchPacketsPath {
-            channel_id: source_channel,
-            batch_hash: commit_packet(packet),
+    let channel_id = packets[0].source_channel_id;
+    let batch_hash = commit_packets(&packets);
+    let batch_commitment_key = BatchPacketsPath::from_packets(&packets).key();
+    let mut events = Vec::new();
+    for packet in packets {
+        events.push(
+            Event::new(events::packet::BATCH_SEND)
+                .add_attributes(packet_to_attr_hash(channel_id, &packet))
+                .add_attribute(events::attribute::BATCH_HASH, batch_hash.to_string()),
+        );
+        if packet.source_channel_id != channel_id {
+            return Err(ContractError::BatchSameChannelOnly);
         }
-        .key();
+        let commitment_key = BatchPacketsPath::from_packets(&[packet]).key();
+
         let commitment = deps
             .storage
-            .get(commitment_key.as_ref())
-            .unwrap_or(H256::<HexPrefixed>::default().into_bytes().into());
-        if commitment != COMMITMENT_MAGIC.as_ref() {
+            .maybe_read::<Commitments>(&commitment_key)?
+            .ok_or(ContractError::PacketCommitmentNotFound)?;
+
+        if commitment != COMMITMENT_MAGIC {
             return Err(ContractError::PacketCommitmentNotFound);
         }
     }
-    store_commit(
-        deps,
-        &BatchPacketsPath {
-            channel_id: source_channel,
-            batch_hash: commit_packets(&packets),
-        }
-        .key(),
-        &COMMITMENT_MAGIC,
-    )?;
-    Ok(
-        Response::new().add_event(Event::new(events::packet::BATCH_SEND).add_attributes([
-            (events::attribute::CHANNEL_ID, source_channel.to_string()),
-            (
-                events::attribute::PACKETS,
-                serde_json::to_string(&packets).expect("packet serialization is infallible; qed;"),
-            ),
-        ])),
-    )
+    store_commit(deps, &batch_commitment_key, &COMMITMENT_MAGIC);
+    Ok(Response::new().add_events(events))
 }
 
-fn batch_acks(
-    deps: DepsMut,
-    source_channel: u32,
-    packets: Vec<Packet>,
-    acks: Vec<Bytes>,
-) -> ContractResult {
+fn batch_acks(deps: DepsMut, packets: Vec<Packet>, acks: Vec<Bytes>) -> ContractResult {
     if packets.len() < 2 {
         return Err(ContractError::NotEnoughPackets);
     }
-    for (packet, ack) in packets.iter().zip(acks.iter()) {
-        let commitment_key = BatchReceiptsPath {
-            channel_id: source_channel,
-            batch_hash: commit_packet(packet),
+    let channel_id = packets[0].destination_channel_id;
+    let batch_hash = commit_packets(&packets);
+    let batch_commitment_key = BatchReceiptsPath::from_packets(&packets).key();
+    let mut events = Vec::new();
+    for (packet, ack) in packets.into_iter().zip(acks.iter()) {
+        events.push(
+            Event::new(events::packet::BATCH_ACKS)
+                .add_attributes(packet_to_attr_hash(channel_id, &packet))
+                .add_attribute(events::attribute::BATCH_HASH, batch_hash.to_string()),
+        );
+        if packet.destination_channel_id != channel_id {
+            return Err(ContractError::BatchSameChannelOnly);
         }
-        .key();
-        let commitment = deps.storage.get(commitment_key.as_ref());
+        let commitment_key = BatchReceiptsPath::from_packets(&[packet]).key();
+        let commitment = read_commit(deps.as_ref(), &commitment_key);
         match commitment {
-            Some(acknowledgement) => {
-                let expected_ack = commit_ack(ack);
-
-                if acknowledgement == COMMITMENT_MAGIC.as_ref() {
+            Some(ack_commitment) => {
+                let ack_commitment_expected = commit_ack(ack);
+                if ack_commitment == COMMITMENT_MAGIC {
                     return Err(ContractError::AcknowledgementIsEmpty);
-                } else if acknowledgement != expected_ack.as_ref() {
+                } else if ack_commitment != ack_commitment_expected {
                     return Err(ContractError::AcknowledgementMismatch {
-                        found: acknowledgement.into(),
-                        expected: expected_ack.into(),
+                        found: ack_commitment.into(),
+                        expected: ack_commitment_expected.into(),
                     });
                 }
             }
             None => return Err(ContractError::PacketCommitmentNotFound),
         }
     }
-    store_commit(
-        deps,
-        &BatchReceiptsPath {
-            channel_id: source_channel,
-            batch_hash: commit_packets(&packets),
-        }
-        .key(),
-        &commit_acks(&acks),
-    )?;
-    Ok(
-        Response::new().add_event(Event::new(events::packet::BATCH_ACKS).add_attributes([
-            (events::attribute::CHANNEL_ID, source_channel.to_string()),
-            (
-                events::attribute::PACKETS,
-                serde_json::to_string(&packets).expect("packet serialization is infallible; qed;"),
-            ),
-            (
-                events::attribute::ACKS,
-                serde_json::to_string(&acks).expect("bytes serialization is infallible; qed;"),
-            ),
-        ])),
-    )
+    store_commit(deps, &batch_commitment_key, &commit_acks(&acks));
+    Ok(Response::new().add_events(events))
 }
 
 fn timeout_packet(
     mut deps: DepsMut,
+    info: MessageInfo,
     packet: Packet,
     proof: Vec<u8>,
     proof_height: u64,
     relayer: Addr,
 ) -> ContractResult {
     let source_channel = packet.source_channel_id;
-    let destination_channel = packet.destination_channel_id;
     let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
     let proof_timestamp =
         get_timestamp_at_height(deps.as_ref(), connection.client_id, proof_height)?;
-    if proof_timestamp == 0 {
+    if proof_timestamp.is_zero() {
         return Err(ContractError::TimeoutProofTimestampNotFound);
     }
 
-    let commitment_key = BatchReceiptsPath {
-        channel_id: destination_channel,
-        batch_hash: commit_packet(&packet),
-    }
-    .key();
+    let commitment_key = BatchReceiptsPath::from_packets(&[packet.clone()]).key();
 
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyNonMembership {
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyNonMembership {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
             path: commitment_key.into_bytes(),
         },
     )?;
-    delete_packet_commitment(deps.branch(), source_channel, &packet)?;
+    mark_packet_as_acknowledged(deps.branch(), &packet)?;
 
-    if packet.timeout_timestamp == 0 && packet.timeout_height == 0 {
+    if packet.timeout_timestamp.is_zero() && packet.timeout_height == 0 {
         return Err(ContractError::TimeoutMustBeSet);
     }
 
-    if packet.timeout_timestamp > 0 && packet.timeout_timestamp > proof_timestamp {
+    if !packet.timeout_timestamp.is_zero() && packet.timeout_timestamp > proof_timestamp {
         return Err(ContractError::TimeoutTimestampNotReached);
     }
 
-    if packet.timeout_height > 0 && packet.timeout_height > proof_height {
+    if !packet.timeout_timestamp.is_zero() && packet.timeout_height > proof_height {
         return Err(ContractError::TimeoutHeightNotReached);
     }
 
-    let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&source_channel)?;
     Ok(Response::new()
-        .add_event(Event::new(events::packet::TIMEOUT).add_attributes([
-            (
-                events::attribute::PACKET,
-                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
-            ),
-            (events::attribute::MAKER, relayer.to_string()),
-        ]))
+        .add_event(
+            Event::new(events::packet::TIMEOUT)
+                .add_attributes(packet_to_attr_hash(source_channel, &packet))
+                .add_attributes([(events::attribute::MAKER, relayer.to_string())]),
+        )
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnTimeoutPacket {
+                caller: info.sender.into_string(),
                 packet,
                 relayer: relayer.into(),
             }),
@@ -638,6 +831,7 @@ fn timeout_packet(
 
 fn acknowledge_packet(
     mut deps: DepsMut,
+    info: MessageInfo,
     packets: Vec<Packet>,
     acknowledgements: Vec<Bytes>,
     proof: Vec<u8>,
@@ -646,27 +840,19 @@ fn acknowledge_packet(
 ) -> ContractResult {
     let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
 
-    let source_channel = first.source_channel_id;
-    let destination_channel = first.destination_channel_id;
+    let source_channel_id = first.source_channel_id;
 
-    let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
+    let channel = ensure_channel_state(deps.as_ref(), source_channel_id)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
-    let (batch_hash, commitment_value) = match packets.len() {
-        1 => (commit_packet(first), commit_ack(&acknowledgements[0])),
-        _ => (commit_packets(&packets), commit_acks(&acknowledgements)),
-    };
-
-    let commitment_key = BatchReceiptsPath {
-        channel_id: destination_channel,
-        batch_hash,
-    }
-    .key();
+    let commitment_key = BatchReceiptsPath::from_packets(&packets).key();
+    let commitment_value = commit_acks(&acknowledgements);
 
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyMembership {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof.to_vec().into(),
@@ -675,22 +861,26 @@ fn acknowledge_packet(
         },
     )?;
 
-    let port_id = CHANNEL_OWNER.load(deps.storage, source_channel)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&source_channel_id)?;
     let mut events = Vec::with_capacity(packets.len());
     let mut messages = Vec::with_capacity(packets.len());
     for (packet, ack) in packets.into_iter().zip(acknowledgements) {
-        delete_packet_commitment(deps.branch(), source_channel, &packet)?;
-        events.push(Event::new(events::packet::ACK).add_attributes([
-            (
-                events::attribute::PACKET,
-                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
-            ),
-            (events::attribute::ACKNOWLEDGEMENT, hex::encode(&ack)),
-            (events::attribute::MAKER, relayer.clone().to_string()),
-        ]));
+        if packet.source_channel_id != source_channel_id {
+            return Err(ContractError::BatchSameChannelOnly);
+        }
+        mark_packet_as_acknowledged(deps.branch(), &packet)?;
+        events.push(
+            Event::new(events::packet::ACK)
+                .add_attributes(packet_to_attr_hash(source_channel_id, &packet))
+                .add_attributes([
+                    (events::attribute::ACKNOWLEDGEMENT, hex::encode(&ack)),
+                    (events::attribute::MAKER, relayer.clone().to_string()),
+                ]),
+        );
         messages.push(wasm_execute(
             port_id.clone(),
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnAcknowledgementPacket {
+                caller: info.sender.clone().into_string(),
                 packet,
                 acknowledgement: ack.to_vec().into(),
                 relayer: relayer.clone().into(),
@@ -702,33 +892,24 @@ fn acknowledge_packet(
     Ok(Response::new().add_events(events).add_messages(messages))
 }
 
-fn delete_packet_commitment(
-    deps: DepsMut,
-    source_channel: u32,
-    packet: &Packet,
-) -> Result<(), ContractError> {
-    let commitment_key = BatchPacketsPath {
-        channel_id: source_channel,
-        batch_hash: commit_packet(packet),
-    }
-    .key();
+fn mark_packet_as_acknowledged(deps: DepsMut, packet: &Packet) -> Result<(), ContractError> {
+    let commitment_key = BatchPacketsPath::from_packets(&[packet.clone()]).key();
     let commitment = deps
         .storage
-        .get(commitment_key.as_ref())
-        .unwrap_or(H256::<HexPrefixed>::default().into_bytes().into_vec());
-    if commitment != COMMITMENT_MAGIC.as_ref() {
+        .maybe_read::<Commitments>(&commitment_key)?
+        .ok_or(ContractError::PacketCommitmentNotFound)?;
+
+    if commitment == COMMITMENT_MAGIC_ACK {
+        return Err(ContractError::PacketAlreadyAcknowledged);
+    }
+
+    if commitment != COMMITMENT_MAGIC {
         return Err(ContractError::PacketCommitmentNotFound);
     }
-    deps.storage.remove(commitment_key.as_ref());
+
+    store_commit(deps, &commitment_key, &COMMITMENT_MAGIC_ACK);
+
     Ok(())
-}
-
-fn commit_packet(packet: &Packet) -> H256 {
-    commit(packet.abi_encode())
-}
-
-fn commit_packets(packets: &[Packet]) -> H256 {
-    commit(packets.abi_encode())
 }
 
 fn register_client(
@@ -736,13 +917,12 @@ fn register_client(
     client_type: String,
     client_address: Addr,
 ) -> Result<Response, ContractError> {
-    if CLIENT_REGISTRY
-        .may_load(deps.storage, &client_type)?
-        .is_some()
-    {
-        return Err(ContractError::ClientTypeAlreadyExists);
-    }
-    CLIENT_REGISTRY.save(deps.storage, &client_type, &client_address)?;
+    let client_address = deps
+        .storage
+        .upsert::<ClientRegistry, _>(&client_type, |client_impl| match client_impl {
+            Some(_) => Err(ContractError::ClientTypeAlreadyExists),
+            None => Ok(client_address),
+        })?;
 
     Ok(Response::new().add_event(
         Event::new(events::client::REGISTER)
@@ -753,52 +933,74 @@ fn register_client(
 
 fn create_client(
     mut deps: DepsMut,
+    info: MessageInfo,
     client_type: String,
     client_state_bytes: Vec<u8>,
     consensus_state_bytes: Vec<u8>,
-    _relayer: Addr,
+    relayer: Addr,
 ) -> Result<Response, ContractError> {
-    let client_impl = CLIENT_REGISTRY.load(deps.storage, &client_type)?;
+    let client_impl = deps.storage.read::<ClientRegistry>(&client_type)?;
     let client_id = next_client_id(deps.branch())?;
-    CLIENT_TYPES.save(deps.storage, client_id, &client_type)?;
-    CLIENT_IMPLS.save(deps.storage, client_id, &client_impl)?;
-    let verify_creation_response = deps.querier.query_wasm_smart::<VerifyCreationResponse>(
-        &client_impl,
-        &LightClientQuery::VerifyCreation {
+    deps.storage.write::<ClientTypes>(&client_id, &client_type);
+    deps.storage.write::<ClientImpls>(&client_id, &client_impl);
+
+    // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
+    // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
+
+    // 1. write these states first, so they can be read by the light client contract during VerifyCreation
+    deps.storage
+        .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
+    // 2. once the client state is saved, query the light client impl for the height of that client state (the state we just saved is the latest height)...
+    let latest_height = query_light_client::<u64>(
+        deps.as_ref(),
+        client_impl.clone(),
+        LightClientQuery::GetLatestHeight { client_id },
+    )?;
+    // 3. save the consensus state, so that it can be read during VerifyCreation as well
+    deps.storage.write::<ClientConsensusStates>(
+        &(client_id, latest_height),
+        &consensus_state_bytes.to_vec().into(),
+    );
+    // 4. finally, call VerifyCreation, which will read the states we just stored
+    let verify_creation_response = query_light_client::<VerifyCreationResponse>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyCreation {
+            caller: info.sender.into(),
             client_id,
-            client_state: client_state_bytes.to_vec().into(),
-            consensus_state: consensus_state_bytes.to_vec().into(),
+            relayer: relayer.into(),
         },
     )?;
-    CLIENT_STATES.save(deps.storage, client_id, &client_state_bytes.to_vec().into())?;
-    CLIENT_CONSENSUS_STATES.save(
-        deps.storage,
-        (client_id, verify_creation_response.latest_height),
-        &consensus_state_bytes.to_vec().into(),
-    )?;
+    if let Some(client_state_bytes) = verify_creation_response.client_state_bytes {
+        // ...if VerifyCreation returns a new client state to save, overwrite the state we just wrote.
+        deps.storage
+            .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
+    }
     store_commit(
         deps.branch(),
         &ClientStatePath { client_id }.key(),
         &commit(client_state_bytes),
-    )?;
+    );
     store_commit(
-        deps,
+        deps.branch(),
         &ConsensusStatePath {
             client_id,
-            height: verify_creation_response.latest_height,
+            height: latest_height,
         }
         .key(),
         &commit(consensus_state_bytes),
-    )?;
-    let mut response = Response::new();
-    if let Some(events) = verify_creation_response.events {
-        response = response.add_events(
-            events
-                .into_iter()
-                .map(|e| make_verify_creation_event(client_id, e))
-                .collect::<Vec<_>>(),
-        );
+    );
+
+    for (k, v) in verify_creation_response.storage_writes {
+        deps.storage
+            .write::<ClientStore<RawStore>>(&(client_id, k), &v);
     }
+    let response = verify_creation_response
+        .events
+        .into_iter()
+        .fold(Response::new(), |response, e| {
+            response.add_event(make_verify_creation_event(client_id, e))
+        });
     Ok(
         response.add_event(Event::new(events::client::CREATE).add_attributes([
             (events::attribute::CLIENT_TYPE, client_type),
@@ -813,41 +1015,53 @@ fn create_client(
 
 fn update_client(
     mut deps: DepsMut,
-    client_id: u32,
+    info: MessageInfo,
+    client_id: ClientId,
     client_message: Vec<u8>,
     relayer: Addr,
 ) -> Result<Response, ContractError> {
     let client_impl = client_impl(deps.as_ref(), client_id)?;
     let update = {
+        let status = query_light_client::<Status>(
+            deps.as_ref(),
+            client_impl.clone(),
+            LightClientQuery::GetStatus { client_id },
+        )?;
+
+        if !matches!(status, Status::Active) {
+            return Err(ContractError::ClientNotActive { client_id, status });
+        }
+
         // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
         // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
-        QUERY_STORE.save(deps.storage, &client_message.into())?;
-        let update = deps.querier.query_wasm_smart::<VerifyClientMessageUpdate>(
-            &client_impl,
-            &LightClientQuery::VerifyClientMessage {
+        deps.storage
+            .write_item::<QueryStore>(&client_message.into());
+
+        let update = query_light_client::<UpdateStateResponse>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::UpdateState {
+                caller: info.sender.into(),
                 client_id,
-                caller: relayer.into(),
+                relayer: relayer.into(),
             },
         )?;
-        QUERY_STORE.remove(deps.storage);
+
+        deps.storage.delete_item::<QueryStore>();
+
         update
     };
-    CLIENT_STATES.save(
-        deps.storage,
-        client_id,
-        &update.client_state.to_vec().into(),
-    )?;
-    CLIENT_CONSENSUS_STATES.save(
-        deps.storage,
-        (client_id, update.height),
-        &update.consensus_state.to_vec().into(),
-    )?;
 
-    store_commit(
-        deps.branch(),
-        &ClientStatePath { client_id }.key(),
-        &commit(update.client_state),
-    )?;
+    if let Some(client_state_bytes) = update.client_state_bytes {
+        store_commit(
+            deps.branch(),
+            &ClientStatePath { client_id }.key(),
+            &commit(&client_state_bytes),
+        );
+        deps.storage
+            .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
+    }
+
     store_commit(
         deps.branch(),
         &ConsensusStatePath {
@@ -855,8 +1069,19 @@ fn update_client(
             height: update.height,
         }
         .key(),
-        &commit(update.consensus_state),
-    )?;
+        &commit(&update.consensus_state_bytes),
+    );
+
+    deps.storage.write::<ClientConsensusStates>(
+        &(client_id, update.height),
+        &update.consensus_state_bytes.into_vec().into(),
+    );
+
+    for (k, v) in update.storage_writes {
+        deps.storage
+            .write::<ClientStore<RawStore>>(&(client_id, k), &v);
+    }
+
     Ok(
         Response::new().add_event(Event::new(events::client::UPDATE).add_attributes([
             (events::attribute::CLIENT_ID, client_id.to_string()),
@@ -870,16 +1095,15 @@ fn update_client(
 
 fn connection_open_init(
     mut deps: DepsMut,
-    client_id: u32,
-    counterparty_client_id: u32,
-    _relayer: Addr,
+    client_id: ClientId,
+    counterparty_client_id: ClientId,
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
     let connection = Connection {
         state: ConnectionState::Init,
         client_id,
         counterparty_client_id,
-        counterparty_connection_id: 0,
+        counterparty_connection_id: None,
     };
     save_connection(deps.branch(), connection_id, &connection)?;
     Ok(
@@ -894,45 +1118,50 @@ fn connection_open_init(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn connection_open_try(
+    info: MessageInfo,
     mut deps: DepsMut,
-    counterparty_client_id: u32,
-    counterparty_connection_id: u32,
-    client_id: u32,
+    counterparty_client_id: ClientId,
+    counterparty_connection_id: ConnectionId,
+    client_id: ClientId,
     proof_init: Vec<u8>,
     proof_height: u64,
-    _relayer: Addr,
+    verify: bool,
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
     let connection = Connection {
         state: ConnectionState::TryOpen,
         client_id,
         counterparty_client_id,
-        counterparty_connection_id,
+        counterparty_connection_id: Some(counterparty_connection_id),
     };
-
     let expected_connection = Connection {
         state: ConnectionState::Init,
         client_id: counterparty_client_id,
         counterparty_client_id: client_id,
-        counterparty_connection_id: 0,
+        counterparty_connection_id: None,
     };
-
-    let client_impl = client_impl(deps.as_ref(), client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
-            client_id,
-            height: proof_height,
-            proof: proof_init.into(),
-            path: ConnectionPath {
-                connection_id: counterparty_connection_id,
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_connection.abi_encode_params()).into_bytes(),
-        },
-    )?;
+    if verify {
+        let client_impl = client_impl(deps.as_ref(), client_id)?;
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id,
+                height: proof_height,
+                proof: proof_init.into(),
+                path: ConnectionPath {
+                    connection_id: counterparty_connection_id,
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_connection.abi_encode_params()).into_bytes(),
+            },
+        )?;
+    } else {
+        ensure_relayer_admin(deps.storage, &info.sender)?;
+    }
     save_connection(deps.branch(), connection_id, &connection)?;
     Ok(
         Response::new().add_event(Event::new(events::connection::OPEN_TRY).add_attributes([
@@ -951,43 +1180,49 @@ fn connection_open_try(
 }
 
 fn connection_open_ack(
+    info: MessageInfo,
     mut deps: DepsMut,
-    connection_id: u32,
-    counterparty_connection_id: u32,
+    connection_id: ConnectionId,
+    counterparty_connection_id: ConnectionId,
     proof_try: Vec<u8>,
     proof_height: u64,
-    _relayer: Addr,
+    verify: bool,
 ) -> ContractResult {
-    let mut connection = CONNECTIONS.load(deps.storage, connection_id)?;
+    let mut connection = deps.storage.read::<Connections>(&connection_id)?;
     if connection.state != ConnectionState::Init {
         return Err(ContractError::ConnectionInvalidState {
             got: connection.state,
             expected: ConnectionState::Init,
         });
     }
-    let expected_connection = Connection {
-        state: ConnectionState::TryOpen,
-        client_id: connection.counterparty_client_id,
-        counterparty_client_id: connection.client_id,
-        counterparty_connection_id: connection_id,
-    };
-    let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
-            client_id: connection.client_id,
-            height: proof_height,
-            proof: proof_try.into(),
-            path: ConnectionPath {
-                connection_id: counterparty_connection_id,
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_connection.abi_encode_params()).into_bytes(),
-        },
-    )?;
+    if verify {
+        let expected_connection = Connection {
+            state: ConnectionState::TryOpen,
+            client_id: connection.counterparty_client_id,
+            counterparty_client_id: connection.client_id,
+            counterparty_connection_id: Some(connection_id),
+        };
+        let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id: connection.client_id,
+                height: proof_height,
+                proof: proof_try.into(),
+                path: ConnectionPath {
+                    connection_id: counterparty_connection_id,
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_connection.abi_encode_params()).into_bytes(),
+            },
+        )?;
+    } else {
+        ensure_relayer_admin(deps.storage, &info.sender)?;
+    }
     connection.state = ConnectionState::Open;
-    connection.counterparty_connection_id = counterparty_connection_id;
+    connection.counterparty_connection_id = Some(counterparty_connection_id);
     save_connection(deps.branch(), connection_id, &connection)?;
     Ok(
         Response::new().add_event(Event::new(events::connection::OPEN_ACK).add_attributes([
@@ -1002,20 +1237,21 @@ fn connection_open_ack(
             ),
             (
                 events::attribute::COUNTERPARTY_CONNECTION_ID,
-                connection.counterparty_connection_id.to_string(),
+                counterparty_connection_id.to_string(),
             ),
         ])),
     )
 }
 
 fn connection_open_confirm(
+    info: MessageInfo,
     mut deps: DepsMut,
-    connection_id: u32,
+    connection_id: ConnectionId,
     proof_ack: Vec<u8>,
     proof_height: u64,
-    _relayer: Addr,
+    verify: bool,
 ) -> ContractResult {
-    let mut connection = CONNECTIONS.load(deps.storage, connection_id)?;
+    let mut connection = deps.storage.read::<Connections>(&connection_id)?;
     if connection.state != ConnectionState::TryOpen {
         return Err(ContractError::ConnectionInvalidState {
             got: connection.state,
@@ -1026,23 +1262,30 @@ fn connection_open_confirm(
         state: ConnectionState::Open,
         client_id: connection.counterparty_client_id,
         counterparty_client_id: connection.client_id,
-        counterparty_connection_id: connection_id,
+        counterparty_connection_id: Some(connection_id),
     };
-    let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
-            client_id: connection.client_id,
-            height: proof_height,
-            proof: proof_ack.into(),
-            path: ConnectionPath {
-                connection_id: connection.counterparty_connection_id,
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_connection.abi_encode_params()).into_bytes(),
-        },
-    )?;
+    if verify {
+        let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id: connection.client_id,
+                height: proof_height,
+                proof: proof_ack.into(),
+                path: ConnectionPath {
+                    connection_id: connection
+                        .counterparty_connection_id
+                        .expect("state is open, counterparty exists; qed;"),
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_connection.abi_encode_params()).into_bytes(),
+            },
+        )?;
+    } else {
+        ensure_relayer_admin(deps.storage, &info.sender)?;
+    }
     connection.state = ConnectionState::Open;
     save_connection(deps.branch(), connection_id, &connection)?;
     Ok(Response::new().add_event(
@@ -1058,7 +1301,10 @@ fn connection_open_confirm(
             ),
             (
                 events::attribute::COUNTERPARTY_CONNECTION_ID,
-                connection.counterparty_connection_id.to_string(),
+                connection
+                    .counterparty_connection_id
+                    .expect("state is open, counterparty exists; qed;")
+                    .to_string(),
             ),
         ]),
     ))
@@ -1066,9 +1312,10 @@ fn connection_open_confirm(
 
 fn channel_open_init(
     mut deps: DepsMut,
+    info: MessageInfo,
     port_id: String,
     counterparty_port_id: Bytes,
-    connection_id: u32,
+    connection_id: ConnectionId,
     version: String,
     relayer: Addr,
 ) -> ContractResult {
@@ -1079,7 +1326,7 @@ fn channel_open_init(
         port_id.clone(),
         ChannelState::Init,
         connection_id,
-        0,
+        None,
         counterparty_port_id.clone(),
         version.clone(),
     )?;
@@ -1097,6 +1344,7 @@ fn channel_open_init(
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
+                caller: info.sender.into_string(),
                 connection_id,
                 channel_id,
                 version,
@@ -1106,14 +1354,17 @@ fn channel_open_init(
         )?))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn channel_open_try(
     mut deps: DepsMut,
+    info: MessageInfo,
     port_id: String,
     channel: Channel,
     counterparty_version: String,
     proof_init: Vec<u8>,
     proof_height: u64,
     relayer: Addr,
+    verify: bool,
 ) -> ContractResult {
     if channel.state != ChannelState::TryOpen {
         return Err(ContractError::ChannelInvalidState {
@@ -1122,28 +1373,37 @@ fn channel_open_try(
         });
     }
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
+    let connection_id = connection
+        .counterparty_connection_id
+        .expect("connection is open; qed;");
     let expected_channel = Channel {
         state: ChannelState::Init,
-        connection_id: connection.counterparty_connection_id,
-        counterparty_channel_id: 0,
+        connection_id,
+        counterparty_channel_id: None,
         counterparty_port_id: port_id.as_bytes().to_vec().into(),
         version: counterparty_version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
-            client_id: connection.client_id,
-            height: proof_height,
-            proof: proof_init.into(),
-            path: ChannelPath {
-                channel_id: channel.counterparty_channel_id,
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_channel.abi_encode()).into_bytes(),
-        },
-    )?;
+    let counterparty_channel_id = channel
+        .counterparty_channel_id
+        .ok_or(ContractError::CounterpartyChannelIdInvalid)?;
+    if verify {
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id: connection.client_id,
+                height: proof_height,
+                proof: proof_init.into(),
+                path: ChannelPath {
+                    channel_id: counterparty_channel_id,
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_channel.abi_encode()).into_bytes(),
+            },
+        )?;
+    }
     let port_id = deps.api.addr_validate(&port_id)?;
     let (channel_id, channel) = create_channel(
         deps.branch(),
@@ -1164,15 +1424,19 @@ fn channel_open_try(
             ),
             (
                 events::attribute::COUNTERPARTY_CHANNEL_ID,
-                channel.counterparty_channel_id.to_string(),
+                counterparty_channel_id.to_string(),
             ),
-            ("connection_id", channel.connection_id.to_string()),
+            (
+                events::attribute::CONNECTION_ID,
+                channel.connection_id.to_string(),
+            ),
             ("counterparty_version", counterparty_version.clone()),
         ]))
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
-                connection_id: channel.connection_id,
+                caller: info.sender.into_string(),
+                connection_id,
                 channel_id,
                 version: channel.version,
                 counterparty_version,
@@ -1182,16 +1446,19 @@ fn channel_open_try(
         )?))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn channel_open_ack(
     mut deps: DepsMut,
-    channel_id: u32,
+    info: MessageInfo,
+    channel_id: ChannelId,
     counterparty_version: String,
-    counterparty_channel_id: u32,
+    counterparty_channel_id: ChannelId,
     proof_try: Vec<u8>,
     proof_height: u64,
     relayer: Addr,
+    verify: bool,
 ) -> ContractResult {
-    let mut channel = CHANNELS.load(deps.storage, channel_id)?;
+    let mut channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::Init {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
@@ -1199,32 +1466,37 @@ fn channel_open_ack(
         });
     }
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
-    let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
     let expected_channel = Channel {
         state: ChannelState::TryOpen,
-        connection_id: connection.counterparty_connection_id,
-        counterparty_channel_id: channel_id,
+        connection_id: connection
+            .counterparty_connection_id
+            .expect("connection is open; qed;"),
+        counterparty_channel_id: Some(channel_id),
         counterparty_port_id: port_id.as_bytes().to_vec().into(),
         version: counterparty_version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
-            client_id: connection.client_id,
-            height: proof_height,
-            proof: proof_try.into(),
-            path: ChannelPath {
-                channel_id: counterparty_channel_id,
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_channel.abi_encode()).into_bytes(),
-        },
-    )?;
+    if verify {
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id: connection.client_id,
+                height: proof_height,
+                proof: proof_try.into(),
+                path: ChannelPath {
+                    channel_id: counterparty_channel_id,
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_channel.abi_encode()).into_bytes(),
+            },
+        )?;
+    }
     channel.state = ChannelState::Open;
     channel.version = counterparty_version.clone();
-    channel.counterparty_channel_id = counterparty_channel_id;
+    channel.counterparty_channel_id = Some(counterparty_channel_id);
     save_channel(deps.branch(), channel_id, &channel)?;
     Ok(Response::new()
         .add_event(Event::new(events::channel::OPEN_ACK).add_attributes([
@@ -1236,13 +1508,14 @@ fn channel_open_ack(
             ),
             (
                 events::attribute::COUNTERPARTY_CHANNEL_ID,
-                channel.counterparty_channel_id.to_string(),
+                counterparty_channel_id.to_string(),
             ),
             ("connection_id", channel.connection_id.to_string()),
         ]))
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenAck {
+                caller: info.sender.into_string(),
                 channel_id,
                 counterparty_channel_id,
                 counterparty_version,
@@ -1254,12 +1527,14 @@ fn channel_open_ack(
 
 fn channel_open_confirm(
     mut deps: DepsMut,
-    channel_id: u32,
+    info: MessageInfo,
+    channel_id: ChannelId,
     proof_ack: Vec<u8>,
     proof_height: u64,
     relayer: Addr,
+    verify: bool,
 ) -> ContractResult {
-    let mut channel = CHANNELS.load(deps.storage, channel_id)?;
+    let mut channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::TryOpen {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
@@ -1267,29 +1542,38 @@ fn channel_open_confirm(
         });
     }
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
-    let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
+    let counterparty_connection_id = connection
+        .counterparty_connection_id
+        .expect("connection is open; qed;");
     let expected_channel = Channel {
         state: ChannelState::Open,
-        connection_id: connection.counterparty_connection_id,
-        counterparty_channel_id: channel_id,
+        connection_id: counterparty_connection_id,
+        counterparty_channel_id: Some(channel_id),
         counterparty_port_id: port_id.clone().as_bytes().to_vec().into(),
         version: channel.version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
-            client_id: connection.client_id,
-            height: proof_height,
-            proof: proof_ack.into(),
-            path: ChannelPath {
-                channel_id: channel.counterparty_channel_id,
-            }
-            .key()
-            .into_bytes(),
-            value: commit(expected_channel.abi_encode()).into_bytes(),
-        },
-    )?;
+    let counterparty_channel_id = channel
+        .counterparty_channel_id
+        .expect("channel state is try open; qed;");
+    if verify {
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
+                client_id: connection.client_id,
+                height: proof_height,
+                proof: proof_ack.into(),
+                path: ChannelPath {
+                    channel_id: counterparty_channel_id,
+                }
+                .key()
+                .into_bytes(),
+                value: commit(expected_channel.abi_encode()).into_bytes(),
+            },
+        )?;
+    }
     channel.state = ChannelState::Open;
     save_channel(deps.branch(), channel_id, &channel)?;
     Ok(Response::new()
@@ -1302,13 +1586,17 @@ fn channel_open_confirm(
             ),
             (
                 events::attribute::COUNTERPARTY_CHANNEL_ID,
-                channel.counterparty_channel_id.to_string(),
+                counterparty_channel_id.to_string(),
             ),
-            ("connection_id", channel.connection_id.to_string()),
+            (
+                events::attribute::CONNECTION_ID,
+                channel.connection_id.to_string(),
+            ),
         ]))
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
+                caller: info.sender.into_string(),
                 channel_id,
                 relayer: relayer.into(),
             }),
@@ -1316,8 +1604,13 @@ fn channel_open_confirm(
         )?))
 }
 
-fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> ContractResult {
-    let mut channel = CHANNELS.load(deps.storage, channel_id)?;
+fn channel_close_init(
+    mut deps: DepsMut,
+    info: MessageInfo,
+    channel_id: ChannelId,
+    relayer: Addr,
+) -> ContractResult {
+    let mut channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::Open {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
@@ -1327,23 +1620,29 @@ fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> Cont
     ensure_connection_state(deps.as_ref(), channel.connection_id)?;
     channel.state = ChannelState::Closed;
     save_channel(deps.branch(), channel_id, &channel)?;
-    let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
     Ok(Response::new()
-        .add_event(Event::new(events::channel::CLOSE_INIT).add_attributes([
-            (events::attribute::PORT_ID, port_id.to_string()),
-            (events::attribute::CHANNEL_ID, channel_id.to_string()),
-            (
-                events::attribute::COUNTERPARTY_PORT_ID,
-                hex::encode(&channel.counterparty_port_id),
-            ),
-            (
-                events::attribute::COUNTERPARTY_CHANNEL_ID,
-                channel.counterparty_channel_id.to_string(),
-            ),
-        ]))
+        .add_event(
+            Event::new(events::channel::CLOSE_INIT).add_attributes([
+                (events::attribute::PORT_ID, port_id.to_string()),
+                (events::attribute::CHANNEL_ID, channel_id.to_string()),
+                (
+                    events::attribute::COUNTERPARTY_PORT_ID,
+                    hex::encode(&channel.counterparty_port_id),
+                ),
+                (
+                    events::attribute::COUNTERPARTY_CHANNEL_ID,
+                    channel
+                        .counterparty_channel_id
+                        .expect("channel is open; qed;")
+                        .to_string(),
+                ),
+            ]),
+        )
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
+                caller: info.sender.into_string(),
                 channel_id,
                 relayer: relayer.into(),
             }),
@@ -1353,12 +1652,13 @@ fn channel_close_init(mut deps: DepsMut, channel_id: u32, relayer: Addr) -> Cont
 
 fn channel_close_confirm(
     mut deps: DepsMut,
-    channel_id: u32,
+    info: MessageInfo,
+    channel_id: ChannelId,
     proof_init: Vec<u8>,
     proof_height: u64,
     relayer: Addr,
 ) -> ContractResult {
-    let mut channel = CHANNELS.load(deps.storage, channel_id)?;
+    let mut channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::Open {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
@@ -1366,23 +1666,30 @@ fn channel_close_confirm(
         });
     }
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
-    let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
+    let connection_id = connection
+        .counterparty_connection_id
+        .expect("connection is open; qed;");
     let expected_channel = Channel {
         state: ChannelState::Closed,
-        connection_id: connection.counterparty_connection_id,
-        counterparty_channel_id: channel_id,
+        connection_id,
+        counterparty_channel_id: Some(channel_id),
         counterparty_port_id: port_id.as_bytes().to_vec().into(),
         version: channel.version.clone(),
     };
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-    deps.querier.query_wasm_smart::<()>(
-        &client_impl,
-        &LightClientQuery::VerifyMembership {
+    let counterparty_channel_id = channel
+        .counterparty_channel_id
+        .expect("channel is open; qed;");
+    query_light_client::<()>(
+        deps.as_ref(),
+        client_impl,
+        LightClientQuery::VerifyMembership {
             client_id: connection.client_id,
             height: proof_height,
             proof: proof_init.into(),
             path: ChannelPath {
-                channel_id: channel.counterparty_channel_id,
+                channel_id: counterparty_channel_id,
             }
             .key()
             .into_bytes(),
@@ -1390,12 +1697,12 @@ fn channel_close_confirm(
         },
     )?;
     channel.state = ChannelState::Closed;
-    CHANNELS.save(deps.storage, channel_id, &channel)?;
+    deps.storage.write::<Channels>(&channel_id, &channel);
     store_commit(
         deps.branch(),
         &ChannelPath { channel_id }.key(),
         &commit(channel.abi_encode()),
-    )?;
+    );
     Ok(Response::new()
         .add_event(Event::new(events::channel::CLOSE_CONFIRM).add_attributes([
             (events::attribute::PORT_ID, port_id.to_string()),
@@ -1406,12 +1713,13 @@ fn channel_close_confirm(
             ),
             (
                 events::attribute::COUNTERPARTY_CHANNEL_ID,
-                channel.counterparty_channel_id.to_string(),
+                counterparty_channel_id.to_string(),
             ),
         ]))
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
+                caller: info.sender.into_string(),
                 channel_id,
                 relayer: relayer.into(),
             }),
@@ -1423,6 +1731,7 @@ fn channel_close_confirm(
 fn process_receive(
     mut deps: DepsMut,
     env: Env,
+    info: MessageInfo,
     packets: Vec<Packet>,
     relayer_msgs: Vec<alloy::primitives::Bytes>,
     relayer: String,
@@ -1431,26 +1740,18 @@ fn process_receive(
     intent: bool,
 ) -> Result<Response, ContractError> {
     let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
-    let source_channel = first.source_channel_id;
-    let destination_channel = first.destination_channel_id;
+    let destination_channel_id = first.destination_channel_id;
 
-    let channel = ensure_channel_state(deps.as_ref(), destination_channel)?;
+    let channel = ensure_channel_state(deps.as_ref(), destination_channel_id)?;
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
     if !intent {
-        let proof_commitment_key = BatchPacketsPath {
-            channel_id: source_channel,
-            batch_hash: match packets.len() {
-                1 => commit_packet(first),
-                _ => commit_packets(&packets),
-            },
-        }
-        .key();
-
+        let proof_commitment_key = BatchPacketsPath::from_packets(&packets).key();
         let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-        deps.querier.query_wasm_smart::<()>(
-            &client_impl,
-            &LightClientQuery::VerifyMembership {
+        query_light_client::<()>(
+            deps.as_ref(),
+            client_impl,
+            LightClientQuery::VerifyMembership {
                 client_id: connection.client_id,
                 height: proof_height,
                 proof: proof.to_vec().into(),
@@ -1462,46 +1763,40 @@ fn process_receive(
 
     let mut events = Vec::with_capacity(packets.len());
     let mut messages = Vec::with_capacity(packets.len());
-    let port_id = CHANNEL_OWNER.load(deps.storage, destination_channel)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&destination_channel_id)?;
     for (packet, relayer_msg) in packets.into_iter().zip(relayer_msgs) {
-        if packet.timeout_height > 0 && (env.block.height >= packet.timeout_height) {
-            return Err(ContractError::ReceivedTimedOutPacketHeight {
-                timeout_height: packet.timeout_height,
-                current_height: env.block.height,
-            });
+        if packet.destination_channel_id != destination_channel_id {
+            return Err(ContractError::BatchSameChannelOnly);
         }
 
-        let current_timestamp = env.block.time.nanos();
-        if packet.timeout_timestamp != 0 && (current_timestamp >= packet.timeout_timestamp) {
+        if packet.timeout_height != 0 {
+            return Err(ContractError::TimeoutHeightUnsupported);
+        }
+
+        let current_timestamp = Timestamp::from_nanos(env.block.time.nanos());
+        if current_timestamp >= packet.timeout_timestamp {
             return Err(ContractError::ReceivedTimedOutPacketTimestamp {
                 timeout_timestamp: packet.timeout_timestamp,
                 current_timestamp,
             });
         }
 
-        let commitment_key = BatchReceiptsPath {
-            channel_id: destination_channel,
-            batch_hash: commit_packet(&packet),
-        }
-        .key();
-
+        let commitment_key = BatchReceiptsPath::from_packets(&[packet.clone()]).key();
         if !set_packet_receive(deps.branch(), commitment_key) {
             if intent {
                 events.push(
-                    Event::new(events::packet::INTENT_RECV).add_attributes([
-                        (
-                            events::attribute::PACKET,
-                            serde_json::to_string(&packet)
-                                .expect("packet serialization is infallible; qed;"),
-                        ),
-                        (events::attribute::MAKER, relayer.clone()),
-                        (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
-                    ]),
+                    Event::new(events::packet::INTENT_RECV)
+                        .add_attributes(packet_to_attr_hash(destination_channel_id, &packet))
+                        .add_attributes([
+                            (events::attribute::MAKER, relayer.clone()),
+                            (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
+                        ]),
                 );
 
                 messages.push(wasm_execute(
                     port_id.clone(),
                     &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnIntentRecvPacket {
+                        caller: info.sender.clone().into_string(),
                         packet,
                         market_maker: deps.api.addr_validate(&relayer)?.into(),
                         market_maker_msg: relayer_msg.to_vec().into(),
@@ -1510,25 +1805,27 @@ fn process_receive(
                 )?);
             } else {
                 events.push(
-                    Event::new(events::packet::RECV).add_attributes([
-                        (
-                            events::attribute::PACKET,
-                            serde_json::to_string(&packet)
-                                .expect("packet serialization is infallible; qed;"),
-                        ),
-                        (events::attribute::MAKER, relayer.clone()),
-                        (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
-                    ]),
+                    Event::new(events::packet::RECV)
+                        .add_attributes(packet_to_attr_hash(destination_channel_id, &packet))
+                        .add_attributes([
+                            (events::attribute::MAKER, relayer.clone()),
+                            (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
+                        ]),
                 );
 
                 messages.push(wasm_execute(
                     port_id.clone(),
                     &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
+                        caller: info.sender.clone().into_string(),
                         packet,
                         relayer: deps.api.addr_validate(&relayer)?.into(),
                         relayer_msg: relayer_msg.to_vec().into(),
                     }),
-                    vec![],
+                    // TODO: this is incorrect and we should allow the relayer
+                    // to specify how to split the total funds individually for
+                    // each batched packet. because voyager does not do any
+                    // batching at ibc level, this will always work.
+                    info.funds.clone(),
                 )?);
             }
         }
@@ -1540,7 +1837,6 @@ fn process_receive(
 fn write_acknowledgement(
     mut deps: DepsMut,
     sender: Addr,
-    channel_id: u32,
     packet: Packet,
     acknowledgement: Vec<u8>,
 ) -> ContractResult {
@@ -1548,8 +1844,10 @@ fn write_acknowledgement(
         return Err(ContractError::AcknowledgementIsEmpty);
     }
 
+    let channel_id = packet.destination_channel_id;
+
     // make sure the caller owns the channel
-    let port_id = CHANNEL_OWNER.load(deps.storage, channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
     if port_id != sender {
         return Err(ContractError::Unauthorized {
             channel_id,
@@ -1558,55 +1856,53 @@ fn write_acknowledgement(
         });
     }
 
-    let commitment_key = BatchReceiptsPath {
-        channel_id,
-        batch_hash: commit_packet(&packet),
-    }
-    .key();
+    let commitment_key = BatchReceiptsPath::from_packets(&[packet.clone()]).key();
 
     // the receipt must present, but ack shouldn't
-    match deps.storage.get(commitment_key.as_ref()) {
+    match read_commit(deps.as_ref(), &commitment_key) {
         Some(commitment) => {
-            if commitment != COMMITMENT_MAGIC.into_bytes().into_vec() {
+            if commitment != COMMITMENT_MAGIC {
                 return Err(ContractError::AlreadyAcknowledged);
             }
         }
         None => return Err(ContractError::PacketNotReceived),
     }
 
+    let acknowledgement_serialized = hex::encode(&acknowledgement);
+
     store_commit(
         deps.branch(),
         &commitment_key,
-        &commit_ack(&acknowledgement.clone().into()),
-    )?;
+        &commit_ack(&acknowledgement.into()),
+    );
 
-    Ok(
-        Response::new().add_event(Event::new("write_ack").add_attributes([
-            (
-                events::attribute::PACKET,
-                serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
-            ),
-            (
+    Ok(Response::new().add_event(
+        Event::new(events::packet::WRITE_ACK)
+            .add_attributes(packet_to_attr_hash(channel_id, &packet))
+            .add_attributes([(
                 events::attribute::ACKNOWLEDGEMENT,
-                hex::encode(acknowledgement),
-            ),
-        ])),
-    )
+                acknowledgement_serialized,
+            )]),
+    ))
 }
 
 fn send_packet(
     mut deps: DepsMut,
     sender: Addr,
-    source_channel_id: u32,
+    source_channel_id: ChannelId,
     timeout_height: u64,
-    timeout_timestamp: u64,
+    timeout_timestamp: Timestamp,
     data: Vec<u8>,
 ) -> ContractResult {
-    if timeout_timestamp == 0 && timeout_height == 0 {
+    if timeout_height != 0 {
+        return Err(ContractError::TimeoutHeightUnsupported);
+    }
+
+    if timeout_timestamp.is_zero() {
         return Err(ContractError::TimeoutMustBeSet);
     }
 
-    let port_id = CHANNEL_OWNER.load(deps.storage, source_channel_id)?;
+    let port_id = deps.storage.read::<ChannelOwner>(&source_channel_id)?;
     if port_id != sender {
         return Err(ContractError::Unauthorized {
             channel_id: source_channel_id,
@@ -1618,52 +1914,81 @@ fn send_packet(
     let channel = ensure_channel_state(deps.as_ref(), source_channel_id)?;
     let packet = Packet {
         source_channel_id,
-        destination_channel_id: channel.counterparty_channel_id,
+        destination_channel_id: channel
+            .counterparty_channel_id
+            .expect("channel is open; qed;"),
         data: data.into(),
         timeout_height,
         timeout_timestamp,
     };
 
-    let commitment_key = BatchPacketsPath {
-        channel_id: source_channel_id,
-        batch_hash: commit_packet(&packet),
-    }
-    .key();
+    let serialized_packet =
+        serde_json_wasm::to_string(&packet).expect("packet serialization is infallible; qed;");
 
-    if deps.storage.get(commitment_key.as_ref()).is_some() {
+    let packet_attrs = packet_to_attrs(&packet);
+    let packet_attr_hash = packet_to_attr_hash(source_channel_id, &packet);
+
+    let commitment_key = BatchPacketsPath::from_packets(&[packet]).key();
+
+    if read_commit(deps.as_ref(), &commitment_key).is_some() {
         return Err(ContractError::PacketCommitmentAlreadyExist);
     }
 
-    store_commit(deps.branch(), &commitment_key, &COMMITMENT_MAGIC)?;
+    store_commit(deps.branch(), &commitment_key, &COMMITMENT_MAGIC);
 
     Ok(Response::new()
-        .add_event(Event::new(events::packet::SEND).add_attribute(
-            events::attribute::PACKET,
-            serde_json::to_string(&packet).expect("packet serialization is infallible; qed;"),
-        ))
-        .set_data(to_json_binary(&packet)?))
+        .add_event(
+            Event::new(events::packet::SEND)
+                .add_attributes(packet_attr_hash)
+                .add_attributes(packet_attrs),
+        )
+        .set_data(serialized_packet.as_bytes()))
 }
 
-fn increment(deps: DepsMut, item: Item<u32>) -> Result<u32, ContractError> {
-    item.update(deps.storage, |item| {
-        item.checked_add(1).ok_or(ContractError::ArithmeticOverflow)
-    })
+fn next_channel_id(deps: DepsMut) -> Result<ChannelId, ContractError> {
+    let next = deps.storage.read_item::<NextChannelId>()?;
+
+    let v = next
+        .checked_add(1)
+        .ok_or(StdError::overflow(OverflowError::new(
+            OverflowOperation::Add,
+        )))?;
+
+    deps.storage.write_item::<NextChannelId>(&v);
+
+    Ok(next)
 }
 
-fn next_channel_id(deps: DepsMut) -> Result<u32, ContractError> {
-    increment(deps, NEXT_CHANNEL_ID)
+fn next_connection_id(deps: DepsMut) -> Result<ConnectionId, ContractError> {
+    let next = deps.storage.read_item::<NextConnectionId>()?;
+
+    let v = next
+        .checked_add(1)
+        .ok_or(StdError::overflow(OverflowError::new(
+            OverflowOperation::Add,
+        )))?;
+
+    deps.storage.write_item::<NextConnectionId>(&v);
+
+    Ok(next)
 }
 
-fn next_connection_id(deps: DepsMut) -> Result<u32, ContractError> {
-    increment(deps, NEXT_CONNECTION_ID)
+fn next_client_id(deps: DepsMut) -> Result<ClientId, ContractError> {
+    let next = deps.storage.read_item::<NextClientId>()?;
+
+    let v = next
+        .checked_add(1)
+        .ok_or(StdError::overflow(OverflowError::new(
+            OverflowOperation::Add,
+        )))?;
+
+    deps.storage.write_item::<NextClientId>(&v);
+
+    Ok(next)
 }
 
-fn next_client_id(deps: DepsMut) -> Result<u32, ContractError> {
-    increment(deps, NEXT_CLIENT_ID)
-}
-
-fn client_impl(deps: Deps, client_id: u32) -> Result<Addr, ContractError> {
-    Ok(CLIENT_IMPLS.load(deps.storage, client_id)?)
+fn client_impl(deps: Deps, client_id: ClientId) -> Result<Addr, ContractError> {
+    Ok(deps.storage.read::<ClientImpls>(&client_id)?)
 }
 
 fn commit(bytes: impl AsRef<[u8]>) -> H256 {
@@ -1671,10 +1996,10 @@ fn commit(bytes: impl AsRef<[u8]>) -> H256 {
 }
 
 fn commit_ack(ack: &Bytes) -> H256 {
-    merge_ack(commit(ack))
+    commit_acks(&[ack.clone()])
 }
 
-fn commit_acks(acks: &Vec<Bytes>) -> H256 {
+fn commit_acks(acks: &[Bytes]) -> H256 {
     merge_ack(commit(acks.abi_encode()))
 }
 
@@ -1683,29 +2008,28 @@ fn merge_ack(mut ack: H256) -> H256 {
     ack
 }
 
-fn store_commit(deps: DepsMut, key: &H256, value: &H256) -> Result<(), ContractError> {
-    deps.storage.set(key.as_ref(), value.as_ref());
-    Ok(())
+fn store_commit(deps: DepsMut, key: &H256, value: &H256) {
+    deps.storage.write::<Commitments>(key, value);
 }
 
 fn read_commit(deps: Deps, key: &H256) -> Option<H256> {
-    deps.storage.get(key.as_ref()).map(|bz| {
-        bz.try_into()
-            .expect("H256 is the only value ever written to this storage; qed;")
-    })
+    deps.storage
+        .maybe_read::<Commitments>(key)
+        .expect("H256 is the only value ever written to this storage; qed;")
 }
 
 fn save_connection(
     deps: DepsMut,
-    connection_id: u32,
+    connection_id: ConnectionId,
     connection: &Connection,
 ) -> Result<(), ContractError> {
-    CONNECTIONS.save(deps.storage, connection_id, connection)?;
+    deps.storage
+        .write::<Connections>(&connection_id, connection);
     store_commit(
         deps,
         &ConnectionPath { connection_id }.key(),
         &commit(connection.abi_encode_params()),
-    )?;
+    );
     Ok(())
 }
 
@@ -1713,11 +2037,11 @@ fn create_channel(
     mut deps: DepsMut,
     owner: Addr,
     state: ChannelState,
-    connection_id: u32,
-    counterparty_channel_id: u32,
+    connection_id: ConnectionId,
+    counterparty_channel_id: Option<ChannelId>,
     counterparty_port_id: Bytes,
     version: String,
-) -> Result<(u32, Channel), ContractError> {
+) -> Result<(ChannelId, Channel), ContractError> {
     let channel_id = next_channel_id(deps.branch())?;
     let channel = Channel {
         state,
@@ -1726,33 +2050,41 @@ fn create_channel(
         counterparty_port_id,
         version,
     };
-    CHANNEL_OWNER.save(deps.storage, channel_id, &owner)?;
-    CONTRACT_CHANNELS.update(deps.storage, owner, |v| -> Result<_, ContractError> {
-        Ok(match v {
-            Some(mut set) => {
-                let inserted = set.insert(channel_id);
-                assert!(inserted, "impossible, channel has been just created");
-                set
-            }
-            None => BTreeSet::from([channel_id]),
-        })
-    })?;
+    deps.storage.write::<ChannelOwner>(&channel_id, &owner);
+    deps.storage
+        .upsert::<ContractChannels, _>(&owner, |v| -> Result<_, ContractError> {
+            Ok(match v {
+                Some(mut set) => {
+                    let inserted = set.insert(channel_id);
+                    assert!(inserted, "impossible, channel has been just created");
+                    set
+                }
+                None => BTreeSet::from([channel_id]),
+            })
+        })?;
     save_channel(deps, channel_id, &channel)?;
     Ok((channel_id, channel))
 }
 
-fn save_channel(deps: DepsMut, channel_id: u32, channel: &Channel) -> Result<(), ContractError> {
-    CHANNELS.save(deps.storage, channel_id, channel)?;
+fn save_channel(
+    deps: DepsMut,
+    channel_id: ChannelId,
+    channel: &Channel,
+) -> Result<(), ContractError> {
+    deps.storage.write::<Channels>(&channel_id, channel);
     store_commit(
         deps,
         &ChannelPath { channel_id }.key(),
         &commit(channel.abi_encode()),
-    )?;
+    );
     Ok(())
 }
 
-fn ensure_connection_state(deps: Deps, connection_id: u32) -> Result<Connection, ContractError> {
-    let connection = CONNECTIONS.load(deps.storage, connection_id)?;
+fn ensure_connection_state(
+    deps: Deps,
+    connection_id: ConnectionId,
+) -> Result<Connection, ContractError> {
+    let connection = deps.storage.read::<Connections>(&connection_id)?;
     if connection.state != ConnectionState::Open {
         Err(ContractError::ConnectionInvalidState {
             got: connection.state,
@@ -1763,8 +2095,8 @@ fn ensure_connection_state(deps: Deps, connection_id: u32) -> Result<Connection,
     }
 }
 
-fn ensure_channel_state(deps: Deps, channel_id: u32) -> Result<Channel, ContractError> {
-    let channel = CHANNELS.load(deps.storage, channel_id)?;
+fn ensure_channel_state(deps: Deps, channel_id: ChannelId) -> Result<Channel, ContractError> {
+    let channel = deps.storage.read::<Channels>(&channel_id)?;
     if channel.state != ChannelState::Open {
         Err(ContractError::ChannelInvalidState {
             got: channel.state,
@@ -1776,20 +2108,24 @@ fn ensure_channel_state(deps: Deps, channel_id: u32) -> Result<Channel, Contract
 }
 
 fn set_packet_receive(deps: DepsMut, commitment_key: H256) -> bool {
-    if deps.storage.get(commitment_key.as_ref()).is_some() {
+    if read_commit(deps.as_ref(), &commitment_key).is_some() {
         true
     } else {
-        deps.storage
-            .set(commitment_key.as_ref(), COMMITMENT_MAGIC.as_ref());
+        store_commit(deps, &commitment_key, &COMMITMENT_MAGIC);
         false
     }
 }
 
-fn get_timestamp_at_height(deps: Deps, client_id: u32, height: u64) -> Result<u64, ContractError> {
+fn get_timestamp_at_height(
+    deps: Deps,
+    client_id: ClientId,
+    height: u64,
+) -> Result<Timestamp, ContractError> {
     let client_impl = client_impl(deps, client_id)?;
-    let timestamp = deps.querier.query_wasm_smart(
+    let timestamp = query_light_client(
+        deps,
         client_impl,
-        &LightClientQuery::GetTimestamp { client_id, height },
+        LightClientQuery::GetTimestamp { client_id, height },
     )?;
     Ok(timestamp)
 }
@@ -1798,87 +2134,82 @@ fn get_timestamp_at_height(deps: Deps, client_id: u32, height: u64) -> Result<u6
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
         QueryMsg::GetClientType { client_id } => Ok(to_json_binary(
-            &CLIENT_TYPES.load(deps.storage, client_id)?,
+            &deps.storage.read::<ClientTypes>(&client_id)?,
         )?),
         QueryMsg::GetClientImpl { client_id } => {
             Ok(to_json_binary(&client_impl(deps, client_id)?)?)
         }
         QueryMsg::GetRegisteredClientType { client_type } => Ok(to_json_binary(
-            &CLIENT_REGISTRY.load(deps.storage, &client_type)?,
+            &deps.storage.read::<ClientRegistry>(&client_type)?,
         )?),
         QueryMsg::GetTimestampAtHeight { client_id, height } => Ok(to_json_binary(
             &get_timestamp_at_height(deps, client_id, height)?,
         )?),
         QueryMsg::GetLatestHeight { client_id } => {
             let client_impl = client_impl(deps, client_id)?;
-            let latest_height = deps.querier.query_wasm_smart::<u64>(
+            let latest_height = query_light_client::<u64>(
+                deps,
                 client_impl,
-                &LightClientQuery::GetLatestHeight { client_id },
+                LightClientQuery::GetLatestHeight { client_id },
             )?;
             Ok(to_json_binary(&latest_height)?)
         }
-        QueryMsg::GetClientState { client_id } => {
-            let client_state = CLIENT_STATES.load(deps.storage, client_id)?;
-            Ok(to_json_binary(&client_state)?)
-        }
-        QueryMsg::GetConsensusState { client_id, height } => {
-            let consensus_state =
-                CLIENT_CONSENSUS_STATES.load(deps.storage, (client_id, height))?;
-            Ok(to_json_binary(&consensus_state)?)
-        }
+        QueryMsg::GetClientState { client_id } => Ok(to_json_binary(
+            &deps.storage.read::<ClientStates>(&client_id)?,
+        )?),
+        QueryMsg::GetConsensusState { client_id, height } => Ok(to_json_binary(
+            &deps
+                .storage
+                .read::<ClientConsensusStates>(&(client_id, height))?,
+        )?),
         QueryMsg::GetStatus { client_id } => {
             let client_impl = client_impl(deps, client_id)?;
-            let status = deps.querier.query_wasm_smart::<Status>(
+            let status = query_light_client::<Status>(
+                deps,
                 client_impl,
-                &LightClientQuery::GetStatus { client_id },
+                LightClientQuery::GetStatus { client_id },
             )?;
             Ok(to_json_binary(&status)?)
         }
         QueryMsg::GetChannels { contract } => {
             let contract = deps.api.addr_validate(&contract)?;
-            let channels = CONTRACT_CHANNELS.load(deps.storage, contract)?;
+            let channels = deps.storage.read::<ContractChannels>(&contract)?;
             Ok(to_json_binary(&channels)?)
         }
         QueryMsg::GetChannel { channel_id } => {
-            let channel = CHANNELS.load(deps.storage, channel_id)?;
+            let channel = deps.storage.read::<Channels>(&channel_id)?;
             Ok(to_json_binary(&channel)?)
         }
         QueryMsg::GetConnection { connection_id } => {
-            let connection = CONNECTIONS.load(deps.storage, connection_id)?;
+            let connection = deps.storage.read::<Connections>(&connection_id)?;
             Ok(to_json_binary(&connection)?)
         }
-        QueryMsg::GetBatchPackets {
-            channel_id,
-            batch_hash,
-        } => {
-            let commit = read_commit(
-                deps,
-                &BatchPacketsPath {
-                    channel_id,
-                    batch_hash,
-                }
-                .key(),
-            );
+        QueryMsg::GetBatchPackets { batch_hash } => {
+            let commit = read_commit(deps, &BatchPacketsPath { batch_hash }.key());
             Ok(to_json_binary(&commit)?)
         }
-        QueryMsg::GetBatchReceipts {
-            channel_id,
-            batch_hash,
-        } => {
-            let commit = read_commit(
-                deps,
-                &BatchReceiptsPath {
-                    channel_id,
-                    batch_hash,
-                }
-                .key(),
-            );
+        QueryMsg::GetBatchReceipts { batch_hash } => {
+            let commit = read_commit(deps, &BatchReceiptsPath { batch_hash }.key());
             Ok(to_json_binary(&commit)?)
         }
     }
 }
 
-fn make_verify_creation_event(client_id: u32, event: VerifyCreationResponseEvent) -> Event {
+fn query_light_client<T: DeserializeOwned>(
+    deps: Deps,
+    client_impl: Addr,
+    query: LightClientQuery,
+) -> Result<T, ContractError> {
+    deps.querier
+        .query_wasm_smart::<T>(&client_impl, &query)
+        .map_err(|error| ContractError::CannotQueryLightClient {
+            client_impl,
+            query: Box::new(query),
+            error,
+        })
+}
+
+fn make_verify_creation_event(client_id: ClientId, event: VerifyCreationResponseEvent) -> Event {
     match event {
         VerifyCreationResponseEvent::CreateLensClient {
             l1_client_id,
@@ -1903,8 +2234,8 @@ mod tests {
     fn channel_value() {
         let channel = Channel {
             state: ChannelState::Init,
-            connection_id: 0,
-            counterparty_channel_id: 0,
+            connection_id: ConnectionId!(1),
+            counterparty_channel_id: None,
             counterparty_port_id: hex!("30783735366536393666366533313337373033393732376137373665366536363738363336613730333333323735366533393735363733373739363836383761363737343662363837363663333936613636366237333761373436373737333537353638333633393737363136333332373036373733333936383337373736613637").into(),
             version: "ucs01-relay-1".to_owned()
         };
@@ -1914,5 +2245,21 @@ mod tests {
         dbg!(value);
         dbg!("0x68361972d5315b7a497e342405661930a6bdb0c17ce58a87227bb676fbcfc3ce");
         dbg!("0x9f4901a9b797640d3d2507111018b5130d209eb7305bdda6ed3163a6ec4d4c9b");
+    }
+
+    #[test]
+    fn verify_creation_response() {
+        let response = VerifyCreationResponse {
+            counterparty_chain_id: "chain-id".to_owned(),
+            client_state_bytes: None,
+            storage_writes: [([].into(), [].into())].into_iter().collect(),
+            events: vec![],
+        };
+
+        let json = serde_json_wasm::to_string(&response).unwrap();
+
+        let rt = serde_json_wasm::from_str::<VerifyCreationResponse>(&json).unwrap();
+
+        assert_eq!(response, rt);
     }
 }

@@ -1,5 +1,10 @@
 pragma solidity ^0.8.27;
 
+import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
+
 struct Call3 {
     address target;
     bool allowFailure;
@@ -13,10 +18,29 @@ struct Result {
 
 event MulticallResult(Result[]);
 
-contract Multicall {
+contract Multicall is
+    Initializable,
+    UUPSUpgradeable,
+    AccessManagedUpgradeable
+{
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
+        address _authority
+    ) public initializer {
+        __AccessManaged_init(_authority);
+        __UUPSUpgradeable_init();
+    }
+
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override restricted {}
+
     function multicall(
         Call3[] calldata calls
-    ) public payable returns (Result[] memory returnData) {
+    ) public payable restricted returns (Result[] memory returnData) {
         uint256 length = calls.length;
         returnData = new Result[](length);
         Call3 calldata calli;

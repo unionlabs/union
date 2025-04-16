@@ -1,6 +1,5 @@
 use cometbft_types::crypto::public_key::PublicKey;
-use cosmwasm_std::{Deps, BLS12_381_G1_GENERATOR};
-use sha2::Digest;
+use cosmwasm_std::Deps;
 use tendermint_verifier::types::HostFns;
 
 pub struct Ed25519Verifier<'a> {
@@ -50,60 +49,68 @@ impl HostFns for Ed25519Verifier<'_> {
     }
 }
 
-pub struct Bls12Verifier<'a> {
-    deps: Deps<'a>,
-}
+#[cfg(feature = "bls")]
+pub mod bls {
+    use cometbft_types::crypto::public_key::PublicKey;
+    use cosmwasm_std::{Deps, BLS12_381_G1_GENERATOR};
+    use sha2::Digest;
+    use tendermint_verifier::types::HostFns;
 
-impl<'a> Bls12Verifier<'a> {
-    pub fn new(deps: Deps<'a>) -> Self {
-        Self { deps }
+    pub struct Bls12Verifier<'a> {
+        pub(crate) deps: Deps<'a>,
     }
-}
 
-impl HostFns for Bls12Verifier<'_> {
-    fn verify_signature(
-        &self,
-        pubkey: &cometbft_types::crypto::public_key::PublicKey,
-        msg: &[u8],
-        sig: &[u8],
-    ) -> bool {
-        match pubkey {
-            PublicKey::Bls12_381(ref pubkey) => {
-                let msg = if msg.len() > 32 {
-                    sha2::Sha256::new().chain_update(msg).finalize().to_vec()
-                } else {
-                    msg.to_vec()
-                };
+    impl<'a> Bls12Verifier<'a> {
+        pub fn new(deps: Deps<'a>) -> Self {
+            Self { deps }
+        }
+    }
 
-                let valid = self.deps.api.bls12_381_pairing_equality(
-                    &BLS12_381_G1_GENERATOR,
-                    sig,
-                    pubkey,
-                    &msg,
-                );
+    impl HostFns for Bls12Verifier<'_> {
+        fn verify_signature(
+            &self,
+            pubkey: &cometbft_types::crypto::public_key::PublicKey,
+            msg: &[u8],
+            sig: &[u8],
+        ) -> bool {
+            match pubkey {
+                PublicKey::Bls12_381(ref pubkey) => {
+                    let msg = if msg.len() > 32 {
+                        sha2::Sha256::new().chain_update(msg).finalize().to_vec()
+                    } else {
+                        msg.to_vec()
+                    };
 
-                valid.is_ok()
+                    let valid = self.deps.api.bls12_381_pairing_equality(
+                        &BLS12_381_G1_GENERATOR,
+                        sig,
+                        pubkey,
+                        &msg,
+                    );
+
+                    valid.is_ok()
+                }
+                _ => false,
             }
-            _ => false,
-        }
-    }
-
-    fn verify_batch_signature(
-        &self,
-        pubkeys: &[cometbft_types::crypto::public_key::PublicKey],
-        msgs: &[&[u8]],
-        sigs: &[&[u8]],
-    ) -> bool {
-        if pubkeys.len() != msgs.len() || pubkeys.len() != sigs.len() {
-            return false;
         }
 
-        for ((key, msg), sig) in pubkeys.iter().zip(msgs).zip(sigs) {
-            if !self.verify_signature(key, msg, sig) {
+        fn verify_batch_signature(
+            &self,
+            pubkeys: &[cometbft_types::crypto::public_key::PublicKey],
+            msgs: &[&[u8]],
+            sigs: &[&[u8]],
+        ) -> bool {
+            if pubkeys.len() != msgs.len() || pubkeys.len() != sigs.len() {
                 return false;
             }
-        }
 
-        true
+            for ((key, msg), sig) in pubkeys.iter().zip(msgs).zip(sigs) {
+                if !self.verify_signature(key, msg, sig) {
+                    return false;
+                }
+            }
+
+            true
+        }
     }
 }

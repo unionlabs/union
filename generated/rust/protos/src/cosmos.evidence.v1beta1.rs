@@ -49,6 +49,8 @@ pub struct QueryEvidenceRequest {
     #[prost(bytes = "vec", tag = "1")]
     pub evidence_hash: ::prost::alloc::vec::Vec<u8>,
     /// hash defines the evidence hash of the requested evidence.
+    ///
+    /// Since: cosmos-sdk 0.47
     #[prost(string, tag = "2")]
     pub hash: ::prost::alloc::string::String,
 }

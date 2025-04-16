@@ -30,11 +30,6 @@ pub struct Module {
     /// to be used in keeper construction.
     #[prost(message, repeated, tag = "6")]
     pub override_store_keys: ::prost::alloc::vec::Vec<StoreKeyConfig>,
-    /// skip_store_keys is an optional list of store keys to skip when constructing the
-    /// module's keeper. This is useful when a module does not have a store key.
-    /// NOTE: the provided environment variable will have a fake store service.
-    #[prost(string, repeated, tag = "11")]
-    pub skip_store_keys: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     /// order_migrations defines the order in which module migrations are performed.
     /// If this is left empty, it uses the default migration order.
     /// <https://pkg.go.dev/github.com/cosmos/cosmos-sdk@v0.47.0-alpha2/types/module#DefaultMigrationsOrder>

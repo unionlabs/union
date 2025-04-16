@@ -2,10 +2,10 @@
 import { parseArgs } from "node:util"
 import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
-import { raise } from "#utilities/index.ts"
+import { raise } from "../src/utilities/index.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { berachainTestnetbArtio } from "viem/chains"
-import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
 
 /* `bun playground/berachain-to-union.ts --private-key "..."` */
 

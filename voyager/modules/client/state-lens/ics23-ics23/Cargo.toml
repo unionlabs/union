@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 alloy                                     = { workspace = true, features = ["sol-types"] }
+embed-commit                              = { workspace = true }
 futures                                   = { workspace = true }
 jsonrpsee                                 = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                                    = { workspace = true }

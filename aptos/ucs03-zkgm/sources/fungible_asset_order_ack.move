@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -82,34 +82,20 @@ module zkgm::fungible_asset_order_ack {
 
     public fun encode(ack: &FungibleAssetOrderAck): vector<u8> {
         let buf = vector::empty<u8>();
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
         zkgm_ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
 
         let version_offset = 0x40;
         zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
+        zkgm_ethabi::encode_bytes(&mut buf, &ack.market_maker);
 
-        zkgm_ethabi::encode_vector<u8>(
-            &mut buf,
-            &ack.market_maker,
-            |some_variable, data| {
-                zkgm_ethabi::encode_uint<u8>(some_variable, *data);
-            }
-        );
         buf
     }
 
     public fun decode(buf: &vector<u8>): FungibleAssetOrderAck {
-        let index = 0x20;
+        let index = 0x0;
         let fill_type = zkgm_ethabi::decode_uint(buf, &mut index);
         index = index + 0x20;
-        let market_maker =
-            zkgm_ethabi::decode_vector<u8>(
-                buf,
-                &mut index,
-                |buf, index| {
-                    (zkgm_ethabi::decode_uint(buf, index) as u8)
-                }
-            );
+        let market_maker = zkgm_ethabi::decode_bytes(buf, &mut index);
 
         FungibleAssetOrderAck { fill_type: fill_type, market_maker: market_maker }
     }
@@ -117,7 +103,8 @@ module zkgm::fungible_asset_order_ack {
     #[test]
     fun test_encode_decode_asset_transfer_ack() {
         let output =
-            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
+            x"000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000768656c6c6c6f6f00000000000000000000000000000000000000000000000000";
+
         let ack_data = FungibleAssetOrderAck {
             fill_type: 7788909223344,
             market_maker: b"hellloo"

@@ -24,8 +24,8 @@ pub struct InnerSpec {
 
 // implemented manually for now bc Cow is weird, see https://github.com/bincode-org/bincode/issues/631
 #[cfg(feature = "bincode")]
-impl bincode::Decode for InnerSpec {
-    fn decode<D: bincode::de::Decoder>(
+impl<Context> bincode::Decode<Context> for InnerSpec {
+    fn decode<D: bincode::de::Decoder<Context = Context>>(
         decoder: &mut D,
     ) -> core::result::Result<Self, bincode::error::DecodeError> {
         Ok(Self {
@@ -40,8 +40,8 @@ impl bincode::Decode for InnerSpec {
 }
 
 #[cfg(feature = "bincode")]
-impl<'de> bincode::BorrowDecode<'de> for InnerSpec {
-    fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
+impl<'de, Context> bincode::BorrowDecode<'de, Context> for InnerSpec {
+    fn borrow_decode<D: bincode::de::BorrowDecoder<'de, Context = Context>>(
         decoder: &mut D,
     ) -> core::result::Result<Self, bincode::error::DecodeError> {
         Ok(Self {

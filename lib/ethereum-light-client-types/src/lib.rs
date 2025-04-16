@@ -9,10 +9,12 @@ pub mod storage_proof;
 
 pub use crate::{
     account_proof::AccountProof,
-    client_state::ClientState,
+    client_state::{ClientState, ClientStateV1},
     consensus_state::ConsensusState,
     header::Header,
-    light_client_update::{EpochChangeUpdate, LightClientUpdate, WithinEpochUpdate},
+    light_client_update::{
+        LightClientUpdate, SyncCommitteePeriodChangeUpdate, WithinSyncCommitteePeriodUpdate,
+    },
     light_client_update_data::LightClientUpdateData,
     misbehaviour::Misbehaviour,
     storage_proof::StorageProof,

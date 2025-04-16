@@ -4,9 +4,12 @@ use cometbls_light_client_types::{
     client_state::ClientState, consensus_state::ConsensusState, header::Header,
     misbehaviour::Misbehaviour,
 };
-use cosmwasm_std::Empty;
-use ibc_union_light_client::IbcClientCtx;
-use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
+use cosmwasm_std::{Addr, Empty};
+use ibc_union_light_client::{
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
+use ibc_union_msg::lightclient::Status;
+use ibc_union_spec::path::IBC_UNION_COSMWASM_COMMITMENT_PREFIX;
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
     encoding::Bincode,
@@ -21,9 +24,12 @@ use crate::{
     zkp_verifier::ZkpVerifier,
 };
 
+pub const WASMD_MODULE_STORE_KEY: &[u8] = b"wasm";
+pub const WASMD_CONTRACT_STORE_PREFIX: u8 = 0x03;
+
 pub struct CometblsLightClient<T: ZkpVerifier = ()>(PhantomData<T>);
 
-impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T> {
+impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
     type Error = Error;
 
     type CustomQuery = Empty;
@@ -41,12 +47,12 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
     type Encoding = Bincode;
 
     fn verify_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;
         Ok(ics23::ibc_api::verify_membership(
@@ -54,11 +60,11 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
             &SDK_SPECS,
             &consensus_state.app_hash,
             &[
-                b"wasm".to_vec(),
-                0x3u8
-                    .to_le_bytes()
+                WASMD_MODULE_STORE_KEY.into(),
+                [WASMD_CONTRACT_STORE_PREFIX]
                     .into_iter()
                     .chain(client_state.contract_address)
+                    .chain(IBC_UNION_COSMWASM_COMMITMENT_PREFIX)
                     .chain(key)
                     .collect::<Vec<_>>(),
             ],
@@ -68,18 +74,26 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
     }
 
     fn verify_non_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
+        let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;
         Ok(ics23::ibc_api::verify_non_membership(
             &storage_proof,
             &SDK_SPECS,
             &consensus_state.app_hash,
-            // FIXME: concat(contract, key) right?
-            &[b"wasm".to_vec(), key],
+            &[
+                WASMD_MODULE_STORE_KEY.into(),
+                [WASMD_CONTRACT_STORE_PREFIX]
+                    .into_iter()
+                    .chain(client_state.contract_address)
+                    .chain(IBC_UNION_COSMWASM_COMMITMENT_PREFIX)
+                    .chain(key)
+                    .collect::<Vec<_>>(),
+            ],
         )
         .map_err(Into::<Error>::into)?)
     }
@@ -96,56 +110,50 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
         client_state.chain_id.clone().into_string()
     }
 
-    // TODO(aeryz): pass ctx
-    fn status(client_state: &Self::ClientState) -> ibc_union_msg::lightclient::Status {
+    fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
         if client_state.frozen_height.height() != 0 {
             Status::Frozen
         } else {
+            let Ok(consensus_state) =
+                ctx.read_self_consensus_state(client_state.latest_height.height())
+            else {
+                return Status::Expired;
+            };
+
+            if is_client_expired(
+                consensus_state.timestamp,
+                client_state.trusting_period,
+                ctx.env.block.time.nanos(),
+            ) {
+                return Status::Expired;
+            }
+
             Status::Active
         }
-
-        //         let Some(consensus_state) =
-        //             read_consensus_state::<Self>(deps, &client_state.latest_height)?
-        //         else {
-        //             return Ok(Status::Expired);
-        //         };
-
-        //         if is_client_expired(
-        //             consensus_state.data.timestamp,
-        //             client_state.data.trusting_period,
-        //             env.block.time.nanos(),
-        //         ) {
-        //             return Ok(Status::Expired);
-        //         }
-
-        //         Ok(Status::Active)
     }
 
     fn verify_creation(
+        _caller: Addr,
         _client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<
-        Option<Vec<VerifyCreationResponseEvent>>,
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
-        Ok(None)
+        _relayer: Addr,
+    ) -> Result<ClientCreationResult<Self>, ibc_union_light_client::IbcClientError<Self>> {
+        Ok(ClientCreationResult::new())
     }
 
     fn verify_header(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         header: Self::Header,
-        _caller: cosmwasm_std::Addr,
-    ) -> Result<
-        (u64, Self::ClientState, Self::ConsensusState),
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
+        _relayer: Addr,
+    ) -> Result<StateUpdate<Self>, ibc_union_light_client::IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(header.trusted_height.height())?;
 
         // If the update is already happened, we just do noop
         let header_height = header.signed_header.height.inner() as u64;
-        if let Ok(cons) = ctx.read_self_consensus_state(header_height) {
-            return Ok((header_height, client_state, cons));
+        if let Ok(consensus_state) = ctx.read_self_consensus_state(header_height) {
+            return Ok(StateUpdate::new(header_height, consensus_state));
         }
 
         verify_header::<T>(&ctx, &client_state, &consensus_state, &header)?;
@@ -154,9 +162,11 @@ impl<T: ZkpVerifier> ibc_union_light_client::IbcClient for CometblsLightClient<T
     }
 
     fn misbehaviour(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         misbehaviour: Self::Misbehaviour,
-    ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
+        _relayer: Addr,
+    ) -> Result<Self::ClientState, IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 
         verify_misbehaviour(
@@ -275,19 +285,15 @@ fn verify_misbehaviour<T: ZkpVerifier>(
     Err(Error::MisbehaviourNotFound)
 }
 
-fn update_state(
+fn update_state<T: ZkpVerifier>(
     mut client_state: ClientState,
     mut consensus_state: ConsensusState,
     header: Header,
-) -> Result<(u64, ClientState, ConsensusState), Error> {
+) -> Result<StateUpdate<CometblsLightClient<T>>, Error> {
     let untrusted_height = Height::new_with_revision(
         header.trusted_height.revision(),
         header.signed_header.height.inner() as u64,
     );
-
-    if untrusted_height > client_state.latest_height {
-        client_state.latest_height = untrusted_height;
-    }
 
     consensus_state.app_hash = MerkleRoot {
         hash: header.signed_header.app_hash.into_encoding(),
@@ -297,7 +303,14 @@ fn update_state(
     // Normalized to nanoseconds to follow tendermint convention
     consensus_state.timestamp = header.signed_header.time.as_unix_nanos();
 
-    Ok((untrusted_height.height(), client_state, consensus_state))
+    let state_update = StateUpdate::new(untrusted_height.height(), consensus_state);
+
+    if untrusted_height > client_state.latest_height {
+        client_state.latest_height = untrusted_height;
+        Ok(state_update.overwrite_client_state(client_state))
+    } else {
+        Ok(state_update)
+    }
 }
 
 fn is_client_expired(

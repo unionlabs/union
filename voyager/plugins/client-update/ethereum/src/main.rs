@@ -2,18 +2,13 @@
 
 use std::{collections::VecDeque, ops::Div};
 
-use alloy::{
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
-    rpc::types::BlockTransactionsKind,
-};
-use beacon_api::{client::BeaconApiClient, types::Spec};
-use beacon_api_types::{
-    light_client_update::NextSyncCommitteeBranch, PresetBaseKind, Slot, SyncCommittee,
-};
+use alloy::providers::{DynProvider, Provider, ProviderBuilder};
+use beacon_api::client::BeaconApiClient;
+use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, custom_types::Slot};
 use bitvec::{order::Msb0, vec::BitVec};
 use ethereum_light_client_types::{
-    AccountProof, EpochChangeUpdate, Header, LightClientUpdate, LightClientUpdateData,
-    WithinEpochUpdate,
+    AccountProof, Header, LightClientUpdate, LightClientUpdateData,
+    SyncCommitteePeriodChangeUpdate, WithinSyncCommitteePeriodUpdate,
 };
 use futures::{stream, StreamExt, TryStreamExt};
 use jsonrpsee::{
@@ -22,7 +17,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info, instrument};
+use tracing::{debug, info, instrument, trace};
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{H160, H256},
@@ -30,11 +25,11 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForTimestamp},
-    core::{ChainId, ClientType, Timestamp},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientType, Timestamp},
     DefaultCmd, Plugin, PluginMessage, RawClientId, VoyagerMessage,
 };
 use voyager_vm::{call, defer, now, pass::PassResult, seq, BoxDynError, Op, Visit};
@@ -96,6 +91,13 @@ impl Module {
         plugin_name(&self.chain_id)
     }
 
+    #[instrument(
+        skip_all,
+        fields(
+            %block_number,
+            ibc_handler_address = %self.ibc_handler_address
+        )
+    )]
     pub async fn fetch_account_update(&self, block_number: u64) -> RpcResult<AccountProof> {
         let account_update = self
             .provider
@@ -112,6 +114,10 @@ impl Module {
                     None::<()>,
                 )
             })?;
+
+        // tokio::time::sleep(std::time::Duration::from_millis(500));
+
+        debug!(storage_hash = %account_update.storage_hash, "fetched account update");
 
         Ok(AccountProof {
             storage_root: account_update.storage_hash.into(),
@@ -131,11 +137,11 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
+    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
-                .layer(CacheLayer::new(config.max_cache_size))
-                .on_builtin(&config.rpc_url)
+                // .layer(CacheLayer::new(config.max_cache_size))
+                .connect(&config.rpc_url)
                 .await?,
         );
 
@@ -241,16 +247,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 to_height,
                 counterparty_chain_id,
                 client_id,
-            }) => self
-                .fetch_update(from_height, to_height, counterparty_chain_id, client_id)
-                .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!("error fetching update: {}", ErrorReporter(&*e)),
-                        None::<()>,
-                    )
-                }),
+            }) => {
+                self.fetch_update(from_height, to_height, counterparty_chain_id, client_id)
+                    .await
+            }
         }
     }
 
@@ -269,7 +269,8 @@ impl Module {
     async fn beacon_slot_of_execution_block_number(&self, block_number: u64) -> RpcResult<Slot> {
         let block = self
             .provider
-            .get_block((block_number + 1).into(), BlockTransactionsKind::Hashes)
+            .get_block((block_number + 1).into())
+            .hashes()
             .await
             .map_err(|e| {
                 ErrorObject::owned(
@@ -300,7 +301,14 @@ impl Module {
                 )
             })?;
 
-        Ok(beacon_slot.data.message.slot)
+        Ok(beacon_slot.response.fold(
+            |b| b.message.slot,
+            |b| b.message.slot,
+            |b| b.message.slot,
+            |b| b.message.slot,
+            |b| b.message.slot,
+            |b| b.message.slot,
+        ))
     }
 
     /// Fetch a client update from the provided trusted height (`update_from`) to at least the
@@ -328,13 +336,13 @@ impl Module {
         update_to_block_number: Height,
         counterparty_chain_id: ChainId,
         client_id: RawClientId,
-    ) -> Result<Op<VoyagerMessage>, BoxDynError> {
+    ) -> RpcResult<Op<VoyagerMessage>> {
         if update_from_block_number == update_to_block_number {
             info!("update is for the same height, noop");
             return Ok(voyager_vm::data(OrderedHeaders { headers: vec![] }));
         }
 
-        let finality_update = self
+        let finality_update: LightClientUpdateData = self
             .beacon_api_client
             .finality_update()
             .await
@@ -345,7 +353,26 @@ impl Module {
                     None::<()>,
                 )
             })?
-            .data;
+            .fold(
+                |f| match f {},
+                |_| todo!("altair is not supported"),
+                |_| todo!("bellatrix is not supported"),
+                |_| todo!("capella is not supported"),
+                |f| LightClientUpdateData {
+                    attested_header: f.attested_header.into(),
+                    finalized_header: f.finalized_header.into(),
+                    finality_branch: f.finality_branch.to_vec(),
+                    sync_aggregate: f.sync_aggregate,
+                    signature_slot: f.signature_slot,
+                },
+                |f| LightClientUpdateData {
+                    attested_header: f.attested_header.into(),
+                    finalized_header: f.finalized_header.into(),
+                    finality_branch: f.finality_branch.to_vec(),
+                    sync_aggregate: f.sync_aggregate,
+                    signature_slot: f.signature_slot,
+                },
+            );
 
         let spec = self
             .beacon_api_client
@@ -429,9 +456,17 @@ impl Module {
                     None::<()>,
                 )
             })?
-            .0
             .into_iter()
-            .map(|x| x.data)
+            .map(|x| {
+                x.fold::<ethereum_sync_protocol_types::LightClientUpdate>(
+                    |u| match u {},
+                    |_| todo!("altair is not supported"),
+                    |_| todo!("bellatrix is not supported"),
+                    |_| todo!("capella is not supported"),
+                    |u| u.into(),
+                    |u| u.into(),
+                )
+            })
             .collect::<Vec<_>>();
 
         info!(
@@ -444,7 +479,6 @@ impl Module {
             .try_fold((VecDeque::new(), update_from_block_number.height()), {
                 |(mut vec, mut trusted_block_number), update| {
                     let self_ = self.clone();
-                    let spec = spec.clone();
 
                     async move {
                         let old_trusted_block_number = trusted_block_number;
@@ -471,7 +505,6 @@ impl Module {
                                             .next_sync_committee_branch
                                             .expect("next_sync_committee_branch should exist"),
                                     )),
-                                    &spec,
                                 )
                                 .await?,
                         );
@@ -501,19 +534,8 @@ impl Module {
             info!("has finality update");
             // do finality update
             Some(
-                self.make_header(
-                    last_update_block_number,
-                    LightClientUpdateData {
-                        attested_header: finality_update.attested_header,
-                        finalized_header: finality_update.finalized_header,
-                        finality_branch: finality_update.finality_branch,
-                        sync_aggregate: finality_update.sync_aggregate,
-                        signature_slot: finality_update.signature_slot,
-                    },
-                    None,
-                    &spec,
-                )
-                .await?,
+                self.make_header(last_update_block_number, finality_update, None)
+                    .await?,
             )
         };
 
@@ -540,8 +562,12 @@ impl Module {
         let last_update_signature_slot = headers
             .iter()
             .map(|header| match &header.consensus_update {
-                LightClientUpdate::EpochChange(update) => update.update_data.signature_slot,
-                LightClientUpdate::WithinEpoch(update) => update.update_data.signature_slot,
+                LightClientUpdate::SyncCommitteePeriodChange(update) => {
+                    update.update_data.signature_slot
+                }
+                LightClientUpdate::WithinSyncCommitteePeriod(update) => {
+                    update.update_data.signature_slot
+                }
             })
             .max()
             .expect("expected at least one update");
@@ -564,10 +590,10 @@ impl Module {
                         (
                             DecodedHeaderMeta {
                                 height: Height::new(match &header.consensus_update {
-                                    LightClientUpdate::EpochChange(update) => {
+                                    LightClientUpdate::SyncCommitteePeriodChange(update) => {
                                         update.update_data.finalized_header.execution.block_number
                                     }
-                                    LightClientUpdate::WithinEpoch(update) => {
+                                    LightClientUpdate::WithinSyncCommitteePeriod(update) => {
                                         update.update_data.finalized_header.execution.block_number
                                     }
                                 }),
@@ -586,6 +612,7 @@ impl Module {
             chain_id = %self.chain_id,
             %currently_trusted_block_number,
             signature_slot = %light_client_update_data.signature_slot,
+            has_next_sync_committee = next_sync_committee.is_some(),
         )
     )]
     async fn make_header(
@@ -594,16 +621,12 @@ impl Module {
         currently_trusted_block_number: u64,
         light_client_update_data: LightClientUpdateData,
         // if this is an epoch change update, provide the next sync committee for the target epoch
-        next_sync_committee: Option<(SyncCommittee, NextSyncCommitteeBranch)>,
-        spec: &Spec,
+        next_sync_committee: Option<(SyncCommittee, Vec<H256>)>,
     ) -> RpcResult<Header> {
+        trace!(?light_client_update_data);
+
         // When we fetch the update at this height, the `next_sync_committee` will
         // be the current sync committee of the period that we want to update to.
-        let previous_period = u64::max(
-            1,
-            light_client_update_data.finalized_header.beacon.slot.get() / spec.period(),
-        ) - 1;
-
         let ibc_account_proof = self
             .fetch_account_update(
                 light_client_update_data
@@ -613,43 +636,22 @@ impl Module {
             )
             .await?;
 
-        let previous_period_light_client_update = self
-            .beacon_api_client
-            .light_client_updates(previous_period, 1)
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e)
-                        .with_message("error fetching previous period light client update"),
-                    None::<()>,
-                )
-            })?
-            .0
-            .into_iter()
-            .map(|x| x.data)
-            .collect::<Vec<_>>()
-            .pop()
-            .expect("one update was requested, if the rpc returns a value it should be valid here");
-
         Ok(Header {
             consensus_update: match next_sync_committee {
                 Some((next_sync_committee, next_sync_committee_branch)) => {
-                    LightClientUpdate::EpochChange(Box::new(EpochChangeUpdate {
-                        sync_committee: previous_period_light_client_update
-                            .next_sync_committee
-                            .expect("next_sync_committee should exist"),
-                        next_sync_committee,
-                        next_sync_committee_branch,
-                        update_data: light_client_update_data,
-                    }))
+                    LightClientUpdate::SyncCommitteePeriodChange(Box::new(
+                        SyncCommitteePeriodChangeUpdate {
+                            next_sync_committee,
+                            next_sync_committee_branch,
+                            update_data: light_client_update_data,
+                        },
+                    ))
                 }
-                None => LightClientUpdate::WithinEpoch(Box::new(WithinEpochUpdate {
-                    sync_committee: previous_period_light_client_update
-                        .next_sync_committee
-                        .expect("next_sync_committee should exist"),
-                    update_data: light_client_update_data,
-                })),
+                None => LightClientUpdate::WithinSyncCommitteePeriod(Box::new(
+                    WithinSyncCommitteePeriodUpdate {
+                        update_data: light_client_update_data,
+                    },
+                )),
             },
             trusted_height: Height::new(currently_trusted_block_number),
             ibc_account_proof,

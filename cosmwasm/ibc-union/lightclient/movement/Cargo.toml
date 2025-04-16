@@ -12,20 +12,21 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-aptos-verifier                = { workspace = true }
-bcs                           = { workspace = true }
-cosmwasm-std                  = { workspace = true, features = ["abort"] }
-evm-storage-verifier          = { workspace = true }
-hex-literal                   = { workspace = true }
-ibc-union-light-client        = { workspace = true }
-ibc-union-msg                 = { workspace = true }
-movement-light-client-types   = { workspace = true, features = ["ethabi", "serde", "bincode"] }
-rlp                           = { workspace = true }
-serde                         = { workspace = true, features = ["derive"] }
-serde-utils                   = { workspace = true }
-thiserror                     = { workspace = true }
-unionlabs                     = { workspace = true }
-unionlabs-cosmwasm-upgradable = { workspace = true }
+aptos-verifier              = { workspace = true }
+bcs                         = { workspace = true }
+cosmwasm-std                = { workspace = true, features = ["abort"] }
+embed-commit                = { workspace = true }
+evm-storage-verifier        = { workspace = true }
+frissitheto                 = { workspace = true }
+hex-literal                 = { workspace = true }
+ibc-union-light-client      = { workspace = true }
+ibc-union-msg               = { workspace = true }
+movement-light-client-types = { workspace = true, features = ["ethabi", "serde", "bincode"] }
+rlp                         = { workspace = true }
+serde                       = { workspace = true, features = ["derive"] }
+serde-utils                 = { workspace = true }
+thiserror                   = { workspace = true }
+unionlabs                   = { workspace = true }
 
 [dev-dependencies]
 aptos-crypto = { workspace = true }

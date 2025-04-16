@@ -32,12 +32,15 @@ pub struct VoyagerConfig {
     pub rest_laddr: SocketAddr,
     #[serde(default = "default_rpc_laddr")]
     pub rpc_laddr: SocketAddr,
+    #[serde(default = "default_metrics_endpoint")]
+    pub metrics_endpoint: String,
     pub queue: QueueConfig,
     // TODO: Specify per plugin
     #[serde(default = "default_optimizer_delay_milliseconds")]
     pub optimizer_delay_milliseconds: u64,
     #[serde(default = "default_ipc_client_request_timeout")]
     pub ipc_client_request_timeout: Duration,
+    pub cache: voyager_message::rpc::server::cache::Config,
 }
 
 #[must_use]
@@ -50,6 +53,11 @@ pub const fn default_rest_laddr() -> SocketAddr {
 #[inline]
 pub const fn default_rpc_laddr() -> SocketAddr {
     SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 7178)
+}
+
+#[must_use]
+pub fn default_metrics_endpoint() -> String {
+    "http://localhost:4318/v1/metrics".to_owned()
 }
 
 #[must_use]

@@ -12,7 +12,9 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+embed-commit     = { workspace = true }
 ibc-classic-spec = { workspace = true }
+ibc-union-spec   = { workspace = true, features = ["serde"] }
 jsonrpsee        = { workspace = true, features = ["macros", "server", "tracing"] }
 regex            = "1.10.6"
 serde            = { workspace = true, features = ["derive"] }

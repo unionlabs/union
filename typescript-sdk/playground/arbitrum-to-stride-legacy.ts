@@ -2,10 +2,10 @@
 import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { raise } from "#utilities/index.ts"
+import { raise } from "../src/utilities/index.ts"
 import { arbitrumSepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
-import { createUnionClient, type TransferAssetsParametersLegacy } from "#mod.ts"
+import { createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
 
 /* `bun playground/arbitrum-to-stride.ts --private-key "..."` --estimate-gas */
 

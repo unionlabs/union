@@ -13,8 +13,10 @@ use futures::{
     stream::{self, FuturesUnordered},
     Future, FutureExt, StreamExt, TryStreamExt,
 };
+use indexmap::IndexMap;
+use itertools::Itertools;
 use jsonrpsee::{
-    core::client::ClientT,
+    core::{client::ClientT, RpcResult},
     server::middleware::rpc::RpcServiceT,
     types::{ErrorObject, ErrorObjectOwned},
 };
@@ -30,16 +32,16 @@ use tracing::{
 use unionlabs::{
     ethereum::keccak256, primitives::encoding::HexUnprefixed, traits::Member, ErrorReporter,
 };
-use voyager_core::{ConsensusType, IbcSpecId};
+use voyager_primitives::{ConsensusType, IbcSpecId};
 use voyager_vm::{ItemId, QueueError};
 
 use crate::{
     context::{equivalent_chain_ids::EquivalentChainIds, ibc_spec_handler::IbcSpecHandlers},
-    core::{ChainId, ClientType, IbcInterface},
     module::{
         ClientBootstrapModuleInfo, ClientModuleInfo, ConsensusModuleInfo, PluginInfo,
         ProofModuleInfo, StateModuleInfo,
     },
+    primitives::{ChainId, ClientType, IbcInterface},
     rpc::{server::Server, VoyagerRpcServer},
     IdThreadClient, ParamsWithItemId, UNPROCESSABLE_JSONRPC_ERROR_CODE,
 };
@@ -54,9 +56,7 @@ pub mod ibc_spec_handler;
 pub struct Context {
     pub rpc_server: Server,
 
-    plugins: HashMap<String, ModuleRpcClient>,
-
-    interest_filters: HashMap<String, String>,
+    interest_filters: IndexMap<String, String>,
 
     pub cancellation_token: CancellationToken,
 }
@@ -76,6 +76,8 @@ pub struct Modules {
     chain_consensus_types: HashMap<ChainId, ConsensusType>,
 
     client_consensus_types: HashMap<ClientType, ConsensusType>,
+
+    plugins: HashMap<String, ModuleRpcClient>,
 
     equivalent_chain_ids: EquivalentChainIds,
 
@@ -272,6 +274,7 @@ impl Context {
         equivalent_chain_ids: EquivalentChainIds,
         register_ibc_spec_handlers: fn(&mut IbcSpecHandlers),
         ipc_client_request_timeout: Duration,
+        cache_config: crate::rpc::server::cache::Config,
     ) -> anyhow::Result<Self> {
         let cancellation_token = CancellationToken::new();
 
@@ -289,24 +292,23 @@ impl Context {
             consensus_modules: Default::default(),
             chain_consensus_types: Default::default(),
             client_consensus_types: Default::default(),
+            plugins: Default::default(),
             equivalent_chain_ids,
             ibc_spec_handlers,
         };
 
-        let mut plugins = HashMap::default();
+        let mut interest_filters = HashMap::new();
 
-        let mut interest_filters = HashMap::default();
-
-        let main_rpc_server = Server::new();
+        let main_rpc_server = Server::new(cache_config);
 
         info!("spawning {} plugins", plugin_configs.len());
 
-        stream::iter(plugin_configs)
-            .filter(|plugin_config| {
+        stream::iter(plugin_configs.into_iter().enumerate())
+            .filter(|(_, plugin_config)| {
                 future::ready(if !plugin_config.enabled {
                     info!(
-                        module_path = %plugin_config.path.to_string_lossy(),
-                        "module is not enabled, skipping"
+                        plugin_path = %plugin_config.path.to_string_lossy(),
+                        "plugin is not enabled, skipping"
                     );
                     false
                 } else {
@@ -314,33 +316,25 @@ impl Context {
                 })
             })
             .zip(stream::repeat(main_rpc_server.clone()))
-            .map(Ok)
-            .try_filter_map(|(plugin_config, server)| async move {
-                if !plugin_config.enabled {
-                    info!(
-                        module_path = %plugin_config.path.to_string_lossy(),
-                        "module is not enabled, skipping"
-                    );
-                    Ok(None)
-                } else {
-                    let plugin_info = get_plugin_info(&plugin_config)?;
+            .then(async |((idx, plugin_config), server)| {
+                let plugin_info = get_plugin_info(&plugin_config)?;
 
-                    debug!("starting rpc server for plugin {}", plugin_info.name);
-                    tokio::spawn(module_rpc_server(&plugin_info.name, server).await?);
+                debug!("starting rpc server for plugin {}", plugin_info.name);
+                tokio::spawn(module_rpc_server(&plugin_info.name, server).await?);
 
-                    Ok(Some((plugin_config, plugin_info)))
-                }
+                Ok((idx, plugin_config, plugin_info))
             })
             .try_for_each_concurrent(
                 None,
                 |(
+                    idx,
                     plugin_config,
                     PluginInfo {
                         name,
                         interest_filter,
                     },
                 )| {
-                    info!("registering plugin {}", name);
+                    debug!("registering plugin {}", name);
 
                     tokio::spawn(plugin_child_process(
                         name.clone(),
@@ -350,7 +344,7 @@ impl Context {
 
                     let rpc_client = ModuleRpcClient::new(&name, ipc_client_request_timeout);
 
-                    let prev = plugins.insert(name.clone(), rpc_client.clone());
+                    let prev = modules.plugins.insert(name.clone(), rpc_client.clone());
 
                     if prev.is_some() {
                         return future::ready(Err(anyhow!(
@@ -360,7 +354,7 @@ impl Context {
 
                     info!("registered plugin {name}");
 
-                    interest_filters.insert(name, interest_filter);
+                    interest_filters.insert((idx, name), interest_filter);
 
                     future::ready(Ok(()))
                 },
@@ -582,7 +576,8 @@ impl Context {
 
         info!("checking for plugin health...");
 
-        let futures = plugins
+        let futures = modules
+            .plugins
             .iter()
             .map(|(name, client)| async move {
                 match client
@@ -615,26 +610,26 @@ impl Context {
 
         Ok(Self {
             rpc_server: main_rpc_server,
-            plugins,
-            interest_filters,
+            interest_filters: interest_filters
+                .into_iter()
+                .sorted_unstable_by(|((a, _), _), ((b, _), _)| a.cmp(b))
+                .map(|((_, k), v)| (k, v))
+                .collect(),
             cancellation_token,
         })
     }
 
     pub async fn shutdown(self) {
         self.cancellation_token.cancel();
-
-        for (name, client) in self.plugins {
-            debug!("shutting down plugin client for {name}");
-            client.client.shutdown();
-        }
     }
 
     pub fn plugin(
         &self,
         name: impl AsRef<str>,
-    ) -> Result<&reconnecting_jsonrpc_ws_client::Client, PluginNotFound> {
+    ) -> RpcResult<&reconnecting_jsonrpc_ws_client::Client> {
         Ok(self
+            .rpc_server
+            .modules()?
             .plugins
             .get(name.as_ref())
             .ok_or_else(|| PluginNotFound {
@@ -643,18 +638,18 @@ impl Context {
             .client())
     }
 
-    pub fn plugin_client_raw(
-        &self,
-        name: impl AsRef<str>,
-    ) -> Result<&ModuleRpcClient, PluginNotFound> {
-        self.plugins
+    pub fn plugin_client_raw(&self, name: impl AsRef<str>) -> RpcResult<&ModuleRpcClient> {
+        self.rpc_server
+            .modules()?
+            .plugins
             .get(name.as_ref())
             .ok_or_else(|| PluginNotFound {
                 name: name.as_ref().into(),
             })
+            .map_err(Into::into)
     }
 
-    pub fn interest_filters(&self) -> &HashMap<String, String> {
+    pub fn interest_filters(&self) -> &IndexMap<String, String> {
         &self.interest_filters
     }
 }
@@ -720,6 +715,19 @@ impl Modules {
             client,
             client_bootstrap,
         }
+    }
+
+    pub fn plugin<'a>(
+        &'a self,
+        name: &str,
+    ) -> Result<&'a reconnecting_jsonrpc_ws_client::Client, PluginNotFound> {
+        Ok(self
+            .plugins
+            .get(name)
+            .ok_or_else(|| PluginNotFound {
+                name: name.to_owned(),
+            })?
+            .client())
     }
 
     pub fn equivalent_chain_ids(&self) -> &EquivalentChainIds {
@@ -847,7 +855,7 @@ async fn plugin_child_process(
     let client_socket = ModuleRpcClient::make_socket_path(&plugin_name);
     let server_socket = make_module_rpc_server_socket_path(&plugin_name);
 
-    info!(%client_socket, %server_socket, "starting plugin {plugin_name}");
+    debug!(%client_socket, %server_socket, "starting plugin {plugin_name}");
 
     let mut cmd = tokio::process::Command::new(&module_config.path);
     cmd.arg("run");
@@ -877,7 +885,7 @@ async fn module_child_process<Info: Serialize>(
     let client_socket = ModuleRpcClient::make_socket_path(&module_name);
     let server_socket = make_module_rpc_server_socket_path(&module_name);
 
-    info!(%client_socket, %server_socket, "starting module {module_name}");
+    debug!(%client_socket, %server_socket, "starting module {module_name}");
 
     lazarus_pit(
         &module_config.path,
@@ -1145,7 +1153,7 @@ async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
         .try_for_each(|module_config| {
             let id = id_f(&module_config.info);
 
-            info!("registering module {}", id);
+            debug!("registering module {}", id);
 
             tokio::spawn(module_child_process(
                 id.clone(),

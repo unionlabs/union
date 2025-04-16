@@ -12,19 +12,21 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy           = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
-bip32           = { workspace = true }
-chain-utils     = { workspace = true }
-enumorph        = { workspace = true }
-ibc-solidity    = { workspace = true, features = ["rpc"] }
-ibc-union-spec  = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }
-jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
-macros          = { workspace = true }
-serde           = { workspace = true, features = ["derive"] }
-serde_json      = { workspace = true }
-thiserror       = { workspace = true }
-tokio           = { workspace = true }
-tracing         = { workspace = true }
-unionlabs       = { workspace = true }
-voyager-message = { workspace = true }
-voyager-vm      = { workspace = true }
+alloy              = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+bip32              = { workspace = true }
+clap               = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
+concurrent-keyring = { workspace = true }
+embed-commit       = { workspace = true }
+enumorph           = { workspace = true }
+ibc-solidity       = { workspace = true, features = ["rpc"] }
+ibc-union-spec     = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }
+jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
+macros             = { workspace = true }
+serde              = { workspace = true, features = ["derive"] }
+serde_json         = { workspace = true }
+thiserror          = { workspace = true }
+tokio              = { workspace = true }
+tracing            = { workspace = true }
+unionlabs          = { workspace = true }
+voyager-message    = { workspace = true }
+voyager-vm         = { workspace = true }

@@ -4,12 +4,12 @@ use unionlabs::{
     primitives::{encoding::Base64, Bytes},
 };
 
-use crate::crypto::proof_ops::ProofOps;
+use crate::{code::Code, crypto::proof_ops::ProofOps};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct QueryResponse {
-    pub code: u32,
+    pub code: Code,
     /// nondeterministic
     pub log: String,
     /// nondeterministic
@@ -34,7 +34,7 @@ pub mod proto {
     impl From<QueryResponse> for protos::cometbft::abci::v1::QueryResponse {
         fn from(value: QueryResponse) -> Self {
             Self {
-                code: value.code,
+                code: value.code.into(),
                 log: value.log,
                 info: value.info,
                 index: value.index,
@@ -58,7 +58,7 @@ pub mod proto {
 
         fn try_from(value: protos::cometbft::abci::v1::QueryResponse) -> Result<Self, Self::Error> {
             Ok(Self {
-                code: value.code,
+                code: value.code.into(),
                 log: value.log,
                 info: value.info,
                 index: value.index,

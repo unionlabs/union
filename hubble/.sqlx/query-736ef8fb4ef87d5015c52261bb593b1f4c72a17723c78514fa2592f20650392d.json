@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "CALL sync.replication_schedule_reset_chain($1, $2, $3);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Numeric",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "736ef8fb4ef87d5015c52261bb593b1f4c72a17723c78514fa2592f20650392d"
+}

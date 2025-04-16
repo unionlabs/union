@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 cometbft-rpc                  = { workspace = true }
+embed-commit                  = { workspace = true }
 ethermint-light-client-types  = { workspace = true, features = ["serde"] }
 ics23                         = { workspace = true }
 jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }

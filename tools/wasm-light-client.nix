@@ -7,11 +7,7 @@ _: {
       ...
     }:
     let
-      inherit
-        ((crane.buildWorkspaceMember {
-          crateDirFromRoot = "tools/parse-wasm-client-type";
-        }).packages
-        )
+      inherit (crane.buildWorkspaceMember "tools/parse-wasm-client-type" { })
         parse-wasm-client-type
         ;
     in

@@ -2,7 +2,6 @@ _: {
   perSystem =
     {
       pkgs,
-      unstablePkgs,
       openapi,
       ensureAtRepositoryRoot,
       mkCi,
@@ -17,7 +16,7 @@ _: {
               {
                 buildInputs =
                   [ biome ]
-                  ++ (with unstablePkgs; [
+                  ++ (with pkgs; [
                     yq
                     jq
                     bun

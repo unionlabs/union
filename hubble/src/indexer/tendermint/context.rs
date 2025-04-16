@@ -6,6 +6,7 @@ use url::Url;
 pub struct TmContext {
     pub rpc_urls: Vec<Url>,
     pub tx_search_max_page_size: u8,
+    pub testnet: bool,
 }
 
 impl Display for TmContext {

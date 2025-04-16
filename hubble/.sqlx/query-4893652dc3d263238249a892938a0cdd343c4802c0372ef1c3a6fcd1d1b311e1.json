@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT s.id, s.repo, s.path, s.branch, (SELECT data FROM internet.download WHERE subscription_id = s.id ORDER BY id DESC LIMIT 1) AS data\n            FROM internet.subscription s\n            WHERE enabled = true AND\n            NOT EXISTS (SELECT 1 FROM internet.attempt a WHERE a.subscription_id = s.id AND a.timestamp > now() - make_interval(secs => s.interval_seconds))\n            ORDER BY id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "repo",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "path",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "branch",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "data",
+        "type_info": "Bytea"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "4893652dc3d263238249a892938a0cdd343c4802c0372ef1c3a6fcd1d1b311e1"
+}

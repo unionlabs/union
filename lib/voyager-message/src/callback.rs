@@ -8,16 +8,16 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 use tracing::instrument;
 use unionlabs::traits::Member;
-use voyager_core::{ClientInfo, IbcSpecId};
+use voyager_primitives::{ClientInfo, IbcSpecId};
 use voyager_vm::{BoxDynError, CallbackT, Op, QueueError};
 
 use crate::{
     call::SubmitTx,
     context::WithId,
-    core::ChainId,
     data::{Data, IbcDatagram, OrderedHeaders},
     error_object_to_queue_error, json_rpc_error_to_queue_error,
     module::{ClientModuleClient, PluginClient},
+    primitives::ChainId,
     rpc::missing_state,
     Context, PluginMessage, RawClientId, VoyagerMessage,
 };
@@ -138,7 +138,9 @@ impl CallbackT<VoyagerMessage> for Callback {
             }
             Callback::Plugin(PluginMessage { plugin, message }) => {
                 Ok(PluginClient::<Value, Value>::callback(
-                    &ctx.plugin(plugin)?.with_id(Some(ctx.id())),
+                    &ctx.plugin(plugin)
+                        .map_err(error_object_to_queue_error)?
+                        .with_id(Some(ctx.id())),
                     message,
                     data,
                 )

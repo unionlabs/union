@@ -1,8 +1,7 @@
 use sha3::{Digest, Keccak256};
 use unionlabs::{
     errors::{ExpectedLength, InvalidLength},
-    primitives::{H256, H512},
-    ByteArrayExt,
+    primitives::{ByteArrayExt, H256, H512},
 };
 
 /// @dev Below is the encoding for `BatchHeader` V3, total 193 bytes.

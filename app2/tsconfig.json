@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./.svelte-kit/tsconfig.json",
+  "references": [{ "path": "../ts-sdk" }, { "path": "../typescript-sdk" }],
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "plugins": [
+      { "name": "@effect/language-service" },
+      {
+        "name": "gql.tada/ts-plugin",
+        "schema": "./src/generated/schema.graphql",
+        "tadaOutputLocation": "./src/generated/graphql-env.d.ts"
+      }
+    ]
+  }
+  // Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
+  // except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
+  //
+  // If you want to overwrite includes/excludes, make sure to copy over the relevant includes/excludes
+  // from the referenced tsconfig.json - TypeScript does not merge them in
+}

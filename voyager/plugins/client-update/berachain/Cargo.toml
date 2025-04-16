@@ -18,6 +18,7 @@ berachain-light-client-types = { workspace = true, features = ["serde"] }
 cometbft-rpc                 = { workspace = true }
 cometbft-types.workspace     = true
 dashmap                      = { workspace = true }
+embed-commit                 = { workspace = true }
 enumorph                     = { workspace = true }
 ethereum-light-client-types  = { workspace = true, features = ["serde"] }
 futures                      = { workspace = true }

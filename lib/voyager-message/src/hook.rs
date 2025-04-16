@@ -1,9 +1,10 @@
 use tracing::info;
-use voyager_core::{ChainId, ClientType};
+use voyager_primitives::{ChainId, ClientType};
 use voyager_vm::Visit;
 
 use crate::{
     call::{Call, FetchUpdateHeaders, SubmitTx},
+    filter::simple_take_filter,
     VoyagerMessage,
 };
 
@@ -26,10 +27,10 @@ impl<'a, F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> UpdateHook<'a, F> {
 
 impl UpdateHook<'_, for<'b> fn(&'b FetchUpdateHeaders) -> Call> {
     pub fn filter(chain_id: &ChainId, client_type: &ClientType) -> String {
-        format!(
+        simple_take_filter(format!(
             r#"[.. | ."@type"? == "fetch_update_headers" and ."@value".chain_id == "{}" and ."@value".client_type == "{}"] | any"#,
             chain_id, client_type
-        )
+        ))
     }
 }
 
@@ -39,20 +40,24 @@ impl<F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> Visit<VoyagerMessage> for Up
             Call::FetchUpdateHeaders(fetch)
                 if fetch.chain_id == self.chain_id && fetch.client_type == self.client_type =>
             {
+                let FetchUpdateHeaders {
+                    client_type,
+                    chain_id,
+                    counterparty_chain_id,
+                    client_id,
+                    update_from,
+                    update_to,
+                } = &fetch;
+
                 info!(
-                    %fetch.client_type,
-                    %fetch.chain_id,
-                    %fetch.counterparty_chain_id,
-                    %fetch.client_id,
-                    %fetch.update_from,
-                    %fetch.update_to,
-                    "hooking for update (`{}` on `{}` tracking `{}`, id {}, {} to {})",
-                    fetch.client_type,
-                    fetch.chain_id,
-                    fetch.counterparty_chain_id,
-                    fetch.client_id,
-                    fetch.update_from,
-                    fetch.update_to
+                    %client_type,
+                    %chain_id,
+                    %counterparty_chain_id,
+                    %client_id,
+                    %update_from,
+                    %update_to,
+                    "hooking for update (`{client_type}` on `{counterparty_chain_id}` \
+                    tracking `{chain_id}`, id {client_id}, {update_from} to {update_to})",
                 );
 
                 *c = (self.mk_msg)(fetch)
@@ -76,10 +81,10 @@ impl<'a, F: for<'b> Fn(&'b SubmitTx) -> Call> SubmitTxHook<'a, F> {
 
 impl SubmitTxHook<'_, for<'b> fn(&'b SubmitTx) -> Call> {
     pub fn filter(chain_id: &ChainId) -> String {
-        format!(
+        simple_take_filter(format!(
             r#"[.. | ."@type"? == "submit_tx" and ."@value".chain_id == "{}"] | any"#,
             chain_id
-        )
+        ))
     }
 
     pub fn filter_many<'a>(chain_ids: impl IntoIterator<Item = &'a ChainId>) -> String {
@@ -89,9 +94,9 @@ impl SubmitTxHook<'_, for<'b> fn(&'b SubmitTx) -> Call> {
             .collect::<Vec<_>>()
             .join(",");
 
-        format!(
+        simple_take_filter(format!(
             r#"[.. | . as $o | $o."@type"? == "submit_tx" and ([{chain_ids}] | any(. == $o."@value".chain_id))] | any"#,
-        )
+        ))
     }
 }
 

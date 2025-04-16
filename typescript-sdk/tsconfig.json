@@ -1,6 +1,6 @@
 {
   "schema": "https://json.schemastore.org/tsconfig.json",
-  "extends": ["@tsconfig/strictest/tsconfig.json"],
+  "extends": "./tsconfig.strictest.json",
   "compilerOptions": {
     "noUnusedLocals": false,
     "noUnusedParameters": false,
@@ -10,7 +10,7 @@
     "noEmit": true,
     "allowJs": true,
     "checkJs": true,
-    "lib": ["ESNext"],
+    "lib": ["DOM", "ESNext"],
     "target": "ESNext",
     "module": "ESNext",
     "skipLibCheck": true,
@@ -42,10 +42,7 @@
         }
       }
     ],
-    "types": ["node", "bun"],
-    "paths": {
-      "#*": ["./src/*"]
-    }
+    "types": ["node", "bun"]
   },
   "exclude": ["**/_/**", "**/dist/**"],
   "include": ["src", "test", "scripts", "playground", "knip.json"],

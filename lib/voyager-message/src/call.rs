@@ -2,30 +2,38 @@ use enumorph::Enumorph;
 use macros::model;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use tracing::{debug, error, info, instrument, trace};
+use tracing::{debug, info, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, traits::Member};
-use voyager_core::{ClientType, IbcSpecId, QueryHeight, Timestamp};
+use voyager_primitives::{ClientType, IbcSpecId, QueryHeight, Timestamp};
 use voyager_vm::{call, defer, noop, now, seq, CallT, Op, QueueError};
 
 use crate::{
-    context::WithId, core::ChainId, data::IbcDatagram, error_object_to_queue_error,
-    json_rpc_error_to_queue_error, module::PluginClient, Context, PluginMessage, RawClientId,
-    VoyagerMessage,
+    context::WithId, data::IbcDatagram, error_object_to_queue_error, json_rpc_error_to_queue_error,
+    module::PluginClient, primitives::ChainId, Context, PluginMessage, RawClientId, VoyagerMessage,
 };
 
 #[model]
 #[derive(Enumorph)]
 pub enum Call {
+    // hooks
     FetchBlocks(FetchBlocks),
-
     FetchUpdateHeaders(FetchUpdateHeaders),
-
     SubmitTx(SubmitTx),
 
-    // MakeMsgCreateClient(MakeMsgCreateClient),
+    // generic waiting logic
     WaitForHeight(WaitForHeight),
     WaitForTimestamp(WaitForTimestamp),
+
+    // wait for a window relative to when this message is first handled
+    WaitForHeightRelative(WaitForHeightRelative),
+    // NOTE: impl if needed
+    // WaitForTimestampRelative(WaitForTimestampRelative),
+
+    // wait for counterparty trusted state
     WaitForTrustedHeight(WaitForTrustedHeight),
+    WaitForTrustedTimestamp(WaitForTrustedTimestamp),
+
+    WaitForClientUpdate(WaitForClientUpdate),
 
     Plugin(PluginMessage),
 }
@@ -81,7 +89,7 @@ pub struct FetchBlocks {
 /// The returned [`Op`] ***MUST*** resolve to an [`OrderedHeaders`] data.
 /// This is the entrypoint called when a client update is requested, and
 /// is intended to be called in the queue of an
-/// [`AggregateMsgUpdateClientsFromOrderedHeaders`] message, which will
+/// [`AggregateSubmitTxFromOrderedHeaders`] message, which will
 /// be used to build the actual [`MsgUpdateClient`]s.
 #[model]
 pub struct FetchUpdateHeaders {
@@ -131,6 +139,13 @@ pub struct WaitForTimestamp {
     pub finalized: bool,
 }
 
+#[model]
+pub struct WaitForHeightRelative {
+    pub chain_id: ChainId,
+    pub height_diff: u64,
+    pub finalized: bool,
+}
+
 /// Wait for the client `.client_id` on `.chain_id` to trust a height >=
 /// `.height`.
 #[model]
@@ -140,6 +155,28 @@ pub struct WaitForTrustedHeight {
     pub client_id: RawClientId,
     pub height: Height,
     pub finalized: bool,
+}
+
+/// Wait for the client `.client_id` on `.chain_id` to trust a timestamp >=
+/// `.timestamp`.
+#[model]
+pub struct WaitForTrustedTimestamp {
+    pub chain_id: ChainId,
+    pub ibc_spec_id: IbcSpecId,
+    pub client_id: RawClientId,
+    pub timestamp: Timestamp,
+    pub finalized: bool,
+}
+
+/// Wait for the client `.client_id` on `.chain_id` to trust a height >=
+/// `.height`.
+#[model]
+pub struct WaitForClientUpdate {
+    pub chain_id: ChainId,
+    pub ibc_spec_id: IbcSpecId,
+    pub client_id: RawClientId,
+    pub height: Height,
+    // pub finalized: bool,
 }
 
 impl CallT<VoyagerMessage> for Call {
@@ -158,9 +195,7 @@ impl CallT<VoyagerMessage> for Call {
                     {start_height} but it was not picked up by a plugin"
                 );
 
-                error!(%message);
-
-                Err(QueueError::Fatal(message.into()))
+                Err(QueueError::Unprocessable(message.into()))
             }
 
             Call::FetchUpdateHeaders(FetchUpdateHeaders {
@@ -173,13 +208,11 @@ impl CallT<VoyagerMessage> for Call {
             }) => {
                 let message = format!(
                     "client update request received for a {client_type} client \
-                    (id {client_id}) on {counterparty_chain_id} tracking {chain_id} from
+                    (id {client_id}) on {counterparty_chain_id} tracking {chain_id} from \
                     height {update_from} to {update_to} but it was not picked up by a plugin"
                 );
 
-                error!(%message);
-
-                Err(QueueError::Fatal(message.into()))
+                Err(QueueError::Unprocessable(message.into()))
             }
 
             Call::SubmitTx(SubmitTx { chain_id, .. }) => {
@@ -188,12 +221,9 @@ impl CallT<VoyagerMessage> for Call {
                     it was not picked up by a plugin"
                 );
 
-                error!(%message);
-
-                Err(QueueError::Fatal(message.into()))
+                Err(QueueError::Unprocessable(message.into()))
             }
 
-            // TODO: Replace this with an aggregation
             Call::WaitForHeight(WaitForHeight {
                 chain_id,
                 height,
@@ -262,6 +292,28 @@ impl CallT<VoyagerMessage> for Call {
                 }
             }
 
+            Call::WaitForHeightRelative(WaitForHeightRelative {
+                chain_id,
+                height_diff,
+                finalized,
+            }) => {
+                let chain_height = ctx
+                    .rpc_server
+                    .with_id(Some(ctx.id()))
+                    .query_latest_height(&chain_id, finalized)
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                Ok(seq([
+                    defer(now() + 1),
+                    call(WaitForHeight {
+                        chain_id,
+                        height: chain_height.increment_by(height_diff),
+                        finalized,
+                    }),
+                ]))
+            }
+
             Call::WaitForTrustedHeight(WaitForTrustedHeight {
                 chain_id,
                 ibc_spec_id,
@@ -272,7 +324,7 @@ impl CallT<VoyagerMessage> for Call {
                 let trusted_client_state_meta = ctx
                     .rpc_server
                     .with_id(Some(ctx.id()))
-                    .client_meta(
+                    .client_state_meta(
                         &chain_id,
                         &ibc_spec_id,
                         if finalized {
@@ -318,9 +370,132 @@ impl CallT<VoyagerMessage> for Call {
                     }
                 }
             }
+
+            Call::WaitForTrustedTimestamp(WaitForTrustedTimestamp {
+                chain_id,
+                ibc_spec_id,
+                client_id,
+                timestamp,
+                finalized,
+            }) => {
+                let trusted_client_state_meta = ctx
+                    .rpc_server
+                    .with_id(Some(ctx.id()))
+                    .client_state_meta(
+                        &chain_id,
+                        &ibc_spec_id,
+                        if finalized {
+                            QueryHeight::Finalized
+                        } else {
+                            QueryHeight::Latest
+                        },
+                        client_id.clone(),
+                    )
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                let continuation = seq([
+                    // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
+                    // require a new method on chain
+                    defer(now() + 1),
+                    call(WaitForTrustedTimestamp {
+                        chain_id: chain_id.clone(),
+                        ibc_spec_id: ibc_spec_id.clone(),
+                        client_id: client_id.clone(),
+                        timestamp,
+                        finalized,
+                    }),
+                ]);
+
+                match trusted_client_state_meta {
+                    Some(trusted_client_state_meta) => {
+                        let trusted_consensus_state_meta = ctx
+                            .rpc_server
+                            .with_id(Some(ctx.id()))
+                            .consensus_state_meta(
+                                &chain_id,
+                                &ibc_spec_id,
+                                if finalized {
+                                    QueryHeight::Finalized
+                                } else {
+                                    QueryHeight::Latest
+                                },
+                                client_id.clone(),
+                                trusted_client_state_meta.counterparty_height,
+                            )
+                            .await
+                            .map_err(error_object_to_queue_error)?;
+
+                        match trusted_consensus_state_meta {
+                            Some(trusted_consensus_state_meta)
+                                if trusted_consensus_state_meta.timestamp >= timestamp =>
+                            {
+                                debug!(
+                                    "client timestamp reached ({} >= {})",
+                                    trusted_client_state_meta.counterparty_height, timestamp
+                                );
+
+                                Ok(noop())
+                            }
+                            _ => Ok(continuation),
+                        }
+                    }
+                    None => {
+                        debug!("client {client_id} not found on chain {chain_id}");
+                        Ok(continuation)
+                    }
+                }
+            }
+
+            Call::WaitForClientUpdate(WaitForClientUpdate {
+                chain_id,
+                ibc_spec_id,
+                client_id,
+                height,
+                // finalized,
+            }) => {
+                let consensus_state_meta = ctx
+                    .rpc_server
+                    .with_id(Some(ctx.id()))
+                    .consensus_state_meta(
+                        &chain_id,
+                        &ibc_spec_id,
+                        QueryHeight::Latest,
+                        client_id.clone(),
+                        height,
+                    )
+                    .await
+                    .map_err(error_object_to_queue_error)?;
+
+                match consensus_state_meta {
+                    Some(consensus_state_meta) => {
+                        debug!(
+                            consensus_state_meta.timestamp = %consensus_state_meta.timestamp,
+                            "consensus state exists"
+                        );
+                        Ok(noop())
+                    }
+                    None => {
+                        debug!("consensus state for client {client_id} not found at height {height} on chain {chain_id}");
+                        Ok(seq([
+                            defer(now() + 1),
+                            call(WaitForClientUpdate {
+                                chain_id: chain_id.clone(),
+                                ibc_spec_id,
+                                client_id: client_id.clone(),
+                                height,
+                                // finalized,
+                            }),
+                        ]))
+                    }
+                }
+            }
+
             Call::Plugin(PluginMessage { plugin, message }) => {
                 Ok(PluginClient::<Value, Value>::call(
-                    &ctx.plugin(plugin)?.with_id(Some(ctx.id())),
+                    &ctx.plugin(plugin)
+                        .map_err(error_object_to_queue_error)?
+                        .with_id(Some(ctx.id())),
                     message,
                 )
                 .await

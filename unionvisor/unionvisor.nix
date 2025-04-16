@@ -11,27 +11,14 @@
       stdenv,
       get-flake,
       uniondBundleVersions,
+      dbg,
       ...
     }:
     let
       swapDotsWithUnderscores = pkgs.lib.replaceStrings [ "." ] [ "_" ];
 
-      unionvisorAll = crane.buildWorkspaceMember {
-        crateDirFromRoot = "unionvisor";
-        cargoTestExtraAttrs = {
-          cargoTestExtraArgs = "-- --test-threads 1";
-          preConfigureHooks = [
-            ''
-              cp -r ${self'.packages.uniond-release}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis
-            ''
-            ''
-              echo 'patching testdata'
-            ''
-            ''
-              patchShebangs $PWD/unionvisor/src/testdata
-            ''
-          ];
-        };
+      unionvisor = crane.buildWorkspaceMember "unionvisor" {
+        dontRemoveDevDeps = true;
       };
 
       mkBundle =
@@ -54,7 +41,7 @@
             }
             {
               name = "unionvisor";
-              path = "${unionvisorAll.packages.unionvisor}/bin/unionvisor";
+              path = "${unionvisor.unionvisor}/bin/unionvisor";
             }
           ]
           # add all `versions` to the bundle
@@ -100,14 +87,29 @@
         };
     in
     {
-      inherit (unionvisorAll) checks;
-      packages = {
-        inherit (unionvisorAll.packages) unionvisor;
+      checks.unionvisor-tests = crane.lib.cargoTest (
+        unionvisor.unionvisor.passthru.craneAttrs
+        // {
+          doCheck = true;
+          cargoTestExtraArgs = "-- --test-threads 1";
+          preConfigureHooks = [
+            ''
+              cp -r ${self'.packages.uniond-release}/bin/uniond $PWD/unionvisor/src/testdata/test_init_cmd/bundle/bins/genesis
+            ''
+            ''
+              echo 'patching testdata'
+            ''
+            ''
+              patchShebangs $PWD/unionvisor/src/testdata
+            ''
+          ];
+        }
+      );
+      packages = unionvisor // {
+        bundle-union-1-image = mkUnionvisorImage self'.packages.bundle-union-1;
 
-        bundle-testnet-9-image = mkUnionvisorImage self'.packages.bundle-testnet-9;
-
-        bundle-testnet-9 = mkBundle {
-          name = "testnet-9";
+        bundle-union-1 = mkBundle {
+          name = "union-1";
           versions = uniondBundleVersions.complete;
           genesis = ../networks/genesis/union-testnet-9/genesis.json;
           meta = {
@@ -117,10 +119,23 @@
           };
         };
 
-        bundle-testnet-next = mkBundle {
-          name = "testnet-next";
+        bundle-union-testnet-10-image = mkUnionvisorImage self'.packages.bundle-union-testnet-10;
+
+        bundle-union-testnet-10 = mkBundle {
+          name = "union-testnet-10";
           versions = uniondBundleVersions.complete;
-          nextVersion = "v0.26.0";
+          genesis = ../networks/genesis/union-testnet-10/genesis.json;
+          meta = {
+            binary_name = "uniond";
+            versions_directory = "versions";
+            fallback_version = uniondBundleVersions.first;
+          };
+        };
+
+        bundle-union-1-next = mkBundle {
+          name = "union-1-next";
+          versions = uniondBundleVersions.complete;
+          nextVersion = "v1.1.0";
           genesis = ../networks/genesis/union-testnet-9/genesis.json;
           meta = {
             binary_name = "uniond";
@@ -151,7 +166,7 @@
         };
         bundle = mkOption {
           type = types.package;
-          default = self.packages.${pkgs.system}.bundle-testnet-9;
+          default = self.packages.${pkgs.system}.bundle-union-1;
         };
         logFormat = mkOption {
           type = types.enum [
@@ -164,7 +179,7 @@
         moniker = mkOption { type = types.str; };
         network = mkOption {
           type = types.str;
-          default = "union-testnet-9";
+          default = "union-1";
         };
         seeds = mkOption {
           type = types.str;
@@ -266,7 +281,13 @@
                   ];
 
                   configSymLinkCommands = pkgs.lib.concatMapStrings (l: ''
+                    export UNIONVISOR_BUNDLE="${cfg.bundle}"
+                    export UNIONVISOR_ROOT="${cfg.root}"
+                    export HOME="${cfg.home}"
 
+                    cd "${cfg.root}"
+
+                    pwd
                     rm ./home/config/${l.name}
                     ln -s ${l.path} ./home/config/${l.name}
 
