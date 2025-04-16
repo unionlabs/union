@@ -43,7 +43,7 @@ export const getFillingState = (transfer: Transfer): FillingState => {
   return Option.match(transfer.sourceChain, {
     onNone: () => FillingState.SourceChainMissing(),
     onSome: sourceChain => {
-      const sourceWallet = wallets.getAddressForChain(sourceChain)
+      const sourceWallet = transfer.derivedSender
       if (Option.isNone(sourceWallet)) return FillingState.SourceWalletMissing()
       if (Option.isNone(transfer.baseToken)) return FillingState.BaseTokenMissing()
       if (Option.isNone(transfer.destinationChain)) return FillingState.DestinationMissing()

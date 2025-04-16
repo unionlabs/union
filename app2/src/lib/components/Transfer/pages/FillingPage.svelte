@@ -8,10 +8,10 @@ import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { Match, Option } from "effect"
 import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Input from "$lib/components/ui/Input.svelte"
-import Label from "$lib/components/ui/Label.svelte"
+import {wallets} from "$lib/stores/wallets.svelte.ts";
+import {getDerivedReceiverSafe} from "$lib/services/shared";
 
 type Props = {
   onContinue: () => void
@@ -77,6 +77,7 @@ let sender = $state("")
         variant="inline"
         onclick={() => {
           signingMode = "single";
+          wallets.clearInputAddress()
         }}
       >
         SINGLESIG
@@ -102,7 +103,18 @@ let sender = $state("")
         label="SENDER"
         value={sender}
         placeholder="0x123"
-        oninput={() => {}}
+        spellcheck="false"
+
+        oninput={(event) => {
+          getDerivedReceiverSafe(event.target.value).pipe(
+            Option.match({
+              onNone: () => {},
+              onSome: (address) => {
+                wallets.addInputAddress(address)
+              }
+            })
+          )
+        }}
       />
     {/if}
     <ChainAsset type="source" />

@@ -1,6 +1,6 @@
 import { Match, Option } from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
-import type { Channel, Token } from "@unionlabs/sdk/schema"
+import {type Channel, type Token} from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { type Address, fromHex, type Hex } from "viem"
@@ -69,11 +69,19 @@ export class Transfer {
 
   derivedReceiver = $derived(getDerivedReceiverSafe(this.raw.receiver))
 
-  derivedSender = $derived(
-    Option.isNone(this.sourceChain)
-      ? Option.none()
-      : wallets.getAddressForChain(this.sourceChain.value)
-  )
+  derivedSender = $derived.by(() => {
+    if (Option.isNone(this.sourceChain)) return Option.none()
+
+    const sourceChain = this.sourceChain.value
+
+    if (Option.isSome(wallets.inputAddress)) {
+      return getDerivedReceiverSafe(wallets.inputAddress.value)
+    }
+
+    return wallets.getAddressForChain(sourceChain)
+  })
+
+
 
   // channel = $derived.by<Option.Option<Channel>>(() => {
   //   return Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(

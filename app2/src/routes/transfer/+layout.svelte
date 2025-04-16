@@ -2,7 +2,6 @@
 import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
 import { Option } from "effect"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 
 let { children } = $props()
@@ -15,12 +14,16 @@ $effect(() => {
 
 let lastFetchKey = $state("")
 
+
+//0x50A22f95bcB21E7bFb63c7A8544AC0683dCeA302
+//0xe2f184241cddd9f2235d861eff25c37b7529746e
+
 $effect(() => {
   if (Option.isNone(transfer.sourceChain)) return
 
   const sourceChain = transfer.sourceChain.value
 
-  const addressOption = wallets.getAddressForChain(sourceChain)
+  const addressOption = transfer.derivedSender
   if (Option.isNone(addressOption)) return
 
   const address = addressOption.value

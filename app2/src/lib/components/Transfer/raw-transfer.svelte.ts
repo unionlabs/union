@@ -8,6 +8,7 @@ export type FormFields = {
   destination: string // Destination identifier
   asset: string // Asset type or identifier
   receiver: string // Receiver of the transaction/action
+  sender: string
   amount: string // Amount value (stored as string for form handling)
 }
 
@@ -27,6 +28,7 @@ export class RawTransferSvelte {
   destination: string = $state("")
   asset: string = $state("")
   receiver: string = $state("")
+  sender: string = $state("")
   amount: string = $state("")
 
   constructor() {
@@ -80,8 +82,8 @@ export class RawTransferSvelte {
    * @returns Complete state object with all fields
    */
   cleanState = (state: Partial<FormFields>): FormFields => {
-    const { source = "", destination = "", asset = "", receiver = "", amount = "" } = state
-    return { source, destination, asset, receiver, amount }
+    const { source = "", destination = "", asset = "", receiver = "", sender = "", amount = "" } = state
+    return { source, destination, asset, receiver, sender, amount }
   }
 
   /**
@@ -96,6 +98,7 @@ export class RawTransferSvelte {
       destination: this.destination,
       asset: this.asset,
       receiver: this.receiver,
+      sender: this.sender,
       amount: this.amount,
       ...value
     })
@@ -105,6 +108,7 @@ export class RawTransferSvelte {
     this.destination = newParams.destination
     this.asset = newParams.asset
     this.receiver = newParams.receiver
+    this.sender = newParams.sender
     this.amount = newParams.amount
   }
 
@@ -175,6 +179,7 @@ export class RawTransferSvelte {
       destination: this.destination,
       asset: this.asset,
       receiver: this.receiver,
+      sender: this.sender,
       amount: this.amount
     }
 
@@ -203,6 +208,7 @@ export class RawTransferSvelte {
     this.destination = newParams.destination
     this.asset = newParams.asset
     this.receiver = newParams.receiver
+    this.sender = newParams.sender
     this.amount = newParams.amount
 
     // Debounced URL update
@@ -215,6 +221,7 @@ export class RawTransferSvelte {
       destination: "",
       asset: "",
       receiver: "",
+      sender: "",
       amount: ""
     })
   }
